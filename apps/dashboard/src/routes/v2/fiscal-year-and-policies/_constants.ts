@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Constants and configuration for Fiscal Year & Policies routing
  * Single ?tab= parameter pattern with inferred domains
  */
@@ -39,6 +39,15 @@ export const POLICY_DOMAINS = [
 
 export type PolicyDomain = (typeof POLICY_DOMAINS)[number]['id']
 
+import { PERMISSIONS } from '@/constants/permissions'
+
+/**
+ * Mutually exclusive permission requirements.
+ */
+export type PermissionRequirement =
+  | { anyOf: readonly string[]; allOf?: never }
+  | { allOf: readonly string[]; anyOf?: never }
+
 /**
  * Tab definitions for each Domain
  */
@@ -48,6 +57,13 @@ export interface PolicyTabConfig {
   description: string
   domain: PolicyDomain
   icon: LucideIcon
+  requiredPermission?: string | PermissionRequirement
+}
+
+export interface PermissionChecker {
+  hasPermission: (p: string) => boolean
+  hasAnyPermission: (p: readonly string[]) => boolean
+  hasAllPermissions: (p: readonly string[]) => boolean
 }
 
 export const POLICY_TABS: Record<string, PolicyTabConfig> = {
@@ -58,6 +74,7 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     description: 'Manage fiscal year lifecycles and status',
     domain: 'fiscal-configuration',
     icon: CalendarDays,
+    requiredPermission: PERMISSIONS.Planning.FiscalYear.View,
   },
   'economic-indicators': {
     id: 'economic-indicators',
@@ -65,6 +82,12 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     description: 'Configuration for taxes and economic data',
     domain: 'fiscal-configuration',
     icon: Percent,
+    requiredPermission: {
+      anyOf: [
+        PERMISSIONS.Finance.AgencyMasterBudget.Manage,
+        PERMISSIONS.Planning.Dashboard.ViewGlobal,
+      ],
+    },
   },
   'data-migrations': {
     id: 'data-migrations',
@@ -72,6 +95,12 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     description: 'Year-to-year data rollover and migration tools',
     domain: 'fiscal-configuration',
     icon: History,
+    requiredPermission: {
+      anyOf: [
+        PERMISSIONS.Admin.Tenants.Manage,
+        PERMISSIONS.Admin.Roles.Manage,
+      ],
+    },
   },
 
   // Financial Planning
@@ -81,6 +110,7 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     description: 'Annual budget call preparation and deadlines',
     domain: 'financial-planning',
     icon: ClipboardList,
+    requiredPermission: PERMISSIONS.Planning.BudgetCall.View,
   },
   'procurement-thresholds': {
     id: 'procurement-thresholds',
@@ -88,6 +118,7 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     description: 'Define limits and modes for procurement',
     domain: 'financial-planning',
     icon: Scale,
+    requiredPermission: PERMISSIONS.Procurement.App.Manage,
   },
 
   // Governance & Organization
@@ -98,6 +129,7 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
       'Assign approval authorities to workflow routing by fiscal year',
     domain: 'governance-organization',
     icon: Users,
+    requiredPermission: PERMISSIONS.Planning.WorkflowMatrix.Manage,
   },
   'spms-function-weights': {
     id: 'spms-function-weights',
@@ -105,6 +137,7 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     description: 'Configure weights for performance evaluation',
     domain: 'governance-organization',
     icon: Target,
+    requiredPermission: PERMISSIONS.Planning.Target.Manage,
   },
   'rating-scale': {
     id: 'rating-scale',
@@ -112,7 +145,81 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     description: 'Manage institutional rating criteria',
     domain: 'governance-organization',
     icon: Layout,
+    requiredPermission: PERMISSIONS.Planning.RatingScale.Manage,
   },
+}
+
+/**
+ * Evaluates whether a given tab is permitted for the current user.
+ * Implements strict deny-by-default on malformed requirements.
+ */
+export function isTabPermitted(
+  tab: PolicyTabConfig,
+  checker: PermissionChecker
+): boolean {
+  if (!tab.requiredPermission) return true
+
+  if (typeof tab.requiredPermission === 'string') {
+    return checker.hasPermission(tab.requiredPermission)
+  }
+
+  if (typeof tab.requiredPermission === 'object') {
+    if ('anyOf' in tab.requiredPermission && tab.requiredPermission.anyOf) {
+      return tab.requiredPermission.anyOf.length > 0
+        ? checker.hasAnyPermission(tab.requiredPermission.anyOf)
+        : false
+    }
+    if ('allOf' in tab.requiredPermission && tab.requiredPermission.allOf) {
+      return tab.requiredPermission.allOf.length > 0
+        ? checker.hasAllPermissions(tab.requiredPermission.allOf)
+        : false
+    }
+  }
+
+  return false
+}
+
+export interface TabResolutionResult {
+  resolvedTab: string | null
+  isDenied: boolean
+}
+
+/**
+ * Pure function that deterministically resolves the accessible tab.
+ * Precondition: Permissions are already in 'success' (loaded) state.
+ */
+export function resolveAccessibleTab({
+  requestedTab,
+  activeDomain,
+  checker,
+}: {
+  requestedTab: string
+  activeDomain: PolicyDomain
+  checker: PermissionChecker
+}): TabResolutionResult {
+  const targetConfig = POLICY_TABS[requestedTab]
+  if (targetConfig && isTabPermitted(targetConfig, checker)) {
+    return { resolvedTab: requestedTab, isDenied: false }
+  }
+
+  // 1. Try first accessible sibling in the active domain
+  const siblingTabs = getTabsByDomain(activeDomain).filter((t) =>
+    isTabPermitted(t, checker)
+  )
+  if (siblingTabs.length > 0) {
+    return { resolvedTab: siblingTabs[0].id, isDenied: false }
+  }
+
+  // 2. Try first accessible tab across any domain in the module
+  const anyAccessible = Object.values(POLICY_TABS).find((t) =>
+    isTabPermitted(t, checker)
+  )
+  if (anyAccessible) {
+    return { resolvedTab: anyAccessible.id, isDenied: false }
+  }
+
+  // 3. User has zero accessible tabs in this entire module
+  return { resolvedTab: null, isDenied: true }
 }
 
 /**

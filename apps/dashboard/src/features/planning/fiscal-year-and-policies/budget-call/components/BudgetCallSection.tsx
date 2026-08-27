@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Calendar, Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import {
+  createQueryHookFromTemplate,
+  createMutationHookFromTemplate,
+} from 'erpez-shared-lib'
 import { pascalCaseToWords } from '@/utils/formatters'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getBudgetCallsRequest } from '@/lib/fiscal-year-and-policies/requests/getBudgetCallsRequest'
 import { deleteBudgetCallRequest } from '@/lib/fiscal-year-and-policies/requests/deleteBudgetCallRequest'
-import {
-  ReusableFiscalYearSelector,
-  type ReusableFiscalYearSelectorRef,
-} from '../../fiscal-year-management/components/ReusableFiscalYearSelector'
+import { changeBudgetCallStatusRequest } from '@/lib/fiscal-year-and-policies/requests/changeBudgetCallStatusRequest'
+import { ReusableFiscalYearSelector } from '../../fiscal-year-management/components/ReusableFiscalYearSelector'
 import { BudgetCallForm } from './BudgetCallForm'
 import { BudgetCallCard } from './BudgetCallCard'
 import type { BudgetCall } from '@/lib/fiscal-year-and-policies/types'
@@ -32,15 +33,22 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
+import { usePermissions } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/constants/permissions'
+import { Spinner } from '@/components/ui/spinner'
+
 // Query hooks
 const useBudgetCalls = createQueryHookFromTemplate(getBudgetCallsRequest)
+const useChangeBudgetCallStatus = createMutationHookFromTemplate(
+  changeBudgetCallStatusRequest,
+)
 
 export function BudgetCallSection() {
-  // Use fiscal year selector component
-  const selectorRef = useRef<ReusableFiscalYearSelectorRef>(null)
   const queryClient = useQueryClient()
+  const { hasPermission, isLoaded } = usePermissions()
+  const canView = hasPermission(PERMISSIONS.Planning.BudgetCall.View)
+  const canManage = hasPermission(PERMISSIONS.Planning.BudgetCall.Manage)
 
-  const [budgetCalls, setBudgetCalls] = useState<Array<BudgetCall>>([])
   const [formOpen, setFormOpen] = useState(false)
   const [selectedBudgetCall, setSelectedBudgetCall] = useState<
     BudgetCall | undefined
@@ -49,8 +57,10 @@ export function BudgetCallSection() {
   const [budgetCallToDelete, setBudgetCallToDelete] =
     useState<BudgetCall | null>(null)
   const [selectedFiscalYearId, setSelectedFiscalYearId] = useState<string>('')
+  const [selectedFiscalYear, setSelectedFiscalYear] =
+    useState<FiscalYear | null>(null)
 
-  // Fetch budget calls
+  // Fetch budget calls with strict enabled gating
   const { data: budgetCallsData } = useBudgetCalls({
     pathParams: {},
     queryParams: {
@@ -59,6 +69,7 @@ export function BudgetCallSection() {
           ? `fiscalYearId==${selectedFiscalYearId}`
           : undefined,
     },
+    enabled: isLoaded && canView,
   })
 
   // Delete mutation
@@ -85,29 +96,21 @@ export function BudgetCallSection() {
     },
   })
 
-  // Set budget calls from data
-  useEffect(() => {
-    const calls = budgetCallsData?.data || []
-    setBudgetCalls(calls)
-  }, [budgetCallsData])
-
-  const activeFiscalYear = selectorRef.current?.selectedFiscalYear ?? null
-
   // Filter budget calls based on selected fiscal year
-  const displayedBudgetCalls =
-    selectedFiscalYearId === 'all'
-      ? budgetCalls
-      : activeFiscalYear
-        ? budgetCalls.filter(
-            (call) => call.fiscalYearId === activeFiscalYear.id,
-          )
-        : []
+  const displayedBudgetCalls = useMemo(() => {
+    const calls = budgetCallsData?.data || []
+    if (selectedFiscalYearId === 'all' || !selectedFiscalYearId) {
+      return calls
+    }
+    return calls.filter((call) => call.fiscalYearId === selectedFiscalYearId)
+  }, [budgetCallsData, selectedFiscalYearId])
 
   // Handle fiscal year change
   const handleFiscalYearChange = (
-    _fiscalYear: FiscalYear | null,
+    fiscalYear: FiscalYear | null,
     fiscalYearId: string,
   ) => {
+    setSelectedFiscalYear(fiscalYear)
     setSelectedFiscalYearId(fiscalYearId)
     setFormOpen(false)
     setSelectedBudgetCall(undefined)
@@ -125,6 +128,32 @@ export function BudgetCallSection() {
     deleteMutation.mutate(budgetCallToDelete.id)
   }
 
+  const { mutate: changeBudgetCallStatus } = useChangeBudgetCallStatus()
+
+  // Handle activate budget call
+  const handleActivateCall = (call: BudgetCall) => {
+    changeBudgetCallStatus(
+      {
+        pathParams: { id: call.id },
+        payload: { status: 'Active' },
+      },
+      {
+        onSuccess: () => {
+          toast.success('Budget call activated successfully')
+          void queryClient.invalidateQueries({
+            predicate: (query) => {
+              const key = query.queryKey[0]
+              return typeof key === 'string' && key.startsWith('/budget-calls')
+            },
+          })
+        },
+        onError: (error: any) => {
+          toast.error(error?.message || 'Failed to activate budget call')
+        },
+      },
+    )
+  }
+
   // Handle create new budget call
   const handleCreateNew = () => {
     setSelectedBudgetCall(undefined)
@@ -137,6 +166,18 @@ export function BudgetCallSection() {
     setFormOpen(true)
   }
 
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Spinner size="md" />
+      </div>
+    )
+  }
+
+  if (!canView) {
+    return null
+  }
+
   return (
     <>
       <Card>
@@ -147,22 +188,24 @@ export function BudgetCallSection() {
               Budget Calls
             </CardTitle>
             <CardDescription>
-              {selectedFiscalYearId === 'all'
+              {selectedFiscalYearId === 'all' || !selectedFiscalYearId
                 ? 'All budget calls across fiscal years'
-                : activeFiscalYear
-                  ? `Budget calls for FY ${activeFiscalYear.year}`
-                  : 'Select a fiscal year to view budget calls'}
+                : selectedFiscalYear
+                  ? `Budget calls for FY ${selectedFiscalYear.year}`
+                  : 'Budget calls for selected fiscal year'}
             </CardDescription>
           </div>
-          <Button onClick={handleCreateNew} size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            New Budget Call
-          </Button>
+          {canManage && (
+            <Button onClick={handleCreateNew} size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Initiate Budget Call
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Fiscal Year Selector */}
           <ReusableFiscalYearSelector
-            ref={selectorRef}
+            value={selectedFiscalYearId}
             onFiscalYearChange={handleFiscalYearChange}
             label="Fiscal Year"
             showAllOption={true}
@@ -173,23 +216,23 @@ export function BudgetCallSection() {
             <div className="rounded-lg border-2 border-dashed border-border bg-muted/30 p-8 text-center">
               <Calendar className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
               <h3 className="mb-2 font-semibold text-foreground">
-                {selectedFiscalYearId === 'all'
+                {selectedFiscalYearId === 'all' || !selectedFiscalYearId
                   ? 'No budget calls found'
-                  : activeFiscalYear
-                    ? `No budget calls for FY ${activeFiscalYear.year}`
-                    : 'No fiscal year selected'}
+                  : selectedFiscalYear
+                    ? `No budget calls for FY ${selectedFiscalYear.year}`
+                    : 'No budget calls found for this fiscal year'}
               </h3>
               <p className="mb-4 text-sm text-muted-foreground">
-                {selectedFiscalYearId === 'all'
-                  ? 'Create your first budget call to get started'
-                  : activeFiscalYear
-                    ? `Create a new budget call for this fiscal year to begin the submission process`
-                    : 'Select a fiscal year above to view and manage budget calls'}
+                {selectedFiscalYearId === 'all' || !selectedFiscalYearId
+                  ? 'Initiate your first budget call to get started'
+                  : selectedFiscalYear
+                    ? `Initiate a new budget call for FY ${selectedFiscalYear.year} to begin the submission process`
+                    : 'Initiate a new budget call for this fiscal year to begin the submission process'}
               </p>
-              {activeFiscalYear && (
+              {canManage && (
                 <Button onClick={handleCreateNew} size="sm">
                   <Plus className="mr-2 h-4 w-4" />
-                  Create Budget Call
+                  Initiate Budget Call
                 </Button>
               )}
             </div>
@@ -202,9 +245,13 @@ export function BudgetCallSection() {
                 <BudgetCallCard
                   key={call.id}
                   budgetCall={call}
+                  canManage={canManage}
                   onEdit={handleEditCall}
                   onDelete={handleDeleteClick}
-                  showFiscalYear={selectedFiscalYearId === 'all'}
+                  onActivate={handleActivateCall}
+                  showFiscalYear={
+                    selectedFiscalYearId === 'all' || !selectedFiscalYearId
+                  }
                 />
               ))}
             </div>
@@ -217,6 +264,11 @@ export function BudgetCallSection() {
         open={formOpen}
         onOpenChange={setFormOpen}
         budgetCall={selectedBudgetCall}
+        defaultFiscalYearId={
+          selectedFiscalYearId && selectedFiscalYearId !== 'all'
+            ? selectedFiscalYearId
+            : undefined
+        }
       />
 
       {/* Delete Confirmation Dialog */}

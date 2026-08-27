@@ -8,4 +8,5 @@ public record CreateBudgetCallCommand : IRequest<ApiResponse<Guid>>
     public Guid FiscalYearId { get; init; }
     public string? Type { get; init; }
     public DateTime SubmissionDeadline { get; init; }
+    public string? Status { get; init; }
 }

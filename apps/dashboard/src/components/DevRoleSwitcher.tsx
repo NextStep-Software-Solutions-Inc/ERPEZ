@@ -108,6 +108,17 @@ export const DevRoleSwitcher: React.FC = () => {
     try {
       setIsSwitching(true)
       await switchDevUser(persona.id)
+      // Scoped query removal: wipe user-scoped protected data immediately upon identity change
+      queryClient.removeQueries({
+        predicate: (query) => {
+          const key = String(query.queryKey[0] || '')
+          return (
+            key === 'budget-calls' ||
+            key === 'my-permissions' ||
+            key.startsWith('budget-call')
+          )
+        },
+      })
       await queryClient.invalidateQueries()
       toast.success(`Switched role to ${persona.name}`, {
         description: `Active tenant: ERPEZ Dev Sandbox (${persona.role})`,

@@ -49,6 +49,9 @@ public static class RoleSeeder
                 Permissions.Planning.kpiAssign,
                 Permissions.Planning.targetManage,
                 Permissions.Planning.ratingScaleManage,
+                Permissions.Planning.fiscalYearView,
+                Permissions.Planning.fiscalYearManage,
+                Permissions.Planning.budgetCallView,
                 Permissions.Planning.budgetCallManage,
                 Permissions.Planning.opcrEvaluate,
                 Permissions.Planning.viewGlobalDashboard,
@@ -66,6 +69,8 @@ public static class RoleSeeder
                 Permissions.Finance.fiscalMonthLockUnlock,
                 Permissions.Finance.uacsManage,
                 Permissions.Finance.fundSourceManage,
+                Permissions.Planning.fiscalYearView,
+                Permissions.Planning.fiscalYearManage,
                 Permissions.Planning.viewGlobalDashboard
             ]
         ),
@@ -125,7 +130,12 @@ public static class RoleSeeder
                 Permissions.Admin.rolesManage,
                 Permissions.Admin.usersManage,
                 Permissions.Admin.orgStructureManage,
-                Permissions.Planning.workflowMatrixManage
+                Permissions.Planning.fiscalYearView,
+                Permissions.Planning.fiscalYearManage,
+                Permissions.Planning.budgetCallView,
+                Permissions.Planning.budgetCallManage,
+                Permissions.Planning.workflowMatrixManage,
+                Permissions.Planning.viewGlobalDashboard
             ]
         )
     ];

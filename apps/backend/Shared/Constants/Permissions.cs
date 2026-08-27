@@ -43,6 +43,9 @@ public static class Permissions
         public const string ratingScaleManage = "planning.rating_scale.manage";
 
         // Planning Lifecycle & Matrix
+        public const string fiscalYearView = "planning.fiscal_year.view";
+        public const string fiscalYearManage = "planning.fiscal_year.manage";
+        public const string budgetCallView = "planning.budget_call.view";
         public const string budgetCallManage = "planning.budget_call.manage";
         public const string workflowMatrixManage = "planning.workflow_matrix.manage";
     }
@@ -121,6 +124,9 @@ public static class Permissions
             Planning.kpiAssign,
             Planning.targetManage,
             Planning.ratingScaleManage,
+            Planning.fiscalYearView,
+            Planning.fiscalYearManage,
+            Planning.budgetCallView,
             Planning.budgetCallManage,
             Planning.workflowMatrixManage,
 

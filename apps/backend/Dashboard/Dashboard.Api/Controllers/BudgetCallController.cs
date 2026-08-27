@@ -30,7 +30,7 @@ public class BudgetCallController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [HasPermission(Permissions.Planning.budgetCallManage)]
+    [HasPermission(Permissions.Planning.budgetCallView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<BudgetCallResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetBudgetCalls([FromQuery] GetBudgetCallsQuery query)
@@ -40,7 +40,7 @@ public class BudgetCallController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [HasPermission(Permissions.Planning.budgetCallManage)]
+    [HasPermission(Permissions.Planning.budgetCallView)]
     [ProducesResponseType(typeof(ApiResponse<BudgetCallDetailedResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

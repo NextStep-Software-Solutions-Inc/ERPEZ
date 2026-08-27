@@ -11,6 +11,7 @@ export type CreateBudgetCallPayload = {
   fiscalYearId: string
   type: string
   submissionDeadline: string // ISO string
+  status?: string
 }
 
 export const createBudgetCallRequest: MutationBlueprintFromTemplate<
