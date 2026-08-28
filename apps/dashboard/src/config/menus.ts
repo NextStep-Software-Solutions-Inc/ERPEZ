@@ -1154,11 +1154,6 @@ export const menusConfig = {
             href: '/v2/manage-direct-acquisition',
             icon: Files,
           },
-          {
-            title: 'Manage Supplier Direct Acquisition',
-            href: '/v2/manage-supplier-direct-acquisition',
-            icon: Files,
-          },
         ],
       },
       {
@@ -1503,11 +1498,6 @@ export const menusConfig = {
           {
             title: 'Manage Direct Acquisition',
             href: '/v2/manage-direct-acquisition',
-            icon: Files,
-          },
-          {
-            title: 'Manage Supplier Direct Acquisition',
-            href: '/v2/manage-supplier-direct-acquisition',
             icon: Files,
           },
         ],
