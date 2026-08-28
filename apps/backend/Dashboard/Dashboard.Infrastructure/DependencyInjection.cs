@@ -165,6 +165,9 @@ public static class DependencyInjection
         // Purchase Request — PDF
         services.AddScoped<IDocumentRenderer<PurchaseRequestDataDto>, PurchaseRequestPdfRenderer>();
 
+        // APR — PDF
+        services.AddScoped<IDocumentRenderer<AprDataDto>, AprPdfRenderer>();
+
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()

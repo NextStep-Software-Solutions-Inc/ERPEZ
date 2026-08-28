@@ -153,6 +153,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IDirectContractingRepository directContractingRepository;
     private readonly IDirectContractingProposalRepository directContractingProposalRepository;
     private readonly IDirectContractingProposalItemRepository directContractingProposalItemRepository;
+    private readonly IDirectAcquisitionRepository directAcquisitionRepository;
+    private readonly IDirectPurchaseEntryRepository directPurchaseEntryRepository;
+    private readonly IDirectAcquisitionDocumentRepository directAcquisitionDocumentRepository;
     private readonly IRFQRepository rfqRepository;
     private readonly IPublicSupplierApplicationRepository publicSupplierApplicationRepository;
     private readonly IPurchaseOrderRepository purchaseOrderRepository;
@@ -303,6 +306,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         directContractingRepository = new DirectContractingRepository(context, sieveProcessor);
         directContractingProposalRepository = new DirectContractingProposalRepository(context, sieveProcessor);
         directContractingProposalItemRepository = new DirectContractingProposalItemRepository(context, sieveProcessor);
+        directAcquisitionRepository = new DirectAcquisitionRepository(context, sieveProcessor);
+        directPurchaseEntryRepository = new DirectPurchaseEntryRepository(context, sieveProcessor);
+        directAcquisitionDocumentRepository = new DirectAcquisitionDocumentRepository(context, sieveProcessor);
         rfqRepository = new RFQRepository(context, sieveProcessor);
         publicSupplierApplicationRepository = new PublicSupplierApplicationRepository (context, sieveProcessor);
         purchaseOrderRepository = new PurchaseOrderRepository(context, sieveProcessor);
@@ -448,6 +454,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDirectContractingRepository DirectContractingRepository => directContractingRepository;
     public IDirectContractingProposalRepository DirectContractingProposalRepository => directContractingProposalRepository;
     public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => directContractingProposalItemRepository;
+    public IDirectAcquisitionRepository DirectAcquisitionRepository => directAcquisitionRepository;
+    public IDirectPurchaseEntryRepository DirectPurchaseEntryRepository => directPurchaseEntryRepository;
+    public IDirectAcquisitionDocumentRepository DirectAcquisitionDocumentRepository => directAcquisitionDocumentRepository;
     public IRFQRepository RFQRepository => rfqRepository;
     public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => publicSupplierApplicationRepository;
     public IPurchaseOrderRepository PurchaseOrderRepository => purchaseOrderRepository;

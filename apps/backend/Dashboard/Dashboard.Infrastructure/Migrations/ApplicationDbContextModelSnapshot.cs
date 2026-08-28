@@ -8266,6 +8266,146 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("ConsolidatedPRItems", "procurement");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectAcquisition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ApprovedFileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BACProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ConsolidatedPRId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DANumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<decimal>("TotalABC")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BACProjectId");
+
+                    b.HasIndex("ConsolidatedPRId");
+
+                    b.HasIndex("DANumber")
+                        .IsUnique();
+
+                    b.ToTable("DirectAcquisitions", "procurement");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectAcquisitionDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BlobUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DirectAcquisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DirectPurchaseEntryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("FileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("FileType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DirectAcquisitionId");
+
+                    b.HasIndex("DirectPurchaseEntryId");
+
+                    b.ToTable("DirectAcquisitionDocuments", "procurement");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectContracting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8461,6 +8601,84 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ProposalId");
 
                     b.ToTable("DirectContractingProposalItems", "procurement");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectPurchaseEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DirectAcquisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("FinalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PayeeName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("PayeeUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SupplierName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("SupplierTIN")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("TransactionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DirectAcquisitionId")
+                        .IsUnique();
+
+                    b.HasIndex("PayeeUserId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.ToTable("DirectPurchaseEntries", "procurement");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DocumentProfile", b =>
@@ -12112,6 +12330,42 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("PurchaseRequest");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectAcquisition", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "BACProject")
+                        .WithMany("DirectAcquisitions")
+                        .HasForeignKey("BACProjectId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ConsolidatedPR", "ConsolidatedPR")
+                        .WithMany("DirectAcquisitions")
+                        .HasForeignKey("ConsolidatedPRId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BACProject");
+
+                    b.Navigation("ConsolidatedPR");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectAcquisitionDocument", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.DirectAcquisition", "DirectAcquisition")
+                        .WithMany("Documents")
+                        .HasForeignKey("DirectAcquisitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.DirectPurchaseEntry", "DirectPurchaseEntry")
+                        .WithMany("ProofDocuments")
+                        .HasForeignKey("DirectPurchaseEntryId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("DirectAcquisition");
+
+                    b.Navigation("DirectPurchaseEntry");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectContracting", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "BACProject")
@@ -12167,6 +12421,31 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("CPRItem");
 
                     b.Navigation("Proposal");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectPurchaseEntry", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.DirectAcquisition", "DirectAcquisition")
+                        .WithOne("DirectPurchaseEntry")
+                        .HasForeignKey("ERPEZ.Domain.Entities.Procurement.DirectPurchaseEntry", "DirectAcquisitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.User", "PayeeUser")
+                        .WithMany()
+                        .HasForeignKey("PayeeUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("DirectAcquisition");
+
+                    b.Navigation("PayeeUser");
+
+                    b.Navigation("Supplier");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DocumentProfileItem", b =>
@@ -12988,7 +13267,16 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("ConsolidatedPRItems");
 
+                    b.Navigation("DirectAcquisitions");
+
                     b.Navigation("RFQs");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectAcquisition", b =>
+                {
+                    b.Navigation("DirectPurchaseEntry");
+
+                    b.Navigation("Documents");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectContracting", b =>
@@ -12999,6 +13287,11 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectContractingProposal", b =>
                 {
                     b.Navigation("ProposalItems");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectPurchaseEntry", b =>
+                {
+                    b.Navigation("ProofDocuments");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DocumentProfile", b =>
@@ -13027,6 +13320,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("BiddingActivitySchedules");
 
                     b.Navigation("BiddingDocument");
+
+                    b.Navigation("DirectAcquisitions");
 
                     b.Navigation("DirectContractings");
 

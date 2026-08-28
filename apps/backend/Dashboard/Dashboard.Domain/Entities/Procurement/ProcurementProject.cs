@@ -57,6 +57,7 @@ public class ProcurementProject : BaseEntity
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
     public virtual List<DirectContracting> DirectContractings { get; set; } = [];
+    public virtual List<DirectAcquisition> DirectAcquisitions { get; set; } = [];
     [Sieve(CanFilter = true)]
     public virtual ProcurementMode? ProcurementMode { get; set; }
 
