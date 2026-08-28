@@ -65,22 +65,35 @@ public class GeneratePurchaseRequestDocumentCommandHandler(
         int itemNo = 1;
         var activeItems = pr.PRItems.Where(i => !i.IsDeleted).OrderBy(i => i.CreatedAt).ToList();
 
-        var itemDtos = activeItems.Select(i => new PurchaseRequestItemRowDto
+        var itemDtos = activeItems.Select(i =>
         {
-            ItemNo = itemNo++,
-            ItemName = i.Name,
-            Description = !string.IsNullOrWhiteSpace(i.Description)
+            var name = !string.IsNullOrWhiteSpace(i.Name)
+                ? i.Name
+                : (i.PPMPItem?.Name ?? i.PPMPItem?.NonCSEItem?.Name ?? i.PPMPItem?.CSEItem?.Name ?? "Item");
+
+            var desc = !string.IsNullOrWhiteSpace(i.Description)
                 ? i.Description
                 : (!string.IsNullOrWhiteSpace(i.PPMPItem?.Description)
                     ? i.PPMPItem.Description
-                    : (i.PPMPItem?.NonCSEItem?.Description ?? string.Empty)),
-            Quantity = i.RequestedQuantity,
-            Unit = i.PPMPItem?.Unit
-                ?? i.PPMPItem?.NonCSEItem?.UOM?.Name
-                ?? i.PPMPItem?.CSEItem?.UOM?.Name
-                ?? "unit",
-            UnitCost = i.UnitCost,
-            TotalCost = i.Amount
+                    : (i.PPMPItem?.NonCSEItem?.Description ?? string.Empty));
+
+            var unit = !string.IsNullOrWhiteSpace(i.PPMPItem?.Unit)
+                ? i.PPMPItem.Unit
+                : (i.PPMPItem?.NonCSEItem?.UOM?.Name ?? i.PPMPItem?.CSEItem?.UOM?.Name ?? "unit");
+
+            var unitCost = i.UnitCost > 0 ? i.UnitCost : (i.PPMPItem?.UnitPrice ?? 0);
+            var totalCost = i.Amount > 0 ? i.Amount : (i.RequestedQuantity * unitCost);
+
+            return new PurchaseRequestItemRowDto
+            {
+                ItemNo = itemNo++,
+                ItemName = name,
+                Description = desc,
+                Quantity = i.RequestedQuantity,
+                Unit = unit,
+                UnitCost = unitCost,
+                TotalCost = totalCost
+            };
         }).ToList();
 
         var totalAmount = pr.TotalAmount > 0
