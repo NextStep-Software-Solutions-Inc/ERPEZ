@@ -188,8 +188,8 @@ function UploadApprovalDialog(props: {
 }
 
 export function ManageDirectAcquisitionPage() {
-  const { data: daList, isLoading } = useDirectAcquisitions({ queryParams: {} })
-  const { data: summaryData } = useDirectAcquisitionsSummary({ queryParams: {} })
+  const { data: daList, isLoading } = useDirectAcquisitions({})
+  const { data: summaryData } = useDirectAcquisitionsSummary({})
   const approveMutation = useApproveDirectAcquisition()
   const returnMutation = useReturnDirectAcquisition()
   const changeStatusMutation = useChangeDirectAcquisitionStatus()

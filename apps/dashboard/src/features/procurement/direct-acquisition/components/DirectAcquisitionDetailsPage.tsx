@@ -13,7 +13,7 @@ import {
   FileCheck, Upload, ClipboardList, ArrowLeft, X,
   FileText, FileImage, File, Trash2, ListChecks, Plus, UserCheck, Search, Loader2,
   Layers, Building2, ShieldCheck, Eye, Download, MoreVertical, Edit3, Calendar, History, Info, Copy,
-  Store, MessageSquare,
+  Store, MessageSquare, Send, CornerDownLeft,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -28,7 +28,13 @@ import { ExportComingSoonDialog } from '@/components/ExportComingSoonDialog'
 import { useToast } from '@/components/ui/use-toast'
 import type { DirectAcquisition, ProofFile } from '../store/directAcquisitionStore'
 import { useConsolidatedPRStore, type ConsolidatedPRItem } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
-import { useDirectAcquisition, useRecordDirectPurchase } from '../handlers'
+import {
+  useDirectAcquisition,
+  useRecordDirectPurchase,
+  useApproveDirectAcquisition,
+  useReturnDirectAcquisition,
+  useChangeDirectAcquisitionStatus,
+} from '../handlers'
 import { useSuppliers } from '@/components/features/planning/procurement-library/suppliers/useSuppliers'
 import { formatCurrencyPHP } from '@/utils/formatters'
 import { Input } from '@/components/ui/input'
@@ -94,9 +100,17 @@ export function DirectAcquisitionDetailsPage({ entry, onBack, readOnly = false }
 
   const liveEntry: DirectAcquisition = useMemo(() => {
     if (!daDetail) return entry
-    const allDocs = (daDetail.purchaseEntry?.proofDocuments && daDetail.purchaseEntry.proofDocuments.length > 0)
-      ? daDetail.purchaseEntry.proofDocuments
-      : (daDetail.documents || [])
+    const mergedDocs = [
+      ...(daDetail.documents || []),
+      ...(daDetail.purchaseEntry?.proofDocuments || []),
+    ]
+    const seenFileIds = new Set<string>()
+    const allDocs = mergedDocs.filter((d) => {
+      const fid = d.fileId || d.id
+      if (!fid || seenFileIds.has(fid)) return false
+      seenFileIds.add(fid)
+      return true
+    })
 
     const proofFiles: ProofFile[] = allDocs.map((doc) => ({
       id: doc.id || doc.fileId,
@@ -154,6 +168,12 @@ export function DirectAcquisitionDetailsPage({ entry, onBack, readOnly = false }
       pr.prNumber === liveEntry.prNumber
     ) ?? null
   }, [consolidatedPRs, liveEntry.consolidatedPrId, liveEntry.prNumber])
+
+  const signedApprovalDoc = useMemo(() => {
+    return liveEntry.proofFiles?.find(
+      (f) => f.documentType === 'SIGNED_APPROVAL' || f.name.toLowerCase().includes('signed') || f.name.toLowerCase().includes('approval')
+    ) ?? null
+  }, [liveEntry.proofFiles])
 
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(1)
@@ -329,6 +349,89 @@ export function DirectAcquisitionDetailsPage({ entry, onBack, readOnly = false }
     }
   }
 
+  // Manage / Approval Mutations & State
+  const approveMutation = useApproveDirectAcquisition()
+  const returnMutation = useReturnDirectAcquisition()
+  const changeStatusMutation = useChangeDirectAcquisitionStatus()
+
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false)
+  const [returnRemarks, setReturnRemarks] = useState('')
+  const [isReturning, setIsReturning] = useState(false)
+
+  const [uploadApprovalOpen, setUploadApprovalOpen] = useState(false)
+  const [approvalFile, setApprovalFile] = useState<File | null>(null)
+  const [isApproving, setIsApproving] = useState(false)
+
+  const handleReturnConfirm = async () => {
+    if (!returnRemarks.trim()) return
+    setIsReturning(true)
+    try {
+      await returnMutation.mutateAsync({
+        pathParams: { id: liveEntry.id },
+        payload: { remarks: returnRemarks.trim() },
+      })
+      await queryClient.invalidateQueries({ queryKey: ['direct-acquisition'] })
+      await queryClient.invalidateQueries({ queryKey: ['direct-acquisitions'] })
+      await queryClient.invalidateQueries({ queryKey: ['direct-acquisitions-summary'] })
+      toast({ title: 'Returned', description: 'Direct acquisition request returned with remarks.' })
+      setReturnDialogOpen(false)
+      setReturnRemarks('')
+    } catch (err: any) {
+      toast({ title: 'Return Failed', description: err?.message || 'Failed to return request.', variant: 'destructive' })
+    } finally {
+      setIsReturning(false)
+    }
+  }
+
+  const handleApproveConfirm = async () => {
+    if (!approvalFile) return
+    setIsApproving(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', approvalFile)
+      const uploadRes = await api.post<{ succeeded: boolean; data: string }>('/files/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+
+      const fileId = uploadRes.data?.data
+
+      await approveMutation.mutateAsync({
+        pathParams: { id: liveEntry.id },
+        payload: {
+          approvedFileId: fileId,
+          approvedFileName: approvalFile.name,
+          approvedFileType: 'pdf',
+        },
+      })
+
+      await queryClient.invalidateQueries({ queryKey: ['direct-acquisition'] })
+      await queryClient.invalidateQueries({ queryKey: ['direct-acquisitions'] })
+      await queryClient.invalidateQueries({ queryKey: ['direct-acquisitions-summary'] })
+      toast({ title: 'Approved', description: 'Direct acquisition approved with signed document attached.' })
+      setUploadApprovalOpen(false)
+      setApprovalFile(null)
+    } catch (err: any) {
+      toast({ title: 'Approval Failed', description: err?.message || 'Failed to approve request.', variant: 'destructive' })
+    } finally {
+      setIsApproving(false)
+    }
+  }
+
+  const handleMarkForDisbursement = async () => {
+    try {
+      await changeStatusMutation.mutateAsync({
+        pathParams: { id: liveEntry.id },
+        payload: { status: 'FOR_DISBURSEMENT' },
+      })
+      await queryClient.invalidateQueries({ queryKey: ['direct-acquisition'] })
+      await queryClient.invalidateQueries({ queryKey: ['direct-acquisitions'] })
+      await queryClient.invalidateQueries({ queryKey: ['direct-acquisitions-summary'] })
+      toast({ title: 'Status Updated', description: 'Direct acquisition marked For Disbursement.' })
+    } catch (err: any) {
+      toast({ title: 'Update Failed', description: err?.message || 'Failed to update status.', variant: 'destructive' })
+    }
+  }
+
   const handleOpenRecord = () => {
     setStep(1)
     setSupplier(liveEntry.supplier || '')
@@ -485,19 +588,63 @@ export function DirectAcquisitionDetailsPage({ entry, onBack, readOnly = false }
             </div>
 
             {/* Action buttons */}
-            {!readOnly && (
-              <div className="flex items-center gap-2">
-                {canRecord && (
-                  <Button size="sm" onClick={handleOpenRecord} className="gap-2 bg-violet-600 hover:bg-violet-700 text-white">
-                    <Receipt className="h-4 w-4" /> Record Purchase
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Approver / Manage Actions on Purchase Entry */}
+              {liveEntry.status === 'purchase_entry' && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setReturnDialogOpen(true)}
+                    className="gap-1.5 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-medium"
+                  >
+                    <CornerDownLeft className="h-4 w-4" /> Return with Remarks
                   </Button>
-                )}
 
-                <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-2">
-                  <FileText className="h-4 w-4" /> Export
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleMarkForDisbursement}
+                    disabled={changeStatusMutation.isPending}
+                    className="gap-1.5 text-xs border-amber-300 text-amber-700 hover:bg-amber-50 font-medium"
+                  >
+                    {changeStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Mark For Disbursement
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    onClick={() => setUploadApprovalOpen(true)}
+                    className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs"
+                  >
+                    <CheckCircle className="h-4 w-4" /> Approve (Upload Signed Doc)
+                  </Button>
+                </>
+              )}
+
+              {/* Approver / Manage Action on Approved */}
+              {liveEntry.status === 'approved' && (
+                <Button
+                  size="sm"
+                  onClick={handleMarkForDisbursement}
+                  disabled={changeStatusMutation.isPending}
+                  className="gap-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs"
+                >
+                  {changeStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Route For Disbursement
                 </Button>
-              </div>
-            )}
+              )}
+
+              {!readOnly && canRecord && (
+                <Button size="sm" onClick={handleOpenRecord} className="gap-2 bg-violet-600 hover:bg-violet-700 text-white font-medium">
+                  <Receipt className="h-4 w-4" /> Record Purchase
+                </Button>
+              )}
+
+              <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-2">
+                <FileText className="h-4 w-4" /> Export
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -601,15 +748,15 @@ export function DirectAcquisitionDetailsPage({ entry, onBack, readOnly = false }
       </Card>
 
       {/* Pipeline Tracker */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Procurement Pipeline</CardTitle>
-          <CardDescription>
+      <Card className="border border-default-200 shadow-sm">
+        <CardHeader className="pt-5 pb-3">
+          <CardTitle className="text-base font-semibold">Procurement Pipeline</CardTitle>
+          <CardDescription className="text-xs text-muted-foreground mt-0.5">
             Simplified 3-step Direct Acquisition workflow under RA 12009 — competitive bidding and quotation procedures are bypassed.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center w-full gap-0 flex-wrap sm:flex-nowrap">
+        <CardContent className="pt-2 pb-6">
+          <div className="flex items-center w-full gap-0 flex-wrap sm:flex-nowrap mt-2">
             {DA_PIPELINE.map((phase, i) => {
               const Icon = phase.icon
               const isCompleted = activePipelineStep > phase.id
@@ -656,6 +803,50 @@ export function DirectAcquisitionDetailsPage({ entry, onBack, readOnly = false }
           </div>
         </CardContent>
       </Card>
+
+      {/* Signed Approval Document Banner */}
+      {signedApprovalDoc && (
+        <Card className="border-emerald-300 bg-emerald-50/50 shadow-xs">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-emerald-950">Signed Approval Document (IAR / BAC Sign-off)</p>
+                  <Badge className="bg-emerald-600 text-white text-[10px] px-2.5 py-0.5 rounded-full border-0 font-medium">
+                    Verified & Approved
+                  </Badge>
+                </div>
+                <p className="text-xs text-emerald-800/80 mt-0.5">
+                  {signedApprovalDoc.name} • Attached during approval
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                onClick={() => handlePreviewDocument(signedApprovalDoc)}
+                className="gap-1.5 h-8 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-medium shadow-xs"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                View Approved Document
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownloadDocument(signedApprovalDoc)}
+                className="gap-1.5 h-8 text-xs bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-50 font-medium"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Purchase Entry Details Section */}
       {liveEntry.status !== 'draft' && liveEntry.supplier && (
@@ -875,7 +1066,10 @@ export function DirectAcquisitionDetailsPage({ entry, onBack, readOnly = false }
                     const isPng = f.name.toLowerCase().endsWith('.png')
                     const isJpg = f.name.toLowerCase().endsWith('.jpg') || f.name.toLowerCase().endsWith('.jpeg')
 
-                    const docCategory = f.documentType === 'PROOF_OF_PAYMENT' || idx === 1
+                    const isSignedApproval = f.documentType === 'SIGNED_APPROVAL' || f.name.toLowerCase().includes('signed') || f.name.toLowerCase().includes('approval')
+                    const docCategory = isSignedApproval
+                      ? 'Signed Approval / IAR'
+                      : f.documentType === 'PROOF_OF_PAYMENT' || idx === 1
                       ? 'Proof of Payment'
                       : 'Proof of Transaction'
 
@@ -892,13 +1086,14 @@ export function DirectAcquisitionDetailsPage({ entry, onBack, readOnly = false }
                           <div
                             className={cn(
                               'h-10 w-10 rounded-lg flex flex-col items-center justify-center shrink-0 font-bold text-[10px] tracking-wider border',
+                              isSignedApproval ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
                               isPdf ? 'bg-red-50 text-red-600 border-red-200' :
                               isPng ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                               isJpg ? 'bg-amber-50 text-amber-600 border-amber-200' :
                               'bg-sky-50 text-sky-600 border-sky-200'
                             )}
                           >
-                            {isPdf ? 'PDF' : isPng ? 'PNG' : isJpg ? 'JPG' : 'DOC'}
+                            {isSignedApproval ? 'IAR' : (isPdf ? 'PDF' : isPng ? 'PNG' : isJpg ? 'JPG' : 'DOC')}
                           </div>
 
                           <div className="min-w-0 flex-1">
@@ -916,8 +1111,16 @@ export function DirectAcquisitionDetailsPage({ entry, onBack, readOnly = false }
                         </div>
 
                         <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px] px-2 py-0.5 rounded-full font-medium">
-                            Uploaded
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              'text-[11px] px-2 py-0.5 rounded-full font-medium',
+                              isSignedApproval
+                                ? 'bg-emerald-100/80 text-emerald-800 border-emerald-300'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            )}
+                          >
+                            {isSignedApproval ? 'Approved Document' : 'Uploaded'}
                           </Badge>
 
                           <div className="text-right hidden md:block">
@@ -1690,6 +1893,104 @@ export function DirectAcquisitionDetailsPage({ entry, onBack, readOnly = false }
         }}
         attachment={selectedPreviewAttachment}
       />
+
+      {/* Return Dialog */}
+      <ResponsiveDialog
+        open={returnDialogOpen}
+        onOpenChange={(v) => {
+          if (!v) setReturnRemarks('')
+          setReturnDialogOpen(v)
+        }}
+        title="Return Direct Acquisition"
+        description="Provide specific remarks or corrections for returning this purchase entry to the requester."
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Return Remarks / Audit Findings</label>
+            <Textarea
+              value={returnRemarks}
+              onChange={(e) => setReturnRemarks(e.target.value)}
+              placeholder="State the reason for return (e.g. missing official receipt, incorrect amount, etc.)..."
+              className="mt-2 text-sm"
+              rows={4}
+            />
+          </div>
+
+          <div className="flex gap-2 justify-end pt-2 border-t">
+            <Button type="button" variant="outline" size="sm" onClick={() => setReturnDialogOpen(false)} disabled={isReturning}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleReturnConfirm}
+              disabled={!returnRemarks.trim() || isReturning}
+              className="gap-1.5 bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isReturning ? <Loader2 className="h-4 w-4 animate-spin" /> : <CornerDownLeft className="h-4 w-4" />}
+              Confirm Return
+            </Button>
+          </div>
+        </div>
+      </ResponsiveDialog>
+
+      {/* Upload Approval Dialog */}
+      <ResponsiveDialog
+        open={uploadApprovalOpen}
+        onOpenChange={(v) => {
+          if (!v) setApprovalFile(null)
+          setUploadApprovalOpen(v)
+        }}
+        title="Approve Direct Acquisition"
+        description="Upload the physically signed approval document (Inspection & Acceptance Report / BAC Sign-off) to approve this entry."
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Signed Approval Document (PDF)</label>
+            <div className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:bg-muted/30 transition mt-2">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) setApprovalFile(f)
+                }}
+                className="hidden"
+                id="details-approve-pdf"
+              />
+              <label htmlFor="details-approve-pdf" className="flex flex-col items-center gap-2 cursor-pointer">
+                <Upload className="h-8 w-8 text-muted-foreground/60" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{approvalFile ? approvalFile.name : 'Click to select signed PDF'}</p>
+                  {approvalFile ? (
+                    <p className="text-xs text-muted-foreground mt-1">File size: {(approvalFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">PDF files only (max 25MB)</p>
+                  )}
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end pt-2 border-t">
+            <Button type="button" variant="outline" size="sm" onClick={() => setUploadApprovalOpen(false)} disabled={isApproving}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleApproveConfirm}
+              disabled={!approvalFile || isApproving}
+              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {isApproving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+              Approve & Save
+            </Button>
+          </div>
+        </div>
+      </ResponsiveDialog>
 
       <ExportComingSoonDialog open={exportOpen} onOpenChange={setExportOpen} />
     </div>

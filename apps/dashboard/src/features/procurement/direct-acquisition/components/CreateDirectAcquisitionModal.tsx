@@ -125,17 +125,16 @@ export function CreateDirectAcquisitionModal({ open, onOpenChange }: Props) {
       }
       const entry = map.get(cprId)!
 
-      if (da.remarks && da.remarks.startsWith('SELECTED_ITEMS:')) {
-        const rawIds = da.remarks
-          .substring('SELECTED_ITEMS:'.length)
-          .split(',')
-          .map((s) => s.trim().toLowerCase())
-          .filter(Boolean)
+      const selectedIds = da.selectedItemIds || (
+        da.remarks && da.remarks.startsWith('SELECTED_ITEMS:')
+          ? da.remarks.substring('SELECTED_ITEMS:'.length).split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+          : []
+      )
 
-        for (const id of rawIds) {
-          entry.acquiredItemIds.add(id)
-          entry.daNumberByItemId.set(id, da.daNumber)
-        }
+      for (const id of selectedIds) {
+        const idLower = id.toLowerCase()
+        entry.acquiredItemIds.add(idLower)
+        entry.daNumberByItemId.set(idLower, da.daNumber)
       }
     }
     return map
