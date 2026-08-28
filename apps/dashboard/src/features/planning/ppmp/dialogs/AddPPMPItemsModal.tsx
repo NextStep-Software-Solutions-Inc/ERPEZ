@@ -706,10 +706,11 @@ export default function AddPPMPItemsModal({
           const payload = {
             ppmpExpenditureItemId,
             name: item.name || '',
-            description:
+            description: (
               type === 'cse'
                 ? (item as ProcurementItem).specifications || ''
-                : (item as NONCSEItem).description || '',
+                : (item as NONCSEItem).description || ''
+            ).slice(0, 4000),
             unit: item.uomName || '',
             unitPrice: config.unitPrice,
             plannedQuantity: config.plannedQuantity || 1,

@@ -133,6 +133,7 @@ export function resolveTypeOfExpenditure(
 export function formatExpenditureDisplayName(
   name?: string,
   code?: string,
+  isParentType?: boolean,
 ): string {
   const safeName = name?.trim() || ''
   const safeCode = code?.trim() || ''
@@ -140,6 +141,15 @@ export function formatExpenditureDisplayName(
   if (!safeName && !safeCode) return ''
   if (!safeCode) return safeName
   if (!safeName) return safeCode
+
+  // For parent types of expenditure (e.g., PS, MOOE, CO, FE) or class-level codes ending in zeroes,
+  // always prioritize the human-readable category name
+  if (
+    isParentType ||
+    /^(50[1236]0{5,8}|50{7,9})$/.test(safeCode)
+  ) {
+    return safeName
+  }
 
   // Remove prefixes like "SC:", "GRP:", "CAT:"
   const cleanCode = safeCode.replace(/^(SC|GRP|CAT):\s*/i, '').trim()
@@ -152,7 +162,7 @@ export function formatExpenditureDisplayName(
     return safeName
   }
 
-  // If code is numeric (e.g. standard UACS code "50205030"), display "50205030 - Cloud Compute Subscriptions"
+  // For specific child item accounts (e.g. UACS code "50205030"), display "50205030 - Cloud Compute Subscriptions"
   return `${safeCode} - ${safeName}`
 }
 
@@ -180,11 +190,14 @@ export function AddPPMPItemExpenditureForm({
       .map((group) => ({
         ...group,
         items: group.items.filter(
-          (item) => !existingObjectIds || !existingObjectIds.includes(item.id),
+          (item) =>
+            !existingObjectIds ||
+            !existingObjectIds.includes(item.id) ||
+            item.id === initialValues?.objectId,
         ),
       }))
       .filter((group) => group.items.length > 0)
-  }, [activityObjectsResponse?.data, existingObjectIds])
+  }, [activityObjectsResponse?.data, existingObjectIds, initialValues?.objectId])
 
   // Derive initial parent ID if an initial objectId was passed (edit mode)
   const resolvedInitialParentId = useMemo(() => {
@@ -292,6 +305,7 @@ export function AddPPMPItemExpenditureForm({
                     {formatExpenditureDisplayName(
                       group.parentObjectName,
                       group.parentObjectCode,
+                      true,
                     )}
                   </SelectItem>
                 ))}
