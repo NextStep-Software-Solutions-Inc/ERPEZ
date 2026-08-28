@@ -165,9 +165,7 @@ export function AddItemsModal({
   // For APR: selectedAPR stores selected APR ids
   const [selectedAPR, setSelectedAPR] = useState<Set<string>>(new Set())
   // track edited 'Total Required' per APR item so Deficit can be recalculated
-  const [editedNeededMap, setEditedNeededMap] = useState<Record<string, number>>({})
-  // track per-item per-month edited quantities for APR items
-  const [editedMonthlyMap, setEditedMonthlyMap] = useState<Record<string, Record<string, number>>>({})
+  const [editedNeededMap] = useState<Record<string, number>>({})
   // track per-row edited quantities for Non-CSE items
   const [editedQuantityMap, setEditedQuantityMap] = useState<Record<string, number>>({})
   const [searchTerm, setSearchTerm] = useState('')
@@ -202,6 +200,7 @@ export function AddItemsModal({
     isError: isOfficePpmpsError,
     error: officePpmpsError,
   } = usePurchaseRequestEligiblePpmpsByOffice({
+    pathParams: {},
     queryParams: { officeId: officeIdToUse },
     enabled: open && prType === 'non-cse' && isOfficeMode,
   })
@@ -697,6 +696,7 @@ export function AddItemsModal({
           aprOffice: apr.officeName,
           aprTotalAmount: apr.totalAmount,
           aprGroup: {
+            id: apr.id,
             aprId: apr.id,
             aprNumber: apr.aprNumber,
             officeName: apr.officeName,
@@ -718,8 +718,8 @@ export function AddItemsModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        size="4xl"
-        className="w-full max-w-4xl h-[85vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl shadow-2xl border bg-white"
+        size="2xl"
+        className="w-full max-w-6xl h-[88vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl shadow-2xl border bg-white"
       >
         <DialogHeader className="px-6 pt-6 pb-3 border-b bg-muted/5">
           <div className="flex items-center gap-3">
@@ -971,7 +971,7 @@ export function AddItemsModal({
                                         </TableCell>
 
                                         {/* ITEM & DESCRIPTION */}
-                                        <TableCell className="align-top py-3.5 max-w-[360px]">
+                                        <TableCell className="align-top py-3.5 max-w-[480px]">
                                           <div className="flex items-start gap-3">
                                             <div className={`p-2 rounded-lg border flex-shrink-0 mt-0.5 ${iconMeta.color}`}>
                                               <IconComponent className="h-4 w-4" />

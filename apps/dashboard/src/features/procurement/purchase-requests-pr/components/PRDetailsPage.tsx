@@ -62,12 +62,12 @@ import {
   AlertCircle,
   ChevronDown,
   Calendar,
-  Hash,
-  Layers,
   DollarSign,
   Download,
-  LucideIcon,
+  FileText,
+  Tag,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
 import { useUpdatePurchaseRequestStatus, useUpdatePurchaseRequest, usePurchaseRequest } from '../handlers/hooks'
@@ -81,7 +81,6 @@ import { PRAttachmentsPanel } from './PRAttachmentsPanel'
 import { purchaseRequestRequiresTor } from '../utils/torAttachment'
 
 import api from '@/services/api'
-import { Tag, Loader2 } from 'lucide-react'
 
 // Fixed ordered months used across the procurement views
 const ORDERED_MONTHS: string[] = [
@@ -203,7 +202,7 @@ export function PRDetailsPage({
         unitPrice: i.unitCost,
         totalAmount: i.amount,
         estimatedUnitPrice: i.unitCost,
-        month: i.isNonCSE ? undefined : i.requestedMonth,
+        month: i.requestedMonth,
         fund: i.fund || '',
         source: i.isNonCSE ? ('ppmp' as const) : ('apr' as const),
         ppmpDocId: i.ppmpId,
@@ -294,8 +293,6 @@ export function PRDetailsPage({
   }
 
   const pr = activePR || initialPR
-  const displayUACS = pr.headerDetails.uacs || '—'
-  const displayFundCluster = pr.headerDetails.fundCluster || '—'
 
   // Derive a display status: if remarks exist but status wasn't set to 'returned', prefer showing Returned
   const getDisplayStatus = (p: typeof pr) => {
@@ -644,8 +641,26 @@ export function PRDetailsPage({
 
   const handleExportPR = async () => {
     setIsExporting(true)
-    const toastId = toast.loading('Generating Purchase Request PDF...')
+    const toastId = toast.loading('Preparing Purchase Request PDF...')
     try {
+      if (hasUnsavedChanges) {
+        toast.loading('Saving changes before exporting...', { id: toastId })
+        const payloadItems = buildPayloadItems(pr.items)
+        await updateApi({
+          pathParams: { id: pr.id },
+          queryParams: { id: pr.id },
+          payload: {
+            description: pr.headerDetails.description || '',
+            purpose: pr.headerDetails.purpose || '',
+            ...(pr.headerDetails.procurementCategoryId ? { procurementCategoryId: pr.headerDetails.procurementCategoryId } : {}),
+            requestedDate: pr.headerDetails.date || new Date().toISOString(),
+            items: payloadItems,
+          },
+        })
+        setHasUnsavedChanges(false)
+      }
+
+      toast.loading('Generating Purchase Request PDF...', { id: toastId })
       const response = await api.post<{ succeeded: boolean; data: string; message: string }>(
         `/api/planning/documents/purchase-request/${pr.id}/generate?format=Pdf`
       )
@@ -753,9 +768,10 @@ export function PRDetailsPage({
                 size="sm"
                 className="gap-2 h-8 border-slate-200 dark:border-slate-700"
                 onClick={handleExportPR}
+                disabled={isExporting}
               >
                 <Download className="h-4 w-4" />
-                Export
+                {isExporting ? 'Exporting...' : 'Export'}
               </Button>
               {pr.signedPdfUrl && (
                 <Button
@@ -1078,7 +1094,7 @@ export function PRDetailsPage({
                     (sum, item) => sum + item.totalAmount,
                     0,
                   )
-                  const hasAnyMonth = pr.type !== 'non-cse' && items.some((i) => Boolean(i.month))
+                  const hasAnyMonth = items.some((i) => Boolean(i.month))
 
                   return (
                     <div
@@ -1226,7 +1242,7 @@ export function PRDetailsPage({
                 {(pr.items || [])
                   .filter((i) => i.aprGroup)
                   .map((groupItem) => {
-                    const aprId = groupItem.aprGroup!.id
+                    const aprId = groupItem.aprGroup!.id || groupItem.aprGroup!.aprId || ''
                     const isExpanded = expandedPPMPs.has(aprId)
                     const nested: PRItem[] = (groupItem.aprGroup!.items ||
                       []) as PRItem[]

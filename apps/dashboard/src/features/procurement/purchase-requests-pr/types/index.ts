@@ -59,18 +59,25 @@ export interface PRItem {
   unitOfMeasure: string
   unitPrice: number
   totalAmount: number
+  description?: string
   stockNo?: string
   source?: 'ppmp' | 'apr' | 'bac' // Source of item
   ppmpDocId?: string // For non-CSE PRs, track which PPMP document this item came from
   ppmpDocName?: string // For non-CSE PRs, store the PPMP document name
   month?: string
   fund?: string
+  aprId?: string
+  aprNumber?: string
+  aprOffice?: string
+  aprTotalAmount?: number
   // Optional APR group info when the PR contains an APR as a single grouped entry
   aprGroup?: {
-    id: string
+    id?: string
+    aprId?: string
     aprNumber: string
     officeCode?: string
     officeName?: string
+    totalAmount?: number
     items: PRItem[]
   }
   // APR-specific metadata (when this PRItem was created from an APR item)
@@ -197,6 +204,7 @@ export interface SourceAPRItem {
   category: string
   quantity: number
   outOfStockQuantity?: number
+  currentFulfilled?: number
   originalNeeded?: number
   totalGot?: number
   editedNeeded?: number
