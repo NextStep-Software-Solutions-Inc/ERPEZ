@@ -28,8 +28,8 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 }
 
 export function DirectAcquisitionRequestPage() {
-  const { data: daList, isLoading } = useDirectAcquisitions({ queryParams: {} })
-  const { data: summaryData } = useDirectAcquisitionsSummary({ queryParams: {} })
+  const { data: daList, isLoading } = useDirectAcquisitions({})
+  const { data: summaryData } = useDirectAcquisitionsSummary({})
   const deleteMutation = useDeleteDirectAcquisition()
   const { toast } = useToast()
   const [createOpen, setCreateOpen] = useState(false)
