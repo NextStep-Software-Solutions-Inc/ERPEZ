@@ -10,6 +10,10 @@ import { deleteWhereasClauseTemplateRequest } from './deleteWhereasClauseTemplat
 import { getBacResolutionRequest } from './getBacResolutionRequest'
 import { getBacResolutionsRequest } from './getBacResolutionsRequest'
 import { getWhereasClauseTemplatesRequest } from './getWhereasClauseTemplatesRequest'
+import { getResolutionClausesRequest } from './getResolutionClausesRequest'
+import { createResolutionClauseRequest } from './createResolutionClauseRequest'
+import { updateResolutionClauseRequest } from './updateResolutionClauseRequest'
+import { deleteResolutionClauseRequest } from './deleteResolutionClauseRequest'
 import { linkConsolidatedPrsRequest } from './linkConsolidatedPrsRequest'
 import { printBacResolutionRequest } from './printBacResolutionRequest'
 import { returnBacResolutionRequest } from './returnBacResolutionRequest'
@@ -22,7 +26,7 @@ import { getEligibleConsolidatedPRsRequest } from './getEligibleConsolidatedPRsR
 import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
 
 const bacResolutionQueryKeys = [['bac-resolutions'], ['bac-resolution']] as const
-const whereasClauseQueryKeys = [['/bac-resolution-whereas-clauses']] as const
+const whereasClauseQueryKeys = [['/bac-resolution-whereas-clauses'], ['/resolution-clauses']] as const
 
 type MutationResult<TData, TVariables> = UseMutationResult<
   TData,
@@ -198,3 +202,29 @@ const useDeleteBacResolutionBase = createMutationHookFromTemplate(
 export const useDeleteBacResolution = makeMutationWithRefresh(
   useDeleteBacResolutionBase,
 )
+
+export const useResolutionClauses = createQueryHookFromTemplate(
+  getResolutionClausesRequest,
+)
+
+const useCreateResolutionClauseBase = createMutationHookFromTemplate(
+  createResolutionClauseRequest,
+)
+export const useCreateResolutionClause = makeWhereasClauseMutationWithRefresh(
+  useCreateResolutionClauseBase,
+)
+
+const useUpdateResolutionClauseBase = createMutationHookFromTemplate(
+  updateResolutionClauseRequest,
+)
+export const useUpdateResolutionClause = makeWhereasClauseMutationWithRefresh(
+  useUpdateResolutionClauseBase,
+)
+
+const useDeleteResolutionClauseBase = createMutationHookFromTemplate(
+  deleteResolutionClauseRequest,
+)
+export const useDeleteResolutionClause = makeWhereasClauseMutationWithRefresh(
+  useDeleteResolutionClauseBase,
+)
+

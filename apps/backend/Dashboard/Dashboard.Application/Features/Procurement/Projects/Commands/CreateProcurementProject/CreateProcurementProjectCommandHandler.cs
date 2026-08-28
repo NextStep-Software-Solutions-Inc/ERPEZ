@@ -56,28 +56,15 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             }
 
             // Duplicate protection check for all APP Items
-            var activeProjects = await unitOfWork.ProcurementProjectRepository
-                .Query()
-                .Include(p => p.APPItemLinks)
-                .Where(p => p.Status != "Cancelled")
-                .ToListAsync(cancellationToken);
+            var existingProject = await unitOfWork.ProcurementProjectRepository
+                .FindAsync(p => p.Status != "Cancelled" && (
+                    (p.APPItemId.HasValue && itemIds.Contains(p.APPItemId.Value)) ||
+                    p.APPItemLinks.Any(l => itemIds.Contains(l.APPItemId))
+                ), cancellationToken);
 
-            var activeItemSet = new HashSet<Guid>();
-            foreach (var proj in activeProjects)
+            if (existingProject != null)
             {
-                if (proj.APPItemId.HasValue) activeItemSet.Add(proj.APPItemId.Value);
-                if (proj.APPItemLinks != null)
-                {
-                    foreach (var link in proj.APPItemLinks) activeItemSet.Add(link.APPItemId);
-                }
-            }
-
-            foreach (var id in itemIds)
-            {
-                if (activeItemSet.Contains(id))
-                {
-                    return ApiResponse<Guid>.Fail($"An active Procurement Project already exists for APP Item with ID '{id}'.");
-                }
+                return ApiResponse<Guid>.Fail("An active Procurement Project already exists for one or more selected APP Items.");
             }
 
             // Authoritative Hydration from DB

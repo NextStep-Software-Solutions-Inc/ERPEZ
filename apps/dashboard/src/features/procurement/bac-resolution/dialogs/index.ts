@@ -6,3 +6,7 @@ export * from './EditBacResolutionDialog'
 export * from './ViewBacResolutionDetailsDialog'
 export * from './ViewConsolidatedPrDetailsDialog'
 export * from './CreateEditWhereasClauseDialog'
+export * from './CreateEditResolutionClauseDialog'
+export * from './WhereasClausePickerModal'
+export * from './ResolutionClausePickerModal'
+

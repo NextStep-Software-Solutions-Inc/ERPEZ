@@ -22,7 +22,6 @@ import { Badge } from '@/components/ui/badge'
 import type { RFQItem } from '../store/rfqStore'
 import { useRFQStore } from '../store/rfqStore'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { getMockBacResolutionDatabase } from '@/features/procurement/bac-resolution'
 import type { ConsolidatedPRItem } from '../types'
 
 const ORDERED_MONTHS = [

@@ -2,7 +2,7 @@ import type {
   APIResponse,
   MutationBlueprintFromTemplate,
 } from 'erpez-shared-lib'
-import type { BacResolution, ProcurementSourceType } from '../types'
+import type { BacResolution } from '../types'
 import api from '@/services/api'
 
 export type WhereasClauses = {

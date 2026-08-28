@@ -161,7 +161,22 @@ export function DetailsPanel({
   const approvedBy = selectedProject.approvedBy
   const approvedAt = selectedProject.approvedAt
 
-  const whereasClauses: BacResolutionWhereasClause[] =
+  const appItemLinks = selectedProject.appItemLinks || []
+
+  const allClauseLinks = selectedProject.bacResolutions?.[0]?.clauseLinks || []
+  const whereasClauseLinks = allClauseLinks
+    .filter((c) => c.clauseType === 'Whereas')
+    .map((c) => ({ id: c.id, name: c.name || 'WHEREAS Clause', body: c.body }))
+
+  const nowThereforeClauseLinks = allClauseLinks
+    .filter((c) => c.clauseType === 'NowTherefore')
+    .map((c) => ({ id: c.id, name: c.name || 'NOW, THEREFORE Clause', body: c.body }))
+
+  const resolvedClauseLinks = allClauseLinks
+    .filter((c) => c.clauseType === 'Resolved')
+    .map((c) => ({ id: c.id, name: c.name || 'RESOLVED Clause', body: c.body }))
+
+  const legacyWhereasClauses: BacResolutionWhereasClause[] =
     selectedProject.bacResolutions?.flatMap((item) =>
       Array.isArray(item.whereasClauses)
         ? item.whereasClauses.map((clause) => ({
@@ -171,6 +186,8 @@ export function DetailsPanel({
         }))
         : [],
     ) || []
+
+  const activeWhereasList = whereasClauseLinks.length > 0 ? whereasClauseLinks : legacyWhereasClauses
 
   const activityLog: BacResolutionLogEntry[] =
     []
@@ -483,33 +500,74 @@ export function DetailsPanel({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <span className="text-muted-foreground block text-[10px] font-bold uppercase tracking-wider">
-                  ITEM SPECIFICATIONS & ALLOCATION DETAILS
-                </span>
-                <div className="rounded-lg border border-default-200 p-4 bg-white space-y-1 shadow-2xs">
-                  <p className="font-bold text-default-900 text-sm">{title}</p>
-                  <p className="text-muted-foreground text-xs">
-                    Full Lot Allocation: ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </p>
+              {/* If multiple APP items are linked */}
+              {appItemLinks.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground block text-[10px] font-bold uppercase tracking-wider">
+                      LINKED APP LINE ITEMS ({appItemLinks.length})
+                    </span>
+                    {appItemLinks[0]?.appNumber && (
+                      <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">
+                        {appItemLinks[0].appNumber}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="rounded-lg border border-default-200 overflow-hidden bg-white">
+                    <table className="w-full text-xs">
+                      <thead className="bg-default-50 border-b border-default-200">
+                        <tr>
+                          <th className="p-2 text-left font-bold text-default-700">Item #</th>
+                          <th className="p-2 text-left font-bold text-default-700">Description</th>
+                          <th className="p-2 text-left font-bold text-default-700">Office</th>
+                          <th className="p-2 text-right font-bold text-default-700">ABC</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-default-100">
+                        {appItemLinks.map((item, idx) => (
+                          <tr key={item.id || idx}>
+                            <td className="p-2 font-semibold text-primary">{item.itemNumber || `#${idx + 1}`}</td>
+                            <td className="p-2 font-medium text-default-900">{item.description}</td>
+                            <td className="p-2 text-default-600">{item.officeName || '—'}</td>
+                            <td className="p-2 text-right font-semibold text-emerald-700">
+                              ₱{item.effectiveABC.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <span className="text-muted-foreground block text-[10px] font-bold uppercase tracking-wider">
+                    ITEM SPECIFICATIONS & ALLOCATION DETAILS
+                  </span>
+                  <div className="rounded-lg border border-default-200 p-4 bg-white space-y-1 shadow-2xs">
+                    <p className="font-bold text-default-900 text-sm">{title}</p>
+                    <p className="text-muted-foreground text-xs">
+                      Full Lot Allocation: ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* TAB 3: WHEREAS CLAUSES */}
+        {/* TAB 3: RESOLUTION CLAUSES */}
         <TabsContent value="clauses" className="space-y-4">
+          {/* WHEREAS CLAUSES */}
           <Card className="border border-default-200 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
-                Configured WHEREAS Clauses ({whereasClauses.length})
+                WHEREAS Clauses ({activeWhereasList.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
-              {whereasClauses.length > 0 ? (
-                whereasClauses.map((clause, idx) => (
+              {activeWhereasList.length > 0 ? (
+                activeWhereasList.map((clause, idx) => (
                   <div key={clause.id || idx} className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1">
                     <span className="font-bold text-purple-600 block text-xs">{clause.name}</span>
                     <p className="text-foreground text-xs font-serif leading-relaxed">{clause.body}</p>
@@ -517,11 +575,51 @@ export function DetailsPanel({
                 ))
               ) : (
                 <div className="rounded-xl border border-dashed border-default-300 bg-default-50/50 p-6 text-center text-xs text-muted-foreground">
-                  No custom WHEREAS clauses configured for this resolution.
+                  No WHEREAS clauses configured.
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* NOW, THEREFORE CLAUSES (IF PRESENT) */}
+          {nowThereforeClauseLinks.length > 0 && (
+            <Card className="border border-default-200 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  NOW, THEREFORE Clauses ({nowThereforeClauseLinks.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-xs">
+                {nowThereforeClauseLinks.map((clause, idx) => (
+                  <div key={clause.id || idx} className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1">
+                    <span className="font-bold text-primary block text-xs">{clause.name}</span>
+                    <p className="text-foreground text-xs font-serif leading-relaxed">{clause.body}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* RESOLVED CLAUSES (IF PRESENT) */}
+          {resolvedClauseLinks.length > 0 && (
+            <Card className="border border-default-200 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-emerald-600" />
+                  RESOLVED Clauses ({resolvedClauseLinks.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-xs">
+                {resolvedClauseLinks.map((clause, idx) => (
+                  <div key={clause.id || idx} className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1">
+                    <span className="font-bold text-emerald-700 block text-xs">{clause.name}</span>
+                    <p className="text-foreground text-xs font-serif leading-relaxed">{clause.body}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="border border-default-200 shadow-sm">
             <CardHeader className="pb-3">
