@@ -18,11 +18,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getOPCRRequest } from '@/features/planning/opcr/handlers/getOPCRRequest'
-import type { OPCRDetails, OPCRItem, OPCRItemRating } from '@/features/planning/opcr'
-import type { FYActiveKPIMeasurement } from '@/features/planning/fiscal-year-and-policies/fy-active-kpi/types/types.measurement'
+import type {
+  OPCRDetails,
+  OPCRItem,
+  OPCRItemRating,
+} from '@/features/planning/opcr'
+import { useQueries } from '@tanstack/react-query'
+import type { RatingScaleTemplateResponse } from '@/features/planning/rating-scale-template/types'
+import { getRatingScaleTemplateRequest } from '../../handlers/getRatingScaleTemplateRequest'
 import { SelfRatingSessionHeader } from './SelfRatingSessionHeader'
 import { SelfRatingKpiAccordion } from './SelfRatingKpiAccordion'
-import { useFunctionConfigs } from '@/features/planning/spms-function-config/handlers/hooks'
 import { usePerformanceCalculation } from '../../hooks/usePerformanceCalculation'
 import { usePerformanceReviewFileUpload } from '../../hooks/usePerformanceReviewFileUpload'
 import { usePerformanceReviewFileUploadStore } from '../../store/performanceReviewFileUploadStore'
@@ -41,18 +46,72 @@ import {
   groupKPIsByCategory,
 } from '../../utils/selfRating'
 import type { OpcrItemRating } from '@/services/api/ratings'
-import { patchOPCRSelfEvaluateRequest } from '../../handlers/patchOPCRSelfEvaluateRequest'
 import { patchOPCRReviewStatusRequest } from '../../handlers/patchOPCRReviewStatusRequest'
+import { patchOPCRSelfEvaluateRequest } from '../../handlers/patchOPCRSelfEvaluateRequest'
 
 const useOPCR = createQueryHookFromTemplate(getOPCRRequest)
 
-const DEFAULT_API_RATING_LEVELS: RatingLevel[] = [
-  { level: 5, description: 'Outstanding', min: 4.5, max: 5 },
-  { level: 4, description: 'Very Satisfactory', min: 3.5, max: 4.49 },
-  { level: 3, description: 'Satisfactory', min: 2.5, max: 3.49 },
-  { level: 2, description: 'Unsatisfactory', min: 1.5, max: 2.49 },
-  { level: 1, description: 'Poor', min: 1, max: 1.49 },
-]
+function parseRatingScaleTemplate(
+  template: RatingScaleTemplateResponse | null | undefined,
+): {
+  ratingLevels: RatingLevel[]
+  ratingScaleLabel: string
+  scaleType?: RatingScaleType
+  ratingScaleName?: string
+  ratingScaleDescription?: string
+} {
+  if (!template) {
+    return {
+      ratingLevels: [],
+      ratingScaleLabel: '',
+    }
+  }
+
+  const rawLevels =
+    template.RatingScaleLevels || template.ratingScaleLevels || []
+
+  if (!Array.isArray(rawLevels) || rawLevels.length === 0) {
+    return {
+      ratingLevels: [],
+      ratingScaleLabel: '',
+      scaleType: template.isFixed ? 'FIXED' : 'NON_FIXED',
+      ratingScaleName: template.name ?? undefined,
+      ratingScaleDescription: template.description ?? undefined,
+    }
+  }
+
+  const ratingLevels: RatingLevel[] = rawLevels
+    .map((lvl) => ({
+      level: Number(lvl.ratingValue) as 5 | 4 | 3 | 2 | 1,
+      description: lvl.description ?? '',
+      min:
+        lvl.minValue !== null && lvl.minValue !== undefined
+          ? Number(lvl.minValue)
+          : null,
+      max:
+        lvl.maxValue !== null && lvl.maxValue !== undefined
+          ? Number(lvl.maxValue)
+          : null,
+    }))
+    .sort((a, b) => b.level - a.level)
+
+  const labelParts = ratingLevels
+    .filter((l) => Boolean(l.description?.trim()))
+    .map((l) => `${l.level} - ${l.description.trim()}`)
+
+  const ratingScaleLabel =
+    labelParts.length > 0
+      ? labelParts.join(' · ')
+      : ratingLevels.map((l) => String(l.level)).join(' · ')
+
+  return {
+    ratingLevels,
+    ratingScaleLabel,
+    scaleType: template.isFixed ? 'FIXED' : 'NON_FIXED',
+    ratingScaleName: template.name ?? undefined,
+    ratingScaleDescription: template.description ?? undefined,
+  }
+}
 
 const ALL_DIMENSIONS: Array<'quality' | 'efficiency' | 'timeliness'> = [
   'quality',
@@ -60,8 +119,15 @@ const ALL_DIMENSIONS: Array<'quality' | 'efficiency' | 'timeliness'> = [
   'timeliness',
 ]
 
-type OPCRMeasurementLike = FYActiveKPIMeasurement & {
+type OPCRMeasurementLike = {
+  id?: string
+  ratingScaleTemplateId?: string
+  RatingScaleTemplateId?: string
   dimensions?: string[] | null
+  dimension?: string[] | string | null
+  moVs?: string[] | null
+  isMOVEditable?: boolean
+  isScaleEditable?: boolean
 }
 
 type OPCRItemMOVData = {
@@ -113,13 +179,15 @@ function mapWorkflowStatus(opcr: OPCRDetails): WorkflowStatus {
 
 function getPrimaryMeasurement(item: OPCRItem): OPCRMeasurementLike | null {
   const measurementSource =
-    item.kpiAssignment?.fyActiveKPI?.FYActiveKPIMeasurements ?? []
+    item.kpiAssignment?.fyActiveKPI?.FYActiveKPIMeasurements ??
+    item.kpiAssignment?.FYActiveKPIMeasurements ??
+    []
 
   if (!Array.isArray(measurementSource) || measurementSource.length === 0) {
     return null
   }
 
-  return measurementSource[0] as OPCRMeasurementLike
+  return (measurementSource[0] as unknown) as OPCRMeasurementLike
 }
 
 function mapDimensionsToTags(
@@ -154,8 +222,6 @@ function buildTargetSummary(
     `Assigned Q1-Q4: ${quarterlyTargets.map(formatTargetValue).join(' / ')}`,
   ].join(' · ')
 }
-
-
 
 function buildInitialRating(
   ratings: OPCRItemRating[] | undefined,
@@ -289,9 +355,12 @@ function mapOpcrItemToKpiLineItem(
     isScaleEditable: measurement?.isScaleEditable ?? true,
     isMOVEditable: measurement?.isMOVEditable ?? true,
     scaleType,
-    ratingLevels: DEFAULT_API_RATING_LEVELS,
+    ratingLevels: [],
     configuredMOVs: configuredMOVs.length > 0 ? configuredMOVs : undefined,
-    ratingScaleTemplateId: measurement?.ratingScaleTemplateId ?? null,
+    ratingScaleTemplateId:
+      measurement?.ratingScaleTemplateId ??
+      measurement?.RatingScaleTemplateId ??
+      null,
     fyActiveKPIMeasurementId: measurement?.id ?? null,
     selfRating: buildInitialRating(item.opcrItemRatings, 'self'),
     finalRating: buildInitialRating(item.opcrItemRatings, 'final'),
@@ -299,8 +368,7 @@ function mapOpcrItemToKpiLineItem(
     actual: evaluationItem.actualAccomplishment?.trim() ?? '',
     movFiles: extractInitialMOVFiles(item),
     justification: evaluationItem.justification?.trim() ?? '',
-    ratingScaleLabel:
-      '5 - Outstanding · 4 - Very Satisfactory · 3 - Satisfactory · 2 - Unsatisfactory · 1 - Poor',
+    ratingScaleLabel: '',
   }
 }
 
@@ -346,7 +414,6 @@ function buildSession(
   }
 }
 
-
 /**
  * Derive file type from URL extension
  */
@@ -368,86 +435,7 @@ function deriveFileType(url: string): 'pdf' | 'image' | 'document' {
   return 'document'
 }
 
-type OPCRItemRatingData = {
-  dimension: string
-  selfRating: number
-}
 
-type PatchOPCRSelfEvaluateResponse = {
-  opcrItems?: SubmittedOPCRItem[]
-  [key: string]: unknown
-}
-
-type SubmittedOPCRItem = {
-  id: string
-  opcrItemRatings?: OPCRItemRatingData[]
-  opcrItemMOVs?: OPCRItemMOVData[]
-  actualAccomplishment?: string
-  justification?: string
-}
-
-/**
- * Transform submitted response data to update KPI items with server confirmations
- */
-function transformSubmittedResponseToKpiItems(
-  currentKpiItems: KPILineItem[],
-  submittedOPCRItems: SubmittedOPCRItem[],
-): KPILineItem[] {
-  return currentKpiItems.map((kpiItem) => {
-    const submittedItem = submittedOPCRItems.find(
-      (item: SubmittedOPCRItem) => item.id === kpiItem.id,
-    )
-
-    if (!submittedItem) return kpiItem
-
-    // Transform opcrItemRatings to selfRating object
-    const ratingsByDimension: Record<string, number> = (
-      submittedItem.opcrItemRatings ?? []
-    )
-      .filter(
-        (r: OPCRItemRatingData) =>
-          r.dimension && typeof r.dimension === 'string' && r.dimension.trim(),
-      )
-      .reduce(
-        (acc: Record<string, number>, r: OPCRItemRatingData) => ({
-          ...acc,
-          [r.dimension?.toLowerCase()]: r.selfRating,
-        }),
-        {},
-      )
-
-    const transformedRating: QETRating = {
-      quality: ratingsByDimension['quality'] ?? kpiItem.selfRating.quality,
-      efficiency:
-        ratingsByDimension['efficiency'] ?? kpiItem.selfRating.efficiency,
-      timeliness:
-        ratingsByDimension['timeliness'] ?? kpiItem.selfRating.timeliness,
-      average: null,
-    }
-
-    // Transform opcrItemMOVs to movFiles format
-    const transformedMovFiles = (submittedItem.opcrItemMOVs ?? [])
-      .filter((mov: OPCRItemMOVData) => mov.attachedUrl)
-      .map((mov: OPCRItemMOVData, index: number) => ({
-        id: mov.id,
-        name: mov.requirementName,
-        url: mov.attachedUrl,
-        fileType: deriveFileType(mov.attachedUrl),
-        uploadedAt: mov.uploadedDate || new Date().toISOString(),
-        uploadedBy: mov.createdBy || 'System',
-        configuredMOVIndex: index,
-      }))
-
-    return {
-      ...kpiItem,
-      selfRating: transformedRating,
-      movFiles: transformedMovFiles,
-      actual: submittedItem.actualAccomplishment?.trim() ?? kpiItem.actual,
-      justification:
-        submittedItem.justification?.trim() ?? kpiItem.justification,
-    }
-  })
-}
 
 export function SelfRatingKpiAccordionTab() {
   const navigate = useNavigate({ from: '/v2/performance-review' })
@@ -480,30 +468,109 @@ export function SelfRatingKpiAccordionTab() {
     [kpiItems, opcr],
   )
 
-  const { data: functionConfigsResponse } = useFunctionConfigs({
-    pathParams: {},
-    queryParams: { pageSize: 100 },
-  })
-
   const customWeights = useMemo(() => {
-    const configs = functionConfigsResponse?.data ?? []
-    if (!configs.length) return undefined
-    const match = opcr?.fiscalYear?.id
-      ? configs.find((c) => c.fiscalYearId === opcr.fiscalYear.id) ?? configs[0]
-      : configs[0]
+    const total = kpiItems.length
+    if (total === 0) return undefined
 
-    if (!match) return undefined
-
-    const sWeight = match.strategicMinWeight > 1 ? match.strategicMinWeight / 100 : match.strategicMinWeight
-    const cWeight = match.coreFunctionMinWeight > 1 ? match.coreFunctionMinWeight / 100 : match.coreFunctionMinWeight
-    const supWeight = match.supportMinWeight > 1 ? match.supportMinWeight / 100 : match.supportMinWeight
+    const counts = { STRATEGIC: 0, CORE: 0, SUPPORT: 0 }
+    for (const item of kpiItems) {
+      if (item.category in counts) {
+        counts[item.category]++
+      }
+    }
 
     return {
-      STRATEGIC: sWeight,
-      CORE: cWeight,
-      SUPPORT: supWeight,
+      STRATEGIC: counts.STRATEGIC / total,
+      CORE: counts.CORE / total,
+      SUPPORT: counts.SUPPORT / total,
     }
-  }, [functionConfigsResponse, opcr?.fiscalYear?.id])
+  }, [kpiItems])
+
+  const templateQueries = useQueries({
+    queries: (opcr?.opcrItems ?? []).map((opcrItem) => {
+      const measurement = getPrimaryMeasurement(opcrItem)
+      const templateId =
+        measurement?.ratingScaleTemplateId ??
+        measurement?.RatingScaleTemplateId ??
+        null
+
+      return {
+        queryKey: ['rating-scale-template', opcrItem.id, templateId],
+        queryFn: async ({ signal }: { signal?: AbortSignal }) => {
+          if (!templateId) return null
+          const finalUrl = getRatingScaleTemplateRequest.endpoint.replace(
+            ':id',
+            encodeURIComponent(templateId),
+          )
+          const response = await getRatingScaleTemplateRequest.fetcher({
+            finalUrl,
+            signal,
+          })
+          return response.data ?? null
+        },
+        enabled: Boolean(templateId),
+        staleTime: 1000 * 60 * 5,
+      }
+    }),
+  })
+
+  useEffect(() => {
+    if (!opcr?.opcrItems?.length) return
+
+    setKpiItems((prevItems) => {
+      if (!prevItems.length) return prevItems
+
+      let hasChanges = false
+      const nextItems = prevItems.map((item) => {
+        const opcrItemIndex = opcr?.opcrItems?.findIndex(
+          (oi) => oi.id === item.id,
+        )
+        if (opcrItemIndex === -1) return item
+
+        const queryResult = templateQueries[opcrItemIndex || 0]
+        if (!queryResult?.data) return item
+
+        const {
+          ratingLevels,
+          ratingScaleLabel,
+          scaleType,
+          ratingScaleName,
+          ratingScaleDescription,
+        } = parseRatingScaleTemplate(queryResult.data)
+
+        const levelsChanged =
+          JSON.stringify(item.ratingLevels) !== JSON.stringify(ratingLevels)
+        const labelChanged = item.ratingScaleLabel !== ratingScaleLabel
+        const scaleTypeChanged = Boolean(
+          scaleType && item.scaleType !== scaleType,
+        )
+        const nameChanged = item.ratingScaleName !== ratingScaleName
+        const descChanged =
+          item.ratingScaleDescription !== ratingScaleDescription
+
+        if (
+          levelsChanged ||
+          labelChanged ||
+          scaleTypeChanged ||
+          nameChanged ||
+          descChanged
+        ) {
+          hasChanges = true
+          return {
+            ...item,
+            ratingLevels,
+            ratingScaleLabel,
+            scaleType: scaleType ?? item.scaleType,
+            ratingScaleName,
+            ratingScaleDescription,
+          }
+        }
+        return item
+      })
+
+      return hasChanges ? nextItems : prevItems
+    })
+  }, [templateQueries, opcr])
 
   const calc = usePerformanceCalculation(calculationSession, customWeights)
   const groupedKPIs = useMemo(() => groupKPIsByCategory(kpiItems), [kpiItems])
@@ -706,7 +773,9 @@ export function SelfRatingKpiAccordionTab() {
 
           try {
             await uploadFilesSequentially(item.id, filesToUpload)
-            toast.success(`Successfully uploaded evidence files for "${item.kpiName || item.successIndicator}"`)
+            toast.success(
+              `Successfully uploaded evidence files for "${item.kpiName || item.successIndicator}"`,
+            )
           } catch (error) {
             console.error(`Failed to upload MOVs for item ${item.id}:`, error)
             throw error
@@ -714,13 +783,19 @@ export function SelfRatingKpiAccordionTab() {
         }
       }
 
-      // Step 2: Build patch payload with uploaded file IDs
-      const dimensionRate = kpiItems.flatMap((item) => {
-        const dimensions: any[] = []
+      type DimensionRateEntry = {
+        fyActiveKPIMeasurementId: string
+        dimension: 'Quality' | 'Efficiency' | 'Timeliness'
+        selfRating: number
+      }
+
+      const dimensionRate: DimensionRateEntry[] = kpiItems.flatMap((item) => {
+        const measurementId = item.fyActiveKPIMeasurementId || ''
+        const dimensions: DimensionRateEntry[] = []
 
         if (item.tags.includes('quality') && item.selfRating.quality !== null) {
           dimensions.push({
-            fyActiveKPIMeasurementId: item.fyActiveKPIMeasurementId,
+            fyActiveKPIMeasurementId: measurementId,
             dimension: 'Quality',
             selfRating: item.selfRating.quality,
           })
@@ -731,7 +806,7 @@ export function SelfRatingKpiAccordionTab() {
           item.selfRating.efficiency !== null
         ) {
           dimensions.push({
-            fyActiveKPIMeasurementId: item.fyActiveKPIMeasurementId,
+            fyActiveKPIMeasurementId: measurementId,
             dimension: 'Efficiency',
             selfRating: item.selfRating.efficiency,
           })
@@ -742,7 +817,7 @@ export function SelfRatingKpiAccordionTab() {
           item.selfRating.timeliness !== null
         ) {
           dimensions.push({
-            fyActiveKPIMeasurementId: item.fyActiveKPIMeasurementId,
+            fyActiveKPIMeasurementId: measurementId,
             dimension: 'Timeliness',
             selfRating: item.selfRating.timeliness,
           })
@@ -779,29 +854,37 @@ export function SelfRatingKpiAccordionTab() {
         })
         .filter((mov) => mov.fyActiveKPIMeasurementId && mov.fileId) // Filter out invalid entries
 
-      // Step 3: Execute patch request for first KPI item for now
-      // In a real scenario, you'd loop through or submit aggregated data
-      if (kpiItems.length > 0) {
-        const firstItem = kpiItems[0]
-        const finalUrl = patchOPCRSelfEvaluateRequest.endpoint.replace(
-          ':id',
-          firstItem.opcrItemId || firstItem.id,
+      // Step 3: Execute patch request for all KPI items
+      for (const item of kpiItems) {
+        const itemId = item.opcrItemId || item.id
+        if (!itemId) continue
+
+        const itemDimensions = dimensionRate.filter(
+          (d) => d.fyActiveKPIMeasurementId === item.fyActiveKPIMeasurementId,
+        )
+        const itemMovs = movArray.filter(
+          (m) => m.fyActiveKPIMeasurementId === item.fyActiveKPIMeasurementId,
         )
 
-        const response = await patchOPCRSelfEvaluateRequest.fetcher({
+        const finalUrl = patchOPCRSelfEvaluateRequest.endpoint.replace(
+          ':id',
+          itemId,
+        )
+
+        await patchOPCRSelfEvaluateRequest.fetcher({
           finalUrl,
           payload: {
-            actualAccomplishment: firstItem.actual,
-            justification: firstItem.justification,
-            dimensionRate: dimensionRate.length > 0 ? dimensionRate : undefined,
-            mov: movArray.length > 0 ? movArray : undefined,
+            actualAccomplishment: item.actual,
+            justification: item.justification,
+            dimensionRate:
+              itemDimensions.length > 0 ? itemDimensions : undefined,
+            mov: itemMovs.length > 0 ? itemMovs : undefined,
           },
         })
+      }
 
-        // Success!
-        console.log('Self-evaluation submitted:', response)
-
-        // Step 4: Update the OPCR review status to Submitted (2)
+      // Step 4: Update the OPCR review status to Submitted
+      if (opcr?.id) {
         try {
           const reviewStatusUrl = patchOPCRReviewStatusRequest.endpoint.replace(
             ':id',
@@ -817,36 +900,24 @@ export function SelfRatingKpiAccordionTab() {
         } catch (statusError) {
           console.error('Failed to update OPCR review status:', statusError)
         }
-
-        // Transform response data and update KPI items
-        const responseData =
-          response as unknown as PatchOPCRSelfEvaluateResponse
-        const submittedOPCRItems = responseData?.opcrItems ?? []
-        if (submittedOPCRItems && submittedOPCRItems.length > 0) {
-          const updatedKpiItems = transformSubmittedResponseToKpiItems(
-            kpiItems,
-            submittedOPCRItems,
-          )
-          setKpiItems(updatedKpiItems)
-        }
-
-        // Clear uploads
-        clearAllUploads()
-
-        // Keep in read-only mode to show submitted values
-        setIsReadOnly(true)
-
-        toast.success('Self-Evaluation Submitted', {
-          description:
-            'Your performance review has been successfully submitted. Review your submission below, then return to the OPCR list.',
-          duration: 4000,
-        })
-
-        // Auto-navigate back after 5 seconds for user convenience
-        setTimeout(() => {
-          handleBack()
-        }, 5000)
       }
+
+      // Clear uploads
+      clearAllUploads()
+
+      // Keep in read-only mode to show submitted values
+      setIsReadOnly(true)
+
+      toast.success('Self-Evaluation Submitted', {
+        description:
+          'Your performance review has been successfully submitted.',
+        duration: 4000,
+      })
+
+      // Auto-navigate back after 3 seconds for user convenience
+      setTimeout(() => {
+        handleBack()
+      }, 3000)
     } catch (error) {
       console.error('Submission failed:', error)
       const errorMessage =
@@ -913,9 +984,7 @@ export function SelfRatingKpiAccordionTab() {
   )
 
   const handleToggleAllCategories = useCallback(() => {
-    setOpenAccordions(
-      allCategoriesExpanded ? [] : [...SELF_RATING_CATEGORIES],
-    )
+    setOpenAccordions(allCategoriesExpanded ? [] : [...SELF_RATING_CATEGORIES])
   }, [allCategoriesExpanded, setOpenAccordions])
 
   if (isLoading) {
@@ -1029,7 +1098,6 @@ export function SelfRatingKpiAccordionTab() {
           </>
         )}
       </div>
-
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 px-4 py-3">
         <div className="space-y-1">
