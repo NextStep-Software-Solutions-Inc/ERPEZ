@@ -188,6 +188,13 @@ public static class RoleSeeder
                 Permissions.Procurement.supplierManage,
                 Permissions.Planning.viewGlobalDashboard
             ]
+        ),
+        new(
+            "Supplier",
+            "External vendor or contractor accessing the Supplier Portal to participate in RFQs, Direct Contracting, and submitting quotations.",
+            [
+                Permissions.Procurement.supplierView
+            ]
         )
     ];
 

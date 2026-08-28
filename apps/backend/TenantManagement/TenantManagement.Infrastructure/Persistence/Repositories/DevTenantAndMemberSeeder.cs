@@ -87,6 +87,15 @@ public static class DevTenantAndMemberSeeder
             "admin@erpez.dev",
             TenantMemberRole.Admin,
             ["Tenant Administrator"]
+        ),
+        new(
+            Guid.Parse("aaaaaaaa-0000-0000-0000-000000000008"),
+            "dev_supplier",
+            "dev_supplier",
+            "Supplier / Vendor (Dev)",
+            "supplier@erpez.dev",
+            TenantMemberRole.Member,
+            ["Supplier"]
         )
     ];
 

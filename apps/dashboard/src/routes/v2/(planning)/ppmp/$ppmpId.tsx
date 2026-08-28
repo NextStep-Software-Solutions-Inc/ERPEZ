@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const OfficeLevelPPMPDetailsPage = lazy(() =>
   import('@/features/planning/ppmp/pages/OfficeLevelPPMPDetailsPage').then(
@@ -16,9 +18,14 @@ function PPMPDetailsRoute() {
   const { ppmpId } = Route.useParams()
 
   return (
-    <Suspense fallback={<div>Loading PPMP details...</div>}>
-      <OfficeLevelPPMPDetailsPage ppmpId={ppmpId} />
-    </Suspense>
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.Ppmp.View}
+      message="You do not have permission to view PPMP details."
+    >
+      <Suspense fallback={<div>Loading PPMP details...</div>}>
+        <OfficeLevelPPMPDetailsPage ppmpId={ppmpId} />
+      </Suspense>
+    </RoutePermissionGuard>
   )
 }
 

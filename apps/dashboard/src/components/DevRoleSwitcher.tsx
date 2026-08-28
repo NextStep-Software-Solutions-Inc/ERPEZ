@@ -14,7 +14,8 @@ import {
   CheckCircle2, 
   DollarSign, 
   Package, 
-  Settings 
+  Settings,
+  Store
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -69,6 +70,14 @@ const PERSONAS: PersonaOption[] = [
     color: 'text-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-800',
   },
   {
+    id: 'dev_supplier',
+    name: 'Supplier / Vendor',
+    role: 'Supplier Portal, RFQ & Direct Contracting',
+    badge: 'Supplier',
+    icon: Store,
+    color: 'text-teal-500 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800',
+  },
+  {
     id: 'dev_admin',
     name: 'Tenant Administrator',
     role: 'Org Structure, Members & Roles',
@@ -108,17 +117,8 @@ export const DevRoleSwitcher: React.FC = () => {
     try {
       setIsSwitching(true)
       await switchDevUser(persona.id)
-      // Scoped query removal: wipe user-scoped protected data immediately upon identity change
-      queryClient.removeQueries({
-        predicate: (query) => {
-          const key = String(query.queryKey[0] || '')
-          return (
-            key === 'budget-calls' ||
-            key === 'my-permissions' ||
-            key.startsWith('budget-call')
-          )
-        },
-      })
+      // Wipe all cached query and mutation data immediately upon identity change
+      queryClient.clear()
       await queryClient.invalidateQueries()
       toast.success(`Switched role to ${persona.name}`, {
         description: `Active tenant: ERPEZ Dev Sandbox (${persona.role})`,

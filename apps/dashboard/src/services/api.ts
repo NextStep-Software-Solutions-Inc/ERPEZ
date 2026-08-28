@@ -18,21 +18,25 @@ api.defaults.timeout = 30000 // 30s timeout to allow database operations and deb
 // Request interceptor to add Keycloak/Dev token and Tenant ID
 api.interceptors.request.use(
   (config) => {
-    let token: string | null = keycloak?.token || null
+    let token: string | null = null
     let tenantId = '00000000-0000-0000-0000-000000000001'
 
     if (typeof window !== 'undefined') {
       try {
         const storedToken = localStorage.getItem('erpez_auth_token')
         if (storedToken && storedToken.startsWith('ey')) {
-          token = token || storedToken
+          token = storedToken
         } else if (storedToken) {
           localStorage.removeItem('erpez_auth_token')
+        } else if (keycloak?.token) {
+          token = keycloak.token
         }
         tenantId = localStorage.getItem('erpez_tenant_id') || tenantId
       } catch {
         // Ignore localStorage access errors
       }
+    } else if (keycloak?.token) {
+      token = keycloak.token
     }
 
     if (token && token.startsWith('ey')) {

@@ -287,8 +287,8 @@ export function PageContainerDashtail({
               </TabsList>
             </div>
             {afterTabs && (
-              <div className="flex items-center shrink-0 ml-auto">
-                <div className="w-px h-6 bg-border mx-3" />
+              <div className="flex items-center shrink-0 ml-auto min-w-0 max-w-full overflow-x-auto">
+                <div className="w-px h-6 bg-border mx-3 shrink-0" />
                 {afterTabs}
               </div>
             )}
@@ -314,9 +314,10 @@ export function PageContainerDashtail({
     multiSection: contentType === 'table' ? 'space-y-6' : 'space-y-8',
   }
 
-  const containerClasses = cn('w-full', modeClasses[mode], containerClassName)
+  const containerClasses = cn('w-full min-w-0', modeClasses[mode], containerClassName)
 
   const contentClasses = cn(
+    'w-full min-w-0',
     mode === 'tabbed' ? 'py-6' : contentType === 'default' ? 'p-0' : 'py-6',
     contentType === 'table' ||
       contentType === 'cards' ||

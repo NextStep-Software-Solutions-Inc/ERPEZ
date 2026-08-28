@@ -19,6 +19,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import OrganizationLayout from '@/pages/planning/organization/OrganizationLayout'
 import OrganizationStructurePage from '@/pages/planning/organization/OrganizationStructurePage'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 /**
  * Search Parameters Schema
@@ -71,8 +73,14 @@ export const Route = createFileRoute('/v2/_planning/organization/')({
  */
 function OrganizationalStructureIndexRoute() {
   return (
-    <OrganizationLayout>
-      <OrganizationStructurePage />
-    </OrganizationLayout>
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Admin.OrgStructure.View}
+      message="You do not have permission to access the Organization Structure."
+    >
+      <OrganizationLayout>
+        <OrganizationStructurePage />
+      </OrganizationLayout>
+    </RoutePermissionGuard>
   )
 }
+

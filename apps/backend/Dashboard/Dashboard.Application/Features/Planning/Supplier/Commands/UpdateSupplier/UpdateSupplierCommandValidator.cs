@@ -67,5 +67,26 @@ public class UpdateSupplierCommandValidator : AbstractValidator<UpdateSupplierCo
         RuleFor(x => x.UpdateSupplier.SupplierCategoryId)
             .NotEmpty()
             .WithMessage("Supplier Category is required.");
+
+        When(x => x.UpdateSupplier.Requirements != null, () =>
+        {
+            RuleFor(x => x.UpdateSupplier.Requirements!)
+                .NotEmpty()
+                .WithMessage("At least one requirement is required.");
+
+            RuleForEach(x => x.UpdateSupplier.Requirements!)
+                .ChildRules(req =>
+                {
+                    req.RuleFor(r => r.RequirementName)
+                        .NotEmpty()
+                        .WithMessage("Requirement Name is required.")
+                        .MaximumLength(250)
+                        .WithMessage("Requirement Name cannot exceed 250 characters.");
+
+                    req.RuleFor(r => r)
+                        .Must(r => r.FileId.HasValue || !string.IsNullOrWhiteSpace(r.Url))
+                        .WithMessage("A requirement document file or existing URL is required.");
+                });
+        });
     }
 }

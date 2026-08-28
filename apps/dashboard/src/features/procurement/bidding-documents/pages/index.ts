@@ -1,2 +1,1 @@
-﻿export * from './BiddingDocumentsPage'
-export * from './BiddingDocumentWorkspacePage'
+export * from './BiddingDocumentsPage'

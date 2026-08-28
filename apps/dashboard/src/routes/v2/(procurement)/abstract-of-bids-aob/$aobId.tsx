@@ -3,6 +3,8 @@ import { AOBDetailsPage } from '@/features/procurement/aob/components'
 import { ApproveAOBDialog } from '@/features/procurement/aob/dialogs/ApproveAOBDialog'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 import {
   createQueryHookFromTemplate,
   createMutationHookFromTemplate,
@@ -179,24 +181,29 @@ function RouteComponent() {
   }
 
   return (
-    <div className="p-6">
-      <AOBDetailsPage
-        aob={aob}
-        bidMatrix={bidMatrix}
-        onBack={handleBack}
-        onDelete={handleDelete}
-        onSubmitForApproval={handleSubmitForApproval}
-        onExport={handleExport}
-        isProcessing={isProcessing}
-        isAdmin={false}
-      />
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.Aob.Manage}
+      message="You do not have permission to view this Abstract of Bids (AOB)."
+    >
+      <div className="p-6">
+        <AOBDetailsPage
+          aob={aob}
+          bidMatrix={bidMatrix}
+          onBack={handleBack}
+          onDelete={handleDelete}
+          onSubmitForApproval={handleSubmitForApproval}
+          onExport={handleExport}
+          isProcessing={isProcessing}
+          isAdmin={false}
+        />
 
-      <ApproveAOBDialog
-        open={isApproveDialogOpen}
-        onOpenChange={setIsApproveDialogOpen}
-        aob={aob}
-        onApprove={handleApproveSubmit}
-      />
-    </div>
+        <ApproveAOBDialog
+          open={isApproveDialogOpen}
+          onOpenChange={setIsApproveDialogOpen}
+          aob={aob}
+          onApprove={handleApproveSubmit}
+        />
+      </div>
+    </RoutePermissionGuard>
   )
 }

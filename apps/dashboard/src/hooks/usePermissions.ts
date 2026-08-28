@@ -9,7 +9,7 @@ export type PermissionStatus = 'idle' | 'loading' | 'success' | 'error'
  * Implements strict deny-by-default and fail-closed state semantics.
  */
 export function usePermissions() {
-  const { token, isAuthenticated, userName, tenantId, activeDevUser } = useKeycloak()
+  const { token, isAuthenticated, userName, tenantId, activeDevUser, isSuperAdmin } = useKeycloak()
 
   const {
     data: permissions = [],
@@ -47,22 +47,26 @@ export function usePermissions() {
 
   // Fail closed: only evaluate if permissions successfully loaded
   const hasPermission = (permission: string): boolean => {
+    if (isSuperAdmin) return true
     if (!isLoaded) return false
     return permissions.includes(permission)
   }
 
   const hasAnyPermission = (perms: readonly string[]): boolean => {
+    if (isSuperAdmin) return true
     if (!isLoaded) return false
     return perms.some((p) => permissions.includes(p))
   }
 
   const hasAllPermissions = (perms: readonly string[]): boolean => {
+    if (isSuperAdmin) return true
     if (!isLoaded) return false
     return perms.every((p) => permissions.includes(p))
   }
 
   return {
     permissions,
+    isSuperAdmin,
     status,
     isLoading,
     isLoaded,

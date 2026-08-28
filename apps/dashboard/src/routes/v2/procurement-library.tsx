@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import ProcurementLibraryPageV2 from '@/pages/planning/settings/procurement-library/ProcurementLibraryPageV2'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
   tab: z
@@ -24,5 +26,12 @@ export const Route = createFileRoute('/v2/procurement-library')({
 })
 
 function RouteComponent() {
-  return <ProcurementLibraryPageV2 />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.ProcurementLibrary.View}
+      message="You do not have permission to access the Procurement Library."
+    >
+      <ProcurementLibraryPageV2 />
+    </RoutePermissionGuard>
+  )
 }

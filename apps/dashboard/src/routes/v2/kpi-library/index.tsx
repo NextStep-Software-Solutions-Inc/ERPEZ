@@ -11,6 +11,8 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { BarChart2 } from 'lucide-react'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 import {
   KPI_LIBRARY_TABS,
   kpiLibrarySearchSchema,
@@ -97,40 +99,45 @@ function KpiIndicatorLibraryLayout() {
   )
 
   return (
-    <div className="w-full space-y-6 pb-10">
-      {/* Header - match Fiscal Year & Policies styling */}
-      <><Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-  <CardHeader>
-    <div className="flex items-center justify-between gap-4 flex-wrap">
-      <div className="space-y-1">
-        <CardTitle className="text-3xl">Key Performance Indicator Library</CardTitle>
-        <CardDescription className="text-base">
-          Central repository for defining Key Performance Indicators, rating scales, and measurement configurations
-        </CardDescription>
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Planning.Kpi.View}
+      message="You do not have permission to access the KPI Library."
+    >
+      <div className="w-full space-y-6 pb-10">
+        {/* Header - match Fiscal Year & Policies styling */}
+        <><Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+    <CardHeader>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="space-y-1">
+          <CardTitle className="text-3xl">Key Performance Indicator Library</CardTitle>
+          <CardDescription className="text-base">
+            Central repository for defining Key Performance Indicators, rating scales, and measurement configurations
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
+            <BarChart2 className="h-3.5 w-3.5 mr-1.5" /> KPI Library
+          </Badge>
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
-          <BarChart2 className="h-3.5 w-3.5 mr-1.5" /> KPI Library
-        </Badge>
+    </CardHeader>
+  </Card><PageContainerDashtail
+    mode="tabbed"
+    tabs={KPI_LIBRARY_TABS.map((tab) => ({
+      id: tab.id,
+      label: tab.label,
+    }))}
+    activeTab={activeTab}
+    onTabChange={handleTabChange}
+    contentType="cards"
+    tabVariant="underline"
+  >
+      {/* Lazy-loaded Tab Content */}
+      <Suspense fallback={tabLoadingFallback}>
+        {renderTabContent(activeTab)}
+      </Suspense>
+    </PageContainerDashtail></>
       </div>
-    </div>
-  </CardHeader>
-</Card><PageContainerDashtail
-  mode="tabbed"
-  tabs={KPI_LIBRARY_TABS.map((tab) => ({
-    id: tab.id,
-    label: tab.label,
-  }))}
-  activeTab={activeTab}
-  onTabChange={handleTabChange}
-  contentType="cards"
-  tabVariant="underline"
->
-    {/* Lazy-loaded Tab Content */}
-    <Suspense fallback={tabLoadingFallback}>
-      {renderTabContent(activeTab)}
-    </Suspense>
-  </PageContainerDashtail></>
-    </div>
+    </RoutePermissionGuard>
   )
 }
