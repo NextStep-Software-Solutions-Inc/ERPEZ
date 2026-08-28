@@ -100,7 +100,11 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             {
                 ResolutionType = request.UpdateRequest.ResolutionType ?? string.Empty,
                 ResolutionNumber = request.UpdateRequest.ResolutionNumber ?? string.Empty,
-                DateResolved = request.UpdateRequest.DateResolved ?? DateTime.UtcNow,
+                DateResolved = request.UpdateRequest.DateResolved.HasValue
+                    ? (request.UpdateRequest.DateResolved.Value.Kind == DateTimeKind.Unspecified
+                        ? DateTime.SpecifyKind(request.UpdateRequest.DateResolved.Value, DateTimeKind.Utc)
+                        : request.UpdateRequest.DateResolved.Value.ToUniversalTime())
+                    : DateTime.UtcNow,
                 ResolvedLocation = request.UpdateRequest.ResolvedLocation
             };
             project.BACResolutions.Add(resolution);
@@ -112,7 +116,9 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             if (request.UpdateRequest.ResolutionNumber != null)
                 resolution.ResolutionNumber = request.UpdateRequest.ResolutionNumber;
             if (request.UpdateRequest.DateResolved.HasValue)
-                resolution.DateResolved = request.UpdateRequest.DateResolved.Value;
+                resolution.DateResolved = request.UpdateRequest.DateResolved.Value.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(request.UpdateRequest.DateResolved.Value, DateTimeKind.Utc)
+                    : request.UpdateRequest.DateResolved.Value.ToUniversalTime();
             if (request.UpdateRequest.ResolvedLocation != null)
                 resolution.ResolvedLocation = request.UpdateRequest.ResolvedLocation;
         }

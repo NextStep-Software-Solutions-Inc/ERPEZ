@@ -46,6 +46,14 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
                     {
                         createdAtProp.SetValue(entity, now);
                     }
+                    else if (val.Kind == DateTimeKind.Unspecified)
+                    {
+                        createdAtProp.SetValue(entity, DateTime.SpecifyKind(val, DateTimeKind.Utc));
+                    }
+                    else
+                    {
+                        createdAtProp.SetValue(entity, val.ToUniversalTime());
+                    }
                 }
 
                 var createdByProp = entityType.GetProperty("CreatedBy");
@@ -94,6 +102,18 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
                     if (deletedByProp != null && deletedByProp.CanWrite)
                     {
                         deletedByProp.SetValue(entity, userId);
+                    }
+                }
+            }
+
+            // Convert any Unspecified DateTime property across the entity to UTC
+            if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
+            {
+                foreach (var prop in entry.Properties)
+                {
+                    if (prop.CurrentValue is DateTime dt && dt.Kind == DateTimeKind.Unspecified)
+                    {
+                        prop.CurrentValue = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
                     }
                 }
             }

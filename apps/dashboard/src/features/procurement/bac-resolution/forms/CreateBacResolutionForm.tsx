@@ -336,12 +336,6 @@ export const CreateBacResolutionForm = forwardRef<
         setIsSubmitting(true)
         setSubmitError(null)
 
-        if (whereasClauses.length === 0) {
-          toast.error('At least one WHEREAS clause must be selected.')
-          setIsSubmitting(false)
-          return
-        }
-
         try {
           const payload: CreateBacResolutionPayload = {
             sourceType: selectedSourceType === 'AppItem' ? 'APPItem' : 'ConsolidatedPR',
@@ -354,10 +348,6 @@ export const CreateBacResolutionForm = forwardRef<
             resolutionNumber: value.resolutionNumber,
             dateResolved: value.dateResolved,
             resolvedLocation: value.resolvedLocation,
-            whereasClauses: whereasClauses.map((c, idx) => ({
-              whereasClauseId: c.resolutionClauseId,
-              order: idx,
-            })),
             whereasClauseLinks: whereasClauses.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,

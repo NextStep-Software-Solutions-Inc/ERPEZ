@@ -161,7 +161,9 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
         {
             ResolutionType = string.IsNullOrWhiteSpace(request.ResolutionType) ? "Recommend Mode of Procurement" : request.ResolutionType,
             ResolutionNumber = request.ResolutionNumber,
-            DateResolved = request.DateResolved,
+            DateResolved = request.DateResolved.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(request.DateResolved, DateTimeKind.Utc)
+                : request.DateResolved.ToUniversalTime(),
             ResolvedLocation = request.ResolvedLocation,
             Status = "Draft"
         };

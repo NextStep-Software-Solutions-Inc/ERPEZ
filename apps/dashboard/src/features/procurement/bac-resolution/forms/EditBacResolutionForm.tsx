@@ -115,7 +115,7 @@ export const EditBacResolutionForm = forwardRef<
     const { data: resolutionClausesData, isPending: isClausesPending } =
       useResolutionClauses({
         pathParams: {},
-        queryParams: { PageSize: 200, ClauseType: pickerModalType || undefined },
+        queryParams: { pageSize: 200, ClauseType: pickerModalType || undefined },
         enabled: pickerModalType !== null,
       })
 
@@ -129,7 +129,7 @@ export const EditBacResolutionForm = forwardRef<
     // Load all clauses for lookup
     const { data: allClausesData } = useResolutionClauses({
       pathParams: {},
-      queryParams: { PageSize: 500 },
+      queryParams: { pageSize: 500 },
     })
 
     const allClausesMap = useMemo(() => {
@@ -137,8 +137,8 @@ export const EditBacResolutionForm = forwardRef<
       const list = Array.isArray(allClausesData?.data)
         ? allClausesData.data
         : Array.isArray(allClausesData)
-        ? allClausesData
-        : []
+          ? allClausesData
+          : []
       for (const item of list) {
         map.set(item.id, item)
       }
@@ -228,12 +228,6 @@ export const EditBacResolutionForm = forwardRef<
         setIsSubmitting(true)
         setSubmitError(null)
 
-        if (whereasClauses.length === 0) {
-          toast.error('At least one WHEREAS clause must be selected.')
-          setIsSubmitting(false)
-          return
-        }
-
         try {
           const payload: UpdateBacProjectPayload = {
             title: value.title,
@@ -241,10 +235,6 @@ export const EditBacResolutionForm = forwardRef<
             resolutionNumber: value.resolutionNumber,
             dateResolved: value.dateResolved,
             resolvedLocation: value.resolvedLocation,
-            whereasClauses: whereasClauses.map((c, idx) => ({
-              whereasClauseId: c.resolutionClauseId,
-              order: idx,
-            })),
             whereasClauseLinks: whereasClauses.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
@@ -621,8 +611,8 @@ export const EditBacResolutionForm = forwardRef<
               pickerModalType === 'Whereas'
                 ? whereasClauses
                 : pickerModalType === 'NowTherefore'
-                ? nowThereforeClauses
-                : resolvedClauses
+                  ? nowThereforeClauses
+                  : resolvedClauses
             }
             onApply={(selected) => {
               if (pickerModalType === 'Whereas') {
