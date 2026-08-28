@@ -20,6 +20,8 @@ public record ProcurementProjectResponse
     public ConsolidatedPRSummaryResponse? ConsolidatedPR { get; init; }
     public decimal ABC { get; init; }
     public string Status { get; init; } = string.Empty;
+    public int AppItemCount { get; init; }
+    public decimal SumABC { get; init; }
 
     // Top-level flattened resolution properties
     public string? ResolutionType { get; init; }
@@ -34,6 +36,8 @@ public record ProcurementProjectResponse
         APPItemId = c.APPItemId,
         ConsolidatedPRId = c.ConsolidatedPRId,
         Title = c.Title,
+        AppItemCount = c.APPItemLinks.Count,
+        SumABC = c.APPItemLinks.Sum(l => l.APPItem.EffectiveABC),
         APPItem = c.APPItem != null ? new APPItemResponse
         {
             Id = c.APPItem.Id,
@@ -139,6 +143,7 @@ public record ProcurementProjectResponse
 
 public record ProcurementProjectDetailResponse : ProcurementProjectResponse
 {
+    public List<APPItemLinkResponse> AppItemLinks { get; init; } = new();
     public List<BACResolutionResponse> BACResolutions { get; init; } = new();
     public List<BiddingActivityScheduleResponse> BiddingActivitySchedules { get; init; } = new();
     public Guid? EndUserRepresentativeId { get; init; }
@@ -154,6 +159,20 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
         APPItemId = c.APPItemId,
         ConsolidatedPRId = c.ConsolidatedPRId,
         Title = c.Title,
+        AppItemCount = c.APPItemLinks.Count,
+        SumABC = c.APPItemLinks.Sum(l => l.APPItem.EffectiveABC),
+        AppItemLinks = c.APPItemLinks != null ? c.APPItemLinks.OrderBy(l => l.Order).Select(l => new APPItemLinkResponse
+        {
+            Id = l.Id,
+            APPItemId = l.APPItemId,
+            ItemNumber = l.APPItem != null && l.APPItem.PPMPItem != null ? l.APPItem.PPMPItem.Name : (l.APPItem != null ? l.APPItem.Remarks ?? string.Empty : string.Empty),
+            Description = l.APPItem != null ? (l.APPItem.Remarks ?? (l.APPItem.PPMPItem != null ? l.APPItem.PPMPItem.Description : string.Empty)) : string.Empty,
+            OfficeName = l.APPItem != null && l.APPItem.Office != null ? l.APPItem.Office.Name : string.Empty,
+            EffectiveABC = l.APPItem != null ? l.APPItem.EffectiveABC : 0,
+            Order = l.Order,
+            AppNumber = l.APPItem != null && l.APPItem.APP != null ? l.APPItem.APP.APPNumber : string.Empty,
+            AppName = l.APPItem != null && l.APPItem.APP != null ? l.APPItem.APP.Name : string.Empty,
+        }).ToList() : new List<APPItemLinkResponse>(),
         APPItem = c.APPItem != null ? new APPItemResponse
         {
             Id = c.APPItem.Id,
@@ -291,6 +310,19 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
                         Order = item.Order
                     }).ToList()
                 : new List<BACResolutionWhereasClauseItemResponse>(),
+            ClauseLinks = r.ClauseLinks != null
+                ? r.ClauseLinks
+                    .OrderBy(item => item.Order)
+                    .Select(item => new BACResolutionClauseLinkResponse
+                    {
+                        Id = item.Id,
+                        ResolutionClauseId = item.ResolutionClauseId,
+                        Name = item.ResolutionClause != null ? item.ResolutionClause.Name : string.Empty,
+                        Body = item.ResolutionClause != null ? item.ResolutionClause.Body : string.Empty,
+                        ClauseType = item.ClauseType,
+                        Order = item.Order
+                    }).ToList()
+                : new List<BACResolutionClauseLinkResponse>(),
             BiddingActivitySchedules = c.BiddingActivitySchedules.Select(s => new BiddingActivityScheduleResponse
             {
                 Id = s.Id,

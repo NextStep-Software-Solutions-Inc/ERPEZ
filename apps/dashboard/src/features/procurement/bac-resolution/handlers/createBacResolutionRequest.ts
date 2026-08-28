@@ -13,6 +13,7 @@ export type WhereasClauses = {
 export type CreateBacResolutionPayload = {
   sourceType?: 'APPItem' | 'ConsolidatedPR' | string
   appItemId?: string
+  appItemIds?: string[]
   consolidatedPRId?: string
   title?: string
   abc?: number
@@ -21,6 +22,9 @@ export type CreateBacResolutionPayload = {
   dateResolved?: string
   resolvedLocation?: string
   whereasClauses?: WhereasClauses[]
+  whereasClauseLinks?: { resolutionClauseId: string; order: number }[]
+  nowThereforeClauses?: { resolutionClauseId: string; order: number }[]
+  resolvedClauses?: { resolutionClauseId: string; order: number }[]
   endUserRepresentativeId?: string
   techRepresentativeId?: string
 }

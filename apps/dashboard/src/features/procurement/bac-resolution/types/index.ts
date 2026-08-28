@@ -115,6 +115,38 @@ export type BacResolutionLogEntry = {
 }
 
 
+export type ResolutionClauseType = 'Whereas' | 'NowTherefore' | 'Resolved'
+
+export type ResolutionClause = {
+  id: string
+  name: string
+  body: string
+  clauseType: ResolutionClauseType
+}
+
+export type WhereasClauseTemplate = ResolutionClause
+
+export type BacResolutionClauseLink = {
+  id: string
+  resolutionClauseId: string
+  name: string
+  body: string
+  clauseType: ResolutionClauseType
+  order: number
+}
+
+export type AppItemLinkItem = {
+  id: string
+  appItemId: string
+  itemNumber: string
+  description: string
+  officeName: string
+  effectiveABC: number
+  order: number
+  appNumber: string
+  appName: string
+}
+
 export type WhereasClauses = {
   whereasClauseId: string
   order: number
@@ -129,6 +161,8 @@ export type BacProject = {
   consolidatedPR?: ConsolidatedPR
   title?: string
   abc: number
+  appItemCount?: number
+  sumABC?: number
   status?: BacResolutionStatus
   resolutionType?: string
   resolutionNumber?: string
@@ -146,6 +180,7 @@ export type BacProject = {
 }
 
 export type BacProjectDetails = BacProject & {
+  appItemLinks?: AppItemLinkItem[]
   bacResolutions?: BacResolution[]
   biddingActivitySchedules?: {}[]
   endUserRepresentativeId?: string
@@ -153,8 +188,8 @@ export type BacProjectDetails = BacProject & {
   techRepresentativeId?: string
   techRepresentative?: { id: string, firstName: string, lastName: string, email: string }
   approvalAttachmentFileId?: string
-
 }
+
 export type BacResolution = {
   id: string
   procurementProjectId: string
@@ -164,12 +199,12 @@ export type BacResolution = {
   resolvedLocation?: string
   status: string
   whereasClauses: BacResolutionWhereasClause[]
+  clauseLinks?: BacResolutionClauseLink[]
   biddingActivitySchedules: {}[]
   endUserRepresentativeId?: string
   endUserRepresentative: { id: string, firstName: string, lastName: string, email: string } | null
   techRepresentativeId?: string
   techRepresentative: { id: string, firstName: string, lastName: string, email: string } | null
-
 }
 
 export type BacResolutionWhereasClause = {
