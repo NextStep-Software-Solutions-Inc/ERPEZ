@@ -40,6 +40,8 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             .Include(p => p.BACResolutions)
                 .ThenInclude(r => r.WhereasClauseItems)
                     .ThenInclude(item => item.BACResolutionWhereasClause)
+            .Include(p => p.APPItemLinks)
+                .ThenInclude(l => l.APPItem)
             .Include(p => p.BiddingActivitySchedules)
                 .ThenInclude(s => s.ProcurementActivityType)
             .Where(p => !p.IsDeleted)

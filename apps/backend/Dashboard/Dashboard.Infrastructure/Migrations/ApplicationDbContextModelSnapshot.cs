@@ -5756,6 +5756,51 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("RatingScaleTemplates", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ResolutionClause", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClauseType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ResolutionClauses", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.SDG", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7959,6 +8004,56 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("BACResolutions", "procurement");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.BACResolutionClauseLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BACResolutionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ClauseType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ResolutionClauseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BACResolutionId");
+
+                    b.HasIndex("ResolutionClauseId");
+
+                    b.ToTable("BACResolutionClauseLinks", "procurement");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.BACResolutionWhereasClauseItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8823,6 +8918,52 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("TechRepresentativeId");
 
                     b.ToTable("ProcurementProjects", "procurement");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProcurementProjectAPPItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("APPItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProcurementProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("APPItemId");
+
+                    b.HasIndex("ProcurementProjectId");
+
+                    b.ToTable("ProcurementProjectAPPItems", "procurement");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProjectDocumentChecklist", b =>
@@ -12021,6 +12162,25 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ProcurementProject");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.BACResolutionClauseLink", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.BACResolution", "BACResolution")
+                        .WithMany("ClauseLinks")
+                        .HasForeignKey("BACResolutionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ResolutionClause", "ResolutionClause")
+                        .WithMany()
+                        .HasForeignKey("ResolutionClauseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BACResolution");
+
+                    b.Navigation("ResolutionClause");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.BACResolutionWhereasClauseItem", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.BACResolution", "BACResolution")
@@ -12248,6 +12408,25 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ProcurementMode");
 
                     b.Navigation("TechRepresentative");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProcurementProjectAPPItem", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.APPItem", "APPItem")
+                        .WithMany()
+                        .HasForeignKey("APPItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ProcurementProject")
+                        .WithMany("APPItemLinks")
+                        .HasForeignKey("ProcurementProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("APPItem");
+
+                    b.Navigation("ProcurementProject");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProjectDocumentChecklist", b =>
@@ -12979,6 +13158,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.BACResolution", b =>
                 {
+                    b.Navigation("ClauseLinks");
+
                     b.Navigation("WhereasClauseItems");
                 });
 
@@ -13022,6 +13203,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProcurementProject", b =>
                 {
+                    b.Navigation("APPItemLinks");
+
                     b.Navigation("BACResolutions");
 
                     b.Navigation("BiddingActivitySchedules");

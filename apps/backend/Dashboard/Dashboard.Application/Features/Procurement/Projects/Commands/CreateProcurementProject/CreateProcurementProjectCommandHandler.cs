@@ -1,11 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.Projects.Commands.CreateProcurementProject;
 
@@ -17,36 +21,71 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
         string projectTitle = request.Title ?? string.Empty;
         decimal projectABC = request.ABC ?? 0;
         Guid? procurementModeId = null;
+        var appItems = new List<APPItem>();
 
         if (request.SourceType == ProcurementProjectSourceType.APPItem)
         {
-            if (!request.APPItemId.HasValue)
+            var itemIds = request.APPItemIds != null && request.APPItemIds.Count > 0
+                ? request.APPItemIds.Distinct().ToList()
+                : (request.APPItemId.HasValue ? new List<Guid> { request.APPItemId.Value } : new List<Guid>());
+
+            if (itemIds.Count == 0)
             {
-                return ApiResponse<Guid>.Fail("APPItemId is required when SourceType is APPItem.");
+                return ApiResponse<Guid>.Fail("At least one APP Item is required when SourceType is APPItem.");
             }
 
-            var appItem = await unitOfWork.APPItemRepository.GetWithDetailsAsync(request.APPItemId.Value, cancellationToken);
-            if (appItem == null)
+            Guid? commonAppId = null;
+            foreach (var id in itemIds)
             {
-                return ApiResponse<Guid>.Fail($"APP Item with ID '{request.APPItemId.Value}' was not found.");
+                var appItem = await unitOfWork.APPItemRepository.GetWithDetailsAsync(id, cancellationToken);
+                if (appItem == null)
+                {
+                    return ApiResponse<Guid>.Fail($"APP Item with ID '{id}' was not found.");
+                }
+
+                if (!commonAppId.HasValue)
+                {
+                    commonAppId = appItem.APPId;
+                }
+                else if (appItem.APPId != commonAppId.Value)
+                {
+                    return ApiResponse<Guid>.Fail("All selected APP items must belong to the same APP.");
+                }
+
+                appItems.Add(appItem);
             }
 
-            // Duplicate protection check for APP Item
-            var existingProject = await unitOfWork.ProcurementProjectRepository.FindAsync(
-                p => p.APPItemId == request.APPItemId.Value && p.Status != "Cancelled",
-                cancellationToken);
+            // Duplicate protection check for all APP Items
+            var existingProject = await unitOfWork.ProcurementProjectRepository
+                .FindAsync(p => p.Status != "Cancelled" && (
+                    (p.APPItemId.HasValue && itemIds.Contains(p.APPItemId.Value)) ||
+                    p.APPItemLinks.Any(l => itemIds.Contains(l.APPItemId))
+                ), cancellationToken);
 
             if (existingProject != null)
             {
-                return ApiResponse<Guid>.Fail("An active Procurement Project already exists for this APP Item.");
+                return ApiResponse<Guid>.Fail("An active Procurement Project already exists for one or more selected APP Items.");
             }
 
             // Authoritative Hydration from DB
-            projectTitle = (appItem.PPMPItem != null && !string.IsNullOrWhiteSpace(appItem.PPMPItem.Name))
-                ? appItem.PPMPItem.Name
-                : (!string.IsNullOrWhiteSpace(request.Title) ? request.Title : (!string.IsNullOrWhiteSpace(appItem.Remarks) ? appItem.Remarks : "APP Procurement Project"));
+            if (!string.IsNullOrWhiteSpace(request.Title))
+            {
+                projectTitle = request.Title;
+            }
+            else if (appItems.Count == 1)
+            {
+                var first = appItems[0];
+                projectTitle = (first.PPMPItem != null && !string.IsNullOrWhiteSpace(first.PPMPItem.Name))
+                    ? first.PPMPItem.Name
+                    : (!string.IsNullOrWhiteSpace(first.Remarks) ? first.Remarks : "APP Procurement Project");
+            }
+            else
+            {
+                var appNum = appItems[0].APP?.APPNumber ?? "APP";
+                projectTitle = $"{appNum} - {appItems.Count} Items";
+            }
 
-            decimal inheritedAbc = appItem.EffectiveABC;
+            decimal inheritedAbc = appItems.Sum(i => i.EffectiveABC);
 
             if (request.ABC.HasValue && request.ABC.Value > 0 && request.ABC.Value != inheritedAbc)
             {
@@ -54,8 +93,7 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             }
 
             projectABC = inheritedAbc;
-
-            procurementModeId = appItem.ProcurementModeId;
+            procurementModeId = appItems.FirstOrDefault()?.ProcurementModeId;
         }
         else if (request.SourceType == ProcurementProjectSourceType.ConsolidatedPR)
         {
@@ -97,7 +135,7 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
         var project = new ProcurementProject
         {
             SourceType = request.SourceType,
-            APPItemId = request.SourceType == ProcurementProjectSourceType.APPItem ? request.APPItemId : null,
+            APPItemId = request.SourceType == ProcurementProjectSourceType.APPItem ? appItems.FirstOrDefault()?.Id : null,
             ConsolidatedPRId = request.SourceType == ProcurementProjectSourceType.ConsolidatedPR ? request.ConsolidatedPRId : null,
             Title = projectTitle,
             ABC = projectABC,
@@ -107,15 +145,30 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             TechRepresentativeId = request.TechRepresentativeId
         };
 
+        if (request.SourceType == ProcurementProjectSourceType.APPItem && appItems.Count > 0)
+        {
+            for (int i = 0; i < appItems.Count; i++)
+            {
+                project.APPItemLinks.Add(new ProcurementProjectAPPItem
+                {
+                    APPItemId = appItems[i].Id,
+                    Order = i
+                });
+            }
+        }
+
         var resolution = new BACResolution
         {
             ResolutionType = string.IsNullOrWhiteSpace(request.ResolutionType) ? "Recommend Mode of Procurement" : request.ResolutionType,
             ResolutionNumber = request.ResolutionNumber,
-            DateResolved = request.DateResolved,
+            DateResolved = request.DateResolved.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(request.DateResolved, DateTimeKind.Utc)
+                : request.DateResolved.ToUniversalTime(),
             ResolvedLocation = request.ResolvedLocation,
             Status = "Draft"
         };
 
+        // Legacy Whereas clauses
         if (request.WhereasClauses != null && request.WhereasClauses.Count > 0)
         {
             foreach (var item in request.WhereasClauses)
@@ -134,6 +187,35 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             }
         }
 
+        // Generic Resolution Clauses (Whereas, NowTherefore, Resolved)
+        var clauseGroups = new (string ClauseType, List<ResolutionClauseItemInputDto>? Clauses)[]
+        {
+            ("Whereas", request.WhereasClauseLinks),
+            ("NowTherefore", request.NowThereforeClauses),
+            ("Resolved", request.ResolvedClauses)
+        };
+
+        foreach (var (clauseType, clauses) in clauseGroups)
+        {
+            if (clauses == null || clauses.Count == 0) continue;
+
+            foreach (var item in clauses)
+            {
+                var clause = await unitOfWork.ResolutionClauseRepository.GetByIdAsync(item.ResolutionClauseId, cancellationToken);
+                if (clause == null)
+                {
+                    return ApiResponse<Guid>.Fail($"Resolution Clause with ID '{item.ResolutionClauseId}' was not found.");
+                }
+
+                resolution.ClauseLinks.Add(new BACResolutionClauseLink
+                {
+                    ResolutionClauseId = item.ResolutionClauseId,
+                    ClauseType = clauseType,
+                    Order = item.Order
+                });
+            }
+        }
+
         project.BACResolutions.Add(resolution);
 
         await unitOfWork.ProcurementProjectRepository.AddAsync(project, cancellationToken);
@@ -142,3 +224,4 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
         return ApiResponse<Guid>.Success(project.Id, "Procurement project and initial BAC Resolution created successfully.");
     }
 }
+

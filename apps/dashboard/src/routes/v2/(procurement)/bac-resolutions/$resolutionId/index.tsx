@@ -14,7 +14,6 @@ function BacResolutionDetailRoute() {
     <DetailsPanel
       selectedId={resolutionId}
       role="procurement-staff"
-      handleViewConsolidatedPrDetails={() => {}}
     />
   )
 }
