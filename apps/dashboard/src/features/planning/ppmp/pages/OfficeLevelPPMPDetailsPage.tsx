@@ -3048,7 +3048,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       <style dangerouslySetInnerHTML={{ __html: THROB_STYLE }} />
 
       <div className="space-y-6">
-        {incompleteItems.length > 0 && (
+        {isEditable && incompleteItems.length > 0 && (
           <div className="rounded-xl border border-red-300 bg-red-50/80 dark:bg-red-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-red-500 text-red-900 dark:text-red-200">
             <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
             <div className="space-y-0.5">

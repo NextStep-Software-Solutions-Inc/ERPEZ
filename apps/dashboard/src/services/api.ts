@@ -97,7 +97,8 @@ api.interceptors.response.use(
     }
 
     // Show error toast for non-blacklisted error codes with deduplication ID
-    if (!BLACKLISTED_CODES.includes(error.code || '')) {
+    const skipToast = (error.config as any)?.skipToast || (error.config as any)?.headers?.['x-skip-toast']
+    if (!skipToast && !BLACKLISTED_CODES.includes(error.code || '')) {
       const msg = extractErrorMessage(error)
       if (msg) {
         toast.error(msg, { id: msg })

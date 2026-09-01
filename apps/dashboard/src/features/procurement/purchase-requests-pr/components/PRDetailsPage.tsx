@@ -67,6 +67,7 @@ import {
   DollarSign,
   Download,
   LucideIcon,
+  Edit2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
@@ -75,6 +76,7 @@ import { PurchaseRequest, PRItem, PRStatus } from '../types'
 import type { UpdatePurchaseRequestItemPayload } from '../types/apiTypes'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
 import { AddItemsModal } from './AddItemsModal'
+import { EditPRModal } from './EditPRModal'
 import { ReturnPRModal } from './ReturnPRModal'
 import { ApprovePRModal } from './ApprovePRModal'
 import { PRAttachmentsPanel } from './PRAttachmentsPanel'
@@ -288,6 +290,7 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     return p?.status
   }
   const displayStatus = getDisplayStatus(pr)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [showAddItems, setShowAddItems] = useState(false)
   const [showReturnModal, setShowReturnModal] = useState(false)
   const [showApproveModal, setShowApproveModal] = useState(false)
@@ -723,6 +726,12 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {pr.status === 'draft' && (
+                    <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Edit Details
+                    </DropdownMenuItem>
+                  )}
                   {canReturn && (
                     <DropdownMenuItem onClick={() => setShowReturnModal(true)}>
                       <AlertCircle className="h-4 w-4 mr-2" />
@@ -1048,11 +1057,16 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                                 <TableHead>Category</TableHead>
                                 <TableHead>Fund</TableHead>
                                 <TableHead className="text-center">Month</TableHead>
-                                <TableHead className="text-center w-32">Req Qty</TableHead>
+                                <TableHead className="text-center w-36">Req Qty</TableHead>
                                 <TableHead>Unit Price</TableHead>
                                 <TableHead className="text-right">
                                   Total Amount
                                 </TableHead>
+                                {pr.status === 'draft' && (
+                                  <TableHead className="text-center w-16">
+                                    Actions
+                                  </TableHead>
+                                )}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1071,10 +1085,10 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                                       {item.month}
                                     </TableCell>
                                     <TableCell className="text-center">
-                                      <div className="flex items-center justify-center gap-2">
-                                        <input
+                                      <div className="flex items-center justify-center gap-1.5">
+                                        <Input
                                           type="number"
-                                          min={0}
+                                          min={1}
                                           value={item.quantity || 0}
                                           onChange={(e) => {
                                             const v = parseInt(e.target.value || '0', 10)
@@ -1098,11 +1112,10 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                                             })
                                             setHasUnsavedChanges(true)
                                           }}
-                                          readOnly={!canEditNeeded}
-                                          disabled={!canEditNeeded}
-                                          className={`w-16 text-center tabular-nums text-sm bg-transparent border-none outline-none p-0 caret-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${canEditNeeded ? 'cursor-text focus:outline-none focus:border-b-2 focus:border-primary' : 'cursor-default opacity-70'}`}
+                                          disabled={pr.status !== 'draft'}
+                                          className="h-8 w-20 text-center font-medium tabular-nums"
                                         />
-                                        <span className="text-sm text-slate-600 dark:text-slate-400 pointer-events-none">
+                                        <span className="text-xs text-muted-foreground pointer-events-none">
                                           {item.unitOfMeasure || 'pcs'}
                                         </span>
                                       </div>
@@ -1110,12 +1123,36 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                                     <TableCell>
                                       ₱{unitPrice.toLocaleString()}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-right font-medium">
                                       ₱
                                       {(
                                         (item.quantity || 0) * unitPrice
                                       ).toLocaleString()}
                                     </TableCell>
+                                    {pr.status === 'draft' && (
+                                      <TableCell className="text-center">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                                          title={`Remove ${item.itemName}`}
+                                          onClick={() => {
+                                            const updatedItems = pr.items.filter((pi) => pi.id !== item.id)
+                                            const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+                                            updatePurchaseRequest(pr.id, {
+                                              items: updatedItems,
+                                              totalAmount: newTotal,
+                                            })
+                                            setHasUnsavedChanges(true)
+                                            toast.success('Item Removed', {
+                                              description: `${item.itemName} (${item.month}) removed from PR.`,
+                                            })
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </TableCell>
+                                    )}
                                   </TableRow>
                                 )
                               })}
@@ -1550,6 +1587,17 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit PR Header Modal */}
+      <EditPRModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        pr={pr}
+        onSuccess={() => {
+          setShowEditModal(false)
+        }}
+      />
     </div>
   )
 }
+

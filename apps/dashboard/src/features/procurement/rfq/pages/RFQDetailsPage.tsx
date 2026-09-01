@@ -116,13 +116,22 @@ export function RFQDetailsPage({
     setIsLoading(true)
     if (isSupplierPortal && supplierId) {
       try {
-        const [rfqRes, bidRes] = await Promise.allSettled([
-          api.get<{ data: any }>(`/api/supplier/rfqs/${rfqId}?supplierId=${supplierId}`),
-          api.get<{ data: any }>(`/api/supplier/rfqs/${rfqId}/my-bid?supplierId=${supplierId}`),
-        ])
+        const rfqRes = await api.get<{ data: any }>(`/api/supplier/rfqs/${rfqId}?supplierId=${supplierId}`)
+        const rfqData = rfqRes.data?.data
 
-        const rfqData = rfqRes.status === 'fulfilled' ? rfqRes.value.data.data : null
-        const bidData = bidRes.status === 'fulfilled' ? bidRes.value.data.data : null
+        let bidData = null
+        if (rfqData?.hasSubmittedBid) {
+          try {
+            const bidRes = await api.get<{ data: any }>(
+              `/api/supplier/rfqs/${rfqId}/my-bid?supplierId=${supplierId}`,
+              { skipToast: true } as any
+            )
+            bidData = bidRes.data?.data ?? null
+          } catch {
+            // Supplier bid might not exist yet or failed to load; treat as normal empty state
+            bidData = null
+          }
+        }
 
         if (rfqData) {
           const bidItemMap = new Map((bidData?.items || []).map((b: any) => [b.rfqItemId, b]))

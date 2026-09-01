@@ -554,8 +554,14 @@ public static class ProcurementTestDataSeeder
                 Description = "Intel Core i7 / Ryzen 7, 16GB DDR5 RAM, 512GB NVMe SSD, 15.6 inch FHD Display",
                 Unit = "Unit",
                 UnitPrice = 65000m,
+                PlannedQuantity = 10,
                 ProcurementModeId = svpMode.Id,
                 ProjectType = ProcurementProjectType.Goods,
+                PreProcurementConference = false,
+                ProcurementStartDate = new DateOnly(2026, 8, 1),
+                ProcurementEndDate = new DateOnly(2026, 8, 15),
+                ExpectedDeliveryStart = new DateOnly(2026, 9, 1),
+                ExpectedDeliveryEnd = new DateOnly(2026, 9, 15),
                 CSEItemId = null,
                 NonCSEItemId = null
             };
@@ -586,8 +592,14 @@ public static class ProcurementTestDataSeeder
                 Description = "Heavy-duty print/scan/copy, 40ppm duplex, network Ethernet & Wi-Fi",
                 Unit = "Unit",
                 UnitPrice = 28000m,
+                PlannedQuantity = 5,
                 ProcurementModeId = svpMode.Id,
                 ProjectType = ProcurementProjectType.Goods,
+                PreProcurementConference = false,
+                ProcurementStartDate = new DateOnly(2026, 8, 1),
+                ProcurementEndDate = new DateOnly(2026, 8, 15),
+                ExpectedDeliveryStart = new DateOnly(2026, 9, 1),
+                ExpectedDeliveryEnd = new DateOnly(2026, 9, 15),
                 CSEItemId = null,
                 NonCSEItemId = null
             };
@@ -611,6 +623,56 @@ public static class ProcurementTestDataSeeder
 
             await context.PPMPs!.AddAsync(ppmp);
             await context.SaveChangesAsync();
+        }
+        else
+        {
+            // Backfill existing seeded PPMP items if PlannedQuantity or dates were missing
+            var existingItems = await context.PPMPItems!
+                .Where(i => i.PPMPExpenditureItem.PPMPId == ppmp.Id)
+                .ToListAsync();
+
+            bool modified = false;
+            foreach (var item in existingItems)
+            {
+                if (item.PlannedQuantity == 0)
+                {
+                    if (item.Name.Contains("Laptop", StringComparison.OrdinalIgnoreCase))
+                    {
+                        item.PlannedQuantity = 10;
+                    }
+                    else if (item.Name.Contains("Printer", StringComparison.OrdinalIgnoreCase))
+                    {
+                        item.PlannedQuantity = 5;
+                    }
+                    else
+                    {
+                        var totalAllocated = await context.PPMPItemAllocations!
+                            .Where(a => a.PPMPItemId == item.Id)
+                            .SumAsync(a => a.Quantity);
+                        item.PlannedQuantity = totalAllocated > 0 ? totalAllocated : 1;
+                    }
+                    modified = true;
+                }
+
+                if (item.PreProcurementConference == null)
+                {
+                    item.PreProcurementConference = false;
+                    modified = true;
+                }
+                if (item.ProcurementStartDate == null)
+                {
+                    item.ProcurementStartDate = new DateOnly(2026, 8, 1);
+                    item.ProcurementEndDate = new DateOnly(2026, 8, 15);
+                    item.ExpectedDeliveryStart = new DateOnly(2026, 9, 1);
+                    item.ExpectedDeliveryEnd = new DateOnly(2026, 9, 15);
+                    modified = true;
+                }
+            }
+
+            if (modified)
+            {
+                await context.SaveChangesAsync();
+            }
         }
     }
 

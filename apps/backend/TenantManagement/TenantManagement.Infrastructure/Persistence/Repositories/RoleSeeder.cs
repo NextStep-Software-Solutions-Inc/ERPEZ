@@ -35,6 +35,9 @@ public static class RoleSeeder
                 Permissions.Procurement.ppmpUpdate,
                 Permissions.Procurement.ppmpView,
                 Permissions.Procurement.ppmpSubmit,
+                Permissions.Planning.marketScopingView,
+                Permissions.Planning.marketScopingManage,
+                Permissions.Planning.marketScopingSubmit,
                 Permissions.Planning.viewOfficeDashboard,
                 Permissions.Planning.fiscalYearView,
                 Permissions.Admin.orgStructureView,
@@ -116,6 +119,8 @@ public static class RoleSeeder
                 Permissions.Procurement.supplierView,
                 Permissions.Procurement.supplierManage,
                 Permissions.Planning.marketScopingView,
+                Permissions.Planning.marketScopingManage,
+                Permissions.Planning.marketScopingApprove,
                 Permissions.Admin.orgStructureView,
                 Permissions.Finance.uacsView
             ]
@@ -149,7 +154,8 @@ public static class RoleSeeder
             "Designated reviewer / approver for Project Procurement Management Plans.",
             [
                 Permissions.Procurement.ppmpApprove,
-                Permissions.Procurement.ppmpView
+                Permissions.Procurement.ppmpView,
+                Permissions.Planning.marketScopingView
             ]
         ),
         new(
