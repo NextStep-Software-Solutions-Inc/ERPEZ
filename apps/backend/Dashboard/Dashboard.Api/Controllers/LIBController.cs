@@ -107,6 +107,7 @@ public class LIBController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}/status")]
+    [HasPermission(Permissions.Planning.libUpdate)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

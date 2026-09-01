@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.BACResolutionWhereasClause.Commands.CreateBACResolutionWhereasClause;
 using ERPEZ.Application.Features.Planning.BACResolutionWhereasClause.Commands.DeleteBACResolutionWhereasClause;
 using ERPEZ.Application.Features.Planning.BACResolutionWhereasClause.Commands.UpdateBACResolutionWhereasClause;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("bac-resolution-whereas-clauses")]
 [ApiController]
+[Authorize]
 public class BACResolutionWhereasController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> CreateWhereasClause([FromBody] CreateBACResolutionWhereasClauseCommand command)
     {
         var result = await mediator.Send(command);
@@ -25,6 +30,7 @@ public class BACResolutionWhereasController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<BACResolutionWhereasClauseResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> GetWhereasClauses([FromQuery] GetBACResolutionWhereasClausesQuery query)
     {
         var result = await mediator.Send(query);
@@ -34,6 +40,7 @@ public class BACResolutionWhereasController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<BACResolutionWhereasClauseResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> GetWhereasClauseById(Guid id)
     {
         var result = await mediator.Send(new GetBACResolutionWhereasClauseByIdQuery(id));
@@ -44,6 +51,7 @@ public class BACResolutionWhereasController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> UpdateWhereasClause(Guid id, [FromBody] UpdateBACResolutionWhereasClauseRequest dto)
     {
         var command = new UpdateBACResolutionWhereasClauseCommand { Id = id, UpdateWhereasClause = dto };
@@ -54,6 +62,7 @@ public class BACResolutionWhereasController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> DeleteWhereasClause(Guid id)
     {
         var result = await mediator.Send(new DeleteBACResolutionWhereasClauseCommand(id));

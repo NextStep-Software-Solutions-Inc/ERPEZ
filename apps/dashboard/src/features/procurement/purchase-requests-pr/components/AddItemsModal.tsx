@@ -284,6 +284,27 @@ export function AddItemsModal({
     })
   }, [sourceItems, searchTerm, categoryFilter, monthFilter, fundFilter, prType])
 
+  // Count distinct Non-CSE PPMP items that have at least one month selected
+  const selectedNonCseItemsCount = useMemo(() => {
+    if (prType !== 'non-cse') return 0
+    let count = 0
+    for (const doc of ppmpDocs) {
+      for (const it of doc.items) {
+        if (
+          !it.isCse &&
+          (it.monthlyAllocations || []).some((alloc: EligiblePpmpItemMonthAllocation) =>
+            selectedNonCseRows.has(`${it.id}-${alloc.month}`)
+          )
+        ) {
+          count++
+        }
+      }
+    }
+    return count
+  }, [prType, ppmpDocs, selectedNonCseRows])
+
+  const selectedCount = prType === 'non-cse' ? selectedNonCseItemsCount : selectedAPR.size
+
   const toggleExpandDoc = (docId: string) => {
     const newExpanded = new Set(expandedDocs)
     if (newExpanded.has(docId)) newExpanded.delete(docId)
@@ -897,10 +918,10 @@ export function AddItemsModal({
            )}
 
           {/* Selection Summary */}
-          {(selectedNonCseRows.size > 0 || selectedAPR.size > 0) && (
+          {selectedCount > 0 && (
             <div className="bg-muted/50 p-4 rounded-lg">
               <p className="text-sm font-medium">
-                {prType === 'non-cse' ? selectedNonCseRows.size : selectedAPR.size} {prType === 'non-cse' ? 'PPMP Item' : 'APR'}{(prType === 'non-cse' ? selectedNonCseRows.size : selectedAPR.size) !== 1 ? 's' : ''} selected
+                {selectedCount} {prType === 'non-cse' ? 'PPMP Item' : 'APR'}{selectedCount !== 1 ? 's' : ''} selected
               </p>
             </div>
           )}
@@ -918,9 +939,9 @@ export function AddItemsModal({
           <Button
             type="button"
             onClick={handleAddItems}
-            disabled={prType === 'non-cse' ? selectedNonCseRows.size === 0 : selectedAPR.size === 0}
+            disabled={selectedCount === 0}
           >
-            {prType === 'non-cse' ? 'ADD Items' : 'ADD APR'} ({prType === 'non-cse' ? selectedNonCseRows.size : selectedAPR.size})
+            {prType === 'non-cse' ? 'ADD Items' : 'ADD APR'} ({selectedCount})
           </Button>
         </div>
        </DialogContent>

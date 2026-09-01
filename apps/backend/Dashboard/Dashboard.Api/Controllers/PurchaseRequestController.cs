@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.CreatePR;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.DeletePR;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.UpdatePR;
@@ -16,11 +19,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("purchase-requests")]
 [ApiController]
+[Authorize]
 public class PurchaseRequestController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.prCreate)]
     public async Task<IActionResult> CreatePR(
         [FromBody] CreatePRCommand command,
         CancellationToken cancellationToken)
@@ -34,6 +39,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<PurchaseRequestDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetPRById(Guid id, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetPRByIdQuery(id), cancellationToken);
@@ -42,6 +48,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<PurchaseRequestSummaryResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetPRs(
         [FromQuery] GetPRsQuery query,
         CancellationToken cancellationToken)
@@ -53,6 +60,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
     [HttpGet("stats")]
     [ProducesResponseType(typeof(ApiResponse<PRSummaryStatsResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetPRSummaryStats(
         [FromQuery] Guid? officeId,
         [FromQuery] PRType prType,
@@ -67,6 +75,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> UpdatePR(
         Guid id,
         [FromBody] UpdatePRRequest dto,
@@ -80,6 +89,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> DeletePR(Guid id, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new DeletePRCommand(id), cancellationToken);
@@ -90,6 +100,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> UpdatePRStatus(
         Guid id,
         [FromBody] UpdatePRStatusRequest dto,
@@ -103,6 +114,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
     [HttpGet("{id}/eligible-ppmps")]
     [ProducesResponseType(typeof(ApiResponse<List<EligiblePPMPResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetEligiblePPMPs(Guid id, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetEligiblePPMPsQuery(id), cancellationToken);
@@ -112,6 +124,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
     [HttpGet("{id}/eligible-aprs")]
     [ProducesResponseType(typeof(ApiResponse<List<EligibleAPRResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetEligibleAPRs(Guid id, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetEligibleAPRs.GetEligibleAPRsQuery(id), cancellationToken);

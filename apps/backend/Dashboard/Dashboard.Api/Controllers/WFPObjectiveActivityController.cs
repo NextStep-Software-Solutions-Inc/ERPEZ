@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 ﻿using ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Commands.CreateWFPObjectiveActivity;
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Commands.DeleteWFPObjectiveActivity;
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Commands.UpdateWFPObjectiveActivity;
@@ -14,11 +17,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("wfp-objective-activities")]
 [ApiController]
+[Authorize]
 public class WFPObjectiveActivityController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<WFPObjectiveActivityResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<WFPObjectiveActivityResponse>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.wfpUpdate)]
     public async Task<IActionResult> CreateWFPObjectiveActivity([FromBody] CreateWFPObjectiveActivityCommand command)
     {
         var result = await mediator.Send(command);
@@ -31,6 +36,7 @@ public class WFPObjectiveActivityController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<WFPObjectiveActivityResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Planning.wfpView)]
     public async Task<IActionResult> GetWFPObjectiveActivities([FromQuery] GetWFPObjectiveActivitiesQuery query)
     {
         var result = await mediator.Send(query);
@@ -40,6 +46,7 @@ public class WFPObjectiveActivityController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<WFPObjectiveActivityDetailedResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.wfpView)]
     public async Task<IActionResult> GetWFPObjectiveActivityById(Guid id)
     {
         var result = await mediator.Send(new GetWFPObjectiveActivityByIdQuery(id));
@@ -50,6 +57,7 @@ public class WFPObjectiveActivityController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<WFPObjectiveActivityResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.wfpUpdate)]
     public async Task<IActionResult> UpdateWFPObjectiveActivity(Guid id, [FromBody] UpdateWFPObjectiveActivityRequest dto)
     {
         var command = new UpdateWFPObjectiveActivityCommand
@@ -65,6 +73,7 @@ public class WFPObjectiveActivityController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.wfpUpdate)]
     public async Task<IActionResult> DeleteWFPObjectiveActivity(Guid id)
     {
         var command = new DeleteWFPObjectiveActivityCommand(id);
@@ -77,6 +86,7 @@ public class WFPObjectiveActivityController(ISender mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.wfpUpdate)]
     public async Task<IActionResult> BulkCreateWFPObjectiveActivityExpenditures(Guid id, [FromBody] List<CreateWFPObjectiveActivityExpenditureRequest> expenditureRequests)
     {
         var command = new BulkCreateWFPObjectiveActivityExpenditureCommand

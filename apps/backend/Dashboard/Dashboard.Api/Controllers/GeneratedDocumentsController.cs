@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Authorization;
+using ERPEZ.Shared.Constants;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIB;
 using ERPEZ.Application.Features.Planning.Document.Commands.GeneratePPMP;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateAPP;
@@ -18,13 +21,14 @@ namespace ERPEZ.API.Controllers;
 
 [ApiController]
 [Route("api/planning/documents")]
+[Authorize]
 public class DocumentController(IMediator mediator,
     IUnitOfWork unitOfWork,
     IDocumentStorageService storageService
     ) : ControllerBase
 {
-
     [HttpPost("ppmp/{ppmpId}/generate")]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<ActionResult<ApiResponse<Guid>>> GeneratePpmp(
         Guid         ppmpId,
         [FromQuery]  ExportFormat format = ExportFormat.Pdf,
@@ -42,6 +46,7 @@ public class DocumentController(IMediator mediator,
     }
 
     [HttpPost("lib/{libId:guid}/generate")]
+    [HasPermission(Permissions.Planning.libView)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateLib(
         Guid              libId,
         [FromQuery]       ExportFormat format = ExportFormat.Pdf,
@@ -59,6 +64,7 @@ public class DocumentController(IMediator mediator,
     }
 
     [HttpPost("lib-amendment/{amendmentRequestId:guid}/generate")]
+    [HasPermission(Permissions.Planning.libView)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateLibAmendment(
         Guid amendmentRequestId,
         [FromQuery] ExportFormat format = ExportFormat.Pdf,
@@ -75,6 +81,7 @@ public class DocumentController(IMediator mediator,
     }
 
     [HttpPost("app/{appId}/generate")]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateApp(
         Guid         appId,
         [FromQuery]  ExportFormat format = ExportFormat.Pdf,
@@ -99,6 +106,7 @@ public class DocumentController(IMediator mediator,
     /// with Weighted % Total column. Supports both External and OPCR-mode WFPs.
     /// </summary>
     [HttpPost("wfp/{wfpId:guid}/generate")]
+    [HasPermission(Permissions.Planning.wfpView)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateWfp(
         Guid              wfpId,
         [FromQuery] ExportFormat format = ExportFormat.Pdf,
@@ -121,6 +129,7 @@ public class DocumentController(IMediator mediator,
     /// Generates the Proposed OPCR PDF — performance targets only, no ratings.
     /// </summary>
     [HttpPost("opcr/{opcrId:guid}/generate")]
+    [HasPermission(Permissions.Planning.opcrView)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateProposedOpcr(
         Guid              opcrId,
         [FromQuery] ExportFormat format = ExportFormat.Pdf,
@@ -145,6 +154,7 @@ public class DocumentController(IMediator mediator,
     /// Pass evaluationId to scope to a specific evaluation; omit to use the most recent.
     /// </summary>
     [HttpPost("opcr/{opcrId:guid}/generate-rating")]
+    [HasPermission(Permissions.Planning.opcrView)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateOpcrRating(
         Guid              opcrId,
         [FromQuery] Guid? evaluationId     = null,
@@ -164,6 +174,7 @@ public class DocumentController(IMediator mediator,
     }
 
     [HttpPost("opcr/consolidations/{consolidationId:guid}/generate")]
+    [HasPermission(Permissions.Planning.opcrView)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateConsolidatedOpcr(
         Guid              consolidationId,
         [FromQuery] ExportFormat format       = ExportFormat.Pdf,
@@ -182,6 +193,7 @@ public class DocumentController(IMediator mediator,
     }
 
     [HttpPost("market-scoping/{marketScopingId:guid}/generate")]
+    [HasPermission(Permissions.Planning.marketScopingView)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateMarketScoping(
         Guid marketScopingId,
         [FromQuery] ExportFormat format = ExportFormat.Pdf,
@@ -198,6 +210,7 @@ public class DocumentController(IMediator mediator,
     }
 
     [HttpPost("bac-resolution/{bacResolutionId:guid}/generate")]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateBacResolution(
         Guid bacResolutionId,
         [FromQuery] ExportFormat format = ExportFormat.Pdf,
@@ -214,6 +227,7 @@ public class DocumentController(IMediator mediator,
     }
 
     [HttpGet("{documentId:guid}/download")]
+    [Authorize]
     public async Task<IActionResult> Download(
         Guid documentId,
         CancellationToken cancellationToken = default)

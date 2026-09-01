@@ -32,7 +32,7 @@ public class AgencyMasterBudgetController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [HasPermission(Permissions.Finance.agencyMasterBudgetManage)]
+    [HasPermission(Permissions.Finance.uacsView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<AgencyMasterBudgetResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAgencyMasterBudgets([FromQuery] GetAgencyMasterBudgetsQuery query)
     {
@@ -41,7 +41,7 @@ public class AgencyMasterBudgetController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [HasPermission(Permissions.Finance.agencyMasterBudgetManage)]
+    [HasPermission(Permissions.Finance.uacsView)]
     [ProducesResponseType(typeof(ApiResponse<AgencyMasterBudgetResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAgencyMasterBudgetById(Guid id)

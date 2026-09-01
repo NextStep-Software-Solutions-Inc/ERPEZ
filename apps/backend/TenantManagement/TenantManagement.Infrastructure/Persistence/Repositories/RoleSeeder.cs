@@ -35,7 +35,11 @@ public static class RoleSeeder
                 Permissions.Procurement.ppmpUpdate,
                 Permissions.Procurement.ppmpView,
                 Permissions.Procurement.ppmpSubmit,
-                Permissions.Planning.viewOfficeDashboard
+                Permissions.Planning.viewOfficeDashboard,
+                Permissions.Planning.fiscalYearView,
+                Permissions.Admin.orgStructureView,
+                Permissions.Finance.uacsView,
+                Permissions.Procurement.procurementLibraryView
             ]
         ),
         new(

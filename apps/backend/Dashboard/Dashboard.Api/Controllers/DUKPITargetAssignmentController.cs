@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.DUKPITargetAssignment.Commands.DeleteDUKPITargetAssignment;
 using ERPEZ.Application.Features.Planning.DUKPITargetAssignment.Dtos;
 using ERPEZ.Application.Features.Planning.DUKPITargetAssignment.Queries.GetDUKPITargetAssignmentById;
@@ -10,10 +13,12 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("du-kpi-assignments")]
     [ApiController]
-    public class DUKPITargetAssignmentController(ISender mediator) : ControllerBase
+    [Authorize]
+public class DUKPITargetAssignmentController(ISender mediator) : ControllerBase
     {
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<DUKPITargetAssignmentResponse>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Planning.kpiView)]
         public async Task<IActionResult> GetKPITargetAssignments([FromQuery] GetDUKPITargetAssignmentsQuery query)
         {
             var result = await mediator.Send(query);
@@ -23,6 +28,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<DUKPITargetAssignmentResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.kpiView)]
         public async Task<IActionResult> GetKPITargetAssignmentById(Guid id)
         {
             var result = await mediator.Send(new GetDUKPITargetAssignmentByIdQuery(id));
@@ -32,6 +38,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.kpiAssign)]
         public async Task<IActionResult> DeleteKPITargetAssignment(Guid id)
         {
             var command = new DeleteDUKPITargetAssignmentCommand(id);

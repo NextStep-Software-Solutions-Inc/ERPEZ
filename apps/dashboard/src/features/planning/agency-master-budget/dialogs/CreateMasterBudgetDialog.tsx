@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
+import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
 import type { CreateAgencyMasterBudgetPayload } from '@/features/planning/agency-master-budget/handlers/createAgencyMasterBudgetRequest'
 import type { UpdateAgencyMasterBudgetPayload } from '@/features/planning/agency-master-budget/handlers/updateAgencyMasterBudgetRequest'
 
@@ -240,21 +241,16 @@ export function CreateMasterBudgetDialog({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <Select
+            <FundSourceCombobox
+              options={fundClusters}
               value={formData.fundSourceId}
-              onValueChange={(value) => setFormData({ ...formData, fundSourceId: value })}
-            >
-              <SelectTrigger className={`h-10 border-gray-200 ${errors.fundSourceId ? 'border-red-500' : ''}`}>
-                <SelectValue placeholder="Select Fund Source" />
-              </SelectTrigger>
-              <SelectContent>
-                {fundClusters.map((fc) => (
-                  <SelectItem key={fc.id} value={fc.id}>
-                    {fc.code ? `${fc.code} - ${fc.name}` : fc.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={(value) =>
+                setFormData({ ...formData, fundSourceId: value })
+              }
+              placeholder="Select Fund Source"
+              searchPlaceholder="Search by code, name, authorization..."
+              className={errors.fundSourceId ? 'ring-1 ring-red-500 rounded-md' : ''}
+            />
             {errors.fundSourceId && (
               <p className="text-xs text-red-500">{errors.fundSourceId}</p>
             )}

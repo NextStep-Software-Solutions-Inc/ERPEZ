@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Interfaces;
 using ERPEZ.Shared.Common;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +10,7 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("files")]
 [ApiController]
+[Authorize]
 public class FilesController(IFileStorageService fileStorageService) : ControllerBase
 {
     [HttpPost("upload")]

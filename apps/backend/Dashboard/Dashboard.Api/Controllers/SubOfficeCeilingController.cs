@@ -32,7 +32,7 @@ public class SubOfficeCeilingController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [HasPermission(Permissions.Finance.subOfficeCeilingAssign)]
+    [HasPermission(Permissions.Finance.uacsView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<SubOfficeCeilingResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSubOfficeCeilings([FromQuery] GetSubOfficeCeilingsQuery query)
     {
@@ -41,7 +41,7 @@ public class SubOfficeCeilingController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [HasPermission(Permissions.Finance.subOfficeCeilingAssign)]
+    [HasPermission(Permissions.Finance.uacsView)]
     [ProducesResponseType(typeof(ApiResponse<SubOfficeCeilingResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSubOfficeCeilingById(Guid id)

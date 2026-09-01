@@ -1,3 +1,5 @@
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -19,8 +21,8 @@ public class AuthController(ISender mediator) : ControllerBase
     /// <summary>
     /// Returns the active functional permissions granted to the currently authenticated user within the active tenant.
     /// </summary>
-    [HttpGet("me/permissions")]
     [Authorize]
+    [HttpGet("me/permissions")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlySet<string>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetMyPermissions()
@@ -32,8 +34,8 @@ public class AuthController(ISender mediator) : ControllerBase
     /// <summary>
     /// Returns the list of pre-seeded dev test personas for local testing.
     /// </summary>
-    [HttpGet("dev/users")]
     [AllowAnonymous]
+    [HttpGet("dev/users")]
     public IActionResult GetDevUsers()
     {
         var users = DevTenantAndMemberSeeder.DevPersonas.Select(p => new
@@ -55,8 +57,8 @@ public class AuthController(ISender mediator) : ControllerBase
     /// <summary>
     /// Generates a signed development JWT for a selected persona to test RBAC workflows locally.
     /// </summary>
-    [HttpPost("dev/login")]
     [AllowAnonymous]
+    [HttpPost("dev/login")]
     public IActionResult DevLogin([FromBody] DevLoginRequest? request)
     {
         var username = request?.Username ?? "dev_planner";

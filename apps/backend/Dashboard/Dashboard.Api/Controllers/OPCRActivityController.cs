@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("opcr-activities")]
     [ApiController]
-    public class OPCRActivityController(ISender mediator) : ControllerBase
+    [Authorize]
+public class OPCRActivityController(ISender mediator) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Planning.opcrUpdate)]
         public async Task<IActionResult> CreateOPCRActivity([FromBody] CreateOPCRActivityCommand command)
         {
             var result = await mediator.Send(command);
@@ -29,6 +34,7 @@ namespace ERPEZ.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<OPCRActivityResponse>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Planning.opcrView)]
         public async Task<IActionResult> GetOPCRActivities([FromQuery] GetOPCRActivitiesQuery query)
         {
             var result = await mediator.Send(query);
@@ -38,6 +44,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<OPCRActivityDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrView)]
         public async Task<IActionResult> GetOPCRActivityById(Guid id)
         {
             var result = await mediator.Send(new GetOPCRActivityByIdQuery(id));
@@ -48,6 +55,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrUpdate)]
         public async Task<IActionResult> UpdateOPCRActivity(Guid id, [FromBody] UpdateOPCRActivityRequest dto)
         {
             var command = new UpdateOPCRActivityCommand
@@ -63,6 +71,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrUpdate)]
         public async Task<IActionResult> DeleteOPCRActivity(Guid id)
         {
             var command = new DeleteOPCRActivityCommand(id);

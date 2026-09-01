@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.OPCRActivityMOV.Commands.CreateOPCRActivityMOV;
 using ERPEZ.Application.Features.Planning.OPCRActivityMOV.Commands.DeleteOPCRActivityMOV;
 using ERPEZ.Application.Features.Planning.OPCRActivityMOV.Commands.UpdateOPCRActivityMOV;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("opcr-activity-movs")]
 [ApiController]
+[Authorize]
 public class OPCRActivityMOVController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.opcrUpdate)]
     public async Task<IActionResult> CreateOPCRActivityMOV([FromBody] CreateOPCRActivityMOVCommand command)
     {
         var result = await mediator.Send(command);
@@ -29,6 +34,7 @@ public class OPCRActivityMOVController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<OPCRActivityMOVResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Planning.opcrView)]
     public async Task<IActionResult> GetOPCRActivityMOVs([FromQuery] GetOPCRActivityMOVsQuery query)
     {
         var result = await mediator.Send(query);
@@ -38,6 +44,7 @@ public class OPCRActivityMOVController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<OPCRActivityMOVDetailedResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.opcrView)]
     public async Task<IActionResult> GetOPCRActivityMOVById(Guid id)
     {
         var result = await mediator.Send(new GetOPCRActivityMOVByIdQuery(id));
@@ -48,6 +55,7 @@ public class OPCRActivityMOVController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.opcrUpdate)]
     public async Task<IActionResult> UpdateOPCRActivityMOV(Guid id, [FromBody] UpdateOPCRActivityMOVRequest dto)
     {
         var command = new UpdateOPCRActivityMOVCommand
@@ -63,6 +71,7 @@ public class OPCRActivityMOVController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.opcrUpdate)]
     public async Task<IActionResult> DeleteOPCRActivityMOV(Guid id)
     {
         var command = new DeleteOPCRActivityMOVCommand(id);

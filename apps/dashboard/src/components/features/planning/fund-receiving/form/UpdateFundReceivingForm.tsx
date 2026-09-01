@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { parseUACSFundSource } from '@/utils/uacsFundSource'
 
 const formatDateForInput = (dateString?: string) => {
   if (!dateString) return ''
@@ -120,17 +121,36 @@ export default function UpdateFundReceivingForm({
       <div className="grid gap-4">
         <form.Field
           name="fundSourceId"
-          children={() => (
-            <div className="grid gap-2">
-              <Label htmlFor="fundSource">Fund Source</Label>
-              <Input
-                id="fundSourceId"
-                value={initialValues?.FundSource?.name || ''}
-                readOnly={true}
-                className="bg-gray-100"
-              />
-            </div>
-          )}
+          children={() => {
+            const fs = initialValues?.FundSource
+            const parsed = parseUACSFundSource(fs?.code || '', fs?.name || '')
+            return (
+              <div className="grid gap-2">
+                <Label htmlFor="fundSourceId">Fund Source</Label>
+                <div className="p-2.5 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      {parsed.code && (
+                        <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-800">
+                          {parsed.code}
+                        </span>
+                      )}
+                      {parsed.authorizationName && (
+                        <span
+                          className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded border ${parsed.badge.bg} ${parsed.badge.text} ${parsed.badge.border}`}
+                        >
+                          {parsed.badge.shortLabel}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs font-medium text-gray-800 mt-1 block">
+                      {parsed.name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          }}
         />
         <form.Field
           name="amount"
