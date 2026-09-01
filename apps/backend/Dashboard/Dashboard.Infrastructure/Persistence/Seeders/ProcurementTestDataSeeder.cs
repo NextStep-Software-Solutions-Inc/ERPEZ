@@ -674,6 +674,68 @@ public static class ProcurementTestDataSeeder
                 await context.SaveChangesAsync();
             }
         }
+
+        // 11. Test Purchase Request (Submitted Non-CSE PR from ICT Division)
+        var pr = await context.PurchaseRequests!.FirstOrDefaultAsync(p => p.PRNumber == "PR-2026-ICTD-001");
+        if (pr == null)
+        {
+            var laptopPPMPItem = await context.PPMPItems!.FirstOrDefaultAsync(i => i.Name.Contains("Laptop"));
+            var printerPPMPItem = await context.PPMPItems!.FirstOrDefaultAsync(i => i.Name.Contains("Printer"));
+
+            pr = new PurchaseRequest
+            {
+                Id = Guid.NewGuid(),
+                PRNumber = "PR-2026-ICTD-001",
+                Description = "Procurement of Workstations & Printers for ICT Staff",
+                Purpose = "Equip new technical staff and upgrade aging office workstations.",
+                PRType = PRType.NonCSE,
+                OfficeId = itOffice.Id,
+                FundSourceId = fundSource.Id,
+                PPMPId = ppmp.Id,
+                RequestedDate = new DateOnly(2026, 8, 10),
+                TotalAmount = 790000m,
+                Status = StatusEnum.Submitted,
+                CreatedAt = DateTime.UtcNow.AddDays(-10),
+                CreatedBy = "System"
+            };
+
+            if (laptopPPMPItem != null)
+            {
+                pr.PRItems.Add(new PRItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseRequestId = pr.Id,
+                    PPMPItemId = laptopPPMPItem.Id,
+                    Name = laptopPPMPItem.Name,
+                    Description = laptopPPMPItem.Description,
+                    UnitCost = laptopPPMPItem.UnitPrice,
+                    RequestedQuantity = 10,
+                    Amount = 650000m,
+                    IsNonCSE = true,
+                    RequestedMonth = AllocationMonthEnum.January
+                });
+            }
+
+            if (printerPPMPItem != null)
+            {
+                pr.PRItems.Add(new PRItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseRequestId = pr.Id,
+                    PPMPItemId = printerPPMPItem.Id,
+                    Name = printerPPMPItem.Name,
+                    Description = printerPPMPItem.Description,
+                    UnitCost = printerPPMPItem.UnitPrice,
+                    RequestedQuantity = 5,
+                    Amount = 140000m,
+                    IsNonCSE = true,
+                    RequestedMonth = AllocationMonthEnum.January
+                });
+            }
+
+            await context.PurchaseRequests!.AddAsync(pr);
+            await context.SaveChangesAsync();
+        }
     }
 
     private static async Task SeedSupplierWithRequirementsAsync(
