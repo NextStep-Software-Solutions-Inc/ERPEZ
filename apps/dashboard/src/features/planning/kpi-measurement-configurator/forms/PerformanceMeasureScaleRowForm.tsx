@@ -293,7 +293,10 @@ export function SuccessIndicatorRowForm({
                         size="2xl"
                       >
                         <div className="px-6 py-4">
-                          <TemplateDetailPanel template={selectedTemplate} />
+                          <TemplateDetailPanel
+                            template={selectedTemplate}
+                            hideActions
+                          />
                         </div>
                       </ResponsiveDialogDashtail>
                     </TooltipProvider>

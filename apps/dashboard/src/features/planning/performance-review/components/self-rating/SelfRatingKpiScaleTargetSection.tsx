@@ -56,90 +56,123 @@ export function SelfRatingKpiScaleTargetSection({
       (val) => val !== null && val !== undefined,
     )
 
-  const ratingLevels = [...item.ratingLevels].sort((a, b) => b.level - a.level)
+  const ratingLevels = [...(item.ratingLevels ?? [])].sort(
+    (a, b) => b.level - a.level,
+  )
+  const hasRatingLevels = ratingLevels.length > 0
+  const showRatingScaleSection = Boolean(
+    hasRatingLevels || item.ratingScaleName || item.ratingScaleTemplateId,
+  )
 
   return (
     <div className="px-4 py-3 border-t border-b bg-muted/10 space-y-4">
-      <div className="rounded-lg border bg-background p-3 space-y-3">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="space-y-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Rating Scale
-            </p>
-            <p className="text-sm font-semibold text-slate-900 break-words">
-              {item.ratingScaleLabel || '—'}
-            </p>
+      {showRatingScaleSection && (
+        <div className="rounded-lg border bg-background p-3 space-y-3">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Rating Scale Template
+                </p>
+                {item.ratingScaleName && (
+                  <Badge
+                    variant="outline"
+                    className="text-[11px] font-medium bg-slate-50 text-slate-700"
+                  >
+                    {item.ratingScaleName}
+                  </Badge>
+                )}
+              </div>
+              {item.ratingScaleDescription && (
+                <p className="text-xs text-muted-foreground italic">
+                  {item.ratingScaleDescription}
+                </p>
+              )}
+              {hasRatingLevels && item.ratingScaleLabel && (
+                <p className="text-sm font-semibold text-slate-900 break-words">
+                  {item.ratingScaleLabel}
+                </p>
+              )}
+            </div>
+            <Badge
+              variant="soft"
+              color={item.scaleType === 'FIXED' ? 'info' : 'warning'}
+              className="shrink-0"
+            >
+              {item.scaleType === 'FIXED' ? 'Fixed' : 'Non-Fixed'}
+            </Badge>
           </div>
-          <Badge
-            variant="soft"
-            color={item.scaleType === 'FIXED' ? 'info' : 'warning'}
-            className="shrink-0"
-          >
-            {item.scaleType === 'FIXED' ? 'Fixed' : 'Non-Fixed'}
-          </Badge>
-        </div>
 
-        <div className="overflow-hidden rounded-lg border">
-          <Table wrapperClass="overflow-x-auto">
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="h-auto px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Level
-                </TableHead>
-                <TableHead className="h-auto px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Description
-                </TableHead>
-                <TableHead className="h-auto px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Range
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ratingLevels.map((level) => (
-                <TableRow key={level.level}>
-                  <TableCell className="px-3 py-2 align-top">
-                    <Badge
-                      color={getRatingBadgeColor(level.level)}
-                      variant="soft"
-                      className="min-w-10 justify-center"
-                    >
-                      {level.level}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-3 py-2 align-top text-sm text-slate-900">
-                    {level.description || '—'}
-                  </TableCell>
-                  <TableCell className="px-3 py-2 align-top text-right text-xs text-muted-foreground">
-                    {formatRange(level.min, level.max)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">
-            Configured MOVs
-          </Label>
-          {item.configuredMOVs && item.configuredMOVs.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {item.configuredMOVs.map((mov, index) => (
-                <Badge
-                  key={`${item.id}-configured-mov-${index}`}
-                  variant="outline"
-                  className="text-[11px] font-normal bg-slate-50 text-slate-700"
-                >
-                  {mov}
-                </Badge>
-              ))}
+          {hasRatingLevels ? (
+            <div className="overflow-hidden rounded-lg border">
+              <Table wrapperClass="overflow-x-auto">
+                <TableHeader>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="h-auto px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Level
+                    </TableHead>
+                    <TableHead className="h-auto px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Description
+                    </TableHead>
+                    <TableHead className="h-auto px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Range
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ratingLevels.map((level) => (
+                    <TableRow key={level.level}>
+                      <TableCell className="px-3 py-2 align-top">
+                        <Badge
+                          color={getRatingBadgeColor(level.level)}
+                          variant="soft"
+                          className="min-w-10 justify-center"
+                        >
+                          {level.level}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-3 py-2 align-top text-sm text-slate-900">
+                        {level.description || '—'}
+                      </TableCell>
+                      <TableCell className="px-3 py-2 align-top text-right text-xs text-muted-foreground">
+                        {formatRange(level.min, level.max)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              No configured MOVs available.
-            </p>
+            <div className="rounded-lg border border-dashed bg-muted/20 p-3 text-center">
+              <p className="text-xs text-muted-foreground italic">
+                No rating scale levels configured for this template.
+              </p>
+            </div>
           )}
         </div>
+      )}
+
+      <div className="rounded-lg border bg-background p-3 space-y-2">
+        <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">
+          Configured MOVs
+        </Label>
+        {item.configuredMOVs && item.configuredMOVs.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {item.configuredMOVs.map((mov, index) => (
+              <Badge
+                key={`${item.id}-configured-mov-${index}`}
+                variant="outline"
+                className="text-[11px] font-normal bg-slate-50 text-slate-700"
+              >
+                {mov}
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No configured MOVs available.
+          </p>
+        )}
       </div>
 
       <div className="rounded-lg border bg-background p-3 space-y-3">
