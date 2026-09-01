@@ -210,6 +210,7 @@ export function BacResolutionWorkspace({
           {
             pathParams: { id: selectedId },
             payload: { status: 'Submitted' },
+            queryParams: { id: selectedId }
           },
 
           {
@@ -260,7 +261,7 @@ export function BacResolutionWorkspace({
 
             {/* Global Workspace Actions */}
             <div className="flex items-center gap-2.5 flex-wrap">
-              {role === 'procurement-staff' && (
+              {(role === 'procurement-staff' || role === 'all') && (
                 <Button
                   variant="outline"
                   onClick={() => void navigate({ to: '/v2/bac-resolutions/clauses' })}
@@ -271,7 +272,7 @@ export function BacResolutionWorkspace({
                 </Button>
               )}
 
-              {role === 'procurement-staff' && (
+              {(role === 'procurement-staff' || role === 'all') && (
                 <Button
                   onClick={() => setCreateOpen(true)}
                   className="gap-1.5 text-xs h-9 shadow-xs"
@@ -353,7 +354,7 @@ export function BacResolutionWorkspace({
                 () => { }
               }
               onSubmit={
-                role === 'procurement-staff' && selectedId
+                (role === 'procurement-staff' || role === 'all') && selectedId
                   ? handleSubmit
                   : undefined
               }

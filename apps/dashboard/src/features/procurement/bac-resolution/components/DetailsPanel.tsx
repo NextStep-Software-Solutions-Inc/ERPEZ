@@ -427,8 +427,7 @@ export function DetailsPanel({
                 </Button>
               )}
 
-              {role === 'procurement-staff' && (isDraft || isReturned) && onSubmit && (
-
+              {(role === 'procurement-staff' || role === 'all') && (isDraft || isReturned) && onSubmit && (
                 <Button
                   size="sm"
                   onClick={onSubmit}
@@ -440,7 +439,7 @@ export function DetailsPanel({
                 </Button>
               )}
 
-              {role === 'bac-chairperson' && isForApproval && (
+              {(role === 'bac-chairperson' || role === 'all') && isForApproval && (
                 <Button
                   size="sm"
                   onClick={() => setApproveOpen(true)}
@@ -452,7 +451,7 @@ export function DetailsPanel({
                 </Button>
               )}
 
-              {role === 'bac-chairperson' && isForApproval && (
+              {(role === 'bac-chairperson' || role === 'all') && isForApproval && (
                 <Button
                   size="sm"
                   variant="outline"
