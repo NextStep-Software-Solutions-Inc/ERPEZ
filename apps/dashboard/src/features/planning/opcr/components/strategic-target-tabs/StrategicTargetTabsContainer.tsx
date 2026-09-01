@@ -1,4 +1,4 @@
-﻿import { Suspense, lazy, useMemo, type ReactNode } from 'react'
+import { Suspense, lazy, useMemo, type ReactNode } from 'react'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -19,13 +19,7 @@ const KpiIndicatorContent = lazy(() =>
   })),
 )
 
-const KpiAssignmentContent = lazy(() =>
-  import('./KpiAssignmentContent').then((mod) => ({
-    default: mod.KpiAssignmentContent,
-  })),
-)
-
-type TabType = 'assigned' | 'indicator' | 'assignment'
+type TabType = 'assigned' | 'indicator'
 
 interface TabConfig {
   readonly id: TabType
@@ -73,11 +67,6 @@ export function StrategicTargetTabsContainer({
         label: 'Key Performance Indicator',
         ariaLabel: 'View key performance indicators',
       },
-      {
-        id: 'assignment',
-        label: 'KPI Assignment',
-        ariaLabel: 'View KPI assignment details',
-      },
     ],
     [],
   )
@@ -90,9 +79,7 @@ export function StrategicTargetTabsContainer({
           Loading{' '}
           {tabId === 'assigned'
             ? 'assigned KPIs'
-            : tabId === 'indicator'
-              ? 'KPI indicators'
-              : 'KPI assignments'}
+            : 'KPI indicators'}
           ...
         </span>
       </div>
@@ -114,17 +101,6 @@ export function StrategicTargetTabsContainer({
         return (
           <Suspense fallback={loadingFallback}>
             <KpiIndicatorContent />
-          </Suspense>
-        )
-      case 'assignment':
-        return (
-          <Suspense fallback={loadingFallback}>
-            <KpiAssignmentContent
-              kpiAssignments={kpiAssignments}
-              isLoading={isLoading}
-              queryError={queryError}
-              onKPIAssignmentClick={onKPIAssignmentClick}
-            />
           </Suspense>
         )
       default:
@@ -171,7 +147,7 @@ export function StrategicTargetTabsContainer({
 
         {/* Tabs using shadcn/ui */}
         <Tabs defaultValue="assigned" className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3 mb-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
             {tabConfig.map((tab) => (
               <TabsTrigger
                 key={tab.id}
