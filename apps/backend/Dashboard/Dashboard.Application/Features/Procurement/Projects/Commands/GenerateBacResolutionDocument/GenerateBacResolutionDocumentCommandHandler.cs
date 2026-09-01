@@ -77,8 +77,28 @@ public class GenerateBacResolutionDocumentCommandHandler(
                 .ThenInclude(l => l.ResolutionClause)
             .Include(r => r.WhereasClauseItems)
                 .ThenInclude(i => i.BACResolutionWhereasClause)
-            .FirstOrDefaultAsync(r => r.Id == request.BacResolutionId, cancellationToken)
-            ?? throw new NotFoundException($"BAC Resolution with ID '{request.BacResolutionId}' was not found.");
+            .FirstOrDefaultAsync(r => r.Id == request.BacResolutionId || r.ProcurementProjectId == request.BacResolutionId, cancellationToken);
+
+        if (bacResolution == null)
+        {
+            var proj = await unitOfWork.ProcurementProjectRepository.Query()
+                .Include(p => p.BACResolutions)
+                    .ThenInclude(r => r.ClauseLinks)
+                        .ThenInclude(l => l.ResolutionClause)
+                .Include(p => p.BACResolutions)
+                    .ThenInclude(r => r.WhereasClauseItems)
+                        .ThenInclude(i => i.BACResolutionWhereasClause)
+                .FirstOrDefaultAsync(p => p.Id == request.BacResolutionId, cancellationToken);
+
+            if (proj != null && proj.BACResolutions.Any())
+            {
+                bacResolution = proj.BACResolutions.First();
+            }
+            else
+            {
+                throw new NotFoundException($"BAC Resolution with ID '{request.BacResolutionId}' was not found.");
+            }
+        }
 
         // 2. Fetch associated ProcurementProject
         var project = await unitOfWork.ProcurementProjectRepository.Query()
@@ -88,10 +108,13 @@ public class GenerateBacResolutionDocumentCommandHandler(
             .Include(p => p.BACResolutions)
                 .ThenInclude(r => r.ClauseLinks)
                     .ThenInclude(l => l.ResolutionClause)
+            .Include(p => p.BACResolutions)
+                .ThenInclude(r => r.WhereasClauseItems)
+                    .ThenInclude(i => i.BACResolutionWhereasClause)
             .FirstOrDefaultAsync(p => p.Id == bacResolution.ProcurementProjectId, cancellationToken)
             ?? throw new NotFoundException("Associated Procurement Project was not found.");
 
-        var fullResolution = project.BACResolutions.FirstOrDefault(r => r.Id == request.BacResolutionId) ?? bacResolution;
+        var fullResolution = project.BACResolutions.FirstOrDefault(r => r.Id == bacResolution.Id) ?? bacResolution;
 
         // 3. Hydrate source metadata
         string prNumber = "N/A";
@@ -163,35 +186,35 @@ public class GenerateBacResolutionDocumentCommandHandler(
             : "University of Science and Technology of Southern Philippines, Cagayan de Oro City";
 
         // Build dynamic placeholder replacement map
-        var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "ProjectTitle", project.Title },
-            { "ProjectName", project.Title },
-            { "Title", project.Title },
-            { "ABC", $"Php {project.ABC:N2}" },
-            { "Amount", $"Php {project.ABC:N2}" },
-            { "ApprovedBudget", $"Php {project.ABC:N2}" },
-            { "PrNumber", prNumber },
-            { "PRNumber", prNumber },
-            { "ModeOfProcurement", modeOfProcurement },
-            { "ProcurementMode", modeOfProcurement },
-            { "ResolutionNumber", bacResolution.ResolutionNumber },
-            { "ResNo", bacResolution.ResolutionNumber },
-            { "ResolutionType", bacResolution.ResolutionType },
-            { "OfficeName", officeName },
-            { "Office", officeName },
-            { "SourceOfFund", sourceOfFund },
-            { "FundSource", sourceOfFund },
-            { "EndUserRepName", endUserRepName },
-            { "EndUserRep", endUserRepName },
-            { "EndUserRepPosition", "Provisional Member, End-user Rep" },
-            { "TechRepName", techRepName },
-            { "TechRep", techRepName },
-            { "TechRepPosition", "Provisional Member, Tech Rep" },
-            { "DateResolved", dateFormatted },
-            { "ResolvedLocation", resolvedLocation },
-            { "Location", resolvedLocation }
-        };
+        var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        void AddToken(string key, string val) => replacements[key] = val;
+
+        AddToken("ProjectTitle", project.Title);
+        AddToken("ProjectName", project.Title);
+        AddToken("Title", project.Title);
+        AddToken("ABC", $"Php {project.ABC:N2}");
+        AddToken("Amount", $"Php {project.ABC:N2}");
+        AddToken("ApprovedBudget", $"Php {project.ABC:N2}");
+        AddToken("PrNumber", prNumber);
+        AddToken("PRNumber", prNumber);
+        AddToken("ModeOfProcurement", modeOfProcurement);
+        AddToken("ProcurementMode", modeOfProcurement);
+        AddToken("ResolutionNumber", bacResolution.ResolutionNumber);
+        AddToken("ResNo", bacResolution.ResolutionNumber);
+        AddToken("ResolutionType", bacResolution.ResolutionType);
+        AddToken("OfficeName", officeName);
+        AddToken("Office", officeName);
+        AddToken("SourceOfFund", sourceOfFund);
+        AddToken("FundSource", sourceOfFund);
+        AddToken("EndUserRepName", endUserRepName);
+        AddToken("EndUserRep", endUserRepName);
+        AddToken("EndUserRepPosition", "Provisional Member, End-user Rep");
+        AddToken("TechRepName", techRepName);
+        AddToken("TechRep", techRepName);
+        AddToken("TechRepPosition", "Provisional Member, Tech Rep");
+        AddToken("DateResolved", dateFormatted);
+        AddToken("ResolvedLocation", resolvedLocation);
+        AddToken("Location", resolvedLocation);
 
         // Hydrate clauses from ClauseLinks
         var whereasClauses = new List<BacResolutionClauseDto>();
@@ -226,6 +249,25 @@ public class GenerateBacResolutionDocumentCommandHandler(
                     {
                         resolvedClauses.Add(dto);
                     }
+                }
+            }
+        }
+
+        // Fallback: If whereasClauses is empty, check legacy WhereasClauseItems
+        if (!whereasClauses.Any() && fullResolution.WhereasClauseItems != null && fullResolution.WhereasClauseItems.Any())
+        {
+            foreach (var item in fullResolution.WhereasClauseItems.OrderBy(i => i.Order))
+            {
+                var clause = item.BACResolutionWhereasClause ?? await unitOfWork.BACResolutionWhereasClauseRepository.GetByIdAsync(item.BACResolutionWhereasClauseId, cancellationToken);
+                if (clause != null)
+                {
+                    var interpolatedBody = InterpolatePlaceholders(clause.Body, replacements);
+                    whereasClauses.Add(new BacResolutionClauseDto
+                    {
+                        Name = clause.Name,
+                        Body = interpolatedBody,
+                        Order = item.Order
+                    });
                 }
             }
         }
