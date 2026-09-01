@@ -13,6 +13,7 @@ namespace ERPEZ.Api.Controllers;
 [Authorize]
 public class FilesController(IFileStorageService fileStorageService) : ControllerBase
 {
+    [AllowAnonymous]
     [HttpPost("upload")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -27,6 +28,7 @@ public class FilesController(IFileStorageService fileStorageService) : Controlle
         return Ok(ApiResponse<Guid>.Success(fileId, "File uploaded successfully."));
     }
 
+    [AllowAnonymous]
     [HttpGet("download/{fileId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

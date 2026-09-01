@@ -21,19 +21,20 @@ public class SubmitPublicApplicationCommandHandler(
             .GetByIdAsync(request.ProjectId, cancellationToken)
             ?? throw new NotFoundException("Project not found.");
 
-        if (project.BiddingDocument is null || project.BiddingDocument.Status != "Posted")
+        var allowedFallbackStatuses = new[] { "Open", "ClosingSoon", "Published", "ROUTED_TO_PORTAL", "Active", "Posted" };
+        var isPubliclyVisible = project.BiddingDocument is not null
+            ? project.BiddingDocument.Status == "Posted"
+            : allowedFallbackStatuses.Contains(project.Status);
+
+        if (!isPubliclyVisible)
             throw new ForbiddenException(
-                "This project's bidding document has not been posted yet and is not accepting applications.");
+                "This project is not currently accepting public applications.");
 
         // ── 2. DEADLINE ENFORCEMENT ───────────────────────────────────────────────
         var submissionSchedule = project.BiddingActivitySchedules
             .FirstOrDefault(s => s.ProcurementActivityType?.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids);
 
-        if (submissionSchedule is null)
-            throw new FluentValidation.ValidationException(
-                "This project has no submission deadline configured. Please contact the BAC Secretariat.");
-
-        if (DateTime.UtcNow > submissionSchedule.EndDate)
+        if (submissionSchedule != null && submissionSchedule.EndDate != default && DateTime.UtcNow > submissionSchedule.EndDate)
             throw new ForbiddenException(
                 $"The submission deadline was {submissionSchedule.EndDate:MMMM dd, yyyy 'at' hh:mm tt} UTC. " +
                 "This project is no longer accepting applications.");

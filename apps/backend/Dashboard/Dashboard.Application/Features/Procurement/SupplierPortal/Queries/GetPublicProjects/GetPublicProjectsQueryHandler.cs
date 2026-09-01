@@ -14,16 +14,27 @@ public class GetPublicProjectsQueryHandler(IUnitOfWork unitOfWork)
     public async Task<PaginatedApiResponse<PublicProjectListItemDto>> Handle(
         GetPublicProjectsQuery query, CancellationToken cancellationToken)
     {
-        // Public visibility gate — hardcoded, not reliant on FE-supplied filters.
-        var gateFilter = "BiddingDocument.Status==Posted|Status==ROUTED_TO_PORTAL";
-        var combinedFilters = string.IsNullOrWhiteSpace(query.Filters)
-            ? gateFilter
-            : $"{gateFilter},{query.Filters}";
+        // Public visibility gate: support Posted, Routed to portal, and active public projects
+        var gateFilter = "Status==Posted|Status==ROUTED_TO_PORTAL|Status==Active|Status==Published|Status==Open|Status==ClosingSoon";
+        
+        var filterList = new List<string> { gateFilter };
+
+        if (!string.IsNullOrWhiteSpace(query.Filters))
+        {
+            filterList.Add(query.Filters);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            filterList.Add($"Title@=*{query.Search}*|ContractNo@=*{query.Search}*");
+        }
+
+        var combinedFilters = string.Join(",", filterList);
 
         var sieveModel = new Sieve.Models.SieveModel
         {
-            PageSize = query.PageSize,
-            Page     = query.PageNumber,
+            PageSize = query.PageSize > 0 ? query.PageSize : 50,
+            Page     = query.PageNumber > 0 ? query.PageNumber : 1,
             Filters  = combinedFilters,
             Sorts    = query.Sorts
         };
@@ -32,7 +43,7 @@ public class GetPublicProjectsQueryHandler(IUnitOfWork unitOfWork)
         {
             Id                = p.Id,
             Title             = p.Title,
-            ContractNo        = p.ContractNo ?? string.Empty,
+            ContractNo        = p.ContractNo ?? (p.ConsolidatedPR != null ? p.ConsolidatedPR.CPRNumber : string.Empty),
             ABC               = p.ABC,
             ModeOfProcurement = p.ProcurementMode != null ? p.ProcurementMode.Name : string.Empty,
             Status            = p.Status,
@@ -51,8 +62,22 @@ public class GetPublicProjectsQueryHandler(IUnitOfWork unitOfWork)
         var (projects, totalCount) = await unitOfWork.ProcurementProjectRepository.GetAllAsync(
             sieveModel, projection, cancellationToken);
 
+        var projectList = projects.ToList();
+
+        // Optional post-filter by mode if passed as parameter
+        if (!string.IsNullOrWhiteSpace(query.Mode))
+        {
+            var targetMode = query.Mode.Trim().ToLowerInvariant();
+            projectList = projectList.Where(p => 
+                p.ModeOfProcurement.ToLowerInvariant().Contains(targetMode) ||
+                (targetMode.Contains("svp") && p.ModeOfProcurement.ToLowerInvariant().Contains("small value")) ||
+                (targetMode.Contains("small value") && p.ModeOfProcurement.ToLowerInvariant().Contains("svp"))
+            ).ToList();
+            totalCount = projectList.Count;
+        }
+
         return new PaginatedApiResponse<PublicProjectListItemDto>(
-            [.. projects],
+            projectList,
             query.PageNumber,
             query.PageSize,
             totalCount);
