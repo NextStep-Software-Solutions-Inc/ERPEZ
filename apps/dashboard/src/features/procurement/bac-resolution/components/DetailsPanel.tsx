@@ -70,8 +70,7 @@ export function DetailsPanel({
   onSubmit,
   onViewDocument,
   onCreatePr,
-  onDelete,
-  onGenerateDocument,
+  onDelete
 }: DetailsPanelProps) {
   const [activeTab, setActiveTab] = useState('overview')
   const { mutateAsync: generateBACResolutionDocument, isPending: isGenerating } =
@@ -226,15 +225,15 @@ export function DetailsPanel({
 
   const allClauseLinks = selectedProject.bacResolutions?.[0]?.clauseLinks || []
   const whereasClauseLinks = allClauseLinks
-    .filter((c) => c.clauseType === 'Whereas')
+    .filter((c) => (c.clauseType || 'Whereas').toLowerCase() === 'whereas')
     .map((c) => ({ id: c.id, name: c.name || 'WHEREAS Clause', body: c.body }))
 
   const nowThereforeClauseLinks = allClauseLinks
-    .filter((c) => c.clauseType === 'NowTherefore')
+    .filter((c) => (c.clauseType || '').toLowerCase() === 'nowtherefore')
     .map((c) => ({ id: c.id, name: c.name || 'NOW, THEREFORE Clause', body: c.body }))
 
   const resolvedClauseLinks = allClauseLinks
-    .filter((c) => c.clauseType === 'Resolved')
+    .filter((c) => (c.clauseType || '').toLowerCase() === 'resolved')
     .map((c) => ({ id: c.id, name: c.name || 'RESOLVED Clause', body: c.body }))
 
   const legacyWhereasClauses: BacResolutionWhereasClause[] =
@@ -300,19 +299,6 @@ export function DetailsPanel({
                 >
                   <FilePlus className="h-3.5 w-3.5" />
                   Create PR
-                </Button>
-              )}
-
-              {onViewDocument && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onViewDocument}
-                  disabled={isLoading}
-                  className="gap-1.5 text-xs border-purple-300 text-purple-600 hover:bg-purple-50"
-                >
-                  <FileText className="h-3.5 w-3.5 text-purple-600" />
-                  Preview Doc
                 </Button>
               )}
 
