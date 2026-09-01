@@ -208,8 +208,10 @@ export function BacResolutionWorkspace({
       await toast.promise(
         submitBacResolution(
           {
-            payload: { bacResolutionId: selectedId },
+            pathParams: { id: selectedId },
+            payload: { status: 'Submitted' },
           },
+
           {
             onSuccess: async () => {
               void queryClient.invalidateQueries({

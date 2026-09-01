@@ -10,9 +10,11 @@ interface BacResolutionStatusBadgeProps {
 const bacResolutionStatusMap: Record<string, StatusConfig> = {
   draft: { color: 'secondary', variant: 'soft', label: 'Draft' },
   'for-approval': { color: 'warning', variant: 'soft', label: 'For Approval' },
+  submitted: { color: 'warning', variant: 'soft', label: 'For Approval' },
   returned: { color: 'destructive', variant: 'soft', label: 'Returned' },
   approved: { color: 'success', variant: 'soft', label: 'Approved' },
 }
+
 
 export function BacResolutionStatusBadge({
   status = 'draft',
