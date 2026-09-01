@@ -35,14 +35,14 @@ import type {
 import { createQueryHookFromTemplate, createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
 import { generateBACResolutionDocumentRequest } from '../handlers/generateBacResolutionDocumentRequest'
-import { downloadDocumentRequest } from '@/features/procurement/manage-supplier-portal/handlers/downloadDocumentRequest'
+import { downloadBacResolutionDocumentRequest } from '../handlers/downloadBacResolutionDocumentRequest'
 
 const useBacResolution = createQueryHookFromTemplate(getBacResolutionRequest)
 const useGenerateBACResolutionDocument = createMutationHookFromTemplate(
   generateBACResolutionDocumentRequest,
 )
-const useDownloadDocument = createMutationHookFromTemplate(
-  downloadDocumentRequest,
+const useDownloadBacResolutionDocument = createMutationHookFromTemplate(
+  downloadBacResolutionDocumentRequest,
 )
 
 interface DetailsPanelProps {
@@ -76,8 +76,8 @@ export function DetailsPanel({
   const [activeTab, setActiveTab] = useState('overview')
   const { mutateAsync: generateBACResolutionDocument, isPending: isGenerating } =
     useGenerateBACResolutionDocument()
-  const { mutateAsync: downloadDocument, isPending: isDownloading } =
-    useDownloadDocument()
+  const { mutateAsync: downloadBacResolutionDocument, isPending: isDownloading } =
+    useDownloadBacResolutionDocument()
 
   const { data: responseData, isPending: isFetching } = useBacResolution(
     {
@@ -122,12 +122,15 @@ export function DetailsPanel({
   const resolution = responseData?.data
 
   const handleGenerateDocument = async () => {
-    if (!selectedId) return
-    try {
-      toast.loading('Generating BAC Resolution document...', { id: 'gen-bac-doc' })
+    const bacResolutionId = resolution?.bacResolutions?.[0]?.id
+    if (!bacResolutionId) {
+      toast.error('No BAC Resolution found for this project')
+      return
+    }
 
+    const exportPromise = (async () => {
       const genResponse = await generateBACResolutionDocument({
-        pathParams: { id: selectedId },
+        pathParams: { id: bacResolutionId },
         queryParams: { format: 'Pdf' },
       })
 
@@ -136,14 +139,13 @@ export function DetailsPanel({
         throw new Error('No document ID returned from generation service')
       }
 
-      toast.loading('Downloading document...', { id: 'gen-bac-doc' })
-
-      const downloadResponse = await downloadDocument({
+      const downloadResponse = await downloadBacResolutionDocument({
         pathParams: { documentId },
       })
 
       const blob = downloadResponse.blob
-      const filename = `BAC_Resolution_${resolution?.bacResolutions?.at(0)?.id || selectedId}.pdf`
+      const resNum = resolution?.bacResolutions?.[0]?.resolutionNumber
+      const filename = resNum ? `BAC_Resolution_${resNum}.pdf` : `BAC_Resolution_${bacResolutionId}.pdf`
 
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
@@ -152,12 +154,13 @@ export function DetailsPanel({
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(link.href)
+    })()
 
-      toast.success('BAC Resolution document downloaded successfully!', { id: 'gen-bac-doc' })
-    } catch (error) {
-      console.error('Failed to generate BAC Resolution document:', error)
-      toast.error('Failed to generate BAC Resolution document', { id: 'gen-bac-doc' })
-    }
+    toast.promise(exportPromise, {
+      loading: 'Generating and downloading BAC Resolution document...',
+      success: 'BAC Resolution PDF downloaded successfully!',
+      error: (err) => err instanceof Error ? err.message : 'Failed to export BAC Resolution document.',
+    })
   }
 
   const selectedProject = responseData?.data

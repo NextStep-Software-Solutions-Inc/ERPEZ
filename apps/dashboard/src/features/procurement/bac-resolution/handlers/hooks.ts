@@ -22,6 +22,7 @@ import { updateWhereasClauseTemplateRequest } from './updateWhereasClauseTemplat
 import { updateBacResolutionRequest } from './updateBacResolutionRequest'
 import { deleteBacResolutionRequest } from './deleteBacResolutionRequest'
 import { generateBACResolutionDocumentRequest } from './generateBacResolutionDocumentRequest'
+import { downloadBacResolutionDocumentRequest } from './downloadBacResolutionDocumentRequest'
 import { getEligibleAppsForProcurementRequest } from './getEligibleAppsForProcurementRequest'
 import { getEligibleConsolidatedPRsRequest } from './getEligibleConsolidatedPRsRequest'
 import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
@@ -153,6 +154,10 @@ export const usePrintBacResolution = createMutationHookFromTemplate(
 
 export const useGenerateBACResolutionDocument = createMutationHookFromTemplate(
   generateBACResolutionDocumentRequest,
+)
+
+export const useDownloadBacResolutionDocument = createMutationHookFromTemplate(
+  downloadBacResolutionDocumentRequest,
 )
 
 export const useWhereasClauseTemplates = createQueryHookFromTemplate(
