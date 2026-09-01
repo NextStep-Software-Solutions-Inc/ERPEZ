@@ -18,7 +18,9 @@ import {
   CheckCircle2,
   Clock,
   Edit,
+  Download,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -30,10 +32,18 @@ import type {
   BacResolutionLogEntry,
   BacProjectDetails,
 } from '../types'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { createQueryHookFromTemplate, createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
+import { generateBACResolutionDocumentRequest } from '../handlers/generateBacResolutionDocumentRequest'
+import { downloadDocumentRequest } from '@/features/procurement/manage-supplier-portal/handlers/downloadDocumentRequest'
 
 const useBacResolution = createQueryHookFromTemplate(getBacResolutionRequest)
+const useGenerateBACResolutionDocument = createMutationHookFromTemplate(
+  generateBACResolutionDocumentRequest,
+)
+const useDownloadDocument = createMutationHookFromTemplate(
+  downloadDocumentRequest,
+)
 
 interface DetailsPanelProps {
   selectedId: string | null
@@ -46,7 +56,9 @@ interface DetailsPanelProps {
   onViewDocument?: () => void
   onCreatePr?: () => void
   onDelete?: () => void
+  onGenerateDocument?: () => void | Promise<void>
 }
+
 
 export function DetailsPanel({
   selectedId,
@@ -59,8 +71,13 @@ export function DetailsPanel({
   onViewDocument,
   onCreatePr,
   onDelete,
+  onGenerateDocument,
 }: DetailsPanelProps) {
   const [activeTab, setActiveTab] = useState('overview')
+  const { mutateAsync: generateBACResolutionDocument, isPending: isGenerating } =
+    useGenerateBACResolutionDocument()
+  const { mutateAsync: downloadDocument, isPending: isDownloading } =
+    useDownloadDocument()
 
   const { data: responseData, isPending: isFetching } = useBacResolution(
     {
@@ -100,6 +117,47 @@ export function DetailsPanel({
         </CardContent>
       </Card>
     )
+  }
+
+  const resolution = responseData?.data
+
+  const handleGenerateDocument = async () => {
+    if (!selectedId) return
+    try {
+      toast.loading('Generating BAC Resolution document...', { id: 'gen-bac-doc' })
+
+      const genResponse = await generateBACResolutionDocument({
+        pathParams: { id: selectedId },
+        queryParams: { format: 'Pdf' },
+      })
+
+      const documentId = genResponse.data
+      if (!documentId) {
+        throw new Error('No document ID returned from generation service')
+      }
+
+      toast.loading('Downloading document...', { id: 'gen-bac-doc' })
+
+      const downloadResponse = await downloadDocument({
+        pathParams: { documentId },
+      })
+
+      const blob = downloadResponse.blob
+      const filename = `BAC_Resolution_${resolution?.bacResolutions?.at(0)?.id || selectedId}.pdf`
+
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(link.href)
+
+      toast.success('BAC Resolution document downloaded successfully!', { id: 'gen-bac-doc' })
+    } catch (error) {
+      console.error('Failed to generate BAC Resolution document:', error)
+      toast.error('Failed to generate BAC Resolution document', { id: 'gen-bac-doc' })
+    }
   }
 
   const selectedProject = responseData?.data
@@ -265,6 +323,23 @@ export function DetailsPanel({
                 >
                   <Printer className="h-3.5 w-3.5 text-purple-600" />
                   Print PDF
+                </Button>
+              )}
+
+              {selectedId && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleGenerateDocument}
+                  disabled={isLoading || isGenerating || isDownloading}
+                  className="gap-1.5 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-medium"
+                >
+                  {isGenerating || isDownloading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-700" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5 text-emerald-700" />
+                  )}
+                  Generate BAC Resolution (PDF)
                 </Button>
               )}
 
