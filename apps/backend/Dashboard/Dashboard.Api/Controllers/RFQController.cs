@@ -12,6 +12,8 @@ using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQById;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQs;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQSummary;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQSupplierBids;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.EvaluateRFQSupplierBid;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -161,6 +163,40 @@ public class RFQController(ISender mediator) : ControllerBase
     public async Task<IActionResult> ReopenRFQ(Guid id)
     {
         var result = await mediator.Send(new ReopenRFQCommand(id));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Get all submitted supplier bids for an RFQ
+    /// </summary>
+    [HttpGet("{id}/bids")]
+    [ProducesResponseType(typeof(ApiResponse<List<RFQSupplierBidDto>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
+    public async Task<IActionResult> GetRFQSupplierBids(Guid id)
+    {
+        var result = await mediator.Send(new GetRFQSupplierBidsQuery(id));
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Evaluate a supplier bid for an RFQ (Passed / Failed / Pending with remarks)
+    /// </summary>
+    [HttpPatch("{id}/bids/{bidId}/evaluation")]
+    [ProducesResponseType(typeof(ApiResponse<RFQSupplierBidDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
+    public async Task<IActionResult> EvaluateRFQSupplierBid(
+        Guid id,
+        Guid bidId,
+        [FromBody] EvaluateRFQSupplierBidRequest request)
+    {
+        var result = await mediator.Send(new EvaluateRFQSupplierBidCommand
+        {
+            RFQId = id,
+            BidId = bidId,
+            Request = request
+        });
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

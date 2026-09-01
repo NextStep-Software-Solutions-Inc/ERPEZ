@@ -65,6 +65,18 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
         var projectionFunc = ProcurementProjectResponse.Projection.Compile();
         var entities = rawEntities.Select(projectionFunc).ToList();
 
+        var projectIds = entities.Select(p => p.Id).ToList();
+        var applicationCounts = await unitOfWork.PublicSupplierApplicationRepository.Query()
+            .Where(a => projectIds.Contains(a.ProcurementProjectId) && !a.IsDeleted)
+            .GroupBy(a => a.ProcurementProjectId)
+            .Select(g => new { ProjectId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.ProjectId, g => g.Count, cancellationToken);
+
+        entities = entities.Select(e => e with
+        {
+            ApplicantCount = applicationCounts.GetValueOrDefault(e.Id, 0)
+        }).ToList();
+
         return new PaginatedApiResponse<ProcurementProjectResponse>(
             entities,
             query.PageNumber,

@@ -22,6 +22,7 @@ public record ProcurementProjectResponse
     public string Status { get; init; } = string.Empty;
     public int AppItemCount { get; init; }
     public decimal SumABC { get; init; }
+    public int ApplicantCount { get; init; }
 
     // Top-level flattened resolution properties
     public string? ResolutionType { get; init; }
