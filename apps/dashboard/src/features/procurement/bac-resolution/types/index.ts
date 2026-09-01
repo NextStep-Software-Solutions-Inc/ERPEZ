@@ -218,8 +218,9 @@ export type LinkConsolidatedPrsPayload = {
 }
 
 export type SubmitBacResolutionPayload = {
-  bacResolutionId: string
+  status: string
 }
+
 
 export type ReturnBacResolutionPayload = {
   bacResolutionId: string
