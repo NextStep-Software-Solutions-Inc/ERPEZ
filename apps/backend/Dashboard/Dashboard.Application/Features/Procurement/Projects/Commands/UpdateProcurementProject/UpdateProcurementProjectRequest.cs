@@ -13,6 +13,10 @@ public record UpdateProcurementProjectRequest
     public DateTime? DateResolved { get; init; }
     public string? ResolvedLocation { get; init; }
     public List<WhereasClauseItemInputDto>? WhereasClauses { get; init; }
+    public List<ResolutionClauseItemInputDto>? WhereasClauseLinks { get; init; }
+    public List<ResolutionClauseItemInputDto>? NowThereforeClauses { get; init; }
+    public List<ResolutionClauseItemInputDto>? ResolvedClauses { get; init; }
+    public List<Guid>? AppendAppItemIds { get; init; }
     public Guid? EndUserRepresentativeId { get; init; }
     public Guid? TechRepresentativeId { get; init; }
 }

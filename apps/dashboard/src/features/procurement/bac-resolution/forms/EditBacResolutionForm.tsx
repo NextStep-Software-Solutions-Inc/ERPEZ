@@ -4,6 +4,15 @@ import { z } from 'zod'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   FileText,
   Loader2,
@@ -12,6 +21,8 @@ import {
   ChevronUp,
   ChevronDown,
   GripVertical,
+  PackageCheck,
+  Layers,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -19,20 +30,24 @@ import {
   createQueryHookFromTemplate,
   createMutationHookFromTemplate,
 } from 'erpez-shared-lib'
-import { getWhereasClauseTemplatesRequest } from '../handlers/getWhereasClauseTemplatesRequest'
-import { createWhereasClauseTemplateRequest } from '../handlers/createWhereasClauseTemplateRequest'
+import { getResolutionClausesRequest } from '../handlers/getResolutionClausesRequest'
+import { createResolutionClauseRequest } from '../handlers/createResolutionClauseRequest'
 import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
 import FieldInfo from '@/components/FieldInfo'
 import type { User } from '@/services/api/users'
 import type { UpdateBacProjectPayload } from '../handlers/updateBacResolutionRequest'
-import type { WhereasClauses } from '../handlers/createBacResolutionRequest'
-import { CreateEditWhereasClauseDialog } from '../dialogs/CreateEditWhereasClauseDialog'
-import { WhereasClausePickerModal } from '../dialogs/WhereasClausePickerModal'
+import type {
+  AppItemLinkItem,
+  BacProjectDetails,
+  ResolutionClause,
+  ResolutionClauseType,
+} from '../types'
+import { CreateEditResolutionClauseDialog } from '../dialogs/CreateEditResolutionClauseDialog'
+import { ResolutionClausePickerModal } from '../dialogs/ResolutionClausePickerModal'
 import { UserPickerCombobox } from './CreateBacResolutionForm'
-import { BacResolutionWhereasClause } from '../types'
 
-const useWhereasClauseTemplates = createQueryHookFromTemplate(getWhereasClauseTemplatesRequest)
-const useCreateWhereasClauseTemplate = createMutationHookFromTemplate(createWhereasClauseTemplateRequest)
+const useResolutionClauses = createQueryHookFromTemplate(getResolutionClausesRequest)
+const useCreateResolutionClause = createMutationHookFromTemplate(createResolutionClauseRequest)
 const useUsers = createQueryHookFromTemplate(getUsersRequest)
 
 export const editBacResolutionSchema = z.object({
@@ -42,14 +57,6 @@ export const editBacResolutionSchema = z.object({
   resolutionNumber: z.string().min(1, 'Resolution number is required.'),
   dateResolved: z.string().min(1, 'Date resolved is required.'),
   resolvedLocation: z.string().optional(),
-  whereasClauses: z
-    .array(
-      z.object({
-        whereasClauseId: z.string(),
-        order: z.number(),
-      }),
-    )
-    .min(1, 'At least one WHEREAS clause must be selected.'),
   endUserRepresentativeId: z.string().optional(),
   techRepresentativeId: z.string().optional(),
 })
@@ -64,6 +71,7 @@ export interface EditBacResolutionFormRef {
 
 interface EditBacResolutionFormProps {
   initialValues?: Partial<UpdateBacProjectPayload & { abc?: number }>
+  projectDetails?: BacProjectDetails
   onSubmit: (values: UpdateBacProjectPayload) => Promise<void> | void
   onCancel?: () => void
   onDirtyChange?: (isDirty: boolean) => void
@@ -78,6 +86,7 @@ export const EditBacResolutionForm = forwardRef<
   (
     {
       initialValues,
+      projectDetails,
       onSubmit,
       onDirtyChange,
       isLoading = false,
@@ -87,29 +96,120 @@ export const EditBacResolutionForm = forwardRef<
   ) => {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitError, setSubmitError] = useState<string | null>(null)
-    const [isWhereasPickerOpen, setIsWhereasPickerOpen] = useState(false)
-    const [isCreateWhereasModalOpen, setIsCreateWhereasModalOpen] = useState(false)
-    const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
-    const { data: clauseTemplatesData } = useWhereasClauseTemplates({
+    // Clause state:
+    const [whereasClauses, setWhereasClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
+    const [nowThereforeClauses, setNowThereforeClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
+    const [resolvedClauses, setResolvedClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
+
+    // Modal state:
+    const [pickerModalType, setPickerModalType] = useState<ResolutionClauseType | null>(null)
+    const [createModalType, setCreateModalType] = useState<ResolutionClauseType | null>(null)
+
+    // Collapsible sections:
+    const [isWhereasExpanded, setIsWhereasExpanded] = useState(true)
+    const [isNowThereforeExpanded, setIsNowThereforeExpanded] = useState(false)
+    const [isResolvedExpanded, setIsResolvedExpanded] = useState(false)
+
+    // Load clauses for picker
+    const { data: resolutionClausesData, isPending: isClausesPending } =
+      useResolutionClauses({
+        pathParams: {},
+        queryParams: { pageSize: 200, ClauseType: pickerModalType || undefined },
+        enabled: pickerModalType !== null,
+      })
+
+    const clauseTemplates = useMemo<ResolutionClause[]>(() => {
+      if (!resolutionClausesData) return []
+      if (Array.isArray(resolutionClausesData.data)) return resolutionClausesData.data
+      if (Array.isArray(resolutionClausesData)) return resolutionClausesData
+      return []
+    }, [resolutionClausesData])
+
+    // Load all clauses for lookup
+    const { data: allClausesData } = useResolutionClauses({
       pathParams: {},
-      queryParams: {}
+      queryParams: { pageSize: 500 },
     })
-    const clauseTemplatesMap = useMemo(() => {
-      const map = new Map<string, BacResolutionWhereasClause>()
-      for (const t of clauseTemplatesData?.data || []) {
-        map.set(t.id, t)
+
+    const allClausesMap = useMemo(() => {
+      const map = new Map<string, ResolutionClause>()
+      const list = Array.isArray(allClausesData?.data)
+        ? allClausesData.data
+        : Array.isArray(allClausesData)
+          ? allClausesData
+          : []
+      for (const item of list) {
+        map.set(item.id, item)
       }
       return map
-    }, [clauseTemplatesData])
+    }, [allClausesData])
 
-    const { data: usersData, isLoading: isUsersLoading } = useUsers({
+    // Populate initial clauses
+    useEffect(() => {
+      if (initialValues?.whereasClauseLinks?.length) {
+        setWhereasClauses(initialValues.whereasClauseLinks)
+      } else if (initialValues?.whereasClauses?.length) {
+        setWhereasClauses(
+          initialValues.whereasClauses.map((c, idx) => ({
+            resolutionClauseId: c.whereasClauseId,
+            order: typeof c.order === 'number' ? c.order : idx,
+          })),
+        )
+      }
+
+      if (initialValues?.nowThereforeClauses?.length) {
+        setNowThereforeClauses(initialValues.nowThereforeClauses)
+      }
+
+      if (initialValues?.resolvedClauses?.length) {
+        setResolvedClauses(initialValues.resolvedClauses)
+      }
+    }, [initialValues])
+
+    const { data: usersData, isPending: isUsersLoading } = useUsers({
       pathParams: {},
-      queryParams: {}
+      queryParams: { PageSize: 100 },
     })
-    const users: User[] = useMemo(() => usersData?.data || [], [usersData?.data])
 
-    const createClauseMutation = useCreateWhereasClauseTemplate()
+    const users = useMemo<User[]>(() => {
+      if (!usersData) return []
+      if (Array.isArray(usersData.data)) return usersData.data
+      if (Array.isArray(usersData)) return usersData
+      return []
+    }, [usersData])
+
+    const createClauseMutation = useCreateResolutionClause()
+
+    const handleCreateCustomClause = async (
+      name: string,
+      body: string,
+      type: ResolutionClauseType,
+    ) => {
+      const created = await createClauseMutation.mutateAsync({
+        pathParams: {},
+        payload: { name, body, clauseType: type },
+      })
+
+      if (type === 'Whereas') {
+        setWhereasClauses((prev) => [
+          ...prev,
+          { resolutionClauseId: created.id, order: prev.length },
+        ])
+      } else if (type === 'NowTherefore') {
+        setNowThereforeClauses((prev) => [
+          ...prev,
+          { resolutionClauseId: created.id, order: prev.length },
+        ])
+      } else if (type === 'Resolved') {
+        setResolvedClauses((prev) => [
+          ...prev,
+          { resolutionClauseId: created.id, order: prev.length },
+        ])
+      }
+
+      toast.success(`Custom ${type} Clause created and added.`)
+    }
 
     const form = useForm({
       defaultValues: {
@@ -118,95 +218,50 @@ export const EditBacResolutionForm = forwardRef<
         resolutionType: initialValues?.resolutionType || 'award-recommendation',
         resolutionNumber: initialValues?.resolutionNumber || '',
         dateResolved: initialValues?.dateResolved
-          ? new Date(initialValues.dateResolved).toISOString().slice(0, 10)
-          : new Date().toISOString().slice(0, 10),
+          ? initialValues.dateResolved.split('T')[0]
+          : '',
         resolvedLocation: initialValues?.resolvedLocation || '',
-        whereasClauses: (initialValues?.whereasClauses || []).map((c, idx) => ({
-          whereasClauseId: c.whereasClauseId,
-          order: typeof c.order === 'number' ? c.order : idx,
-          name: (c as { name?: string }).name,
-          body: (c as { body?: string }).body,
-        })),
-        endUserRepresentativeId: initialValues?.endUserRepresentativeId || '',
-        techRepresentativeId: initialValues?.techRepresentativeId || '',
-      } as EditBacResolutionFormValues,
-
+        endUserRepresentativeId: initialValues?.endUserRepresentativeId || undefined,
+        techRepresentativeId: initialValues?.techRepresentativeId || undefined,
+      },
       onSubmit: async ({ value }) => {
         setIsSubmitting(true)
         setSubmitError(null)
 
         try {
-          const isoDate = value.dateResolved
-            ? new Date(value.dateResolved).toISOString()
-            : new Date().toISOString()
-
           const payload: UpdateBacProjectPayload = {
             title: value.title,
             resolutionType: value.resolutionType,
             resolutionNumber: value.resolutionNumber,
-            dateResolved: isoDate,
-            resolvedLocation: value.resolvedLocation || undefined,
-            whereasClauses: (value.whereasClauses || []).map((item, index) => ({
-              whereasClauseId: item.whereasClauseId,
-              order: index,
+            dateResolved: value.dateResolved,
+            resolvedLocation: value.resolvedLocation,
+            whereasClauseLinks: whereasClauses.map((c, idx) => ({
+              resolutionClauseId: c.resolutionClauseId,
+              order: idx,
             })),
-            endUserRepresentativeId: value.endUserRepresentativeId || undefined,
-            techRepresentativeId: value.techRepresentativeId || undefined,
+            nowThereforeClauses: nowThereforeClauses.map((c, idx) => ({
+              resolutionClauseId: c.resolutionClauseId,
+              order: idx,
+            })),
+            resolvedClauses: resolvedClauses.map((c, idx) => ({
+              resolutionClauseId: c.resolutionClauseId,
+              order: idx,
+            })),
+            endUserRepresentativeId: value.endUserRepresentativeId,
+            techRepresentativeId: value.techRepresentativeId,
           }
 
           await onSubmit(payload)
-          setSubmitError(null)
-          onDirtyChange?.(false)
         } catch (error) {
-          const errMsg =
+          const msg =
             error instanceof Error ? error.message : 'Failed to update BAC Resolution'
-          setSubmitError(errMsg)
-          toast.error(errMsg)
+          setSubmitError(msg)
+          toast.error(msg)
         } finally {
           setIsSubmitting(false)
         }
       },
     })
-
-    // Sync form state when initialValues change dynamically (e.g. after full project details query loads)
-    useEffect(() => {
-      if (!initialValues) return
-
-      if (initialValues.title !== undefined && initialValues.title !== '') {
-        form.setFieldValue('title', initialValues.title)
-      }
-      if (initialValues.abc !== undefined) {
-        form.setFieldValue('abc', initialValues.abc)
-      }
-      if (initialValues.resolutionNumber !== undefined && initialValues.resolutionNumber !== '') {
-        form.setFieldValue('resolutionNumber', initialValues.resolutionNumber)
-      }
-      if (initialValues.resolutionType !== undefined) {
-        form.setFieldValue('resolutionType', initialValues.resolutionType)
-      }
-      if (initialValues.dateResolved) {
-        const isoStr = new Date(initialValues.dateResolved).toISOString().slice(0, 10)
-        form.setFieldValue('dateResolved', isoStr)
-      }
-      if (initialValues.resolvedLocation !== undefined) {
-        form.setFieldValue('resolvedLocation', initialValues.resolvedLocation || '')
-      }
-      if (initialValues.whereasClauses && initialValues.whereasClauses.length > 0) {
-        const clauses = initialValues.whereasClauses.map((c, idx) => ({
-          whereasClauseId: c.whereasClauseId,
-          order: typeof c.order === 'number' ? c.order : idx,
-          name: (c as { name?: string }).name,
-          body: (c as { body?: string }).body,
-        }))
-        form.setFieldValue('whereasClauses', clauses)
-      }
-      if (initialValues.endUserRepresentativeId !== undefined) {
-        form.setFieldValue('endUserRepresentativeId', initialValues.endUserRepresentativeId || '')
-      }
-      if (initialValues.techRepresentativeId !== undefined) {
-        form.setFieldValue('techRepresentativeId', initialValues.techRepresentativeId || '')
-      }
-    }, [initialValues, form])
 
     useEffect(() => {
       onDirtyChange?.(form.state.isDirty)
@@ -214,486 +269,606 @@ export const EditBacResolutionForm = forwardRef<
 
     useImperativeHandle(ref, () => ({
       submit: async () => {
+        setSubmitError(null)
         await form.handleSubmit()
       },
     }))
 
-    // const handleConfirmClauseSelection = (selectedIds: string[]) => {
-    //   const currentClauses: WhereasClauses[] = form.getFieldValue('whereasClauses') || []
-    //   const currentIds = new Set(currentClauses.map((c) => c.whereasClauseId))
-
-    //   const updated = currentClauses.filter((c) => selectedIds.includes(c.whereasClauseId))
-
-    //   for (const id of selectedIds) {
-    //     if (!currentIds.has(id)) {
-    //       updated.push({
-    //         whereasClauseId: id,
-    //         order: updated.length,
-    //       })
-    //     }
-    //   }
-
-    //   const reindexed = updated.map((c, idx) => ({
-    //     ...c,
-    //     order: idx,
-    //   }))
-
-    //   form.setFieldValue('whereasClauses', reindexed)
-    // }
-
-    const handleCreateCustomClause = (name: string, body: string) => {
-      createClauseMutation.mutate(
-        {
-          payload: {
-            name,
-            body
-          },
-          pathParams: {}
-        },
-        {
-          onSuccess: (res) => {
-            const createdId = res.id
-            if (createdId) {
-              const currentClauses: WhereasClauses[] = form.getFieldValue('whereasClauses') || []
-              const updated = [
-                ...currentClauses,
-                { whereasClauseId: createdId, order: currentClauses.length },
-              ]
-              form.setFieldValue('whereasClauses', updated)
-              toast.success('Custom WHEREAS clause created and added!')
-            }
-            setIsCreateWhereasModalOpen(false)
-          },
-          onError: (err) => {
-            toast.error(err instanceof Error ? err.message : 'Failed to create clause template')
-          },
-        },
-      )
-    }
+    const appItemLinks: AppItemLinkItem[] = projectDetails?.appItemLinks || []
 
     return (
-      <div className="space-y-6">
+      <form
+        id={formId}
+        onSubmit={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          form.handleSubmit()
+        }}
+        className="space-y-6"
+      >
         {submitError && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3.5 text-xs font-medium text-destructive">
-            {submitError}
+          <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            <p className="font-semibold">Update Error</p>
+            <p className="text-xs mt-1">{submitError}</p>
           </div>
         )}
 
-        <form
-          id={formId}
-          onSubmit={(event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            form.handleSubmit()
-          }}
-          className="space-y-6"
-        >
-          {/* Section 1: BAC Resolution Main Information */}
-          <div className="rounded-lg border border-default-200 bg-white p-4 space-y-5 shadow-xs">
-            <h4 className="font-bold text-sm text-default-900 border-b border-default-200 pb-2">
-              BAC Resolution Details
-            </h4>
-
-            {/* Title & ABC */}
-            <div className="grid gap-5 md:grid-cols-3">
-              <div className="md:col-span-2">
-                <form.Field name="title">
-                  {(field) => (
-                    <div className="grid gap-2">
-                      <Label htmlFor={field.name}>Title *</Label>
-                      <Input
-                        id={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        disabled={isLoading || isSubmitting}
-                        placeholder="Resolution Title..."
-                      />
-                      <FieldInfo field={field} />
-                    </div>
-                  )}
-                </form.Field>
-              </div>
-
-              <div>
-                <form.Field name="abc">
-                  {(field) => (
-                    <div className="grid gap-2">
-                      <Label htmlFor={field.name}>Approved Budget (ABC) *</Label>
-                      <Input
-                        id={field.name}
-                        type="number"
-                        step="0.01"
-                        value={field.state.value || 0}
-                        disabled={true}
-                        className="bg-default-100 font-semibold cursor-not-allowed text-default-700"
-                      />
-                      <p className="text-[11px] text-muted-foreground">
-                        Read-only budget inherited directly from source record.
-                      </p>
-                    </div>
-                  )}
-                </form.Field>
-              </div>
-            </div>
-
-            {/* Resolution Number, Type, Date Resolved, & Resolved Location */}
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-              <form.Field name="resolutionNumber">
-                {(field) => (
-                  <div className="grid gap-2">
-                    <Label htmlFor={field.name}>Resolution Number *</Label>
-                    <Input
-                      id={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="BAC-RES-2026-001"
-                      disabled={isLoading || isSubmitting}
-                    />
-                    <FieldInfo field={field} />
-                  </div>
-                )}
-              </form.Field>
-
-              <form.Field name="resolutionType">
-                {(field) => (
-                  <div className="grid gap-2">
-                    <Label htmlFor={field.name}>Resolution Type *</Label>
-                    <select
-                      id={field.name}
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      disabled={isLoading || isSubmitting}
-                      className="h-10 rounded-md border border-default-300 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                    >
-                      <option value="award-recommendation">
-                        Award Recommendation
-                      </option>
-                      <option value="procurement-mode-recommendation">
-                        Procurement Mode Recommendation
-                      </option>
-                    </select>
-                    <FieldInfo field={field} />
-                  </div>
-                )}
-              </form.Field>
-
-              <form.Field name="dateResolved">
-                {(field) => (
-                  <div className="grid gap-2">
-                    <Label htmlFor={field.name}>Date Resolved *</Label>
-                    <Input
-                      id={field.name}
-                      type="date"
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      disabled={isLoading || isSubmitting}
-                    />
-                    <FieldInfo field={field} />
-                  </div>
-                )}
-              </form.Field>
-
-              <form.Field name="resolvedLocation">
-                {(field) => (
-                  <div className="grid gap-2">
-                    <Label htmlFor={field.name}>Resolved Location</Label>
-                    <Input
-                      id={field.name}
-                      value={field.state.value || ''}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="e.g. BAC Conference Room, Main Bldg"
-                      disabled={isLoading || isSubmitting}
-                    />
-                    <FieldInfo field={field} />
-                  </div>
-                )}
-              </form.Field>
-            </div>
-          </div>
-
-          {/* Section 2: Representatives Section */}
-          <div className="rounded-lg border border-default-200 bg-white p-4 space-y-4 shadow-xs">
-            <h4 className="font-bold text-sm text-default-900 border-b border-default-200 pb-2">
-              Resolution Representatives
-            </h4>
-            <div className="grid gap-5 md:grid-cols-2">
-              <form.Field name="endUserRepresentativeId">
-                {(field) => (
-                  <div className="grid gap-2">
-                    <Label htmlFor={field.name}>End-User Representative</Label>
-                    {isUsersLoading ? (
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                        Loading users...
-                      </div>
-                    ) : (
-                      <UserPickerCombobox
-                        value={field.state.value}
-                        onChange={(userId) => field.handleChange(userId)}
-                        users={users}
-                        disabled={isSubmitting}
-                        placeholder="Select End-User Representative..."
-                      />
-                    )}
-                    <FieldInfo field={field} />
-                  </div>
-                )}
-              </form.Field>
-
-              <form.Field name="techRepresentativeId">
-                {(field) => (
-                  <div className="grid gap-2">
-                    <Label htmlFor={field.name}>Technical Representative</Label>
-                    {isUsersLoading ? (
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                        Loading users...
-                      </div>
-                    ) : (
-                      <UserPickerCombobox
-                        value={field.state.value}
-                        onChange={(userId) => field.handleChange(userId)}
-                        users={users}
-                        disabled={isSubmitting}
-                        placeholder="Select Technical Representative..."
-                      />
-                    )}
-                    <FieldInfo field={field} />
-                  </div>
-                )}
-              </form.Field>
-            </div>
-          </div>
-
-          {/* Section 3: WHEREAS Clauses Manager */}
-          <div className="rounded-lg border border-default-200 bg-white p-4 space-y-4 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-default-200 pb-3">
-              <div>
-                <h4 className="font-bold text-sm text-default-900 flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-primary" />
-                  WHEREAS Clauses
+        {/* Read-Only Linked APP Items Table (if present) */}
+        {appItemLinks.length > 0 && (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PackageCheck className="h-4 w-4 text-primary" />
+                <h4 className="font-bold text-sm text-default-900">
+                  Linked APP Items ({appItemLinks.length})
                 </h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Legal clause sequence for this resolution document. Use the Up/Down buttons or drag handles to reorder.
-                </p>
+                {appItemLinks[0]?.appNumber && (
+                  <Badge variant="outline" className="bg-white text-primary border-primary/30 text-xs">
+                    {appItemLinks[0].appNumber}
+                  </Badge>
+                )}
               </div>
-              <div className="flex items-center gap-2 self-start sm:self-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsCreateWhereasModalOpen(true)}
-                  className="gap-1.5 text-xs text-default-700 border-default-300 hover:bg-default-100"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Create Custom Template
-                </Button>
-                <Button
-                  type="button"
-                  variant="default"
-                  size="sm"
-                  onClick={() => setIsWhereasPickerOpen(true)}
-                  className="gap-1.5 text-xs font-semibold"
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  Select WHEREAS Clauses
-                </Button>
-              </div>
+              <span className="text-xs font-semibold text-muted-foreground">
+                Parent APP: <span className="text-default-900">{appItemLinks[0]?.appName || 'Annual Procurement Plan'}</span>
+              </span>
             </div>
 
-            <form.Field name="whereasClauses">
-              {(field) => {
-                const currentItems: WhereasClauses[] = field.state.value || []
+            <div className="overflow-hidden rounded-md border border-default-200 bg-white">
+              <Table>
+                <TableHeader className="bg-default-50">
+                  <TableRow>
+                    <TableHead className="w-[100px] text-xs font-bold">Item #</TableHead>
+                    <TableHead className="text-xs font-bold">Description / Line Item</TableHead>
+                    <TableHead className="text-xs font-bold">Office</TableHead>
+                    <TableHead className="text-right text-xs font-bold">Approved Budget (ABC)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {appItemLinks.map((item, idx) => (
+                    <TableRow key={item.id || item.appItemId} className="text-xs">
+                      <TableCell className="font-semibold text-primary">
+                        {item.itemNumber || `Item ${(idx + 1).toString().padStart(2, '0')}`}
+                      </TableCell>
+                      <TableCell className="font-medium text-default-900 max-w-[280px]">
+                        <p className="truncate font-semibold">{item.description}</p>
+                      </TableCell>
+                      <TableCell className="text-default-700">{item.officeName || '—'}</TableCell>
+                      <TableCell className="text-right font-semibold text-emerald-700">
+                        ₱{item.effectiveABC.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-default-50/80 font-bold border-t-2 border-default-300">
+                    <TableCell colSpan={3} className="text-right text-xs uppercase tracking-wider text-default-800">
+                      Total Approved Budget for Contract (ABC):
+                    </TableCell>
+                    <TableCell className="text-right text-sm font-bold text-emerald-700">
+                      ₱{appItemLinks.reduce((s, i) => s + i.effectiveABC, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
 
-                const removeItem = (templateId: string) => {
-                  const nextItems = currentItems
-                    .filter((c) => c.whereasClauseId !== templateId)
-                    .map((c, idx) => ({
-                      whereasClauseId: c.whereasClauseId,
-                      order: idx,
-                    }))
-                  field.handleChange(nextItems)
-                }
+        {/* CPR Details (if CPR source) */}
+        {projectDetails?.consolidatedPR && (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-4 space-y-2 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-emerald-700" />
+                <h4 className="font-bold text-sm text-default-900">
+                  Linked Consolidated Purchase Request
+                </h4>
+              </div>
+              <Badge variant="outline" className="bg-white text-emerald-800 border-emerald-300 font-semibold">
+                {projectDetails.consolidatedPR.prNumber}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+              <div>
+                <span className="text-muted-foreground">Project:</span>
+                <p className="font-semibold text-default-900 truncate">{projectDetails.consolidatedPR.description}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">End-User:</span>
+                <p className="font-semibold text-default-900">{projectDetails.consolidatedPR.endUser || '—'}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Total Budget:</span>
+                <p className="font-bold text-emerald-700">₱{(projectDetails.consolidatedPR.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
-                const moveUp = (index: number) => {
-                  if (index <= 0) return
-                  const newArr = [...currentItems]
-                  const temp = newArr[index - 1]
-                  newArr[index - 1] = newArr[index]
-                  newArr[index] = temp
-                  const reindexed = newArr.map((item, idx) => ({
-                    ...item,
-                    order: idx,
-                  }))
-                  field.handleChange(reindexed)
-                }
+        {/* General Project Metadata */}
+        <div className="rounded-lg border border-default-200 bg-white p-4 space-y-5 shadow-xs">
+          <h4 className="font-bold text-sm text-default-900 border-b border-default-200 pb-2">
+            Project & Resolution Details
+          </h4>
 
-                const moveDown = (index: number) => {
-                  if (index >= currentItems.length - 1) return
-                  const newArr = [...currentItems]
-                  const temp = newArr[index + 1]
-                  newArr[index + 1] = newArr[index]
-                  newArr[index] = temp
-                  const reindexed = newArr.map((item, idx) => ({
-                    ...item,
-                    order: idx,
-                  }))
-                  field.handleChange(reindexed)
-                }
-
-                const handleDragStart = (e: React.DragEvent, index: number) => {
-                  e.dataTransfer.setData('text/plain', index.toString())
-                  setDraggedIndex(index)
-                }
-
-                const handleDragOver = (e: React.DragEvent) => {
-                  e.preventDefault()
-                }
-
-                const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-                  e.preventDefault()
-                  const sourceIndexStr = e.dataTransfer.getData('text/plain')
-                  const sourceIndex = sourceIndexStr ? parseInt(sourceIndexStr, 10) : draggedIndex
-                  if (sourceIndex === null || sourceIndex === undefined || isNaN(sourceIndex) || sourceIndex === targetIndex) {
-                    setDraggedIndex(null)
-                    return
-                  }
-
-                  const updated = [...currentItems]
-                  const [removed] = updated.splice(sourceIndex, 1)
-                  updated.splice(targetIndex, 0, removed)
-                  const reindexed = updated.map((item, idx) => ({ ...item, order: idx }))
-                  field.handleChange(reindexed)
-                  setDraggedIndex(null)
-                }
-
-                return (
-                  <div className="space-y-3">
-                    {currentItems.length === 0 ? (
-                      <div
-                        onClick={() => setIsWhereasPickerOpen(true)}
-                        className="rounded-lg border-2 border-dashed border-default-200 bg-default-50/50 p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                      >
-                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary mb-2">
-                          <Plus className="h-5 w-5" />
-                        </div>
-                        <p className="font-semibold text-xs text-default-800">
-                          No WHEREAS clauses added yet
-                        </p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          Click here to open the selection modal and add legal clause templates to this resolution.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-                        {currentItems.map((item, index) => {
-                          const template = clauseTemplatesMap.get(item.whereasClauseId)
-                          const clauseName = template?.name || `Clause ${index + 1}`
-                          const clauseBody = template?.body || 'Clause body text content...'
-                          const isFirst = index === 0
-                          const isLast = index === currentItems.length - 1
-
-                          return (
-                            <div
-                              key={item.whereasClauseId}
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, index)}
-                              onDragOver={handleDragOver}
-                              onDrop={(e) => handleDrop(e, index)}
-                              className={cn(
-                                'flex items-start gap-3 rounded-lg border border-default-200 bg-white p-3 shadow-2xs transition-all hover:border-primary/40',
-                                draggedIndex === index && 'opacity-50 border-dashed border-primary bg-primary/5',
-                              )}
-                            >
-                              <div className="flex items-center gap-1 self-center text-muted-foreground">
-                                <GripVertical className="h-4 w-4 cursor-grab text-default-400 hover:text-default-700" />
-                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-bold">
-                                  {index + 1}
-                                </span>
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h5 className="font-bold text-xs text-default-900 truncate">
-                                    {clauseName}
-                                  </h5>
-                                </div>
-                                <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                                  {clauseBody}
-                                </p>
-                              </div>
-
-                              <div className="flex items-center gap-1 shrink-0 self-center">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  disabled={isFirst}
-                                  onClick={() => moveUp(index)}
-                                  className="h-7 w-7 text-default-600 hover:text-default-900"
-                                  title="Move Up"
-                                >
-                                  <ChevronUp className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  disabled={isLast}
-                                  onClick={() => moveDown(index)}
-                                  className="h-7 w-7 text-default-600 hover:text-default-900"
-                                  title="Move Down"
-                                >
-                                  <ChevronDown className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeItem(item.whereasClauseId)}
-                                  className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                                  title="Remove Clause"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
+          <div className="grid gap-5 md:grid-cols-3">
+            <div className="md:col-span-2">
+              <form.Field name="title">
+                {(field) => (
+                  <div className="grid gap-2">
+                    <Label htmlFor={field.name}>Project Title *</Label>
+                    <Input
+                      id={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Procurement Project Title"
+                      disabled={isLoading || isSubmitting}
+                    />
                     <FieldInfo field={field} />
                   </div>
-                )
-              }}
+                )}
+              </form.Field>
+            </div>
+
+            <div>
+              <form.Field name="abc">
+                {(field) => (
+                  <div className="grid gap-2">
+                    <Label htmlFor={field.name}>Approved Budget (ABC)</Label>
+                    <Input
+                      id={field.name}
+                      type="number"
+                      step="0.01"
+                      value={field.state.value}
+                      disabled={true}
+                      className="bg-default-100 font-semibold cursor-not-allowed text-default-700"
+                    />
+                    <FieldInfo field={field} />
+                  </div>
+                )}
+              </form.Field>
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            <form.Field name="resolutionNumber">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Resolution Number *</Label>
+                  <Input
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="BAC-RES-2026-001"
+                    disabled={isLoading || isSubmitting}
+                  />
+                  <FieldInfo field={field} />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="resolutionType">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Resolution Type *</Label>
+                  <select
+                    id={field.name}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    disabled={isLoading || isSubmitting}
+                    className="h-10 rounded-md border border-default-300 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  >
+                    <option value="award-recommendation">Award Recommendation</option>
+                    <option value="procurement-mode-recommendation">Procurement Mode Recommendation</option>
+                  </select>
+                  <FieldInfo field={field} />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="dateResolved">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Date Resolved *</Label>
+                  <Input
+                    id={field.name}
+                    type="date"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    disabled={isLoading || isSubmitting}
+                  />
+                  <FieldInfo field={field} />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="resolvedLocation">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Resolved Location</Label>
+                  <Input
+                    id={field.name}
+                    value={field.state.value || ''}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="e.g. BAC Conference Room, Main Bldg"
+                    disabled={isLoading || isSubmitting}
+                  />
+                  <FieldInfo field={field} />
+                </div>
+              )}
             </form.Field>
           </div>
-        </form>
+        </div>
 
-        {/* Modal: Select WHEREAS Clauses */}
-        <WhereasClausePickerModal
-          open={isWhereasPickerOpen}
-          onOpenChange={setIsWhereasPickerOpen}
-          templates={clauseTemplatesData?.data || []}
-          initialSelected={form.getFieldValue('whereasClauses') || []}
-          onApply={(updatedItems) => form.setFieldValue('whereasClauses', updatedItems)}
-          onCreateCustom={() => setIsCreateWhereasModalOpen(true)}
-        />
+        {/* Representatives Section */}
+        <div className="rounded-lg border border-default-200 bg-white p-4 space-y-4 shadow-xs">
+          <h4 className="font-bold text-sm text-default-900 border-b border-default-200 pb-2">
+            Resolution Representatives
+          </h4>
+          <div className="grid gap-5 md:grid-cols-2">
+            <form.Field name="endUserRepresentativeId">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>End-User Representative</Label>
+                  {isUsersLoading ? (
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      Loading users...
+                    </div>
+                  ) : (
+                    <UserPickerCombobox
+                      value={field.state.value}
+                      onChange={(userId) => field.handleChange(userId)}
+                      users={users}
+                      disabled={isSubmitting}
+                      placeholder="Select End-User Representative..."
+                    />
+                  )}
+                  <FieldInfo field={field} />
+                </div>
+              )}
+            </form.Field>
 
-        {/* Modal: Create Custom WHEREAS Clause Template */}
-        <CreateEditWhereasClauseDialog
-          open={isCreateWhereasModalOpen}
-          onOpenChange={setIsCreateWhereasModalOpen}
-          onSave={handleCreateCustomClause}
-          isSubmitting={createClauseMutation.isPending}
-        />
-      </div>
+            <form.Field name="techRepresentativeId">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Technical Representative</Label>
+                  {isUsersLoading ? (
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      Loading users...
+                    </div>
+                  ) : (
+                    <UserPickerCombobox
+                      value={field.state.value}
+                      onChange={(userId) => field.handleChange(userId)}
+                      users={users}
+                      disabled={isSubmitting}
+                      placeholder="Select Technical Representative..."
+                    />
+                  )}
+                  <FieldInfo field={field} />
+                </div>
+              )}
+            </form.Field>
+          </div>
+        </div>
+
+        {/* THREE COLLAPSIBLE CLAUSE SECTIONS */}
+        <div className="space-y-4">
+          <EditClauseSection
+            title="WHEREAS Clauses"
+            description="Legal context and background clauses for this resolution."
+            badgeRequired={true}
+            items={whereasClauses}
+            clausesMap={allClausesMap}
+            isExpanded={isWhereasExpanded}
+            onToggleExpand={() => setIsWhereasExpanded((prev) => !prev)}
+            onOpenPicker={() => setPickerModalType('Whereas')}
+            onOpenCreate={() => setCreateModalType('Whereas')}
+            onChangeItems={setWhereasClauses}
+          />
+
+          <EditClauseSection
+            title="NOW, THEREFORE Clauses"
+            description="Committee premise and transition clauses."
+            badgeRequired={false}
+            items={nowThereforeClauses}
+            clausesMap={allClausesMap}
+            isExpanded={isNowThereforeExpanded}
+            onToggleExpand={() => setIsNowThereforeExpanded((prev) => !prev)}
+            onOpenPicker={() => setPickerModalType('NowTherefore')}
+            onOpenCreate={() => setCreateModalType('NowTherefore')}
+            onChangeItems={setNowThereforeClauses}
+          />
+
+          <EditClauseSection
+            title="RESOLVED Clauses"
+            description="Final resolution decisions and award recommendations."
+            badgeRequired={false}
+            items={resolvedClauses}
+            clausesMap={allClausesMap}
+            isExpanded={isResolvedExpanded}
+            onToggleExpand={() => setIsResolvedExpanded((prev) => !prev)}
+            onOpenPicker={() => setPickerModalType('Resolved')}
+            onOpenCreate={() => setCreateModalType('Resolved')}
+            onChangeItems={setResolvedClauses}
+          />
+        </div>
+
+        {/* Modal: Clause Picker */}
+        {pickerModalType && (
+          <ResolutionClausePickerModal
+            open={pickerModalType !== null}
+            onOpenChange={(open) => {
+              if (!open) setPickerModalType(null)
+            }}
+            clauseType={pickerModalType}
+            templates={clauseTemplates}
+            initialSelected={
+              pickerModalType === 'Whereas'
+                ? whereasClauses
+                : pickerModalType === 'NowTherefore'
+                  ? nowThereforeClauses
+                  : resolvedClauses
+            }
+            onApply={(selected) => {
+              if (pickerModalType === 'Whereas') {
+                setWhereasClauses(selected)
+              } else if (pickerModalType === 'NowTherefore') {
+                setNowThereforeClauses(selected)
+              } else if (pickerModalType === 'Resolved') {
+                setResolvedClauses(selected)
+              }
+              setPickerModalType(null)
+            }}
+            onCreateCustom={() => {
+              const currentType = pickerModalType
+              setPickerModalType(null)
+              setCreateModalType(currentType)
+            }}
+            isPending={isClausesPending}
+          />
+        )}
+
+        {/* Modal: Create Custom Clause */}
+        {createModalType && (
+          <CreateEditResolutionClauseDialog
+            open={createModalType !== null}
+            onOpenChange={(open) => {
+              if (!open) setCreateModalType(null)
+            }}
+            defaultClauseType={createModalType}
+            onSave={async (name, body, type) => {
+              await handleCreateCustomClause(name, body, type)
+            }}
+            isSubmitting={createClauseMutation.isPending}
+          />
+        )}
+      </form>
     )
   },
 )
 
 EditBacResolutionForm.displayName = 'EditBacResolutionForm'
+
+/* ── HELPER: EDIT CLAUSE SECTION ─────────────────────────────────────────── */
+interface EditClauseSectionProps {
+  title: string
+  description: string
+  badgeRequired: boolean
+  items: { resolutionClauseId: string; order: number }[]
+  clausesMap: Map<string, ResolutionClause>
+  isExpanded: boolean
+  onToggleExpand: () => void
+  onOpenPicker: () => void
+  onOpenCreate: () => void
+  onChangeItems: (items: { resolutionClauseId: string; order: number }[]) => void
+}
+
+function EditClauseSection({
+  title,
+  description,
+  badgeRequired,
+  items,
+  clausesMap,
+  isExpanded,
+  onToggleExpand,
+  onOpenPicker,
+  onOpenCreate,
+  onChangeItems,
+}: EditClauseSectionProps) {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+
+  const removeItem = (id: string) => {
+    const next = items
+      .filter((c) => c.resolutionClauseId !== id)
+      .map((c, idx) => ({ resolutionClauseId: c.resolutionClauseId, order: idx }))
+    onChangeItems(next)
+  }
+
+  const moveUp = (index: number) => {
+    if (index <= 0) return
+    const newArr = [...items]
+    const temp = newArr[index - 1]
+    newArr[index - 1] = newArr[index]
+    newArr[index] = temp
+    onChangeItems(newArr.map((item, idx) => ({ ...item, order: idx })))
+  }
+
+  const moveDown = (index: number) => {
+    if (index >= items.length - 1) return
+    const newArr = [...items]
+    const temp = newArr[index + 1]
+    newArr[index + 1] = newArr[index]
+    newArr[index] = temp
+    onChangeItems(newArr.map((item, idx) => ({ ...item, order: idx })))
+  }
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.setData('text/plain', index.toString())
+    setDraggedIndex(index)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault()
+    const sourceIndexStr = e.dataTransfer.getData('text/plain')
+    const sourceIndex = sourceIndexStr ? parseInt(sourceIndexStr, 10) : draggedIndex
+    if (sourceIndex === null || sourceIndex === undefined || isNaN(sourceIndex) || sourceIndex === targetIndex) {
+      setDraggedIndex(null)
+      return
+    }
+
+    const updated = [...items]
+    const [removed] = updated.splice(sourceIndex, 1)
+    updated.splice(targetIndex, 0, removed)
+    onChangeItems(updated.map((item, idx) => ({ ...item, order: idx })))
+    setDraggedIndex(null)
+  }
+
+  return (
+    <div className="rounded-lg border border-default-200 bg-white overflow-hidden shadow-xs">
+      <div
+        onClick={onToggleExpand}
+        className="p-3.5 bg-default-50/70 flex items-center justify-between cursor-pointer select-none hover:bg-default-100/70 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-primary" />
+          <h4 className="font-bold text-sm text-default-900">{title}</h4>
+          {badgeRequired ? (
+            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold">
+              Required (≥1)
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="text-[10px] text-muted-foreground">
+              Optional
+            </Badge>
+          )}
+          <Badge variant="secondary" className="text-[10px] font-bold">
+            {items.length} selected
+          </Badge>
+        </div>
+
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onOpenCreate}
+            className="h-7 text-xs gap-1 text-default-700 border-default-300 hover:bg-default-100"
+          >
+            <Plus className="h-3 w-3" /> Custom
+          </Button>
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            onClick={onOpenPicker}
+            className="h-7 text-xs font-semibold gap-1"
+          >
+            <FileText className="h-3 w-3" /> Add from Library
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onToggleExpand}
+            className="h-7 w-7 text-muted-foreground"
+          >
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="p-4 space-y-3 border-t border-default-200">
+          <p className="text-xs text-muted-foreground">{description}</p>
+
+          {items.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-default-200 bg-default-50/50 p-6 text-center text-xs text-muted-foreground">
+              No clauses added yet. Click &quot;Add from Library&quot; or &quot;Custom&quot; to add clauses.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {items.map((item, index) => {
+                const clauseObj = clausesMap.get(item.resolutionClauseId)
+                return (
+                  <div
+                    key={item.resolutionClauseId}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                    className={cn(
+                      'group flex items-start gap-3 p-3 rounded-lg border bg-white shadow-xs transition-all',
+                      draggedIndex === index
+                        ? 'opacity-40 border-primary border-dashed'
+                        : 'border-default-200 hover:border-default-300',
+                    )}
+                  >
+                    <div className="cursor-grab active:cursor-grabbing text-muted-foreground group-hover:text-default-700 flex items-center justify-center h-6 w-4 mt-0.5">
+                      <GripVertical className="h-4 w-4" />
+                    </div>
+
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary mt-0.5">
+                      {index + 1}
+                    </span>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-xs text-default-900">
+                          {clauseObj?.name || 'Clause'}
+                        </span>
+                        <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            disabled={index === 0}
+                            onClick={() => moveUp(index)}
+                            className="h-6 w-6 text-muted-foreground hover:text-default-900"
+                          >
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            disabled={index === items.length - 1}
+                            onClick={() => moveDown(index)}
+                            className="h-6 w-6 text-muted-foreground hover:text-default-900"
+                          >
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeItem(item.resolutionClauseId)}
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                        {clauseObj?.body || ''}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

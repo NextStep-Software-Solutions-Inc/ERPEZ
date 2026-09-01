@@ -10,6 +10,7 @@ using MediatR;
 // These aliases resolve the CS0118 namespace-vs-type collision
 using PpmpEntity     = ERPEZ.Domain.Entities.Planning.PPMP;
 using PpmpItemEntity = ERPEZ.Domain.Entities.Planning.PPMPItem;
+using ObjectEntity   = ERPEZ.Domain.Entities.Planning.Object;
 
 namespace ERPEZ.Application.Features.Planning.Document.Commands.GeneratePPMP;
 
@@ -175,15 +176,10 @@ public class GeneratePpmpDocumentCommandHandler(
             fundSourceParts.Add($"FY {fiscalYear.Year}");
         }
 
-        var activeExpenseClasses = item.PPMPExpenditureItem?.Object?.ObjectExpenseClasses?
-            .Where(oec => oec.IsActive && oec.ExpenseClass != null && oec.ExpenseClass.IsActive)
-            .Select(oec => oec.ExpenseClass!.Code.Trim())
-            .Distinct()
-            .ToList() ?? [];
-
-        if (activeExpenseClasses.Count == 1)
+        var typeOfExpenditure = ResolveTypeOfExpenditure(item.PPMPExpenditureItem?.Object);
+        if (!string.IsNullOrWhiteSpace(typeOfExpenditure))
         {
-            fundSourceParts.Add(activeExpenseClasses[0]);
+            fundSourceParts.Add(typeOfExpenditure);
         }
 
         var headerFunding = string.Join(" ", fundSourceParts).Trim();
@@ -254,5 +250,111 @@ public class GeneratePpmpDocumentCommandHandler(
                 Date        = approver?.Timestamp
             }
         ];
+    }
+
+    private static string ResolveTypeOfExpenditure(ObjectEntity? obj)
+    {
+        if (obj == null) return string.Empty;
+
+        // 1. If ObjectExpenseClasses is present and active, use ExpenseClass Name
+        var activeExpenseClass = obj.ObjectExpenseClasses?
+            .Where(oec => oec.IsActive && oec.ExpenseClass != null && oec.ExpenseClass.IsActive)
+            .Select(oec => oec.ExpenseClass!.Name.Trim())
+            .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name));
+
+        if (!string.IsNullOrWhiteSpace(activeExpenseClass))
+        {
+            return CleanExpenseClassName(activeExpenseClass);
+        }
+
+        // 2. If parent hierarchy is present, traverse to highest non-root ancestor
+        var current = obj.ParentObject;
+        string? highestNonRootName = null;
+
+        while (current != null)
+        {
+            var pName = current.Name?.Trim() ?? string.Empty;
+            var pCode = current.Code?.Trim() ?? string.Empty;
+
+            if (IsRootNode(pCode, pName))
+            {
+                break;
+            }
+
+            highestNonRootName = pName;
+            current = current.ParentObject;
+        }
+
+        if (!string.IsNullOrWhiteSpace(highestNonRootName))
+        {
+            return CleanExpenseClassName(highestNonRootName);
+        }
+
+        // 3. Authoritative standard UACS expense class mapping by Code prefix or Name
+        var cleanCode = (obj.Code ?? string.Empty).Replace("-", "").Replace(":", "").Trim();
+        var lowerName = (obj.Name ?? string.Empty).ToLowerInvariant();
+
+        if (cleanCode.StartsWith("501", StringComparison.OrdinalIgnoreCase) || 
+            cleanCode.StartsWith("51", StringComparison.OrdinalIgnoreCase) ||
+            cleanCode.StartsWith("PS", StringComparison.OrdinalIgnoreCase) ||
+            lowerName.Contains("personnel services"))
+        {
+            return "Personnel Services";
+        }
+
+        if (cleanCode.StartsWith("502", StringComparison.OrdinalIgnoreCase) || 
+            cleanCode.StartsWith("52", StringComparison.OrdinalIgnoreCase) ||
+            cleanCode.StartsWith("MOOE", StringComparison.OrdinalIgnoreCase) ||
+            lowerName.Contains("maintenance and other operating"))
+        {
+            return "Maintenance and Other Operating Expenses";
+        }
+
+        if (cleanCode.StartsWith("503", StringComparison.OrdinalIgnoreCase) || 
+            cleanCode.StartsWith("53", StringComparison.OrdinalIgnoreCase) ||
+            cleanCode.StartsWith("FE", StringComparison.OrdinalIgnoreCase) ||
+            lowerName.Contains("financial expenses"))
+        {
+            return "Financial Expenses";
+        }
+
+        if (cleanCode.StartsWith("506", StringComparison.OrdinalIgnoreCase) || 
+            cleanCode.StartsWith("56", StringComparison.OrdinalIgnoreCase) ||
+            cleanCode.StartsWith("106", StringComparison.OrdinalIgnoreCase) || 
+            cleanCode.StartsWith("16", StringComparison.OrdinalIgnoreCase) || 
+            cleanCode.StartsWith("107", StringComparison.OrdinalIgnoreCase) ||
+            cleanCode.StartsWith("CO", StringComparison.OrdinalIgnoreCase) ||
+            lowerName.Contains("capital outlay") ||
+            lowerName.Contains("property, plant and equipment"))
+        {
+            return "Capital Outlays";
+        }
+
+        return string.Empty;
+    }
+
+    private static bool IsRootNode(string code, string name)
+    {
+        if (string.IsNullOrWhiteSpace(code) && string.IsNullOrWhiteSpace(name))
+            return true;
+
+        return string.Equals(name, "Expenses", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(code, "CLS:Expenses", StringComparison.OrdinalIgnoreCase) ||
+               code == "50000000" ||
+               code.StartsWith("50000000");
+    }
+
+    private static string CleanExpenseClassName(string name)
+    {
+        var cleaned = System.Text.RegularExpressions.Regex.Replace(name, @"^(SC|GRP|CAT):\s*", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+        if (cleaned.Contains("Maintenance and Other Operating", StringComparison.OrdinalIgnoreCase))
+            return "Maintenance and Other Operating Expenses";
+        if (cleaned.Contains("Personnel Services", StringComparison.OrdinalIgnoreCase))
+            return "Personnel Services";
+        if (cleaned.Contains("Financial Expenses", StringComparison.OrdinalIgnoreCase))
+            return "Financial Expenses";
+        if (cleaned.Contains("Capital Outlay", StringComparison.OrdinalIgnoreCase))
+            return "Capital Outlays";
+        return cleaned;
     }
 }

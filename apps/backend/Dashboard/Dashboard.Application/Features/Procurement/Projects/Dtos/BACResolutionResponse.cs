@@ -13,8 +13,9 @@ public record BACResolutionResponse
     public DateTime DateResolved { get; init; }
     public string? ResolvedLocation { get; init; }
     public string Status { get; init; } = string.Empty;
-    public string? WhereasClause { get; init; }
+    public string? WhereasClause { get; set; }
     public List<BACResolutionWhereasClauseItemResponse> WhereasClauses { get; init; } = [];
+    public List<BACResolutionClauseLinkResponse> ClauseLinks { get; init; } = [];
 
     public List<BiddingActivityScheduleResponse> BiddingActivitySchedules { get; init; } = [];
     public Guid? EndUserRepresentativeId { get; init; }
@@ -28,5 +29,15 @@ public record BACResolutionWhereasClauseItemResponse
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public string Body { get; init; } = string.Empty;
+    public int Order { get; init; }
+}
+
+public record BACResolutionClauseLinkResponse
+{
+    public Guid Id { get; init; }
+    public Guid ResolutionClauseId { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Body { get; init; } = string.Empty;
+    public string ClauseType { get; init; } = string.Empty;
     public int Order { get; init; }
 }

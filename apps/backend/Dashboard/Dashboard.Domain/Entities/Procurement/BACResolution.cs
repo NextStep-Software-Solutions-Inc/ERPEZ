@@ -30,4 +30,5 @@ public class BACResolution : BaseEntity
     // Navigation properties
     public virtual ProcurementProject ProcurementProject { get; set; } = null!;
     public virtual ICollection<BACResolutionWhereasClauseItem> WhereasClauseItems { get; set; } = new List<BACResolutionWhereasClauseItem>();
+    public virtual ICollection<BACResolutionClauseLink> ClauseLinks { get; set; } = new List<BACResolutionClauseLink>();
 }

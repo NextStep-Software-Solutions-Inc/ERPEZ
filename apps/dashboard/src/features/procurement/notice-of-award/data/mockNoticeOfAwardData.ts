@@ -1,4 +1,3 @@
-import { getMockBacResolutionDatabase } from '../../bac-resolution/data/mockBacResolutionData'
 import type {
   BacResolution,
   ConsolidatedPrLink,

@@ -4,6 +4,7 @@ export * from './forms'
 export * from './dialogs'
 export * from './pages'
 export * from './data/mockBacResolutionData'
-export * from './handlers/hooks'
+export * from './handlers'
 export * from './utils/downloadBacResolutionBlob'
 export * from './utils/bacResolutionWorkflow'
+
