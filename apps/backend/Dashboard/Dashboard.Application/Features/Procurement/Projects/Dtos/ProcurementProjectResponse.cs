@@ -166,7 +166,7 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
             Id = l.Id,
             APPItemId = l.APPItemId,
             ItemNumber = l.APPItem != null && l.APPItem.PPMPItem != null ? l.APPItem.PPMPItem.Name : (l.APPItem != null ? l.APPItem.Remarks ?? string.Empty : string.Empty),
-            Description = l.APPItem != null ? (l.APPItem.Remarks ?? (l.APPItem.PPMPItem != null ? l.APPItem.PPMPItem.Description : string.Empty)) : string.Empty,
+            Description = l.APPItem != null ? (l.APPItem.Remarks ?? (l.APPItem.PPMPItem != null ? l.APPItem.PPMPItem.Description ?? string.Empty : string.Empty)) : string.Empty,
             OfficeName = l.APPItem != null && l.APPItem.Office != null ? l.APPItem.Office.Name : string.Empty,
             EffectiveABC = l.APPItem != null ? l.APPItem.EffectiveABC : 0,
             Order = l.Order,
