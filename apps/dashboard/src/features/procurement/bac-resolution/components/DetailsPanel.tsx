@@ -284,10 +284,12 @@ export function DetailsPanel({
   const abc =
     selectedProject.abc
 
-  const isDraft = status === 'draft'
-  const isApproved = status === 'approved'
-  const isReturned = status === 'returned'
-  const isForApproval = status === 'for-approval'
+  const statusLower = (selectedProject.status || 'draft').toLowerCase()
+  const isDraft = statusLower === 'draft'
+  const isApproved = statusLower === 'approved' || statusLower === 'approve'
+  const isReturned = statusLower === 'returned' || statusLower === 'decline'
+  const isForApproval = statusLower === 'for-approval' || statusLower === 'submitted' || statusLower === 'submit'
+
 
   const officeName =
     selectedProject.appItem?.Office?.name
@@ -425,7 +427,8 @@ export function DetailsPanel({
                 </Button>
               )}
 
-              {role === 'procurement-staff' && (isDraft || isReturned || isForApproval) && onSubmit && (
+              {role === 'procurement-staff' && (isDraft || isReturned) && onSubmit && (
+
                 <Button
                   size="sm"
                   onClick={onSubmit}
