@@ -22,7 +22,9 @@ public record EligiblePPMPItemResult(
     AllocationMonthEnum? Month,
     int     TotalAllocatedQuantity,
     int     AvailableQuantity,
-    decimal TotalAvailableAmount
+    decimal TotalAvailableAmount,
+    Guid?   ProcurementModeId = null,
+    string? ProcurementModeName = null
 );
 
 public record EligibleAPRItemResult(

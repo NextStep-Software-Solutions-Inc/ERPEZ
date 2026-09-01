@@ -252,6 +252,8 @@ export function AddItemsModal({
               availableQuantity: hasMonthly ? adjustedMonthlyAllocations.reduce((s, a) => s + a.availableQuantity, 0) : itemAvailableQty,
               plannedQuantity: item.plannedQuantity ?? item.availableQuantity,
               monthlyAllocations: adjustedMonthlyAllocations,
+              procurementModeId: item.procurementModeId,
+              procurementModeName: item.procurementModeName,
             }
           }).filter(item => item.hasMonthlyAllocations ? item.monthlyAllocations.length > 0 : (item.availableQuantity ?? 0) > 0)
 
@@ -612,6 +614,8 @@ export function AddItemsModal({
                 unitPrice: it.estimatedUnitPrice,
                 totalAmount: editedQty * (it.estimatedUnitPrice || 0),
                 fund: it.fund,
+                procurementModeId: it.procurementModeId,
+                procurementModeName: it.procurementModeName,
                 source: 'ppmp',
                 ppmpDocId: doc.id,
                 ppmpDocName: doc.documentName,
@@ -635,6 +639,8 @@ export function AddItemsModal({
                   totalAmount: editedQty * (it.estimatedUnitPrice || 0),
                   month: alloc.month,
                   fund: it.fund,
+                  procurementModeId: it.procurementModeId,
+                  procurementModeName: it.procurementModeName,
                   source: 'ppmp',
                   ppmpDocId: doc.id,
                   ppmpDocName: doc.documentName,
@@ -985,11 +991,16 @@ export function AddItemsModal({
                                                   {it.description}
                                                 </span>
                                               )}
-                                              {it.uacsCode && (
-                                                <span className="text-[11px] font-mono text-muted-foreground/80 mt-1">
-                                                  UACS: {it.uacsCode}
-                                                </span>
-                                              )}
+                                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                <Badge variant="outline" className="text-[10px] font-semibold bg-purple-50 text-purple-700 border-purple-200 px-1.5 py-0">
+                                                  {it.procurementModeName || 'Direct Acquisition'}
+                                                </Badge>
+                                                {it.uacsCode && (
+                                                  <span className="text-[11px] font-mono text-muted-foreground/80">
+                                                    • UACS: {it.uacsCode}
+                                                  </span>
+                                                )}
+                                              </div>
                                             </div>
                                           </div>
                                         </TableCell>

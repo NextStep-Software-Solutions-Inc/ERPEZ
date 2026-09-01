@@ -54,6 +54,8 @@ public record PRItemDetailResponse
     public string?  PPMPNumber        { get; init; }
     public string?  Unit              { get; init; }
     public string?  OfficeName        { get; init; }
+    public Guid?    ProcurementModeId { get; init; }
+    public string?  ProcurementModeName { get; init; }
 }
 
 public record ApprovalEventResponse(

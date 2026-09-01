@@ -120,6 +120,8 @@ export interface PurchaseRequestDetailItemApi {
   ppmpNumber?: string
   unit?: string
   officeName?: string
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface PurchaseRequestDetailApi {
@@ -240,6 +242,8 @@ export interface EligiblePpmpItem {
   availableQuantity?: number
   monthlyAllocations: EligiblePpmpItemMonthAllocation[]
   totalAvailableAmount: number
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface EligiblePpmpDocument {

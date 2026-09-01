@@ -49,4 +49,5 @@ public class PRItem : BaseEntity
     public virtual PurchaseRequest PurchaseRequest { get; set; } = null!;
     public virtual PPMPItem PPMPItem { get; set; } = null!;
     public virtual APRItem? APRItem { get; set; }
+    public virtual List<ConsolidatedPRItem> ConsolidatedPRItems { get; set; } = [];
 }

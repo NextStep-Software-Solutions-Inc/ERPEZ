@@ -78,6 +78,20 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
                         .ThenInclude(e => e!.PPMPActivity)
                             .ThenInclude(a => a!.PPMP)
                                 .ThenInclude(p => p!.FundSource)
+            .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
+                .ThenInclude(i => i.PPMPItem)
+                    .ThenInclude(pi => pi!.ProcurementMode)
+            .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
+                .ThenInclude(i => i.PPMPItem)
+                    .ThenInclude(pi => pi!.APPItems)
+                        .ThenInclude(ai => ai.ProcurementMode)
+            .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
+                .ThenInclude(i => i.PPMPItem)
+                    .ThenInclude(pi => pi!.APPItems)
+                        .ThenInclude(ai => ai.APP)
+            .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
+                .ThenInclude(i => i.ConsolidatedPRItems.Where(ci => !ci.IsDeleted))
+                    .ThenInclude(ci => ci.ProcurementMode)
             .Include(pr => pr.ApprovalEvents.OrderByDescending(ae => ae.Timestamp))
             .AsSplitQuery();
     }
@@ -147,6 +161,9 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             .Include(pi => pi.NonCSEItem)
                 .ThenInclude(n => n!.ItemRequest)
             .Include(pi => pi.PPMPItemAllocations)
+            .Include(pi => pi.ProcurementMode)
+            .Include(pi => pi.APPItems)
+                .ThenInclude(ai => ai.ProcurementMode)
             .Include(pi => pi.APPItems)
                 .ThenInclude(ai => ai.APP)
             .Where(pi =>
@@ -175,6 +192,16 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             {
                 var ppmp = pi.PPMPExpenditureItem?.PPMP ?? pi.PPMPExpenditureItem?.PPMPActivity?.PPMP;
                 if (ppmp == null) return Enumerable.Empty<EligiblePPMPItemResult>();
+
+                var appItem = pi.APPItems?.FirstOrDefault(ai => !ai.IsDeleted && !ai.APP.IsDeleted && ai.APP.Status == StatusEnum.Approved);
+                var effectiveModeId = appItem?.ProcurementModeId ?? (pi.ProcurementModeId != Guid.Empty ? pi.ProcurementModeId : (Guid?)null);
+                var effectiveModeName = appItem?.ProcurementMode?.Name ?? pi.ProcurementMode?.Name;
+
+                decimal effectiveUnitPrice = pi.UnitPrice;
+                if (appItem?.EstimatedBudgetOverride.HasValue == true && appItem.EstimatedBudgetOverride.Value > 0 && pi.PlannedQuantity > 0)
+                {
+                    effectiveUnitPrice = Math.Round(appItem.EstimatedBudgetOverride.Value / pi.PlannedQuantity, 2);
+                }
 
                 var description = !string.IsNullOrWhiteSpace(pi.Description) 
                     ? pi.Description 
@@ -217,14 +244,16 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
                                 UacsCode:               uacsCode,
                                 Fund:                   ppmp.FundSource?.Name ?? string.Empty,
                                 Unit:                   pi.Unit,
-                                UnitPrice:              pi.UnitPrice,
+                                UnitPrice:              effectiveUnitPrice,
                                 HasMonthlyAllocations:  true,
                                 PlannedQuantity:        pi.PlannedQuantity,
                                 TotalAvailableQuantity: available,
                                 Month:                  allocMonth,
                                 TotalAllocatedQuantity: allocation.Quantity,
                                 AvailableQuantity:      available,
-                                TotalAvailableAmount:   available * pi.UnitPrice
+                                TotalAvailableAmount:   available * effectiveUnitPrice,
+                                ProcurementModeId:      effectiveModeId,
+                                ProcurementModeName:    effectiveModeName
                             ));
                         }
                     }
@@ -253,14 +282,16 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
                             UacsCode:               uacsCode,
                             Fund:                   ppmp.FundSource?.Name ?? string.Empty,
                             Unit:                   pi.Unit,
-                            UnitPrice:              pi.UnitPrice,
+                            UnitPrice:              effectiveUnitPrice,
                             HasMonthlyAllocations:  false,
                             PlannedQuantity:        pi.PlannedQuantity,
                             TotalAvailableQuantity: available,
                             Month:                  null,
                             TotalAllocatedQuantity: pi.PlannedQuantity,
                             AvailableQuantity:      available,
-                            TotalAvailableAmount:   available * pi.UnitPrice
+                            TotalAvailableAmount:   available * effectiveUnitPrice,
+                            ProcurementModeId:      effectiveModeId,
+                            ProcurementModeName:    effectiveModeName
                         )
                     };
                 }

@@ -2750,7 +2750,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<ConsolidatedPRItem>()
             .HasOne(ci => ci.PRItem)
-            .WithMany()
+            .WithMany(i => i.ConsolidatedPRItems)
             .HasForeignKey(ci => ci.PRItemId)
             .OnDelete(DeleteBehavior.Restrict);
 

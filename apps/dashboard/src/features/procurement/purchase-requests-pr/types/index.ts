@@ -87,6 +87,8 @@ export interface PRItem {
   editedNeeded?: number
   // Per-month quantity breakdown (January..December) when available
   monthlyQuantities?: Record<string, number>
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface PurchaseRequest {
@@ -188,6 +190,8 @@ export interface ProcessedPPMPItem {
   monthlyAllocations: import('./apiTypes').EligiblePpmpItemMonthAllocation[]
   monthlyQuantities?: Partial<Record<string, number>>
   month?: string
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface ProcessedPPMPDoc {

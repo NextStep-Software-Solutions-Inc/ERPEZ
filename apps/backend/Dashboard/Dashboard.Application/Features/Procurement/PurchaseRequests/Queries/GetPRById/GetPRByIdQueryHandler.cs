@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -68,7 +69,19 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                                         ?? "unit",
                     OfficeName        = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.Office?.Name
                                         ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Office?.Name
-                                        ?? pr.Office?.Name
+                                        ?? pr.Office?.Name,
+                    ProcurementModeId = i.ConsolidatedPRItems?.OrderByDescending(ci => ci.CreatedAt).FirstOrDefault(ci => !ci.IsDeleted && ci.ProcurementModeId.HasValue)?.ProcurementModeId
+                                        ?? i.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                                            .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
+                                            .ThenByDescending(ai => ai.CreatedAt)
+                                            .FirstOrDefault()?.ProcurementModeId
+                                        ?? (i.PPMPItem?.ProcurementModeId != Guid.Empty ? i.PPMPItem?.ProcurementModeId : null),
+                    ProcurementModeName = i.ConsolidatedPRItems?.OrderByDescending(ci => ci.CreatedAt).FirstOrDefault(ci => !ci.IsDeleted && ci.ProcurementMode != null)?.ProcurementMode?.Name
+                                          ?? i.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                                              .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
+                                              .ThenByDescending(ai => ai.CreatedAt)
+                                              .FirstOrDefault()?.ProcurementMode?.Name
+                                          ?? i.PPMPItem?.ProcurementMode?.Name
                 }).ToList()
         };
 

@@ -204,6 +204,8 @@ export function PRDetailsPage({
         estimatedUnitPrice: i.unitCost,
         month: i.requestedMonth,
         fund: i.fund || '',
+        procurementModeId: i.procurementModeId,
+        procurementModeName: i.procurementModeName,
         source: i.isNonCSE ? ('ppmp' as const) : ('apr' as const),
         ppmpDocId: i.ppmpId,
         ppmpDocName: i.ppmpNumber
@@ -1152,6 +1154,7 @@ export function PRDetailsPage({
                               <TableRow className="bg-muted/40">
                                 <TableHead>Item Name</TableHead>
                                 <TableHead>Category</TableHead>
+                                <TableHead>Mode of Procurement</TableHead>
                                 <TableHead>Fund</TableHead>
                                 {hasAnyMonth && <TableHead className="text-center">Month</TableHead>}
                                 <TableHead className="text-center w-32">Req Qty</TableHead>
@@ -1172,6 +1175,11 @@ export function PRDetailsPage({
                                       {item.itemName}
                                     </TableCell>
                                     <TableCell>{item.category}</TableCell>
+                                    <TableCell>
+                                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-semibold whitespace-nowrap">
+                                        {item.procurementModeName || 'Direct Acquisition'}
+                                      </Badge>
+                                    </TableCell>
                                     <TableCell>{item.fund || '—'}</TableCell>
                                     {hasAnyMonth && (
                                       <TableCell className="text-center">

@@ -69,7 +69,9 @@ public class GetEligiblePPMPsQueryHandler(IUnitOfWork unitOfWork)
                         item.UnitPrice,
                         item.HasMonthlyAllocations,
                         item.PlannedQuantity,
-                        item.TotalAvailableQuantity
+                        item.TotalAvailableQuantity,
+                        item.ProcurementModeId,
+                        item.ProcurementModeName
                     })
                     .Select(ig => new EligiblePPMPItemResponse(
                         PPMPItemId:           ig.Key.PPMPItemId,
@@ -94,7 +96,9 @@ public class GetEligiblePPMPsQueryHandler(IUnitOfWork unitOfWork)
                             : new List<EligiblePPMPItemMonthAllocation>(),
                         TotalAvailableAmount: ig.Key.HasMonthlyAllocations
                             ? ig.Sum(m => m.TotalAvailableAmount)
-                            : ig.Key.TotalAvailableQuantity * ig.Key.UnitPrice
+                            : ig.Key.TotalAvailableQuantity * ig.Key.UnitPrice,
+                        ProcurementModeId:    ig.Key.ProcurementModeId,
+                        ProcurementModeName:  ig.Key.ProcurementModeName
                     )).ToList()
             ))
             .ToList();
