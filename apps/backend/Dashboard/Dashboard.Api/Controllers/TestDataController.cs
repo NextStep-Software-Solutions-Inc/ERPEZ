@@ -22,6 +22,16 @@ public class TestDataController(ApplicationDbContext context, IUnitOfWork unitOf
     }
 
     /// <summary>
+    /// Seeds public bidding projects, document checklists, and sample public supplier applications.
+    /// </summary>
+    [HttpPost("seed-public-bidding")]
+    public async Task<IActionResult> SeedPublicBiddingData()
+    {
+        await ProcurementTestDataSeeder.SeedPublicBiddingPortalAsync(context, unitOfWork);
+        return Ok(ApiResponse<string>.Success("Public bidding portal test data seeded successfully."));
+    }
+
+    /// <summary>
     /// Returns summary counts of seeded prerequisite entities in the database.
     /// </summary>
     [HttpGet("summary")]
@@ -42,7 +52,10 @@ public class TestDataController(ApplicationDbContext context, IUnitOfWork unitOf
             PurchaseRequests = await context.PurchaseRequests!.CountAsync(),
             ConsolidatedPRs = await context.ConsolidatedPRs!.CountAsync(),
             RFQs = await context.RFQs!.CountAsync(),
-            AOBs = await context.AOBs!.CountAsync()
+            AOBs = await context.AOBs!.CountAsync(),
+            ProcurementProjects = await context.ProcurementProjects!.CountAsync(),
+            MasterDocumentTypes = await context.MasterDocumentTypes!.CountAsync(),
+            PublicSupplierApplications = await context.PublicSupplierApplications!.CountAsync()
         };
 
         return Ok(ApiResponse<object>.Success(summary, "Test data entity summary retrieved."));

@@ -18,7 +18,7 @@ public class SubmitPublicApplicationCommandHandler(
     {
         // ── 1. LOAD PROJECT (with schedules + PBD gate) ───────────────────────────
         var project = await unitOfWork.ProcurementProjectRepository
-            .GetByIdAsync(request.ProjectId, cancellationToken)
+            .GetWithPublicDetailsByIdAsync(request.ProjectId, cancellationToken)
             ?? throw new NotFoundException("Project not found.");
 
         var allowedFallbackStatuses = new[] { "Open", "ClosingSoon", "Published", "ROUTED_TO_PORTAL", "Active", "Posted" };

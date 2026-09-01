@@ -736,6 +736,9 @@ public static class ProcurementTestDataSeeder
             await context.PurchaseRequests!.AddAsync(pr);
             await context.SaveChangesAsync();
         }
+
+        // 12. Public Bidding Portal & Public Opportunities
+        await SeedPublicBiddingPortalAsync(context, unitOfWork);
     }
 
     private static async Task SeedSupplierWithRequirementsAsync(
@@ -817,4 +820,301 @@ public static class ProcurementTestDataSeeder
         await context.Suppliers!.AddAsync(supplier);
         await context.SaveChangesAsync();
     }
+
+    public static async Task SeedPublicBiddingPortalAsync(ApplicationDbContext context, IUnitOfWork unitOfWork)
+    {
+        // 1. Ensure Master Document Types
+        var docTypes = new (string Name, string Description, int EnvelopeType, string? TemplateUrl)[]
+        {
+            ("PhilGEPS Certificate of Registration (Platinum Membership)", "Valid and current Platinum PhilGEPS Registration Certificate with Annex A", 1, null),
+            ("Statement of Single Largest Completed Contract (SLCC)", "Statement of SLCC similar to the contract to be bid within the last 3-5 years", 1, null),
+            ("Audited Financial Statements (AFS)", "Complete Audited Financial Statements stamped 'received' by BIR or its duly accredited institutions", 1, null),
+            ("NFCC Computation or Committed Line of Credit", "Net Financial Contracting Capacity (NFCC) computation in accordance with ITB Clause 5.5", 1, null),
+            ("Technical Specifications Compliance & Schedule of Requirements", "Compliance matrix for technical specifications with supporting brochures/datasheets", 1, null),
+            ("Omnibus Sworn Statement (GPPB Prescribed Form)", "Original notarized Omnibus Sworn Statement with Secretary's Certificate/SPA", 1, "/documents/templates/omnibus_sworn_statement.pdf"),
+            ("Bid Securing Declaration Form", "Original notarized Bid Securing Declaration or acceptable form of Bid Security", 1, "/documents/templates/bid_securing_declaration.pdf"),
+            ("Financial Bid Form", "Original copy of completed and signed Financial Bid Form (GPPB standard format)", 2, "/documents/templates/financial_bid_form.pdf"),
+            ("Detailed Bill of Quantities / Price Schedule", "Itemized price breakdown per component/line item including taxes and duties", 2, "/documents/templates/detailed_price_schedule.pdf")
+        };
+
+        var masterDocTypeDict = new Dictionary<string, MasterDocumentType>();
+        foreach (var (name, desc, envType, tempUrl) in docTypes)
+        {
+            var existing = await context.MasterDocumentTypes!.FirstOrDefaultAsync(d => d.Name == name);
+            if (existing == null)
+            {
+                existing = new MasterDocumentType
+                {
+                    Id = Guid.NewGuid(),
+                    Name = name,
+                    Description = desc,
+                    EnvelopeType = envType,
+                    TemplateFileUrl = tempUrl,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                };
+                await context.MasterDocumentTypes!.AddAsync(existing);
+            }
+            masterDocTypeDict[name] = existing;
+        }
+        await context.SaveChangesAsync();
+
+        // 2. Fetch Activity Types
+        var actPosting = await context.ProcurementActivityTypes!.FirstOrDefaultAsync(a => a.SystemRole == ProcurementActivitySystemRole.AdvertisementPosting);
+        var actPreBid = await context.ProcurementActivityTypes!.FirstOrDefaultAsync(a => a.SystemRole == ProcurementActivitySystemRole.PreBidConference);
+        var actOpening = await context.ProcurementActivityTypes!.FirstOrDefaultAsync(a => a.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids);
+
+        // Fetch Goods Category & Modes
+        var goodsCat = await context.ProcurementCategories!.FirstOrDefaultAsync(c => c.Name == "Goods")
+            ?? new ProcurementCategory { Id = Guid.NewGuid(), Name = "Goods", Description = "Goods & Equipment" };
+        var publicBiddingMode = await context.ProcurementModes!.FirstOrDefaultAsync(m => m.Name.Contains("Competitive Bidding") || m.Name.Contains("Public Bidding"))
+            ?? await context.ProcurementModes!.FirstOrDefaultAsync();
+        var svpMode = await context.ProcurementModes!.FirstOrDefaultAsync(m => m.Name.Contains("Small Value Procurement"))
+            ?? await context.ProcurementModes!.FirstOrDefaultAsync();
+
+        // 3. Define Public Bidding Projects
+        var projectDefinitions = new[]
+        {
+            new
+            {
+                ContractNo = "ITB-2026-BAC-001",
+                Title = "Supply, Delivery, and Installation of High-Performance Computing Cluster and GPU Servers for AI Research",
+                ABC = 18500000.00m,
+                Mode = publicBiddingMode,
+                Status = "Posted",
+                ScopeOfWork = "Supply, delivery, installation, integration, testing, and commissioning of high-performance multi-GPU server compute nodes, 200Gbps InfiniBand high-speed interconnect switches, 500TB parallel storage arrays, and complete deep learning runtime software stack for institutional AI and data science research.",
+                NonRefundableFee = 25000.00m,
+                DeliveryDays = 60,
+                DaysPostedAgo = 10,
+                DaysPreBidAgo = 3,
+                DaysDeadlineAhead = 14,
+                Applicants = new[]
+                {
+                    new { Company = "Apex Computech Solutions Inc.", Contact = "Engr. Marcus Vance", Email = "bids@apexcompute.ph", Phone = "+63 917 555 1234", TIN = "123-456-789-000", Address = "Unit 1204 Cyberpark Tower 1, Cubao, Quezon City", Status = "Submitted", Remarks = (string?)null },
+                    new { Company = "Nexus IT Systems Philippines Corp.", Contact = "Claire Dela Cruz", Email = "procurement@nexus-it.com.ph", Phone = "+63 920 888 5678", TIN = "987-654-321-000", Address = "8th Floor Enterprise Center, Ayala Avenue, Makati City", Status = "Submitted", Remarks = (string?)null }
+                }
+            },
+            new
+            {
+                ContractNo = "ITB-2026-BAC-002",
+                Title = "Procurement of Advanced Analytical Instruments and Spectrophotometers for Chemistry & Material Science Laboratory",
+                ABC = 8750000.00m,
+                Mode = publicBiddingMode,
+                Status = "ClosingSoon",
+                ScopeOfWork = "Procurement of 2x UV-Vis-NIR Double-Beam Spectrophotometers, 1x Research-Grade FTIR Spectrometer with diamond ATR accessory, 4x High-Precision Analytical Micro-Balances, calibration standards, and on-site operator certification training.",
+                NonRefundableFee = 10000.00m,
+                DeliveryDays = 45,
+                DaysPostedAgo = 18,
+                DaysPreBidAgo = 10,
+                DaysDeadlineAhead = 3,
+                Applicants = new[]
+                {
+                    new { Company = "BioTech Scientific Supplies Corp.", Contact = "Dr. Arthur Pendelton", Email = "govbids@biotech-sci.ph", Phone = "+63 918 333 4455", TIN = "456-789-012-000", Address = "BioTech Hub, C5 Road, Pasig City", Status = "Submitted", Remarks = (string?)null }
+                }
+            },
+            new
+            {
+                ContractNo = "SVP-2026-GSPD-003",
+                Title = "Supply and Delivery of 86-inch Interactive Smart Displays and Wall Mounts for Engineering Lecture Halls",
+                ABC = 950000.00m,
+                Mode = svpMode,
+                Status = "Posted",
+                ScopeOfWork = "Supply, delivery, wall mounting, and cabling of 5 units 86-inch 4K UHD Interactive Touchscreen Displays with 40-point multi-touch, anti-glare tempered glass, integrated dual OS (Android 13 / Windows 11 Pro OPS), stylus pens, and screen mirroring modules.",
+                NonRefundableFee = 1000.00m,
+                DeliveryDays = 30,
+                DaysPostedAgo = 4,
+                DaysPreBidAgo = -1,
+                DaysDeadlineAhead = 8,
+                Applicants = new[]
+                {
+                    new { Company = "OmniTech Display Solutions", Contact = "Jonathan Sy", Email = "sales@omnitechdisplays.ph", Phone = "+63 922 456 7890", TIN = "789-012-345-000", Address = "15 Gilmore Ave, New Manila, Quezon City", Status = "Submitted", Remarks = (string?)null },
+                    new { Company = "Prime Smart Living Corp.", Contact = "Elena Roxas", Email = "bids@primesmart.ph", Phone = "+63 917 222 9988", TIN = "321-654-987-000", Address = "24 Bonifacio High Street, BGC, Taguig City", Status = "Submitted", Remarks = (string?)null }
+                }
+            },
+            new
+            {
+                ContractNo = "ITB-2026-INFRA-004",
+                Title = "Design, Supply, and Construction of Renewable Solar Micro-Grid and Energy Storage Facility",
+                ABC = 35000000.00m,
+                Mode = publicBiddingMode,
+                Status = "Posted",
+                ScopeOfWork = "Turnkey engineering design, supply, installation, civil works, grid-synchronization, and commissioning of 500kWp high-efficiency monocrystalline solar PV panels across academic buildings, 1MWh Containerized Lithium-Iron-Phosphate Battery Energy Storage System (BESS), and real-time SCADA energy management dashboard.",
+                NonRefundableFee = 25000.00m,
+                DeliveryDays = 180,
+                DaysPostedAgo = 20,
+                DaysPreBidAgo = 12,
+                DaysDeadlineAhead = 22,
+                Applicants = new[]
+                {
+                    new { Company = "Solaria Green Energy Infrastructure Inc.", Contact = "Engr. Roberto Gomez", Email = "epc@solariagreen.ph", Phone = "+63 919 111 2233", TIN = "654-321-098-000", Address = "Solaria Tower, Ortigas Center, Pasig City", Status = "Submitted", Remarks = (string?)null }
+                }
+            },
+            new
+            {
+                ContractNo = "ITB-2026-BAC-005",
+                Title = "Upgrade and Expansion of Campus-Wide High-Density Wi-Fi 7 and Fiber Backbone Infrastructure",
+                ABC = 14200000.00m,
+                Mode = publicBiddingMode,
+                Status = "Closed",
+                ScopeOfWork = "Procurement and structured deployment of 120 units Enterprise Tri-Band Wi-Fi 7 Access Points, 16 units 10G Multi-Gigabit PoE++ Distribution Switches, 2 units 100G Core Spine Switches, single-mode fiber optic underground backbone cabling, and cloud controller licenses.",
+                NonRefundableFee = 25000.00m,
+                DeliveryDays = 60,
+                DaysPostedAgo = 60,
+                DaysPreBidAgo = 50,
+                DaysDeadlineAhead = -30,
+                Applicants = new[]
+                {
+                    new { Company = "ConvergeNet Enterprise Solutions", Contact = "Gary Tan", Email = "contracts@convergenet.ph", Phone = "+63 917 777 8899", TIN = "890-123-456-000", Address = "Tech Plaza, Shaw Blvd, Mandaluyong City", Status = "Passed", Remarks = (string?)"Lowest Calculated and Responsive Bidder (LCRB). All post-qualification parameters verified responsive." },
+                    new { Company = "Telecom & Data Systems Global Inc.", Contact = "Vanessa Lim", Email = "enterprise@tdsglobal.ph", Phone = "+63 920 444 7788", TIN = "234-567-890-000", Address = "Ayala Triangle Gardens, Makati City", Status = "Failed", Remarks = (string?)"Disqualified during post-qualification: SLCC equipment capacity did not meet minimum 100G spine switch threshold." }
+                }
+            }
+        };
+
+        foreach (var def in projectDefinitions)
+        {
+            var project = await context.ProcurementProjects!
+                .Include(p => p.BiddingDocument)
+                .Include(p => p.BiddingActivitySchedules)
+                .Include(p => p.ProjectDocumentChecklists)
+                .FirstOrDefaultAsync(p => p.ContractNo == def.ContractNo);
+
+            if (project == null)
+            {
+                project = new ProcurementProject
+                {
+                    Id = Guid.NewGuid(),
+                    ContractNo = def.ContractNo,
+                    Title = def.Title,
+                    ABC = def.ABC,
+                    Status = def.Status,
+                    ProcurementModeId = def.Mode?.Id,
+                    ScopeOfWork = def.ScopeOfWork,
+                    NonRefundableBidderFee = def.NonRefundableFee,
+                    DeliveryPeriodDays = def.DeliveryDays,
+                    ChecklistConfirmed = true,
+                    CreatedAt = DateTime.UtcNow.AddDays(-def.DaysPostedAgo),
+                    CreatedBy = "System"
+                };
+
+                // Add Bidding Document
+                project.BiddingDocument = new BiddingDocument
+                {
+                    Id = Guid.NewGuid(),
+                    ProcurementProjectId = project.Id,
+                    ProcurementCategoryId = goodsCat.Id,
+                    Status = "Posted",
+                    PostedAt = DateTime.UtcNow.AddDays(-def.DaysPostedAgo),
+                    CreatedAt = DateTime.UtcNow.AddDays(-def.DaysPostedAgo),
+                    CreatedBy = "System"
+                };
+
+                // Add Schedules
+                if (actPosting != null)
+                {
+                    project.BiddingActivitySchedules.Add(new BiddingActivitySchedule
+                    {
+                        Id = Guid.NewGuid(),
+                        ProcurementProjectId = project.Id,
+                        ProcurementActivityTypeId = actPosting.Id,
+                        StartDate = DateTime.UtcNow.AddDays(-def.DaysPostedAgo),
+                        EndDate = DateTime.UtcNow.AddDays(-def.DaysPostedAgo + 7),
+                        Venue = "PhilGEPS Portal & University Bulletin",
+                        Status = "Completed",
+                        IsLocked = true
+                    });
+                }
+
+                if (actPreBid != null && def.DaysPreBidAgo > 0)
+                {
+                    project.BiddingActivitySchedules.Add(new BiddingActivitySchedule
+                    {
+                        Id = Guid.NewGuid(),
+                        ProcurementProjectId = project.Id,
+                        ProcurementActivityTypeId = actPreBid.Id,
+                        StartDate = DateTime.UtcNow.AddDays(-def.DaysPreBidAgo),
+                        EndDate = DateTime.UtcNow.AddDays(-def.DaysPreBidAgo),
+                        Venue = "BAC Conference Room, 3rd Floor Admin Bldg / Zoom Video Conference",
+                        Status = "Completed",
+                        IsLocked = true
+                    });
+                }
+
+                if (actOpening != null)
+                {
+                    var deadline = DateTime.UtcNow.AddDays(def.DaysDeadlineAhead);
+                    project.BiddingActivitySchedules.Add(new BiddingActivitySchedule
+                    {
+                        Id = Guid.NewGuid(),
+                        ProcurementProjectId = project.Id,
+                        ProcurementActivityTypeId = actOpening.Id,
+                        StartDate = deadline,
+                        EndDate = deadline,
+                        Venue = "BAC Bidding Hall & Live Broadcast",
+                        Status = def.DaysDeadlineAhead > 0 ? "Pending" : "Completed",
+                        IsLocked = def.DaysDeadlineAhead <= 0
+                    });
+                }
+
+                // Add Document Checklists
+                int orderIdx = 1;
+                foreach (var kvp in masterDocTypeDict)
+                {
+                    var mType = kvp.Value;
+                    project.ProjectDocumentChecklists.Add(new ProjectDocumentChecklist
+                    {
+                        Id = Guid.NewGuid(),
+                        ProcurementProjectId = project.Id,
+                        MasterDocumentTypeId = mType.Id,
+                        EnvelopeType = mType.EnvelopeType,
+                        IsRequired = true,
+                        OrderIndex = orderIdx++
+                    });
+                }
+
+                await context.ProcurementProjects!.AddAsync(project);
+                await context.SaveChangesAsync();
+
+                // Add sample supplier applications
+                foreach (var app in def.Applicants)
+                {
+                    var supplierApp = new PublicSupplierApplication
+                    {
+                        Id = Guid.NewGuid(),
+                        ProcurementProjectId = project.Id,
+                        CompanyName = app.Company,
+                        ContactPerson = app.Contact,
+                        EmailAddress = app.Email,
+                        ContactNumber = app.Phone,
+                        TinNumber = app.TIN,
+                        BusinessAddress = app.Address,
+                        Status = app.Status,
+                        Remarks = app.Remarks,
+                        SubmittedAt = DateTime.UtcNow.AddDays(-Math.Max(1, def.DaysPostedAgo - 2)),
+                        CreatedAt = DateTime.UtcNow.AddDays(-Math.Max(1, def.DaysPostedAgo - 2)),
+                        CreatedBy = "PublicPortal"
+                    };
+
+                    // Add uploaded documents for checklist items
+                    foreach (var checklist in project.ProjectDocumentChecklists.Take(5))
+                    {
+                        var docName = checklist.MasterDocumentType?.Name ?? "Required Document";
+                        supplierApp.UploadedDocuments.Add(new ApplicationUploadedDocument
+                        {
+                            Id = Guid.NewGuid(),
+                            ApplicationId = supplierApp.Id,
+                            ChecklistItemId = checklist.Id,
+                            OriginalFileName = $"{app.Company.Replace(" ", "_")}_{docName.Replace(" ", "_")}.pdf",
+                            BlobStorageUrl = $"/documents/public_applications/{supplierApp.Id}_{checklist.Id}.pdf",
+                            UploadedAt = supplierApp.SubmittedAt
+                        });
+                    }
+
+                    await context.PublicSupplierApplications!.AddAsync(supplierApp);
+                }
+
+                await context.SaveChangesAsync();
+            }
+        }
+    }
 }
+
