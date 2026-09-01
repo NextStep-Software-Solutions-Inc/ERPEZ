@@ -23,6 +23,7 @@ import { useToast } from '@/components/ui/use-toast'
 import {
   useConsolidatedPrs,
   useConsolidatedPr,
+  useProcurementModes,
 } from '@/features/procurement/consolidated-pr/handlers/hooks'
 import { useBacResolutions } from '@/features/procurement/bac-resolution/handlers/hooks'
 import { useDirectAcquisitions, useCreateDirectAcquisition } from '../handlers'
@@ -45,8 +46,8 @@ const formatCurrency = formatCurrencyPHP
 function genDANumber(entries: any[]): string {
   const year = new Date().getFullYear()
   let maxSeq = 0
-  for (const ent of entries) {
-    const da = (ent?.daNumber ?? '').toString()
+  for (const entry of entries) {
+    const da = (entry?.daNumber ?? '').toString()
     const m = da.match(new RegExp(`^DA-${year}-(\\d+)$`, 'i'))
     if (m) {
       const seq = parseInt(m[1], 10)
@@ -79,6 +80,11 @@ export function CreateDirectAcquisitionModal({ open, onOpenChange }: Props) {
     queryParams: { pageSize: 100 },
     enabled: open,
   })
+  const { data: modesResponse } = useProcurementModes({
+    pathParams: {},
+    queryParams: { pageSize: 100 },
+    enabled: open,
+  })
 
   const createMutation = useCreateDirectAcquisition()
 
@@ -87,6 +93,40 @@ export function CreateDirectAcquisitionModal({ open, onOpenChange }: Props) {
   const [daNumber, setDaNumber] = useState('')
   const [selectedCprId, setSelectedCprId] = useState('')
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set())
+
+  // Direct Acquisition Mode IDs lookup
+  const directAcquisitionModeIds = useMemo(() => {
+    const raw = modesResponse?.data
+    const modes: any[] = Array.isArray(raw) ? raw : (raw as any)?.items || []
+    return new Set(
+      modes
+        .filter((m: any) => {
+          const n = (m.name || '').toLowerCase()
+          return n.includes('direct acquisition') || n.includes('direct purchase') || n.includes('retail')
+        })
+        .map((m: any) => (m.id || '').toString().toLowerCase())
+    )
+  }, [modesResponse])
+
+  // Direct Acquisition mode verification helper
+  const isItemDirectAcquisition = useCallback(
+    (item: { procurementModeId?: string; procurementModeName?: string; totalAmount?: number }) => {
+      const modeName = (item.procurementModeName || '').toLowerCase()
+      if (modeName.includes('direct acquisition') || modeName.includes('direct purchase') || modeName.includes('retail')) {
+        return true
+      }
+      if (item.procurementModeId && directAcquisitionModeIds.has(item.procurementModeId.toLowerCase())) {
+        return true
+      }
+      // If not explicitly tagged to a different mode and within statutory direct retail limit (<= 200,000)
+      const hasOtherMode = modeName.includes('bidding') || modeName.includes('contracting') || modeName.includes('svp') || modeName.includes('small value')
+      if (!hasOtherMode && (item.totalAmount ?? 0) <= THRESHOLD) {
+        return true
+      }
+      return false
+    },
+    [directAcquisitionModeIds]
+  )
 
   // Query detail of selected CPR
   const { data: cprDetailResponse, isLoading: isLoadingDetail } = useConsolidatedPr({
@@ -140,7 +180,7 @@ export function CreateDirectAcquisitionModal({ open, onOpenChange }: Props) {
     return map
   }, [daList])
 
-  // Eligible CPRs (Approved / finalized and not fully acquired)
+  // Eligible CPRs (Approved / finalized and not fully acquired, excluding non-direct modes)
   const eligibleCprs = useMemo(() => {
     return cprList.filter((c: any) => {
       const status = (c.status ?? '').toUpperCase()
@@ -151,6 +191,11 @@ export function CreateDirectAcquisitionModal({ open, onOpenChange }: Props) {
       const acquiredInfo = acquiredItemsByCpr.get(cprId)
       if (acquiredInfo?.allAcquired) return false
 
+      const mode = (c.modeOfProcurement || c.mode || '').toLowerCase()
+      if (mode && (mode.includes('bidding') || mode.includes('contracting')) && !mode.includes('direct acquisition')) {
+        return false
+      }
+
       return true
     })
   }, [cprList, acquiredItemsByCpr])
@@ -159,25 +204,38 @@ export function CreateDirectAcquisitionModal({ open, onOpenChange }: Props) {
   const allCprItems = useMemo(() => {
     if (!cprDetail?.prs) return []
     return cprDetail.prs.flatMap((pr) =>
-      pr.items.map((item, idx) => ({
-        id: item.consolidatedPRItemId ?? item.prItemId ?? `${pr.purchaseRequestId}-${idx}`,
-        prItemId: item.prItemId,
-        consolidatedPRItemId: item.consolidatedPRItemId,
-        name: item.name,
-        description: item.description,
-        category: item.category,
-        fund: item.fund,
-        unit: item.unit || 'unit',
-        unitPrice: item.unitPrice,
-        totalQuantity: item.totalQuantity,
-        totalAmount: item.totalAmount || (item.totalQuantity * item.unitPrice),
-        purchaseRequestId: pr.purchaseRequestId,
-        prNumber: pr.prNumber,
-        officeName: pr.officeName,
-        procurementModeId: item.procurementModeId,
-      }))
+      pr.items.map((item, idx) => {
+        const totalAmount = item.totalAmount || (item.totalQuantity * item.unitPrice)
+        const modeName = (item as any).procurementModeName || (item as any).modeOfProcurement
+        const modeId = item.procurementModeId
+        const isDirectAcq = isItemDirectAcquisition({
+          procurementModeId: modeId,
+          procurementModeName: modeName,
+          totalAmount,
+        })
+
+        return {
+          id: item.consolidatedPRItemId ?? item.prItemId ?? `${pr.purchaseRequestId}-${idx}`,
+          prItemId: item.prItemId,
+          consolidatedPRItemId: item.consolidatedPRItemId,
+          name: item.name,
+          description: item.description,
+          category: item.category,
+          fund: item.fund,
+          unit: item.unit || 'unit',
+          unitPrice: item.unitPrice,
+          totalQuantity: item.totalQuantity,
+          totalAmount,
+          purchaseRequestId: pr.purchaseRequestId,
+          prNumber: pr.prNumber,
+          officeName: pr.officeName,
+          procurementModeId: modeId,
+          procurementModeName: modeName,
+          isDirectAcquisition: isDirectAcq,
+        }
+      })
     )
-  }, [cprDetail])
+  }, [cprDetail, isItemDirectAcquisition])
 
   // Check if a specific item was already acquired in an existing DA
   const isItemAcquired = useCallback((item: { id: string; prItemId?: string; consolidatedPRItemId?: string }) => {
@@ -194,9 +252,9 @@ export function CreateDirectAcquisitionModal({ open, onOpenChange }: Props) {
     return null
   }, [acquiredItemsByCpr, selectedCprId])
 
-  // Only items that have NOT been acquired yet
+  // Only items that have NOT been acquired yet AND are eligible for Direct Acquisition
   const availableCprItems = useMemo(() => {
-    return allCprItems.filter((i) => !isItemAcquired(i))
+    return allCprItems.filter((i) => !isItemAcquired(i) && i.isDirectAcquisition)
   }, [allCprItems, isItemAcquired])
 
   // Pre-select unacquired items by default whenever a new CPR is loaded
@@ -533,8 +591,9 @@ export function CreateDirectAcquisitionModal({ open, onOpenChange }: Props) {
                     ) : (
                       allCprItems.map((item, idx) => {
                         const acquiredIn = isItemAcquired(item)
+                        const isDirectAcq = item.isDirectAcquisition
                         const isChecked = selectedItemIds.has(item.id)
-                        const isDisabled = !!acquiredIn
+                        const isDisabled = !!acquiredIn || !isDirectAcq
 
                         return (
                           <TableRow
@@ -568,9 +627,17 @@ export function CreateDirectAcquisitionModal({ open, onOpenChange }: Props) {
                             <TableCell className="font-semibold text-foreground">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="line-clamp-1">{item.name}</p>
-                                {acquiredIn && (
+                                {acquiredIn ? (
                                   <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
                                     Acquired in {acquiredIn}
+                                  </Badge>
+                                ) : isDirectAcq ? (
+                                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[10px] px-1.5 py-0">
+                                    Direct Acquisition
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-300 text-[10px] px-1.5 py-0">
+                                    Ineligible ({item.procurementModeName || 'Different Mode'})
                                   </Badge>
                                 )}
                               </div>
