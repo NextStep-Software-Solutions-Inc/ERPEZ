@@ -4,7 +4,7 @@ import { ConsolidatedPR } from "../../consolidated-pr/store/consolidatedPRStore"
 export type BacResolutionStatus =
   'draft' | 'for-approval' | 'returned' | 'approved'
 
-export type BacResolutionRole = 'procurement-staff' | 'bac-chairperson'
+export type BacResolutionRole = 'procurement-staff' | 'bac-chairperson' | 'all'
 
 export type BacResolutionWorkspaceScope = 'all' | 'public-bidding'
 
