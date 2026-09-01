@@ -227,8 +227,8 @@ export type ReturnBacResolutionPayload = {
 }
 
 export type ApproveBacResolutionPayload = {
-  bacResolutionId: string
-  signedDocument: File
+  attachmentFileId: string
+
 }
 
 

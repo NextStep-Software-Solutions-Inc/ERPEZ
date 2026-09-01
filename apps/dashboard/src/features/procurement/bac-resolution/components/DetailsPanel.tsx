@@ -19,6 +19,7 @@ import {
   Clock,
   Edit,
   Download,
+  RotateCcw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,11 +32,17 @@ import type {
   BacResolutionWhereasClause,
   BacResolutionLogEntry,
   BacProjectDetails,
+  ReturnBacResolutionPayload,
 } from '../types'
-import { createQueryHookFromTemplate, createMutationHookFromTemplate } from 'erpez-shared-lib'
+import { createQueryHookFromTemplate, createMutationHookFromTemplate, useQueryClient, type APIResponse } from 'erpez-shared-lib'
+import api from '@/services/api'
 import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
 import { generateBACResolutionDocumentRequest } from '../handlers/generateBacResolutionDocumentRequest'
 import { downloadBacResolutionDocumentRequest } from '../handlers/downloadBacResolutionDocumentRequest'
+import { useApproveBacResolution, useReturnBacResolution } from '../handlers/hooks'
+import { ApproveBacResolutionDialog } from '../dialogs/ApproveBacResolutionDialog'
+import { ReturnBacResolutionDialog } from '../dialogs/ReturnBacResolutionDialog'
+import type { ApproveBacResolutionFormValues } from '../forms/ApproveBacResolutionForm'
 
 const useBacResolution = createQueryHookFromTemplate(getBacResolutionRequest)
 const useGenerateBACResolutionDocument = createMutationHookFromTemplate(
@@ -72,6 +79,13 @@ export function DetailsPanel({
   onDelete
 }: DetailsPanelProps) {
   const [activeTab, setActiveTab] = useState('overview')
+  const [approveOpen, setApproveOpen] = useState(false)
+  const [returnOpen, setReturnOpen] = useState(false)
+
+  const queryClient = useQueryClient()
+  const { mutateAsync: approveBacResolution, isPending: isApproving } = useApproveBacResolution()
+  const { mutateAsync: returnBacResolution, isPending: isReturning } = useReturnBacResolution()
+
   const { mutateAsync: generateBACResolutionDocument, isPending: isGenerating } =
     useGenerateBACResolutionDocument()
   const { mutateAsync: downloadBacResolutionDocument, isPending: isDownloading } =
@@ -84,6 +98,85 @@ export function DetailsPanel({
       enabled: !!selectedId,
     },
   )
+
+  const handleApprove = async ({ signedDocument }: ApproveBacResolutionFormValues) => {
+    if (!selectedId) return
+
+    const approveTask = async () => {
+      // 1. Upload signed document file first to obtain attachmentFileId
+      const formData = new FormData()
+      formData.append('file', signedDocument)
+
+      const uploadResponse = await api.post<APIResponse<string>>('/files/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      const attachmentFileId = uploadResponse.data?.data
+      if (!attachmentFileId) {
+        throw new Error('Failed to upload signed document.')
+      }
+
+      await approveBacResolution({
+        pathParams: { id: selectedId },
+        payload: { attachmentFileId },
+        queryParams: { id: selectedId }
+      })
+
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/bac/projects'),
+      })
+    }
+
+    try {
+      await toast.promise(approveTask(), {
+        loading: 'Uploading document and approving BAC Resolution...',
+        success: 'BAC Resolution approved successfully!',
+        error: (err) =>
+          err instanceof Error ? err.message : 'Failed to approve BAC Resolution.',
+      })
+      setApproveOpen(false)
+    } catch {
+      // handled by toast
+    }
+  }
+
+
+  const handleReturn = async (values: ReturnBacResolutionPayload) => {
+    try {
+      await toast.promise(
+        returnBacResolution(
+          {
+            payload: values,
+            pathParams: { id: selectedId || '' }
+          },
+          {
+            onSuccess: async () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].startsWith('/bac/projects'),
+              })
+            },
+          },
+        ),
+        {
+          loading: 'Returning BAC Resolution...',
+          success: 'BAC Resolution returned for revision.',
+          error: (err) =>
+            err instanceof Error ? err.message : 'Failed to return BAC Resolution.',
+        },
+      )
+      setReturnOpen(false)
+    } catch {
+      // handled by toast
+    }
+  }
+
 
   if (!selectedId) {
     return (
@@ -194,6 +287,7 @@ export function DetailsPanel({
   const isDraft = status === 'draft'
   const isApproved = status === 'approved'
   const isReturned = status === 'returned'
+  const isForApproval = status === 'for-approval'
 
   const officeName =
     selectedProject.appItem?.Office?.name
@@ -331,7 +425,7 @@ export function DetailsPanel({
                 </Button>
               )}
 
-              {role === 'procurement-staff' && (isDraft || isReturned) && onSubmit && (
+              {role === 'procurement-staff' && (isDraft || isReturned || isForApproval) && onSubmit && (
                 <Button
                   size="sm"
                   onClick={onSubmit}
@@ -340,6 +434,31 @@ export function DetailsPanel({
                 >
                   <Send className="h-3.5 w-3.5" />
                   Submit for Approval
+                </Button>
+              )}
+
+              {role === 'bac-chairperson' && isForApproval && (
+                <Button
+                  size="sm"
+                  onClick={() => setApproveOpen(true)}
+                  disabled={isLoading || isApproving || isReturning}
+                  className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Approve
+                </Button>
+              )}
+
+              {role === 'bac-chairperson' && isForApproval && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setReturnOpen(true)}
+                  disabled={isLoading || isApproving || isReturning}
+                  className="gap-1.5 text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Return
                 </Button>
               )}
 
@@ -783,8 +902,26 @@ export function DetailsPanel({
           </Card>
         </TabsContent>
       </Tabs>
+
+      {selectedId && (
+        <>
+          <ApproveBacResolutionDialog
+            open={approveOpen}
+            onOpenChange={setApproveOpen}
+            bacResolutionId={selectedId}
+            onApprove={handleApprove}
+          />
+          <ReturnBacResolutionDialog
+            open={returnOpen}
+            onOpenChange={setReturnOpen}
+            bacResolutionId={selectedId}
+            onReturn={handleReturn}
+          />
+        </>
+      )}
     </div>
   )
 }
 
 export default DetailsPanel
+
