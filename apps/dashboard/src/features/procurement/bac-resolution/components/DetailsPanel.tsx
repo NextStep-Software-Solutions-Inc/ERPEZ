@@ -68,7 +68,6 @@ export function DetailsPanel({
   onLinkPrs,
   onPrint,
   onSubmit,
-  onViewDocument,
   onCreatePr,
   onDelete
 }: DetailsPanelProps) {
