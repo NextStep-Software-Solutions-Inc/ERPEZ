@@ -8,6 +8,7 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.APP.Queries.GetEligibleAppsForProcurement;
 
@@ -18,11 +19,29 @@ public class GetEligibleAppsForProcurementQueryHandler(IUnitOfWork unitOfWork)
         GetEligibleAppsForProcurementQuery request,
         CancellationToken cancellationToken)
     {
-        // 1. Find all active procurement projects linked to an APPItem
+        // 1. Find all active procurement projects linked to an APPItem or APPItemLinks
         var activeProjects = await unitOfWork.ProcurementProjectRepository
-            .FindAllAsync(p => p.APPItemId.HasValue && p.Status != "Cancelled", cancellationToken);
+            .Query()
+            .Include(p => p.APPItemLinks)
+            .Where(p => p.Status != "Cancelled")
+            .ToListAsync(cancellationToken);
 
-        var activeItemSet = activeProjects.Select(p => p.APPItemId!.Value).ToHashSet();
+        var activeItemSet = new HashSet<Guid>();
+        foreach (var proj in activeProjects)
+        {
+            if (proj.APPItemId.HasValue)
+            {
+                activeItemSet.Add(proj.APPItemId.Value);
+            }
+
+            if (proj.APPItemLinks != null)
+            {
+                foreach (var link in proj.APPItemLinks)
+                {
+                    activeItemSet.Add(link.APPItemId);
+                }
+            }
+        }
 
         // 2. Query eligible APPItems with full details matching APPItemRepository
         var eligibleAppItems = await unitOfWork.APPItemRepository

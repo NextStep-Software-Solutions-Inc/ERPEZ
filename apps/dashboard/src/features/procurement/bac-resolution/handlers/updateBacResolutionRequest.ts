@@ -13,6 +13,10 @@ export type UpdateBacProjectPayload = {
   dateResolved?: string
   resolvedLocation?: string
   whereasClauses?: WhereasClauses[]
+  whereasClauseLinks?: { resolutionClauseId: string; order: number }[]
+  nowThereforeClauses?: { resolutionClauseId: string; order: number }[]
+  resolvedClauses?: { resolutionClauseId: string; order: number }[]
+  appendAppItemIds?: string[]
   endUserRepresentativeId?: string
   techRepresentativeId?: string
 }

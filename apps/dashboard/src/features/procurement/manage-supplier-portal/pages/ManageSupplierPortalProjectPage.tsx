@@ -8,10 +8,9 @@ import { ReviewWorkspace } from '../components/ReviewWorkspace'
 import { useSupplierEvaluation } from '../hooks/useSupplierEvaluation'
 import { UnsavedChangesDialog } from '../dialogs/UnsavedChangesDialog'
 import { bulkDownloadDocuments } from '../utils/bulkDownload'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
-import { getBackendProjectDetailsRequest } from '@/features/procurement/bac-resolution/handlers/getBackendProjectDetailsRequest'
+import { getBacResolutionRequest } from '@/features/procurement/bac-resolution/handlers/getBacResolutionRequest'
 
-const useProjectDetails = createQueryHookFromTemplate(getBackendProjectDetailsRequest)
+const useProjectDetails = createQueryHookFromTemplate(getBacResolutionRequest)
 
 const isValidGuid = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)

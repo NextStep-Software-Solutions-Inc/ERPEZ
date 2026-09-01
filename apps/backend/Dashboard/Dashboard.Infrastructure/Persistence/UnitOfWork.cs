@@ -78,6 +78,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOfficeTypeRepository officeTypeRepository;
     private readonly ICategoryRepository categoryRepository;
     private readonly IBACResolutionWhereasClauseRepository bacResolutionWhereasClauseRepository;
+    private readonly IResolutionClauseRepository resolutionClauseRepository;
+    private readonly IBACResolutionClauseLinkRepository bacResolutionClauseLinkRepository;
     private readonly IAdministrativeLevelRepository administrativeLevelRepository;
     private readonly IProcurementWorkflowRepository procurementWorkflowRepository;
     private readonly IPositionRepository positionRepository;
@@ -232,6 +234,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         officeTypeRepository = new OfficeTypeRepository(context, sieveProcessor);
         categoryRepository = new CategoryRepository(context, sieveProcessor);
         bacResolutionWhereasClauseRepository = new BACResolutionWhereasClauseRepository(context, sieveProcessor);
+        resolutionClauseRepository = new ResolutionClauseRepository(context, sieveProcessor);
+        bacResolutionClauseLinkRepository = new BACResolutionClauseLinkRepository(context, sieveProcessor);
         administrativeLevelRepository = new AdministrativeLevelRepository(context, sieveProcessor);
         procurementWorkflowRepository = new ProcurementWorkflowRepository(context, sieveProcessor);
         positionRepository = new PositionRepository(context, sieveProcessor);
@@ -380,6 +384,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOfficeTypeRepository OfficeTypeRepository => officeTypeRepository;
     public ICategoryRepository CategoryRepository => categoryRepository;
     public IBACResolutionWhereasClauseRepository BACResolutionWhereasClauseRepository => bacResolutionWhereasClauseRepository;
+    public IResolutionClauseRepository ResolutionClauseRepository => resolutionClauseRepository;
+    public IBACResolutionClauseLinkRepository BACResolutionClauseLinkRepository => bacResolutionClauseLinkRepository;
     public IAdministrativeLevelRepository AdministrativeLevelRepository => administrativeLevelRepository;
     public IProcurementWorkflowRepository ProcurementWorkflowRepository => procurementWorkflowRepository;
     public IPositionRepository PositionRepository => positionRepository;

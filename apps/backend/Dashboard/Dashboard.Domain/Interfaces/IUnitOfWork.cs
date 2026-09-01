@@ -68,6 +68,8 @@ public interface IUnitOfWork
     IOfficeTypeRepository OfficeTypeRepository { get; }
     ICategoryRepository CategoryRepository { get; }
     IBACResolutionWhereasClauseRepository BACResolutionWhereasClauseRepository { get; }
+    IResolutionClauseRepository ResolutionClauseRepository { get; }
+    IBACResolutionClauseLinkRepository BACResolutionClauseLinkRepository { get; }
     IAdministrativeLevelRepository AdministrativeLevelRepository { get; }
     IProcurementWorkflowRepository ProcurementWorkflowRepository { get; }
     IPositionRepository PositionRepository { get; }

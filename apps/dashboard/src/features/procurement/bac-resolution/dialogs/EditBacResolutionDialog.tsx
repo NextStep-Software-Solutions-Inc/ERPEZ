@@ -82,7 +82,21 @@ export function EditBacResolutionDialog({
   const fullProject = detailsData?.data || (resolution as BacProjectDetails)
   const resDetail = fullProject.bacResolutions?.[0]
 
-  // Map existing resolution & project details to edit form initial values
+  // Map generic clause links if present
+  const allClauseLinks = resDetail?.clauseLinks || []
+  const whereasClauseLinks = allClauseLinks
+    .filter((c) => c.clauseType === 'Whereas')
+    .map((c) => ({ resolutionClauseId: c.resolutionClauseId, order: c.order }))
+
+  const nowThereforeClauses = allClauseLinks
+    .filter((c) => c.clauseType === 'NowTherefore')
+    .map((c) => ({ resolutionClauseId: c.resolutionClauseId, order: c.order }))
+
+  const resolvedClauses = allClauseLinks
+    .filter((c) => c.clauseType === 'Resolved')
+    .map((c) => ({ resolutionClauseId: c.resolutionClauseId, order: c.order }))
+
+  // Legacy fallback for Whereas clauses
   const rawWhereas = fullProject.whereasClauses || resDetail?.whereasClauses || []
   const prepopulatedClauses = rawWhereas
     .map((c: Record<string, unknown>, idx: number) => ({
@@ -101,6 +115,9 @@ export function EditBacResolutionDialog({
     dateResolved: fullProject.dateResolved || resDetail?.dateResolved || '',
     resolvedLocation: fullProject.resolvedLocation || resDetail?.resolvedLocation || '',
     whereasClauses: prepopulatedClauses,
+    whereasClauseLinks: whereasClauseLinks.length > 0 ? whereasClauseLinks : undefined,
+    nowThereforeClauses: nowThereforeClauses.length > 0 ? nowThereforeClauses : undefined,
+    resolvedClauses: resolvedClauses.length > 0 ? resolvedClauses : undefined,
     endUserRepresentativeId: fullProject.endUserRepresentativeId || fullProject.endUserRepresentative?.id || undefined,
     techRepresentativeId: fullProject.techRepresentativeId || fullProject.techRepresentative?.id || undefined,
   }
@@ -131,6 +148,7 @@ export function EditBacResolutionDialog({
         <EditBacResolutionForm
           ref={formRef}
           initialValues={initialValues}
+          projectDetails={fullProject}
           onSubmit={handleSubmitForm}
           onCancel={() => handleOpenChange(false)}
           onDirtyChange={setIsDirty}

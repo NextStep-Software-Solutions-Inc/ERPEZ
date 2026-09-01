@@ -3,14 +3,17 @@ import type {
   MutationBlueprintFromTemplate,
 } from 'erpez-shared-lib'
 import api from '@/services/api'
-const endpoint = '/api/planning/documents/bac-resolution/:bacResolutionId/generate' as const
-export type GenerateBacResolutionDocumentQueryParams = {
-  format?: 'Excel' | 'Pdf'
+
+const endpoint = '/api/planning/documents/bac-resolution/:id/generate' as const
+
+export type GenerateBACResolutionDocumentQueryParams = {
+  format?: 'Pdf'
 }
-export const generateBacResolutionDocumentRequest: MutationBlueprintFromTemplate<
+
+export const generateBACResolutionDocumentRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
   APIResponse<string>,
-  GenerateBacResolutionDocumentQueryParams,
+  GenerateBACResolutionDocumentQueryParams,
   undefined
 > = {
   endpoint,
@@ -18,4 +21,4 @@ export const generateBacResolutionDocumentRequest: MutationBlueprintFromTemplate
     const response = await api.post<APIResponse<string>>(finalUrl)
     return response.data
   },
-}
+}

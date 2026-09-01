@@ -54,6 +54,7 @@ public class ProcurementProject : BaseEntity
     // Navigation properties
     public virtual ConsolidatedPR? ConsolidatedPR { get; set; }
     public virtual APPItem? APPItem { get; set; }
+    public virtual List<ProcurementProjectAPPItem> APPItemLinks { get; set; } = [];
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
     public virtual List<DirectContracting> DirectContractings { get; set; } = [];

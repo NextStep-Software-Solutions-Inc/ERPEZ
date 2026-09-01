@@ -108,6 +108,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MarketScopingParameterSettings>? MarketScopingParameterSettings { get; set; }
     public DbSet<MarketScopingActivitySettings>? MarketScopingActivitySettings { get; set; }
     public DbSet<BACResolutionWhereasClause>? BACResolutionWhereasClauses { get; set; }
+    public DbSet<ResolutionClause>? ResolutionClauses { get; set; }
 
     //Procurement
     public DbSet<PurchaseOrder>? PurchaseOrders { get; set; }
@@ -117,8 +118,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementMode>? ProcurementModes { get; set; }
     public DbSet<ProcurementModeThreshold>? ProcurementModeThresholds { get; set; }
     public DbSet<ProcurementProject>? ProcurementProjects { get; set; }
+    public DbSet<ProcurementProjectAPPItem>? ProcurementProjectAPPItems { get; set; }
     public DbSet<BACResolution>? BACResolutions { get; set; }
     public DbSet<BACResolutionWhereasClauseItem>? BACResolutionWhereasClauseItems { get; set; }
+    public DbSet<BACResolutionClauseLink>? BACResolutionClauseLinks { get; set; }
     public DbSet<BACMember>? BACMembers { get; set; }
     public DbSet<BiddingActivitySchedule>? BiddingActivitySchedules { get; set; }
     public DbSet<SupplierBid>? SupplierBids { get; set; }
@@ -3324,6 +3327,44 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasOne(item => item.BACResolutionWhereasClause)
                 .WithMany()
                 .HasForeignKey(item => item.BACResolutionWhereasClauseId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ResolutionClause
+        modelBuilder.Entity<ResolutionClause>(entity =>
+        {
+            entity.ToTable("ResolutionClauses", "planning");
+        });
+
+        // ProcurementProjectAPPItem
+        modelBuilder.Entity<ProcurementProjectAPPItem>(entity =>
+        {
+            entity.ToTable("ProcurementProjectAPPItems", "procurement");
+
+            entity.HasOne(item => item.ProcurementProject)
+                .WithMany(proj => proj.APPItemLinks)
+                .HasForeignKey(item => item.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(item => item.APPItem)
+                .WithMany()
+                .HasForeignKey(item => item.APPItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // BACResolutionClauseLink
+        modelBuilder.Entity<BACResolutionClauseLink>(entity =>
+        {
+            entity.ToTable("BACResolutionClauseLinks", "procurement");
+
+            entity.HasOne(link => link.BACResolution)
+                .WithMany(res => res.ClauseLinks)
+                .HasForeignKey(link => link.BACResolutionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(link => link.ResolutionClause)
+                .WithMany()
+                .HasForeignKey(link => link.ResolutionClauseId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }
