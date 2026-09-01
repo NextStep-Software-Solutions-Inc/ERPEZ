@@ -11,5 +11,7 @@ public enum DocumentType
     OpcrRating,
     ConsolidatedOpcr,
     MarketScoping,
-    BacResolution
+    BacResolution,
+    PurchaseRequest,
+    Apr
 }

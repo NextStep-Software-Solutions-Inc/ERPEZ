@@ -104,7 +104,7 @@ internal sealed class AppPdfRenderer : BasePdfRenderer, IDocumentRenderer<AppDat
                         // Render sections
                         RenderSection(table, "General Requirements", request.GeneralRequirements);
                         RenderSection(table, "Common Use Supplies and Equipment (CSE) to be purchased from PS-DBM (kindly indicate the summary/total amounts only)", request.CommonUseSupplies);
-                        RenderSection(table, "Miscellaneous Items (for Direct Acquisition only) Sec 32.2 of RA No. 12009", request.MiscellaneousItems);
+                        RenderSection(table, "Miscellaneous Items Sec 32.2 of RA No. 12009", request.MiscellaneousItems);
                     });
 
                     // ── Footer Totals Block ───────────────────────────────────

@@ -162,6 +162,12 @@ public static class DependencyInjection
         // BAC Resolution — PDF
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.Projects.Commands.GenerateBacResolutionDocument.BacResolutionDataDto>, BacResolutionPdfRenderer>();
 
+        // Purchase Request — PDF
+        services.AddScoped<IDocumentRenderer<PurchaseRequestDataDto>, PurchaseRequestPdfRenderer>();
+
+        // APR — PDF
+        services.AddScoped<IDocumentRenderer<AprDataDto>, AprPdfRenderer>();
+
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()

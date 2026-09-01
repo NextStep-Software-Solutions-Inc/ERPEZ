@@ -141,6 +141,9 @@ public interface IUnitOfWork
     IDirectContractingRepository DirectContractingRepository { get; }
     IDirectContractingProposalRepository DirectContractingProposalRepository { get; }
     IDirectContractingProposalItemRepository DirectContractingProposalItemRepository { get; }
+    IDirectAcquisitionRepository DirectAcquisitionRepository { get; }
+    IDirectPurchaseEntryRepository DirectPurchaseEntryRepository { get; }
+    IDirectAcquisitionDocumentRepository DirectAcquisitionDocumentRepository { get; }
 
     IPublicSupplierApplicationRepository PublicSupplierApplicationRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);

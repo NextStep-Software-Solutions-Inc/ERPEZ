@@ -250,19 +250,26 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Quantity</p>
                   <p className="text-base font-bold text-slate-800">
-                    {(details?.PPMPItem?.quantity || selectedItem?.quantity || 1).toLocaleString('en-PH')}
+                    {(() => {
+                      const q = details?.quantity || details?.PPMPItem?.quantity || selectedItem?.quantity
+                      if (q && q > 0) return q.toLocaleString('en-PH')
+                      const cost = details?.PPMPItem?.unitPrice ?? details?.unitCost ?? selectedItem?.unitCost ?? 0
+                      const total = details?.effectiveABC ?? details?.totalAmount ?? details?.PPMPItem?.totalAmount ?? selectedItem?.totalAmount ?? 0
+                      if (cost > 0 && total > 0) return Math.round(total / cost).toLocaleString('en-PH')
+                      return '1'
+                    })()}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Unit of Measure</p>
                   <p className="text-base font-semibold text-slate-600">
-                    {details?.PPMPItem?.unit || selectedItem?.unit || 'unit'}
+                    {details?.PPMPItem?.unit || details?.unit || selectedItem?.unit || 'unit'}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Unit Cost</p>
                   <p className="text-base font-bold text-slate-800">
-                    ₱{(details?.PPMPItem?.unitPrice ?? selectedItem?.unitCost ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₱{(details?.PPMPItem?.unitPrice ?? details?.unitCost ?? selectedItem?.unitCost ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
@@ -271,11 +278,13 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Estimated Budget</p>
                 <p className="text-2xl font-black text-emerald-600">
                   ₱{(
-                    (details?.PPMPItem?.totalAmount && details.PPMPItem.totalAmount > 0)
+                    (details?.effectiveABC && details.effectiveABC > 0)
+                      ? details.effectiveABC
+                      : (details?.PPMPItem?.totalAmount && details.PPMPItem.totalAmount > 0)
                       ? details.PPMPItem.totalAmount
                       : (selectedItem?.totalAmount && selectedItem.totalAmount > 0)
                       ? selectedItem.totalAmount
-                      : ((details?.PPMPItem?.quantity || selectedItem?.quantity || 1) * (details?.PPMPItem?.unitPrice || selectedItem?.unitCost || 0))
+                      : (((details?.quantity || details?.PPMPItem?.quantity || selectedItem?.quantity || 1)) * (details?.PPMPItem?.unitPrice || details?.unitCost || selectedItem?.unitCost || 0))
                   ).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>

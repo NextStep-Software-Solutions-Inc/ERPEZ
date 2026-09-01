@@ -7,7 +7,6 @@
 
 import type {
   QueryBlueprintFromTemplate,
-  PaginationResponse,
   QueryKey,
   QueryParams,
 } from 'erpez-shared-lib'
@@ -16,6 +15,10 @@ import api from '@/services/api'
 export interface APPItemResponse {
   id: string
   ppmpItemId: string
+  cseItemId?: string
+  nonCSEItemId?: string
+  isCSE?: boolean
+  isNonCSE?: boolean
   ppmpItemName: string
   description: string
   unit: string
@@ -72,7 +75,7 @@ export const getApprovedAPPsRequest: QueryBlueprintFromTemplate<
   QueryKey
 > = {
   endpoint,
-  key: ({ url, fiscalYearId, status }) => [url, fiscalYearId || '', status || ''] as const,
+  key: ({ url, queryParams }) => [url, queryParams?.fiscalYearId || '', queryParams?.status || ''] as const,
   fetcher: async ({ finalUrl, signal }) => {
     const response = await api.get<any>(finalUrl, { signal })
     return response.data

@@ -207,7 +207,14 @@ export default function PurchaseRequestPageV2() {
 
   // Show PR details if viewing
   if (viewingPR) {
-    return <PRDetailsPage pr={viewingPR} onBack={handleBackFromDetails} />
+    const isManageView = isManagePrsRoute || activeTab === 'manage-pr'
+    return (
+      <PRDetailsPage
+        pr={viewingPR}
+        onBack={handleBackFromDetails}
+        isManagePRView={isManageView}
+      />
+    )
   }
 
   return (

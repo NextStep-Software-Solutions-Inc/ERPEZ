@@ -15,6 +15,7 @@ import {
 import { createPurchaseRequestRequest } from './createPurchaseRequestRequest'
 import { deletePurchaseRequestRequest } from './deletePurchaseRequestRequest'
 import { getPurchaseRequestEligiblePpmpsRequest } from './getPurchaseRequestEligiblePpmpsRequest'
+import { getPurchaseRequestEligiblePpmpsByOfficeRequest } from './getPurchaseRequestEligiblePpmpsByOfficeRequest'
 import { getPurchaseRequestEligibleAprsRequest } from './getPurchaseRequestEligibleAprsRequest'
 import { getPurchaseRequestRequest } from './getPurchaseRequestRequest'
 import { getPurchaseRequestsRequest } from './getPurchaseRequestsRequest'
@@ -96,6 +97,15 @@ export const usePurchaseRequestStats = createQueryHookFromTemplate(
  */
 export const usePurchaseRequestEligiblePpmps = createQueryHookFromTemplate(
   getPurchaseRequestEligiblePpmpsRequest,
+)
+
+/**
+ * PPMP documents eligible to supply items for a given Office (new PR creation).
+ * Only relevant for Non-CSE PRs.
+ * Pass `{ queryParams: { officeId } }`.
+ */
+export const usePurchaseRequestEligiblePpmpsByOffice = createQueryHookFromTemplate(
+  getPurchaseRequestEligiblePpmpsByOfficeRequest,
 )
 
 /**

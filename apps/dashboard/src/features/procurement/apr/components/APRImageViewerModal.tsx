@@ -121,7 +121,7 @@ export function APRImageViewerModal({
             <Button
               type="button"
               onClick={onClose}
-              variant="secondary"
+              variant="outline"
               size="sm"
               className="text-xs h-8 px-4"
             >

@@ -117,10 +117,20 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
                     lineItem.description ||
                     lineItem.name ||
                     'Procurement Item'
-                  const qty = lineItem.quantity ?? 1
+                  const qty =
+                    lineItem.quantity && lineItem.quantity > 0
+                      ? lineItem.quantity
+                      : lineItem.unitCost && lineItem.totalAmount
+                        ? Math.round(lineItem.totalAmount / lineItem.unitCost)
+                        : 1
                   const unit = lineItem.unit || 'unit'
-                  const unitCost = lineItem.unitCost ?? 0
-                  const total = lineItem.totalAmount ?? (qty * unitCost)
+                  const unitCost =
+                    lineItem.unitCost && lineItem.unitCost > 0
+                      ? lineItem.unitCost
+                      : lineItem.totalAmount && qty > 0
+                        ? lineItem.totalAmount / qty
+                        : 0
+                  const total = lineItem.totalAmount || lineItem.effectiveABC || (qty * unitCost)
                   const isSelected = selectedLineItemIds.includes(lineItem.id)
                   const officeName = lineItem.officeName || lineItem.office
                   const fundSource = lineItem.fundSourceName || lineItem.fundSource
@@ -148,7 +158,7 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <p className="font-semibold text-sm text-gray-900">{desc}</p>
                           <span className="text-sm font-semibold text-primary">
-                            ₱{total.toLocaleString()}
+                            ₱{total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                         {lineItem.remarks && (
@@ -163,7 +173,7 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
                             </Badge>
                           )}
                           <span className="text-muted-foreground">
-                            {qty} {unit} @ ₱{unitCost.toLocaleString()}/unit
+                            {qty} {unit} @ ₱{unitCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / {unit}
                           </span>
                           {officeName && (
                             <Badge variant="outline" className="text-[10px] py-0 h-5">

@@ -61,6 +61,10 @@ public record APPItemSummaryResponse
 {
     public Guid Id { get; init; }
     public Guid PPMPItemId { get; init; }
+    public Guid? CSEItemId { get; init; }
+    public Guid? NonCSEItemId { get; init; }
+    public bool IsCSE { get; init; }
+    public bool IsNonCSE { get; init; }
     public string PPMPItemName { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public string Unit { get; init; } = string.Empty;

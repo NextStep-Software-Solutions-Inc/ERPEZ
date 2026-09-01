@@ -68,6 +68,26 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
                         resolvedPpmpItemId, cancellationToken)
                         ?? throw new NotFoundException($"PPMP Item with ID {resolvedPpmpItemId} not found.");
 
+                    if (pr.PRType == PRType.NonCSE && ppmpItem.NonCSEItemId == null)
+                        throw new ValidationException($"Item '{ppmpItem.Name}' is not an approved Non-CSE item.");
+
+                    if (pr.PRType == PRType.NonCSE)
+                    {
+                        var itemOfficeId = ppmpItem.PPMPExpenditureItem?.PPMP?.OfficeId
+                                        ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId;
+                        if (itemOfficeId.HasValue && itemOfficeId.Value != pr.OfficeId)
+                            throw new ValidationException($"Item '{ppmpItem.Name}' belongs to another office and cannot be added to this Purchase Request.");
+
+                        var ppmpStatus = ppmpItem.PPMPExpenditureItem?.PPMP?.Status
+                                      ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Status;
+                        if (ppmpStatus != StatusEnum.Approved)
+                            throw new ValidationException($"Item '{ppmpItem.Name}' belongs to a PPMP that is not approved.");
+
+                        var isAppApproved = ppmpItem.APPItems.Any(ai => !ai.IsDeleted && !ai.APP.IsDeleted && ai.APP.Status == StatusEnum.Approved);
+                        if (!isAppApproved)
+                            throw new ValidationException($"Item '{ppmpItem.Name}' has not been consolidated into an approved Annual Procurement Plan (APP).");
+                    }
+
                     await ValidatePPMPItemBudget(ppmpItem.Id, itemReq.RequestedMonth, itemReq.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, request.Id, cancellationToken);
 
                     var item = new PRItem
@@ -108,26 +128,57 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
         Guid? currentPRId,
         CancellationToken cancellationToken)
     {
-        var existingItems = await unitOfWork.PRItemRepository.FindAllAsync(
-            i => i.PPMPItemId == ppmpItemId &&
-                i.RequestedMonth == requestedMonth &&
-                !i.PurchaseRequest.IsDeleted &&
-                i.PurchaseRequest.Status != StatusEnum.Returned &&
-                (!currentPRId.HasValue || i.PurchaseRequestId != currentPRId.Value),
-            cancellationToken);
+        var hasMonthlyAllocations = ppmpItem.PPMPItemAllocations.Any(a => !a.IsDeleted && a.Quantity > 0);
 
-        var totalAllocated   = ppmpItem.PPMPItemAllocations.Where(a => a.AllocationMonth == requestedMonth).Sum(a => a.Quantity);
-        var reservedQty      = existingItems.Sum(i => i.RequestedQuantity);
-        var reservedCost     = existingItems.Sum(i => i.Amount);
-        var ppmpBudget       = unitPrice * totalAllocated;
-        var newCost          = requestedQty * unitPrice;
+        if (hasMonthlyAllocations)
+        {
+            var existingItems = await unitOfWork.PRItemRepository.FindAllAsync(
+                i => i.PPMPItemId == ppmpItemId &&
+                    i.RequestedMonth == requestedMonth &&
+                    !i.PurchaseRequest.IsDeleted &&
+                    i.PurchaseRequest.Status != StatusEnum.Returned &&
+                    (!currentPRId.HasValue || i.PurchaseRequestId != currentPRId.Value),
+                cancellationToken);
 
-        if (reservedQty + requestedQty > totalAllocated)
-            throw new ValidationException(
-                $"Requested quantity for '{ppmpItem.Name}' in month {requestedMonth} exceeds PPMP allocation. Available: {totalAllocated - reservedQty}, Requested: {requestedQty}.");
+            var totalAllocated   = ppmpItem.PPMPItemAllocations
+                .Where(a => !a.IsDeleted && a.AllocationMonth == requestedMonth)
+                .Sum(a => a.Quantity);
 
-        if (reservedCost + newCost > ppmpBudget)
-            throw new ValidationException(
-                $"Requested amount for '{ppmpItem.Name}' in month {requestedMonth} exceeds PPMP budget. Remaining: ₱{ppmpBudget - reservedCost:N2}, Requested: ₱{newCost:N2}.");
+            var reservedQty      = existingItems.Sum(i => i.RequestedQuantity);
+            var reservedCost     = existingItems.Sum(i => i.Amount);
+            var ppmpBudget       = unitPrice * totalAllocated;
+            var newCost          = requestedQty * unitPrice;
+
+            if (reservedQty + requestedQty > totalAllocated)
+                throw new ValidationException(
+                    $"Requested quantity for '{ppmpItem.Name}' in month {requestedMonth} exceeds PPMP allocation. Available: {totalAllocated - reservedQty}, Requested: {requestedQty}.");
+
+            if (reservedCost + newCost > ppmpBudget)
+                throw new ValidationException(
+                    $"Requested amount for '{ppmpItem.Name}' in month {requestedMonth} exceeds PPMP budget. Remaining: ₱{ppmpBudget - reservedCost:N2}, Requested: ₱{newCost:N2}.");
+        }
+        else
+        {
+            var existingItems = await unitOfWork.PRItemRepository.FindAllAsync(
+                i => i.PPMPItemId == ppmpItemId &&
+                    !i.PurchaseRequest.IsDeleted &&
+                    i.PurchaseRequest.Status != StatusEnum.Returned &&
+                    (!currentPRId.HasValue || i.PurchaseRequestId != currentPRId.Value),
+                cancellationToken);
+
+            var totalAllocated = ppmpItem.PlannedQuantity;
+            var reservedQty    = existingItems.Sum(i => i.RequestedQuantity);
+            var reservedCost   = existingItems.Sum(i => i.Amount);
+            var ppmpBudget     = unitPrice * totalAllocated;
+            var newCost        = requestedQty * unitPrice;
+
+            if (reservedQty + requestedQty > totalAllocated)
+                throw new ValidationException(
+                    $"Requested quantity for '{ppmpItem.Name}' exceeds available PPMP planned quantity. Available: {totalAllocated - reservedQty}, Requested: {requestedQty}.");
+
+            if (reservedCost + newCost > ppmpBudget)
+                throw new ValidationException(
+                    $"Requested amount for '{ppmpItem.Name}' exceeds available PPMP budget. Remaining: ₱{ppmpBudget - reservedCost:N2}, Requested: ₱{newCost:N2}.");
+        }
     }
 }

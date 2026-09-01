@@ -5,7 +5,7 @@ using QuestPDF.Infrastructure;
 
 namespace ERPEZ.Infrastructure.Services.Renderers.Pdf.Base;
 
-internal abstract class BasePdfRenderer
+public abstract class BasePdfRenderer
 {
     protected static byte[]? LoadDefaultLogo()
     {

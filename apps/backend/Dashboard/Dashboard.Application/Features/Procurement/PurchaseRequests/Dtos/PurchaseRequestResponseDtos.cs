@@ -12,6 +12,8 @@ public record PurchaseRequestSummaryResponse
     public decimal  TotalAmount   { get; init; }
     public DateOnly RequestedDate { get; init; }
     public DateOnly CreatedDate   { get; init; }
+    public Guid     OfficeId      { get; init; }
+    public string   OfficeName    { get; init; } = string.Empty;
 }
 
 public record PurchaseRequestDetailResponse

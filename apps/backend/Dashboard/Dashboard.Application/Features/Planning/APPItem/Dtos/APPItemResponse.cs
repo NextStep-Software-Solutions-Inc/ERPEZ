@@ -32,6 +32,9 @@ public record APPItemResponse
     public decimal? EstimatedBudgetOverride { get; init; }
     public decimal OriginalPPMPBudget { get; init; }
     public decimal EffectiveABC { get; init; }
+    public int Quantity { get; init; }
+    public decimal UnitCost { get; init; }
+    public decimal TotalAmount { get; init; }
     public bool IsABCOverridden { get; init; }
     public bool IsStartProcurementOverridden { get; init; }
     public bool IsEndProcurementOverridden { get; init; }
@@ -72,6 +75,8 @@ public record APPItemPPMPItemResponse
     public string? Description { get; init; }
     public string Unit { get; init; } = string.Empty;
     public decimal UnitPrice { get; init; }
+    public int Quantity { get; init; }
+    public decimal TotalAmount { get; init; }
 }
 
 public record APPItemProcurementModeResponse

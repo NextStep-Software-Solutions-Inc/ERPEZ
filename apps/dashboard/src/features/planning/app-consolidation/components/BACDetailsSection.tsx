@@ -196,6 +196,11 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
               <div className="divide-y divide-slate-200">
                 {app.bac?.lineItems?.map((item, idx) => {
                   const effectiveABC = (item.effectiveABC ?? item.estimatedBudgetOverride ?? item.totalAmount) || 0
+                  const qty = (item.quantity && item.quantity > 0)
+                    ? item.quantity
+                    : (item.unitCost && effectiveABC > 0)
+                      ? Math.round(effectiveABC / item.unitCost)
+                      : (item.quantity ?? 1)
                   return (
                     <div
                       key={idx}
@@ -226,7 +231,7 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
                             </span>
                             <span className="text-slate-300">•</span>
                             <span className="text-slate-700 font-medium">
-                              {item.quantity} {item.unit || 'units'} × ₱{item.unitCost?.toLocaleString('en-PH', { maximumFractionDigits: 0 })}
+                              {qty} {item.unit || 'units'} × ₱{item.unitCost?.toLocaleString('en-PH', { maximumFractionDigits: 0 })}
                             </span>
                             {item.estimatedBudgetOverride != null && (
                               <span className="text-xs text-amber-900 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-300">

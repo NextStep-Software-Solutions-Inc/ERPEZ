@@ -54,35 +54,71 @@ public class GetAPPsQueryHandler(IUnitOfWork unitOfWork)
                 StartDate = app.FiscalYear.StartDate,
                 EndDate = app.FiscalYear.EndDate
             },
-            APPItems = app.APPItems.Where(item => !item.IsDeleted).Select(item => new APPItemSummaryResponse
+            APPItems = app.APPItems.Where(item => !item.IsDeleted).Select(item =>
             {
-                Id = item.Id,
-                PPMPItemId = item.PPMPItemId,
-                PPMPItemName = item.PPMPItem?.Name ?? string.Empty,
-                ProcurementModeId = item.ProcurementModeId,
-                ProcurementModeName = item.ProcurementMode?.Name ?? string.Empty,
-                FundSourceId = item.FundSourceId,
-                FundSourceName = item.FundSource?.Name ?? string.Empty,
-                OfficeId = item.OfficeId,
-                OfficeName = item.Office?.Name ?? string.Empty,
-                PAPCode = item.PAPCode,
-                Remarks = item.Remarks,
-                IsEarlyProcurementActivity = item.IsEarlyProcurementActivity,
-                IsOutsourced = item.IsOutsourced,
-                StartOfProcurementOverride = item.StartOfProcurementOverride,
-                EndOfProcurementOverride = item.EndOfProcurementOverride,
-                IsNew = item.IsNew,
-                IsRevised = item.IsRevised,
-                Schedules = item.PPMPItem?.APPProcurementSchedules
-                    .Where(schedule => !schedule.IsDeleted)
-                    .Select(schedule => new APPItemScheduleSummaryResponse
-                    {
-                        Id = schedule.Id,
-                        ProcurementActivityTypeId = schedule.ProcurementActivityTypeId,
-                        ProcurementActivityTypeName = schedule.ProcurementActivityType?.Name ?? string.Empty,
-                        ScheduledDate = schedule.ScheduledDate,
-                        CustomDateText = schedule.CustomDateText
-                    }).ToList() ?? []
+                var allocQty = item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
+                var unitPrice = item.PPMPItem?.UnitPrice ?? 0;
+                var plannedQty = item.PPMPItem?.PlannedQuantity ?? 0;
+                var qty = allocQty > 0 ? allocQty : plannedQty;
+                if (qty <= 0 && unitPrice > 0 && item.EffectiveABC > 0)
+                {
+                    qty = (int)Math.Round(item.EffectiveABC / unitPrice);
+                }
+                if (qty <= 0) qty = 1;
+
+                var effectiveStart = item.StartOfProcurementOverride ?? (item.PPMPItem?.ProcurementStartDate.HasValue == true ? item.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null);
+                var effectiveEnd = item.EndOfProcurementOverride ?? (item.PPMPItem?.ProcurementEndDate.HasValue == true ? item.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null);
+
+                return new APPItemSummaryResponse
+                {
+                    Id = item.Id,
+                    PPMPItemId = item.PPMPItemId,
+                    CSEItemId = item.PPMPItem?.CSEItemId,
+                    NonCSEItemId = item.PPMPItem?.NonCSEItemId,
+                    IsCSE = item.PPMPItem?.CSEItemId != null || (item.PPMPItem != null && item.PPMPItem.NonCSEItemId == null),
+                    IsNonCSE = item.PPMPItem?.NonCSEItemId != null,
+                    PPMPItemName = item.PPMPItem?.Name ?? string.Empty,
+                    Description = item.PPMPItem?.Description ?? string.Empty,
+                    Unit = item.PPMPItem?.Unit ?? string.Empty,
+                    Quantity = qty,
+                    UnitCost = unitPrice,
+                    TotalAmount = item.EffectiveABC,
+                    OriginalPPMPBudget = item.OriginalPPMPBudget,
+                    EffectiveABC = item.EffectiveABC,
+                    EffectiveStartOfProcurement = effectiveStart,
+                    EffectiveEndOfProcurement = effectiveEnd,
+                    IsABCOverridden = item.EstimatedBudgetOverride.HasValue,
+                    IsStartProcurementOverridden = item.StartOfProcurementOverride.HasValue,
+                    IsEndProcurementOverridden = item.EndOfProcurementOverride.HasValue,
+                    ProcurementModeId = item.ProcurementModeId,
+                    ProcurementModeName = item.ProcurementMode?.Name ?? string.Empty,
+                    FundSourceId = item.FundSourceId,
+                    FundSourceName = item.FundSource?.Name ?? string.Empty,
+                    OfficeId = item.OfficeId,
+                    OfficeName = item.Office?.Name ?? string.Empty,
+                    PAPCode = item.PAPCode,
+                    Remarks = item.Remarks,
+                    IsEarlyProcurementActivity = item.IsEarlyProcurementActivity,
+                    EPARemarks = item.EPARemarks,
+                    IsOutsourced = item.IsOutsourced,
+                    StartOfProcurementOverride = item.StartOfProcurementOverride,
+                    EndOfProcurementOverride = item.EndOfProcurementOverride,
+                    EstimatedBudgetOverride = item.EstimatedBudgetOverride,
+                    BidEvaluationCriteria = item.BidEvaluationCriteria?.ToString(),
+                    ProcurementStrategies = item.ProcurementStrategies?.Select(s => s.ToString()).ToList() ?? new List<string>(),
+                    IsNew = item.IsNew,
+                    IsRevised = item.IsRevised,
+                    Schedules = item.PPMPItem?.APPProcurementSchedules
+                        .Where(schedule => !schedule.IsDeleted)
+                        .Select(schedule => new APPItemScheduleSummaryResponse
+                        {
+                            Id = schedule.Id,
+                            ProcurementActivityTypeId = schedule.ProcurementActivityTypeId,
+                            ProcurementActivityTypeName = schedule.ProcurementActivityType?.Name ?? string.Empty,
+                            ScheduledDate = schedule.ScheduledDate,
+                            CustomDateText = schedule.CustomDateText
+                        }).ToList() ?? []
+                };
             }).ToList(),
             APPPPMPs = app.APPPPMPs.Where(link => !link.IsDeleted).Select(link => new APPPPMPLinkResponse
             {

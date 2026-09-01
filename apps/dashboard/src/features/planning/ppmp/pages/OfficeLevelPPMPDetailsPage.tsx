@@ -2298,6 +2298,7 @@ function DetailsSkeleton({ isDeptMode }: { isDeptMode: boolean }) {
 }
 
 export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
+  const queryClient = useQueryClient()
   const { data: ppmpResp, isLoading } = usePPMP({
     pathParams: { id: ppmpId },
     queryParams: {},
@@ -2399,7 +2400,6 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   }
 
   // Delete activity mutation + confirmation (hooks must run unconditionally)
-  const queryClient = useQueryClient()
   const { mutateAsync: deleteActivityMutateAsync, isPending: isDeleting } =
     useDeletePPMPActivity()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -3302,6 +3302,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             ppmp={activeChildPpmp || ppmp}
             lib={lib}
             isEditable={isEditable}
+            ExpenditureItemGroupComponent={ExpenditureItemGroup}
             onAddItem={handleAddItem}
             onEditItem={handleEditItem}
             onDeleteItem={handleDeleteItem}
