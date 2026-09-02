@@ -32,4 +32,5 @@ public record PurchaseRequestDetailResponse
     public string?  FundSource         { get; init; }
     public string?  ProcurementCategory { get; init; }
     public List<PRItemDetailResponse> Items { get; init; } = [];
+    public List<ConsolidatedPRBacResolutionResponse>? BacResolutions { get; init; } = [];
 }

@@ -124,6 +124,19 @@ export interface PurchaseRequestDetailItemApi {
   procurementModeName?: string
 }
 
+export interface PRBacResolutionApi {
+  id: string
+  procurementProjectId: string
+  projectTitle: string
+  resolutionNumber: string
+  resolutionType: string
+  dateResolved: string
+  status: string
+  resolvedLocation?: string
+  abc: number
+  sourceType: string
+}
+
 export interface PurchaseRequestDetailApi {
   id: string
   prNumber: string
@@ -140,6 +153,7 @@ export interface PurchaseRequestDetailApi {
   fundSource: string
   procurementCategory: string
   items: PurchaseRequestDetailItemApi[]
+  bacResolutions?: PRBacResolutionApi[]
 }
 
 // ─── POST /purchase-requests ───────────────────────────────────────────────────

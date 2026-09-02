@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Dtos;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -17,6 +18,75 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
             query.Id, cancellationToken)
             ?? throw new NotFoundException($"Purchase Request with ID {query.Id} not found.");
 
+        var activeItems = pr.PRItems
+            .Where(i => !i.IsDeleted)
+            .ToList();
+
+        // 1. Direct downstream CPR Project (Route 2)
+        var directCPRIds = activeItems
+            .SelectMany(i => i.ConsolidatedPRItems ?? Enumerable.Empty<ConsolidatedPRItem>())
+            .Where(ci => !ci.IsDeleted)
+            .Select(ci => ci.ConsolidatedPRId)
+            .Distinct()
+            .ToList();
+
+        ProcurementProject? authoritativeProject = null;
+
+        if (directCPRIds.Count > 0)
+        {
+            foreach (var cprId in directCPRIds)
+            {
+                var proj = await unitOfWork.ProcurementProjectRepository
+                    .GetByConsolidatedPRIdWithResolutionsAsync(cprId, cancellationToken);
+                if (proj != null)
+                {
+                    authoritativeProject = proj;
+                    break;
+                }
+            }
+        }
+
+        // 2. Upstream Lineage Resolution via APP Items (Route 1)
+        if (authoritativeProject == null)
+        {
+            var appItemIds = activeItems
+                .SelectMany(i => i.PPMPItem?.APPItems ?? Enumerable.Empty<ERPEZ.Domain.Entities.Planning.APPItem>())
+                .Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                .Select(ai => ai.Id)
+                .Distinct()
+                .ToList();
+
+            if (appItemIds.Count > 0)
+            {
+                var lineageProjects = await unitOfWork.ProcurementProjectRepository
+                    .GetByAPPItemIdsWithResolutionsAsync(appItemIds, cancellationToken);
+
+                authoritativeProject = lineageProjects
+                    .OrderByDescending(p => p.Status == "Approved" ? 2 : (p.Status == "Active" ? 1 : 0))
+                    .ThenByDescending(p => p.CreatedAt)
+                    .FirstOrDefault();
+            }
+        }
+
+        var bacResolutions = authoritativeProject?.BACResolutions
+            .Where(r => !r.IsDeleted)
+            .OrderByDescending(r => r.Status == "Approved" ? 2 : (r.Status == "Active" ? 1 : 0))
+            .ThenByDescending(r => r.DateResolved)
+            .ThenByDescending(r => r.CreatedAt)
+            .Select(r => new ConsolidatedPRBacResolutionResponse(
+                Id:                   r.Id,
+                ProcurementProjectId: authoritativeProject.Id,
+                ProjectTitle:         authoritativeProject.Title,
+                ResolutionNumber:     r.ResolutionNumber,
+                ResolutionType:       r.ResolutionType,
+                DateResolved:         r.DateResolved,
+                Status:               r.Status,
+                ResolvedLocation:     r.ResolvedLocation,
+                ABC:                  authoritativeProject.ABC,
+                SourceType:           authoritativeProject.SourceType.ToString()
+            ))
+            .ToList() ?? [];
+
         var response = new PurchaseRequestDetailResponse
         {
             Id                  = pr.Id,
@@ -29,11 +99,10 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
             TotalAmount         = pr.TotalAmount,
             OfficeId            = pr.OfficeId,
             OfficeName          = pr.Office.Name,
-            UACSCode            = pr.UACSCodeCombination?.CombinationCode,   // ← fix: use correct property
+            UACSCode            = pr.UACSCodeCombination?.CombinationCode,
             FundSource          = pr.FundSource?.Name,
             ProcurementCategory = pr.ProcurementCategory?.Name,
-            Items = pr.PRItems
-                .Where(i => !i.IsDeleted)
+            Items = activeItems
                 .Select(i => new PRItemDetailResponse
                 {
                     Id                = i.Id,
@@ -82,7 +151,8 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                                               .ThenByDescending(ai => ai.CreatedAt)
                                               .FirstOrDefault()?.ProcurementMode?.Name
                                           ?? i.PPMPItem?.ProcurementMode?.Name
-                }).ToList()
+                }).ToList(),
+            BacResolutions = bacResolutions
         };
 
         return ApiResponse<PurchaseRequestDetailResponse>.Success(response);

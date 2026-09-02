@@ -3,6 +3,8 @@
  * Supporting both Non-CSE and Out-of-Stock CSE workflows
  */
 
+import type { PRBacResolutionApi } from './apiTypes'
+
 export type PRType = 'non-cse' | 'out-of-stock' | 'consolidated'
 export type PRStatus =
   | 'draft'
@@ -110,6 +112,7 @@ export interface PurchaseRequest {
   approvalOrigin?: 'STANDARD' | 'APPROVED_VIA_BAC'
   bacResolutionNumber?: string
   modeOfProcurement?: string
+  bacResolutions?: PRBacResolutionApi[]
 }
 
 export interface PPMPItemMonthAllocation {
