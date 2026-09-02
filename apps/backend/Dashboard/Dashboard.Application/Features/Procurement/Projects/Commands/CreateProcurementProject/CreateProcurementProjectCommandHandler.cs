@@ -118,6 +118,33 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 return ApiResponse<Guid>.Fail("An active Procurement Project already exists for this Consolidated PR.");
             }
 
+            // Lineage duplicate protection: check if underlying APP items are already packaged in an active Route 1 Procurement Project
+            var cprWithDetails = await unitOfWork.ConsolidatedPRRepository.GetCPRWithDetailsAsync(request.ConsolidatedPRId.Value, cancellationToken);
+            if (cprWithDetails != null)
+            {
+                var appItemIds = cprWithDetails.ConsolidatedPRItems
+                    .Where(ci => !ci.IsDeleted)
+                    .SelectMany(ci => ci.PRItem.PPMPItem?.APPItems ?? Enumerable.Empty<APPItem>())
+                    .Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                    .Select(ai => ai.Id)
+                    .Distinct()
+                    .ToList();
+
+                if (appItemIds.Count > 0)
+                {
+                    var existingLineageProjects = await unitOfWork.ProcurementProjectRepository
+                        .GetByAPPItemIdsWithResolutionsAsync(appItemIds, cancellationToken);
+
+                    var existingLineageProject = existingLineageProjects.FirstOrDefault();
+                    if (existingLineageProject != null)
+                    {
+                        var resolutionNum = existingLineageProject.BACResolutions.FirstOrDefault(r => !r.IsDeleted)?.ResolutionNumber;
+                        var resolutionInfo = !string.IsNullOrEmpty(resolutionNum) ? $" (Resolution No. '{resolutionNum}')" : "";
+                        return ApiResponse<Guid>.Fail($"Cannot create BAC Resolution: An active Procurement Project already exists for the items in this Consolidated PR under '{existingLineageProject.Title}'{resolutionInfo}.");
+                    }
+                }
+            }
+
             // Authoritative Hydration from DB
             projectTitle = !string.IsNullOrWhiteSpace(consolidatedPr.Description)
                 ? consolidatedPr.Description

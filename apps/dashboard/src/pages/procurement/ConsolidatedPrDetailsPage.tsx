@@ -257,8 +257,8 @@ export function ConsolidatedPrDetailsPage({
   )
 
   const linkedBacResolutions = useMemo(() => {
-    if (!consolidatedPr) return []
-    return []
+    if (!consolidatedPr?.bacResolutions) return []
+    return consolidatedPr.bacResolutions
   }, [consolidatedPr])
 
   const owningBacResolution = linkedBacResolutions[0] ?? null
@@ -576,10 +576,12 @@ export function ConsolidatedPrDetailsPage({
                 Owning BAC Resolution
               </p>
               <p className="mt-0.5 text-sm font-bold text-foreground">
-                {'Not linked yet'}
+                {owningBacResolution ? owningBacResolution.resolutionNumber : 'Not linked yet'}
               </p>
               <p className="mt-0.5 text-[11px] text-muted-foreground leading-tight">
-                {'This Consolidated PR has not been assigned to a BAC Resolution.'}
+                {owningBacResolution
+                  ? `${owningBacResolution.resolutionType} · ${owningBacResolution.status}`
+                  : 'This Consolidated PR has not been assigned to a BAC Resolution.'}
               </p>
             </div>
           </div>
@@ -971,24 +973,40 @@ export function ConsolidatedPrDetailsPage({
             </p>
           ) : (
             linkedBacResolutions.map((resolution, index) => (
-              <div key={index}>
-                {index > 0 && <Separator className="mb-4" />}
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="font-medium">
-                      {resolution}
+              <div key={resolution.id || index}>
+                {index > 0 && <Separator className="my-4" />}
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5">
+                      <p className="font-semibold text-foreground text-sm tracking-tight">
+                        {resolution.resolutionNumber}
+                      </p>
+                      <Badge variant="outline" className="text-[10px] py-0.5 px-2.5 rounded-full border-purple-200 text-purple-700 bg-purple-50/50 dark:bg-purple-950/30 font-medium">
+                        {resolution.sourceType === 'APPItem'
+                          ? 'Inherited from APP Item'
+                          : 'Created from Consolidated PR'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {resolution.projectTitle || resolution.resolutionType}
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      {resolution}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Resolution date: {resolution}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-0.5">
+                      {resolution.dateResolved && (
+                        <span>
+                          Resolution date: <span className="font-medium text-foreground/80">{new Date(resolution.dateResolved).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                        </span>
+                      )}
+                      {resolution.resolvedLocation && (
+                        <span>
+                          Location: <span className="font-medium text-foreground/80">{resolution.resolvedLocation}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <BacResolutionStatusBadge status={resolution} />
-                    <Badge variant="outline">
-                      ₱{resolution}
+                  <div className="flex flex-col items-end gap-2.5">
+                    <BacResolutionStatusBadge status={resolution.status} />
+                    <Badge variant="outline" className="font-mono text-xs px-2.5 py-0.5">
+                      {formatCurrency(resolution.abc)}
                     </Badge>
                   </div>
                 </div>

@@ -41,4 +41,9 @@ public interface IAPPPPMPRepository : IRepository<APPPPMP>
     /// Gets existing APPPPMP link records for a specific APP and PPMP ID list.
     /// </summary>
     Task<List<APPPPMP>> GetLinksByAppAndPpmpIdsAsync(Guid appId, IEnumerable<Guid> ppmpIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all active APPPPMP link records for given PPMP IDs across any active APP with eager-loaded APP lineage.
+    /// </summary>
+    Task<List<APPPPMP>> GetActiveLinksByPPMPIdsAsync(IEnumerable<Guid> ppmpIds, CancellationToken cancellationToken = default);
 }
