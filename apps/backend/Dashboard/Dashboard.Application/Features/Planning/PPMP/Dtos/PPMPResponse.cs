@@ -25,6 +25,11 @@ public record PPMPResponse
     public DateTime? SubmittedDate { get; init; }
     public DateTime? ApprovedDate { get; init; }
     public Guid? ConsolidatedIntoId { get; init; }
+    public Guid? ConsolidatedAppId { get; init; }
+    public string? ConsolidatedAppNumber { get; init; }
+    public string? ConsolidatedAppName { get; init; }
+    public string? ConsolidatedAppType { get; init; }
+    public Guid? ConsolidatedAppRootId { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
     public DateTime? UpdatedAt { get; init; }

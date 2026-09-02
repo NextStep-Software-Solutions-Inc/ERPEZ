@@ -63,6 +63,7 @@ public class PPMP : ApprovableEntity
     public virtual List<PPMPActivity> PPMPActivities { get; set; } = [];
     public virtual List<ApprovalEvent> ApprovalEvents { get; set; } = [];
     public virtual List<PPMPExpenditureItem> PPMPExpenditureItems { get; set; } = [];
+    public virtual List<APPPPMP> APPPPMPs { get; set; } = [];
     // Inherited from ApprovableEntity:  
     // public StatusEnum Status { get; set; }
     // public DateTime? SubmittedDate { get; set; }

@@ -50,6 +50,16 @@ public class ConsolidatedPRRepository : Repository<ConsolidatedPR>, IConsolidate
                         .ThenInclude(pi => pi!.NonCSEItem)
                             .ThenInclude(n => n!.ItemCategory)
             .Include(cpr => cpr.ConsolidatedPRItems)
+                .ThenInclude(ci => ci.PRItem)
+                    .ThenInclude(i => i.PPMPItem)
+                        .ThenInclude(pi => pi!.APPItems)
+                            .ThenInclude(ai => ai.APP)
+            .Include(cpr => cpr.ConsolidatedPRItems)
+                .ThenInclude(ci => ci.PRItem)
+                    .ThenInclude(i => i.PPMPItem)
+                        .ThenInclude(pi => pi!.APPItems)
+                            .ThenInclude(ai => ai.ProcurementMode)
+            .Include(cpr => cpr.ConsolidatedPRItems)
                 .ThenInclude(ci => ci.ProcurementMode)
             .AsSplitQuery();
     }
