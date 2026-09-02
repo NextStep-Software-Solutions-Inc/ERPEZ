@@ -102,6 +102,13 @@ public class GetAvailableAwardBacResolutionsQueryHandler(IUnitOfWork unitOfWork)
             cancellationToken
         );
 
+        // Authoritative Public Bidding Award Recommendations
+        var biddingAwardRecs = await unitOfWork.BiddingAwardRecommendationRepository.ToListAsync(
+            unitOfWork.BiddingAwardRecommendationRepository.Query(a => projectIds.Contains(a.ProcurementProjectId) && !a.IsDeleted),
+            cancellationToken
+        );
+
+        // Alternative modes (SVP/Shopping) AOB mappings
         var aobMappings = await unitOfWork.AOBProcurementProjectMappingRepository.ToListAsync(
             unitOfWork.AOBProcurementProjectMappingRepository.Query(m => projectIds.Contains(m.ProcurementProjectId)),
             cancellationToken
@@ -126,20 +133,72 @@ public class GetAvailableAwardBacResolutionsQueryHandler(IUnitOfWork unitOfWork)
         foreach (var res in availableResolutions)
         {
             var project = projects.FirstOrDefault(p => p.Id == res.ProcurementProjectId);
+            var isBidding = IsPublicBidding(project);
+
             var cpr = project?.ConsolidatedPRId.HasValue == true ? cprs.FirstOrDefault(c => c.Id == project.ConsolidatedPRId.Value) : null;
             var projectItems = project?.ConsolidatedPRId.HasValue == true
                 ? cprItems.Where(ci => ci.ConsolidatedPRId == project.ConsolidatedPRId.Value).ToList()
                 : [];
 
-            var mapping = aobMappings.FirstOrDefault(m => m.ProcurementProjectId == res.ProcurementProjectId);
-            var aob = mapping != null ? aobs.FirstOrDefault(a => a.Id == mapping.AOBId) : null;
-            var winningItem = aob != null ? aobAwardedItems.FirstOrDefault(ai => ai.AOBId == aob.Id) : null;
+            Guid supplierId = Guid.Empty;
+            string supplierName = string.Empty;
+            decimal awardedAmount = 0m;
+            string awardCriterion = "LCRB";
+            string? sourceAobNumber = null;
 
-            var supplier = winningItem != null ? suppliers.FirstOrDefault(s => s.Id == winningItem.WinningSupplierId) : suppliers.FirstOrDefault();
-            var supplierId = supplier?.Id ?? Guid.Empty;
-            var supplierName = supplier?.Name ?? "Winning Bidder";
-            var awardedAmount = winningItem?.TotalAwardedAmount ?? project?.ABC ?? 0;
-            var awardCriterion = aob?.AwardCriterion.ToString() ?? "LCRB";
+            if (isBidding)
+            {
+                // Authoritative Public Bidding Handshake:
+                // Locate BiddingAwardRecommendation via direct FK or ProjectId
+                var awardRec = res.BiddingAwardRecommendationId.HasValue
+                    ? biddingAwardRecs.FirstOrDefault(a => a.Id == res.BiddingAwardRecommendationId.Value)
+                    : biddingAwardRecs.FirstOrDefault(a => a.ProcurementProjectId == res.ProcurementProjectId);
+
+                if (awardRec != null)
+                {
+                    var winningSupplier = suppliers.FirstOrDefault(s => s.Id == awardRec.WinningSupplierId);
+                    supplierId = awardRec.WinningSupplierId;
+                    supplierName = winningSupplier?.Name ?? "Winning Bidder";
+                    awardedAmount = awardRec.AwardedAmount;
+                    awardCriterion = awardRec.AwardCriterion;
+                }
+                else
+                {
+                    // Fallback to AOB mapping only if an authoritative AOB awarded item exists
+                    var mapping = aobMappings.FirstOrDefault(m => m.ProcurementProjectId == res.ProcurementProjectId);
+                    var aob = mapping != null ? aobs.FirstOrDefault(a => a.Id == mapping.AOBId) : null;
+                    var winningItem = aob != null ? aobAwardedItems.FirstOrDefault(ai => ai.AOBId == aob.Id) : null;
+
+                    if (winningItem == null)
+                    {
+                        // No post-qualification award recommendation or AOB awarded item found -> skip
+                        continue;
+                    }
+
+                    var supplier = suppliers.FirstOrDefault(s => s.Id == winningItem.WinningSupplierId);
+                    supplierId = supplier?.Id ?? Guid.Empty;
+                    supplierName = supplier?.Name ?? "Winning Bidder";
+                    awardedAmount = winningItem.TotalAwardedAmount;
+                    awardCriterion = aob?.AwardCriterion.ToString() ?? "LCRB";
+                    sourceAobNumber = aob?.AOBNumber;
+                }
+            }
+            else
+            {
+                // Alternative SVP / Shopping Mode via AOB
+                var mapping = aobMappings.FirstOrDefault(m => m.ProcurementProjectId == res.ProcurementProjectId);
+                var aob = mapping != null ? aobs.FirstOrDefault(a => a.Id == mapping.AOBId) : null;
+                var winningItem = aob != null ? aobAwardedItems.FirstOrDefault(ai => ai.AOBId == aob.Id) : null;
+
+                if (winningItem == null) continue;
+
+                var supplier = suppliers.FirstOrDefault(s => s.Id == winningItem.WinningSupplierId);
+                supplierId = supplier?.Id ?? Guid.Empty;
+                supplierName = supplier?.Name ?? "Winning Bidder";
+                awardedAmount = winningItem.TotalAwardedAmount;
+                awardCriterion = aob?.AwardCriterion.ToString() ?? "LCRB";
+                sourceAobNumber = aob?.AOBNumber;
+            }
 
             var lineItems = projectItems.Select(ci =>
             {
@@ -199,7 +258,7 @@ public class GetAvailableAwardBacResolutionsQueryHandler(IUnitOfWork unitOfWork)
                 WinningSupplierName = supplierName,
                 AwardedAmount = awardedAmount,
                 AwardCriterion = awardCriterion,
-                SourceAOBNumber = aob?.AOBNumber,
+                SourceAOBNumber = sourceAobNumber,
                 LineItems = lineItems
             });
         }
@@ -207,4 +266,3 @@ public class GetAvailableAwardBacResolutionsQueryHandler(IUnitOfWork unitOfWork)
         return ApiResponse<List<AvailableAwardBacResolutionDto>>.Success(result);
     }
 }
-
