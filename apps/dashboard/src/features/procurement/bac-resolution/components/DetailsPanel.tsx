@@ -272,10 +272,10 @@ export function DetailsPanel({
     (selectedProject.appItem ? 'APPItem' : 'ConsolidatedPR')
   const isAppItemSource = sourceType === 'APPItem'
 
-  const consolidatedPR = selectedProject.consolidatedPR
-  const cprNumber = consolidatedPR?.prNumber
+  const consolidatedPR = selectedProject.consolidatedPR as (Record<string, any> | undefined)
+  const cprNumber = consolidatedPR?.cprNumber || consolidatedPR?.prNumber
   const cprDescription = consolidatedPR?.description
-  const cprProcurementMode = consolidatedPR?.
+  const cprProcurementMode = consolidatedPR?.modeOfProcurementName || consolidatedPR?.modeOfProcurement
 
   const title =
     selectedProject.title ||
