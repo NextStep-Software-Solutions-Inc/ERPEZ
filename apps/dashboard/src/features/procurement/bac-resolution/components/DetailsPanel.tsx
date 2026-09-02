@@ -272,10 +272,15 @@ export function DetailsPanel({
     (selectedProject.appItem ? 'APPItem' : 'ConsolidatedPR')
   const isAppItemSource = sourceType === 'APPItem'
 
+  const consolidatedPR = selectedProject.consolidatedPR
+  const cprNumber = consolidatedPR?.prNumber
+  const cprDescription = consolidatedPR?.description
+  const cprProcurementMode = consolidatedPR?.
+
   const title =
     selectedProject.title ||
     selectedProject.appItem?.ppmpItemName ||
-    selectedProject.consolidatedPR?.description
+    cprDescription
 
 
   const status = selectedProject.status
@@ -295,7 +300,7 @@ export function DetailsPanel({
     selectedProject.appItem?.Office?.name
 
   const procurementMode =
-    selectedProject.appItem?.ProcurementMode?.name
+    selectedProject.appItem?.ProcurementMode?.name || cprProcurementMode
   const fundSource =
     selectedProject.appItem?.FundSource?.name
   // 'General Fund'
@@ -492,23 +497,29 @@ export function DetailsPanel({
 
             <div>
               <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                IMPLEMENTING UNIT
+                {isAppItemSource ? 'IMPLEMENTING UNIT' : 'CPR NUMBER'}
               </span>
-              <span className="font-medium text-foreground truncate block">{officeName}</span>
+              <span className="font-medium text-foreground truncate block">
+                {isAppItemSource ? (officeName || '—') : (cprNumber || '—')}
+              </span>
             </div>
 
             <div>
               <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
                 PROCUREMENT MODE
               </span>
-              <span className="font-semibold text-purple-600 truncate block">{procurementMode}</span>
+              <span className="font-semibold text-purple-600 truncate block">
+                {procurementMode || '—'}
+              </span>
             </div>
 
             <div>
               <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
                 SOURCE OF FUND
               </span>
-              <span className="font-medium text-foreground truncate block">{fundSource}</span>
+              <span className="font-medium text-foreground truncate block">
+                {isAppItemSource ? (fundSource || '—') : 'N/A'}
+              </span>
             </div>
           </div>
         </CardHeader>
@@ -660,78 +671,107 @@ export function DetailsPanel({
               </div>
             </CardHeader>
             <CardContent className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-default-50 border border-default-200">
-                <div>
-                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">OFFICE / UNIT</span>
-                  <span className="font-semibold text-foreground text-sm">{officeName}</span>
-                </div>
+              {isAppItemSource ? (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-default-50 border border-default-200">
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] font-semibold uppercase">OFFICE / UNIT</span>
+                      <span className="font-semibold text-foreground text-sm">{officeName || '—'}</span>
+                    </div>
 
-                <div>
-                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">PROCUREMENT MODE</span>
-                  <span className="font-semibold text-purple-600 text-sm">{procurementMode}</span>
-                </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] font-semibold uppercase">PROCUREMENT MODE</span>
+                      <span className="font-semibold text-purple-600 text-sm">{procurementMode || '—'}</span>
+                    </div>
 
-                <div>
-                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">SOURCE OF FUND</span>
-                  <span className="font-semibold text-foreground text-sm">{fundSource}</span>
-                </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] font-semibold uppercase">SOURCE OF FUND</span>
+                      <span className="font-semibold text-foreground text-sm">{fundSource || '—'}</span>
+                    </div>
 
-                <div>
-                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">APPROVED BUDGET (ABC)</span>
-                  <span className="font-bold text-emerald-700 text-sm">
-                    ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] font-semibold uppercase">APPROVED BUDGET (ABC)</span>
+                      <span className="font-bold text-emerald-700 text-sm">
+                        ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
 
-              {/* If multiple APP items are linked */}
-              {appItemLinks.length > 0 ? (
-                <div className="space-y-2">
+                  {/* If multiple APP items are linked */}
+                  {appItemLinks.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground block text-[10px] font-bold uppercase tracking-wider">
+                          LINKED APP LINE ITEMS ({appItemLinks.length})
+                        </span>
+                        {appItemLinks[0]?.appNumber && (
+                          <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">
+                            {appItemLinks[0].appNumber}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="rounded-lg border border-default-200 overflow-hidden bg-white">
+                        <table className="w-full text-xs">
+                          <thead className="bg-default-50 border-b border-default-200">
+                            <tr>
+                              <th className="p-2 text-left font-bold text-default-700">Item #</th>
+                              <th className="p-2 text-left font-bold text-default-700">Description</th>
+                              <th className="p-2 text-left font-bold text-default-700">Office</th>
+                              <th className="p-2 text-right font-bold text-default-700">ABC</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-default-100">
+                            {appItemLinks.map((item, idx) => (
+                              <tr key={item.id || idx}>
+                                <td className="p-2 font-semibold text-primary">{item.itemNumber || `#${idx + 1}`}</td>
+                                <td className="p-2 font-medium text-default-900">{item.description}</td>
+                                <td className="p-2 text-default-600">{item.officeName || '—'}</td>
+                                <td className="p-2 text-right font-semibold text-emerald-700">
+                                  ₱{item.effectiveABC.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <span className="text-muted-foreground block text-[10px] font-bold uppercase tracking-wider">
+                        ITEM SPECIFICATIONS & ALLOCATION DETAILS
+                      </span>
+                      <div className="rounded-lg border border-default-200 p-4 bg-white space-y-1 shadow-2xs">
+                        <p className="font-bold text-default-900 text-sm">{title}</p>
+                        <p className="text-muted-foreground text-xs">
+                          Full Lot Allocation: ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="rounded-xl border border-default-200 p-4 bg-white space-y-3 shadow-2xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground block text-[10px] font-bold uppercase tracking-wider">
-                      LINKED APP LINE ITEMS ({appItemLinks.length})
+                    <span className="font-bold text-base text-primary flex items-center gap-1.5">
+                      <FileText className="h-4 w-4" />
+                      {cprNumber || 'Consolidated Purchase Request'}
                     </span>
-                    {appItemLinks[0]?.appNumber && (
-                      <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">
-                        {appItemLinks[0].appNumber}
+                    {cprProcurementMode && (
+                      <Badge className="bg-purple-600 text-white text-[10px] rounded-full px-2.5">
+                        {cprProcurementMode}
                       </Badge>
                     )}
                   </div>
-                  <div className="rounded-lg border border-default-200 overflow-hidden bg-white">
-                    <table className="w-full text-xs">
-                      <thead className="bg-default-50 border-b border-default-200">
-                        <tr>
-                          <th className="p-2 text-left font-bold text-default-700">Item #</th>
-                          <th className="p-2 text-left font-bold text-default-700">Description</th>
-                          <th className="p-2 text-left font-bold text-default-700">Office</th>
-                          <th className="p-2 text-right font-bold text-default-700">ABC</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-default-100">
-                        {appItemLinks.map((item, idx) => (
-                          <tr key={item.id || idx}>
-                            <td className="p-2 font-semibold text-primary">{item.itemNumber || `#${idx + 1}`}</td>
-                            <td className="p-2 font-medium text-default-900">{item.description}</td>
-                            <td className="p-2 text-default-600">{item.officeName || '—'}</td>
-                            <td className="p-2 text-right font-semibold text-emerald-700">
-                              ₱{item.effectiveABC.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <span className="text-muted-foreground block text-[10px] font-bold uppercase tracking-wider">
-                    ITEM SPECIFICATIONS & ALLOCATION DETAILS
-                  </span>
-                  <div className="rounded-lg border border-default-200 p-4 bg-white space-y-1 shadow-2xs">
-                    <p className="font-bold text-default-900 text-sm">{title}</p>
-                    <p className="text-muted-foreground text-xs">
-                      Full Lot Allocation: ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  {cprDescription && (
+                    <p className="text-xs text-foreground font-medium leading-relaxed">
+                      {cprDescription}
                     </p>
+                  )}
+                  <div className="pt-2 border-t border-default-100 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Approved Budget (ABC):</span>
+                    <span className="font-bold text-emerald-700 text-sm">
+                      ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </span>
                   </div>
                 </div>
               )}
@@ -841,24 +881,28 @@ export function DetailsPanel({
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
                     <LinkIcon className="h-4 w-4 text-primary" />
-                    Linked Consolidated PRs (0)
+                    Linked Consolidated PR (1)
                   </CardTitle>
-                  {onLinkPrs && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onLinkPrs}
-                      className="gap-1.5 text-xs border-purple-300 text-purple-600 hover:bg-purple-50 h-8"
-                    >
-                      <LinkIcon className="h-3.5 w-3.5 text-purple-600" />
-                      Manage Linkage
-                    </Button>
-                  )}
                 </div>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="rounded-xl border border-dashed border-default-300 bg-default-50/50 p-8 text-center text-xs text-muted-foreground">
-                  No Consolidated PRs linked to this BAC resolution.
+              <CardContent className="p-4">
+                <div className="rounded-xl border border-default-200 p-4 bg-white space-y-2 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-primary flex items-center gap-1.5">
+                      <FileText className="h-4 w-4" />
+                      {cprNumber || 'Consolidated PR'}
+                    </span>
+                    {cprProcurementMode && (
+                      <Badge className="bg-purple-600 text-white text-[10px] rounded-full px-2.5">
+                        {cprProcurementMode}
+                      </Badge>
+                    )}
+                  </div>
+                  {cprDescription && (
+                    <p className="text-xs text-muted-foreground">
+                      {cprDescription}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
