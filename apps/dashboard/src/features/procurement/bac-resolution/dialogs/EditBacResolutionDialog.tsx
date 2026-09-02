@@ -85,15 +85,15 @@ export function EditBacResolutionDialog({
   // Map generic clause links if present
   const allClauseLinks = resDetail?.clauseLinks || []
   const whereasClauseLinks = allClauseLinks
-    .filter((c) => c.clauseType === 'Whereas')
+    .filter((c) => (c.clauseType || 'Whereas').toLowerCase() === 'whereas')
     .map((c) => ({ resolutionClauseId: c.resolutionClauseId, order: c.order }))
 
   const nowThereforeClauses = allClauseLinks
-    .filter((c) => c.clauseType === 'NowTherefore')
+    .filter((c) => (c.clauseType || '').toLowerCase() === 'nowtherefore')
     .map((c) => ({ resolutionClauseId: c.resolutionClauseId, order: c.order }))
 
   const resolvedClauses = allClauseLinks
-    .filter((c) => c.clauseType === 'Resolved')
+    .filter((c) => (c.clauseType || '').toLowerCase() === 'resolved')
     .map((c) => ({ resolutionClauseId: c.resolutionClauseId, order: c.order }))
 
   // Legacy fallback for Whereas clauses

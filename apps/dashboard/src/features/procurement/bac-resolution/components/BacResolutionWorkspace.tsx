@@ -29,6 +29,7 @@ import type {
 } from '../types'
 import { ClauseTemplateManagerDialog } from './ClauseTemplateManagerDialog'
 import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
+import { useSubmitBacResolution } from '../handlers/hooks'
 import { deleteBacResolutionRequest } from '../handlers/deleteBacResolutionRequest'
 import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
 import { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
@@ -79,6 +80,7 @@ export function BacResolutionWorkspace({
   const queryClient = useQueryClient()
   const { mutateAsync: deleteBacProject } = useDeleteBacResolution()
   const { mutateAsync: updateBacProject } = useUpdateBacResolution()
+  const { mutateAsync: submitBacResolution } = useSubmitBacResolution()
 
   // Filter & Queue Search States
   const [searchValue, setSearchValue] = useState('')
@@ -199,7 +201,40 @@ export function BacResolutionWorkspace({
     }
   }
   const handleSubmit = () => { setSubmitConfirmOpen(true) }
-  const handleConfirmSubmit = () => { setSubmitConfirmOpen(false) }
+  const handleConfirmSubmit = async () => {
+    if (!selectedId) return
+    setSubmitConfirmOpen(false)
+    try {
+      await toast.promise(
+        submitBacResolution(
+          {
+            pathParams: { id: selectedId },
+            payload: { status: 'Submitted' },
+            queryParams: { id: selectedId }
+          },
+
+          {
+            onSuccess: async () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].startsWith('/bac/projects'),
+              })
+            },
+          },
+        ),
+        {
+          loading: 'Submitting BAC Resolution for approval...',
+          success: 'BAC Resolution submitted for approval successfully!',
+          error: (err) =>
+            err instanceof Error ? err.message : 'Failed to submit BAC Resolution.',
+        },
+      )
+    } catch {
+      // toast handles presentation
+    }
+  }
+
 
   return (
     <div className="w-full space-y-6 pb-12">
@@ -226,7 +261,7 @@ export function BacResolutionWorkspace({
 
             {/* Global Workspace Actions */}
             <div className="flex items-center gap-2.5 flex-wrap">
-              {role === 'procurement-staff' && (
+              {(role === 'procurement-staff' || role === 'all') && (
                 <Button
                   variant="outline"
                   onClick={() => void navigate({ to: '/v2/bac-resolutions/clauses' })}
@@ -237,7 +272,7 @@ export function BacResolutionWorkspace({
                 </Button>
               )}
 
-              {role === 'procurement-staff' && (
+              {(role === 'procurement-staff' || role === 'all') && (
                 <Button
                   onClick={() => setCreateOpen(true)}
                   className="gap-1.5 text-xs h-9 shadow-xs"
@@ -319,7 +354,7 @@ export function BacResolutionWorkspace({
                 () => { }
               }
               onSubmit={
-                role === 'procurement-staff' && selectedId
+                (role === 'procurement-staff' || role === 'all') && selectedId
                   ? handleSubmit
                   : undefined
               }
