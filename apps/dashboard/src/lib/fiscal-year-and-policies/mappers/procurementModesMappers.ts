@@ -26,6 +26,22 @@ function parseThresholdInput(value: string | null | undefined): number | null {
 export function mapProcurementModeToDisplay(
   mode: ProcurementMode,
 ): ProcurementModeDisplay {
+  if (!mode) {
+    return {
+      id: '',
+      modeName: null,
+      description: null,
+      minThreshold: 0,
+      maxThreshold: null,
+      isArchived: false,
+      isActive: false,
+      categoryId: '',
+      categoryName: null,
+      createdAt: '',
+      updatedAt: null,
+    }
+  }
+
   return {
     id: mode.id,
     modeName: mode.name,
@@ -34,8 +50,8 @@ export function mapProcurementModeToDisplay(
     maxThreshold: mode.maxThreshold,
     isArchived: mode.isArchived,
     isActive: mode.isActive,
-    categoryId: mode.procurementCategory.id,
-    categoryName: mode.procurementCategory.name,
+    categoryId: mode.procurementCategory?.id ?? '',
+    categoryName: mode.procurementCategory?.name ?? null,
     createdAt: mode.createdAt,
     updatedAt: mode.updatedAt,
   }
