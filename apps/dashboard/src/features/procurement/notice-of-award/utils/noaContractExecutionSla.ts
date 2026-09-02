@@ -81,8 +81,8 @@ export function addCalendarDaysToDateOnly(value: string, days: number): string {
 export function getNoaContractExecutionDeadline(noa: NoticeOfAward) {
   return (
     normalizeDateOnly(noa.contractExecutionDeadline) ??
-    (noa.issuedAt
-      ? addCalendarDaysToDateOnly(noa.issuedAt, NOA_CONTRACT_EXECUTION_SLA_DAYS)
+    (noa.conformeReceivedDate
+      ? addCalendarDaysToDateOnly(noa.conformeReceivedDate, NOA_CONTRACT_EXECUTION_SLA_DAYS)
       : null)
   )
 }
@@ -121,11 +121,13 @@ export function getNoaMilestoneFileName(
 
 export function getNoaContractExecutionSlaState(
   noa: NoticeOfAward,
-  now: Date = new Date(),
+  currentDateInput?: Date | string,
 ): NoticeOfAwardContractExecutionSlaState {
+  const now = currentDateInput ? new Date(currentDateInput) : new Date()
+  const isIssued = Boolean(noa.issuedAt && noa.status === 'approved')
   const issuedDate = normalizeDateOnly(noa.issuedAt)
+  const conformeDate = normalizeDateOnly(noa.conformeReceivedDate)
   const deadlineDate = getNoaContractExecutionDeadline(noa)
-  const isIssued = noa.status === 'approved' && Boolean(issuedDate)
   const completedMilestones = NOA_CONTRACT_EXECUTION_MILESTONES.filter(
     (milestone) => Boolean(getNoaMilestoneDate(noa, milestone.key)),
   )
@@ -135,7 +137,7 @@ export function getNoaContractExecutionSlaState(
   const isComplete =
     completedMilestones.length === NOA_CONTRACT_EXECUTION_MILESTONES.length
 
-  if (!isIssued || !issuedDate || !deadlineDate) {
+  if (!isIssued || !issuedDate) {
     return {
       isIssued: false,
       isComplete: false,
@@ -150,7 +152,38 @@ export function getNoaContractExecutionSlaState(
       completedMilestones: completedMilestones.length,
       totalMilestones: NOA_CONTRACT_EXECUTION_MILESTONES.length,
       pendingMilestoneLabels,
-      label: 'Not issued',
+      label: noa.status === 'for-approval' ? 'Pending approval' : 'Draft',
+      tone: 'muted',
+    }
+  }
+
+  // Before receipt/conforme, NOA is issued but statutory 10-day clock is awaiting receipt
+  if (!conformeDate || !deadlineDate) {
+    const issued = parseDateOnly(issuedDate)
+    const today = parseDateOnly(now.toISOString())
+    const elapsedDays =
+      issued && today
+        ? Math.max(0, Math.floor((today.getTime() - issued.getTime()) / DAY_IN_MS))
+        : null
+
+    return {
+      isIssued: true,
+      isComplete: false,
+      isOpen: false,
+      isOverdue: false,
+      requiresCascadeDecision: false,
+      issuedDate,
+      deadlineDate: null,
+      daysRemaining: null,
+      elapsedDays,
+      progressPercent: Math.round(
+        (completedMilestones.length / NOA_CONTRACT_EXECUTION_MILESTONES.length) *
+          100,
+      ),
+      completedMilestones: completedMilestones.length,
+      totalMilestones: NOA_CONTRACT_EXECUTION_MILESTONES.length,
+      pendingMilestoneLabels,
+      label: 'Issued — Awaiting Conforme',
       tone: 'muted',
     }
   }

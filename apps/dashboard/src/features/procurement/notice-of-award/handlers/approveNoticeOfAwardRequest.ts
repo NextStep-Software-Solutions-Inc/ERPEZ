@@ -1,85 +1,47 @@
-import {
-  findNoticeOfAward,
-  replaceNoticeOfAward,
-  uploadedNoaFilesMap,
-} from '../data/mockNoticeOfAwardData'
-import { mockSession } from '@/config/mockSession'
+﻿import api from '@/services/api'
+import type { APIResponse } from 'erpez-shared-lib'
 import type { ApproveNoticeOfAwardPayload } from '../types'
-import {
-  addCalendarDaysToDateOnly,
-  NOA_CONTRACT_EXECUTION_SLA_DAYS,
-} from '../utils/noaContractExecutionSla'
-import { useBidEvaluationStore } from '../../bid-evaluation/store/bidEvaluationStore'
 
 export const approveNoticeOfAwardRequest = {
   endpoint: '/notice-of-awards/:id/approve',
   key: null,
-  fetcher: async ({ data }: { data: ApproveNoticeOfAwardPayload }) => {
-    await new Promise((resolve) => window.setTimeout(resolve, 120))
-    const approvedBy = mockSession.user.name?.trim() || 'Unknown'
+  fetcher: async ({
+    data,
+  }: {
+    data: ApproveNoticeOfAwardPayload & {
+      philgepsPostedAt?: string | null
+      philgepsReferenceNumber?: string | null
+      remarks?: string | null
+    }
+  }): Promise<void> => {
+    let signedDocumentFileId: string | undefined
+    let signedDocumentFileName: string | undefined
 
-    const noticeOfAward = findNoticeOfAward(data.noaId)
+    if (data.signedDocument) {
+      signedDocumentFileName = data.signedDocument.name
+      const formData = new FormData()
+      formData.append('file', data.signedDocument)
 
-    if (!noticeOfAward) {
-      throw new Error('Notice of Award not found.')
+      const uploadResponse = await api.post<APIResponse<string>>('/files/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+
+      if (uploadResponse.data?.succeeded && uploadResponse.data.data) {
+        signedDocumentFileId = uploadResponse.data.data
+      }
     }
 
-    if (noticeOfAward.status !== 'for-approval') {
-      throw new Error('Only NOAs for approval can be approved.')
+    const payload = {
+      signedDocumentFileId,
+      signedDocumentFileName,
+      philgepsPostedAt: data.philgepsPostedAt || null,
+      philgepsReferenceNumber: data.philgepsReferenceNumber || null,
+      remarks: data.remarks || 'Approved and issued by HoPE',
     }
 
-    if (
-      !data.signedDocument ||
-      data.signedDocument.type !== 'application/pdf'
-    ) {
-      throw new Error('A signed NOA PDF is required before approval.')
+    const response = await api.post<APIResponse<void>>(`/notice-of-awards/${data.noaId}/approve`, payload)
+    if (!response.data?.succeeded) {
+      throw new Error(response.data?.message || 'Failed to approve Notice of Award.')
     }
-
-    uploadedNoaFilesMap.set(data.noaId, data.signedDocument)
-
-    const issuedAt = new Date().toISOString()
-    const philgepsPostedAt = issuedAt.slice(0, 10)
-    const updated = {
-      ...noticeOfAward,
-      status: 'approved' as const,
-      approvedBy,
-      approvedAt: issuedAt,
-      issuedAt,
-      contractExecutionDeadline: addCalendarDaysToDateOnly(
-        issuedAt,
-        NOA_CONTRACT_EXECUTION_SLA_DAYS,
-      ),
-      signedDocumentFileName: data.signedDocument.name,
-      philgepsPostedAt,
-      philgepsReferenceNumber:
-        noticeOfAward.philgepsReferenceNumber ??
-        `PHILGEPS-${noticeOfAward.noaNumber}`,
-      updatedAt: issuedAt,
-      activityLog: [
-        ...noticeOfAward.activityLog,
-        {
-          id: `${noticeOfAward.id}-log-${noticeOfAward.activityLog.length + 1}`,
-          action: 'Approved / Issued with signed document',
-          actor: approvedBy,
-          timestamp: issuedAt,
-          note: data.signedDocument.name,
-        },
-        {
-          id: `${noticeOfAward.id}-log-${noticeOfAward.activityLog.length + 2}`,
-          action: 'Logged PhilGEPS NOA posting',
-          actor: approvedBy,
-          timestamp: issuedAt,
-          note: philgepsPostedAt,
-        },
-      ],
-    }
-
-    if (noticeOfAward.linkedBacResolution.sourceBidEvaluationProjectId) {
-      useBidEvaluationStore.getState().approveProject(
-        noticeOfAward.linkedBacResolution.sourceBidEvaluationProjectId,
-      )
-    }
-
-    return replaceNoticeOfAward(updated)
   },
 }

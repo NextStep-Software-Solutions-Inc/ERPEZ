@@ -32,7 +32,7 @@ import {
 
 const createNoticeOfAwardSchema = z.object({
   bacResolutionId: z.string().min(1, 'Approved BAC Resolution is required.'),
-  noaNumber: z.string().min(1, 'NOA Number is required.'),
+  noaNumber: z.string().optional(),
   date: z.string().min(1, 'Date is required.'),
   dateBid: z.string().min(1, 'Date Bid is required.'),
   description: z.string().min(1, 'Description is required.'),
@@ -143,15 +143,19 @@ export function CreateNoticeOfAwardForm({
                   <SelectValue placeholder="-- Select Approved BAC Resolution --" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableAwardBacResolutions.map((resolution) => (
-                    <SelectItem key={resolution.id} value={resolution.id}>
-                      {resolution.bacResolutionNumber} -{' '}
-                      {resolution.winningSupplierName}
-                      {resolution.sourceModule === 'bid-evaluation'
-                        ? ' (Bid Evaluation winner)'
-                        : ''}
-                    </SelectItem>
-                  ))}
+                  {availableAwardBacResolutions.map((resolution) => {
+                    const projectTitle =
+                      resolution.projectName ||
+                      resolution.linkedConsolidatedPr?.projectName ||
+                      (resolution.description && !resolution.description.startsWith('WHEREAS') ? resolution.description : '')
+                    return (
+                      <SelectItem key={resolution.id} value={resolution.id}>
+                        {resolution.bacResolutionNumber}
+                        {projectTitle ? ` — ${projectTitle}` : ''}
+                        {resolution.winningSupplierName ? ` (${resolution.winningSupplierName})` : ''}
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">

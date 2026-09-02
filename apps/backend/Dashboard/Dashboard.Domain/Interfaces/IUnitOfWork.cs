@@ -154,5 +154,8 @@ public interface IUnitOfWork
     IRFQRepository RFQRepository { get; }
     IPurchaseOrderRepository PurchaseOrderRepository { get; }
     IPurchaseOrderItemRepository PurchaseOrderItemRepository { get; }
+    INoticeOfAwardRepository NoticeOfAwardRepository { get; }
+    INoticeOfAwardMilestoneRepository NoticeOfAwardMilestoneRepository { get; }
+    INoticeOfAwardActivityRepository NoticeOfAwardActivityRepository { get; }
 }
 

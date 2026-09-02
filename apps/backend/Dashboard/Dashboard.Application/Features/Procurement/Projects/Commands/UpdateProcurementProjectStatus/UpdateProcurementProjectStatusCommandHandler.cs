@@ -39,6 +39,16 @@ public class UpdateProcurementProjectStatusCommandHandler(IUnitOfWork unitOfWork
         project.Status = newStatusEnum.ToString();
 
         unitOfWork.ProcurementProjectRepository.Update(project);
+
+        var resolutions = await unitOfWork.BACResolutionRepository.ToListAsync(
+            unitOfWork.BACResolutionRepository.Query(r => r.ProcurementProjectId == project.Id),
+            cancellationToken);
+        foreach (var res in resolutions)
+        {
+            res.Status = newStatusEnum.ToString();
+            unitOfWork.BACResolutionRepository.Update(res);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, $"Procurement project status updated to {newStatusEnum} successfully.");

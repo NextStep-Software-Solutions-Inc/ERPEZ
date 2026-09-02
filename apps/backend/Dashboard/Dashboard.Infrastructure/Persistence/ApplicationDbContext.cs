@@ -197,6 +197,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PsdbmStockHistory>? PsdbmStockHistories { get; set; }
     public DbSet<PsdbmSyncRun>? PsdbmSyncRuns { get; set; }
 
+    // Notice of Award (NOA)
+    public DbSet<NoticeOfAward>? NoticeOfAwards { get; set; }
+    public DbSet<NoticeOfAwardMilestone>? NoticeOfAwardMilestones { get; set; }
+    public DbSet<NoticeOfAwardActivity>? NoticeOfAwardActivities { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -2194,7 +2199,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<APPPPMP>()
             .HasOne(e => e.PPMP)
-            .WithMany()
+            .WithMany(p => p.APPPPMPs)
             .HasForeignKey(e => e.PPMPId)
             .OnDelete(DeleteBehavior.Restrict);
 

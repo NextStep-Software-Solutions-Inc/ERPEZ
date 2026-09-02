@@ -14,12 +14,12 @@ import { PageContainerDashtail } from '@/components/v2'
 import {
   approveNoticeOfAwardRequest,
   createNoticeOfAwardRequest,
+  getAvailableAwardBacResolutionsRequest,
   getNoticeOfAwardsRequest,
   returnNoticeOfAwardRequest,
 } from '../handlers'
-import { getApprovedAwardBacResolutionSources } from '../data/mockNoticeOfAwardData'
-import { useBidEvaluationStore } from '../../bid-evaluation/store/bidEvaluationStore'
 import type {
+  AwardBacResolutionSource,
   NoticeOfAward,
   NoticeOfAwardInboxFilter,
   NoticeOfAwardRole,
@@ -43,20 +43,6 @@ type NoticeOfAwardWorkspaceProps = {
   defaultFilter?: NoticeOfAwardInboxFilter
 }
 
-const TAB_ITEMS: Array<{ id: NoticeOfAwardInboxFilter; label: string }> = [
-  { id: 'all', label: 'All' },
-  { id: 'draft', label: 'Draft' },
-  { id: 'for-approval', label: 'For Approval' },
-  { id: 'returned', label: 'Returned' },
-  { id: 'approved', label: 'Approved' },
-]
-
-const HOPE_TAB_ITEMS: Array<{ id: NoticeOfAwardInboxFilter; label: string }> = [
-  { id: 'for-approval', label: 'For Approval' },
-  { id: 'approved', label: 'Approved' },
-  { id: 'all', label: 'All (Manage)' },
-]
-
 export function NoticeOfAwardWorkspace({
   title,
   description,
@@ -65,6 +51,7 @@ export function NoticeOfAwardWorkspace({
   defaultFilter = 'all',
 }: NoticeOfAwardWorkspaceProps) {
   const [noticesOfAward, setNoticesOfAward] = useState<NoticeOfAward[]>([])
+  const [availableAwardBacResolutions, setAvailableAwardBacResolutions] = useState<AwardBacResolutionSource[]>([])
   const [activeFilter, setActiveFilter] =
     useState<NoticeOfAwardInboxFilter>(defaultFilter)
   const [search, setSearch] = useState('')
@@ -73,13 +60,16 @@ export function NoticeOfAwardWorkspace({
   const [createOpen, setCreateOpen] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
   const [approveOpen, setApproveOpen] = useState(false)
-  const bidEvaluationProjects = useBidEvaluationStore((state) => state.projects)
 
   const loadNoticesOfAward = async () => {
     setIsLoading(true)
     try {
-      const response = await getNoticeOfAwardsRequest.fetcher()
-      setNoticesOfAward(response)
+      const [noas, resolutions] = await Promise.all([
+        getNoticeOfAwardsRequest.fetcher(),
+        getAvailableAwardBacResolutionsRequest.fetcher().catch(() => []),
+      ])
+      setNoticesOfAward(noas)
+      setAvailableAwardBacResolutions(resolutions)
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Failed to load NOAs.',
@@ -140,20 +130,6 @@ export function NoticeOfAwardWorkspace({
     }
   }, [filteredNoticesOfAward, selectedNoaId])
 
-  const availableAwardBacResolutions = useMemo(
-    () => {
-      const usedBacResolutionIds = new Set(
-        noticesOfAward.map((noa) => noa.linkedBacResolution.id)
-      )
-      return getApprovedAwardBacResolutionSources().filter(
-        (source) =>
-          source.sourceModule === 'bid-evaluation' &&
-          !usedBacResolutionIds.has(source.id),
-      )
-    },
-    [bidEvaluationProjects, noticesOfAward],
-  )
-
   const selectedNoticeOfAward = useMemo(
     () => noticesOfAward.find((item) => item.id === selectedNoaId) ?? null,
     [noticesOfAward, selectedNoaId],
@@ -162,154 +138,110 @@ export function NoticeOfAwardWorkspace({
   const countByStatus = (status: NoticeOfAward['status']) =>
     noticesOfAward.filter((item) => item.status === status).length
 
-  const summaryCount = role === 'hope'
-    ? countByStatus('for-approval') + countByStatus('approved')
+  const countDraft = countByStatus('draft')
+  const countForApproval = countByStatus('for-approval')
+  const countReturned = countByStatus('returned')
+  const countApproved = countByStatus('approved')
+  const countAll = role === 'hope'
+    ? countForApproval + countApproved
     : noticesOfAward.length
 
-  const runningTotal = noticesOfAward
-    .filter((item) => {
-      if (role === 'hope') {
-        return item.status === 'for-approval' || item.status === 'approved'
-      }
-      return true
-    })
-    .reduce((sum, item) => sum + item.totalAmount, 0)
+  const totalAwardedValue = useMemo(() => {
+    return noticesOfAward
+      .filter((item) => {
+        if (role === 'hope') {
+          return item.status === 'for-approval' || item.status === 'approved'
+        }
+        return item.status === 'approved'
+      })
+      .reduce((sum, item) => sum + item.totalAmount, 0)
+  }, [noticesOfAward, role])
 
-  const slaStates = noticesOfAward
-    .filter((item) => {
-      if (role === 'hope') {
-        return item.status === 'for-approval' || item.status === 'approved'
-      }
-      return true
-    })
-    .map((item) => getNoaContractExecutionSlaState(item))
+  const slaStates = useMemo(() => {
+    return noticesOfAward
+      .filter((item) => {
+        if (role === 'hope') {
+          return item.status === 'for-approval' || item.status === 'approved'
+        }
+        return true
+      })
+      .map((item) => getNoaContractExecutionSlaState(item))
+  }, [noticesOfAward, role])
 
-  const openSlaCount = slaStates.filter((state) => state.isOpen).length
   const overdueSlaCount = slaStates.filter((state) => state.isOverdue).length
 
-  const metricCards = useMemo(() => {
+  const filterCards = useMemo(() => {
     if (role === 'hope') {
       return [
         {
-          key: 'for-approval',
-          title: 'For Approval',
-          value: countByStatus('for-approval'),
-          icon: Clock3,
-          containerClassName:
-            'border-default-200 bg-sky-50/90 text-sky-700 shadow-sm hover:shadow-md border-l-4 border-l-sky-500 hover:translate-y-[-2px] transition-all duration-200',
-          iconClassName: 'text-sky-600',
-          valueClassName: 'text-sky-700',
-          status: 'for-approval' as const,
-        },
-        {
-          key: 'approved',
-          title: 'Approved / Issued',
-          value: countByStatus('approved'),
-          icon: CircleCheckBig,
-          containerClassName:
-            'border-default-200 bg-emerald-50/90 text-emerald-700 shadow-sm hover:shadow-md border-l-4 border-l-emerald-500 hover:translate-y-[-2px] transition-all duration-200',
-          iconClassName: 'text-emerald-600',
-          valueClassName: 'text-emerald-700',
-          status: 'approved' as const,
-        },
-        {
-          key: 'summary',
-          title: 'Summary',
-          value: summaryCount,
+          id: 'all' as NoticeOfAwardInboxFilter,
+          title: 'All',
+          count: countAll,
           icon: LayoutList,
-          containerClassName:
-            'border-default-200 bg-default-50/90 text-default-850 shadow-sm hover:shadow-md border-l-4 border-l-primary hover:translate-y-[-2px] transition-all duration-200',
-          iconClassName: 'text-primary',
-          valueClassName: 'text-default-900',
-          summary: true,
-          rows: [
-            { label: 'For Approval', value: countByStatus('for-approval') },
-            { label: 'Approved', value: countByStatus('approved') },
-            {
-              label: 'Running Total',
-              value: runningTotal.toLocaleString('en-PH', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }),
-            },
-          ],
+          colorTheme: 'indigo' as const,
+        },
+        {
+          id: 'for-approval' as NoticeOfAwardInboxFilter,
+          title: 'For Approval',
+          count: countForApproval,
+          icon: Clock3,
+          colorTheme: 'sky' as const,
+        },
+        {
+          id: 'approved' as NoticeOfAwardInboxFilter,
+          title: 'Approved / Issued',
+          count: countApproved,
+          icon: CircleCheckBig,
+          colorTheme: 'emerald' as const,
         },
       ]
     }
 
     return [
       {
-        key: 'draft',
-        title: 'Draft',
-        value: countByStatus('draft'),
-        icon: FileClock,
-        containerClassName:
-          'border-default-200 bg-slate-50/90 text-slate-700 shadow-sm hover:shadow-md border-l-4 border-l-slate-400 hover:translate-y-[-2px] transition-all duration-200',
-        iconClassName: 'text-slate-600',
-        valueClassName: 'text-slate-850',
-        status: 'draft' as const,
-      },
-      {
-        key: 'for-approval',
-        title: 'For Approval',
-        value: countByStatus('for-approval'),
-        icon: Clock3,
-        containerClassName:
-          'border-default-200 bg-sky-50/90 text-sky-700 shadow-sm hover:shadow-md border-l-4 border-l-sky-500 hover:translate-y-[-2px] transition-all duration-200',
-        iconClassName: 'text-sky-600',
-        valueClassName: 'text-sky-700',
-        status: 'for-approval' as const,
-      },
-      {
-        key: 'returned',
-        title: 'Returned',
-        value: countByStatus('returned'),
-        icon: RotateCcw,
-        containerClassName:
-          'border-default-200 bg-rose-50/90 text-rose-700 shadow-sm hover:shadow-md border-l-4 border-l-rose-500 hover:translate-y-[-2px] transition-all duration-200',
-        iconClassName: 'text-rose-600',
-        valueClassName: 'text-rose-700',
-        status: 'returned' as const,
-      },
-      {
-        key: 'approved',
-        title: 'Approved',
-        value: countByStatus('approved'),
-        icon: CircleCheckBig,
-        containerClassName:
-          'border-default-200 bg-emerald-50/90 text-emerald-700 shadow-sm hover:shadow-md border-l-4 border-l-emerald-500 hover:translate-y-[-2px] transition-all duration-200',
-        iconClassName: 'text-emerald-600',
-        valueClassName: 'text-emerald-700',
-        status: 'approved' as const,
-      },
-      {
-        key: 'summary',
-        title: 'Summary',
-        value: summaryCount,
+        id: 'all' as NoticeOfAwardInboxFilter,
+        title: 'All',
+        count: countAll,
         icon: LayoutList,
-        containerClassName:
-          'border-default-200 bg-default-50/90 text-default-850 shadow-sm hover:shadow-md border-l-4 border-l-primary hover:translate-y-[-2px] transition-all duration-200',
-        iconClassName: 'text-primary',
-        valueClassName: 'text-default-900',
-        summary: true,
-        rows: [
-          { label: 'Draft', value: countByStatus('draft') },
-          { label: 'For Approval', value: countByStatus('for-approval') },
-          { label: 'Returned', value: countByStatus('returned') },
-          { label: 'Approved', value: countByStatus('approved') },
-          { label: 'Open SLA', value: openSlaCount },
-          { label: 'Overdue SLA', value: overdueSlaCount },
-          {
-            label: 'Running Total',
-            value: runningTotal.toLocaleString('en-PH', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }),
-          },
-        ],
+        colorTheme: 'indigo' as const,
+      },
+      {
+        id: 'draft' as NoticeOfAwardInboxFilter,
+        title: 'Draft',
+        count: countDraft,
+        icon: FileClock,
+        colorTheme: 'slate' as const,
+      },
+      {
+        id: 'for-approval' as NoticeOfAwardInboxFilter,
+        title: 'For Approval',
+        count: countForApproval,
+        icon: Clock3,
+        colorTheme: 'sky' as const,
+      },
+      {
+        id: 'returned' as NoticeOfAwardInboxFilter,
+        title: 'Returned',
+        count: countReturned,
+        icon: RotateCcw,
+        colorTheme: 'rose' as const,
+      },
+      {
+        id: 'approved' as NoticeOfAwardInboxFilter,
+        title: 'Approved / Issued',
+        count: countApproved,
+        icon: CircleCheckBig,
+        colorTheme: 'emerald' as const,
       },
     ]
-  }, [role, noticesOfAward, openSlaCount, overdueSlaCount, runningTotal])
+  }, [
+    role,
+    countAll,
+    countDraft,
+    countForApproval,
+    countReturned,
+    countApproved,
+  ])
 
   const handleRefreshSelected = (updated: NoticeOfAward) => {
     setNoticesOfAward((current) =>
@@ -335,24 +267,38 @@ export function NoticeOfAwardWorkspace({
     )
   }
 
+  const handleOpenCreate = async () => {
+    try {
+      const resolutions = await getAvailableAwardBacResolutionsRequest.fetcher()
+      setAvailableAwardBacResolutions(resolutions)
+    } catch {
+      // Keep existing
+    }
+    setCreateOpen(true)
+  }
+
   return (
     <PageContainerDashtail
       title={title}
       description={description}
       headerVariant="branded"
       headerSize="large"
-      mode="tabbed"
-      tabs={role === 'hope' ? HOPE_TAB_ITEMS : TAB_ITEMS}
-      activeTab={activeFilter}
-      onTabChange={(tabId: string) => setActiveFilter(tabId as NoticeOfAwardInboxFilter)}
       actions={
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {totalAwardedValue > 0 && (
+            <Badge
+              variant="outline"
+              className="h-8 px-3 py-1 font-semibold text-xs border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/40 shadow-xs"
+            >
+              Total Awarded: ₱{totalAwardedValue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Badge>
+          )}
           {role === 'procurement-staff' ? (
-            <Badge variant="outline" className="h-fit px-3 py-1 font-semibold border-primary/30 text-primary-700 bg-primary/5 shadow-sm">
+            <Badge variant="outline" className="h-8 px-3 py-1 font-semibold text-xs border-primary/30 text-primary-700 bg-primary/5 shadow-xs">
               <Award className="h-3.5 w-3.5 mr-1.5 text-primary" /> Notice of Award
             </Badge>
           ) : (
-            <Badge variant="outline" className="h-fit px-3 py-1 font-semibold border-primary/30 text-primary-700 bg-primary/5 shadow-sm">
+            <Badge variant="outline" className="h-8 px-3 py-1 font-semibold text-xs border-primary/30 text-primary-700 bg-primary/5 shadow-xs">
               <Award className="h-3.5 w-3.5 mr-1.5 text-primary" /> Approver Queue
             </Badge>
           )}
@@ -360,36 +306,37 @@ export function NoticeOfAwardWorkspace({
       }
       contentClassName="space-y-4 pt-4"
     >
+      {/* Interactive Compact Status Filter Cards */}
       <div
-        className={`grid gap-3 md:grid-cols-2 ${role === 'hope' ? 'xl:grid-cols-3' : 'xl:grid-cols-5'
-          }`}
+        className={`grid gap-3 grid-cols-2 sm:grid-cols-3 ${
+          role === 'hope' ? 'lg:grid-cols-3' : 'lg:grid-cols-5'
+        }`}
       >
-        {metricCards.map((item) => (
+        {filterCards.map((card) => (
           <NoticeOfAwardSummaryCard
-            key={item.key}
-            title={item.title}
-            value={String(item.value)}
-            icon={item.icon}
-            containerClassName={item.containerClassName}
-            iconClassName={item.iconClassName}
-            valueClassName={item.valueClassName}
-            status={item.status}
-            summary={item.summary}
-            rows={item.rows}
+            key={card.id}
+            id={card.id}
+            title={card.title}
+            count={card.count}
+            icon={card.icon}
+            isSelected={activeFilter === card.id}
+            onClick={() => setActiveFilter(card.id)}
+            colorTheme={card.colorTheme}
           />
         ))}
       </div>
 
       {role !== 'hope' && overdueSlaCount > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 dark:border-rose-900 bg-rose-50/90 dark:bg-rose-950/40 px-4 py-2.5 text-xs text-rose-800 dark:text-rose-300 shadow-xs">
           <div className="flex items-center gap-2 font-medium">
-            <AlertTriangle className="h-4 w-4" />
-            {overdueSlaCount} NOA contract execution SLA
-            {overdueSlaCount === 1 ? ' is' : 's are'} overdue.
+            <AlertTriangle className="h-4 w-4 text-rose-600" />
+            <span>
+              <strong className="font-bold">{overdueSlaCount}</strong> NOA contract execution SLA
+              {overdueSlaCount === 1 ? ' is' : 's are'} overdue.
+            </span>
           </div>
-          <div className="text-xs text-rose-700">
-            Review the record and log a justification or trigger the next-ranked
-            bidder cascade.
+          <div className="text-rose-700 dark:text-rose-400">
+            Review the record and log a justification or trigger the next-ranked bidder cascade.
           </div>
         </div>
       ) : null}
@@ -400,10 +347,14 @@ export function NoticeOfAwardWorkspace({
         primaryActionLabel={
           role === 'procurement-staff' ? 'Create NOA' : undefined
         }
-        onPrimaryAction={() => setCreateOpen(true)}
+        onPrimaryAction={handleOpenCreate}
       />
 
-      <NoticeOfAwardTable rows={filteredNoticesOfAward} detailsTo={detailsTo} />
+      <NoticeOfAwardTable
+        rows={filteredNoticesOfAward}
+        detailsTo={detailsTo}
+        onCreateClick={role === 'procurement-staff' ? handleOpenCreate : undefined}
+      />
 
       <CreateNoticeOfAwardDialog
         open={createOpen}
@@ -411,13 +362,12 @@ export function NoticeOfAwardWorkspace({
         availableAwardBacResolutions={availableAwardBacResolutions}
         onCreate={async (payload) => {
           try {
-            const created = await createNoticeOfAwardRequest.fetcher({
+            await createNoticeOfAwardRequest.fetcher({
               data: payload,
             })
-            setNoticesOfAward((current) => [created, ...current])
-            setSelectedNoaId(created.id)
             setCreateOpen(false)
             toast.success('NOA draft created.')
+            await loadNoticesOfAward()
           } catch (error) {
             toast.error(
               error instanceof Error ? error.message : 'Failed to create NOA.',
@@ -434,12 +384,12 @@ export function NoticeOfAwardWorkspace({
           noaNumber={selectedNoticeOfAward.noaNumber}
           onReturn={async (payload) => {
             try {
-              const updated = await returnNoticeOfAwardRequest.fetcher({
+              await returnNoticeOfAwardRequest.fetcher({
                 data: payload,
               })
-              handleRefreshSelected(updated)
               setReturnOpen(false)
               toast.success('NOA returned for revision.')
+              await loadNoticesOfAward()
             } catch (error) {
               toast.error(
                 error instanceof Error
@@ -459,12 +409,12 @@ export function NoticeOfAwardWorkspace({
           noaNumber={selectedNoticeOfAward.noaNumber}
           onApprove={async (payload) => {
             try {
-              const updated = await approveNoticeOfAwardRequest.fetcher({
+              await approveNoticeOfAwardRequest.fetcher({
                 data: payload,
               })
-              handleRefreshSelected(updated)
               setApproveOpen(false)
               toast.success('NOA approved.')
+              await loadNoticesOfAward()
             } catch (error) {
               toast.error(
                 error instanceof Error
