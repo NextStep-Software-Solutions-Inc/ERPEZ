@@ -42,27 +42,10 @@ export default function ManageSupplierPortalPage() {
   const rawRfqs = rfqsResponse?.data ?? []
 
   const projects: Project[] = useMemo(() => {
-    // Map RFQs
-    const mappedRfqs: Project[] = rawRfqs.map((r: any) => {
-      const mopName = r.modeOfProcurementName || 'SVP'
-      return {
-        id: r.id,
-        source: 'rfq' as const,
-        sourceNumber: r.rfqNumber,
-        title: r.description || r.rfqNumber || 'Untitled RFQ',
-        status: r.status || 'Draft',
-        type: mopName,
-        datePosted: r.deadline || new Date().toISOString(),
-        deadline: r.deadline || '',
-        abc: r.totalAmount || 0,
-        applicantCount: r.applicantCount || 0,
-      }
-    })
-
-    // Map BAC Projects
+    // 1. Map BAC Projects (Authoritative Opportunities)
     const mappedProjects: Project[] = rawProjects
       .filter((p: any) => {
-        const isDraft = p.status && p.status.toLowerCase() === 'draft'
+        const isDraft = p.status && p.status.toLowerCase() === 'draft' && (p.applicantCount ?? 0) === 0
         if (isDraft) return false
 
         const mopName = (p.consolidatedPR?.modeOfProcurementName || p.type || '').toLowerCase()
@@ -111,8 +94,35 @@ export default function ManageSupplierPortalPage() {
         }
       })
 
+    // 2. Identify Standalone RFQs (RFQs not already part of any BAC project)
+    const projectCprIds = new Set(rawProjects.map((p: any) => p.consolidatedPRId).filter(Boolean))
+    const projectIds = new Set(rawProjects.map((p: any) => p.id))
+    
+    const standaloneRfqs = rawRfqs.filter((r: any) => {
+      const isLinkedToProject = (r.consolidatedPRId && projectCprIds.has(r.consolidatedPRId)) || projectIds.has(r.id)
+      const isApproved = r.status === 'Approved' || r.status === 3 || (typeof r.status === 'string' && r.status.toLowerCase() === 'approved')
+      const hasApplicants = (r.applicantCount ?? 0) > 0
+      return !isLinkedToProject && (isApproved || hasApplicants)
+    })
+
+    const mappedRfqs: Project[] = standaloneRfqs.map((r: any) => {
+      const mopName = r.modeOfProcurementName || 'SVP'
+      return {
+        id: r.id,
+        source: 'rfq' as const,
+        sourceNumber: r.rfqNumber,
+        title: r.description || r.rfqNumber || 'Untitled RFQ',
+        status: r.status || 'Draft',
+        type: mopName,
+        datePosted: r.deadline || new Date().toISOString(),
+        deadline: r.deadline || '',
+        abc: r.totalAmount || 0,
+        applicantCount: r.applicantCount || 0,
+      }
+    })
+
     // Combine and sort by datePosted descending
-    return [...mappedRfqs, ...mappedProjects].sort((a, b) => {
+    return [...mappedProjects, ...mappedRfqs].sort((a, b) => {
       const dateA = a.datePosted ? new Date(a.datePosted).getTime() : 0
       const dateB = b.datePosted ? new Date(b.datePosted).getTime() : 0
       return dateB - dateA

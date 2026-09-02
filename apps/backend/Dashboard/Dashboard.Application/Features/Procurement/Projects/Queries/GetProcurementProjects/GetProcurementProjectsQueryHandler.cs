@@ -88,9 +88,17 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             .Select(g => new { ProjectId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(g => g.ProjectId, g => g.Count, cancellationToken);
 
+        var cprIds = entities.Where(e => e.ConsolidatedPRId.HasValue).Select(e => e.ConsolidatedPRId!.Value).ToList();
+        var rfqBidCounts = await unitOfWork.SupplierBidRepository.Query()
+            .Where(b => b.RFQ != null && b.RFQ.ConsolidatedPRId.HasValue && cprIds.Contains(b.RFQ.ConsolidatedPRId.Value) && !b.IsDeleted)
+            .GroupBy(b => b.RFQ.ConsolidatedPRId!.Value)
+            .Select(g => new { ConsolidatedPRId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.ConsolidatedPRId, g => g.Count, cancellationToken);
+
         entities = entities.Select(e => e with
         {
-            ApplicantCount = applicationCounts.GetValueOrDefault(e.Id, 0)
+            ApplicantCount = applicationCounts.GetValueOrDefault(e.Id, 0) +
+                (e.ConsolidatedPRId.HasValue ? rfqBidCounts.GetValueOrDefault(e.ConsolidatedPRId.Value, 0) : 0)
         }).ToList();
 
         return new PaginatedApiResponse<ProcurementProjectResponse>(

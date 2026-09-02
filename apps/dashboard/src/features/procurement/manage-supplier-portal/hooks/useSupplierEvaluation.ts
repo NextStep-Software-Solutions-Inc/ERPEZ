@@ -93,7 +93,7 @@ export function useSupplierEvaluation(projectId: string, source: 'rfq' | 'bac' =
     return rawApplications.map((a: any) => ({
       id: a.id,
       projectId: a.projectId || projectId,
-      source: 'bac' as const,
+      source: (a.source === 'InternalRFQ' ? 'rfq' : 'bac') as 'rfq' | 'bac',
       supplierName: a.supplierName || 'Unnamed Supplier',
       supplierCategory: a.supplierCategory,
       contactPerson: a.contactPerson,
@@ -112,6 +112,22 @@ export function useSupplierEvaluation(projectId: string, source: 'rfq' | 'bac' =
         name: d.name,
         url: d.url || '',
         type: (d.type as any) || 'PDF',
+      })),
+      items: (a.items || []).map((it: any) => ({
+        id: it.id,
+        rfqItemId: it.rfqItemId,
+        itemName: it.itemName,
+        quantity: it.quantity,
+        abcUnitPrice: it.abcUnitPrice,
+        unitPrice: it.unitPrice,
+        totalPrice: it.totalPrice,
+        brand: it.brand,
+        model: it.model,
+        color: it.color,
+        brochureFileUrl: it.brochureFileUrl,
+        isResponsive: it.isResponsive,
+        disqualificationReason: it.disqualificationReason,
+        qualityScore: it.qualityScore,
       })),
     }))
   }, [source, rfqBidsResponse, bacApplicationsResponse, projectId])
