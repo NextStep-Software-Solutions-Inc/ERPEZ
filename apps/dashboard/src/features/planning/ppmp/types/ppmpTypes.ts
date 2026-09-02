@@ -134,6 +134,8 @@ export interface CostItemMaster {
   uacsCode?: string | null
   isActive: boolean
   isCSE?: boolean
+  source?: 'predefined' | 'non-cse'
+  itemRequestId?: string | null
   createdDate: Date
   lastModified: Date
 }

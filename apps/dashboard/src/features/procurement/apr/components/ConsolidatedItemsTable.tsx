@@ -37,7 +37,6 @@ import {
   Package,
   FolderClosed,
   ZoomIn,
-  Image as ImageIcon,
 } from 'lucide-react'
 import { formatCurrencyPHP } from '@/utils/formatters'
 import type { ConsolidatedAPRItem } from '../types'

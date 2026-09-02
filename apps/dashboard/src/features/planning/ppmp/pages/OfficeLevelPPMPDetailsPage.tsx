@@ -2298,6 +2298,7 @@ function DetailsSkeleton({ isDeptMode }: { isDeptMode: boolean }) {
 }
 
 export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
+  const queryClient = useQueryClient()
   const { data: ppmpResp, isLoading } = usePPMP({
     pathParams: { id: ppmpId },
     queryParams: {},
@@ -2399,7 +2400,6 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   }
 
   // Delete activity mutation + confirmation (hooks must run unconditionally)
-  const queryClient = useQueryClient()
   const { mutateAsync: deleteActivityMutateAsync, isPending: isDeleting } =
     useDeletePPMPActivity()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -2500,15 +2500,24 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     [activities, selectedActivityId],
   )
 
+  const activeActivityId = selectedActivity?.id || selectedActivityId
+
+  // Synchronize selectedActivityId with first activity if not set
+  useEffect(() => {
+    if (!selectedActivityId && activities.length > 0) {
+      setSelectedActivityId(activities[0].id)
+    }
+  }, [activities, selectedActivityId])
+
   // Fetch current activity/project's expenditure items to filter out already added objects from the Add dialog
   const { data: currentActivityExpItemsResp } = usePPMPExpenditureItems({
     pathParams: {},
     queryParams: isProjectScope
       ? (ppmpId ? { filters: `ppmpId==${ppmpId}` } : {})
-      : selectedActivityId
-        ? { filters: `ppmpActivityId==${selectedActivityId}` }
+      : activeActivityId
+        ? { filters: `ppmpActivityId==${activeActivityId}` }
         : {},
-    enabled: isProjectScope ? !!ppmpId : !!selectedActivityId,
+    enabled: isProjectScope ? !!ppmpId : !!activeActivityId,
   })
 
   const existingObjectIds = useMemo(() => {
@@ -3293,6 +3302,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             ppmp={activeChildPpmp || ppmp}
             lib={lib}
             isEditable={isEditable}
+            ExpenditureItemGroupComponent={ExpenditureItemGroup}
             onAddItem={handleAddItem}
             onEditItem={handleEditItem}
             onDeleteItem={handleDeleteItem}
@@ -3440,7 +3450,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         isOpen={groupDialogOpen}
         onOpenChange={setGroupDialogOpen}
         ppmpId={ppmpId}
-        ppmpActivityId={selectedActivityId || undefined}
+        ppmpActivityId={selectedActivity?.id || selectedActivityId || undefined}
         libActivityId={selectedActivity?.libActivityId}
         orphanDetails={lib?.orphanDetails}
         groupToEdit={groupDialogEditGroup}

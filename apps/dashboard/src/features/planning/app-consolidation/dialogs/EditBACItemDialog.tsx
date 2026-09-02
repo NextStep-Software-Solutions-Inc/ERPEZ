@@ -134,7 +134,8 @@ export function EditBACItemDialog({
               ...lineItem,
               id: apiData.id || lineItem.id,
               code: apiData.papCode || apiData.ppmpItemName || lineItem.code,
-              description: apiData.PPMPItem?.description || apiData.description || lineItem.description,
+              description: apiData.ppmpItemName || apiData.PPMPItem?.name || lineItem.description || 'Procurement Item',
+              itemDescription: apiData.PPMPItem?.description || apiData.description,
               unit: apiData.PPMPItem?.unit || apiData.unit || lineItem.unit,
               quantity: apiData.quantity || lineItem.quantity,
               unitCost: apiData.PPMPItem?.unitPrice || apiData.unitCost || lineItem.unitCost,
@@ -463,8 +464,14 @@ export function EditBACItemDialog({
                     {/* Item Basic Info */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       <div className="p-3 bg-white rounded-lg border border-blue-100 md:col-span-3">
-                        <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Description</p>
+                        <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Item Name</p>
                         <p className="text-sm font-semibold text-gray-900">{formData.description}</p>
+                        {formData.itemDescription && (
+                          <div className="mt-2 pt-2 border-t border-slate-100">
+                            <p className="text-[11px] font-medium text-gray-500 uppercase mb-0.5">Specifications</p>
+                            <p className="text-xs text-gray-700 leading-relaxed">{formData.itemDescription}</p>
+                          </div>
+                        )}
                       </div>
                       <div className="p-3 bg-white rounded-lg border border-blue-100">
                         <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Unit</p>

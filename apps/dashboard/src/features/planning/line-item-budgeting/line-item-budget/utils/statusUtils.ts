@@ -158,5 +158,17 @@ export const getStatusBannerText = (status: LIBStatus): string | undefined => {
  */
 export const getSourceDisplay = (lib: LIB): string => {
   const icon = lib.sourceType === 'OPCR' ? '📋' : '📊'
-  return `${icon} ${lib.sourceName}`
+  const name = lib.sourceName || lib.sourceType || 'LIB'
+  return `${icon} ${name}`
+}
+
+/**
+ * Normalizes and formats the LIB scope for user-facing display (e.g. 'ActivityLevel' -> 'Activity')
+ */
+export const formatScopeDisplay = (scope?: string): string => {
+  if (!scope) return 'N/A'
+  const clean = scope.trim().toLowerCase()
+  if (clean === 'activitylevel' || clean === 'activity') return 'Activity'
+  if (clean === 'projectlevel' || clean === 'project') return 'Project'
+  return scope
 }

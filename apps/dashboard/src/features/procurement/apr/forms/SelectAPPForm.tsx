@@ -12,10 +12,9 @@ import { toast } from 'sonner'
 import { APPSelectField } from '../components/APPSelectField'
 import { LineItemsSelectField } from '../components/LineItemsSelectField'
 import { ValidationAlerts } from '../components/ValidationAlerts'
-import { APRItemsPreview } from '../components/APRItemsPreview'
 import { useApprovedAPPs, useAPPById, useAllocatedAPPItemIds } from '../handlers/hooks'
 import { useAPPApprovalValidation } from '../hooks'
-import { convertAppLineItemsToAPRItems, validateBudgetCeiling } from '../utils'
+import { convertAppLineItemsToAPRItems, validateBudgetCeiling, isCSEItem } from '../utils'
 import type { ConsolidatedAPRItem } from '../types'
 
 export type SelectAppFormValues = {
@@ -93,7 +92,7 @@ export function SelectAPPForm({
         if (fy && fy !== fiscalYear) return false
       }
 
-      // Filter out APPs that have no remaining unallocated line items
+      // Filter out APPs that have no remaining unallocated CSE line items
       const directItems = app.APPItems || app.appItems || app.items || []
       if (directItems.length === 0) {
         const appPmps = app.APPPPMPs || app.appppmPs || []
@@ -101,15 +100,16 @@ export function SelectAPPForm({
         const allExtractedIds: string[] = []
         appPmps.forEach((rel: any) => {
           const ppmp = rel.PPMP || rel.ppmp || rel
-          const pItems = ppmp?.PPMPItems || ppmp?.ppmpItems || ppmp?.items || []
+          const pItems = (ppmp?.PPMPItems || ppmp?.ppmpItems || ppmp?.items || []).filter(isCSEItem)
           pItems.forEach((pi: any) => allExtractedIds.push(String(pi.id).toLowerCase()))
         })
         return allExtractedIds.some((id) => !allocatedItemIds.has(id))
       }
 
-      const unallocatedCount = directItems.filter(
-        (item: any) => !allocatedItemIds.has(String(item.id).toLowerCase())
-      ).length
+      const unallocatedCount = directItems
+        .filter(isCSEItem)
+        .filter((item: any) => !allocatedItemIds.has(String(item.id).toLowerCase()))
+        .length
 
       return unallocatedCount > 0
     })
@@ -172,14 +172,21 @@ export function SelectAPPForm({
               fundSourceId: ppmp?.fundSourceId,
               fundSourceName: ppmp?.fundSourceName,
               procurementModeName: pi.modeOfProcurement || pi.procurementModeName,
+              cseItemId: pi.cseItemId,
+              nonCSEItemId: pi.nonCSEItemId,
+              isCSE: pi.cseItemId != null || pi.isCSE === true,
+              isNonCSE: pi.nonCSEItemId != null || pi.isNonCSE === true,
             })
           })
         })
         items = extracted
       }
 
+      // Filter out Non-CSE items: APRs are strictly for CSE items (Common-Use Supplies and Equipment from PS-DBM)
+      const cseItems = items.filter(isCSEItem)
+
       // Filter out items already allocated to another APR
-      const unallocatedItems = items.filter(
+      const unallocatedItems = cseItems.filter(
         (item: any) => !allocatedItemIds.has(String(item.id).toLowerCase())
       )
 
@@ -226,28 +233,36 @@ export function SelectAPPForm({
   const appTotalBudget = useMemo(() => {
     if (selectedApps.length === 0) return 0
     return selectedApps.reduce((appSum: number, app: any) => {
-      if (app.bac?.totalBudget) return appSum + app.bac.totalBudget
+      if (app.totalBudget && app.totalBudget > 0) return appSum + app.totalBudget
+      if (app.bac?.totalBudget && app.bac.totalBudget > 0) return appSum + app.bac.totalBudget
+      
+      const items = app.APPItems || app.appItems || app.items || []
+      const itemsTotal = items.reduce(
+        (sum: number, item: any) =>
+          sum +
+          (item.effectiveABC ||
+            item.totalAmount ||
+            item.originalPPMPBudget ||
+            (item.quantity && item.unitCost ? item.quantity * item.unitCost : 0) ||
+            0),
+        0
+      )
+      if (itemsTotal > 0) return appSum + itemsTotal
+
       if (app.APPPPMPs?.[0]?.PPMP?.totalEstimatedBudget) {
         const ppmpTotal = app.APPPPMPs.reduce(
           (sum: number, p: any) => sum + (p.PPMP?.totalEstimatedBudget || 0),
           0
         )
-        return appSum + ppmpTotal
+        if (ppmpTotal > 0) return appSum + ppmpTotal
       }
-      const items = app.APPItems || app.appItems || app.items || []
-      const itemsTotal = items.reduce(
-        (sum: number, item: any) =>
-          sum +
-          (item.totalAmount ||
-            item.quantity * item.unitCost ||
-            item.originalPPMPBudget ||
-            item.effectiveABC ||
-            0),
-        0
-      )
-      return appSum + itemsTotal
+
+      // Fallback: sum all available raw line items for this selected APP
+      const appRawItems = rawLineItems.filter((item: any) => item.sourceAppId === app.id)
+      const rawTotal = appRawItems.reduce((sum: number, item: any) => sum + (item.totalAmount || item.effectiveABC || 0), 0)
+      return appSum + rawTotal
     }, 0)
-  }, [selectedApps])
+  }, [selectedApps, rawLineItems])
 
   const budgetValidation = useMemo(() => {
     if (selectedApps.length === 0) return null
@@ -348,10 +363,6 @@ export function SelectAPPForm({
       </Alert>
     )
   }
-
-  const combinedAppNames = selectedApps
-    .map((a: any) => a.appNumber || a.appCode || a.name)
-    .join(', ')
 
   return (
     <form id={formId} onSubmit={handleFormSubmit} className="space-y-4">

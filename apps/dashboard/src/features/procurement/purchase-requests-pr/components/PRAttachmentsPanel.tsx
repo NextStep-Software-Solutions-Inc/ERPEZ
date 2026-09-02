@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -32,9 +32,8 @@ export function PRAttachmentsPanel({
   const torRequired = purchaseRequestRequiresTor(pr)
   const hasTorAttachment = Boolean(pr.torAttachment?.url)
   const hasSignedDocument = Boolean(pr.signedPdfUrl)
-  const hasCategory = Boolean(pr.headerDetails.procurementCategoryName)
 
-  if (!torRequired && !hasTorAttachment && !hasSignedDocument && !hasCategory) {
+  if (!torRequired && !hasTorAttachment && !hasSignedDocument) {
     return null
   }
 
@@ -53,24 +52,6 @@ export function PRAttachmentsPanel({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
-        {hasCategory && (
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-cyan-200 bg-linear-to-br from-cyan-50 to-cyan-100/70 p-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-cyan-700">
-                Procurement Category
-              </p>
-              <p className="text-base font-semibold text-cyan-950">
-                {pr.headerDetails.procurementCategoryName}
-              </p>
-            </div>
-            {torRequired && (
-              <Badge variant="outline" color="warning">
-                TOR Required
-              </Badge>
-            )}
-          </div>
-        )}
-
         {torRequired && (
           <div className="rounded-xl border border-amber-200 bg-linear-to-br from-amber-50 to-orange-50 p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

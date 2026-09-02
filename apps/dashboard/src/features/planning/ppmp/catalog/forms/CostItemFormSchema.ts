@@ -24,7 +24,7 @@ export const costItemFormSchema = z.object({
     .max(50, 'Unit of measure must not exceed 50 characters'),
   description: z
     .string()
-    .min(10, 'Description must be at least 10 characters')
+    .min(1, 'Description is required')
     .max(1000, 'Description must not exceed 1000 characters'),
   uacsCode: z.string().optional().nullable(),
   isActive: z.boolean().default(true),

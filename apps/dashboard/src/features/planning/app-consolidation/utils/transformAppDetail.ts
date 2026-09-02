@@ -35,9 +35,13 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
 
   // Parse API APPItems to internal BAC lineItems
   const lineItems: BACLineItem[] = apiApp.APPItems?.map((item: APPItemFromAPI) => {
-    const quantity = item.quantity ?? 0
     const unitCost = item.unitCost ?? 0
-    const totalAmount = item.totalAmount ?? (quantity * unitCost)
+    const totalAmount = item.effectiveABC ?? item.totalAmount ?? (item.quantity && unitCost ? item.quantity * unitCost : 0)
+    const quantity = (item.quantity && item.quantity > 0)
+      ? item.quantity
+      : (unitCost > 0 && totalAmount > 0)
+        ? Math.round(totalAmount / unitCost)
+        : (item.quantity ?? 1)
 
     const milestones = {
       advertisementDate: '',

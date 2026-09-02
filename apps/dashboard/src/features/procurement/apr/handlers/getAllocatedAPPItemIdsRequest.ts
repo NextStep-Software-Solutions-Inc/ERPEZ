@@ -25,7 +25,7 @@ export const getAllocatedAPPItemIdsRequest: QueryBlueprintFromTemplate<
   QueryKey
 > = {
   endpoint,
-  key: ({ url, excludeAprId }) => [url, excludeAprId || ''] as const,
+  key: ({ url, queryParams }) => [url, queryParams?.excludeAprId || ''] as const,
   fetcher: async ({ finalUrl, signal }) => {
     const response = await api.get<any>(finalUrl, { signal })
     return response.data

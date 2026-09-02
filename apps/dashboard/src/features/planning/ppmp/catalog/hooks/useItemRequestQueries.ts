@@ -99,6 +99,7 @@ export function useUpdateItemRequestMutation() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/item-requests'] })
+      queryClient.invalidateQueries({ queryKey: ['/non-cse-items'] })
     },
     onError: (error: unknown) => {
       toast.error(getErrorMessage(error, 'Failed to update item request.'))

@@ -49,6 +49,14 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
             {
                 var allocQty = item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
                 var unitPrice = item.PPMPItem?.UnitPrice ?? 0;
+                var plannedQty = item.PPMPItem?.PlannedQuantity ?? 0;
+                var qty = allocQty > 0 ? allocQty : plannedQty;
+                if (qty <= 0 && unitPrice > 0 && item.EffectiveABC > 0)
+                {
+                    qty = (int)Math.Round(item.EffectiveABC / unitPrice);
+                }
+                if (qty <= 0) qty = 1;
+
                 var effectiveStart = item.StartOfProcurementOverride ?? (item.PPMPItem?.ProcurementStartDate.HasValue == true ? item.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null);
                 var effectiveEnd = item.EndOfProcurementOverride ?? (item.PPMPItem?.ProcurementEndDate.HasValue == true ? item.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null);
 
@@ -56,10 +64,14 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
                 {
                     Id = item.Id,
                     PPMPItemId = item.PPMPItemId,
+                    CSEItemId = item.PPMPItem?.CSEItemId,
+                    NonCSEItemId = item.PPMPItem?.NonCSEItemId,
+                    IsCSE = item.PPMPItem?.CSEItemId != null || (item.PPMPItem != null && item.PPMPItem.NonCSEItemId == null),
+                    IsNonCSE = item.PPMPItem?.NonCSEItemId != null,
                     PPMPItemName = item.PPMPItem?.Name ?? string.Empty,
                     Description = item.PPMPItem?.Description ?? string.Empty,
                     Unit = item.PPMPItem?.Unit ?? string.Empty,
-                    Quantity = allocQty,
+                    Quantity = qty,
                     UnitCost = unitPrice,
                     TotalAmount = item.EffectiveABC,
                     OriginalPPMPBudget = item.OriginalPPMPBudget,

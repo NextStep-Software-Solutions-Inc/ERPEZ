@@ -29,6 +29,7 @@ public class NonCSEItemRepository : Repository<NonCSEItem>, INonCSEItemRepositor
     {
         return await context.Set<NonCSEItem>()
             .Include(n => n.UOM)
+            .Include(n => n.ItemRequest).ThenInclude(ir => ir!.ProcurementCategory)
             .FirstOrDefaultAsync(n => n.Id == id && !n.IsDeleted, cancellationToken);
     }
 }

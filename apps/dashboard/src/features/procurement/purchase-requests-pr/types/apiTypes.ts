@@ -116,6 +116,12 @@ export interface PurchaseRequestDetailItemApi {
   requestedMonth: string
   category: string
   fund: string
+  ppmpId?: string
+  ppmpNumber?: string
+  unit?: string
+  officeName?: string
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface PurchaseRequestDetailApi {
@@ -224,12 +230,20 @@ export interface EligiblePpmpItemMonthAllocation {
 export interface EligiblePpmpItem {
   ppmpItemId: string
   itemName: string
+  description?: string
   category: string
+  itemCategory?: string
+  uacsCode?: string
   fund: string
   unit: string
   unitPrice: number
+  hasMonthlyAllocations?: boolean
+  plannedQuantity?: number
+  availableQuantity?: number
   monthlyAllocations: EligiblePpmpItemMonthAllocation[]
   totalAvailableAmount: number
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface EligiblePpmpDocument {

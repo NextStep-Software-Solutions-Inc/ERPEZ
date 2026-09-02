@@ -7,7 +7,8 @@ public record ConsolidatedPRSummaryResponse(
     string CPRNumber,
     DateOnly ConsolidationDate,
     string? Description,
-    string Status
+    string Status,
+    string? ModeOfProcurement = null
 );
 
 public record ConsolidatedPRDetailResponse(
@@ -19,7 +20,8 @@ public record ConsolidatedPRDetailResponse(
     StatusEnum Status,
     decimal TotalAmount,
     string? Remarks,
-    List<ConsolidatedPRLinkedPrResponse> Prs
+    List<ConsolidatedPRLinkedPrResponse> Prs,
+    string? ModeOfProcurement = null
 );
 
 public record ConsolidatedPRLinkedPrResponse(
@@ -46,7 +48,8 @@ public record ConsolidatedPRItemResponse(
     string? StockNo,
     Dictionary<string, int> MonthlyQuantities,
     Guid? ProcurementModeId,
-    bool? AllowPartial
+    bool? AllowPartial,
+    string? ProcurementModeName = null
 );
 
 public record PRSummaryStatsResponse(

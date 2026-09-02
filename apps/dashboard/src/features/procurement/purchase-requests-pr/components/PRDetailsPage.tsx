@@ -62,12 +62,12 @@ import {
   AlertCircle,
   ChevronDown,
   Calendar,
-  Hash,
-  Layers,
   DollarSign,
   Download,
-  LucideIcon,
+  FileText,
+  Tag,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
 import { useUpdatePurchaseRequestStatus, useUpdatePurchaseRequest, usePurchaseRequest } from '../handlers/hooks'
@@ -79,6 +79,8 @@ import { ReturnPRModal } from './ReturnPRModal'
 import { ApprovePRModal } from './ApprovePRModal'
 import { PRAttachmentsPanel } from './PRAttachmentsPanel'
 import { purchaseRequestRequiresTor } from '../utils/torAttachment'
+
+import api from '@/services/api'
 
 // Fixed ordered months used across the procurement views
 const ORDERED_MONTHS: string[] = [
@@ -141,15 +143,23 @@ const STATUS_BADGE_CONFIG: Record<
 interface PRDetailsPageProps {
   pr: PurchaseRequest
   onBack: () => void
+  isManagePRView?: boolean
 }
 
-export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
+export function PRDetailsPage({
+  pr: initialPR,
+  onBack,
+  isManagePRView: isManagePRViewProp,
+}: PRDetailsPageProps) {
+  const storeIsManagePRView = usePurchaseRequestStore((s) => s.isManagePRView)
+  const isManagePRView = isManagePRViewProp ?? storeIsManagePRView
   const { activePR, updatePurchaseRequest, setActivePR } =
     usePurchaseRequestStore()
   const statusMutation = useUpdatePurchaseRequestStatus()
   const { mutateAsync: updateApi, isPending: isUpdating } = useUpdatePurchaseRequest()
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   // Always fetch fresh data from the server so edits (purpose, items) are reflected
   // after mutations without requiring a full page reload.
   const { data: freshPRResponse } = usePurchaseRequest({
@@ -185,14 +195,22 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         id: i.id,
         itemId: i.aprItemId ?? i.ppmpItemId,
         itemName: i.name,
-        category: '',
+        description: i.description || '',
+        category: i.category || '',
         quantity: i.requestedQuantity,
-        unitOfMeasure: '',
+        unitOfMeasure: i.unit || '',
         unitPrice: i.unitCost,
         totalAmount: i.amount,
         estimatedUnitPrice: i.unitCost,
         month: i.requestedMonth,
+        fund: i.fund || '',
+        procurementModeId: i.procurementModeId,
+        procurementModeName: i.procurementModeName,
         source: i.isNonCSE ? ('ppmp' as const) : ('apr' as const),
+        ppmpDocId: i.ppmpId,
+        ppmpDocName: i.ppmpNumber
+          ? `${i.ppmpNumber} — ${i.officeName || apiData.officeName || ''}`
+          : undefined,
       })),
     }
 
@@ -200,8 +218,8 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [freshPRResponse, hasUnsavedChanges])
 
-  const handleSaveChanges = () => {
-    const payloadItems: UpdatePurchaseRequestItemPayload[] = pr.items.flatMap((group): UpdatePurchaseRequestItemPayload[] => {
+  const buildPayloadItems = (items: PRItem[]): UpdatePurchaseRequestItemPayload[] => {
+    return items.flatMap((group): UpdatePurchaseRequestItemPayload[] => {
       // Handle legacy grouped APR structure (optimistic items added before server sync)
       if (group.aprGroup && group.aprGroup.items) {
         return group.aprGroup.items.flatMap((aprItem): UpdatePurchaseRequestItemPayload[] => {
@@ -209,7 +227,7 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
           return Object.entries(monthsMap).filter(([, qty]) => qty > 0).map(([m, qty]) => ({
             aprItemId: aprItem.itemId || aprItem.id,
             name: aprItem.itemName,
-            description: '',
+            description: aprItem.description || '',
             unitCost: aprItem.unitPrice,
             requestedQuantity: qty,
             stockNo: '',
@@ -227,7 +245,7 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
           ppmpItemId: isApr ? undefined : (group.itemId || group.id),
           aprItemId: isApr ? (group.itemId || group.id) : undefined,
           name: group.itemName,
-          description: '',
+          description: group.description || '',
           unitCost: group.unitPrice || group.estimatedUnitPrice || 0,
           requestedQuantity: qty,
           stockNo: group.stockNo || '',
@@ -241,7 +259,7 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         ppmpItemId: isApr ? undefined : (group.itemId || group.id),
         aprItemId: isApr ? (group.itemId || group.id) : undefined,
         name: group.itemName,
-        description: '',
+        description: group.description || '',
         unitCost: group.unitPrice || group.estimatedUnitPrice || 0,
         requestedQuantity: group.quantity,
         stockNo: group.stockNo || '',
@@ -249,6 +267,10 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         requestedMonth: group.month || 'January',
       }]
     })
+  }
+
+  const handleSaveChanges = () => {
+    const payloadItems = buildPayloadItems(pr.items)
 
     toast.promise(
       updateApi({
@@ -273,8 +295,6 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
   }
 
   const pr = activePR || initialPR
-  const displayUACS = pr.headerDetails.uacs || '—'
-  const displayFundCluster = pr.headerDetails.fundCluster || '—'
 
   // Derive a display status: if remarks exist but status wasn't set to 'returned', prefer showing Returned
   const getDisplayStatus = (p: typeof pr) => {
@@ -374,7 +394,16 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         ).sort()
       : []
 
-  const months = pr.type === 'non-cse' ? ORDERED_MONTHS : []
+  const months =
+    pr.type === 'non-cse'
+      ? []
+      : Array.from(
+          new Set(
+            pr.items
+              .map((item) => item.month)
+              .filter((m): m is string => Boolean(m) && m !== ''),
+          ),
+        )
 
   const funds =
     pr.type === 'non-cse'
@@ -540,15 +569,33 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     setShowSubmitConfirmDialog(true)
   }
 
-  const handleConfirmSubmitPR = () => {
+  const handleConfirmSubmitPR = async () => {
+    const payloadItems = buildPayloadItems(pr.items)
+
     toast.promise(
-      statusMutation.mutateAsync({
-        pathParams: { id: pr.id },
-        queryParams: { id: pr.id },
-        payload: { prId: pr.id, newStatus: 'Submitted' },
-      }).then(() => {
+      (async () => {
+        // Persist items & header to backend first
+        await updateApi({
+          pathParams: { id: pr.id },
+          queryParams: { id: pr.id },
+          payload: {
+            description: pr.headerDetails.description || '',
+            purpose: pr.headerDetails.purpose || '',
+            ...(pr.headerDetails.procurementCategoryId ? { procurementCategoryId: pr.headerDetails.procurementCategoryId } : {}),
+            requestedDate: pr.headerDetails.date || new Date().toISOString(),
+            items: payloadItems,
+          },
+        })
+        setHasUnsavedChanges(false)
+
+        // Then execute status transition to Submitted
+        await statusMutation.mutateAsync({
+          pathParams: { id: pr.id },
+          queryParams: { id: pr.id },
+          payload: { prId: pr.id, newStatus: 'Submitted' },
+        })
         updatePurchaseRequest(pr.id, { status: 'submitted', updatedAt: new Date().toISOString() })
-      }),
+      })(),
       {
         loading: 'Submitting Purchase Request...',
         success: `${pr.headerDetails.prNumber} is now waiting for approval.`,
@@ -594,21 +641,65 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     setShowApproveModal(false)
   }
 
-  const handleExportPR = () => {
-    setShowExportDialog(true)
+  const handleExportPR = async () => {
+    setIsExporting(true)
+    const toastId = toast.loading('Preparing Purchase Request PDF...')
+    try {
+      if (hasUnsavedChanges) {
+        toast.loading('Saving changes before exporting...', { id: toastId })
+        const payloadItems = buildPayloadItems(pr.items)
+        await updateApi({
+          pathParams: { id: pr.id },
+          queryParams: { id: pr.id },
+          payload: {
+            description: pr.headerDetails.description || '',
+            purpose: pr.headerDetails.purpose || '',
+            ...(pr.headerDetails.procurementCategoryId ? { procurementCategoryId: pr.headerDetails.procurementCategoryId } : {}),
+            requestedDate: pr.headerDetails.date || new Date().toISOString(),
+            items: payloadItems,
+          },
+        })
+        setHasUnsavedChanges(false)
+      }
+
+      toast.loading('Generating Purchase Request PDF...', { id: toastId })
+      const response = await api.post<{ succeeded: boolean; data: string; message: string }>(
+        `/api/planning/documents/purchase-request/${pr.id}/generate?format=Pdf`
+      )
+      const documentId = response.data?.data
+      if (documentId) {
+        toast.loading('Downloading Purchase Request PDF...', { id: toastId })
+        const downloadRes = await api.get(`/api/planning/documents/${documentId}/download`, {
+          responseType: 'blob',
+        })
+        const blob = new Blob([downloadRes.data], {
+          type: 'application/pdf',
+        })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `PR_${pr.headerDetails.prNumber || pr.id}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+        toast.success('Purchase Request PDF downloaded successfully.', { id: toastId })
+      } else {
+        toast.error('Failed to generate PR document.', { id: toastId })
+      }
+    } catch (err: unknown) {
+      console.error('❌ PR document generation error:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to generate Purchase Request PDF.', { id: toastId })
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const StatusIcon = STATUS_BADGE_CONFIG[displayStatus].icon
   const canAddItems = pr.status === 'draft'
   const canSubmit = pr.status === 'draft' && pr.items.length > 0
-  const nonApprovableTypes = ['non-cse', 'out-of-stock']
-  const isNonApprovableType = nonApprovableTypes.includes(pr.type)
-  const { isManagePRView } = usePurchaseRequestStore()
-
-  const canReturn =
-    pr.status === 'submitted' && (isManagePRView || !isNonApprovableType)
-  const canApprove =
-    pr.status === 'submitted' && (isManagePRView || !isNonApprovableType)
+  const canReturn = pr.status === 'submitted' && Boolean(isManagePRView)
+  const canApprove = pr.status === 'submitted' && Boolean(isManagePRView)
   const canEditNeeded = pr.status === 'draft' && !isManagePRView
 
   return (
@@ -679,10 +770,28 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                 size="sm"
                 className="gap-2 h-8 border-slate-200 dark:border-slate-700"
                 onClick={handleExportPR}
+                disabled={isExporting}
               >
                 <Download className="h-4 w-4" />
-                Export
+                {isExporting ? 'Exporting...' : 'Export'}
               </Button>
+              {pr.signedPdfUrl && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 h-8 border-purple-300 text-purple-900 bg-purple-50/50 hover:bg-purple-100/50 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-300"
+                  asChild
+                >
+                  <a
+                    href={pr.signedPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    View Signed Document
+                  </a>
+                </Button>
+              )}
               {hasUnsavedChanges && (
                 <Button
                   onClick={handleSaveChanges}
@@ -695,11 +804,22 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
               {canReturn && (
                 <Button
                   variant="outline"
-                  className="gap-2 border-destructive text-destructive hover:bg-destructive/10"
+                  size="sm"
+                  className="gap-2 h-8 border-destructive text-destructive hover:bg-destructive/10"
                   onClick={() => setShowReturnModal(true)}
                 >
                   <AlertCircle className="h-4 w-4" />
                   Return
+                </Button>
+              )}
+              {canApprove && (
+                <Button
+                  size="sm"
+                  className="gap-2 h-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                  onClick={() => setShowApproveModal(true)}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Approve
                 </Button>
               )}
               {canSubmit && (
@@ -749,19 +869,19 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
             Details
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* PR Date */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800/50 hover:shadow-sm transition-shadow lg:col-span-3">
+            <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800/50 hover:shadow-sm transition-shadow min-w-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-white/70 border border-blue-100 dark:bg-transparent dark:border-blue-800">
+                <div className="p-2 rounded-md bg-white/70 border border-blue-100 dark:bg-transparent dark:border-blue-800 shrink-0">
                   <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
                     PR Date
                   </p>
-                  <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">
                     {pr.headerDetails.date
                       ? new Date(pr.headerDetails.date).toLocaleDateString()
                       : '—'}
@@ -770,51 +890,34 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
               </div>
             </div>
 
-            {/* UACS Code */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200 dark:border-purple-800/50 hover:shadow-sm transition-shadow lg:col-span-3">
+            {/* Procurement Category */}
+            <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-950/30 dark:to-cyan-900/20 border border-cyan-200 dark:border-cyan-800/50 hover:shadow-sm transition-shadow min-w-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-white/70 border border-purple-100 dark:bg-transparent dark:border-purple-800">
-                  <Hash className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+                <div className="p-2 rounded-md bg-white/70 border border-cyan-100 dark:bg-transparent dark:border-cyan-800 shrink-0">
+                  <Tag className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
-                    UACS Code
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wider">
+                    Category
                   </p>
-                  <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                    {displayUACS}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Fund Cluster */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800/50 hover:shadow-sm transition-shadow lg:col-span-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-white/70 border border-amber-100 dark:bg-transparent dark:border-amber-800">
-                  <Layers className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
-                    Fund Cluster
-                  </p>
-                  <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                    {displayFundCluster}
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate" title={pr.headerDetails.procurementCategoryName || 'Goods and General Services'}>
+                    {pr.headerDetails.procurementCategoryName || 'Goods and General Services'}
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Total PR Amount */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 hover:shadow-sm transition-shadow lg:col-span-3">
+            <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 hover:shadow-sm transition-shadow min-w-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-white/70 border border-emerald-100 dark:bg-transparent dark:border-emerald-800">
+                <div className="p-2 rounded-md bg-white/70 border border-emerald-100 dark:bg-transparent dark:border-emerald-800 shrink-0">
                   <DollarSign className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
                     Total PR Amount
                   </p>
-                  <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-50 truncate">
                     ₱{pr.totalAmount.toLocaleString()}
                   </p>
                 </div>
@@ -822,11 +925,11 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
             </div>
 
             {/* Purpose */}
-            <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200/50 dark:from-slate-800/30 dark:to-slate-700/20 border border-slate-300 dark:border-slate-600/50 hover:shadow-sm transition-shadow lg:col-span-12">
-              <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200/50 dark:from-slate-800/30 dark:to-slate-700/20 border border-slate-300 dark:border-slate-600/50 hover:shadow-sm transition-shadow col-span-full">
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Purpose
               </p>
-              <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
+              <p className="text-sm font-normal text-slate-800 dark:text-slate-100 break-words">
                 {pr.headerDetails.purpose || '—'}
               </p>
             </div>
@@ -834,9 +937,11 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         </CardContent>
       </Card>
 
-      <div ref={torSectionRef}>
-        <PRAttachmentsPanel pr={pr} torValidationMessage={torSubmitError} />
-      </div>
+      {/* Attachments Section (Signed PR Document & Terms of Reference) */}
+      <PRAttachmentsPanel
+        pr={pr}
+        torValidationMessage={torSubmitError}
+      />
 
       {/* Items/PPMPs Table */}
       <Card className="border-0 shadow-lg overflow-hidden">
@@ -903,21 +1008,23 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                   </Select>
                 </div>
 
-                <div style={{ minWidth: 'fit-content' }}>
-                  <Select value={monthFilter} onValueChange={setMonthFilter}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Months</SelectItem>
-                      {months.map((month) => (
-                        <SelectItem key={month} value={month}>
-                          {month}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {months.length > 0 && (
+                  <div style={{ minWidth: 'fit-content' }}>
+                    <Select value={monthFilter} onValueChange={setMonthFilter}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Months</SelectItem>
+                        {months.map((month) => (
+                          <SelectItem key={month} value={month}>
+                            {month}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div style={{ minWidth: 'fit-content' }}>
                   <Select value={fundFilter} onValueChange={setFundFilter}>
@@ -989,6 +1096,7 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                     (sum, item) => sum + item.totalAmount,
                     0,
                   )
+                  const hasAnyMonth = items.some((i) => Boolean(i.month))
 
                   return (
                     <div
@@ -1046,8 +1154,9 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                               <TableRow className="bg-muted/40">
                                 <TableHead>Item Name</TableHead>
                                 <TableHead>Category</TableHead>
+                                <TableHead>Mode of Procurement</TableHead>
                                 <TableHead>Fund</TableHead>
-                                <TableHead className="text-center">Month</TableHead>
+                                {hasAnyMonth && <TableHead className="text-center">Month</TableHead>}
                                 <TableHead className="text-center w-32">Req Qty</TableHead>
                                 <TableHead>Unit Price</TableHead>
                                 <TableHead className="text-right">
@@ -1066,10 +1175,17 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                                       {item.itemName}
                                     </TableCell>
                                     <TableCell>{item.category}</TableCell>
-                                    <TableCell>{item.fund || '—'}</TableCell>
-                                    <TableCell className="text-center">
-                                      {item.month}
+                                    <TableCell>
+                                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-semibold whitespace-nowrap">
+                                        {item.procurementModeName || 'Direct Acquisition'}
+                                      </Badge>
                                     </TableCell>
+                                    <TableCell>{item.fund || '—'}</TableCell>
+                                    {hasAnyMonth && (
+                                      <TableCell className="text-center">
+                                        {item.month || '—'}
+                                      </TableCell>
+                                    )}
                                     <TableCell className="text-center">
                                       <div className="flex items-center justify-center gap-2">
                                         <input
@@ -1134,7 +1250,7 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                 {(pr.items || [])
                   .filter((i) => i.aprGroup)
                   .map((groupItem) => {
-                    const aprId = groupItem.aprGroup!.id
+                    const aprId = groupItem.aprGroup!.id || groupItem.aprGroup!.aprId || ''
                     const isExpanded = expandedPPMPs.has(aprId)
                     const nested: PRItem[] = (groupItem.aprGroup!.items ||
                       []) as PRItem[]
@@ -1401,6 +1517,7 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         prType={pr.type}
         onAddItems={handleAddItems}
         prId={pr.id}
+        officeId={pr.officeCode ?? pr.headerDetails?.officeId}
         currentItems={pr.items}
       />
 

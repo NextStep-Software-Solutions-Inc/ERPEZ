@@ -23,12 +23,20 @@ public record EligiblePPMPItemMonthAllocation(
 public record EligiblePPMPItemResponse(
     Guid PPMPItemId,
     string ItemName,
+    string? Description,
     string Category,
+    string? ItemCategory,
+    string? UacsCode,
     string Fund,
     string Unit,
     decimal UnitPrice,
+    bool HasMonthlyAllocations,
+    int PlannedQuantity,
+    int AvailableQuantity,
     List<EligiblePPMPItemMonthAllocation> MonthlyAllocations,
-    decimal TotalAvailableAmount // sum across all months
+    decimal TotalAvailableAmount,
+    Guid? ProcurementModeId = null,
+    string? ProcurementModeName = null
 );
 
 // ── Out-of-Stock CSE: "Add APR Items" modal (Image 9) ────────────────────────
