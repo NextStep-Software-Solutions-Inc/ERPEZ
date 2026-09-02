@@ -3,8 +3,8 @@ import {
   type APIResponse,
   type PaginationResponse,
   type AxiosError,
+  type AxiosResponse,
 } from "erpez-shared-lib";
-import type { AxiosResponse } from "erpez-shared-lib/dist/services/api";
 import { toast } from "sonner";
 import { extractErrorMessage, extractSuccessMessage } from "./utils/messages";
 

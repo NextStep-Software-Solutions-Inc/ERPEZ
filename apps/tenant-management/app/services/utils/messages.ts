@@ -1,5 +1,9 @@
-import type { AxiosError, AxiosResponse } from "erpez-shared-lib/dist/services/api";
-import type { APIResponse, PaginationResponse } from "erpez-shared-lib";
+import type {
+  APIResponse,
+  PaginationResponse,
+  AxiosError,
+  AxiosResponse,
+} from "erpez-shared-lib";
 
 export const extractErrorMessage = (error: AxiosError): { title: string, description: string } => {
   let title = error.message || "Error";

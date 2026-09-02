@@ -12,27 +12,35 @@ public class GetPublicProjectStatsQueryHandler(IUnitOfWork unitOfWork)
         GetPublicProjectStatsQuery request, CancellationToken cancellationToken)
     {
         var projects = await unitOfWork.ProcurementProjectRepository
-            .FindAllAsync(p => (p.BiddingDocument != null && p.BiddingDocument.Status == "Posted") 
-                            || p.Status == "ROUTED_TO_PORTAL" 
-                            || p.Status == "Active" 
-                            || p.Status == "Published" 
-                            || p.Status == "Open"
-                            || p.Status == "ClosingSoon"
-                            || p.Status == "Closed", cancellationToken);
+            .GetAllPublicProjectsWithModeAsync(cancellationToken);
 
         var isClosed = (string status) => status?.Equals("Closed", StringComparison.OrdinalIgnoreCase) ?? false;
         var isClosingSoon = (string status) => status?.Equals("ClosingSoon", StringComparison.OrdinalIgnoreCase) ?? false;
 
         var activeProjects = projects.Where(p => !isClosed(p.Status)).ToList();
 
-        var isPublicBidding = (string? mode) => mode != null && (mode.Contains("Public Bidding", StringComparison.OrdinalIgnoreCase) || mode.Contains("Public", StringComparison.OrdinalIgnoreCase));
-        var isSvp = (string? mode) => mode != null && (mode.Contains("Small Value", StringComparison.OrdinalIgnoreCase) || mode.Contains("SVP", StringComparison.OrdinalIgnoreCase));
+        var isSvp = (string? mode, string? contractNo) =>
+            (mode != null && (mode.Contains("Small Value", StringComparison.OrdinalIgnoreCase)
+                           || mode.Contains("SVP", StringComparison.OrdinalIgnoreCase)
+                           || mode.Contains("53.9", StringComparison.OrdinalIgnoreCase)))
+            || (contractNo != null && (contractNo.StartsWith("SVP", StringComparison.OrdinalIgnoreCase) || contractNo.Contains("SVP", StringComparison.OrdinalIgnoreCase)));
+
+        var isPublicBidding = (string? mode, string? contractNo) =>
+            !isSvp(mode, contractNo) &&
+            ((mode != null && (mode.Contains("Public Bidding", StringComparison.OrdinalIgnoreCase) 
+                            || mode.Contains("Competitive Bidding", StringComparison.OrdinalIgnoreCase)
+                            || mode.Contains("Bidding", StringComparison.OrdinalIgnoreCase)
+                            || mode.Contains("Public", StringComparison.OrdinalIgnoreCase)))
+             || (contractNo != null && (contractNo.StartsWith("ITB", StringComparison.OrdinalIgnoreCase) || contractNo.Contains("PB", StringComparison.OrdinalIgnoreCase))));
+
+        var svpCount = activeProjects.Count(p => isSvp(p.ProcurementMode?.Name, p.ContractNo));
+        var publicBiddingCount = activeProjects.Count(p => isPublicBidding(p.ProcurementMode?.Name, p.ContractNo));
 
         return ApiResponse<PublicProjectStatsDto>.Success(new PublicProjectStatsDto
         {
             ActiveProjects        = activeProjects.Count,
-            PublicBidding         = activeProjects.Count(p => isPublicBidding(p.ProcurementMode?.Name)),
-            SmallValueProcurement = activeProjects.Count(p => isSvp(p.ProcurementMode?.Name)),
+            PublicBidding         = publicBiddingCount,
+            SmallValueProcurement = svpCount,
             ClosingSoon           = projects.Count(p => isClosingSoon(p.Status)),
             Closed                = projects.Count(p => isClosed(p.Status))
         });

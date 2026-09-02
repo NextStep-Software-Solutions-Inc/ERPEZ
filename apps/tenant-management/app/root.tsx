@@ -1,6 +1,5 @@
 
 import { ClerkProvider } from '@clerk/react-router'
-import { rootAuthLoader } from '@clerk/react-router/server'
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router'
 import type { Route } from './+types/root'
 import stylesheet from './app.css?url'
@@ -9,14 +8,6 @@ import { Toaster } from 'sonner'
 import { AuthProvider } from './providers/AuthProvider'
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string
-
-export const loader = async (args: Route.LoaderArgs) => {
-  try {
-    return await rootAuthLoader(args)
-  } catch {
-    return {}
-  }
-}
 
 const { Provider: QueryClientProvider } = erpSharedLib;
 export const links: Route.LinksFunction = () => [
@@ -51,9 +42,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   )
 }
 
-export default function App({ loaderData }: Route.ComponentProps) {
+export default function App() {
   return (
-    <ClerkProvider loaderData={loaderData} publishableKey={CLERK_PUBLISHABLE_KEY}>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
       <QueryClientProvider>
         <AuthProvider>
           <main>

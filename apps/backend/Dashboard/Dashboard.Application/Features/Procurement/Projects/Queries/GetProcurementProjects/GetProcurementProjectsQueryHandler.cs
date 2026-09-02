@@ -37,6 +37,8 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             .Include(p => p.ConsolidatedPR)
                 .ThenInclude(c => c!.ConsolidatedPRItems)
                     .ThenInclude(ci => ci.ProcurementMode)
+            .Include(p => p.ConsolidatedPR)
+                .ThenInclude(c => c!.RFQs)
             .Include(p => p.BACResolutions)
                 .ThenInclude(r => r.WhereasClauseItems)
                     .ThenInclude(item => item.BACResolutionWhereasClause)
@@ -47,7 +49,21 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             .Where(p => !p.IsDeleted)
             .AsQueryable();
 
-        // Apply custom filters for ModeOfProcurement - REMOVED
+        if (query.HasRFQ == true)
+        {
+            dbQuery = dbQuery.Where(p => p.ConsolidatedPR != null && p.ConsolidatedPR.RFQs.Any(r => !r.IsDeleted));
+        }
+
+        if (query.HasApprovedRFQ == true)
+        {
+            dbQuery = dbQuery.Where(p => p.ConsolidatedPR != null && p.ConsolidatedPR.RFQs.Any(r => !r.IsDeleted && r.Status == ERPEZ.Domain.Enums.StatusEnum.Approved));
+        }
+
+        if (query.ForSupplierPortal == true)
+        {
+            var allowedPortalStatuses = new[] { "Posted", "ROUTED_TO_PORTAL", "Active", "Published", "Open", "ClosingSoon", "Closed" };
+            dbQuery = dbQuery.Where(p => allowedPortalStatuses.Contains(p.Status));
+        }
 
         var sieveModel = new Sieve.Models.SieveModel
         {

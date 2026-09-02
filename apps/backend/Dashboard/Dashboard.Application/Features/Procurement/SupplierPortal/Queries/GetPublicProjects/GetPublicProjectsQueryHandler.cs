@@ -68,11 +68,33 @@ public class GetPublicProjectsQueryHandler(IUnitOfWork unitOfWork)
         if (!string.IsNullOrWhiteSpace(query.Mode))
         {
             var targetMode = query.Mode.Trim().ToLowerInvariant();
-            projectList = projectList.Where(p => 
-                p.ModeOfProcurement.ToLowerInvariant().Contains(targetMode) ||
-                (targetMode.Contains("svp") && p.ModeOfProcurement.ToLowerInvariant().Contains("small value")) ||
-                (targetMode.Contains("small value") && p.ModeOfProcurement.ToLowerInvariant().Contains("svp"))
-            ).ToList();
+            if (targetMode.Contains("small value") || targetMode.Contains("svp"))
+            {
+                projectList = projectList.Where(p => 
+                    p.ModeOfProcurement.Contains("Small Value", StringComparison.OrdinalIgnoreCase) ||
+                    p.ModeOfProcurement.Contains("SVP", StringComparison.OrdinalIgnoreCase) ||
+                    p.ModeOfProcurement.Contains("53.9", StringComparison.OrdinalIgnoreCase) ||
+                    p.ContractNo.Contains("SVP", StringComparison.OrdinalIgnoreCase)
+                ).ToList();
+            }
+            else if (targetMode.Contains("public") || targetMode.Contains("bidding"))
+            {
+                projectList = projectList.Where(p => 
+                    !p.ModeOfProcurement.Contains("Small Value", StringComparison.OrdinalIgnoreCase) &&
+                    !p.ModeOfProcurement.Contains("SVP", StringComparison.OrdinalIgnoreCase) &&
+                    !p.ModeOfProcurement.Contains("53.9", StringComparison.OrdinalIgnoreCase) &&
+                    !p.ContractNo.Contains("SVP", StringComparison.OrdinalIgnoreCase) &&
+                    (p.ModeOfProcurement.Contains("Public", StringComparison.OrdinalIgnoreCase) ||
+                     p.ModeOfProcurement.Contains("Competitive Bidding", StringComparison.OrdinalIgnoreCase) ||
+                     p.ModeOfProcurement.Contains("Bidding", StringComparison.OrdinalIgnoreCase) ||
+                     p.ContractNo.StartsWith("ITB", StringComparison.OrdinalIgnoreCase) ||
+                     p.ContractNo.Contains("PB", StringComparison.OrdinalIgnoreCase))
+                ).ToList();
+            }
+            else
+            {
+                projectList = projectList.Where(p => p.ModeOfProcurement.Contains(targetMode, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
             totalCount = projectList.Count;
         }
 

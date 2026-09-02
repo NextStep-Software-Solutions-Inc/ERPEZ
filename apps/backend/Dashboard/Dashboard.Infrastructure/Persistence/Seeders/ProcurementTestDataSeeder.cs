@@ -972,6 +972,57 @@ public static class ProcurementTestDataSeeder
 
         foreach (var def in projectDefinitions)
         {
+            var cprNumber = $"CPR-{def.ContractNo}";
+            var cpr = await context.ConsolidatedPRs!.FirstOrDefaultAsync(c => c.CPRNumber == cprNumber);
+            if (cpr == null)
+            {
+                cpr = new ConsolidatedPR
+                {
+                    Id = Guid.NewGuid(),
+                    CPRNumber = cprNumber,
+                    Description = def.Title,
+                    Purpose = def.ScopeOfWork,
+                    ConsolidationDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-def.DaysPostedAgo)),
+                    TotalAmount = def.ABC,
+                    Status = StatusEnum.Approved,
+                    CreatedAt = DateTime.UtcNow.AddDays(-def.DaysPostedAgo),
+                    CreatedBy = "System"
+                };
+                await context.ConsolidatedPRs!.AddAsync(cpr);
+                await context.SaveChangesAsync();
+            }
+
+            var rfqNumber = $"RFQ-{def.ContractNo}";
+            var rfq = await context.RFQs!.FirstOrDefaultAsync(r => r.RFQNumber == rfqNumber);
+            if (rfq == null)
+            {
+                rfq = new RFQ
+                {
+                    Id = Guid.NewGuid(),
+                    RFQNumber = rfqNumber,
+                    TracingNumber = $"TRC-{def.ContractNo}",
+                    Description = def.Title,
+                    ConsolidatedPRId = cpr.Id,
+                    ModeOfProcurementId = def.Mode?.Id,
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-def.DaysPostedAgo)),
+                    Deadline = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(def.DaysDeadlineAhead)),
+                    DeliveryPeriod = $"{def.DeliveryDays} days",
+                    Purpose = def.Title,
+                    Status = StatusEnum.Approved,
+                    TotalAmount = def.ABC,
+                    CreatedAt = DateTime.UtcNow.AddDays(-def.DaysPostedAgo),
+                    CreatedBy = "System"
+                };
+                await context.RFQs!.AddAsync(rfq);
+                await context.SaveChangesAsync();
+            }
+            else if (rfq.Status != StatusEnum.Approved)
+            {
+                rfq.Status = StatusEnum.Approved;
+                context.RFQs!.Update(rfq);
+                await context.SaveChangesAsync();
+            }
+
             var project = await context.ProcurementProjects!
                 .Include(p => p.BiddingDocument)
                 .Include(p => p.BiddingActivitySchedules)
@@ -988,6 +1039,7 @@ public static class ProcurementTestDataSeeder
                     ABC = def.ABC,
                     Status = def.Status,
                     ProcurementModeId = def.Mode?.Id,
+                    ConsolidatedPRId = cpr.Id,
                     ScopeOfWork = def.ScopeOfWork,
                     NonRefundableBidderFee = def.NonRefundableFee,
                     DeliveryPeriodDays = def.DeliveryDays,
@@ -1113,6 +1165,15 @@ public static class ProcurementTestDataSeeder
                 }
 
                 await context.SaveChangesAsync();
+            }
+            else
+            {
+                if (project.ConsolidatedPRId == null)
+                {
+                    project.ConsolidatedPRId = cpr.Id;
+                    context.ProcurementProjects!.Update(project);
+                    await context.SaveChangesAsync();
+                }
             }
         }
     }

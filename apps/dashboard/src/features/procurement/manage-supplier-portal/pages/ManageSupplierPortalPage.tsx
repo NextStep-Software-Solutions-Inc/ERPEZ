@@ -19,11 +19,12 @@ export default function ManageSupplierPortalPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const navigate = useNavigate()
 
-  // 1. Fetch BAC Projects (Public Bidding)
+  // 1. Fetch BAC Projects (Public Bidding & Posted Projects)
   const { data: projectsResponse, isLoading: isLoadingProjects } = useProjects({
     pathParams: {},
     queryParams: {
       pageSize: 100,
+      forSupplierPortal: true,
     },
   })
 
@@ -59,26 +60,56 @@ export default function ManageSupplierPortalPage() {
     })
 
     // Map BAC Projects
-    const mappedProjects: Project[] = rawProjects.map((p: any) => {
-      const mopName = p.consolidatedPR?.modeOfProcurementName || 'Public Bidding'
-      const schedules = p.biddingActivitySchedules || []
-      const latestSchedule = schedules.length > 0 ? schedules[schedules.length - 1] : null
-      const datePosted = schedules[0]?.startDate || new Date().toISOString()
-      const deadline = latestSchedule?.endDate || latestSchedule?.startDate || ''
+    const mappedProjects: Project[] = rawProjects
+      .filter((p: any) => {
+        const isDraft = p.status && p.status.toLowerCase() === 'draft'
+        if (isDraft) return false
 
-      return {
-        id: p.id,
-        source: 'bac' as const,
-        sourceNumber: p.consolidatedPR?.cprNumber || (p.id ? p.id.substring(0, 8) : ''),
-        title: p.title || 'Untitled Project',
-        status: (p.status || 'Active') as any,
-        type: mopName,
-        datePosted,
-        deadline,
-        abc: p.abc || 0,
-        applicantCount: p.applicantCount || 0,
-      }
-    })
+        const mopName = (p.consolidatedPR?.modeOfProcurementName || p.type || '').toLowerCase()
+        const isSvp =
+          mopName.includes('svp') ||
+          mopName.includes('small value') ||
+          mopName.includes('53.9') ||
+          (p.consolidatedPR?.cprNumber && p.consolidatedPR.cprNumber.toLowerCase().includes('svp'))
+
+        // Business Rule: hasApprovedRfq is required for Small Value Procurement (SVP) display.
+        // Public Bidding projects are governed by PBD / ITB notices and do NOT require an RFQ.
+        if (isSvp) {
+          const hasApprovedRfq =
+            p.hasApprovedRFQ ||
+            p.consolidatedPR?.hasApprovedRFQ ||
+            (p.consolidatedPR?.rfqs &&
+              p.consolidatedPR.rfqs.some(
+                (r: any) =>
+                  r.status === 'Approved' ||
+                  r.status === 3 ||
+                  (typeof r.status === 'string' && r.status.toLowerCase() === 'approved'),
+              ))
+          return !!hasApprovedRfq
+        }
+
+        return true
+      })
+      .map((p: any) => {
+        const mopName = p.consolidatedPR?.modeOfProcurementName || 'Public Bidding'
+        const schedules = p.biddingActivitySchedules || []
+        const latestSchedule = schedules.length > 0 ? schedules[schedules.length - 1] : null
+        const datePosted = schedules[0]?.startDate || new Date().toISOString()
+        const deadline = latestSchedule?.endDate || latestSchedule?.startDate || ''
+
+        return {
+          id: p.id,
+          source: 'bac' as const,
+          sourceNumber: p.consolidatedPR?.cprNumber || (p.id ? p.id.substring(0, 8) : ''),
+          title: p.title || 'Untitled Project',
+          status: (p.status || 'Active') as any,
+          type: mopName,
+          datePosted,
+          deadline,
+          abc: p.abc || 0,
+          applicantCount: p.applicantCount || 0,
+        }
+      })
 
     // Combine and sort by datePosted descending
     return [...mappedRfqs, ...mappedProjects].sort((a, b) => {
