@@ -71,7 +71,8 @@ export function ApprovePRModal({ open, onOpenChange, onApprove }: ApprovePRModal
         })
 
         if (uploadResult?.succeeded && uploadResult.data) {
-          signedPdfUrl = uploadResult.data
+          const fileData = String(uploadResult.data)
+          signedPdfUrl = fileData.startsWith('/files/download/') ? fileData : `/files/download/${fileData}`
         }
       } catch {
         // Fallback to object URL if server file upload is unavailable

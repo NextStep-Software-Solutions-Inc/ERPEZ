@@ -79,6 +79,7 @@ import { ReturnPRModal } from './ReturnPRModal'
 import { ApprovePRModal } from './ApprovePRModal'
 import { PRAttachmentsPanel } from './PRAttachmentsPanel'
 import { purchaseRequestRequiresTor } from '../utils/torAttachment'
+import { openSignedDocument } from '../utils/openSignedDocument'
 
 import api from '@/services/api'
 
@@ -175,6 +176,7 @@ export function PRDetailsPage({
     const base = activePR ?? initialPR
     const merged: PurchaseRequest = {
       ...base,
+      signedPdfUrl: base.signedPdfUrl,
       status: fromApiStatus(apiData.status),
       type: fromApiPrType(apiData.prType),
       totalAmount: apiData.totalAmount,
@@ -775,21 +777,22 @@ export function PRDetailsPage({
                 <Download className="h-4 w-4" />
                 {isExporting ? 'Exporting...' : 'Export'}
               </Button>
-              {pr.signedPdfUrl && (
+              {(pr.signedPdfUrl || pr.status === 'approved') && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   className="gap-2 h-8 border-purple-300 text-purple-900 bg-purple-50/50 hover:bg-purple-100/50 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-300"
-                  asChild
+                  onClick={() => {
+                    if (pr.signedPdfUrl) {
+                      openSignedDocument(pr.signedPdfUrl, 'Signed PR Document')
+                    } else {
+                      handleExportPR()
+                    }
+                  }}
                 >
-                  <a
-                    href={pr.signedPdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                    View Signed Document
-                  </a>
+                  <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  View Signed Document
                 </Button>
               )}
               {hasUnsavedChanges && (
@@ -941,6 +944,7 @@ export function PRDetailsPage({
       <PRAttachmentsPanel
         pr={pr}
         torValidationMessage={torSubmitError}
+        onViewSignedDocument={handleExportPR}
       />
 
       {/* Items/PPMPs Table */}

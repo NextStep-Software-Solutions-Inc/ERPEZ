@@ -172,6 +172,7 @@ export function AddItemsModal({
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [monthFilter, setMonthFilter] = useState<string>('all')
   const [fundFilter, setFundFilter] = useState<string>('all')
+  const [modeFilter, setModeFilter] = useState<string>('all')
 
   const { activePR } = usePurchaseRequestStore()
   const officeIdToUse =
@@ -350,11 +351,29 @@ export function AddItemsModal({
             ? Object.keys(item.monthlyQuantities).includes(monthFilter) && (item.monthlyQuantities[monthFilter] || 0) > 0
             : item.month === monthFilter)
         const matchesFund = fundFilter === 'all' || item.fund === fundFilter
-        return matchesSearch && matchesCategory && matchesMonth && matchesFund
+        const itemMode = item.procurementModeName || 'Direct Acquisition'
+        const matchesMode = modeFilter === 'all' || itemMode === modeFilter
+        return matchesSearch && matchesCategory && matchesMonth && matchesFund && matchesMode
       })
       return { ...doc, items: filteredItems }
     }).filter((doc: ProcessedPPMPDoc) => doc.items.length > 0)
-  }, [ppmpDocs, searchTerm, categoryFilter, monthFilter, fundFilter, prType])
+  }, [ppmpDocs, searchTerm, categoryFilter, monthFilter, fundFilter, modeFilter, prType])
+
+  // Get unique procurement modes
+  const procurementModes = useMemo(() => {
+    if (prType === 'non-cse') {
+      const modeSet = new Set<string>()
+      ppmpDocs.forEach((d: ProcessedPPMPDoc) => {
+        d.items.forEach((i: ProcessedPPMPItem) => {
+          if (!i.isCse && i.procurementModeName) {
+            modeSet.add(i.procurementModeName)
+          }
+        })
+      })
+      return Array.from(modeSet).sort()
+    }
+    return []
+  }, [prType, ppmpDocs])
 
   // Get unique categories and filters
   const categories = useMemo(() => {
@@ -478,6 +497,7 @@ export function AddItemsModal({
     setCategoryFilter('all')
     setMonthFilter('all')
     setFundFilter('all')
+    setModeFilter('all')
   }
 
   const handleToggleItem = (it: ProcessedPPMPItem, checked: boolean) => {
@@ -820,9 +840,25 @@ export function AddItemsModal({
                   </SelectContent>
                 </Select>
               </div>
+
+              {procurementModes.length > 0 && (
+                <div className="w-[160px]">
+                  <Select value={modeFilter} onValueChange={setModeFilter}>
+                    <SelectTrigger className="h-9 text-xs bg-white rounded-lg shadow-2xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Modes</SelectItem>
+                      {procurementModes.map((mode) => (
+                        <SelectItem key={mode} value={mode}>{mode}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
-            {(searchTerm || categoryFilter !== 'all' || monthFilter !== 'all' || fundFilter !== 'all') && (
+            {(searchTerm || categoryFilter !== 'all' || monthFilter !== 'all' || fundFilter !== 'all' || modeFilter !== 'all') && (
               <Button
                 variant="ghost"
                 size="sm"

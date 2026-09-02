@@ -48,16 +48,31 @@ public class GetConsolidatedPRByIdQueryHandler(IUnitOfWork unitOfWork)
                         TotalAmount:          ci.PRItem.Amount,
                         StockNo:              ci.PRItem.StockNo,
                         MonthlyQuantities:    new Dictionary<string, int> { { ((int)ci.PRItem.RequestedMonth).ToString("D2"), ci.PRItem.RequestedQuantity } },
-                        ProcurementModeId:    ci.ProcurementModeId ?? ci.PRItem.PPMPItem?.ProcurementModeId,
+                        ProcurementModeId:    ci.ProcurementModeId 
+                                              ?? ci.PRItem.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                                                  .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Approved || ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Active) ? 2 : 1)
+                                                  .ThenByDescending(ai => ai.CreatedAt)
+                                                  .FirstOrDefault()?.ProcurementModeId
+                                              ?? (ci.PRItem.PPMPItem?.ProcurementModeId != Guid.Empty ? ci.PRItem.PPMPItem?.ProcurementModeId : null),
                         AllowPartial:         ci.AllowPartial,
-                        ProcurementModeName:  ci.ProcurementMode?.Name ?? ci.PRItem.PPMPItem?.ProcurementMode?.Name
+                        ProcurementModeName:  ci.ProcurementMode?.Name 
+                                              ?? ci.PRItem.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                                                  .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Approved || ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Active) ? 2 : 1)
+                                                  .ThenByDescending(ai => ai.CreatedAt)
+                                                  .FirstOrDefault()?.ProcurementMode?.Name
+                                              ?? ci.PRItem.PPMPItem?.ProcurementMode?.Name
                     )).ToList()
                 );
             })
             .ToList();
 
         var firstMode = activeItems
-            .Select(ci => ci.ProcurementMode?.Name ?? ci.PRItem.PPMPItem?.ProcurementMode?.Name)
+            .Select(ci => ci.ProcurementMode?.Name 
+                       ?? ci.PRItem.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                           .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Approved || ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Active) ? 2 : 1)
+                           .ThenByDescending(ai => ai.CreatedAt)
+                           .FirstOrDefault()?.ProcurementMode?.Name
+                       ?? ci.PRItem.PPMPItem?.ProcurementMode?.Name)
             .FirstOrDefault(m => !string.IsNullOrEmpty(m));
 
         var response = new ConsolidatedPRDetailResponse(

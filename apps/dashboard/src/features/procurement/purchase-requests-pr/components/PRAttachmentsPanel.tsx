@@ -11,10 +11,12 @@ import { createFileRequest } from '@/components/features/planning/file-upload/ha
 import type { PurchaseRequest } from '../types'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
 import { purchaseRequestRequiresTor } from '../utils/torAttachment'
+import { openSignedDocument } from '../utils/openSignedDocument'
 
 interface PRAttachmentsPanelProps {
   pr: PurchaseRequest
   torValidationMessage?: string | null
+  onViewSignedDocument?: () => void
 }
 
 const useUploadTorFile = createMutationHookFromTemplate(createFileRequest)
@@ -22,6 +24,7 @@ const useUploadTorFile = createMutationHookFromTemplate(createFileRequest)
 export function PRAttachmentsPanel({
   pr,
   torValidationMessage,
+  onViewSignedDocument,
 }: PRAttachmentsPanelProps) {
   const { updatePurchaseRequest } = usePurchaseRequestStore()
   const { toast } = useToast()
@@ -31,7 +34,8 @@ export function PRAttachmentsPanel({
 
   const torRequired = purchaseRequestRequiresTor(pr)
   const hasTorAttachment = Boolean(pr.torAttachment?.url)
-  const hasSignedDocument = Boolean(pr.signedPdfUrl)
+  const isApproved = pr.status === 'approved'
+  const hasSignedDocument = Boolean(pr.signedPdfUrl) || isApproved
 
   if (!torRequired && !hasTorAttachment && !hasSignedDocument) {
     return null
@@ -194,18 +198,21 @@ export function PRAttachmentsPanel({
               </div>
 
               <Button
-                asChild
+                type="button"
                 variant="outline"
                 className="gap-2 border-purple-300 bg-white/80 text-purple-900 hover:bg-purple-50"
+                onClick={() => {
+                  if (pr.signedPdfUrl) {
+                    openSignedDocument(pr.signedPdfUrl, 'Signed PR Document')
+                  } else if (onViewSignedDocument) {
+                    onViewSignedDocument()
+                  } else {
+                    openSignedDocument(pr.signedPdfUrl, 'Signed PR Document')
+                  }
+                }}
               >
-                <a
-                  href={pr.signedPdfUrl}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  <FileText className="h-4 w-4" />
-                  View Signed Document
-                </a>
+                <FileText className="h-4 w-4" />
+                View Signed Document
               </Button>
             </div>
           </div>
