@@ -319,11 +319,7 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
                         ResolutionClauseId = item.ResolutionClauseId,
                         Name = item.ResolutionClause != null ? item.ResolutionClause.Name : string.Empty,
                         Body = item.ResolutionClause != null ? item.ResolutionClause.Body : string.Empty,
-                        ClauseType = !string.IsNullOrWhiteSpace(item.ClauseType)
-                            ? item.ClauseType
-                            : (item.ResolutionClause != null && !string.IsNullOrWhiteSpace(item.ResolutionClause.ClauseType)
-                                ? item.ResolutionClause.ClauseType
-                                : "Whereas"),
+                        ClauseType = item.ClauseType ?? "Whereas",
                         Order = item.Order
                     }).ToList()
                 : new List<BACResolutionClauseLinkResponse>(),
