@@ -202,6 +202,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<NoticeOfAwardMilestone>? NoticeOfAwardMilestones { get; set; }
     public DbSet<NoticeOfAwardActivity>? NoticeOfAwardActivities { get; set; }
 
+    // Public Bidding Evaluation & Award Ecosystem
+    public DbSet<BiddingSubmission>? BiddingSubmissions { get; set; }
+    public DbSet<BidOpeningRecord>? BidOpeningRecords { get; set; }
+    public DbSet<BiddingEvaluation>? BiddingEvaluations { get; set; }
+    public DbSet<BiddingEvaluatedBid>? BiddingEvaluatedBids { get; set; }
+    public DbSet<BiddingPostQualification>? BiddingPostQualifications { get; set; }
+    public DbSet<BiddingAwardRecommendation>? BiddingAwardRecommendations { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -2369,6 +2377,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany(p => p.BACResolutions)
                 .HasForeignKey(r => r.ProcurementProjectId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(r => r.BiddingAwardRecommendation)
+                .WithOne(a => a.BACResolution)
+                .HasForeignKey<BACResolution>(r => r.BiddingAwardRecommendationId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasIndex(r => r.BiddingAwardRecommendationId)
+                .IsUnique()
+                .HasFilter("\"BiddingAwardRecommendationId\" IS NOT NULL");
         });
 
         modelBuilder.Entity<BiddingActivitySchedule>(e =>
@@ -3371,6 +3388,151 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(link => link.ResolutionClauseId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // BiddingSubmission
+        modelBuilder.Entity<BiddingSubmission>(entity =>
+        {
+            entity.HasOne(s => s.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(s => s.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(s => s.Supplier)
+                .WithMany()
+                .HasForeignKey(s => s.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(s => s.PublicSupplierApplication)
+                .WithMany()
+                .HasForeignKey(s => s.PublicSupplierApplicationId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(s => s.BidOpeningRecord)
+                .WithOne(o => o.BiddingSubmission)
+                .HasForeignKey<BidOpeningRecord>(o => o.BiddingSubmissionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(s => new { s.ProcurementProjectId, s.SupplierId })
+                .IsUnique();
+
+            entity.Property(s => s.OriginalProposedAmount)
+                .HasPrecision(18, 2);
+
+            entity.Property(s => s.BidSecurityAmount)
+                .HasPrecision(18, 2);
+        });
+
+        // BidOpeningRecord
+        modelBuilder.Entity<BidOpeningRecord>(entity =>
+        {
+            entity.HasOne(o => o.BiddingActivitySchedule)
+                .WithMany()
+                .HasForeignKey(o => o.BiddingActivityScheduleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(o => o.BiddingSubmissionId)
+                .IsUnique();
+
+            entity.Property(o => o.AsReadBidAmount)
+                .HasPrecision(18, 2);
+        });
+
+        // BiddingEvaluation
+        modelBuilder.Entity<BiddingEvaluation>(entity =>
+        {
+            entity.HasOne(e => e.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(e => e.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.EvaluatedBids)
+                .WithOne(b => b.BiddingEvaluation)
+                .HasForeignKey(b => b.BiddingEvaluationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.ProcurementProjectId)
+                .IsUnique();
+
+            entity.Property(e => e.TechnicalWeight)
+                .HasPrecision(5, 2);
+
+            entity.Property(e => e.FinancialWeight)
+                .HasPrecision(5, 2);
+        });
+
+        // BiddingEvaluatedBid
+        modelBuilder.Entity<BiddingEvaluatedBid>(entity =>
+        {
+            entity.HasOne(b => b.BidOpeningRecord)
+                .WithOne(o => o.BiddingEvaluatedBid)
+                .HasForeignKey<BiddingEvaluatedBid>(b => b.BidOpeningRecordId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(b => b.Supplier)
+                .WithMany()
+                .HasForeignKey(b => b.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(b => b.PostQualification)
+                .WithOne(p => p.BiddingEvaluatedBid)
+                .HasForeignKey<BiddingPostQualification>(p => p.BiddingEvaluatedBidId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(b => new { b.BiddingEvaluationId, b.SupplierId })
+                .IsUnique();
+
+            entity.HasIndex(b => b.BidOpeningRecordId)
+                .IsUnique();
+
+            entity.HasIndex(b => b.Rank);
+
+            entity.Property(b => b.EvaluatedBidPrice)
+                .HasPrecision(18, 2);
+
+            entity.Property(b => b.TechnicalScore)
+                .HasPrecision(5, 2);
+
+            entity.Property(b => b.NormalizedFinancialScore)
+                .HasPrecision(5, 2);
+
+            entity.Property(b => b.TotalScore)
+                .HasPrecision(5, 2);
+        });
+
+        // BiddingPostQualification
+        modelBuilder.Entity<BiddingPostQualification>(entity =>
+        {
+            entity.HasIndex(p => p.BiddingEvaluatedBidId)
+                .IsUnique();
+        });
+
+        // BiddingAwardRecommendation
+        modelBuilder.Entity<BiddingAwardRecommendation>(entity =>
+        {
+            entity.HasOne(a => a.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(a => a.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.WinningSupplier)
+                .WithMany()
+                .HasForeignKey(a => a.WinningSupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(a => a.BiddingPostQualification)
+                .WithOne(p => p.AwardRecommendation)
+                .HasForeignKey<BiddingAwardRecommendation>(a => a.BiddingPostQualificationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(a => a.ProcurementProjectId)
+                .IsUnique();
+
+            entity.HasIndex(a => a.BiddingPostQualificationId)
+                .IsUnique();
+
+            entity.Property(a => a.AwardedAmount)
+                .HasPrecision(18, 2);
         });
     }
 

@@ -157,5 +157,8 @@ public interface IUnitOfWork
     INoticeOfAwardRepository NoticeOfAwardRepository { get; }
     INoticeOfAwardMilestoneRepository NoticeOfAwardMilestoneRepository { get; }
     INoticeOfAwardActivityRepository NoticeOfAwardActivityRepository { get; }
+    IBiddingSubmissionRepository BiddingSubmissionRepository { get; }
+    IBiddingEvaluationRepository BiddingEvaluationRepository { get; }
+    IBiddingAwardRecommendationRepository BiddingAwardRecommendationRepository { get; }
 }
 
