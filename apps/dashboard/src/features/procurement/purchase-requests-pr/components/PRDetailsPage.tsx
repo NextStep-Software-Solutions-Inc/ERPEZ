@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import {
   Card,
   CardContent,
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import {
   Table,
   TableBody,
@@ -66,13 +68,22 @@ import {
   Download,
   FileText,
   Tag,
+  Building2,
+  Eye,
+  ExternalLink,
+  Loader2,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
 import { useUpdatePurchaseRequestStatus, useUpdatePurchaseRequest, usePurchaseRequest } from '../handlers/hooks'
+import {
+  useGenerateBACResolutionDocument,
+  useDownloadBacResolutionDocument,
+} from '@/features/procurement/bac-resolution/handlers/hooks'
+import { BacResolutionStatusBadge } from '@/features/procurement/bac-resolution/components'
 import { PurchaseRequest, PRItem, PRStatus } from '../types'
-import type { UpdatePurchaseRequestItemPayload } from '../types/apiTypes'
+import type { UpdatePurchaseRequestItemPayload, PRBacResolutionApi } from '../types/apiTypes'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
 import { AddItemsModal } from './AddItemsModal'
 import { ReturnPRModal } from './ReturnPRModal'
@@ -180,6 +191,7 @@ export function PRDetailsPage({
       status: fromApiStatus(apiData.status),
       type: fromApiPrType(apiData.prType),
       totalAmount: apiData.totalAmount,
+      bacResolutions: apiData.bacResolutions ?? base.bacResolutions ?? [],
       headerDetails: {
         ...base.headerDetails,
         prNumber: apiData.prNumber,
@@ -335,6 +347,72 @@ export function PRDetailsPage({
     itemIds: [],
     type: 'ppmp',
   })
+
+  const navigate = useNavigate()
+  const [generatingDocId, setGeneratingDocId] = useState<string | null>(null)
+  const { mutateAsync: generateBACResolutionDocument } = useGenerateBACResolutionDocument()
+  const { mutateAsync: downloadBacResolutionDocument } = useDownloadBacResolutionDocument()
+
+  const linkedBacResolutions: PRBacResolutionApi[] = useMemo(() => {
+    return pr?.bacResolutions ?? freshPRResponse?.data?.bacResolutions ?? []
+  }, [pr?.bacResolutions, freshPRResponse?.data?.bacResolutions])
+
+  const owningBacResolution = linkedBacResolutions[0] ?? null
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+    }).format(amount)
+  }
+
+  const handleViewOrDownloadDocument = async (
+    resolution: PRBacResolutionApi,
+    action: 'view' | 'download',
+  ) => {
+    if (!resolution.id) {
+      toast.error('No BAC Resolution identifier available.')
+      return
+    }
+
+    try {
+      setGeneratingDocId(resolution.id)
+      const genResponse = await generateBACResolutionDocument({
+        pathParams: { id: resolution.id },
+        queryParams: { format: 'Pdf' },
+      })
+
+      const documentId = genResponse.data
+      if (!documentId) {
+        throw new Error('Document generation service did not return a document ID.')
+      }
+
+      const downloadResponse = await downloadBacResolutionDocument({
+        pathParams: { documentId },
+      })
+
+      const blob = downloadResponse.blob
+      const filename = `BAC_Resolution_${resolution.resolutionNumber || resolution.id}.pdf`
+
+      if (action === 'view') {
+        const fileUrl = URL.createObjectURL(blob)
+        window.open(fileUrl, '_blank')
+      } else {
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(link.href)
+        toast.success('BAC Resolution document downloaded successfully.')
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate BAC Resolution document.')
+    } finally {
+      setGeneratingDocId(null)
+    }
+  }
 
   if (!pr) {
     return (
@@ -940,12 +1018,228 @@ export function PRDetailsPage({
         </CardContent>
       </Card>
 
-      {/* Attachments Section (Signed PR Document & Terms of Reference) */}
+      {/* Attachments Section (Terms of Reference) */}
       <PRAttachmentsPanel
         pr={pr}
         torValidationMessage={torSubmitError}
-        onViewSignedDocument={handleExportPR}
       />
+
+      {/* ── Unified BAC Resolution Section ───────────────────────────── */}
+      {linkedBacResolutions.length > 0 ? (
+        <Card className="border border-purple-200/90 dark:border-purple-800/70 bg-gradient-to-br from-purple-50/90 via-purple-50/50 to-white dark:from-purple-950/50 dark:via-purple-950/30 dark:to-card shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="bg-purple-100/50 dark:bg-purple-900/30 pb-3 pt-3.5 px-6 border-b border-purple-200/80 dark:border-purple-800/60">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-purple-200/80 dark:bg-purple-800/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
+                  <Building2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-bold text-foreground">
+                    BAC Resolution
+                  </CardTitle>
+                  <p className="text-[11px] text-purple-950/70 dark:text-purple-300/80 font-medium">
+                    Procurement milestone & resolution context
+                  </p>
+                </div>
+              </div>
+              {owningBacResolution && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/90 dark:bg-background/90 hover:bg-purple-50 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700 font-semibold gap-1.5 shadow-xs"
+                  onClick={() =>
+                    navigate({
+                      to: '/v2/bac-resolutions',
+                      search: { id: owningBacResolution.procurementProjectId },
+                    })
+                  }
+                >
+                  View BAC Details
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-5 pb-6 px-6">
+            {linkedBacResolutions.map((resolution, index) => (
+              <div key={resolution.id || index} className="space-y-4">
+                {index > 0 && <Separator className="my-4 border-purple-200/60 dark:border-purple-800/40" />}
+
+                {/* Attributes Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {/* BAC Status */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      BAC Status
+                    </p>
+                    <div>
+                      <BacResolutionStatusBadge status={resolution.status} />
+                    </div>
+                  </div>
+
+                  {/* Resolution No. */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      Resolution No.
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {resolution.resolutionNumber}
+                    </p>
+                  </div>
+
+                  {/* Resolution Type */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      Resolution Type
+                    </p>
+                    <p className="text-sm font-medium text-foreground/90 truncate capitalize">
+                      {resolution.resolutionType?.replace(/[-_]/g, ' ') || '—'}
+                    </p>
+                  </div>
+
+                  {/* Source */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      Source
+                    </p>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] py-0.5 px-2.5 rounded-full border-purple-300 text-purple-800 dark:text-purple-200 bg-purple-100/80 dark:bg-purple-900/50 font-medium"
+                    >
+                      {resolution.sourceType === 'APPItem'
+                        ? 'Inherited from APP Item'
+                        : 'Created from Consolidated PR'}
+                    </Badge>
+                  </div>
+
+                  {/* Resolution Date */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      Resolution Date
+                    </p>
+                    <p className="text-sm text-foreground/80 font-medium">
+                      {resolution.dateResolved
+                        ? new Date(resolution.dateResolved).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : '—'}
+                    </p>
+                  </div>
+
+                  {/* ABC */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      ABC
+                    </p>
+                    <div>
+                      <Badge variant="outline" className="text-xs font-semibold px-2.5 py-0.5 border-purple-200 text-purple-900 dark:text-purple-200 bg-white/80 dark:bg-card">
+                        {formatCurrency(resolution.abc)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Procurement / BAC Project Title */}
+                  <div className="sm:col-span-2 md:col-span-3 lg:col-span-6 space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      Procurement / BAC Project
+                    </p>
+                    <p className="text-sm text-foreground font-medium">
+                      {resolution.projectTitle || resolution.resolutionType || '—'}
+                    </p>
+                    {resolution.resolvedLocation && (
+                      <p className="text-xs text-muted-foreground pt-0.5">
+                        Location: <span className="font-medium text-foreground/80">{resolution.resolvedLocation}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* BAC Resolution Document Sub-Panel */}
+                <div className="rounded-xl border border-purple-200/90 dark:border-purple-800/70 bg-purple-50/70 dark:bg-purple-950/50 p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-purple-100 dark:bg-purple-900/70 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0 border border-purple-200/80 dark:border-purple-800/60">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground">
+                        BAC Resolution Document
+                      </p>
+                      <p className="text-[11px] text-purple-900/80 dark:text-purple-300/90 font-mono font-medium truncate">
+                        BAC_Resolution_{resolution.resolutionNumber || resolution.id}.pdf
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={generatingDocId === resolution.id}
+                      className="h-8 gap-1.5 text-xs bg-white dark:bg-card hover:bg-purple-50 dark:hover:bg-purple-900/40 text-foreground border-purple-200 dark:border-purple-800 font-medium shadow-xs"
+                      onClick={() => handleViewOrDownloadDocument(resolution, 'view')}
+                    >
+                      {generatingDocId === resolution.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Eye className="h-3.5 w-3.5" />
+                      )}
+                      View
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={generatingDocId === resolution.id}
+                      className="h-8 gap-1.5 text-xs bg-white dark:bg-card hover:bg-purple-50 dark:hover:bg-purple-900/40 text-foreground border-purple-200 dark:border-purple-800 font-medium shadow-xs"
+                      onClick={() => handleViewOrDownloadDocument(resolution, 'download')}
+                    >
+                      {generatingDocId === resolution.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                      Download
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border border-dashed border-purple-200/80 dark:border-purple-800/60 bg-purple-50/40 dark:bg-purple-950/20 shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="bg-purple-100/30 dark:bg-purple-900/20 pb-3 pt-3.5 px-6 border-b border-purple-100/80 dark:border-purple-900/40">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                <Building2 className="h-4 w-4" />
+              </div>
+              <CardTitle className="text-base font-semibold text-muted-foreground">
+                BAC Resolution
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="py-6 px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">
+                No BAC Resolution yet
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                This Purchase Request has not been assigned or linked to an active BAC Resolution. You can create or manage BAC Resolutions in the BAC workspace.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/50 bg-white dark:bg-card shadow-xs"
+              onClick={() => navigate({ to: '/v2/bac-resolutions' })}
+            >
+              Go to BAC Workspace
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Items/PPMPs Table */}
       <Card className="border-0 shadow-lg overflow-hidden">
