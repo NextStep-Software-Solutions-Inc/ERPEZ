@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useAtom, useSetAtom } from 'jotai'
-import { ArrowLeft, Edit2, Download, Plus } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Edit2, Download, Plus } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -250,8 +250,36 @@ export function APPDetailsPage() {
         <div className="lg:col-span-3 space-y-6">
           {/* Action Buttons */}
           <div className="flex gap-2 justify-end pointer-events-auto flex-wrap">
-            {/* Indicative + Approved → Create Final APP (lifecycle follow-up) */}
-            {app.appType === 'Indicative' && app.status === 'Approved' && (
+            {/* Indicative + Derived Final APP already exists -> Show guidance and View Final APP */}
+            {app.appType === 'Indicative' && app.derivedFinalAppId && (
+              <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl px-3 py-1.5 text-xs shadow-xs">
+                <div className="flex flex-col">
+                  <span className="font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    Final APP already created
+                  </span>
+                  <span className="text-amber-700 dark:text-amber-400 font-mono text-[11px]">
+                    {app.derivedFinalAppNumber || 'Final APP'}{app.derivedFinalAppStatus ? ` (${app.derivedFinalAppStatus})` : ''}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    navigate({
+                      to: '/v2/app-consolidation/$appId',
+                      params: { appId: app.derivedFinalAppId! },
+                    })
+                  }
+                  className="gap-1.5 cursor-pointer pointer-events-auto bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs h-8 px-3 rounded-lg shadow-xs"
+                >
+                  View Final APP
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            )}
+
+            {/* Indicative + Approved + No Final APP yet -> Create Final APP */}
+            {app.appType === 'Indicative' && app.status === 'Approved' && !app.derivedFinalAppId && (
               <Button
                 onClick={handleMarkAsFinal}
                 className="gap-2 cursor-pointer pointer-events-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold shadow-md"

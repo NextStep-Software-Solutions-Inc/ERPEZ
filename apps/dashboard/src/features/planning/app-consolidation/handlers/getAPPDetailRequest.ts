@@ -142,6 +142,10 @@ export interface AppDetailResponse {
   createdBy?: string
   updatedAt?: string | null
   updatedBy?: string | null
+  derivedFinalAppId?: string | null
+  derivedFinalAppNumber?: string | null
+  derivedFinalAppName?: string | null
+  derivedFinalAppStatus?: string | null
   FiscalYear?: {
     id: string
     year: number

@@ -14,6 +14,16 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
         var app = await unitOfWork.APPRepository.GetAPPWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
 
+        ERPEZ.Domain.Entities.Planning.APP? derivedFinalApp = null;
+        if (string.Equals(app.APPType, "Indicative", StringComparison.OrdinalIgnoreCase))
+        {
+            var derivedFinalQuery = unitOfWork.APPRepository
+                .Query(a => a.SourceAPPId == app.Id && a.APPType == "Final" && !a.IsDeleted)
+                .OrderByDescending(a => a.CreatedAt);
+
+            derivedFinalApp = await unitOfWork.APPRepository.GetFirstAsync(derivedFinalQuery, cancellationToken);
+        }
+
         var response = new APPResponse
         {
             Id = app.Id,
@@ -37,6 +47,10 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
             CreatedBy = app.CreatedBy,
             UpdatedAt = app.UpdatedAt,
             UpdatedBy = app.UpdatedBy,
+            DerivedFinalAppId = derivedFinalApp?.Id,
+            DerivedFinalAppNumber = derivedFinalApp?.APPNumber,
+            DerivedFinalAppName = derivedFinalApp?.Name,
+            DerivedFinalAppStatus = derivedFinalApp?.Status.ToString(),
             FiscalYear = app.FiscalYear == null ? null : new APPFiscalYearResponse
             {
                 Id = app.FiscalYear.Id,
