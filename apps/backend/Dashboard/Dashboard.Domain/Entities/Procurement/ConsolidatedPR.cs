@@ -48,4 +48,5 @@ public class ConsolidatedPR : ApprovableEntity
     public virtual List<ConsolidatedPRItem> ConsolidatedPRItems { get; set; } = [];
     public virtual List<ApprovalEvent> ApprovalEvents { get; set; } = [];
     public virtual List<RFQ> RFQs { get; set; } = [];
+    public virtual List<DirectAcquisition> DirectAcquisitions { get; set; } = [];
 }

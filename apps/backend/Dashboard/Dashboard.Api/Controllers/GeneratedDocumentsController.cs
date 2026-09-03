@@ -226,6 +226,39 @@ public class DocumentController(IMediator mediator,
         return Ok(result);
     }
 
+    [HttpPost("purchase-request/{purchaseRequestId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GeneratePurchaseRequest(
+        Guid purchaseRequestId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.GeneratePurchaseRequestDocument.GeneratePurchaseRequestDocumentCommand
+        {
+            PurchaseRequestId = purchaseRequestId,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("agency-procurement-request/{aprId:guid}/generate")]
+    [HttpPost("apr/{aprId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateApr(
+        Guid aprId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.GenerateAprDocument.GenerateAprDocumentCommand
+        {
+            APRId = aprId,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{documentId:guid}/download")]
     [Authorize]
     public async Task<IActionResult> Download(

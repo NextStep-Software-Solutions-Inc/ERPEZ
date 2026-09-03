@@ -59,18 +59,25 @@ export interface PRItem {
   unitOfMeasure: string
   unitPrice: number
   totalAmount: number
+  description?: string
   stockNo?: string
   source?: 'ppmp' | 'apr' | 'bac' // Source of item
   ppmpDocId?: string // For non-CSE PRs, track which PPMP document this item came from
   ppmpDocName?: string // For non-CSE PRs, store the PPMP document name
   month?: string
   fund?: string
+  aprId?: string
+  aprNumber?: string
+  aprOffice?: string
+  aprTotalAmount?: number
   // Optional APR group info when the PR contains an APR as a single grouped entry
   aprGroup?: {
-    id: string
+    id?: string
+    aprId?: string
     aprNumber: string
     officeCode?: string
     officeName?: string
+    totalAmount?: number
     items: PRItem[]
   }
   // APR-specific metadata (when this PRItem was created from an APR item)
@@ -80,6 +87,8 @@ export interface PRItem {
   editedNeeded?: number
   // Per-month quantity breakdown (January..December) when available
   monthlyQuantities?: Record<string, number>
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface PurchaseRequest {
@@ -166,21 +175,30 @@ export interface ProcessedPPMPItem {
   id: string
   itemId: string
   itemName: string
+  description?: string
   category: string
+  itemCategory?: string
+  uacsCode?: string
   isCse: boolean
   unitOfMeasure: string
   estimatedUnitPrice: number
   totalAmount: number
   fund: string
+  hasMonthlyAllocations?: boolean
+  plannedQuantity?: number
+  availableQuantity?: number
   monthlyAllocations: import('./apiTypes').EligiblePpmpItemMonthAllocation[]
   monthlyQuantities?: Partial<Record<string, number>>
   month?: string
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface ProcessedPPMPDoc {
   id: string
   documentName: string
   officeCode: string
+  officeName?: string
   items: ProcessedPPMPItem[]
 }
 
@@ -190,6 +208,7 @@ export interface SourceAPRItem {
   category: string
   quantity: number
   outOfStockQuantity?: number
+  currentFulfilled?: number
   originalNeeded?: number
   totalGot?: number
   editedNeeded?: number

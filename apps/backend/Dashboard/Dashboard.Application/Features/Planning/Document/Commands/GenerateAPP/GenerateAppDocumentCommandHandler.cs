@@ -76,8 +76,8 @@ public class GenerateAppDocumentCommandHandler(
         {
             var row = MapToRow(item);
 
-            // 1. Common-Use Supplies: If it has a CSEItemId, it is a CSE item
-            if (item.PPMPItem?.CSEItemId != null)
+            // 1. Common-Use Supplies: If it has a CSEItemId, or it is not a Non-CSE item and is Goods
+            if (item.PPMPItem?.CSEItemId != null || (item.PPMPItem != null && item.PPMPItem.NonCSEItemId == null && item.PPMPItem.ProjectType == ProcurementProjectType.Goods))
             {
                 commonUseSupplies.Add(row);
             }
@@ -177,9 +177,7 @@ public class GenerateAppDocumentCommandHandler(
 
     private static decimal CalculateItemBudget(AppItemEntity item)
     {
-        return item.EstimatedBudgetOverride ?? (item.PPMPItem?.PPMPItemAllocations
-            .Where(a => !a.IsDeleted)
-            .Sum(a => a.Amount) ?? 0);
+        return item.EffectiveABC;
     }
 
     private async Task<List<SignatoryDto>> BuildSignatoriesAsync(AppEntity app, CancellationToken cancellationToken)

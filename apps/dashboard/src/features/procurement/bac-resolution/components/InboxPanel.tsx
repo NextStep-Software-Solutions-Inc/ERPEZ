@@ -116,8 +116,14 @@ export function InboxPanel({
         // Status filter
         if (filter !== 'all') {
           const itemStatus = (item.status || 'draft').toLowerCase()
-          if (itemStatus !== filter.toLowerCase()) return false
+          const targetFilter = filter.toLowerCase()
+          if (targetFilter === 'for-approval') {
+            if (itemStatus !== 'for-approval' && itemStatus !== 'submitted' && itemStatus !== 'submit') return false
+          } else if (itemStatus !== targetFilter) {
+            return false
+          }
         }
+
         // Source type filter
         if (sourceTypeFilter !== 'all') {
           if (sourceTypeFilter === 'APP_ITEM' && item.sourceType !== 'APPItem') return false

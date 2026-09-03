@@ -1211,12 +1211,6 @@ export const menusConfig = {
             icon: Files,
             permission: PERMISSIONS.Procurement.Po.Manage,
           },
-          {
-            title: 'Manage Supplier Direct Acquisition',
-            href: '/v2/manage-supplier-direct-acquisition',
-            icon: Files,
-            permission: PERMISSIONS.Procurement.Supplier.Manage,
-          },
         ],
       },
       {
@@ -1647,12 +1641,6 @@ export const menusConfig = {
             href: '/v2/manage-direct-acquisition',
             icon: Files,
             permission: PERMISSIONS.Procurement.Po.Manage,
-          },
-          {
-            title: 'Manage Supplier Direct Acquisition',
-            href: '/v2/manage-supplier-direct-acquisition',
-            icon: Files,
-            permission: PERMISSIONS.Procurement.Supplier.Manage,
           },
         ],
       },

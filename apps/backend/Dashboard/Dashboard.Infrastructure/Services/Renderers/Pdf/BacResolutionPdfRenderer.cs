@@ -56,11 +56,21 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                     {
                         foreach (var clause in request.WhereasClauses.OrderBy(c => c.Order))
                         {
+                            var body = clause.Body?.Trim() ?? string.Empty;
+                            if (body.StartsWith("WHEREAS,", StringComparison.OrdinalIgnoreCase))
+                            {
+                                body = body.Substring(8).TrimStart();
+                            }
+                            else if (body.StartsWith("WHEREAS", StringComparison.OrdinalIgnoreCase))
+                            {
+                                body = body.Substring(7).TrimStart();
+                            }
+
                             col.Item().PaddingBottom(8).Text(text =>
                             {
                                 text.Span("WHEREAS, ").Bold();
-                                text.Span(clause.Body);
-                                if (!clause.Body.TrimEnd().EndsWith(";") && !clause.Body.TrimEnd().EndsWith("."))
+                                text.Span(body);
+                                if (!body.EndsWith(";") && !body.EndsWith("."))
                                 {
                                     text.Span(";");
                                 }
@@ -76,16 +86,44 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                         });
                     }
 
-                    // 2. NOW, THEREFORE Clause
-                    col.Item().PaddingTop(4).PaddingBottom(8).Text(text =>
+                    // 2. NOW, THEREFORE Clauses
+                    if (request.NowThereforeClauses != null && request.NowThereforeClauses.Any())
                     {
-                        text.Span("NOW, THEREFORE, ").Bold();
-                        text.Span("We, the members of the Bids and Awards Committee (BAC) hereby ");
-                        text.Span("RESOLVE ").Bold();
-                        text.Span("as it is hereby ");
-                        text.Span("RESOLVED ").Bold();
-                        text.Span("to recommend the use of:");
-                    });
+                        foreach (var clause in request.NowThereforeClauses.OrderBy(c => c.Order))
+                        {
+                            var body = clause.Body?.Trim() ?? string.Empty;
+                            if (body.StartsWith("NOW, THEREFORE,", StringComparison.OrdinalIgnoreCase))
+                            {
+                                body = body.Substring(15).TrimStart();
+                            }
+                            else if (body.StartsWith("NOW THEREFORE,", StringComparison.OrdinalIgnoreCase))
+                            {
+                                body = body.Substring(14).TrimStart();
+                            }
+                            else if (body.StartsWith("NOW THEREFORE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                body = body.Substring(13).TrimStart();
+                            }
+
+                            col.Item().PaddingTop(4).PaddingBottom(8).Text(text =>
+                            {
+                                text.Span("NOW, THEREFORE, ").Bold();
+                                text.Span(body);
+                            });
+                        }
+                    }
+                    else
+                    {
+                        col.Item().PaddingTop(4).PaddingBottom(8).Text(text =>
+                        {
+                            text.Span("NOW, THEREFORE, ").Bold();
+                            text.Span("We, the members of the Bids and Awards Committee (BAC) hereby ");
+                            text.Span("RESOLVE ").Bold();
+                            text.Span("as it is hereby ");
+                            text.Span("RESOLVED ").Bold();
+                            text.Span("to recommend the use of:");
+                        });
+                    }
 
                     // 3. Project Details Block
                     col.Item().PaddingLeft(12).PaddingBottom(10).Column(details =>
@@ -117,19 +155,59 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                         });
                     });
 
-                    // 4. RESOLVED Date and Location
-                    var dateFormatted = request.DateResolved != default
-                        ? request.DateResolved.ToString("dddd, MMMM dd, yyyy")
-                        : DateTime.Now.ToString("dddd, MMMM dd, yyyy");
-                    var location = !string.IsNullOrWhiteSpace(request.ResolvedLocation)
-                        ? request.ResolvedLocation
-                        : "University of Science and Technology of Southern Philippines, Cagayan de Oro City";
-
-                    col.Item().PaddingBottom(10).Text(t =>
+                    // 4. RESOLVED Clauses
+                    if (request.ResolvedClauses != null && request.ResolvedClauses.Any())
                     {
-                        t.Span("RESOLVED ").Bold();
-                        t.Span($"this day of {dateFormatted} at {location}.");
-                    });
+                        int resolvedIndex = 0;
+                        foreach (var clause in request.ResolvedClauses.OrderBy(c => c.Order))
+                        {
+                            var body = clause.Body?.Trim() ?? string.Empty;
+                            string prefix = resolvedIndex == 0 ? "RESOLVED, " : "FURTHER RESOLVED, ";
+
+                            if (body.StartsWith("FURTHER RESOLVED,", StringComparison.OrdinalIgnoreCase))
+                            {
+                                prefix = "FURTHER RESOLVED, ";
+                                body = body.Substring(17).TrimStart();
+                            }
+                            else if (body.StartsWith("FURTHER RESOLVED", StringComparison.OrdinalIgnoreCase))
+                            {
+                                prefix = "FURTHER RESOLVED, ";
+                                body = body.Substring(16).TrimStart();
+                            }
+                            else if (body.StartsWith("RESOLVED,", StringComparison.OrdinalIgnoreCase))
+                            {
+                                prefix = "RESOLVED, ";
+                                body = body.Substring(9).TrimStart();
+                            }
+                            else if (body.StartsWith("RESOLVED", StringComparison.OrdinalIgnoreCase))
+                            {
+                                prefix = "RESOLVED, ";
+                                body = body.Substring(8).TrimStart();
+                            }
+
+                            col.Item().PaddingBottom(10).Text(t =>
+                            {
+                                t.Span(prefix).Bold();
+                                t.Span(body);
+                            });
+                            resolvedIndex++;
+                        }
+                    }
+                    else
+                    {
+                        var dateFormatted = request.DateResolved != default
+                            ? request.DateResolved.ToString("dddd, MMMM dd, yyyy")
+                            : DateTime.Now.ToString("dddd, MMMM dd, yyyy");
+                        var location = !string.IsNullOrWhiteSpace(request.ResolvedLocation)
+                            ? request.ResolvedLocation
+                            : "University of Science and Technology of Southern Philippines, Cagayan de Oro City";
+
+                        col.Item().PaddingBottom(10).Text(t =>
+                        {
+                            t.Span("RESOLVED ").Bold();
+                            t.Span($"this day of {dateFormatted} at {location}.");
+                        });
+                    }
 
                     // 5. Note
                     col.Item().PaddingBottom(16).Text(t =>

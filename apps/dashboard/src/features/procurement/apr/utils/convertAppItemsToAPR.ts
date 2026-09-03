@@ -51,13 +51,6 @@ export function convertAppLineItemToAPRItem(
     (lineItem as any).uom ||
     'unit'
 
-  const quantity =
-    lineItem.quantity ??
-    (lineItem as any).approvedQuantity ??
-    (lineItem as any).requestedQuantity ??
-    (lineItem as any).qty ??
-    1
-
   const unitCost =
     lineItem.unitCost ??
     (lineItem as any).unitPrice ??
@@ -67,13 +60,25 @@ export function convertAppLineItemToAPRItem(
 
   const totalAmount =
     lineItem.totalAmount ||
+    (lineItem as any).effectiveABC ||
     (lineItem as any).totalCost ||
     (lineItem as any).estimatedBudget ||
     (lineItem as any).totalEstimatedBudget ||
     (lineItem as any).originalPPMPBudget ||
-    (lineItem as any).effectiveABC ||
-    quantity * unitCost ||
     0
+
+  const rawQty =
+    lineItem.quantity ??
+    (lineItem as any).approvedQuantity ??
+    (lineItem as any).requestedQuantity ??
+    (lineItem as any).qty
+
+  const quantity =
+    (rawQty && rawQty > 0)
+      ? rawQty
+      : (unitCost > 0 && totalAmount > 0)
+      ? Math.round(totalAmount / unitCost)
+      : 1
   const office = lineItem.officeName || lineItem.office || ''
   const fundSource = lineItem.fundSourceName || lineItem.fundSource || ''
 

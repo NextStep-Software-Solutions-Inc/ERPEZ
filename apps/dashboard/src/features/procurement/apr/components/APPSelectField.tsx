@@ -8,6 +8,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { isCSEItem } from '../utils'
 
 interface APPSelectFieldProps {
   apps: any[]
@@ -59,7 +60,7 @@ export const APPSelectField = React.memo(function APPSelectField({
             const fy = app.FiscalYear?.year || app.fiscalYear?.year || app.fiscalYear || app.fiscalYearName || '2026'
             const isSelected = selectedAppIds.includes(app.id)
             const appType = app.appType || (app.isFinal === 'true' || app.isFinal === true ? 'Final' : null)
-            const directItems = app.APPItems || app.appItems || app.items || []
+            const directItems = (app.APPItems || app.appItems || app.items || []).filter(isCSEItem)
             const itemCount = allocatedItemIds && allocatedItemIds.size > 0
               ? directItems.filter((i: any) => !allocatedItemIds.has(String(i.id).toLowerCase())).length
               : directItems.length

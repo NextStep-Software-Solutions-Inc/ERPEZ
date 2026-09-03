@@ -112,7 +112,7 @@ export function MoPTabItem({ item, onUpdate, readOnly }: MoPTabItemProps) {
         </CardHeader>
         <CardContent className="py-2 px-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div>
-            <span className="text-slate-500 block">Description:</span>
+            <span className="text-slate-500 block">Item Name:</span>
             <span className="font-medium text-slate-900 line-clamp-1">{item.description || '—'}</span>
           </div>
           <div>

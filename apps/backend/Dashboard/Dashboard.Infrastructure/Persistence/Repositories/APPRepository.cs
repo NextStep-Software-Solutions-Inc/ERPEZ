@@ -32,6 +32,15 @@ public class APPRepository : Repository<APP>, IAPPRepository
                     .ThenInclude(ppmpItem => ppmpItem.PPMPItemAllocations)
             .Include(a => a.APPItems
                 .Where(item => !item.IsDeleted))
+                .ThenInclude(item => item.PPMPItem)
+                    .ThenInclude(ppmpItem => ppmpItem.NonCSEItem)
+            .Include(a => a.APPItems
+                .Where(item => !item.IsDeleted))
+                .ThenInclude(item => item.PPMPItem)
+                    .ThenInclude(ppmpItem => ppmpItem.CSEItem)
+                        .ThenInclude(cseItem => cseItem!.ItemPrices)
+            .Include(a => a.APPItems
+                .Where(item => !item.IsDeleted))
                 .ThenInclude(item => item.ProcurementMode)
             .Include(a => a.APPItems
                 .Where(item => !item.IsDeleted))
@@ -168,8 +177,7 @@ public class APPRepository : Repository<APP>, IAPPRepository
         var appItems = app.APPItems.Where(i => !i.IsDeleted).ToList();
         var ppmps = app.APPPPMPs.Where(p => !p.IsDeleted && p.PPMP != null).Select(p => p.PPMP!).ToList();
 
-        var totalAmount = appItems.Sum(item =>
-            item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0);
+        var totalAmount = appItems.Sum(item => item.EffectiveABC);
 
         var officeBreakdown = appItems
             .GroupBy(i => new { Id = i.OfficeId, Name = i.Office?.Name ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Office?.Name ?? "Unknown Office" })
@@ -177,15 +185,15 @@ public class APPRepository : Repository<APP>, IAPPRepository
                 g.Key.Id,
                 g.Key.Name,
                 g.Count(),
-                g.Sum(item => item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0)
+                g.Sum(item => item.EffectiveABC)
             )).ToList();
 
         var categoryBreakdown = appItems
-            .GroupBy(i => i.PPMPItem?.CSEItemId != null ? "Common-Use Supplies" : "Non-CSE Supplies & Services")
+            .GroupBy(i => (i.PPMPItem?.CSEItemId != null || (i.PPMPItem != null && i.PPMPItem.NonCSEItemId == null)) ? "Common-Use Supplies" : "Non-CSE Supplies & Services")
             .Select(g => new ERPEZ.Domain.Models.CategoryBreakdownData(
                 g.Key,
                 g.Count(),
-                g.Sum(item => item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0)
+                g.Sum(item => item.EffectiveABC)
             )).ToList();
 
         var modeBreakdown = appItems
@@ -193,7 +201,7 @@ public class APPRepository : Repository<APP>, IAPPRepository
             .Select(g => new ERPEZ.Domain.Models.ProcurementTypeBreakdownData(
                 g.Key,
                 g.Count(),
-                g.Sum(item => item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0)
+                g.Sum(item => item.EffectiveABC)
             )).ToList();
 
         var fundBreakdown = appItems
@@ -201,7 +209,7 @@ public class APPRepository : Repository<APP>, IAPPRepository
             .Select(g => new ERPEZ.Domain.Models.FundSourceBreakdownData(
                 g.Key,
                 g.Count(),
-                g.Sum(item => item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0)
+                g.Sum(item => item.EffectiveABC)
             )).ToList();
 
         decimal mooe = totalAmount;

@@ -11,7 +11,6 @@ import type {
   PPMPItem,
 } from '../types'
 import type { LIBDetails } from '@/features/planning/line-item-budgeting/line-item-budget/types'
-import { ExpenditureItemGroup } from '../pages/OfficeLevelPPMPDetailsPage'
 
 const usePPMPExpenditureItems = createQueryHookFromTemplate(
   getPPMPExpenditureItemsRequest,
@@ -21,6 +20,7 @@ interface ProjectLevelPPMPWorkspaceProps {
   ppmp: PPMPDetails
   lib?: LIBDetails | null
   isEditable: boolean
+  ExpenditureItemGroupComponent?: React.ComponentType<any>
   onAddItem?: (groupId: string) => void
   onEditItem?: (item: PPMPItem) => void
   onDeleteItem?: (item: PPMPItem) => void
@@ -34,6 +34,7 @@ export function ProjectLevelPPMPWorkspace({
   ppmp,
   lib,
   isEditable,
+  ExpenditureItemGroupComponent,
   onAddItem,
   onEditItem,
   onDeleteItem,
@@ -161,20 +162,23 @@ export function ProjectLevelPPMPWorkspace({
                 No expenditure items recorded for this project yet. Click &ldquo;Add Expenditure Item&rdquo; above to create one.
               </div>
             ) : (
-              expenditureItems.map((group) => (
-                <ExpenditureItemGroup
-                  key={group.id}
-                  group={group}
-                  expandedItemIds={expandedItemIds}
-                  onToggleItem={toggleItem}
-                  onAddItem={isEditable ? onAddItem : undefined}
-                  onEditItem={isEditable ? onEditItem : undefined}
-                  onDeleteItem={isEditable ? onDeleteItem : undefined}
-                  onEditGroup={isEditable ? onEditGroup : undefined}
-                  onDeleteGroup={isEditable ? onDeleteGroup : undefined}
-                  onEditAllocations={isEditable ? onEditAllocations : undefined}
-                />
-              ))
+              ExpenditureItemGroupComponent && expenditureItems.map((group) => {
+                const GroupComp = ExpenditureItemGroupComponent
+                return (
+                  <GroupComp
+                    key={group.id}
+                    group={group}
+                    expandedItemIds={expandedItemIds}
+                    onToggleItem={toggleItem}
+                    onAddItem={isEditable ? onAddItem : undefined}
+                    onEditItem={isEditable ? onEditItem : undefined}
+                    onDeleteItem={isEditable ? onDeleteItem : undefined}
+                    onEditGroup={isEditable ? onEditGroup : undefined}
+                    onDeleteGroup={isEditable ? onDeleteGroup : undefined}
+                    onEditAllocations={isEditable ? onEditAllocations : undefined}
+                  />
+                )
+              })
             )}
           </div>
         )}

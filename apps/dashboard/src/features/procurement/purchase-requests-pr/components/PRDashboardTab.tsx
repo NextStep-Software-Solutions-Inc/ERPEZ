@@ -39,13 +39,14 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
-// Store only used for EditPRModal (item editing still store-managed during transition)
+import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
 import { useToast } from '@/components/ui/use-toast'
 import { PurchaseRequest, PRStatus } from '../types'
 import { useState, useEffect, useMemo } from 'react'
 import { EditPRModal } from './EditPRModal'
 import { usePurchaseRequests, usePurchaseRequestStats, useDeletePurchaseRequest } from '../handlers/hooks'
 import { fromApiStatus, fromApiPrType, toApiPrType } from '../types/apiTypes'
+import { useDashboardRole } from '@/hooks/useDashboardRole'
 
 const STATUS_BADGE_CONFIG: Record<PRStatus, { label: string; color?: any; variant?: any }> = {
   draft: { label: 'Draft', color: 'secondary' },
@@ -65,7 +66,12 @@ interface PRDashboardTabProps {
 
 export function PRDashboardTab({ prType, onCreateClick, onViewDetails }: PRDashboardTabProps) {
   const { toast } = useToast()
+  const { setIsManagePRView } = usePurchaseRequestStore()
   const deletePRMutation = useDeletePurchaseRequest()
+
+  useEffect(() => {
+    setIsManagePRView(false)
+  }, [setIsManagePRView])
 
   const apiPrType = toApiPrType(prType)
 
@@ -77,11 +83,11 @@ export function PRDashboardTab({ prType, onCreateClick, onViewDetails }: PRDashb
     },
   })
 
-  const isGuid = (val?: string): boolean =>
+  const isGuid = (val?: string | null): boolean =>
     !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
 
-  const tempOfficeId = import.meta.env.VITE_TEMP_OFFICE_ID
-  const validOfficeId = isGuid(tempOfficeId) ? tempOfficeId : undefined
+  const { departmentId, canAccessGlobalData } = useDashboardRole()
+  const validOfficeId = !canAccessGlobalData && isGuid(departmentId) ? departmentId : undefined
 
   const { data: statsResponse } = usePurchaseRequestStats({
     pathParams: {},
@@ -243,7 +249,7 @@ export function PRDashboardTab({ prType, onCreateClick, onViewDetails }: PRDashb
                 <Layers className="h-6 w-6" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-indigo-700">
+                <div className="text-2xl font-semibold text-indigo-700">
                   ₱{(apiStats?.totalPPMPAmount || 0).toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">Approved budget allocation</p>
@@ -266,7 +272,7 @@ export function PRDashboardTab({ prType, onCreateClick, onViewDetails }: PRDashb
                 <Wallet className="h-6 w-6" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-sky-700">
+                <div className="text-2xl font-semibold text-sky-700">
                   ₱{(apiStats?.totalSubmittedPRAmount || 0).toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">Amount in submitted requests</p>
@@ -289,7 +295,7 @@ export function PRDashboardTab({ prType, onCreateClick, onViewDetails }: PRDashb
                 <Wallet className="h-6 w-6" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-emerald-600">
+                <div className="text-2xl font-semibold text-emerald-600">
                   ₱{(apiStats?.availableBalance || 0).toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">Remaining budget available</p>

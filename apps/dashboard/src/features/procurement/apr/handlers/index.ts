@@ -17,6 +17,12 @@ export { getApprovedAPPsRequest, type BackendAPPResponse, type APPItemResponse }
 export { getAPPByIdRequest, type GetAPPByIdParams } from './getAPPByIdRequest'
 export { getFiscalYearsRequest, type FiscalYearDto, type FiscalYearsResponse } from './getFiscalYearsRequest'
 export { getAllocatedAPPItemIdsRequest, type GetAllocatedAPPItemIdsParams } from './getAllocatedAPPItemIdsRequest'
+export {
+  generateAndDownloadAprDocument,
+  fetchAprPdfBlobUrl,
+  type GenerateAPRDocumentPayload,
+  type APRDocumentFormat,
+} from './generateAprDocumentRequest'
 
 // React Query and Mutation Hooks
 export {

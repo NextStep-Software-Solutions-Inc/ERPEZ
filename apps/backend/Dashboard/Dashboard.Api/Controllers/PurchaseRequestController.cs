@@ -111,13 +111,25 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
-    [HttpGet("{id}/eligible-ppmps")]
+    [HttpGet("eligible-ppmps")]
+    [ProducesResponseType(typeof(ApiResponse<List<EligiblePPMPResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetEligiblePPMPsByOffice(
+        [FromQuery] Guid officeId,
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetEligiblePPMPsQuery(OfficeId: officeId), cancellationToken);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpGet("{id:guid}/eligible-ppmps")]
     [ProducesResponseType(typeof(ApiResponse<List<EligiblePPMPResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetEligiblePPMPs(Guid id, CancellationToken cancellationToken)
     {
-        var result = await mediator.Send(new GetEligiblePPMPsQuery(id), cancellationToken);
+        var result = await mediator.Send(new GetEligiblePPMPsQuery(PurchaseRequestId: id), cancellationToken);
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 

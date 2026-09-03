@@ -191,8 +191,10 @@ export interface BACMilestones {
 export interface BACLineItem {
   id: string
   ppmpItemId?: string
+  name?: string
   code?: string // Item code for reference (e.g., "ITEM-001", from delta extraction)
   description: string // Item name/title (e.g., "Office Chairs", "Laptops")
+  itemDescription?: string // Detailed technical specifications/description
   unit: string
   quantity: number
   unitCost: number
@@ -209,7 +211,7 @@ export interface BACLineItem {
   epaRemarks?: string
   startOfProcurementOverride?: string
   endOfProcurementOverride?: string
-  estimatedBudgetOverride?: number
+  estimatedBudgetOverride?: number | null
   effectiveStartOfProcurement?: string
   effectiveEndOfProcurement?: string
   isStartProcurementOverridden?: boolean
@@ -455,6 +457,22 @@ export interface APPItemDetail {
   createdBy?: string
   updatedAt?: string | null
   updatedBy?: string | null
+  isNew?: boolean
+  isRevised?: boolean
+  effectiveStartOfProcurement?: string | null
+  effectiveEndOfProcurement?: string | null
+  startOfProcurementOverride?: string | null
+  endOfProcurementOverride?: string | null
+  estimatedBudgetOverride?: number | null
+  originalPPMPBudget?: number
+  effectiveABC?: number
+  quantity?: number
+  unitCost?: number
+  totalAmount?: number
+  isABCOverridden?: boolean
+  isStartProcurementOverridden?: boolean
+  isEndProcurementOverridden?: boolean
+  unit?: string
   APP?: {
     id: string
     appNumber: string

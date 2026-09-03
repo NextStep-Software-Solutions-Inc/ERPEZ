@@ -165,6 +165,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DirectContracting>? DirectContractings { get; set; }
     public DbSet<DirectContractingProposal>? DirectContractingProposals { get; set; }
     public DbSet<DirectContractingProposalItem>? DirectContractingProposalItems { get; set; }
+    public DbSet<DirectAcquisition>? DirectAcquisitions { get; set; }
+    public DbSet<DirectPurchaseEntry>? DirectPurchaseEntries { get; set; }
+    public DbSet<DirectAcquisitionDocument>? DirectAcquisitionDocuments { get; set; }
 
     public DbSet<OPCRConsolidation>? OPCRConsolidations { get; set; }
 
@@ -2443,6 +2446,80 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasPrecision(18, 2);
         });
 
+        // Direct Acquisition (RA 12009)
+        modelBuilder.Entity<DirectAcquisition>(e =>
+        {
+            e.Property(da => da.DANumber).IsRequired().HasMaxLength(50);
+            e.HasIndex(da => da.DANumber).IsUnique();
+
+            e.Property(da => da.TotalABC).HasPrecision(18, 2);
+
+            e.Property(da => da.Status)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            e.Property(da => da.Remarks).HasMaxLength(1000);
+
+            e.HasOne(da => da.ConsolidatedPR)
+                .WithMany(cpr => cpr.DirectAcquisitions)
+                .HasForeignKey(da => da.ConsolidatedPRId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(da => da.BACProject)
+                .WithMany(p => p.DirectAcquisitions)
+                .HasForeignKey(da => da.BACProjectId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasOne(da => da.DirectPurchaseEntry)
+                .WithOne(dpe => dpe.DirectAcquisition)
+                .HasForeignKey<DirectPurchaseEntry>(dpe => dpe.DirectAcquisitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasMany(da => da.Documents)
+                .WithOne(doc => doc.DirectAcquisition)
+                .HasForeignKey(doc => doc.DirectAcquisitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DirectPurchaseEntry>(e =>
+        {
+            e.Property(dpe => dpe.SupplierName).IsRequired().HasMaxLength(200);
+            e.Property(dpe => dpe.SupplierTIN).HasMaxLength(50);
+            e.Property(dpe => dpe.FinalAmount).HasPrecision(18, 2);
+            e.Property(dpe => dpe.PaymentMethod)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+            e.Property(dpe => dpe.PayeeName).HasMaxLength(200);
+            e.Property(dpe => dpe.Remarks).HasMaxLength(1000);
+
+            e.HasOne(dpe => dpe.Supplier)
+                .WithMany()
+                .HasForeignKey(dpe => dpe.SupplierId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasOne(dpe => dpe.PayeeUser)
+                .WithMany()
+                .HasForeignKey(dpe => dpe.PayeeUserId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasMany(dpe => dpe.ProofDocuments)
+                .WithOne(doc => doc.DirectPurchaseEntry)
+                .HasForeignKey(doc => doc.DirectPurchaseEntryId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DirectAcquisitionDocument>(e =>
+        {
+            e.Property(doc => doc.FileName).IsRequired().HasMaxLength(255);
+            e.Property(doc => doc.FileType).HasMaxLength(50);
+            e.Property(doc => doc.BlobUrl).HasMaxLength(2000);
+            e.Property(doc => doc.DocumentType).IsRequired().HasMaxLength(50);
+        });
+
         modelBuilder.Entity<SupplierBid>(e =>
         {
             e.HasOne(sb => sb.RFQ)
@@ -2685,7 +2762,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<ConsolidatedPRItem>()
             .HasOne(ci => ci.PRItem)
-            .WithMany()
+            .WithMany(i => i.ConsolidatedPRItems)
             .HasForeignKey(ci => ci.PRItemId)
             .OnDelete(DeleteBehavior.Restrict);
 
