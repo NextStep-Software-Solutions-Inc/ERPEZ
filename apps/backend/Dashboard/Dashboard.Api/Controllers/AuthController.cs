@@ -16,7 +16,7 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("auth")]
 [ApiController]
-public class AuthController(ISender mediator) : ControllerBase
+public class AuthController(ISender mediator, IWebHostEnvironment env) : ControllerBase
 {
     /// <summary>
     /// Returns the active functional permissions granted to the currently authenticated user within the active tenant.
@@ -38,6 +38,11 @@ public class AuthController(ISender mediator) : ControllerBase
     [HttpGet("dev/users")]
     public IActionResult GetDevUsers()
     {
+        if (!env.IsDevelopment())
+        {
+            return NotFound();
+        }
+
         var users = DevTenantAndMemberSeeder.DevPersonas.Select(p => new
         {
             p.UserId,
@@ -61,6 +66,11 @@ public class AuthController(ISender mediator) : ControllerBase
     [HttpPost("dev/login")]
     public IActionResult DevLogin([FromBody] DevLoginRequest? request)
     {
+        if (!env.IsDevelopment())
+        {
+            return NotFound();
+        }
+
         var username = request?.Username ?? "dev_planner";
         var tenantId = request?.TenantId ?? DevTenantAndMemberSeeder.DevTenantId;
 
