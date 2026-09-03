@@ -7,6 +7,7 @@ using ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurement
 using ERPEZ.Application.Features.Procurement.Projects.Commands.AddConsolidatedPR;
 using ERPEZ.Application.Features.Procurement.Projects.Dtos;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEvents;
+using ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEventsSummary;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEventById;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjectById;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjects;
@@ -264,6 +265,14 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [HttpGet("calendar-events")]
     [ProducesResponseType(typeof(ApiResponse<CalendarEventsWithSummaryResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCalendarEvents([FromQuery] GetCalendarEventsQuery query)
+    {
+        var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    [HttpGet("calendar-events/summary")]
+    [ProducesResponseType(typeof(ApiResponse<CalendarSummaryResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetCalendarEventsSummary([FromQuery] GetCalendarEventsSummaryQuery query)
     {
         var result = await mediator.Send(query);
         return Ok(result);
