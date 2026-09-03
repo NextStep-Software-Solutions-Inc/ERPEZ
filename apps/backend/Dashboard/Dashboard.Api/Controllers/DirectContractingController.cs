@@ -8,7 +8,9 @@ using ERPEZ.Application.Features.Procurement.DirectContractings.Dtos;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingById;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingProposal;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractings;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,10 +19,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("direct-contracting")]
 [ApiController]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class DirectContractingController(ISender mediator) : ControllerBase
 {
     [HttpPost]
-    //[Authorize(Roles = "BAC_Officer")]
+    [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateDirectContracting([FromBody] CreateDirectContractingCommand command)
@@ -30,6 +35,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(PaginatedApiResponse<DirectContractingResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDirectContractings([FromQuery] GetDirectContractingsQuery query)
     {
@@ -38,6 +44,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(ApiResponse<DirectContractingResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetDirectContractingById(Guid id)
@@ -47,7 +54,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
-    //[Authorize(Roles = "BAC_Officer")]
+    [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateDirectContracting(Guid id, [FromBody] UpdateDirectContractingRequest request)
@@ -57,7 +64,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    //[Authorize(Roles = "BAC_Officer")]
+    [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeDirectContractingStatusRequest request)
@@ -67,7 +74,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPatch("{id}/approve")]
-    //[Authorize(Roles = "BAC_Officer")]
+    [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -82,7 +89,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    //[Authorize(Roles = "BAC_Officer")]
+    [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteDirectContracting(Guid id)
@@ -92,6 +99,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}/proposal")]
+    [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(ApiResponse<DirectContractingProposalResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProposal(Guid id)
@@ -101,7 +109,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("{id}/proposal")]
-    //[Authorize(Roles = "Supplier")]
+    [HasPermission(Permissions.Procurement.supplierManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SubmitProposal(Guid id, [FromBody] SubmitDirectContractingProposalRequest request)
@@ -111,7 +119,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("{id}/review")]
-    //[Authorize(Roles = "BAC_Officer")]
+    [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ReviewProposal(Guid id, [FromBody] ReviewDirectContractingProposalRequest request)

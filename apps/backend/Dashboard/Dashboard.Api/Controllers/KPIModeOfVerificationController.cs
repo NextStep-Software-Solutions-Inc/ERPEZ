@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.CreateKPIModeOfVerification;
 using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.DeleteKPIModeOfVerification;
 using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.UpdateKPIModeOfVerification;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("kpi-mode-of-verifications")]
     [ApiController]
-    public class KPIModeOfVerificationController(ISender mediator) : ControllerBase
+    [Authorize]
+public class KPIModeOfVerificationController(ISender mediator) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationResponse>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationResponse>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Planning.kpiUpdate)]
         public async Task<IActionResult> CreateKPIModeOfVerification([FromBody] CreateKPIModeOfVerificationCommand command)
         {
             var result = await mediator.Send(command);
@@ -29,6 +34,7 @@ namespace ERPEZ.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<KPIModeOfVerificationResponse>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Planning.kpiView)]
         public async Task<IActionResult> GetKPIModeOfVerifications([FromQuery] GetKPIModeOfVerificationsQuery query)
         {
             var result = await mediator.Send(query);
@@ -38,6 +44,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.kpiView)]
         public async Task<IActionResult> GetKPIModeOfVerificationById(Guid id)
         {
             var result = await mediator.Send(new GetKPIModeOfVerificationByIdQuery(id));
@@ -48,6 +55,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.kpiUpdate)]
         public async Task<IActionResult> UpdateKPIModeOfVerification(Guid id, [FromBody] UpdateKPIModeOfVerificationRequest dto)
         {
             var command = new UpdateKPIModeOfVerificationCommand
@@ -63,6 +71,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.kpiUpdate)]
         public async Task<IActionResult> DeleteKPIModeOfVerification(Guid id)
         {
             var command = new DeleteKPIModeOfVerificationCommand(id);

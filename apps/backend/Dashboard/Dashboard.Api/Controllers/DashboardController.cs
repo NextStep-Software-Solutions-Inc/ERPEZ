@@ -1,3 +1,5 @@
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Dashboard.Dtos;
 using ERPEZ.Application.Features.Dashboard.Queries.GetDashboardTasks;
 using ERPEZ.Application.Features.Dashboard.Queries.GetOfficeDashboard;
@@ -27,6 +29,7 @@ public class DashboardController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status401Unauthorized)]
+    [HasPermission(Permissions.Planning.viewGlobalDashboard)]
     public async Task<IActionResult> GetPlanningDashboard(
         [FromQuery] Guid fiscalYearId,
         [FromQuery] Guid? organizationId = null)
@@ -53,6 +56,7 @@ public class DashboardController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.viewGlobalDashboard)]
     public async Task<IActionResult> GetOfficeDashboard(
         [FromQuery] Guid fiscalYearId,
         [FromQuery] Guid? officeId = null)
@@ -81,6 +85,7 @@ public class DashboardController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<List<SmartTaskCardResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<List<SmartTaskCardResponse>>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<List<SmartTaskCardResponse>>), StatusCodes.Status401Unauthorized)]
+    [HasPermission(Permissions.Planning.viewGlobalDashboard)]
     public async Task<IActionResult> GetDashboardTasks(
         [FromQuery] Guid fiscalYearId,
         [FromQuery] TaskType? taskType = null,
@@ -111,6 +116,7 @@ public class DashboardController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status401Unauthorized)]
+    [HasPermission(Permissions.Planning.viewGlobalDashboard)]
     public async Task<IActionResult> GetDashboard([FromQuery] Guid fiscalYearId)
     {
         var principal = HttpContext?.User;

@@ -73,6 +73,125 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.ToTable("Modules", "public");
                 });
 
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Permission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("Permissions", "public");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSystemRole")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("Roles", "public");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.RolePermission", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PermissionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("RoleId", "PermissionId");
+
+                    b.HasIndex("PermissionId");
+
+                    b.ToTable("RolePermissions", "public");
+                });
+
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -135,6 +254,10 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<string>("ExternalIdentityId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -161,10 +284,27 @@ namespace ERP_EZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "UserId")
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("ExternalIdentityId", "TenantId")
                         .IsUnique();
 
-                    b.ToTable("TenantMember", "public");
+                    b.ToTable("TenantMembers", "public");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMemberRoleAssignment", b =>
+                {
+                    b.Property<Guid>("TenantMemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("TenantMemberId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("TenantMemberRoleAssignments", "public");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantSetting", b =>
@@ -299,6 +439,35 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.ToTable("TenantModule", "public");
                 });
 
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Role", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.RolePermission", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Permission", "Permission")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Role", "Role")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Permission");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMember", b =>
                 {
                     b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
@@ -308,6 +477,25 @@ namespace ERP_EZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMemberRoleAssignment", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Role", "Role")
+                        .WithMany("MemberAssignments")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.TenantMember", "TenantMember")
+                        .WithMany("RoleAssignments")
+                        .HasForeignKey("TenantMemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("TenantMember");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantSetting", b =>
@@ -347,6 +535,18 @@ namespace ERP_EZ.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Permission", b =>
+                {
+                    b.Navigation("RolePermissions");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Role", b =>
+                {
+                    b.Navigation("MemberAssignments");
+
+                    b.Navigation("RolePermissions");
+                });
+
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Tenant", b =>
                 {
                     b.Navigation("TenantMembers");
@@ -355,6 +555,11 @@ namespace ERP_EZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("TenantSubscriptions");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMember", b =>
+                {
+                    b.Navigation("RoleAssignments");
                 });
 #pragma warning restore 612, 618
         }

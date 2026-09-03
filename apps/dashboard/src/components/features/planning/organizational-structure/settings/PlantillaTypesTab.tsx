@@ -13,7 +13,7 @@ export function PlantillaTypesTab() {
   const [editingItem, setEditingItem] = useState<PlantillaTypeSetting | null>(null)
   const [deleteItem, setDeleteItem] = useState<PlantillaTypeSetting | null>(null)
 
-  const { data: response } = usePlantillaTypes({ pathParams: {}, queryParams: {} })
+  const { data: response } = usePlantillaTypes({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'name' } })
   const items = response?.data ?? []
 
   const actions: MetaActions = ['write', 'delete']

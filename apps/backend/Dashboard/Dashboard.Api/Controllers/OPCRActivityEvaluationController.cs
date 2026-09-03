@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.OPCRActivityEvaluation.Commands.CreateOPCRActivityEvaluation;
 using ERPEZ.Application.Features.Planning.OPCRActivityEvaluation.Commands.CreateOPCRActivityEvaluationsBatch;
 using ERPEZ.Application.Features.Planning.OPCRActivityEvaluation.Commands.DeleteOPCRActivityEvaluation;
@@ -14,11 +17,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("opcr-activity-evaluations")]
 [ApiController]
+[Authorize]
 public class OPCRActivityEvaluationController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.opcrEvaluate)]
     public async Task<IActionResult> CreateOPCRActivityEvaluation([FromBody] CreateOPCRActivityEvaluationCommand command)
     {
         var result = await mediator.Send(command);
@@ -32,6 +37,7 @@ public class OPCRActivityEvaluationController(ISender mediator) : ControllerBase
     [HttpPost("batch")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.opcrEvaluate)]
     public async Task<IActionResult> CreateOPCRActivityEvaluationsBatch([FromBody] CreateOPCRActivityEvaluationsBatchCommand command)
     {
         var result = await mediator.Send(command);
@@ -44,6 +50,7 @@ public class OPCRActivityEvaluationController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<OPCRActivityEvaluationResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Planning.opcrView)]
     public async Task<IActionResult> GetOPCRActivityEvaluations([FromQuery] GetOPCRActivityEvaluationsQuery query)
     {
         var result = await mediator.Send(query);
@@ -53,6 +60,7 @@ public class OPCRActivityEvaluationController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<OPCRActivityEvaluationDetailedResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.opcrView)]
     public async Task<IActionResult> GetOPCRActivityEvaluationById(Guid id)
     {
         var result = await mediator.Send(new GetOPCRActivityEvaluationByIdQuery(id));
@@ -63,6 +71,7 @@ public class OPCRActivityEvaluationController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.opcrEvaluate)]
     public async Task<IActionResult> UpdateOPCRActivityEvaluation(Guid id, [FromBody] UpdateOPCRActivityEvaluationRequest dto)
     {
         var command = new UpdateOPCRActivityEvaluationCommand
@@ -79,6 +88,7 @@ public class OPCRActivityEvaluationController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.opcrEvaluate)]
     public async Task<IActionResult> UpdateOPCRActivityEvaluationStatus(Guid id, [FromBody] UpdateOPCRActivityEvaluationStatusRequest dto)
     {
         var command = new UpdateOPCRActivityEvaluationStatusCommand
@@ -94,6 +104,7 @@ public class OPCRActivityEvaluationController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.opcrEvaluate)]
     public async Task<IActionResult> DeleteOPCRActivityEvaluation(Guid id)
     {
         var command = new DeleteOPCRActivityEvaluationCommand(id);

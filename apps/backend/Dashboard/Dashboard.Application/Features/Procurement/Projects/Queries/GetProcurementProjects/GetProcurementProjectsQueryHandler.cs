@@ -37,6 +37,8 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             .Include(p => p.ConsolidatedPR)
                 .ThenInclude(c => c!.ConsolidatedPRItems)
                     .ThenInclude(ci => ci.ProcurementMode)
+            .Include(p => p.ConsolidatedPR)
+                .ThenInclude(c => c!.RFQs)
             .Include(p => p.BACResolutions)
                 .ThenInclude(r => r.WhereasClauseItems)
                     .ThenInclude(item => item.BACResolutionWhereasClause)
@@ -47,7 +49,21 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             .Where(p => !p.IsDeleted)
             .AsQueryable();
 
-        // Apply custom filters for ModeOfProcurement - REMOVED
+        if (query.HasRFQ == true)
+        {
+            dbQuery = dbQuery.Where(p => p.ConsolidatedPR != null && p.ConsolidatedPR.RFQs.Any(r => !r.IsDeleted));
+        }
+
+        if (query.HasApprovedRFQ == true)
+        {
+            dbQuery = dbQuery.Where(p => p.ConsolidatedPR != null && p.ConsolidatedPR.RFQs.Any(r => !r.IsDeleted && r.Status == ERPEZ.Domain.Enums.StatusEnum.Approved));
+        }
+
+        if (query.ForSupplierPortal == true)
+        {
+            var allowedPortalStatuses = new[] { "Posted", "ROUTED_TO_PORTAL", "Active", "Published", "Open", "ClosingSoon", "Closed" };
+            dbQuery = dbQuery.Where(p => allowedPortalStatuses.Contains(p.Status));
+        }
 
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -64,6 +80,26 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
         var rawEntities = await paginatedQuery.ToListAsync(cancellationToken);
         var projectionFunc = ProcurementProjectResponse.Projection.Compile();
         var entities = rawEntities.Select(projectionFunc).ToList();
+
+        var projectIds = entities.Select(p => p.Id).ToList();
+        var applicationCounts = await unitOfWork.PublicSupplierApplicationRepository.Query()
+            .Where(a => projectIds.Contains(a.ProcurementProjectId) && !a.IsDeleted)
+            .GroupBy(a => a.ProcurementProjectId)
+            .Select(g => new { ProjectId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.ProjectId, g => g.Count, cancellationToken);
+
+        var cprIds = entities.Where(e => e.ConsolidatedPRId.HasValue).Select(e => e.ConsolidatedPRId!.Value).ToList();
+        var rfqBidCounts = await unitOfWork.SupplierBidRepository.Query()
+            .Where(b => b.RFQ != null && b.RFQ.ConsolidatedPRId.HasValue && cprIds.Contains(b.RFQ.ConsolidatedPRId.Value) && !b.IsDeleted)
+            .GroupBy(b => b.RFQ.ConsolidatedPRId!.Value)
+            .Select(g => new { ConsolidatedPRId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.ConsolidatedPRId, g => g.Count, cancellationToken);
+
+        entities = entities.Select(e => e with
+        {
+            ApplicantCount = applicationCounts.GetValueOrDefault(e.Id, 0) +
+                (e.ConsolidatedPRId.HasValue ? rfqBidCounts.GetValueOrDefault(e.ConsolidatedPRId.Value, 0) : 0)
+        }).ToList();
 
         return new PaginatedApiResponse<ProcurementProjectResponse>(
             entities,

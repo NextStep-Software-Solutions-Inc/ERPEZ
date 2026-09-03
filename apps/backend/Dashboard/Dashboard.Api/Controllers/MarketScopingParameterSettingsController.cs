@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.MarketScopingParameterSettings.Command
 using ERPEZ.Application.Features.Planning.MarketScopingParameterSettings.Dtos;
 using ERPEZ.Application.Features.Planning.MarketScopingParameterSettings.Queries.GetMarketScopingParameterSettings;
 using ERPEZ.Application.Features.Planning.MarketScopingParameterSettings.Queries.GetMarketScopingParameterSettingsById;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("market-scoping-parameter-settings")]
 [ApiController]
+[Authorize]
 public class MarketScopingParameterSettingsController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Planning.marketScopingManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateMarketScopingParameterSettings([FromBody] CreateMarketScopingParameterSettingsCommand command)
     {
         var result = await mediator.Send(command);
@@ -24,7 +30,10 @@ public class MarketScopingParameterSettingsController(ISender mediator) : Contro
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Planning.marketScopingView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<MarketScopingParameterSettingsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetMarketScopingParameterSettings([FromQuery] GetMarketScopingParameterSettingsQuery query)
     {
         var result = await mediator.Send(query);
@@ -32,7 +41,10 @@ public class MarketScopingParameterSettingsController(ISender mediator) : Contro
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Planning.marketScopingView)]
     [ProducesResponseType(typeof(ApiResponse<MarketScopingParameterSettingsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetMarketScopingParameterSettingsById(Guid id)
     {
         var result = await mediator.Send(new GetMarketScopingParameterSettingsByIdQuery(id));
@@ -40,8 +52,11 @@ public class MarketScopingParameterSettingsController(ISender mediator) : Contro
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Planning.marketScopingManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateMarketScopingParameterSettings(Guid id, [FromBody] UpdateMarketScopingParameterSettingsRequest dto)
     {
         var command = new UpdateMarketScopingParameterSettingsCommand { Id = id, UpdateData = dto };
@@ -50,8 +65,11 @@ public class MarketScopingParameterSettingsController(ISender mediator) : Contro
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Planning.marketScopingManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteMarketScopingParameterSettings(Guid id)
     {
         var result = await mediator.Send(new DeleteMarketScopingParameterSettingsCommand(id));

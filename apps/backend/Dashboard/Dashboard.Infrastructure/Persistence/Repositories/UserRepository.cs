@@ -15,6 +15,15 @@ public class UserRepository : Repository<User>, IUserRepository
         dbContext = context;
     }
 
+    public async Task<User?> GetByExternalIdentityIdAsync(string externalIdentityId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Users!
+            .Include(u => u.Office)
+            .Include(u => u.PersonnelPositions)
+                .ThenInclude(pp => pp.Position)
+            .FirstOrDefaultAsync(u => u.ExternalIdentityId == externalIdentityId && !u.IsDeleted, cancellationToken);
+    }
+
     public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         return await dbContext.Users!

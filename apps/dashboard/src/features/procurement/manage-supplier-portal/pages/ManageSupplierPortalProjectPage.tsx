@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Download, Loader2 } from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
+import { Badge } from '@/components/ui/badge'
+import { ArrowLeft, Download, Loader2, FileText, Globe } from 'lucide-react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useToast } from '@/components/ui/use-toast'
 import { ApplicantList } from '../components/ApplicantList'
 import { ReviewWorkspace } from '../components/ReviewWorkspace'
@@ -9,25 +10,69 @@ import { useSupplierEvaluation } from '../hooks/useSupplierEvaluation'
 import { UnsavedChangesDialog } from '../dialogs/UnsavedChangesDialog'
 import { bulkDownloadDocuments } from '../utils/bulkDownload'
 import { getBacResolutionRequest } from '@/features/procurement/bac-resolution/handlers/getBacResolutionRequest'
+import { getRFQByIdRequest } from '../handlers/getRFQByIdRequest'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 
-const useProjectDetails = createQueryHookFromTemplate(getBacResolutionRequest)
+const useBACProjectDetails = createQueryHookFromTemplate(getBacResolutionRequest)
+const useRFQDetails = createQueryHookFromTemplate(getRFQByIdRequest)
 
 const isValidGuid = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
 
 export default function ManageSupplierPortalProjectPage({ projectId }: { projectId: string }) {
   const navigate = useNavigate()
+  const search = useSearch({ strict: false }) as any
+  const source: 'rfq' | 'bac' = search?.source === 'bac' ? 'bac' : 'rfq'
+
   const { toast } = useToast()
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
 
   const isGuid = isValidGuid(projectId)
 
-  const { data: project, isLoading: isLoadingProject } = useProjectDetails({
+  // Fetch RFQ details if source is rfq
+  const { data: rfqResponse, isLoading: isLoadingRfq } = useRFQDetails({
     pathParams: { id: projectId },
     queryParams: {},
-    enabled: Boolean(projectId && isGuid),
+    enabled: Boolean(projectId && isGuid && source === 'rfq'),
   })
+
+  // Fetch BAC project details if source is bac
+  const { data: bacProjectResponse, isLoading: isLoadingBac } = useBACProjectDetails({
+    pathParams: { id: projectId },
+    queryParams: {},
+    enabled: Boolean(projectId && isGuid && source === 'bac'),
+  })
+
+  const isLoadingDetails = source === 'rfq' ? isLoadingRfq : isLoadingBac
+
+  const projectInfo = useMemo(() => {
+    if (source === 'rfq') {
+      const rfq = (rfqResponse as any)?.data ?? rfqResponse
+      if (!rfq || !rfq.id) return null
+      return {
+        id: rfq.id,
+        title: rfq.description || rfq.rfqNumber || 'Request for Quotation',
+        number: rfq.rfqNumber || (rfq.id ? rfq.id.substring(0, 8) : projectId.substring(0, 8)),
+        modeOfProcurementName: rfq.modeOfProcurementName || 'SVP',
+        abc: rfq.totalAmount || 0,
+        deadline: rfq.deadline,
+        source: 'rfq' as const,
+      }
+    }
+
+    const bac = (bacProjectResponse as any)?.data ?? bacProjectResponse
+    if (!bac || !bac.id) return null
+    return {
+      id: bac.id,
+      title: bac.title || 'Procurement Project',
+      number: bac.consolidatedPR?.cprNumber || (bac.id ? bac.id.substring(0, 8) : projectId.substring(0, 8)),
+      modeOfProcurementName: bac.modeOfProcurementName || 'Public Bidding',
+      abc: bac.abc || 0,
+      deadline: '',
+      source: 'bac' as const,
+    }
+  }, [source, rfqResponse, bacProjectResponse, projectId])
 
   const {
     bids,
@@ -41,7 +86,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
     handleSaveEvaluation,
     isLoading: isLoadingBids,
     isSaving,
-  } = useSupplierEvaluation(projectId)
+  } = useSupplierEvaluation(projectId, source)
 
   const bidStats = {
     totalApplicants: bids.length,
@@ -67,7 +112,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
           name: doc.name,
           url: doc.url,
         })),
-        `${(project?.title || 'Project').replace(/\s+/g, '_')}_${selectedBid.supplierName.replace(/\s+/g, '_')}`,
+        `${(projectInfo?.title || 'Opportunity').replace(/\s+/g, '_')}_${selectedBid.supplierName.replace(/\s+/g, '_')}`,
       )
 
       toast({
@@ -84,7 +129,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
     } finally {
       setIsDownloading(false)
     }
-  }, [selectedBid, project?.title, toast])
+  }, [selectedBid, projectInfo?.title, toast])
 
   const handleAllProjectDocumentsDownload = useCallback(async () => {
     try {
@@ -107,7 +152,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
 
       await bulkDownloadDocuments(
         allDocuments,
-        `${(project?.title || 'Project').replace(/\s+/g, '_')}_all_documents`,
+        `${(projectInfo?.title || 'Opportunity').replace(/\s+/g, '_')}_all_documents`,
       )
 
       toast({
@@ -124,35 +169,35 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
     } finally {
       setIsDownloading(false)
     }
-  }, [bids, project?.title, toast])
+  }, [bids, projectInfo?.title, toast])
 
   if (!isGuid) {
     return (
       <div className="p-8 text-center space-y-3">
-        <h2 className="text-2xl font-bold">Invalid Project ID</h2>
+        <h2 className="text-2xl font-bold">Invalid Opportunity ID</h2>
         <p className="text-muted-foreground max-w-md mx-auto">
-          The project ID <code className="bg-muted px-1.5 py-0.5 rounded text-sm">{projectId}</code> is not a valid UUID format. Please select an active project from the Manage Supplier Portal list.
+          The ID <code className="bg-muted px-1.5 py-0.5 rounded text-sm">{projectId}</code> is not a valid UUID format. Please select an active opportunity from the Manage Supplier Portal list.
         </p>
         <Button className="mt-4" onClick={() => navigate({ to: '/v2/manage-supplier-portal' })}>
-          Back to Projects List
+          Back to Opportunities List
         </Button>
       </div>
     )
   }
 
-  if (isLoadingProject) {
+  if (isLoadingDetails) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
         <Loader2 className="h-6 w-6 animate-spin" />
-        <span>Loading project details...</span>
+        <span>Loading opportunity details...</span>
       </div>
     )
   }
 
-  if (!project) {
+  if (!projectInfo) {
     return (
       <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold">Project not found</h2>
+        <h2 className="text-2xl font-bold">Opportunity not found</h2>
         <Button className="mt-4" onClick={() => navigate({ to: '/v2/manage-supplier-portal' })}>
           Back to Portal
         </Button>
@@ -167,17 +212,30 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">{project.title}</h1>
-          <p className="text-muted-foreground">
-            {project.id} • {project.modeOfProcurementName || 'Procurement Project'} • ABC: ₱
-            {project.abc.toLocaleString()}
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{projectInfo.title}</h1>
+            <Badge variant="outline" className="text-xs">
+              {source === 'rfq' ? (
+                <>
+                  <FileText className="h-3 w-3 mr-1" /> Internal RFQ
+                </>
+              ) : (
+                <>
+                  <Globe className="h-3 w-3 mr-1" /> Public Portal
+                </>
+              )}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {projectInfo.number} • {projectInfo.modeOfProcurementName} • ABC: ₱
+            {projectInfo.abc.toLocaleString()}
           </p>
         </div>
         <div className="ml-auto flex gap-2">
           <Button
             onClick={handleAllProjectDocumentsDownload}
             variant="outline"
-            className="gap-2"
+            className="gap-2 text-xs"
             disabled={isDownloading || bids.length === 0}
           >
             {isDownloading ? (
@@ -199,7 +257,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
         <div className="md:col-span-12">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Applicants</p>
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Submissions</p>
               <p className="mt-3 text-3xl font-bold text-slate-900">{bidStats.totalApplicants}</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -207,11 +265,11 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
               <p className="mt-3 text-3xl font-bold text-amber-900">{bidStats.pending}</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Passed</p>
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Passed / Responsive</p>
               <p className="mt-3 text-3xl font-bold text-emerald-900">{bidStats.passed}</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Failed</p>
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Failed / Disqualified</p>
               <p className="mt-3 text-3xl font-bold text-red-900">{bidStats.failed}</p>
             </div>
           </div>
@@ -221,10 +279,10 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
       {isLoadingBids ? (
         <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Loading applicant bids...</span>
+          <span>Loading supplier submissions...</span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start h-[calc(100vh-220px)]">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start min-h-[500px]">
           <ApplicantList
             bids={bids}
             selectedBidId={selectedBidId}

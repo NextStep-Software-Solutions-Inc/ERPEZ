@@ -1,8 +1,17 @@
-using ERPEZ.Shared.Middlewares;
-using ERPEZ.Api.Extensions;
 using ERPEZ.Api.Configuration;
+using ERPEZ.Api.Extensions;
 using ERPEZ.Infrastructure.Services;
+using ERPEZ.Shared.Authorization;
+using ERPEZ.Shared.Interceptors;
+using ERPEZ.Shared.Interfaces;
+using ERPEZ.Shared.Middlewares;
+using ERPEZ.Shared.Services;
+using ERPEZ.TenantManagement.Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Text.Json.Serialization;
+using TenantDbContext = ERPEZ.TenantManagement.Infrastructure.Persistence.ApplicationDbContext;
 
 namespace ERPEZ.Api;
 
@@ -12,6 +21,7 @@ public static class DependencyInjection
     {
         var services = builder.Services;
         var configuration = builder.Configuration;
+        var env = builder.Environment;
         
         // 1. Bind the AzureBlobStorage section to the Options class
         services.Configure<AzureBlobStorageOptions>(options => 
@@ -19,15 +29,34 @@ public static class DependencyInjection
             configuration.GetSection("AzureBlobStorage").Bind(options);
         });
 
-        // 2. Register the service itself if not already registered elsewhere
-        // services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         services.AddControllers()
-        .AddJsonOptions(options =>
+            .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
+
         services.AddEndpointsApiExplorer();
         services.AddJwtAuthentication(configuration);
+
+        // Dynamic Authorization & Tenant Services
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        services.AddDbContext<TenantDbContext>((sp, options) =>
+        {
+            options.UseNpgsql(connectionString);
+            options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
+
+            if (env != null && env.IsDevelopment())
+            {
+                options.ConfigureWarnings(w =>
+                    w.Ignore(RelationalEventId.PendingModelChangesWarning));
+            }
+        });
+
+        services.AddMemoryCache();
+        services.AddScoped<ITenantContextService, TenantContextService>();
+        services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
+        services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddAuthorization();
         
         services.AddSwaggerGen(c =>

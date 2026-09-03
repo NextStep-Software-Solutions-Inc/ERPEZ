@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -11,11 +14,13 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("opcr-pap-departments")]
     [ApiController]
-    public class OPCRPAPDepartmentController(ISender mediator) : ControllerBase
+    [Authorize]
+public class OPCRPAPDepartmentController(ISender mediator) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartmentResponse>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartmentResponse>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Planning.opcrUpdate)]
         public async Task<IActionResult> CreateOPCRPAPDepartment([FromBody] CreateOPCRPAPDepartmentCommand command)
         {
             var result = await mediator.Send(command);
@@ -28,6 +33,7 @@ namespace ERPEZ.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<OPCRPAPDepartmentResponse>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Planning.opcrView)]
         public async Task<IActionResult> GetOPCRPAPDepartments([FromQuery] GetOPCRPAPDepartmentsQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,6 +43,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartmentResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrView)]
         public async Task<IActionResult> GetOPCRPAPDepartmentById(Guid id)
         {
             var result = await mediator.Send(new GetOPCRPAPDepartmentByIdQuery(id));
@@ -46,6 +53,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrUpdate)]
         public async Task<IActionResult> DeleteOPCRPAPDepartment(Guid id)
         {
             var command = new DeleteOPCRPAPDepartmentCommand(id);

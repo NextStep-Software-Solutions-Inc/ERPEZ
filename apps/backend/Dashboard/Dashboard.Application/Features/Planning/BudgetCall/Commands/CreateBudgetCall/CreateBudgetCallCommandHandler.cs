@@ -20,7 +20,8 @@ public class CreateBudgetCallCommandHandler(IUnitOfWork unitOfWork)
         {
             FiscalYearId = request.FiscalYearId,
             Type = request.Type,
-            SubmissionDeadline = request.SubmissionDeadline
+            SubmissionDeadline = request.SubmissionDeadline,
+            Status = !string.IsNullOrWhiteSpace(request.Status) ? request.Status : nameof(Domain.Enums.BudgetCallStatusEnum.Active)
         };
 
         await unitOfWork.BudgetCallRepository.AddAsync(budgetCall, cancellationToken);

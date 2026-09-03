@@ -15,11 +15,35 @@ const WHITELISTED_METHODS = ['post', 'put', 'patch', 'delete']
 export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL)
 api.defaults.timeout = 30000 // 30s timeout to allow database operations and debugging without premature frontend timeouts
 
-// Request interceptor to add Keycloak token
+// Request interceptor to add Keycloak/Dev token and Tenant ID
 api.interceptors.request.use(
   (config) => {
-    if (keycloak.token) {
-      config.headers.Authorization = `Bearer ${keycloak.token}`
+    let token: string | null = null
+    let tenantId = '00000000-0000-0000-0000-000000000001'
+
+    if (typeof window !== 'undefined') {
+      try {
+        const storedToken = localStorage.getItem('erpez_auth_token')
+        if (storedToken && storedToken.startsWith('ey')) {
+          token = storedToken
+        } else if (storedToken) {
+          localStorage.removeItem('erpez_auth_token')
+        } else if (keycloak?.token) {
+          token = keycloak.token
+        }
+        tenantId = localStorage.getItem('erpez_tenant_id') || tenantId
+      } catch {
+        // Ignore localStorage access errors
+      }
+    } else if (keycloak?.token) {
+      token = keycloak.token
+    }
+
+    if (token && token.startsWith('ey')) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    if (tenantId) {
+      config.headers['X-Tenant-Id'] = tenantId
     }
     return config
   },
@@ -73,7 +97,8 @@ api.interceptors.response.use(
     }
 
     // Show error toast for non-blacklisted error codes with deduplication ID
-    if (!BLACKLISTED_CODES.includes(error.code || '')) {
+    const skipToast = (error.config as any)?.skipToast || (error.config as any)?.headers?.['x-skip-toast']
+    if (!skipToast && !BLACKLISTED_CODES.includes(error.code || '')) {
       const msg = extractErrorMessage(error)
       if (msg) {
         toast.error(msg, { id: msg })

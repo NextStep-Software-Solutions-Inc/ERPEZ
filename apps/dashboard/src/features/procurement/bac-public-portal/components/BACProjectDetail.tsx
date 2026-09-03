@@ -46,13 +46,15 @@ function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 }).format(amount)
 }
 
-function formatDatetime(dateStr: string) {
+function formatDatetime(dateStr?: string) {
+  if (!dateStr || isNaN(Date.parse(dateStr))) return '—'
   return new Date(dateStr).toLocaleDateString('en-PH', {
     year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
   })
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr?: string) {
+  if (!dateStr || isNaN(Date.parse(dateStr))) return '—'
   return new Date(dateStr).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 

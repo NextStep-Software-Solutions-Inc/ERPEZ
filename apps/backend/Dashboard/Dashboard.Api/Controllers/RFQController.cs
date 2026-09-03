@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.CreateRFQ;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.SubmitRFQ;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.AddRFQItems;
@@ -9,6 +12,8 @@ using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQById;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQs;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQSummary;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQSupplierBids;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.EvaluateRFQSupplierBid;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +25,7 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("rfqs")]
 [ApiController]
+[Authorize]
 public class RFQController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -28,6 +34,7 @@ public class RFQController(ISender mediator) : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> CreateRFQ([FromBody] CreateRFQCommand command)
     {
         var result = await mediator.Send(command);
@@ -41,6 +48,7 @@ public class RFQController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<RFQListItemDto>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> GetRFQs([FromQuery] GetRFQsQuery query)
     {
         var result = await mediator.Send(query);
@@ -52,6 +60,7 @@ public class RFQController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet("summary")]
     [ProducesResponseType(typeof(ApiResponse<RFQSummaryDto>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> GetRFQSummary()
     {
         var result = await mediator.Send(new GetRFQSummaryQuery());
@@ -64,6 +73,7 @@ public class RFQController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<RFQDetailDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<RFQDetailDto>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> GetRFQById(Guid id)
     {
         var result = await mediator.Send(new GetRFQByIdQuery(id));
@@ -76,6 +86,7 @@ public class RFQController(ISender mediator) : ControllerBase
     [HttpPost("{id}/items")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> AddRFQItems(Guid id, [FromBody] AddRFQItemsCommand command)
     {
         if (id != command.RFQId)
@@ -91,6 +102,7 @@ public class RFQController(ISender mediator) : ControllerBase
     [HttpDelete("{rfqId}/items/{itemId}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> RemoveRFQItem(Guid rfqId, Guid itemId)
     {
         var result = await mediator.Send(new RemoveRFQItemCommand(rfqId, itemId));
@@ -103,6 +115,7 @@ public class RFQController(ISender mediator) : ControllerBase
     [HttpPost("{id}/submit")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> SubmitRFQ(Guid id)
     {
         var result = await mediator.Send(new SubmitRFQCommand(id));
@@ -115,6 +128,7 @@ public class RFQController(ISender mediator) : ControllerBase
     [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> ChangeRFQStatus(Guid id, [FromBody] ChangeRFQStatusCommand command)
     {
         if (id != command.RFQId)
@@ -130,6 +144,7 @@ public class RFQController(ISender mediator) : ControllerBase
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> UpdateRFQ(Guid id, [FromBody] UpdateRFQCommand command)
     {
         command.RFQId = id; // RFQId is [JsonIgnore] — always set from the route, never trust the body
@@ -144,9 +159,44 @@ public class RFQController(ISender mediator) : ControllerBase
     [HttpPatch("{id}/reopen")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> ReopenRFQ(Guid id)
     {
         var result = await mediator.Send(new ReopenRFQCommand(id));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Get all submitted supplier bids for an RFQ
+    /// </summary>
+    [HttpGet("{id}/bids")]
+    [ProducesResponseType(typeof(ApiResponse<List<RFQSupplierBidDto>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
+    public async Task<IActionResult> GetRFQSupplierBids(Guid id)
+    {
+        var result = await mediator.Send(new GetRFQSupplierBidsQuery(id));
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Evaluate a supplier bid for an RFQ (Passed / Failed / Pending with remarks)
+    /// </summary>
+    [HttpPatch("{id}/bids/{bidId}/evaluation")]
+    [ProducesResponseType(typeof(ApiResponse<RFQSupplierBidDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
+    public async Task<IActionResult> EvaluateRFQSupplierBid(
+        Guid id,
+        Guid bidId,
+        [FromBody] EvaluateRFQSupplierBidRequest request)
+    {
+        var result = await mediator.Send(new EvaluateRFQSupplierBidCommand
+        {
+            RFQId = id,
+            BidId = bidId,
+            Request = request
+        });
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

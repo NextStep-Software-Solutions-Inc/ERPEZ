@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.OPCRItem.Commands.CreateOPCRItem;
 using ERPEZ.Application.Features.Planning.OPCRItem.Commands.DeleteOPCRItem;
 using ERPEZ.Application.Features.Planning.OPCRItem.Commands.UpdateOPCRItem;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("opcr-items")]
 [ApiController]
+[Authorize]
 public class OPCRItemController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.opcrUpdate)]
     public async Task<IActionResult> CreateOPCRItem([FromBody] CreateOPCRItemCommand command)
     {
         var result = await mediator.Send(command);
@@ -31,6 +36,7 @@ public class OPCRItemController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<OPCRItemResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Planning.opcrView)]
     public async Task<IActionResult> GetOPCRItems([FromQuery] GetOPCRItemsQuery query)
     {
         var result = await mediator.Send(query);
@@ -40,6 +46,7 @@ public class OPCRItemController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<OPCRItemResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.opcrView)]
     public async Task<IActionResult> GetOPCRItemById(Guid id)
     {
         var result = await mediator.Send(new GetOPCRItemByIdQuery(id));
@@ -50,6 +57,7 @@ public class OPCRItemController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.opcrUpdate)]
     public async Task<IActionResult> UpdateOPCRItem(Guid id, [FromBody] UpdateOPCRItemRequest dto)
     {
         var command = new UpdateOPCRItemCommand
@@ -65,6 +73,7 @@ public class OPCRItemController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.opcrUpdate)]
     public async Task<IActionResult> DeleteOPCRItem(Guid id)
     {
         var result = await mediator.Send(new DeleteOPCRItemCommand(id));

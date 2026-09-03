@@ -31,6 +31,7 @@ import {
 import { getOfficeCeilingsRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/getOfficeCeilingsRequest'
 import { getFundSourcesRequest } from '@/components/features/planning/fund-receiving/handlers/getFundSourcesRequest'
 import type { FundSource } from '@/features/planning/fund-source/types'
+import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
 import { Send, Layers } from 'lucide-react'
 import { OfficeCeiling } from '@/features/planning/line-item-budgeting/line-item-budget/types/type.office-ceiling'
 
@@ -684,57 +685,38 @@ export default function CreateLineItemBudgetForm({
 
                   {budgetMode === 'bottom-up' ? (
                     /* Bottom-up: all AMBs filtered by fiscal year */
-                    <Select
+                    <FundSourceCombobox
+                      id={field.name}
+                      options={formattedAllFundClusters}
                       value={field.state.value || ''}
-                      onValueChange={(value) => {
-                        field.handleChange(value)
-                        setFundCluster(value)
-                        const selectedAMB = formattedAllFundClusters.find(
-                          (a: { id: string; fundSourceId: string }) =>
-                            a.id === value,
-                        )
-                        if (selectedAMB) {
+                      onValueChange={(val, selectedItem) => {
+                        field.handleChange(val)
+                        setFundCluster(val)
+                        if (selectedItem) {
                           form.setFieldValue(
                             'fundSourceId',
-                            selectedAMB.fundSourceId,
+                            selectedItem.fundSourceId || selectedItem.id,
                           )
                         } else {
                           form.setFieldValue('fundSourceId', null)
                         }
                       }}
+                      placeholder={
+                        !fiscalYearValue
+                          ? 'Select Fiscal Year first'
+                          : 'Select Fund Source'
+                      }
+                      searchPlaceholder="Search by UACS code (e.g. 01102), fund name, or authorization..."
+                      emptyMessage={
+                        !fiscalYearValue
+                          ? 'Please select a fiscal year first'
+                          : 'No fund sources available'
+                      }
                       disabled={
                         isLoading || isFundSourcesLoading || !fiscalYearValue
                       }
-                    >
-                      <SelectTrigger id={field.name} className="w-full">
-                        <SelectValue
-                          placeholder={
-                            !fiscalYearValue
-                              ? 'Select Fiscal Year first'
-                              : 'Select Fund Source'
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-72 overflow-y-auto">
-                        {formattedAllFundClusters.length > 0 ? (
-                          formattedAllFundClusters.map(
-                            (cluster: { id: string; label: string }) => (
-                              <SelectItem key={cluster.id} value={cluster.id}>
-                                {cluster.label}
-                              </SelectItem>
-                            ),
-                          )
-                        ) : (
-                          <div className="px-2 py-1.5 text-sm text-gray-500">
-                            {isFundSourcesLoading
-                              ? 'Loading...'
-                              : !fiscalYearValue
-                                ? 'Please select a fiscal year'
-                                : 'No fund sources available'}
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
+                      isLoading={isFundSourcesLoading}
+                    />
                   ) : (
                     /* Top-down: OfficeCeilings filtered by officeId + fiscalYearId */
                     <Select

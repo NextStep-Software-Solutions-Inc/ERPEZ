@@ -44,7 +44,7 @@ public class GetSupplierRFQInvitationsQueryHandler(IUnitOfWork unitOfWork)
                 TotalAmount = rfq.TotalAmount,
                 Status = rfq.Status,
                 InvitedAt = invitation.InvitedAt,
-                HasSubmittedBid = existingBid != null,
+                HasSubmittedBid = existingBid != null && string.Equals(existingBid.Status, "SUBMITTED", StringComparison.OrdinalIgnoreCase),
                 BidStatus = existingBid?.Status,
                 Items = rfq.RFQItems.Select(i => new SupplierRFQItemDto
                 {

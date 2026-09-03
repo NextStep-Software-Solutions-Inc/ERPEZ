@@ -1,5 +1,5 @@
-import { useAuth } from '@clerk/react-router';
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from './KeycloakProvider';
 import { setAuthToken } from '~/services/api';
 
 interface AuthContextType {
@@ -9,7 +9,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const { getToken, isSignedIn } = useAuth();
+    const { getToken, isSignedIn, isLoaded } = useAuth();
     const [isTokenReady, setIsTokenReady] = useState(false);
 
     useEffect(() => {
@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } else {
                     setAuthToken(null);
                 }
-                setIsTokenReady(true);
+                setIsTokenReady(isLoaded);
             } catch (error) {
                 console.error('Failed to get token:', error);
                 setAuthToken(null);
@@ -30,10 +30,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         fetchToken();
-    }, [getToken, isSignedIn]);
+    }, [getToken, isSignedIn, isLoaded]);
 
     return (
-        <AuthContext.Provider value={{ isTokenReady }}>
+        <AuthContext.Provider value={{ isTokenReady: isTokenReady || isLoaded }}>
             {children}
         </AuthContext.Provider>
     );

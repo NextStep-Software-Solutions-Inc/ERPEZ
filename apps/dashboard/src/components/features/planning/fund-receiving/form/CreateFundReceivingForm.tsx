@@ -11,7 +11,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { getTodayDateString, toTitleCase } from '@/utils/formatters'
+import { getTodayDateString } from '@/utils/formatters'
+import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
+import { parseUACSFundSource } from '@/utils/uacsFundSource'
 
 const useFundSources = createQueryHookFromTemplate(getFundSourcesRequest)
 
@@ -181,16 +183,38 @@ export default function CreateFundReceivingForm({
               </Label>
               {currentMode === 'add' && initialValues.fundSourceId ? (
                 <div className="flex flex-col gap-2">
-                  <span
-                    className="block w-full h-10 px-3 py-2 border border-gray-300 rounded-lg shadow-sm bg-gray-100 text-gray-700 cursor-default"
-                    aria-readonly="true"
-                  >
-                    {toTitleCase(
-                      fundSourcesList.find(
-                        (source) => source.id === initialValues.fundSourceId,
-                      )?.name || initialValues.fundSourceId,
-                    )}
-                  </span>
+                  {(() => {
+                    const source = fundSourcesList.find(
+                      (s) => s.id === initialValues.fundSourceId,
+                    )
+                    const parsed = parseUACSFundSource(
+                      source?.code || '',
+                      source?.name || initialValues.fundSourceId,
+                    )
+                    return (
+                      <div className="p-2.5 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            {parsed.code && (
+                              <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-800">
+                                {parsed.code}
+                              </span>
+                            )}
+                            {parsed.authorizationName && (
+                              <span
+                                className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded border ${parsed.badge.bg} ${parsed.badge.text} ${parsed.badge.border}`}
+                              >
+                                {parsed.badge.shortLabel}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-medium text-gray-800 mt-1 block">
+                            {parsed.name}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })()}
                   <input
                     type="hidden"
                     name={field.name}
@@ -207,40 +231,23 @@ export default function CreateFundReceivingForm({
                   <X className="w-4 h-4 mr-2" /> Error loading fund sources.
                 </span>
               ) : (
-                <select
+                <FundSourceCombobox
                   id={field.name}
-                  name={field.name}
+                  options={activeFundSourcesList}
                   value={field.state.value || ''}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value)
-                    updateFormData('fundSourceId', e.target.value)
+                  onValueChange={(val) => {
+                    field.handleChange(val)
+                    updateFormData('fundSourceId', val)
                   }}
                   disabled={
                     isSubmitting ||
-                    fundSourcesList.length === 0 ||
+                    activeFundSourcesList.length === 0 ||
                     isFundSourceDisabled
                   }
-                  className={`
-                    block w-full h-10 px-3 py-1 border rounded-lg shadow-sm bg-white
-                    focus:outline-none transition duration-150 ease-in-out appearance-none
-                    ${
-                      field.state.meta.errors.length > 0
-                        ? 'border-red-500 ring-red-500 focus:ring-1'
-                        : 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                    }
-                    ${isSubmitting || activeFundSourcesList.length === 0 || isFundSourceDisabled ? 'cursor-not-allowed opacity-70 bg-gray-100' : ''}
-                  `}
-                >
-                  <option value="" disabled>
-                    Select Fund Source
-                  </option>
-                  {activeFundSourcesList.map((source) => (
-                    <option key={source.id} value={source.id}>
-                      {toTitleCase(source.name)}
-                    </option>
-                  ))}
-                </select>
+                  isLoading={isLoadingSources}
+                  placeholder="Select Fund Source"
+                  searchPlaceholder="Search by UACS code, fund name, or authorization..."
+                />
               )}
 
               {field.state.meta.errors.length > 0 && (

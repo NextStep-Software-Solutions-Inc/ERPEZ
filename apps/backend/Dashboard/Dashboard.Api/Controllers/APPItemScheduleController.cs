@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.APPItemSchedule.Commands.CreateAPPItemSchedule;
 using ERPEZ.Application.Features.Planning.APPItemSchedule.Commands.DeleteAPPItemSchedule;
 using ERPEZ.Application.Features.Planning.APPItemSchedule.Commands.UpdateAPPItemSchedule;
@@ -13,12 +16,14 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("app-item-schedules")]
 [ApiController]
+[Authorize]
 public class APPItemScheduleController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> CreateAPPItemSchedule([FromBody] CreateAPPItemScheduleRequest request)
     {
         var command = new CreateAPPItemScheduleCommand
@@ -35,6 +40,7 @@ public class APPItemScheduleController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<APPItemScheduleResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> GetAPPItemSchedules([FromQuery] SieveModel sieveModel)
     {
         var result = await mediator.Send(new GetAPPItemSchedulesQuery(sieveModel));
@@ -44,6 +50,7 @@ public class APPItemScheduleController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<APPItemScheduleResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> GetAPPItemScheduleById(Guid id)
     {
         var result = await mediator.Send(new GetAPPItemScheduleByIdQuery(id));
@@ -54,6 +61,7 @@ public class APPItemScheduleController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> UpdateAPPItemSchedule(Guid id, [FromBody] UpdateAPPItemScheduleRequest request)
     {
         var command = new UpdateAPPItemScheduleCommand
@@ -72,6 +80,7 @@ public class APPItemScheduleController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> DeleteAPPItemSchedule(Guid id)
     {
         var result = await mediator.Send(new DeleteAPPItemScheduleCommand(id));

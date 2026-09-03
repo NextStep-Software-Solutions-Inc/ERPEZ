@@ -140,7 +140,7 @@ export const getSupplierBidRequest: QueryBlueprintFromTemplate<
   endpoint: myBidEndpoint,
   key: ({ url }) => [url] as const,
   fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<{ data: SupplierBidDetailDto }>(finalUrl, { signal })
+    const response = await api.get<{ data: SupplierBidDetailDto }>(finalUrl, { signal, skipToast: true } as any)
     return response.data.data
   },
 }

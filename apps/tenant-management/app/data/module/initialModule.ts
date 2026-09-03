@@ -14,10 +14,10 @@ export const initialModules: ModuleDef[] = [
     enabled: true,
   },
   {
-    id: "planning",
-    title: "Planning and Commitment",
+    id: "pbms",
+    title: "PBMS - Planning & Budget Management System",
     description:
-      "Handle core functions of performance and strategic planning. Identify and align performance goals, develop success indicators and rating scales, and accomplish commitment forms for unified organizational objectives.",
+      "Handle core functions of performance, budget preparation, and strategic planning. Identify and align performance goals, develop success indicators and rating scales, and accomplish commitment forms for unified organizational objectives.",
     enabled: true,
   },
   {

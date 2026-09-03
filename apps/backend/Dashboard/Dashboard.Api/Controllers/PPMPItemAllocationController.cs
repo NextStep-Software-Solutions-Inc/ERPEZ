@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.PPMPItemAllocation.Commands.CreatePPMPItemAllocation;
 using ERPEZ.Application.Features.Planning.PPMPItemAllocation.Commands.DeletePPMPItemAllocation;
 using ERPEZ.Application.Features.Planning.PPMPItemAllocation.Commands.UpdatePPMPItemAllocation;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("ppmp-item-allocations")]
 [ApiController]
+[Authorize]
 public class PPMPItemAllocationController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.ppmpUpdate)]
     public async Task<IActionResult> CreatePPMPItemAllocation([FromBody] CreatePPMPItemAllocationCommand command)
     {
         var result = await mediator.Send(command);
@@ -29,6 +34,7 @@ public class PPMPItemAllocationController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<PPMPItemAllocationResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<IActionResult> GetPPMPItemAllocations([FromQuery] GetPPMPItemAllocationsQuery query)
     {
         var result = await mediator.Send(query);
@@ -38,6 +44,7 @@ public class PPMPItemAllocationController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<PPMPItemAllocationResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<IActionResult> GetPPMPItemAllocationById(Guid id)
     {
         var result = await mediator.Send(new GetPPMPItemAllocationByIdQuery(id));
@@ -48,6 +55,7 @@ public class PPMPItemAllocationController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpUpdate)]
     public async Task<IActionResult> UpdatePPMPItemAllocation(Guid id, [FromBody] UpdatePPMPItemAllocationRequest dto)
     {
         var command = new UpdatePPMPItemAllocationCommand
@@ -63,6 +71,7 @@ public class PPMPItemAllocationController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpUpdate)]
     public async Task<IActionResult> DeletePPMPItemAllocation(Guid id)
     {
         var command = new DeletePPMPItemAllocationCommand(id);

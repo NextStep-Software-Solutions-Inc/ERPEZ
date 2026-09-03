@@ -52,7 +52,7 @@ export default function ModulePage() {
                                 <div className="flex items-center gap-2">
                                     <div className="h-10 w-10 flex items-center justify-center rounded-md bg-gradient-to-tl from-[var(--button-green)]/20 to-[var(--button-blue)]/20">
                                         {mod.id === "ams" && <User className="h-6 w-6 text-blue-500" />}
-                                        {mod.id === "planning" && <NotepadText className="h-6 w-6 text-blue-500" />}
+                                        {(mod.id === "pbms" || mod.id === "planning") && <NotepadText className="h-6 w-6 text-blue-500" />}
                                         {mod.id === "pms" && <ShoppingCart className="h-6 w-6 text-blue-500" />}
                                         {mod.id === "sams" && <PackageOpen className="h-6 w-6 text-blue-500" />}
                                     </div>

@@ -1,6 +1,7 @@
 import { Provider as JotaiProvider } from 'jotai'
 import type { ReactNode } from 'react'
 import { KeycloakProvider } from '@/providers/KeycloakProvider'
+import { DevRoleSwitcher } from '@/components/DevRoleSwitcher'
 
 interface GlobalProvidersProps {
   children: ReactNode
@@ -9,7 +10,10 @@ interface GlobalProvidersProps {
 export default function GlobalProviders({ children }: GlobalProvidersProps) {
   return (
     <JotaiProvider>
-      <KeycloakProvider>{children}</KeycloakProvider>
+      <KeycloakProvider>
+        {children}
+        <DevRoleSwitcher />
+      </KeycloakProvider>
     </JotaiProvider>
   )
 }

@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.APP.Commands.ChangeAPPStatus;
 using ERPEZ.Application.Features.Planning.APP.Commands.CloneFinalAPP;
 using ERPEZ.Application.Features.Planning.APP.Commands.CreateAPP;
@@ -24,6 +27,7 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("apps")]
 [ApiController]
+[Authorize]
 public class APPController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -33,6 +37,7 @@ public class APPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status409Conflict)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> CreateAPP([FromBody] CreateAPPCommand command)
     {
         var result = await mediator.Send(command);
@@ -44,6 +49,7 @@ public class APPController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet("eligible-for-procurement")]
     [ProducesResponseType(typeof(ApiResponse<List<EligibleAppForProcurementDto>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> GetEligibleAppsForProcurement()
     {
         var query = new ERPEZ.Application.Features.Planning.APP.Queries.GetEligibleAppsForProcurement.GetEligibleAppsForProcurementQuery();
@@ -56,6 +62,7 @@ public class APPController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<APPResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> GetAPPs([FromQuery] SieveModel sieveModel)
     {
         var query = new GetAPPsQuery(sieveModel);
@@ -69,6 +76,7 @@ public class APPController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<APPResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<APPResponse>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> GetAPPById(Guid id)
     {
         var query = new GetAPPByIdQuery(id);
@@ -82,6 +90,7 @@ public class APPController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> DeleteAPP(Guid id)
     {
         var result = await mediator.Send(new DeleteAPPCommand(id));
@@ -95,6 +104,7 @@ public class APPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status409Conflict)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> SelectPPMPs(Guid id, [FromBody] SelectPPMPsRequest request)
     {
         var command = new SelectPPMPsCommand
@@ -114,6 +124,7 @@ public class APPController(ISender mediator) : ControllerBase
     [HttpPut("{id}/remove-ppmps")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> RemovePPMPs(Guid id, [FromBody] RemovePPMPsRequest request)
     {
         var command = new RemovePPMPsCommand
@@ -133,6 +144,7 @@ public class APPController(ISender mediator) : ControllerBase
     [HttpPut("{id}/signatories")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> UpdateAPPSignatories(Guid id, [FromBody] UpdateAPPSignatoriesRequest request)
     {
         var command = new UpdateAPPSignatoriesCommand
@@ -152,6 +164,7 @@ public class APPController(ISender mediator) : ControllerBase
     [HttpGet("{id}/bac")]
     [ProducesResponseType(typeof(ApiResponse<BACResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<BACResponse>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> GetAPPBAC(Guid id)
     {
         var query = new GetAPPBACQuery(id);
@@ -166,6 +179,7 @@ public class APPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> UpdateBACLineItems(Guid id, [FromBody] System.Text.Json.JsonElement body)
     {
         List<UpdateBACLineItemRequest>? lineItems = null;
@@ -208,6 +222,7 @@ public class APPController(ISender mediator) : ControllerBase
     [HttpGet("{id}/available-ppmp-items")]
     [ProducesResponseType(typeof(ApiResponse<List<PPMPItemResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<List<PPMPItemResponse>>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> GetAvailablePPMPItems(Guid id)
     {
         var query = new GetAvailablePPMPItemsQuery(id);
@@ -219,6 +234,7 @@ public class APPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> ChangeStatus(
         [FromRoute] Guid id,
         [FromBody] ChangeAPPStatusRequest request)  // ✅ body uses request DTO
@@ -241,6 +257,7 @@ public class APPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> CloneUpdated(
         [FromRoute] Guid id,
         [FromBody] ERPEZ.Application.Features.Planning.APP.Commands.CloneUpdatedAPP.CloneUpdatedAPPCommand command)
@@ -259,6 +276,7 @@ public class APPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> CloneFinal(
         [FromRoute] Guid id,
         [FromBody] CloneFinalAPPCommand command)
@@ -275,6 +293,7 @@ public class APPController(ISender mediator) : ControllerBase
     [HttpGet("{id}/analytics")]
     [ProducesResponseType(typeof(ApiResponse<APPAnalyticsResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<APPAnalyticsResponse>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.appManage)]
     public async Task<IActionResult> GetAnalytics(Guid id)
     {
         var query = new ERPEZ.Application.Features.Planning.APP.Queries.GetAPPAnalytics.GetAPPAnalyticsQuery(id);

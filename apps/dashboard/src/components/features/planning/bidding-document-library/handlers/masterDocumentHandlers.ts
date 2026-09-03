@@ -9,13 +9,16 @@ import type {
 import type { MasterDocumentTypeDto } from '../types/api'
 import api from '@/services/api'
 
+const getEndpoint = '/admin/bidding-documents'
+const itemEndpoint = '/admin/bidding-documents/:id'
+
 export const getMasterDocumentsRequest: QueryBlueprintFromTemplate<
-  '/admin/bidding-documents',
+  typeof getEndpoint,
   PaginationResponse<MasterDocumentTypeDto>,
   QueryParams,
   QueryKey
 > = {
-  endpoint: '/admin/bidding-documents',
+  endpoint: getEndpoint,
   key: ({ url }) => [url],
   fetcher: async ({ finalUrl, signal }) => {
     const response = await api.get<PaginationResponse<MasterDocumentTypeDto>>(
@@ -34,12 +37,12 @@ export type CreateMasterDocumentPayload = {
 }
 
 export const createMasterDocumentRequest: MutationBlueprintFromTemplate<
-  '/admin/bidding-documents',
+  typeof getEndpoint,
   APIResponse<string>, // returns Guid
   undefined,
   CreateMasterDocumentPayload
 > = {
-  endpoint: '/admin/bidding-documents',
+  endpoint: getEndpoint,
   fetcher: async ({ finalUrl, payload }) => {
     const response = await api.post<APIResponse<string>>(finalUrl, payload)
     return response.data
@@ -55,12 +58,12 @@ export type UpdateMasterDocumentPayload = {
 }
 
 export const updateMasterDocumentRequest: MutationBlueprintFromTemplate<
-  '/admin/bidding-documents/:id',
+  typeof itemEndpoint,
   APIResponse<void>,
   undefined,
   UpdateMasterDocumentPayload
 > = {
-  endpoint: '/admin/bidding-documents/:id',
+  endpoint: itemEndpoint,
   fetcher: async ({ finalUrl, payload }) => {
     const response = await api.put<APIResponse<void>>(
       finalUrl,
@@ -71,10 +74,12 @@ export const updateMasterDocumentRequest: MutationBlueprintFromTemplate<
 }
 
 export const deleteMasterDocumentRequest: MutationBlueprintFromTemplate<
-  '/admin/bidding-documents/:id',
-  void
+  typeof itemEndpoint,
+  void,
+  undefined,
+  undefined
 > = {
-  endpoint: '/admin/bidding-documents/:id',
+  endpoint: itemEndpoint,
   fetcher: async ({ finalUrl }) => {
     const response = await api.delete<void>(finalUrl)
     return response.data

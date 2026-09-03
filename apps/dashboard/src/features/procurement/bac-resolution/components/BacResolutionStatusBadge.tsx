@@ -30,3 +30,18 @@ export function BacResolutionStatusBadge({
     />
   )
 }
+
+export function BacResolutionExecutionBadges({ resolution }: { resolution?: any }) {
+  if (!resolution) return null
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <BacResolutionStatusBadge status={resolution.status} />
+      {resolution.resolutionNumber && (
+        <span className="text-xs text-muted-foreground font-mono">
+          {resolution.resolutionNumber}
+        </span>
+      )}
+    </div>
+  )
+}
+

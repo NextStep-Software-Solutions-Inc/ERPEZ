@@ -1,4 +1,4 @@
-// ERPEZ.Domain/Entities/Procurement/BiddingDocument.cs
+using System.ComponentModel.DataAnnotations.Schema;
 using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
@@ -11,6 +11,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// visibility gate (Status == Posted). Category-specific structured fields (Phase 0A)
 /// will be added in a dedicated TC-02 task once that scope starts.
 /// </summary>
+[Table("BiddingDocument", Schema = "procurement")]
 public class BiddingDocument : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]

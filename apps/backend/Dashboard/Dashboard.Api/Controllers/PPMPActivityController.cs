@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.PPMPActivity.Commands.CreatePPMPActivity;
 using ERPEZ.Application.Features.Planning.PPMPActivity.Commands.DeletePPMPActivity;
 using ERPEZ.Application.Features.Planning.PPMPActivity.Queries.GetPPMPActivities;
@@ -11,11 +14,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("ppmp-activities")]
 [ApiController]
+[Authorize]
 public class PPMPActivityController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.ppmpUpdate)]
     public async Task<IActionResult> CreatePPMPActivity([FromBody] CreatePPMPActivityCommand command)
     {
         var result = await mediator.Send(command);
@@ -28,6 +33,7 @@ public class PPMPActivityController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<PPMPActivityResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<IActionResult> GetPPMPActivities([FromQuery] GetPPMPActivitiesQuery query)
     {
         var result = await mediator.Send(query);
@@ -37,6 +43,7 @@ public class PPMPActivityController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<PPMPActivityResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<IActionResult> GetPPMPActivityById(Guid id)
     {
         var result = await mediator.Send(new GetPPMPActivityByIdQuery(id));
@@ -46,6 +53,7 @@ public class PPMPActivityController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpUpdate)]
     public async Task<IActionResult> DeletePPMPActivity(Guid id)
     {
         var result = await mediator.Send(new DeletePPMPActivityCommand(id));

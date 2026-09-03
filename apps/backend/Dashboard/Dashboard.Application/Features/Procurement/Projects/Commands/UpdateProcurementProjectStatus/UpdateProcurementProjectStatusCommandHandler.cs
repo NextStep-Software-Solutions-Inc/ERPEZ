@@ -5,6 +5,7 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProjectStatus;
 
@@ -34,6 +35,29 @@ public class UpdateProcurementProjectStatusCommandHandler(IUnitOfWork unitOfWork
         if (!IsValidTransition(currentStatusEnum, newStatusEnum))
         {
             return ApiResponse<Unit>.Fail($"Cannot transition from '{currentStatusEnum}' status to '{newStatusEnum}'.");
+        }
+
+        // Business Rule: Small Value Procurement (SVP) projects submitted or approved/posted for suppliers must have an associated RFQ
+        if (newStatusEnum is StatusEnum.Submitted or StatusEnum.Approved)
+        {
+            var mode = project.ProcurementModeId.HasValue 
+                ? await unitOfWork.ProcurementModeRepository.GetByIdAsync(project.ProcurementModeId.Value, cancellationToken)
+                : null;
+
+            var isSvp = (mode != null && (mode.Name.Contains("Small Value", StringComparison.OrdinalIgnoreCase) ||
+                                          mode.Name.Contains("SVP", StringComparison.OrdinalIgnoreCase) ||
+                                          mode.Name.Contains("53.9", StringComparison.OrdinalIgnoreCase)))
+                        || (project.ContractNo != null && project.ContractNo.Contains("SVP", StringComparison.OrdinalIgnoreCase));
+
+            if (isSvp)
+            {
+                var hasRfq = project.ConsolidatedPRId.HasValue && await unitOfWork.RFQRepository.Query()
+                    .AnyAsync(r => r.ConsolidatedPRId == project.ConsolidatedPRId.Value && !r.IsDeleted, cancellationToken);
+                if (!hasRfq)
+                {
+                    return ApiResponse<Unit>.Fail("Cannot submit or approve project: Small Value Procurement projects must have an associated Request for Quotation (RFQ) before submitting or posting.");
+                }
+            }
         }
 
         project.Status = newStatusEnum.ToString();

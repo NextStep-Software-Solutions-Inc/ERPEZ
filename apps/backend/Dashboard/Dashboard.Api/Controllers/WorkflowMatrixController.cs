@@ -6,7 +6,9 @@ using ERPEZ.Application.Features.Planning.WorkflowMatrix.Dtos;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.ResolveWorkflowMatrixApprovers;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrices;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrixById;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,8 +19,10 @@ namespace ERPEZ.Api.Controllers;
 public class WorkflowMatrixController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Planning.workflowMatrixManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateWorkflowMatrix([FromBody] CreateWorkflowMatrixCommand command)
     {
         var result = await mediator.Send(command);
@@ -30,10 +34,12 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("resolve-approvers")]
+    [HasPermission(Permissions.Planning.workflowMatrixManage)]
     [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ResolveApprovers([FromBody] ResolveWorkflowMatrixApproversRequest request)
     {
         var query = new ResolveWorkflowMatrixApproversQuery
@@ -48,7 +54,9 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
     }
     
     [HttpGet]
+    [HasPermission(Permissions.Planning.workflowMatrixManage)]
     [ProducesResponseType(typeof(PaginatedApiResponse<WorkflowMatrixResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetWorkflowMatrices([FromQuery] GetWorkflowMatricesQuery query)
     {
         var result = await mediator.Send(query);
@@ -56,8 +64,10 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [HasPermission(Permissions.Planning.workflowMatrixManage)]
     [ProducesResponseType(typeof(ApiResponse<WorkflowMatrixResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<WorkflowMatrixResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetWorkflowMatrixById(Guid id)
     {
         var result = await mediator.Send(new GetWorkflowMatrixByIdQuery(id));
@@ -65,9 +75,11 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [HasPermission(Permissions.Planning.workflowMatrixManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateWorkflowMatrix(Guid id, [FromBody] UpdateWorkflowMatrixRequest request)
     {
         var command = new UpdateWorkflowMatrixCommand
@@ -83,8 +95,10 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [HasPermission(Permissions.Planning.workflowMatrixManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteWorkflowMatrix(Guid id)
     {
         var result = await mediator.Send(new DeleteWorkflowMatrixCommand(id));
@@ -96,9 +110,11 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/status")]
+    [HasPermission(Permissions.Planning.workflowMatrixManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateWorkflowMatrixStatus(Guid id, [FromBody] UpdateWorkflowMatrixStatusRequest request)
     {
         var command = new UpdateWorkflowMatrixStatusCommand

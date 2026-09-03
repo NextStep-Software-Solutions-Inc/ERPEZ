@@ -107,11 +107,21 @@ export function ProfileDialog({
     if (!name.trim()) return
     if (!procurementCategory.trim()) return
 
+    const techCount = documentIds.filter(
+      (id) => masterDocs.find((d) => d.id === id)?.envelope === 1,
+    ).length
+    const finCount = documentIds.filter(
+      (id) => masterDocs.find((d) => d.id === id)?.envelope === 2,
+    ).length
+
     onSave({
       name: name.trim(),
       description: description.trim(),
       procurementCategory,
       documentIds,
+      itemCount: documentIds.length,
+      techCount,
+      finCount,
     })
   }
 

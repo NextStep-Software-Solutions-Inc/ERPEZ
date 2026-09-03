@@ -9,13 +9,16 @@ import type {
 import api from '@/services/api'
 import type { DocumentProfileDto } from '../types/api'
 
+const listEndpoint = '/admin/bidding-documents/profiles'
+const itemEndpoint = '/admin/bidding-documents/profiles/:profileId'
+
 export const getProfilesRequest: QueryBlueprintFromTemplate<
-  '/admin/bidding-documents/profiles',
+  typeof listEndpoint,
   PaginationResponse<DocumentProfileDto>,
   QueryParams,
   QueryKey
 > = {
-  endpoint: '/admin/bidding-documents/profiles',
+  endpoint: listEndpoint,
   key: ({ url }) => [url],
   fetcher: async ({ finalUrl, signal }) => {
     const response = await api.get<PaginationResponse<DocumentProfileDto>>(
@@ -34,12 +37,12 @@ export type CreateProfilePayload = {
 }
 
 export const createProfileRequest: MutationBlueprintFromTemplate<
-  '/admin/bidding-documents/profiles',
+  typeof listEndpoint,
   APIResponse<string>,
   undefined,
   CreateProfilePayload
 > = {
-  endpoint: '/admin/bidding-documents/profiles',
+  endpoint: listEndpoint,
   fetcher: async ({ finalUrl, payload }) => {
     const response = await api.post<APIResponse<string>>(finalUrl, payload)
     return response.data
@@ -54,12 +57,12 @@ export type UpdateProfilePayload = {
 }
 
 export const updateProfileRequest: MutationBlueprintFromTemplate<
-  '/admin/bidding-documents/profiles/:profileId',
+  typeof itemEndpoint,
   APIResponse<void>,
   undefined,
   UpdateProfilePayload
 > = {
-  endpoint: '/admin/bidding-documents/profiles/:profileId',
+  endpoint: itemEndpoint,
   fetcher: async ({ finalUrl, payload }) => {
     const response = await api.put<APIResponse<void>>(
       finalUrl,
@@ -70,10 +73,12 @@ export const updateProfileRequest: MutationBlueprintFromTemplate<
 }
 
 export const deleteProfileRequest: MutationBlueprintFromTemplate<
-  '/admin/bidding-documents/profiles/:profileId',
-  void
+  typeof itemEndpoint,
+  void,
+  undefined,
+  undefined
 > = {
-  endpoint: '/admin/bidding-documents/profiles/:profileId',
+  endpoint: itemEndpoint,
   fetcher: async ({ finalUrl }) => {
     const response = await api.delete<void>(finalUrl)
     return response.data
@@ -81,10 +86,12 @@ export const deleteProfileRequest: MutationBlueprintFromTemplate<
 }
 
 export const getProfileByIdRequest: QueryBlueprintFromTemplate<
-  '/admin/bidding-documents/profiles/:profileId',
-  APIResponse<DocumentProfileDto>
+  typeof itemEndpoint,
+  APIResponse<DocumentProfileDto>,
+  undefined,
+  QueryKey
 > = {
-  endpoint: '/admin/bidding-documents/profiles/:profileId',
+  endpoint: itemEndpoint,
   key: ({ url }) => [url],
   fetcher: async ({ finalUrl, signal }) => {
     const response = await api.get<APIResponse<DocumentProfileDto>>(finalUrl, { signal })

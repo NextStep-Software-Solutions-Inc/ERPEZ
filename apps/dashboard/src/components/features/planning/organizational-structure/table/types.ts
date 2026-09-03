@@ -22,7 +22,7 @@ export type Position = {
   code?: string
   orgUnitId: string
   description?: string
-  salaryGrade?: SalaryGradeRef
+  salaryGrade?: SalaryGradeRef | string
   itemNumber?: string
   authorizedFTE?: number
   status: 'active' | 'inactive' | 'filled' | 'vacant' | 'frozen'

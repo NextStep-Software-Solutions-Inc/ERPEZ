@@ -5,7 +5,9 @@ using ERPEZ.Application.Features.Planning.Psdbm.Queries.GetDepots;
 using ERPEZ.Application.Features.Planning.Psdbm.Queries.GetItemDetail;
 using ERPEZ.Application.Features.Planning.Psdbm.Queries.GetItems;
 using ERPEZ.Application.Features.Planning.Psdbm.Queries.GetSyncRuns;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,6 +15,9 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("api/psdbm")]
     [ApiController]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public class PsdbmController(ISender mediator) : ControllerBase
     {
         /// <summary>
@@ -20,6 +25,7 @@ namespace ERPEZ.Api.Controllers
         /// </summary>
         [HttpGet("items")]
         [HttpGet("items/{mode}")]
+        [HasPermission(Permissions.Procurement.procurementLibraryView)]
         [ProducesResponseType(typeof(ApiResponse<GetPsdbmItemsResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<GetPsdbmItemsResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetItems(
@@ -58,6 +64,7 @@ namespace ERPEZ.Api.Controllers
         /// Get product detail and stock across all depots by ID
         /// </summary>
         [HttpGet("items/id/{id:guid}")]
+        [HasPermission(Permissions.Procurement.procurementLibraryView)]
         [ProducesResponseType(typeof(ApiResponse<PsdbmProductDetailDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<PsdbmProductDetailDto>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetItemById([FromRoute] Guid id)
@@ -71,6 +78,7 @@ namespace ERPEZ.Api.Controllers
         /// Get product detail and stock across all depots by item code
         /// </summary>
         [HttpGet("items/code/{itemCode}")]
+        [HasPermission(Permissions.Procurement.procurementLibraryView)]
         [ProducesResponseType(typeof(ApiResponse<PsdbmProductDetailDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<PsdbmProductDetailDto>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetItemByCode([FromRoute] string itemCode)
@@ -84,6 +92,7 @@ namespace ERPEZ.Api.Controllers
         /// Get distinct categories with item counts
         /// </summary>
         [HttpGet("categories")]
+        [HasPermission(Permissions.Procurement.procurementLibraryView)]
         [ProducesResponseType(typeof(ApiResponse<List<PsdbmCategoryDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllCategories()
         {
@@ -96,6 +105,7 @@ namespace ERPEZ.Api.Controllers
         /// Get categories for a specific mode
         /// </summary>
         [HttpGet("categories/{mode}")]
+        [HasPermission(Permissions.Procurement.procurementLibraryView)]
         [ProducesResponseType(typeof(ApiResponse<List<PsdbmCategoryDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<List<PsdbmCategoryDto>>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetCategories([FromRoute] string mode)
@@ -110,6 +120,7 @@ namespace ERPEZ.Api.Controllers
         /// </summary>
         [HttpGet("depots")]
         [HttpGet("depots/{mode}")]
+        [HasPermission(Permissions.Procurement.procurementLibraryView)]
         [ProducesResponseType(typeof(ApiResponse<List<PsdbmDepotDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<List<PsdbmDepotDto>>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetDepots([FromRoute] string? mode = null, [FromQuery] string? queryMode = null)
@@ -123,6 +134,7 @@ namespace ERPEZ.Api.Controllers
         /// Trigger synchronization of PSDBM catalog and stocks
         /// </summary>
         [HttpPost("sync")]
+        [HasPermission(Permissions.Procurement.procurementLibraryManage)]
         [ProducesResponseType(typeof(ApiResponse<PsdbmSyncResultDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<PsdbmSyncResultDto>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> TriggerSync([FromBody] PsdbmSyncRequestDto? request = null)
@@ -140,6 +152,7 @@ namespace ERPEZ.Api.Controllers
         /// Get historical synchronization runs
         /// </summary>
         [HttpGet("sync/runs")]
+        [HasPermission(Permissions.Procurement.procurementLibraryView)]
         [ProducesResponseType(typeof(ApiResponse<List<PsdbmSyncRunDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetSyncRuns([FromQuery] int count = 20)
         {
@@ -152,6 +165,7 @@ namespace ERPEZ.Api.Controllers
         /// Get a specific synchronization run by ID
         /// </summary>
         [HttpGet("sync/runs/{id:guid}")]
+        [HasPermission(Permissions.Procurement.procurementLibraryView)]
         [ProducesResponseType(typeof(ApiResponse<PsdbmSyncRunDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<PsdbmSyncRunDto>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetSyncRunById([FromRoute] Guid id)

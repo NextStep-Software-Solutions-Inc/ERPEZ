@@ -70,11 +70,20 @@ export const ReusableFiscalYearSelector = forwardRef<
     useEffect(() => {
       if (value !== undefined && value !== selectedFiscalYearId) {
         setSelectedFiscalYearId(value || '')
-        const matchingFY =
-          accumulatedFiscalYears.find((fy) => fy.id === value) || null
-        setSelectedFiscalYear(matchingFY)
       }
-    }, [value, accumulatedFiscalYears])
+    }, [value, selectedFiscalYearId])
+
+    // Sync selectedFiscalYear whenever active ID or accumulated list changes
+    useEffect(() => {
+      const activeId = value !== undefined ? value : selectedFiscalYearId
+      if (activeId && activeId !== 'all') {
+        const matchingFY =
+          accumulatedFiscalYears.find((fy) => fy.id === activeId) || null
+        setSelectedFiscalYear(matchingFY)
+      } else {
+        setSelectedFiscalYear(null)
+      }
+    }, [value, selectedFiscalYearId, accumulatedFiscalYears])
     const [currentPage, setCurrentPage] = useState(1)
     const [hasMorePages, setHasMorePages] = useState(true)
 
@@ -147,16 +156,25 @@ export const ReusableFiscalYearSelector = forwardRef<
       if (
         autoSelectFirst &&
         accumulatedFiscalYears.length > 0 &&
-        !selectedFiscalYearId
+        !selectedFiscalYearId &&
+        (value === undefined || value === '')
       ) {
         const firstFY = accumulatedFiscalYears[0]
         setSelectedFiscalYearId(firstFY.id)
         setSelectedFiscalYear(firstFY)
-        // Don't call callback for auto-select (as per spec)
+        if (onFiscalYearChange) {
+          onFiscalYearChange(firstFY, firstFY.id)
+        }
       }
-    }, [accumulatedFiscalYears, selectedFiscalYearId, autoSelectFirst])
+    }, [
+      accumulatedFiscalYears,
+      selectedFiscalYearId,
+      autoSelectFirst,
+      value,
+      onFiscalYearChange,
+    ])
 
-    // Handle fiscal year change - fires ONLY on user selection
+    // Handle fiscal year change - fires on user selection
     const handleFiscalYearChange = (fyId: string) => {
       setSelectedFiscalYearId(fyId)
       const selectedFY =
@@ -204,7 +222,7 @@ export const ReusableFiscalYearSelector = forwardRef<
           </Label>
         )}
         <Select
-          value={selectedFiscalYearId}
+          value={value !== undefined ? value : selectedFiscalYearId}
           onValueChange={handleFiscalYearChange}
           disabled={isLoading || disabled}
         >
