@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { createQueryHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
-import { AlertCircle, Building2, Globe, Layers, Loader2 } from 'lucide-react'
+import { AlertCircle, Building2, Files, Globe, Layers, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type {
   MasterDoc,
@@ -14,6 +14,13 @@ import type {
   UploadedFileAttachment,
 } from '@/components/features/planning/bidding-document-library/types'
 import type { ProfileFormData } from '@/components/features/planning/bidding-document-library/dialogs/ProfileDialog'
+import { Badge } from '@/components/ui/badge'
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { CreateMasterDocumentDialog } from '@/components/features/planning/bidding-document-library/dialogs/CreateMasterDocumentDialog'
 import { CustomRequirementDialog } from '@/components/features/planning/bidding-document-library/dialogs/CustomRequirementDialog'
 import { DeleteMasterDocumentDialog } from '@/components/features/planning/bidding-document-library/dialogs/DeleteMasterDocumentDialog'
@@ -507,24 +514,33 @@ export default function BiddingDocumentLibraryPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Bidding Document Library
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Master checklist configuration, category profiles, and project-specific bidding document requirements.
-          </p>
-        </div>
+      {/* Header Banner */}
+      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="space-y-1.5">
+              <CardTitle className="text-3xl font-bold tracking-tight text-foreground">
+                Bidding Document Library
+              </CardTitle>
+              <CardDescription className="text-base text-muted-foreground">
+                Master checklist configuration, category profiles, and project-specific bidding document requirements.
+              </CardDescription>
+            </div>
 
-        {(isMasterDocsLoading || isProfilesLoading || isProjectsLoading || isChecklistLoading) && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-md border">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-            <span>Syncing with server...</span>
+            <div className="flex items-center gap-3">
+              {(isMasterDocsLoading || isProfilesLoading || isProjectsLoading || isChecklistLoading) && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background/80 px-3 py-1.5 rounded-md border shadow-2xs">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  <span>Syncing with server...</span>
+                </div>
+              )}
+              <Badge variant="outline" className="h-fit px-3 py-1.5 font-semibold bg-background/80 shadow-2xs">
+                <Files className="h-3.5 w-3.5 mr-1.5 text-primary" /> Bidding Documents
+              </Badge>
+            </div>
           </div>
-        )}
-      </div>
+        </CardHeader>
+      </Card>
 
       {/* Error Alert Banner if an API request fails */}
       {hasError && (

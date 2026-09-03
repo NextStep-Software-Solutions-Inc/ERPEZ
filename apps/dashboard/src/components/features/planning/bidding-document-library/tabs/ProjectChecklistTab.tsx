@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Download, Eye, FolderOpen, Loader2, Plus } from 'lucide-react'
+import {
+  CheckCircle2,
+  Download,
+  Eye,
+  FileCheck,
+  FileText,
+  FolderOpen,
+  Loader2,
+  Plus,
+} from 'lucide-react'
 import { getSortedChecklist } from '../utils'
 import type {
   MasterDoc,
@@ -35,6 +44,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { cn } from '@/lib/utils'
 
 interface ProjectChecklistTabProps {
   projects: Array<Project>
@@ -54,6 +64,23 @@ interface ProjectChecklistTabProps {
   onViewTemplate: (doc: MasterDoc) => void
 }
 
+const UUID_REGEX =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+
+function getTemplateDisplayName(url?: string): string {
+  if (!url) return ''
+  try {
+    const decoded = decodeURIComponent(url)
+    const lastSegment = decoded.split('/').pop() ?? url
+    if (UUID_REGEX.test(lastSegment)) return 'Uploaded Template'
+    const underscoreIndex = lastSegment.indexOf('_')
+    if (underscoreIndex !== -1) return lastSegment.slice(underscoreIndex + 1)
+    return lastSegment
+  } catch {
+    return url
+  }
+}
+
 function ChecklistItemRow({
   item,
   isDraft,
@@ -69,60 +96,82 @@ function ChecklistItemRow({
   onToggleChecklistDoc: (projectId: string, docId: string) => void
   onViewTemplate: (doc: MasterDoc) => void
 }) {
+  const displayName = getTemplateDisplayName(item.templateFile)
+
   return (
     <div
-      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+      className={cn(
+        'flex items-center justify-between p-3.5 rounded-xl border transition-all duration-150 gap-4',
         item.enabled
-          ? 'bg-background border-default-200'
-          : 'bg-muted/40 border-dashed border-default-100 opacity-60'
-      }`}
+          ? 'bg-card border-border shadow-2xs hover:shadow-xs hover:border-primary/30'
+          : 'bg-muted/30 border-dashed border-border/80 opacity-60',
+      )}
     >
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm">{item.name}</span>
+      <div className="space-y-1.5 min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className={cn(
+              'font-semibold text-sm leading-tight text-foreground',
+              !item.enabled &&
+                'text-muted-foreground line-through decoration-muted-foreground/40',
+            )}
+          >
+            {item.name}
+          </span>
           {item.isCustom && (
-            <Badge className="bg-purple-500/25 text-purple-600 border-transparent text-[10px] py-0 px-1.5 font-semibold">
-              Custom End-User Requirement
+            <Badge
+              variant="outline"
+              className="bg-purple-500/10 text-purple-600 border-purple-500/20 text-[10px] py-0 px-1.5 font-medium"
+            >
+              Custom Requirement
             </Badge>
           )}
         </div>
+
         {item.templateFile && (
-          <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-primary">
-            <span className="flex min-w-0 items-center gap-1.5">
-              <Download className="h-3 w-3 shrink-0" />
-              Attached template:{' '}
-              <span className="truncate">{item.templateFile}</span>
-            </span>
-            {templateDoc && (
+          <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+            {templateDoc ? (
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="h-6 gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 text-[10px] font-semibold text-primary hover:bg-primary/10"
+                className="h-6 gap-1.5 rounded-md border-primary/25 bg-primary/5 px-2 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
                 onClick={() => onViewTemplate(templateDoc)}
               >
-                <Eye className="h-3 w-3" />
-                View Template
+                <Eye className="h-3 w-3 shrink-0" />
+                <span className="truncate max-w-[220px]">{displayName}</span>
               </Button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                <span className="truncate max-w-[220px] font-mono">
+                  {displayName}
+                </span>
+              </span>
             )}
           </div>
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 shrink-0">
         {isDraft ? (
-          <Switch
-            checked={item.enabled}
-            onCheckedChange={() => onToggleChecklistDoc(projectId, item.id)}
-          />
+          <div className="flex items-center gap-2">
+            <span className="text-2xs font-medium text-muted-foreground hidden sm:inline select-none">
+              {item.enabled ? 'Included' : 'Excluded'}
+            </span>
+            <Switch
+              checked={item.enabled}
+              onCheckedChange={() => onToggleChecklistDoc(projectId, item.id)}
+              aria-label={`Toggle ${item.name}`}
+            />
+          </div>
         ) : (
           <Badge
             variant="outline"
-            color={item.enabled ? 'success' : 'secondary'}
             className={
               item.enabled
-                ? 'border-success/30 text-success bg-success/5'
-                : 'bg-muted'
+                ? 'border-success/30 text-success bg-success/5 font-semibold text-xs'
+                : 'bg-muted text-muted-foreground text-xs'
             }
           >
             {item.enabled ? 'Active' : 'Disabled'}
@@ -373,18 +422,19 @@ export function ProjectChecklistTab({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
-        <Card className="border border-info/20 shadow-sm">
-          <CardHeader className="bg-info/5 border-b border-info/15 py-4">
+        {/* Envelope 1 */}
+        <Card className="border border-info/25 shadow-xs overflow-hidden bg-card">
+          <CardHeader className="bg-info/5 border-b border-info/15 py-3.5 px-4">
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle className="text-base text-info font-bold">
+                <CardTitle className="text-sm font-bold text-info flex items-center gap-1.5">
                   Envelope 1: Technical & Eligibility Documents
                 </CardTitle>
                 <CardDescription className="text-2xs text-info/80">
                   Required to pass preliminary legal and competency criteria
                 </CardDescription>
               </div>
-              <Badge className="bg-info text-info-foreground border-transparent">
+              <Badge variant="outline" className="bg-info/10 text-info border-info/30 font-semibold text-xs">
                 {
                   currentProject.checklist.filter(
                     (item) => item.envelope === 1 && item.enabled,
@@ -394,36 +444,44 @@ export function ProjectChecklistTab({
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-4 space-y-3">
-            {sortedChecklist
-              .filter((item) => item.envelope === 1)
-              .map((item) => (
-                <ChecklistItemRow
-                  key={item.id}
-                  item={item}
-                  isDraft={isDraft}
-                  projectId={currentProject.id}
-                  templateDoc={getTemplateDoc(item)}
-                  onToggleChecklistDoc={onToggleChecklistDoc}
-                  onViewTemplate={onViewTemplate}
-                />
-              ))}
+          <CardContent className="p-4 space-y-2.5 bg-card min-h-[160px]">
+            {sortedChecklist.filter((item) => item.envelope === 1).length === 0 ? (
+              <div className="py-10 text-center text-xs text-muted-foreground flex flex-col items-center justify-center">
+                <FileCheck className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                <p className="font-semibold text-foreground/80">No technical requirements added</p>
+                <p className="text-2xs text-muted-foreground mt-0.5">Apply a checklist profile or add a custom requirement above.</p>
+              </div>
+            ) : (
+              sortedChecklist
+                .filter((item) => item.envelope === 1)
+                .map((item) => (
+                  <ChecklistItemRow
+                    key={item.id}
+                    item={item}
+                    isDraft={isDraft}
+                    projectId={currentProject.id}
+                    templateDoc={getTemplateDoc(item)}
+                    onToggleChecklistDoc={onToggleChecklistDoc}
+                    onViewTemplate={onViewTemplate}
+                  />
+                ))
+            )}
           </CardContent>
         </Card>
 
-        <Card className="border border-warning/20 shadow-sm">
-          <CardHeader className="bg-warning/5 border-b border-warning/15 py-4">
+        {/* Envelope 2 */}
+        <Card className="border border-warning/25 shadow-xs overflow-hidden bg-card">
+          <CardHeader className="bg-warning/5 border-b border-warning/15 py-3.5 px-4">
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle className="text-base text-warning font-bold">
+                <CardTitle className="text-sm font-bold text-warning flex items-center gap-1.5">
                   Envelope 2: Financial Proposal Documents
                 </CardTitle>
                 <CardDescription className="text-2xs text-warning/80">
-                  Bid tender calculations, quantities, and cost estimate
-                  templates
+                  Bid tender calculations, quantities, and cost estimate templates
                 </CardDescription>
               </div>
-              <Badge className="bg-warning text-warning-foreground border-transparent">
+              <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 font-semibold text-xs">
                 {
                   currentProject.checklist.filter(
                     (item) => item.envelope === 2 && item.enabled,
@@ -433,20 +491,28 @@ export function ProjectChecklistTab({
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-4 space-y-3">
-            {sortedChecklist
-              .filter((item) => item.envelope === 2)
-              .map((item) => (
-                <ChecklistItemRow
-                  key={item.id}
-                  item={item}
-                  isDraft={isDraft}
-                  projectId={currentProject.id}
-                  templateDoc={getTemplateDoc(item)}
-                  onToggleChecklistDoc={onToggleChecklistDoc}
-                  onViewTemplate={onViewTemplate}
-                />
-              ))}
+          <CardContent className="p-4 space-y-2.5 bg-card min-h-[160px]">
+            {sortedChecklist.filter((item) => item.envelope === 2).length === 0 ? (
+              <div className="py-10 text-center text-xs text-muted-foreground flex flex-col items-center justify-center">
+                <FileCheck className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                <p className="font-semibold text-foreground/80">No financial requirements added</p>
+                <p className="text-2xs text-muted-foreground mt-0.5">Apply a checklist profile or add a custom requirement above.</p>
+              </div>
+            ) : (
+              sortedChecklist
+                .filter((item) => item.envelope === 2)
+                .map((item) => (
+                  <ChecklistItemRow
+                    key={item.id}
+                    item={item}
+                    isDraft={isDraft}
+                    projectId={currentProject.id}
+                    templateDoc={getTemplateDoc(item)}
+                    onToggleChecklistDoc={onToggleChecklistDoc}
+                    onViewTemplate={onViewTemplate}
+                  />
+                ))
+            )}
           </CardContent>
         </Card>
       </div>
