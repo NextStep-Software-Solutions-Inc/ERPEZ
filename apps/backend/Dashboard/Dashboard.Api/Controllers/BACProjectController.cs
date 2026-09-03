@@ -16,12 +16,136 @@ using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
+using ERPEZ.Application.Features.Procurement.BiddingSchedules.Commands.ConfirmBiddingSchedule;
+using ERPEZ.Application.Features.Procurement.BiddingSchedules.Commands.GenerateBiddingSchedule;
+using ERPEZ.Application.Features.Procurement.BiddingSchedules.Commands.LockBiddingSchedule;
+using ERPEZ.Application.Features.Procurement.BiddingSchedules.Commands.RegenerateBiddingSchedule;
+using ERPEZ.Application.Features.Procurement.BiddingSchedules.Commands.SetMilestoneCompletion;
+using ERPEZ.Application.Features.Procurement.BiddingSchedules.Commands.UpdateBiddingMilestone;
+using ERPEZ.Application.Features.Procurement.BiddingSchedules.Dtos;
+using ERPEZ.Application.Features.Procurement.BiddingSchedules.Queries.GetAllBiddingSchedules;
+using ERPEZ.Application.Features.Procurement.BiddingSchedules.Queries.GetBiddingScheduleByResolutionId;
+
 namespace ERPEZ.Api.Controllers;
+
+public record GenerateScheduleApiRequest(string IbPostingDate, string ProcurementCategory, string? BacResolutionNumber = null, string? CreatedBy = null);
+public record RegenerateScheduleApiRequest(string IbPostingDate, string ProcurementCategory, string? CreatedBy = null);
+public record UpdateMilestoneApiRequest(string OverrideDate, string? Time, string Reason, string? EditedBy = null);
+public record SetMilestoneCompletionApiRequest(bool Completed, string? UpdatedBy = null);
+public record ConfirmScheduleApiRequest(string? ConfirmedBy = null);
+public record LockScheduleApiRequest(string? LockedBy = null);
 
 [Route("bac")]
 [ApiController]
 public class BACProjectController(ISender mediator) : ControllerBase
 {
+    // ── Bidding Schedule & Master Calendar Endpoints ─────────────────────────
+
+    [HttpPost("resolutions/{resolutionId}/schedule")]
+    [ProducesResponseType(typeof(ApiResponse<BiddingScheduleResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GenerateSchedule(Guid resolutionId, [FromBody] GenerateScheduleApiRequest request)
+    {
+        var command = new GenerateBiddingScheduleCommand(
+            resolutionId,
+            request.BacResolutionNumber ?? string.Empty,
+            request.IbPostingDate,
+            request.ProcurementCategory,
+            request.CreatedBy ?? "current-user"
+        );
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("resolutions/{resolutionId}/schedule/regenerate")]
+    [ProducesResponseType(typeof(ApiResponse<BiddingScheduleResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RegenerateSchedule(Guid resolutionId, [FromBody] RegenerateScheduleApiRequest request)
+    {
+        var command = new RegenerateBiddingScheduleCommand(
+            resolutionId,
+            request.IbPostingDate,
+            request.ProcurementCategory,
+            request.CreatedBy ?? "current-user"
+        );
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpGet("resolutions/{resolutionId}/schedule")]
+    [ProducesResponseType(typeof(ApiResponse<BiddingScheduleResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetScheduleByResolutionId(Guid resolutionId)
+    {
+        var result = await mediator.Send(new GetBiddingScheduleByResolutionIdQuery(resolutionId));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPatch("schedules/{scheduleId}/milestones/{milestoneId}")]
+    [ProducesResponseType(typeof(ApiResponse<BiddingScheduleResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateMilestone(Guid scheduleId, Guid milestoneId, [FromBody] UpdateMilestoneApiRequest request)
+    {
+        var command = new UpdateBiddingMilestoneCommand(
+            scheduleId,
+            milestoneId,
+            request.OverrideDate,
+            request.Time,
+            request.Reason,
+            request.EditedBy ?? "current-user"
+        );
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPatch("schedules/{scheduleId}/milestones/{milestoneId}/complete")]
+    [ProducesResponseType(typeof(ApiResponse<BiddingScheduleResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SetMilestoneCompletion(Guid scheduleId, Guid milestoneId, [FromBody] SetMilestoneCompletionApiRequest request)
+    {
+        var command = new SetMilestoneCompletionCommand(
+            scheduleId,
+            milestoneId,
+            request.Completed,
+            request.UpdatedBy ?? "current-user"
+        );
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("schedules/{scheduleId}/confirm")]
+    [ProducesResponseType(typeof(ApiResponse<BiddingScheduleResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ConfirmSchedule(Guid scheduleId, [FromBody] ConfirmScheduleApiRequest request)
+    {
+        var command = new ConfirmBiddingScheduleCommand(
+            scheduleId,
+            request.ConfirmedBy ?? "current-user"
+        );
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("schedules/{scheduleId}/lock")]
+    [ProducesResponseType(typeof(ApiResponse<BiddingScheduleResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> LockSchedule(Guid scheduleId, [FromBody] LockScheduleApiRequest request)
+    {
+        var command = new LockBiddingScheduleCommand(
+            scheduleId,
+            request.LockedBy ?? "current-user"
+        );
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpGet("schedules")]
+    [ProducesResponseType(typeof(ApiResponse<List<BiddingScheduleResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllSchedules()
+    {
+        var result = await mediator.Send(new GetAllBiddingSchedulesQuery());
+        return Ok(result);
+    }
     //[Authorize(Roles = "BAC_Officer")]
     [HttpPost("projects")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]

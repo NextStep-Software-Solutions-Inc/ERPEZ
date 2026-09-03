@@ -1,9 +1,7 @@
 using ERPEZ.Api;
 using ERPEZ.Api.Extensions;
 using ERPEZ.Application;
-using ERPEZ.Domain.Interfaces;
 using ERPEZ.Infrastructure;
-using ERPEZ.Infrastructure.Persistence.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.ConfigureAppConfiguration();
@@ -14,7 +12,7 @@ builder.ConfigureAppConfiguration();
 builder.Services.AddHttpClient("psdbm", c =>
 {
     c.Timeout = TimeSpan.FromSeconds(20);
-    c.DefaultRequestHeaders.UserAgent.ParseAdd("ERPEZ/1.0"); // ✅ fix #2
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("ERPEZ/1.0");
 });
 
 builder
@@ -24,15 +22,6 @@ builder
 await builder.AddInfrastructureServices();
 
 var app = builder.Build();
-// Seed GPPB-standard procurement activity types (idempotent)
-using (var scope = app.Services.CreateScope())
-{
-    var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-    var dbContext = scope.ServiceProvider.GetRequiredService<ERPEZ.Infrastructure.Persistence.ApplicationDbContext>();
-    await ProcurementActivityTypeSeeder.SeedAsync(unitOfWork);
-    await ERPEZ.Infrastructure.Persistence.Seeders.ItemCategorySeeder.SeedAsync(dbContext);
-    await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedAsync(dbContext);
-}
 
 app.UseApiMiddlewares();
 
