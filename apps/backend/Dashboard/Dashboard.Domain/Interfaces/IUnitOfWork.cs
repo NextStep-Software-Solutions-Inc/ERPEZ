@@ -124,6 +124,7 @@ public interface IUnitOfWork
     IBACResolutionRepository BACResolutionRepository { get; }
     IRepository<ERPEZ.Domain.Entities.Procurement.BACMember> BACMemberRepository { get; }
     IBiddingActivityScheduleRepository BiddingActivityScheduleRepository { get; }
+    IRepository<ERPEZ.Domain.Entities.Procurement.PublicHoliday> PublicHolidayRepository { get; }
     IMasterDocumentTypeRepository    MasterDocumentTypeRepository    { get; }
     IDocumentProfileRepository       DocumentProfileRepository       { get; }
     IDocumentProfileItemRepository   DocumentProfileItemRepository   { get; }

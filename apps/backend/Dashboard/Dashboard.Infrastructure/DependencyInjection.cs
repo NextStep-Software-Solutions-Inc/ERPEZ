@@ -191,6 +191,12 @@ public static class DependencyInjection
                     "CREATE SCHEMA IF NOT EXISTS planning; " +
                     "CREATE SCHEMA IF NOT EXISTS procurement;");
                 await dbContext.Database.MigrateAsync();
+
+                var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                await ERPEZ.Infrastructure.Persistence.Seeders.ProcurementActivityTypeSeeder.SeedAsync(unitOfWork);
+                await ERPEZ.Infrastructure.Persistence.Seeders.PublicHolidaySeeder.SeedAsync(unitOfWork);
+                await ERPEZ.Infrastructure.Persistence.Seeders.ItemCategorySeeder.SeedAsync(dbContext);
+                await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedAsync(dbContext);
             }
             catch (InvalidOperationException ex)
             {
@@ -198,7 +204,7 @@ public static class DependencyInjection
                     "Database migration failed; pending model changes detected. " +
                     "Add a migration before updating the database.");
             }
-            catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07" || ex.SqlState == "42710")
+            catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07" || ex.SqlState == "42710" || ex.SqlState == "42701")
             {
                 logger.LogWarning(ex,
                     "Database object already exists on remote database ({SqlState}). Skipping migration step.", ex.SqlState);
