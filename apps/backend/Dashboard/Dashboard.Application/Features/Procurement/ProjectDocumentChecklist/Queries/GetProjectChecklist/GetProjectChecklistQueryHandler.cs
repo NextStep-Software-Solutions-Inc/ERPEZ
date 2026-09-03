@@ -24,21 +24,20 @@ public class GetProjectChecklistQueryHandler(IUnitOfWork unitOfWork)
             new()
             {
                 Id           = c.Id,
-                DocumentName = c.MasterDocumentTypeId.HasValue
-                                   ? c.MasterDocumentType!.Name
-                                   : c.CustomDocumentName ?? string.Empty,
+                DocumentName = c.MasterDocumentType?.Name
+                               ?? c.CustomDocumentName
+                               ?? string.Empty,
                 IsCustom             = c.MasterDocumentTypeId is null,
                 IsRequired           = c.IsRequired,
                 EnvelopeType         = c.EnvelopeType,
                 OrderIndex           = c.OrderIndex,
-                TemplateFileUrl      = c.MasterDocumentTypeId.HasValue
-                                           ? c.MasterDocumentType!.TemplateFileUrl
-                                           : c.CustomTemplateFileUrl,
+                TemplateFileUrl      = c.MasterDocumentType?.TemplateFileUrl
+                                       ?? c.CustomTemplateFileUrl,
                 MasterDocumentTypeId = c.MasterDocumentTypeId
             };
 
-        var env1 = items.Where(i => i.EnvelopeType == 1).Select(ToDto).ToList();
-        var env2 = items.Where(i => i.EnvelopeType == 2).Select(ToDto).ToList();
+        var env1 = items.Where(i => i.EnvelopeType == 1).OrderBy(i => i.OrderIndex).Select(ToDto).ToList();
+        var env2 = items.Where(i => i.EnvelopeType == 2).OrderBy(i => i.OrderIndex).Select(ToDto).ToList();
 
         return ApiResponse<ProjectChecklistResponse>.Success(new ProjectChecklistResponse
         {

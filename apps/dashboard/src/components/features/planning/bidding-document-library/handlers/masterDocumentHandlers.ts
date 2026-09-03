@@ -6,8 +6,8 @@ import type {
   QueryKey,
   QueryParams,
 } from 'erpez-shared-lib'
-import api from '@/services/api'
 import type { MasterDocumentTypeDto } from '../types/api'
+import api from '@/services/api'
 
 export const getMasterDocumentsRequest: QueryBlueprintFromTemplate<
   '/admin/bidding-documents',
@@ -51,12 +51,13 @@ export type UpdateMasterDocumentPayload = {
   description?: string
   envelopeType: number
   fileId?: string
+  removeFile?: boolean
 }
 
 export const updateMasterDocumentRequest: MutationBlueprintFromTemplate<
   '/admin/bidding-documents/:id',
   APIResponse<void>,
-  { id: string },
+  undefined,
   UpdateMasterDocumentPayload
 > = {
   endpoint: '/admin/bidding-documents/:id',
@@ -71,9 +72,7 @@ export const updateMasterDocumentRequest: MutationBlueprintFromTemplate<
 
 export const deleteMasterDocumentRequest: MutationBlueprintFromTemplate<
   '/admin/bidding-documents/:id',
-  void,
-  { id: string },
-  undefined
+  void
 > = {
   endpoint: '/admin/bidding-documents/:id',
   fetcher: async ({ finalUrl }) => {

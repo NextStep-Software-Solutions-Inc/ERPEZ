@@ -1,18 +1,15 @@
+import { buildEndpoint } from 'erpez-shared-lib'
 import type {
   APIResponse,
   MutationBlueprintFromTemplate,
   QueryBlueprintFromTemplate,
-  QueryKey,
 } from 'erpez-shared-lib'
-import api from '@/services/api'
 import type { ProjectChecklistResponse } from '../types/api'
-import type { BACProjectListItem } from '../types/api'
+import api from '@/services/api'
 
 export const getProjectChecklistRequest: QueryBlueprintFromTemplate<
   '/bac/projects/:projectId/checklists',
-  APIResponse<ProjectChecklistResponse>,
-  { projectId: string },
-  QueryKey
+  APIResponse<ProjectChecklistResponse>
 > = {
   endpoint: '/bac/projects/:projectId/checklists',
   key: ({ url }) => [url],
@@ -25,6 +22,15 @@ export const getProjectChecklistRequest: QueryBlueprintFromTemplate<
   },
 }
 
+export const getProjectChecklistQueryKey = (projectId: string) => {
+  const finalUrl = buildEndpoint(getProjectChecklistRequest.endpoint, { projectId }, undefined)
+  return getProjectChecklistRequest.key({
+    url: finalUrl,
+    pathParams: { projectId },
+    queryParams: undefined,
+  })
+}
+
 export type LoadProfilePayload = {
   documentProfileId: string
 }
@@ -32,7 +38,7 @@ export type LoadProfilePayload = {
 export const loadProfileRequest: MutationBlueprintFromTemplate<
   '/bac/projects/:projectId/checklists/load-profile',
   APIResponse<void>,
-  { projectId: string },
+  undefined,
   LoadProfilePayload
 > = {
   endpoint: '/bac/projects/:projectId/checklists/load-profile',
@@ -55,7 +61,7 @@ export type AddCustomRequirementPayload = {
 export const addCustomRequirementRequest: MutationBlueprintFromTemplate<
   '/bac/projects/:projectId/checklists/custom',
   APIResponse<string>,
-  { projectId: string },
+  undefined,
   AddCustomRequirementPayload
 > = {
   endpoint: '/bac/projects/:projectId/checklists/custom',
@@ -76,7 +82,7 @@ export type UpdateChecklistItemPayload = {
 export const updateChecklistItemRequest: MutationBlueprintFromTemplate<
   '/bac/projects/:projectId/checklists/:checklistItemId',
   APIResponse<void>,
-  { projectId: string; checklistItemId: string },
+  undefined,
   UpdateChecklistItemPayload
 > = {
   endpoint: '/bac/projects/:projectId/checklists/:checklistItemId',
@@ -91,9 +97,7 @@ export const updateChecklistItemRequest: MutationBlueprintFromTemplate<
 
 export const deleteChecklistItemRequest: MutationBlueprintFromTemplate<
   '/bac/projects/:projectId/checklists/:checklistItemId',
-  void,
-  { projectId: string; checklistItemId: string },
-  undefined
+  void
 > = {
   endpoint: '/bac/projects/:projectId/checklists/:checklistItemId',
   fetcher: async ({ finalUrl }) => {
@@ -106,9 +110,7 @@ export const deleteChecklistItemRequest: MutationBlueprintFromTemplate<
 
 export const confirmChecklistRequest: MutationBlueprintFromTemplate<
   '/bac/projects/:projectId/checklists/confirm',
-  APIResponse<void>,
-  { projectId: string },
-  undefined
+  APIResponse<void>
 > = {
   endpoint: '/bac/projects/:projectId/checklists/confirm',
   fetcher: async ({ finalUrl }) => {
@@ -121,9 +123,7 @@ export const confirmChecklistRequest: MutationBlueprintFromTemplate<
 
 export const resetChecklistRequest: MutationBlueprintFromTemplate<
   '/bac/projects/:projectId/checklists/reset',
-  APIResponse<void>,
-  { projectId: string },
-  undefined
+  APIResponse<void>
 > = {
   endpoint: '/bac/projects/:projectId/checklists/reset',
   fetcher: async ({ finalUrl }) => {

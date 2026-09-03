@@ -7,7 +7,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import type { RowSelectionState, SortingState } from '@tanstack/react-table'
 import {
   AlertCircle,
   Eye,
@@ -17,6 +16,10 @@ import {
   Plus,
   Search,
 } from 'lucide-react'
+import { Column } from '../master-documents/table'
+import { getProfileEnvelopeCount } from '../utils'
+import type { RowSelectionState, SortingState } from '@tanstack/react-table'
+import type { MasterDoc, Profile } from '../types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,6 +31,13 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -35,13 +45,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Column } from '../master-documents/table'
-import type { MasterDoc, Profile } from '../types'
-import { getProfileEnvelopeCount } from '../utils'
 
 interface MasterSetupTabProps {
-  masterDocs: MasterDoc[]
-  profiles: Profile[]
+  masterDocs: Array<MasterDoc>
+  profiles: Array<Profile>
   onAddDocument: () => void
   onEditDocument: (doc: MasterDoc) => void
   onDeleteDocument: (doc: MasterDoc) => void
@@ -66,19 +73,25 @@ export function MasterSetupTab({
     'documents' | 'profiles'
   >('documents')
   const [search, setSearch] = useState('')
+  const [envelopeFilter, setEnvelopeFilter] = useState<'all' | '1' | '2'>('all')
   const [sorting, setSorting] = useState<SortingState>([])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
   const filteredMasterDocs = useMemo(() => {
     const searchText = search.toLowerCase()
 
-    return masterDocs.filter(
-      (doc) =>
+    return masterDocs.filter((doc) => {
+      const matchesSearch =
         doc.name.toLowerCase().includes(searchText) ||
         doc.description.toLowerCase().includes(searchText) ||
-        doc.templateFile.toLowerCase().includes(searchText),
-    )
-  }, [masterDocs, search])
+        doc.templateFile.toLowerCase().includes(searchText)
+
+      const matchesEnvelope =
+        envelopeFilter === 'all' || doc.envelope.toString() === envelopeFilter
+
+      return matchesSearch && matchesEnvelope
+    })
+  }, [envelopeFilter, masterDocs, search])
 
   const columns = useMemo(
     () =>
@@ -180,6 +193,22 @@ export function MasterSetupTab({
                 className="pl-9 h-9"
               />
             </div>
+            <Select
+              value={envelopeFilter}
+              onValueChange={(val) => {
+                setEnvelopeFilter(val as 'all' | '1' | '2')
+                table.setPageIndex(0)
+              }}
+            >
+              <SelectTrigger className="w-[190px] h-9">
+                <SelectValue placeholder="All Envelopes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Envelopes</SelectItem>
+                <SelectItem value="1">Envelope 1: Technical</SelectItem>
+                <SelectItem value="2">Envelope 2: Financial</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="rounded-md border flex-1 flex flex-col min-h-0">
@@ -330,6 +359,11 @@ export function MasterSetupTab({
                 </CardHeader>
                 <CardContent className="space-y-4 p-4 pt-0">
                   <div className="flex flex-wrap gap-1">
+                    {profile.procurementCategory && (
+                      <Badge variant="secondary" className="text-2xs font-semibold">
+                        {profile.procurementCategory}
+                      </Badge>
+                    )}
                     <Badge variant="outline" className="text-2xs bg-background">
                       {profile.itemCount} Default Documents
                     </Badge>

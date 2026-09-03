@@ -56,7 +56,7 @@ export type UpdateProfilePayload = {
 export const updateProfileRequest: MutationBlueprintFromTemplate<
   '/admin/bidding-documents/profiles/:profileId',
   APIResponse<void>,
-  { profileId: string },
+  undefined,
   UpdateProfilePayload
 > = {
   endpoint: '/admin/bidding-documents/profiles/:profileId',
@@ -71,9 +71,7 @@ export const updateProfileRequest: MutationBlueprintFromTemplate<
 
 export const deleteProfileRequest: MutationBlueprintFromTemplate<
   '/admin/bidding-documents/profiles/:profileId',
-  void,
-  { profileId: string },
-  undefined
+  void
 > = {
   endpoint: '/admin/bidding-documents/profiles/:profileId',
   fetcher: async ({ finalUrl }) => {
@@ -84,9 +82,7 @@ export const deleteProfileRequest: MutationBlueprintFromTemplate<
 
 export const getProfileByIdRequest: QueryBlueprintFromTemplate<
   '/admin/bidding-documents/profiles/:profileId',
-  APIResponse<DocumentProfileDto>,
-  { profileId: string },
-  QueryKey
+  APIResponse<DocumentProfileDto>
 > = {
   endpoint: '/admin/bidding-documents/profiles/:profileId',
   key: ({ url }) => [url],

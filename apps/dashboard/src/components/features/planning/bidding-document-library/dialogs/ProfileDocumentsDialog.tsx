@@ -1,4 +1,5 @@
 import { Eye } from 'lucide-react'
+import type { MasterDoc, Profile } from '../types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -9,11 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { MasterDoc, Profile } from '../types'
 
 interface ProfileDocumentsDialogProps {
   profile: Profile | null
-  masterDocs: MasterDoc[]
+  masterDocs: Array<MasterDoc>
   open: boolean
   onOpenChange: (open: boolean) => void
   onViewTemplate: (doc: MasterDoc) => void
@@ -37,7 +37,14 @@ export function ProfileDocumentsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[760px] max-h-[88vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{profile?.name ?? 'Default Documents'}</DialogTitle>
+          <div className="flex items-center gap-2">
+            <DialogTitle>{profile?.name ?? 'Default Documents'}</DialogTitle>
+            {profile?.procurementCategory && (
+              <Badge variant="secondary" className="text-2xs">
+                {profile.procurementCategory}
+              </Badge>
+            )}
+          </div>
           <DialogDescription>
             Review the master documents bundled into this reusable checklist
             profile.

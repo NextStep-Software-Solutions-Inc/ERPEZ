@@ -8,6 +8,15 @@ import {
   Lock,
   Upload,
 } from 'lucide-react'
+import { getSortedChecklist } from '../utils'
+import { SupplierUploadDialog } from '../dialogs/SupplierUploadDialog'
+import { UploadedFileViewerDialog } from '../dialogs/UploadedFileViewerDialog'
+import type {
+  MasterDoc,
+  Project,
+  ProjectChecklistItem,
+  UploadedFileAttachment,
+} from '../types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -17,21 +26,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type {
-  MasterDoc,
-  Project,
-  ProjectChecklistItem,
-  UploadedFileAttachment,
-} from '../types'
-import { getSortedChecklist } from '../utils'
-import { SupplierUploadDialog } from '../dialogs/SupplierUploadDialog'
-import { UploadedFileViewerDialog } from '../dialogs/UploadedFileViewerDialog'
 
 interface PublicPortalTabProps {
-  projects: Project[]
-  currentProject: Project
+  projects: Array<Project>
+  currentProject: Project | null
   selectedProjectId: string
-  masterDocs: MasterDoc[]
+  masterDocs: Array<MasterDoc>
+  isLoading?: boolean
   onSelectedProjectChange: (projectId: string) => void
   onDownloadTemplate: (templateFile: string) => void
   onViewTemplate: (doc: MasterDoc) => void
@@ -103,6 +104,7 @@ export function PublicPortalTab({
   currentProject,
   selectedProjectId,
   masterDocs,
+  isLoading,
   onSelectedProjectChange,
   onDownloadTemplate,
   onViewTemplate,
@@ -123,6 +125,23 @@ export function PublicPortalTab({
       if (downloadTimerRef.current) clearTimeout(downloadTimerRef.current)
     }
   }, [])
+
+  if (isLoading) {
+    return (
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <span>Loading public portal preview...</span>
+      </div>
+    )
+  }
+
+  if (!currentProject) {
+    return (
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+        No projects found. Projects must be created before previewing the supplier portal.
+      </div>
+    )
+  }
 
   const sortedChecklist = getSortedChecklist(
     currentProject.checklist,
@@ -192,7 +211,7 @@ export function PublicPortalTab({
             Preview Project View:
           </span>
           <Select
-            value={selectedProjectId}
+            value={selectedProjectId || currentProject.id}
             onValueChange={onSelectedProjectChange}
           >
             <SelectTrigger className="w-[300px]">

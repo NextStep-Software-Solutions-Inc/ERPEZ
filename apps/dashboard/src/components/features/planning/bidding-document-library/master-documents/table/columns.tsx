@@ -1,9 +1,9 @@
-import type { ColumnDef } from '@tanstack/react-table'
 import { Edit, Eye, Trash2 } from 'lucide-react'
+import type { ColumnDef } from '@tanstack/react-table'
+import type { MasterDoc } from '../../types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import type { MasterDoc } from '../../types'
 
 interface Handlers {
   onViewTemplate: (doc: MasterDoc) => void
@@ -11,15 +11,24 @@ interface Handlers {
   onDelete: (doc: MasterDoc) => void
 }
 
-// Add this helper above the getColumns function
-const getTemplateFileName = (url: string): string => {
+// Resolves a human-readable display label for a template file URL.
+// If the stored URL is a /files/download/{uuid} path (i.e. the original
+// filename was never separately persisted), shows "Uploaded Template" so
+// a raw GUID is never surfaced to the user.
+const UUID_REGEX =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+
+const getTemplateDisplayName = (url: string): string => {
+  if (!url) return ''
   try {
     const decoded = decodeURIComponent(url)
     const lastSegment = decoded.split('/').pop() ?? url
+    // Raw UUID — filename was not persisted separately
+    if (UUID_REGEX.test(lastSegment)) return 'Uploaded Template'
+    // Blob name format: {uuid}_{originalName}
     const underscoreIndex = lastSegment.indexOf('_')
-    return underscoreIndex !== -1
-      ? lastSegment.slice(underscoreIndex + 1)
-      : lastSegment
+    if (underscoreIndex !== -1) return lastSegment.slice(underscoreIndex + 1)
+    return lastSegment
   } catch {
     return url
   }
@@ -29,7 +38,7 @@ export const getColumns = ({
   onViewTemplate,
   onEdit,
   onDelete,
-}: Handlers): ColumnDef<MasterDoc>[] => [
+}: Handlers): Array<ColumnDef<MasterDoc>> => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -87,7 +96,7 @@ export const getColumns = ({
     header: 'Blank Template File',
     cell: ({ row }) => {
       const doc = row.original
-      const displayName = getTemplateFileName(doc.templateFile)
+      const displayName = getTemplateDisplayName(doc.templateFile)
 
       return doc.templateFile ? (
         <Button

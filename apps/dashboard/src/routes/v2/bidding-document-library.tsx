@@ -3,7 +3,9 @@ import { z } from 'zod'
 import BiddingDocumentLibraryPage from '@/pages/planning/settings/bidding-document-library/BiddingDocumentLibraryPage'
 
 const searchSchema = z.object({
-  tab: z.enum(['SystemAdmin', 'BACSecretariat']).catch('SystemAdmin'),
+  tab: z
+    .enum(['SystemAdmin', 'BACSecretariat', 'PublicPortal'])
+    .catch('SystemAdmin'),
 })
 
 export const Route = createFileRoute('/v2/bidding-document-library')({
