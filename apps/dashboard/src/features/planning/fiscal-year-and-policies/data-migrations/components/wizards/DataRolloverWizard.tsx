@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import type { FiscalYear, DataRolloverOptions } from '@/lib/fiscal-year-and-policies/types';
+import { toast } from 'sonner';
+import { useQueryClient } from 'erpez-shared-lib';
+import { useRolloverFiscalYear } from '@/lib/fiscal-year-and-policies/requests/hooks/useRolloverFiscalYear';
 import RolloverStep1 from './steps/RolloverStep1';
 import RolloverStep2 from './steps/RolloverStep2';
 import RolloverStep3 from './steps/RolloverStep3';
@@ -48,6 +51,8 @@ interface ValidationErrors {
 }
 
 export default function DataRolloverWizard({ fiscalYears, onRolloverComplete }: DataRolloverWizardProps) {
+  const queryClient = useQueryClient();
+  const { mutateAsync: executeRollover } = useRolloverFiscalYear();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isRollingOver, setIsRollingOver] = useState(false);
@@ -167,23 +172,39 @@ export default function DataRolloverWizard({ fiscalYears, onRolloverComplete }: 
     }
 
     setIsRollingOver(true);
-    setRolloverProgress(0);
+    setRolloverProgress(20);
     setIsMinimized(false);
     setToastDismissedButRollingOver(false);
 
     try {
-      // Simulate rollover process
-      const interval = setInterval(() => {
-        setRolloverProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            return 100;
-          }
-          return prev + 10;
-        });
-      }, 300);
+      setRolloverProgress(40);
+      const response = await executeRollover({
+        pathParams: { id: formData.targetYearId },
+        payload: {
+          sourceFiscalYearId: formData.sourceYearId,
+          includeOrgStructure: formData.copyOrgStructure,
+          includeUACSLibrary: formData.copyUACSLibrary,
+          includeRecurringExpenses: formData.copyRecurringExpenses,
+        },
+      });
 
-      // Call the callback if provided
+      setRolloverProgress(85);
+
+      // Invalidate relevant queries so data refresh happens across views
+      void queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return (
+            typeof key === 'string' &&
+            (key.startsWith('/fiscal-years') ||
+              key.startsWith('/fund-sources') ||
+              key.startsWith('/uacs') ||
+              key.startsWith('/mfo-pap') ||
+              key.startsWith('/organizations'))
+          );
+        },
+      });
+
       if (onRolloverComplete) {
         await onRolloverComplete(formData.sourceYearId, formData.targetYearId, {
           copyOrgStructure: formData.copyOrgStructure,
@@ -192,15 +213,26 @@ export default function DataRolloverWizard({ fiscalYears, onRolloverComplete }: 
         });
       }
 
-      // Wait for progress to complete
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      // Set flag to indicate rollover is done (will trigger completion modal via useEffect)
+      setRolloverProgress(100);
       setIsRollingOver(false);
+
+      const result = response?.data;
+      const copiedSummary = result
+        ? `${result.totalRecordsCopied} total records copied (${result.fundSourcesCopied} fund sources, ${result.mfopapsCopied} MFO/PAPs, ${result.uacsCombinationsCopied} UACS combinations)`
+        : 'Data transfer completed successfully.';
+
+      toast.success('Rollover Completed', {
+        description: copiedSummary,
+      });
     } catch (error) {
       console.error('Rollover failed:', error);
       setIsRollingOver(false);
       setRolloverProgress(0);
+      const errorMsg =
+        error instanceof Error ? error.message : 'Failed to execute fiscal year rollover';
+      toast.error('Rollover Failed', {
+        description: errorMsg,
+      });
     }
   };
 

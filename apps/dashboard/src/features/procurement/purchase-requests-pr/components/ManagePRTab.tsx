@@ -30,6 +30,7 @@ import {
   Building2,
   Layers,
   Funnel,
+  Loader2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
@@ -73,7 +74,7 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
   }, [setIsManagePRView])
 
   // Use API hooks
-  const { data: prResponse } = usePurchaseRequests({ pathParams: {}, queryParams: { PageSize: 100 } })
+  const { data: prResponse, isLoading } = usePurchaseRequests({ pathParams: {}, queryParams: { PageSize: 100 } })
   const statusMutation = useUpdatePurchaseRequestStatus()
 
   // Map API response to frontend PurchaseRequest models (purely API-driven)
@@ -84,16 +85,16 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
       status: fromApiStatus(apiPr.status),
       headerDetails: {
         prNumber: apiPr.prNumber,
-        description: apiPr.description,
-        date: apiPr.requestedDate,
+        description: apiPr.description || '',
+        date: apiPr.requestedDate ? String(apiPr.requestedDate) : '',
         purpose: '',
-        officeId: apiPr.officeId,
-        officeName: apiPr.officeName,
+        officeId: '',
+        officeName: '',
       },
       items: [],
       totalAmount: apiPr.totalAmount,
-      createdAt: apiPr.createdDate,
-      updatedAt: apiPr.createdDate,
+      createdAt: apiPr.createdDate ? String(apiPr.createdDate) : '',
+      updatedAt: apiPr.createdDate ? String(apiPr.createdDate) : '',
       createdBy: '',
     } as PurchaseRequest))
   }, [prResponse])
@@ -348,7 +349,12 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
           <CardTitle>Purchase Requests</CardTitle>
         </CardHeader>
         <CardContent>
-          {submittedPRs.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span>Loading purchase requests...</span>
+            </div>
+          ) : submittedPRs.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-muted-foreground">No PRs to review</p>
             </div>

@@ -1,6 +1,8 @@
-﻿import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { BiddingMasterCalendarPage } from '@/features/procurement/bidding-master-calendar'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
   selectedResolutionId: z.string().optional(),
@@ -29,10 +31,15 @@ export function BiddingMasterCalendarRoute() {
   const search = Route.useSearch()
 
   return (
-    <BiddingMasterCalendarPage
-      selectedResolutionId={search.selectedResolutionId}
-      selectedEventId={search.selectedEventId}
-      drawerTab={search.drawerTab}
-    />
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.Bac.Manage}
+      message="You do not have permission to view the Bidding Master Calendar."
+    >
+      <BiddingMasterCalendarPage
+        selectedResolutionId={search.selectedResolutionId}
+        selectedEventId={search.selectedEventId}
+        drawerTab={search.drawerTab}
+      />
+    </RoutePermissionGuard>
   )
 }

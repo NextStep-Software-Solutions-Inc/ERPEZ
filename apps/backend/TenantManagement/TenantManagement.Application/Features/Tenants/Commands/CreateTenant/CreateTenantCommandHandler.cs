@@ -38,9 +38,19 @@ public sealed class CreateTenantCommandHandler(IUnitOfWork unitOfWork, ICurrentU
         var tenantMember = new TenantMember
         {
             UserId = currentUserService.UserId,
-            Role = TenantMemberRole.Owner,
+            ExternalIdentityId = currentUserService.UserId,
             Status = Status.Active
         };
+
+        var adminRole = await unitOfWork.RoleRepository.FindAsync(r => r.NormalizedName == "TENANT ADMINISTRATOR", cancellationToken);
+        if (adminRole != null)
+        {
+            tenantMember.RoleAssignments.Add(new TenantMemberRoleAssignment
+            {
+                RoleId = adminRole.Id
+            });
+        }
+
         tenant.TenantMembers.Add(tenantMember);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return ApiResponse<Guid>.Success(tenant.Id, "Tenant created successfully.");

@@ -1,14 +1,14 @@
-import { useUser } from "@clerk/react-router"
-import { GalleryVerticalEnd } from "lucide-react"
+import { useKeycloak } from "~/providers/KeycloakProvider";
+import { GalleryVerticalEnd } from "lucide-react";
 
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "~/components/ui/sidebar"
+} from "~/components/ui/sidebar";
 
 export function SuperAdminSidebarHeader() {
-  const { user } = useUser();
+  const { user } = useKeycloak();
 
   return (
     <SidebarMenu>
@@ -22,10 +22,10 @@ export function SuperAdminSidebarHeader() {
           </div>
           <div className="flex flex-col gap-0.5 leading-none w-auto">
             <span className="font-medium truncate max-w-[calc(100%-1rem)]">ERP Overview</span>
-            <span className="text-muted-foreground truncate max-w-[calc(100%-1rem)]">{user?.username}</span>
+            <span className="text-muted-foreground truncate max-w-[calc(100%-1rem)]">{user?.username || 'Super Administrator'}</span>
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

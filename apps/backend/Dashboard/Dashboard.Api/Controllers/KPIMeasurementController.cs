@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.KPIMeasurement.Commands.CreateKPIMeasurement;
 using ERPEZ.Application.Features.Planning.KPIMeasurement.Commands.UpdateKPIMeasurement;
 using ERPEZ.Application.Features.Planning.KPIMeasurement.Commands.DeleteKPIMeasurement;
@@ -12,6 +15,7 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("kpi-measurements")]
 [ApiController]
+[Authorize]
 public class KPIMeasurementController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -21,6 +25,7 @@ public class KPIMeasurementController(ISender mediator) : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.kpiUpdate)]
     public async Task<IActionResult> CreateKPIMeasurement([FromBody] CreateKPIMeasurementCommand command)
     {
         var result = await mediator.Send(command);
@@ -36,6 +41,7 @@ public class KPIMeasurementController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<KPIMeasurementResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Planning.kpiView)]
     public async Task<IActionResult> GetKPIMeasurements([FromQuery] GetKPIMeasurementsQuery query)
     {
         var result = await mediator.Send(query);
@@ -45,6 +51,7 @@ public class KPIMeasurementController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<KPIMeasurementResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<KPIMeasurementResponse>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiView)]
     public async Task<IActionResult> GetKPIMeasurementById(Guid id)
     {
         var result = await mediator.Send(new GetKPIMeasurementByIdQuery(id));
@@ -54,6 +61,7 @@ public class KPIMeasurementController(ISender mediator) : ControllerBase
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiUpdate)]
     public async Task<IActionResult> UpdateKPIMeasurement(Guid id, [FromBody] UpdateKPIMeasurementRequest dto)
     {
         var command = new UpdateKPIMeasurementCommand { Id = id, UpdateKPIMeasurement = dto };
@@ -64,6 +72,7 @@ public class KPIMeasurementController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiUpdate)]
     public async Task<IActionResult> DeleteKPIMeasurement(Guid id)
     {
         var result = await mediator.Send(new DeleteKPIMeasurementCommand(id));

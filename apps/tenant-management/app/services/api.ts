@@ -3,8 +3,8 @@ import {
   type APIResponse,
   type PaginationResponse,
   type AxiosError,
+  type AxiosResponse,
 } from "erpez-shared-lib";
-import type { AxiosResponse } from "erpez-shared-lib/dist/services/api";
 import { toast } from "sonner";
 import { extractErrorMessage, extractSuccessMessage } from "./utils/messages";
 
@@ -21,8 +21,26 @@ export const setAuthToken = (token: string | null) => {
 
 api.interceptors.request.use(
   (config) => {
-    if (authToken) {
-      config.headers.Authorization = `Bearer ${authToken}`;
+    let token = authToken;
+    let tenantId = "00000000-0000-0000-0000-000000000001";
+
+    if (typeof window !== "undefined") {
+      try {
+        const storedToken = localStorage.getItem("erpez_auth_token");
+        if (storedToken && storedToken.startsWith("ey")) {
+          token = storedToken;
+        }
+        tenantId = localStorage.getItem("erpez_tenant_id") || tenantId;
+      } catch {
+        // Ignore localStorage access errors
+      }
+    }
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (tenantId) {
+      config.headers["X-Tenant-Id"] = tenantId;
     }
     return config;
   },

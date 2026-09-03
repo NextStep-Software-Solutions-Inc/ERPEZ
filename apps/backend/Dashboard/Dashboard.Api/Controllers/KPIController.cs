@@ -1,20 +1,26 @@
 using ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
+using ERPEZ.Application.Features.Planning.KPI.Commands.DeleteKPI;
+using ERPEZ.Application.Features.Planning.KPI.Commands.UpdateKPI;
 using ERPEZ.Application.Features.Planning.KPI.Dtos;
-using ERPEZ.Shared.Common;
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using ERPEZ.Application.Features.Planning.KPI.Queries.GetKPIByIdQuery;
 using ERPEZ.Application.Features.Planning.KPI.Queries.GetKPIsQuery;
-using ERPEZ.Application.Features.Planning.KPI.Commands.UpdateKPI;
-using ERPEZ.Application.Features.Planning.KPI.Commands.DeleteKPI;
+using ERPEZ.Shared.Authorization;
+using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
     [Route("kpis")]
     [ApiController]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public class KPIController(ISender mediator) : ControllerBase
     {
         [HttpPost]
+        [HasPermission(Permissions.Planning.kpiCreate)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateKPI([FromBody] CreateKPICommand command)
@@ -28,6 +34,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
+        [HasPermission(Permissions.Planning.kpiView)]
         [ProducesResponseType(typeof(PaginatedApiResponse<KPIResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetKPIs([FromQuery] GetKPIsQuery query)
         {
@@ -36,6 +43,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [HasPermission(Permissions.Planning.kpiView)]
         [ProducesResponseType(typeof(ApiResponse<KPIDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetKPIById(Guid id)
@@ -45,6 +53,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [HasPermission(Permissions.Planning.kpiUpdate)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -56,6 +65,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [HasPermission(Permissions.Planning.kpiDelete)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteKPI(Guid id)

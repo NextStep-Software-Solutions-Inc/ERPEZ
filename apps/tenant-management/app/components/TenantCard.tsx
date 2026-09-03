@@ -48,7 +48,7 @@ export function TenantCard({
     const displayStatus = statusLabel(rawStatus);
     const displayAmount = tenant?.tenantSubscription?.amount ?? 0;
     const displayBilling =
-        tenant?.billingContactEmail ?? tenant?.tenantSetting?.billingContactEmail ?? billingProp ?? phone ?? "-";
+        tenant?.tenantSetting?.billingContactEmail ?? billingProp ?? phone ?? "-";
     const displayModules = modulesProp ?? [];
 
     const statusColor =

@@ -12,6 +12,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ITenantMemberRepository TenantMemberRepository { get; }
     public ITenantSubscriptionRepository TenantSubscriptionRepository { get; }
     public IModuleRepository ModuleRepository { get; }
+    public IRoleRepository RoleRepository { get; }
 
     private ICurrentUserService CurrentUser { get; }
 
@@ -23,7 +24,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         ITenantSubscriptionRepository tenantSubscriptionRepository,
         ITenantSettingRepository tenantSettingRepository,
         ICurrentUserService currentUser,
-        IModuleRepository moduleRepository)
+        IModuleRepository moduleRepository,
+        IRoleRepository roleRepository)
     {
         this.context = context ?? throw new ArgumentNullException(nameof(context));
         CurrentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
@@ -32,6 +34,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         TenantSettingRepository = tenantSettingRepository ?? throw new ArgumentNullException(nameof(tenantSettingRepository));
         ModuleRepository = moduleRepository ?? throw new ArgumentNullException(nameof(moduleRepository));
         TenantSubscriptionRepository = tenantSubscriptionRepository ?? throw new ArgumentNullException(nameof(tenantSubscriptionRepository));
+        RoleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
     }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

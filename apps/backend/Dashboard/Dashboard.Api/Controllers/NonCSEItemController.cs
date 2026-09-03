@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.NonCSEItem.Commands.UpdateNonCSEItem;
 using ERPEZ.Application.Features.Planning.NonCSEItem.Dtos;
 using ERPEZ.Application.Features.Planning.NonCSEItem.Queries.GetNonCSEItemById;
 using ERPEZ.Application.Features.Planning.NonCSEItem.Queries.GetNonCSEItems;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,9 +14,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("non-cse-items")]
 [ApiController]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class NonCSEItemController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateNonCSEItem([FromBody] CreateNonCSEItemCommand command)
@@ -28,6 +34,7 @@ public class NonCSEItemController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<NonCSEItemResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetNonCSEItems([FromQuery] GetNonCSEItemsQuery query)
     {
@@ -36,6 +43,7 @@ public class NonCSEItemController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(ApiResponse<NonCSEItemResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetNonCSEItemById(Guid id)
@@ -45,6 +53,7 @@ public class NonCSEItemController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -66,6 +75,7 @@ public class NonCSEItemController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteNonCSEItem(Guid id)

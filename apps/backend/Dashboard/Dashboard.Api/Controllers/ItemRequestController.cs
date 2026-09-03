@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.ItemRequest.Commands.CreateItemRequest;
 using ERPEZ.Application.Features.Planning.ItemRequest.Commands.DeleteItemRequest;
 using ERPEZ.Application.Features.Planning.ItemRequest.Commands.UpdateItemRequest;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("item-requests")]
 [ApiController]
+[Authorize]
 public class ItemRequestController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     public async Task<IActionResult> CreateItemRequest([FromBody] CreateItemRequestCommand command)
     {
         var result = await mediator.Send(command);
@@ -29,6 +34,7 @@ public class ItemRequestController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<ItemRequestResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     public async Task<IActionResult> GetItemRequests([FromQuery] GetItemRequestsQuery query)
     {
         var result = await mediator.Send(query);
@@ -38,6 +44,7 @@ public class ItemRequestController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<ItemRequestResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     public async Task<IActionResult> GetItemRequestById(Guid id)
     {
         var result = await mediator.Send(new GetItemRequestByIdQuery(id));
@@ -48,6 +55,7 @@ public class ItemRequestController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     public async Task<IActionResult> UpdateItemRequest(Guid id, [FromBody] UpdateItemRequestRequest dto)
     {
         var command = new UpdateItemRequestCommand
@@ -71,6 +79,7 @@ public class ItemRequestController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     public async Task<IActionResult> DeleteItemRequest(Guid id)
     {
         var command = new DeleteItemRequestCommand(id);

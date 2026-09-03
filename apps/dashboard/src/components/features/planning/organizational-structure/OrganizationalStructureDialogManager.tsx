@@ -7,6 +7,7 @@ import UpdateOfficeDialog from './dialog/UpdateOfficeDialog'
 import DeleteOfficeDialog from './dialog/DeleteOfficeDialog'
 import CreatePositionDialog from './dialog/CreatePositionDialog'
 import UpdatePositionDialog from './dialog/UpdatePositionDialog'
+import DeletePositionDialog from './dialog/DeletePositionDialog'
 import CreatePersonnelDialog from './dialog/CreatePersonnelDialog'
 import UpdatePersonnelDialog from './dialog/UpdatePersonnelDialog'
 import PMTBodyDialog from './dialog/PMTBodyDialog'
@@ -16,6 +17,7 @@ import {
   deleteOfficeDialogAtom,
   createPositionDialogAtom,
   updatePositionDialogAtom,
+  deletePositionDialogAtom,
   createPersonnelDialogAtom,
   updatePersonnelDialogAtom,
   pmtBodyDialogAtom,
@@ -55,6 +57,8 @@ export default function OrganizationalStructureDialogManager() {
   const setCreatePositionDialog = useSetAtom(createPositionDialogAtom)
   const updatePositionDialog = useAtomValue(updatePositionDialogAtom)
   const setUpdatePositionDialog = useSetAtom(updatePositionDialogAtom)
+  const deletePositionDialog = useAtomValue(deletePositionDialogAtom)
+  const setDeletePositionDialog = useSetAtom(deletePositionDialogAtom)
 
   // Personnel dialogs
   const createPersonnelDialog = useAtomValue(createPersonnelDialogAtom)
@@ -104,6 +108,13 @@ export default function OrganizationalStructureDialogManager() {
           setUpdatePositionDialog({ ...updatePositionDialog, isOpen: open })
         }
         positionId={updatePositionDialog.selectedId || undefined}
+      />
+      <DeletePositionDialog
+        open={deletePositionDialog.isOpen}
+        onOpenChange={(open) =>
+          setDeletePositionDialog({ ...deletePositionDialog, isOpen: open })
+        }
+        positionId={deletePositionDialog.selectedId || undefined}
       />
 
       {/* Personnel Dialogs */}

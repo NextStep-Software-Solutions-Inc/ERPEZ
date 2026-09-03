@@ -54,10 +54,20 @@ export function ProfileDialog({
     e.preventDefault()
     if (!name.trim()) return
 
+    const techCount = documentIds.filter(
+      (id) => masterDocs.find((d) => d.id === id)?.envelope === 1,
+    ).length
+    const finCount = documentIds.filter(
+      (id) => masterDocs.find((d) => d.id === id)?.envelope === 2,
+    ).length
+
     onSave({
       name,
       description,
       documentIds,
+      itemCount: documentIds.length,
+      techCount,
+      finCount,
     })
   }
 

@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.User.Commands.CreateUser;
 using ERPEZ.Application.Features.Planning.User.Commands.DeleteUser;
 using ERPEZ.Application.Features.Planning.User.Commands.UpdateUser;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("users")]
 [ApiController]
+[Authorize]
 public class UserController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Admin.usersManage)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserCommand command)
     {
         var result = await mediator.Send(command);
@@ -25,6 +30,7 @@ public class UserController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<UserResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Admin.usersManage)]
     public async Task<IActionResult> GetUsers([FromQuery] GetUsersQuery query)
     {
         var result = await mediator.Send(query);
@@ -34,6 +40,7 @@ public class UserController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<UserResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Admin.usersManage)]
     public async Task<IActionResult> GetUserById(Guid id)
     {
         var result = await mediator.Send(new GetUserByIdQuery(id));
@@ -44,6 +51,7 @@ public class UserController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Admin.usersManage)]
     public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest updateUser)
     {
         var request = new UpdateUserCommand
@@ -59,6 +67,7 @@ public class UserController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Admin.usersManage)]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
         var result = await mediator.Send(new DeleteUserCommand(id));

@@ -16,7 +16,7 @@ public class GetSalaryGradesQueryHandler(IUnitOfWork unitOfWork)
             PageSize = query.PageSize,
             Page = query.PageNumber,
             Filters = query.Filters,
-            Sorts = query.Sorts
+            Sorts = query.Sorts ?? "GradeNumber"
         };
 
         Expression<Func<Domain.Entities.Planning.SalaryGrade, SalaryGradeResponse>> projection = sg => new SalaryGradeResponse

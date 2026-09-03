@@ -32,11 +32,13 @@ function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 }).format(amount)
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr?: string) {
+  if (!dateStr || isNaN(Date.parse(dateStr))) return '—'
   return new Date(dateStr).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function daysUntil(dateStr: string) {
+function daysUntil(dateStr?: string) {
+  if (!dateStr || isNaN(Date.parse(dateStr))) return 30
   const diff = new Date(dateStr).getTime() - Date.now()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }

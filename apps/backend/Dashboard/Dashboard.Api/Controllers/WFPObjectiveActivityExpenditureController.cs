@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 ﻿using ERPEZ.Application.Features.Planning.WFPObjectiveActivityExpenditure.Commands.CreateWFPObjectiveActivityExpenditure;
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivityExpenditure.Commands.DeleteWFPObjectiveActivityExpenditure;
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivityExpenditure.Commands.UpdateWFPObjectiveActivityExpenditure;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("wfp-objective-activity-expenditures")]
     [ApiController]
-    public class WFPObjectiveActivityExpenditureController(ISender mediator) : ControllerBase
+    [Authorize]
+public class WFPObjectiveActivityExpenditureController(ISender mediator) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Planning.wfpUpdate)]
         public async Task<IActionResult> CreateWFPObjectiveActivityExpenditure([FromBody] CreateWFPObjectiveActivityExpenditureCommand command)
         {
             var result = await mediator.Send(command);
@@ -29,6 +34,7 @@ namespace ERPEZ.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<WFPObjectiveActivityExpenditureResponse>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Planning.wfpView)]
         public async Task<IActionResult> GetWFPObjectiveActivityExpenditures([FromQuery] GetWFPObjectiveActivityExpendituresQuery query)
         {
             var result = await mediator.Send(query);
@@ -38,6 +44,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<WFPObjectiveActivityExpenditureResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.wfpView)]
         public async Task<IActionResult> GetWFPObjectiveActivityExpenditureById(Guid id)
         {
             var result = await mediator.Send(new GetWFPObjectiveActivityExpenditureByIdQuery(id));
@@ -49,6 +56,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.wfpUpdate)]
         public async Task<IActionResult> UpdateWFPObjectiveActivityExpenditure(Guid id, [FromBody] UpdateWFPObjectiveActivityExpenditureRequest dto)
         {
             var command = new UpdateWFPObjectiveActivityExpenditureCommand
@@ -64,6 +72,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.wfpUpdate)]
         public async Task<IActionResult> DeleteWFPObjectiveActivityExpenditure(Guid id)
         {
             var command = new DeleteWFPObjectiveActivityExpenditureCommand(id);

@@ -116,13 +116,20 @@ export function RFQDetailsPage({
     setIsLoading(true)
     if (isSupplierPortal && supplierId) {
       try {
-        const [rfqRes, bidRes] = await Promise.allSettled([
-          api.get<{ data: any }>(`/api/supplier/rfqs/${rfqId}?supplierId=${supplierId}`),
-          api.get<{ data: any }>(`/api/supplier/rfqs/${rfqId}/my-bid?supplierId=${supplierId}`),
-        ])
+        const rfqRes = await api.get<{ data: any }>(`/api/supplier/rfqs/${rfqId}?supplierId=${supplierId}`)
+        const rfqData = rfqRes.data?.data
 
-        const rfqData = rfqRes.status === 'fulfilled' ? rfqRes.value.data.data : null
-        const bidData = bidRes.status === 'fulfilled' ? bidRes.value.data.data : null
+        let bidData = null
+        try {
+          const bidRes = await api.get<{ data: any }>(
+            `/api/supplier/rfqs/${rfqId}/my-bid?supplierId=${supplierId}`,
+            { skipToast: true } as any
+          )
+          bidData = bidRes.data?.data ?? null
+        } catch {
+          // Supplier bid might not exist yet; treat as normal empty state
+          bidData = null
+        }
 
         if (rfqData) {
           const bidItemMap = new Map((bidData?.items || []).map((b: any) => [b.rfqItemId, b]))
@@ -150,6 +157,7 @@ export function RFQDetailsPage({
                 description: it.itemName,
                 quantity: it.quantity,
                 unit: 'pcs',
+                unitOfMeasure: 'pcs',
                 unitPrice: it.unitPriceSnapshot,
                 totalAmount: it.totalABC,
                 category: it.category || 'General',
@@ -302,6 +310,28 @@ export function RFQDetailsPage({
     rfq.quotationStatus === 'submitted' && !rfq.quotationApprovalStatus
   const quotationIsApproved = rfq.quotationApprovalStatus === 'approved'
   const quotationIsReturned = rfq.quotationApprovalStatus === 'returned'
+
+  // Authoritative calculations for supplier bid & comparison
+  const totalRFQAmount = rfq.items.reduce(
+    (s: number, it: any) => s + (it.totalAmount || ((it.quantity || 0) * (it.unitPrice || 0)) || 0),
+    0
+  )
+  const hasAnyBid = rfq.items.some(
+    (it: any) => it.bidUnitPrice !== undefined && it.bidUnitPrice !== null && it.bidUnitPrice > 0
+  )
+  const isCompleteBid =
+    rfq.items.length > 0 &&
+    rfq.items.every((it: any) => it.bidUnitPrice !== undefined && it.bidUnitPrice !== null && it.bidUnitPrice > 0)
+  const totalBidAmount = rfq.items.reduce(
+    (s: number, it: any) =>
+      s + (it.bidTotalAmount !== undefined && it.bidTotalAmount !== null ? it.bidTotalAmount : (it.bidUnitPrice ? it.bidUnitPrice * it.quantity : 0)),
+    0
+  )
+  const overBudgetItemsCount = rfq.items.filter(
+    (it: any) => (it.bidUnitPrice || 0) > (it.unitPrice || 0) && (it.bidUnitPrice || 0) > 0
+  ).length
+  const isOverallWithinABC = totalBidAmount <= totalRFQAmount && overBudgetItemsCount === 0
+  const netSavings = totalRFQAmount - totalBidAmount
 
   // Precompute rendered table rows for items (keeps JSX cleaner and avoids parser issues)
   const monthsList = [
@@ -587,6 +617,151 @@ export function RFQDetailsPage({
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
+        </TableCell>
+      </TableRow>
+    )
+  })
+
+  // Explicit business language outcome renderer for supplier comparison
+  const renderSupplierResultStatus = (it: any) => {
+    const hasBid = it.bidUnitPrice !== undefined && it.bidUnitPrice !== null && it.bidUnitPrice > 0
+    if (!hasBid) {
+      return (
+        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-[11px] font-medium">
+          Pending Bid
+        </Badge>
+      )
+    }
+
+    const unitBid = it.bidUnitPrice
+    const unitABC = it.unitPrice || 0
+    const totalBid = it.bidTotalAmount ?? (unitBid * it.quantity)
+    const totalABC = it.totalAmount ?? (unitABC * it.quantity)
+    const lineSavings = totalABC - totalBid
+
+    if (unitBid > unitABC) {
+      const overAmount = totalBid - totalABC
+      return (
+        <div className="space-y-1">
+          <div className="text-sm font-semibold text-destructive">
+            ₱{overAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} over
+          </div>
+          <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5 uppercase tracking-wide font-semibold">
+            Exceeds ABC
+          </Badge>
+        </div>
+      )
+    }
+
+    if (unitBid === unitABC) {
+      return (
+        <div className="space-y-1">
+          <div className="text-sm font-medium text-slate-700">
+            ₱0.00 variance
+          </div>
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-slate-300 bg-slate-100 text-slate-700 uppercase tracking-wide font-semibold">
+            At ABC
+          </Badge>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-1">
+        <div className="text-sm font-semibold text-emerald-700">
+          ₱{lineSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} savings
+        </div>
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-emerald-300 bg-emerald-50 text-emerald-700 uppercase tracking-wide font-semibold">
+          Within ABC
+        </Badge>
+      </div>
+    )
+  }
+
+  // Precomputed hierarchical comparison rows for Supplier Portal
+  const supplierItemRows = filteredItems.map(({ it }: any) => {
+    return (
+      <TableRow key={it.id} className="hover:bg-slate-50/80 transition-colors">
+        {/* 1. Item & Description */}
+        <TableCell className="align-top py-3.5">
+          <div className="font-semibold text-slate-900 text-sm">{it.itemName}</div>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <Badge variant="outline" className="text-[11px] py-0 px-1.5 text-muted-foreground bg-slate-50 font-normal">
+              {it.category || 'General'}
+            </Badge>
+            {it.greenSpecification && (
+              <Badge variant="outline" className="text-[11px] py-0 px-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 font-normal" title={it.greenSpecification}>
+                Eco/Green
+              </Badge>
+            )}
+          </div>
+        </TableCell>
+
+        {/* 2. Qty & Unit */}
+        <TableCell className="align-top py-3.5 text-center">
+          <div className="font-bold text-slate-900 text-sm">{it.quantity}</div>
+          <div className="text-xs text-muted-foreground">{it.unitOfMeasure || it.unit || 'pcs'}</div>
+        </TableCell>
+
+        {/* 3. RFQ / ABC (Baseline) */}
+        <TableCell className="align-top py-3.5 bg-slate-50/60">
+          <div className="text-sm font-medium text-slate-700">
+            ₱{(it.unitPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <span className="text-xs text-muted-foreground font-normal"> / unit</span>
+          </div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            ₱{(it.totalAmount || ((it.quantity || 0) * (it.unitPrice || 0)) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} total
+          </div>
+        </TableCell>
+
+        {/* 4. YOUR BID (Dominant) */}
+        <TableCell className="align-top py-3.5 bg-indigo-50/30 border-l border-r border-indigo-100/60">
+          {it.bidUnitPrice ? (
+            <div>
+              <div className="text-sm font-bold text-indigo-950">
+                ₱{it.bidUnitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="text-xs text-indigo-700/80 font-normal"> / unit</span>
+              </div>
+              <div className="text-xs font-semibold text-indigo-900/80 mt-0.5">
+                ₱{(it.bidTotalAmount || (it.bidUnitPrice * it.quantity)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} total
+              </div>
+            </div>
+          ) : (
+            <span className="text-xs italic text-muted-foreground">— Not Quoted —</span>
+          )}
+        </TableCell>
+
+        {/* 5. Result & Outcome */}
+        <TableCell className="align-top py-3.5">
+          {renderSupplierResultStatus(it)}
+        </TableCell>
+
+        {/* 6. Details & Specs */}
+        <TableCell className="align-top py-3.5">
+          <div className="space-y-1 text-xs">
+            {(it.bidBrand || it.bidModel || it.bidColor) ? (
+              <div className="text-slate-700">
+                {it.bidBrand && <div><span className="text-muted-foreground">Brand:</span> {it.bidBrand}</div>}
+                {it.bidModel && <div><span className="text-muted-foreground">Model:</span> {it.bidModel}</div>}
+                {it.bidColor && <div><span className="text-muted-foreground">Color:</span> {it.bidColor}</div>}
+              </div>
+            ) : (
+              <span className="text-muted-foreground italic">No brand/model</span>
+            )}
+            {it.bidBrochureUrl && (
+              <div className="pt-1">
+                <a
+                  href={it.bidBrochureUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Brochure
+                </a>
+              </div>
+            )}
+          </div>
         </TableCell>
       </TableRow>
     )
@@ -1100,11 +1275,151 @@ export function RFQDetailsPage({
         </Card>
       )}
 
+      {/* Supplier Portal Quotation Summary Card */}
+      {isSupplierPortal && (
+        <Card className="border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-slate-50 to-purple-50/40 shadow-sm">
+          <CardHeader className="pb-3 border-b border-indigo-100/60">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  <DollarSign className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg text-indigo-950 font-bold">
+                    {rfq.quotationStatus === 'submitted' ? 'Submitted Quotation Summary' : 'Draft Quotation Summary'}
+                  </CardTitle>
+                  <CardDescription className="text-xs text-indigo-900/70">
+                    Comparison against Approved Budget for Contract (ABC)
+                  </CardDescription>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {rfq.quotationStatus === 'submitted' ? (
+                  <Badge className="bg-emerald-600 text-white font-semibold">
+                    SUBMITTED
+                  </Badge>
+                ) : hasAnyBid ? (
+                  <Badge variant="outline" className="border-amber-300 bg-amber-100/80 text-amber-800 font-semibold">
+                    DRAFT BID
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="border-slate-300 bg-slate-100 text-slate-600 font-semibold">
+                    NOT YET QUOTED
+                  </Badge>
+                )}
+                {(quotationIsPending || quotationIsReturned) && (
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8"
+                    onClick={() => setShowQuotationModal(true)}
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                    {hasAnyBid ? 'Edit Quotation' : 'Set Quotation'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Total Items */}
+              <div className="p-4 bg-white rounded-lg border border-indigo-100 shadow-xs">
+                <div className="text-xs text-muted-foreground font-medium mb-1">Total Items</div>
+                <div className="text-2xl font-bold text-slate-900">{rfq.items.length} item(s)</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {rfq.items.filter((it: any) => (it.bidUnitPrice || 0) > 0).length} of {rfq.items.length} quoted
+                </div>
+              </div>
+
+              {/* Total Quotation Amount vs Total RFQ ABC */}
+              <div className="p-4 bg-white rounded-lg border border-indigo-100 shadow-xs">
+                <div className="text-xs text-muted-foreground font-medium mb-1">
+                  {rfq.quotationStatus === 'submitted' ? 'Total Submitted Bid' : 'Total Draft Bid'}
+                </div>
+                <div className="text-2xl font-bold text-indigo-950">
+                  ₱{totalBidAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Allowed RFQ ABC: <span className="font-semibold text-slate-700">₱{totalRFQAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+
+              {/* Overall Budget Comparison Outcome */}
+              <div className={`p-4 bg-white rounded-lg border shadow-xs ${
+                !hasAnyBid
+                  ? 'border-slate-200'
+                  : isOverallWithinABC
+                  ? 'border-emerald-200 bg-emerald-50/30'
+                  : 'border-red-200 bg-red-50/30'
+              }`}>
+                <div className="text-xs text-muted-foreground font-medium mb-1">Budget Outcome</div>
+                {!hasAnyBid ? (
+                  <div>
+                    <div className="text-lg font-semibold text-slate-600">Pending Quotation</div>
+                    <div className="text-xs text-muted-foreground mt-1">Click Set Quotation to enter your bids</div>
+                  </div>
+                ) : isOverallWithinABC ? (
+                  <div>
+                    <div className="text-2xl font-bold text-emerald-700">
+                      ₱{netSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs font-semibold text-emerald-700 flex items-center gap-1 mt-1">
+                      <span>✓ Within Approved Budget (ABC)</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-2xl font-bold text-destructive">
+                      ₱{Math.abs(netSavings).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Over
+                    </div>
+                    <div className="text-xs font-semibold text-destructive flex items-center gap-1 mt-1">
+                      <span>⚠ {overBudgetItemsCount} item(s) exceed allowed ABC</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Explicit status banner */}
+            {hasAnyBid && (
+              <div className={`p-3 rounded-lg border flex items-center justify-between flex-wrap gap-2 text-xs font-medium ${
+                isOverallWithinABC
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-red-50 border-red-200 text-red-800'
+              }`}>
+                <div className="flex items-center gap-2">
+                  {isOverallWithinABC ? (
+                    <span>✓ Your {rfq.quotationStatus === 'submitted' ? 'submitted bid' : 'draft bid'} is <strong>₱{netSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} below</strong> the Approved Budget (ABC).</span>
+                  ) : (
+                    <span>⚠ Attention: Your bid exceeds the Approved Budget for {overBudgetItemsCount} item(s). Please review your unit bids before submitting.</span>
+                  )}
+                </div>
+                {isCompleteBid && (quotationIsPending || quotationIsReturned) && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowQuotationModal(true)}
+                    className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    Submit Quotation
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Items / Office PPMPs style section */}
       <Card>
         <CardHeader>
-          <CardTitle>Items</CardTitle>
-          <CardDescription>{rfq.items.length} item(s)</CardDescription>
+          <CardTitle>
+            {isSupplierPortal ? 'Items & Quotation Comparison' : 'Items'}
+          </CardTitle>
+          <CardDescription>
+            {isSupplierPortal
+              ? `${rfq.items.length} item(s) — Compare Approved Budget for Contract (ABC) with your quotation`
+              : `${rfq.items.length} item(s)`}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 mb-4">
@@ -1178,88 +1493,64 @@ export function RFQDetailsPage({
             </div>
           </div>
 
-          {/* Green Specification Information Alert */}
-          <Alert className="mb-4 border-blue-200 bg-blue-50">
-            <Info className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-sm text-blue-800">
-              <strong>Green Specification:</strong> Optional field to indicate
-              environmental or eco-friendly requirements for items (e.g.,
-              energy-efficient, recyclable materials, sustainable sourcing,
-              eco-certified products).
-            </AlertDescription>
-          </Alert>
+          {/* Green Specification Information Alert (Procurement view only) */}
+          {!isSupplierPortal && (
+            <Alert className="mb-4 border-blue-200 bg-blue-50">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm text-blue-800">
+                <strong>Green Specification:</strong> Optional field to indicate
+                environmental or eco-friendly requirements for items (e.g.,
+                energy-efficient, recyclable materials, sustainable sourcing,
+                eco-certified products).
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="rounded-md border bg-white">
             <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50">
-                  <TableHead className="text-sm font-medium text-slate-600">
-                    Item
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-slate-600">
-                    Category
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-slate-600">
-                    Fund
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-slate-600">
-                    Month
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-slate-600">
-                    Quantity
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-slate-600">
-                    Unit
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-slate-600">
-                    Unit Price
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-slate-600">
-                    Total
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-slate-600">
-                    Brochure
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-slate-600">
-                    Green Specification
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-slate-600"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>{itemRows}</TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* My Quotation - Show in supplier portal after quotation is submitted */}
-      {isSupplierPortal && rfq.quotationStatus === 'submitted' && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>My Quotation</CardTitle>
-                <CardDescription>
-                  Your submitted bid for this RFQ
-                </CardDescription>
-              </div>
-              <Badge className="bg-green-600">SUBMITTED</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {rfq.quotationSubmittedAt && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
-                Submitted on{' '}
-                {new Date(rfq.quotationSubmittedAt).toLocaleString()}
-              </div>
-            )}
-
-            <div className="rounded-md border bg-white">
-              <Table>
+              {isSupplierPortal ? (
+                <TableHeader>
+                  <TableRow className="bg-slate-50 border-b">
+                    <TableHead className="text-sm font-semibold text-slate-700 min-w-[220px]">
+                      Item & Description
+                    </TableHead>
+                    <TableHead className="text-sm font-semibold text-slate-700 text-center w-24">
+                      Qty & Unit
+                    </TableHead>
+                    <TableHead className="text-sm font-semibold text-slate-700 min-w-[160px] bg-slate-100/60">
+                      <div className="flex flex-col">
+                        <span>RFQ / ABC</span>
+                        <span className="text-[11px] font-normal text-muted-foreground">Unit / Total</span>
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-sm font-bold text-indigo-950 min-w-[160px] bg-indigo-50/50">
+                      <div className="flex flex-col">
+                        <span>YOUR BID {rfq.quotationStatus === 'submitted' ? '' : '(DRAFT)'}</span>
+                        <span className="text-[11px] font-normal text-indigo-700/80">Unit / Total</span>
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-sm font-semibold text-slate-700 min-w-[180px]">
+                      Result & Outcome
+                    </TableHead>
+                    <TableHead className="text-sm font-semibold text-slate-700 min-w-[140px]">
+                      Details & Specs
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+              ) : (
                 <TableHeader>
                   <TableRow className="bg-slate-50">
                     <TableHead className="text-sm font-medium text-slate-600">
                       Item
+                    </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Category
+                    </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Fund
+                    </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Month
                     </TableHead>
                     <TableHead className="text-sm font-medium text-slate-600">
                       Quantity
@@ -1268,98 +1559,28 @@ export function RFQDetailsPage({
                       Unit
                     </TableHead>
                     <TableHead className="text-sm font-medium text-slate-600">
-                      Model/Brand/Color
+                      Unit Price
                     </TableHead>
                     <TableHead className="text-sm font-medium text-slate-600">
-                      Unit Bid
-                    </TableHead>
-                    <TableHead className="text-sm font-medium text-slate-600">
-                      Total Bid
+                      Total
                     </TableHead>
                     <TableHead className="text-sm font-medium text-slate-600">
                       Brochure
                     </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Green Specification
+                    </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600"></TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {rfq.items
-                    .filter((item: any) => item.bidUnitPrice)
-                    .map((item: RFQItem) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">
-                          {item.itemName}
-                        </TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>{item.unitOfMeasure || '—'}</TableCell>
-                        <TableCell>
-                          {item.bidModel && item.bidBrand && item.bidColor ? (
-                            <div className="text-sm">
-                              <div>
-                                <strong>Model:</strong> {item.bidModel}
-                              </div>
-                              <div>
-                                <strong>Brand:</strong> {item.bidBrand}
-                              </div>
-                              <div>
-                                <strong>Color:</strong> {item.bidColor}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          ₱
-                          {(item.bidUnitPrice || 0).toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          ₱
-                          {(item.bidTotalAmount || 0).toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          {item.bidBrochureFileName ? (
-                            <a
-                              href={item.bidBrochureUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline text-sm flex items-center gap-1"
-                            >
-                              <FileText className="h-4 w-4" />
-                              {item.bidBrochureFileName}
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            <div className="mt-4 p-4 bg-slate-50 rounded-lg flex items-center justify-between">
-              <div className="text-lg font-semibold">
-                Total Quotation Amount:
-              </div>
-              <div className="text-2xl font-bold text-primary">
-                ₱
-                {rfq.items
-                  .reduce((sum: number, item: any) => sum + (item.bidTotalAmount || 0), 0)
-                  .toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              )}
+              <TableBody>
+                {isSupplierPortal ? supplierItemRows : itemRows}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Add Consolidated PR Modal */}
       <AddConsolidatedPRModal

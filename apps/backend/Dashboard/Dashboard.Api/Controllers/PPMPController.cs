@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.ConsolidatePPMPs;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.CreatePPMP;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.DeletePPMP;
@@ -18,11 +21,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("ppmps")]
 [ApiController]
+[Authorize]
 public class PPMPController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.ppmpCreate)]
     public async Task<IActionResult> CreatePPMP([FromBody] CreatePPMPCommand command)
     {
         var result = await mediator.Send(command);
@@ -35,6 +40,7 @@ public class PPMPController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<PPMPDetailedResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<IActionResult> GetPPMPs([FromQuery] GetPPMPsQuery query)
     {
         var result = await mediator.Send(query);
@@ -44,6 +50,7 @@ public class PPMPController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<PPMPDetailedResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<IActionResult> GetPPMPById(Guid id)
     {
         var result = await mediator.Send(new GetPPMPByIdQuery(id));
@@ -52,6 +59,7 @@ public class PPMPController(ISender mediator) : ControllerBase
 
     [HttpGet("by-office/{officeId}")]
     [ProducesResponseType(typeof(ApiResponse<List<PPMPDetailedResponse>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<IActionResult> GetPPMPsByOffice(Guid officeId, [FromQuery] GetPPMPsByOfficeQuery query)
     {
         var result = await mediator.Send(query with { OfficeId = officeId });
@@ -60,6 +68,7 @@ public class PPMPController(ISender mediator) : ControllerBase
 
     [HttpGet("by-fiscal-year/{fiscalYearId}")]
     [ProducesResponseType(typeof(ApiResponse<List<PPMPDetailedResponse>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<IActionResult> GetPPMPsByFiscalYear(Guid fiscalYearId, [FromQuery] GetPPMPsByFiscalYearQuery query)
     {
         var result = await mediator.Send(query with { FiscalYearId = fiscalYearId });
@@ -70,6 +79,7 @@ public class PPMPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpUpdate)]
     public async Task<IActionResult> UpdatePPMP(Guid id, [FromBody] UpdatePPMPRequest dto)
     {
         var command = new UpdatePPMPCommand(id, dto);
@@ -80,6 +90,7 @@ public class PPMPController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpUpdate)]
     public async Task<IActionResult> DeletePPMP(Guid id)
     {
         var command = new DeletePPMPCommand(id);
@@ -92,6 +103,7 @@ public class PPMPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpSubmit)]
     public async Task<IActionResult> UpdatePPMPStatus([FromBody] UpdatePPMPStatusCommand command)
     {
         var result = await mediator.Send(command);
@@ -101,6 +113,7 @@ public class PPMPController(ISender mediator) : ControllerBase
     [HttpPost("consolidate")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.ppmpConsolidate)]
     public async Task<IActionResult> ConsolidatePPMPs([FromBody] ConsolidatePPMPsCommand command)
     {
         var result = await mediator.Send(command);
@@ -110,6 +123,7 @@ public class PPMPController(ISender mediator) : ControllerBase
     [HttpGet("{id}/approval-history")]
     [ProducesResponseType(typeof(ApiResponse<List<ApprovalEventResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpReview)]
     public async Task<IActionResult> GetPPMPApprovalHistory(Guid id)
     {
         var result = await mediator.Send(new GetPPMPApprovalHistoryQuery(id));
@@ -120,6 +134,7 @@ public class PPMPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<List<ApprovalEventResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpReview)]
     public async Task<IActionResult> GetPPMPApprovalHistoryByBody([FromBody] GetPPMPApprovalHistoryRequest request)
     {
         var result = await mediator.Send(new GetPPMPApprovalHistoryQuery(request.PPMPId));

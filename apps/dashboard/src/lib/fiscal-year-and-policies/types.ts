@@ -426,6 +426,16 @@ export type SubOfficeCeiling = {
   fiscalYear: SubOfficeCeilingFiscalYear
 }
 
+// Item Category (CSE & Non-CSE items grouping)
+export type ItemCategory = {
+  id: string
+  name: string
+  description: string | null
+  isActive: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
 // Re-export procurement types
 export type {
   ProcurementCategory,

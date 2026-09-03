@@ -6,7 +6,9 @@ using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficeByIdQuery;
 using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficeHierarchy;
 using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficesQuery;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,11 +16,15 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("offices")]
     [ApiController]
+    [Authorize]
     public class OfficeController(ISender mediator) : ControllerBase
     {
         [HttpPost]
+        [HasPermission(Permissions.Admin.orgStructureManage)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateOffice([FromBody] CreateOfficeCommand command)
         {
             var office = await mediator.Send(command);
@@ -27,7 +33,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
+        [HasPermission(Permissions.Admin.orgStructureView)]
         [ProducesResponseType(typeof(PaginatedApiResponse<OfficeResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetOffices([FromQuery] GetOfficesQuery query)
         {
             var result = await mediator.Send(query);
@@ -35,8 +44,11 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [HasPermission(Permissions.Admin.orgStructureView)]
         [ProducesResponseType(typeof(ApiResponse<OfficeDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetOfficeById(Guid id)
         {
             var office = await mediator.Send(new GetOfficeByIdQuery(id));
@@ -44,9 +56,12 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [HasPermission(Permissions.Admin.orgStructureManage)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UpdateOffice(Guid id, [FromBody] UpdateOfficeRequest updateOffice)
         {
             var request = new UpdateOfficeCommand
@@ -60,8 +75,11 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [HasPermission(Permissions.Admin.orgStructureManage)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> DeleteOffice(Guid id)
         {
             var command = new DeleteOfficeCommand(id);
@@ -71,9 +89,12 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}/workflow")]
+        [HasPermission(Permissions.Admin.orgStructureManage)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UpdateOfficeWorkflow(Guid id, [FromBody] UpdateOfficeWorkflowCommand command)
         {
             command.Id = id;
@@ -82,8 +103,11 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("hierarchy")]
+        [HasPermission(Permissions.Admin.orgStructureView)]
         [ProducesResponseType(typeof(ApiResponse<List<OfficeHierarchyResponse>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<List<OfficeHierarchyResponse>>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetOfficeHierarchy([FromQuery] GetOfficeHierarchyQuery query)
         {
             var result = await mediator.Send(query);

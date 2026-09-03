@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.PPMPItem.Commands.CreatePPMPItem;
 using ERPEZ.Application.Features.Planning.PPMPItem.Commands.DeletePPMPItem;
 using ERPEZ.Application.Features.Planning.PPMPItem.Commands.UpdatePPMPItem;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("ppmp-items")]
 [ApiController]
+[Authorize]
 public class PPMPItemController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.ppmpUpdate)]
     public async Task<IActionResult> CreatePPMPItem([FromBody] CreatePPMPItemCommand command)
     {
         var result = await mediator.Send(command);
@@ -29,6 +34,7 @@ public class PPMPItemController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<PPMPItemResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<IActionResult> GetPPMPItems([FromQuery] GetPPMPItemsQuery query)
     {
         var result = await mediator.Send(query);
@@ -38,6 +44,7 @@ public class PPMPItemController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<PPMPItemResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpView)]
     public async Task<IActionResult> GetPPMPItemById(Guid id)
     {
         var result = await mediator.Send(new GetPPMPItemByIdQuery(id));
@@ -48,6 +55,7 @@ public class PPMPItemController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpUpdate)]
     public async Task<IActionResult> UpdatePPMPItem(Guid id, [FromBody] UpdatePPMPItemRequest dto)
     {
         var command = new UpdatePPMPItemCommand
@@ -80,6 +88,7 @@ public class PPMPItemController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpUpdate)]
     public async Task<IActionResult> DeletePPMPItem(Guid id)
     {
         var command = new DeletePPMPItemCommand(id);

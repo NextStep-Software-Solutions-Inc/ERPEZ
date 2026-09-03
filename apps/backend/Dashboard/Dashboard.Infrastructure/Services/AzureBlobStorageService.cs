@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using Azure.Storage.Sas;
 using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Enums;
 using Microsoft.Extensions.Logging;
@@ -138,6 +139,43 @@ public class AzureBlobStorageService : IFileStorageService
         var containerClient = blobServiceClient.GetBlobContainerClient(permanentContainer);
         var blobClient = containerClient.GetBlobClient(fileName);
         await blobClient.UploadAsync(stream, overwrite: true, cancellationToken);
+    }
+
+    public async Task<string> GetDownloadUrlAsync(Guid fileId, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
+    {
+        var duration = expiry ?? TimeSpan.FromMinutes(30);
+        var expiresOn = DateTimeOffset.UtcNow.Add(duration);
+
+        // 1. Check permanent container
+        var permanentContainerClient = blobServiceClient.GetBlobContainerClient(permanentContainer);
+        var permanentBlobs = permanentContainerClient.GetBlobsAsync(prefix: fileId.ToString(), cancellationToken: cancellationToken);
+        await foreach (var blobItem in permanentBlobs.WithCancellation(cancellationToken))
+        {
+            var blobClient = permanentContainerClient.GetBlobClient(blobItem.Name);
+            if (blobClient.CanGenerateSasUri)
+            {
+                var sasUri = blobClient.GenerateSasUri(BlobSasPermissions.Read, expiresOn);
+                return sasUri.ToString();
+            }
+            return $"/files/download/{fileId}";
+        }
+
+        // 2. Check temp container
+        var tempContainerClient = blobServiceClient.GetBlobContainerClient(tempContainer);
+        var tempBlobs = tempContainerClient.GetBlobsAsync(prefix: fileId.ToString(), cancellationToken: cancellationToken);
+        await foreach (var blobItem in tempBlobs.WithCancellation(cancellationToken))
+        {
+            var blobClient = tempContainerClient.GetBlobClient(blobItem.Name);
+            if (blobClient.CanGenerateSasUri)
+            {
+                var sasUri = blobClient.GenerateSasUri(BlobSasPermissions.Read, expiresOn);
+                return sasUri.ToString();
+            }
+            return $"/files/download/{fileId}";
+        }
+
+        // Default fallback
+        return $"/files/download/{fileId}";
     }
 
     public async Task DeletePermanentAsync(Guid fileId, CancellationToken cancellationToken = default)

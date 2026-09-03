@@ -6,6 +6,7 @@ public class UpdateTenantMemberDto
 {
     public Guid? TenantId { get; set; }
     public string? UserId { get; set; }
-    public TenantMemberRole? Role { get; set; }
+    public string? ExternalIdentityId { get; set; }
+    public List<Guid>? RoleIds { get; set; }
     public Status? Status { get; set; }
 }

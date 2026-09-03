@@ -16,7 +16,7 @@ public class GetPositionTypesQueryHandler(IUnitOfWork unitOfWork)
             PageSize = query.PageSize,
             Page = query.PageNumber,
             Filters = query.Filters,
-            Sorts = query.Sorts
+            Sorts = query.Sorts ?? "Name"
         };
 
         Expression<Func<Domain.Entities.Planning.PositionType, PositionTypeResponse>> projection = x => new PositionTypeResponse

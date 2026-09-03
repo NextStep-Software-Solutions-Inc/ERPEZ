@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("kpi-performance-measures")]
     [ApiController]
-    public class KPIPerformanceMeasureController(ISender mediator) : ControllerBase
+    [Authorize]
+public class KPIPerformanceMeasureController(ISender mediator) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Planning.kpiUpdate)]
         public async Task<IActionResult> CreateKPIPerformanceMeasure([FromBody] CreateKPIPerformanceMeasureRequest request)
         {
             var command = new CreateKPIPerformanceMeasureCommand
@@ -35,6 +40,7 @@ namespace ERPEZ.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<KPIPerformanceMeasureResponse>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Planning.kpiView)]
         public async Task<IActionResult> GetKPIPerformanceMeasures([FromQuery] GetKPIPerformanceMeasuresQuery query)
         {
             var result = await mediator.Send(query);
@@ -44,6 +50,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<KPIPerformanceMeasureDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.kpiView)]
         public async Task<IActionResult> GetKPIPerformanceMeasureById(Guid id)
         {
             var result = await mediator.Send(new GetKPIPerformanceMeasureByIdQuery(id));
@@ -54,6 +61,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.kpiUpdate)]
         public async Task<IActionResult> UpdateKPIPerformanceMeasure(Guid id, [FromBody] UpdateKPIPerformanceMeasureRequest dto)
         {
             var command = new UpdateKPIPerformanceMeasureCommand
@@ -69,6 +77,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.kpiUpdate)]
         public async Task<IActionResult> DeleteKPIPerformanceMeasure(Guid id)
         {
             var command = new DeleteKPIPerformanceMeasureCommand(id);

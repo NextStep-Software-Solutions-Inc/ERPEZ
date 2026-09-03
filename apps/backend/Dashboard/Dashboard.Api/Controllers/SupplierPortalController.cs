@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.SubmitSupplierBid;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Dtos;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetSupplierBid;
@@ -14,6 +17,7 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("api/supplier/rfqs")]
 [ApiController]
+[Authorize]
 public class SupplierPortalController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -21,6 +25,7 @@ public class SupplierPortalController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<List<SupplierRFQDto>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.supplierView)]
     public async Task<IActionResult> GetRFQInvitations([FromQuery] Guid supplierId)
     {
         var result = await mediator.Send(new GetSupplierRFQInvitationsQuery(supplierId));
@@ -33,6 +38,7 @@ public class SupplierPortalController(ISender mediator) : ControllerBase
     [HttpGet("{rfqId}")]
     [ProducesResponseType(typeof(ApiResponse<SupplierRFQDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.supplierView)]
     public async Task<IActionResult> GetRFQDetails(Guid rfqId, [FromQuery] Guid supplierId)
     {
         var result = await mediator.Send(new GetSupplierRFQDetailsQuery(rfqId, supplierId));
@@ -45,6 +51,7 @@ public class SupplierPortalController(ISender mediator) : ControllerBase
     [HttpGet("{rfqId}/my-bid")]
     [ProducesResponseType(typeof(ApiResponse<SupplierBidDetailDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.supplierView)]
     public async Task<IActionResult> GetMyBid(Guid rfqId, [FromQuery] Guid supplierId)
     {
         var result = await mediator.Send(new GetSupplierBidQuery(rfqId, supplierId));
@@ -57,6 +64,7 @@ public class SupplierPortalController(ISender mediator) : ControllerBase
     [HttpPost("{rfqId}/bids")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.supplierManage)]
     public async Task<IActionResult> SubmitBid(Guid rfqId, [FromBody] SubmitSupplierBidCommand command)
     {
         if (rfqId != command.RFQId)

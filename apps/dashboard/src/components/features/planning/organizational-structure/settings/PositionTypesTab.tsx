@@ -13,7 +13,7 @@ export function PositionTypesTab() {
   const [editingItem, setEditingItem] = useState<PositionTypeSetting | null>(null)
   const [deleteItem, setDeleteItem] = useState<PositionTypeSetting | null>(null)
 
-  const { data: response } = usePositionTypes({ pathParams: {}, queryParams: {} })
+  const { data: response } = usePositionTypes({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'name' } })
   const items = response?.data ?? []
 
   const actions: MetaActions = ['write', 'delete']

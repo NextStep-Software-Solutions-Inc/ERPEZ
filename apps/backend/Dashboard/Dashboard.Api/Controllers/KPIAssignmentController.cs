@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.CreateKPIAssignment;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.BulkCreateKPIAssignment;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.BulkUpdateKPIAssignmentLockStatus;
@@ -14,6 +17,7 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("kpi-assignments")]
 [ApiController]
+[Authorize]
 public class KPIAssignmentController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -23,6 +27,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.kpiAssign)]
     public async Task<IActionResult> CreateKPIAssignment([FromBody] CreateKPIAssignmentCommand command)
     {
         var result = await mediator.Send(command);
@@ -41,6 +46,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
     [HttpPost("bulk")]
     [ProducesResponseType(typeof(ApiResponse<BulkAssignmentResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<BulkAssignmentResult>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.kpiAssign)]
     public async Task<IActionResult> BulkCreateKPIAssignment([FromBody] List<KPIOfficeAssignmentRequest> assignments)
     {
         var command = new BulkCreateKPIAssignmentCommand(assignments);
@@ -59,6 +65,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
     [HttpPut("lock-status/bulk")]
     [ProducesResponseType(typeof(ApiResponse<BulkLockStatusUpdateResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<BulkLockStatusUpdateResult>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.kpiAssign)]
     public async Task<IActionResult> BulkUpdateKPIAssignmentLockStatus([FromBody] List<KPIOfficeLockStatusRequest> assignments)
     {
         var command = new BulkUpdateKPIAssignmentLockStatusCommand(assignments);
@@ -75,6 +82,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<KPIAssignmentResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Planning.kpiView)]
     public async Task<IActionResult> GetKPIAssignments([FromQuery] GetKPIAssignmentsQuery query)
     {
         var result = await mediator.Send(query);
@@ -84,6 +92,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<KPIAssignmentResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<KPIAssignmentResponse>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiView)]
     public async Task<IActionResult> GetKPIAssignmentById(Guid id)
     {
         var result = await mediator.Send(new GetKPIAssignmentByIdQuery(id));
@@ -93,6 +102,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiAssign)]
     public async Task<IActionResult> UpdateKPIAssignment(Guid id, [FromBody] UpdateKPIAssignmentCommand command)
     {
         var request = command with { Id = id };
@@ -103,6 +113,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiAssign)]
     public async Task<IActionResult> DeleteKPIAssignment(Guid id)
     {
         var result = await mediator.Send(new DeleteKPIAssignmentCommand(id));

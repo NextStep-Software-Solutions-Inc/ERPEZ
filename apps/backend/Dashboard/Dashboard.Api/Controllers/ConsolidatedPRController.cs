@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.ConsolidatedPR;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.ConsolidatedPR.RemovePRFromConsolidated;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Dtos;
@@ -15,6 +18,7 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("consolidated-prs")]
 [ApiController]
+[Authorize]
 public class ConsolidatedPRController(ISender mediator) : ControllerBase
 {
     // ── CRUD ─────────────────────────────────────────────────────────────────
@@ -22,6 +26,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> CreateConsolidatedPR(
         [FromBody] CreateConsolidatedPRRequest dto,
         CancellationToken cancellationToken)
@@ -35,6 +40,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<ConsolidatedPRSummaryResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetConsolidatedPRs(
         [FromQuery] GetConsolidatedPRsQuery query,
         CancellationToken cancellationToken)
@@ -45,6 +51,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
 
     [HttpGet("eligible-for-procurement")]
     [ProducesResponseType(typeof(ApiResponse<List<EligibleConsolidatedPRDto>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetEligibleConsolidatedPRs(CancellationToken cancellationToken)
     {
         var query = new ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetEligibleConsolidatedPRs.GetEligibleConsolidatedPRsQuery();
@@ -55,6 +62,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<ConsolidatedPRDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetConsolidatedPRById(
         Guid id, CancellationToken cancellationToken)
     {
@@ -69,6 +77,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> AddPRsToConsolidated(
         Guid id,
         [FromBody] AddPRsToConsolidatedRequest dto,
@@ -84,6 +93,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> RemovePRFromConsolidated(
         Guid id,
         Guid purchaseRequestId,
@@ -101,6 +111,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> UpdateConsolidatedPRItem(
         Guid id,
         Guid itemId,
@@ -119,6 +130,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> SubmitConsolidatedPR(
         Guid id, CancellationToken cancellationToken)
     {
@@ -131,6 +143,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> ApproveConsolidatedPR(
         Guid id, CancellationToken cancellationToken)
     {
@@ -143,6 +156,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> ReturnConsolidatedPR(
         Guid id,
         [FromBody] ReturnConsolidatedPRRequest dto,
@@ -158,6 +172,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     [HttpGet("{id}/eligible-prs")]
     [ProducesResponseType(typeof(ApiResponse<List<EligiblePRResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetEligiblePRsForCPR(
         Guid id, CancellationToken cancellationToken)
     {
@@ -171,6 +186,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet("for-rfq")]
     [ProducesResponseType(typeof(ApiResponse<List<ConsolidatedPrItemForRFQDto>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetForRfq()
     {
         var result = await mediator.Send(new GetConsolidatedPrItemsForRFQQuery());

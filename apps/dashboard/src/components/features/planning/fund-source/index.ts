@@ -1,4 +1,5 @@
 export * from './table'
 export * from './table/types'
 export * from './atoms'
+export * from './components/FundSourceCombobox'
 export { default as FundSourceDialogManager } from './FundSourceDialogManager'

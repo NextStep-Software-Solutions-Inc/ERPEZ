@@ -29,7 +29,9 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
 
   // Handle mop mapping
   let mop: ModeOfProcurement = 'public-bidding'
-  if (p.modeOfProcurement === 'Small Value Procurement' || p.modeOfProcurement === 'svp') {
+  const modeStr = (p.modeOfProcurement || '').toLowerCase()
+  const contractNo = (p.contractNo || '').toLowerCase()
+  if (modeStr.includes('small value') || modeStr.includes('svp') || modeStr.includes('53.9') || contractNo.startsWith('svp') || contractNo.includes('svp')) {
     mop = 'svp'
   }
 

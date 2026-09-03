@@ -5,7 +5,9 @@ using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Application.Features.Planning.Object.Queries.GetObjectById;
 using ERPEZ.Application.Features.Planning.Object.Queries.GetObjects;
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,10 +16,14 @@ namespace ERPEZ.Api.Controllers
     // Sets the route to 'objects'
     [Route("objects")]
     [ApiController]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     // Uses primary constructor injection for ISender (MediatR)
     public class ObjectController(ISender mediator) : ControllerBase
     {
         [HttpPost]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateObject([FromBody] CreateObjectCommand command)
@@ -32,6 +38,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
+        [HasPermission(Permissions.Finance.uacsView)]
         [ProducesResponseType(typeof(PaginatedApiResponse<ObjectResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetObjects([FromQuery] GetObjectsQuery query)
         {
@@ -40,6 +47,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [HasPermission(Permissions.Finance.uacsView)]
         [ProducesResponseType(typeof(ApiResponse<ObjectDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetObjectById(Guid id)
@@ -50,6 +58,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -66,6 +75,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteObject(Guid id)

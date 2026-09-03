@@ -1,3 +1,5 @@
+using ERPEZ.Shared.Authorization;
+using ERPEZ.Shared.Constants;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.ApproveAOB;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.AwardAOB;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.CreateAOB;
@@ -23,6 +25,7 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("aobs")]
 [ApiController]
+[Authorize]
 public class AOBController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -30,6 +33,7 @@ public class AOBController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<AOBResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> GetAOBs([FromQuery] GetAOBsQuery query)
     {
         var result = await mediator.Send(query);
@@ -42,6 +46,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<AOBDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> GetAOBById(Guid id)
     {
         var result = await mediator.Send(new GetAOBByIdQuery(id));
@@ -54,6 +59,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> CreateAOB([FromBody] CreateAOBCommand command)
     {
         var result = await mediator.Send(command);
@@ -67,6 +73,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> UpdateAOB(Guid id, [FromBody] UpdateAOBCommand command)
     {
         if (id != command.Id)
@@ -84,6 +91,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> DeleteAOB(Guid id)
     {
         var result = await mediator.Send(new DeleteAOBCommand(id));
@@ -97,6 +105,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> FinalizeRFQ(Guid id)
     {
         var result = await mediator.Send(new FinalizeRFQCommand(id));
@@ -118,6 +127,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> LinkRFQs(Guid id, [FromBody] LinkRFQsCommand command)
     {
         if (id != command.AOBId)
@@ -135,6 +145,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [HttpGet("{id}/matrix")]
     [ProducesResponseType(typeof(ApiResponse<AOBMatrixResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> GetAOBMatrix(Guid id)
     {
         var result = await mediator.Send(new GetAOBMatrixQuery(id));
@@ -148,6 +159,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> AwardAOB(Guid id, [FromBody] List<AwardItemInputDto> awardedItems)
     {
         var result = await mediator.Send(new AwardAOBCommand { AOBId = id, AwardedItems = awardedItems });
@@ -161,6 +173,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> SubmitAOB(Guid id, [FromBody] SubmitAOBCommand? command = null)
     {
         var result = await mediator.Send(new SubmitAOBCommand(id, command?.SubmittedBy));
@@ -174,6 +187,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> ApproveAOB(Guid id, [FromBody] ApproveAOBCommand command)
     {
         var result = await mediator.Send(command with { AOBId = id });
@@ -187,6 +201,7 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
     public async Task<IActionResult> ReturnAOB(Guid id, [FromBody] ReturnAOBCommand command)
     {
         var result = await mediator.Send(command with { AOBId = id });

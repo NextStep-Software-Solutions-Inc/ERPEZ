@@ -19,9 +19,9 @@ public class ModuleSeeder(IUnitOfWork unitOfWork) : IBaseSeeder
             },
             new()
             {
-                Key = "planning",
-                Name = "Planning",
-                Description = "Handles planning and scheduling of procurement and related processes.",
+                Key = "pbms",
+                Name = "Planning and Budget Management System",
+                Description = "Handles planning, budget preparation, and scheduling of procurement and related processes.",
                 IsActive = true
             },
             new()
@@ -41,17 +41,29 @@ public class ModuleSeeder(IUnitOfWork unitOfWork) : IBaseSeeder
         };
 
         var existingModules = await unitOfWork.ModuleRepository.Query()
-            .Select(m => m.Name)
             .ToListAsync(cancellationToken);
 
-        var newModules = modules
-            .Where(m => !existingModules.Any(e => e.Equals(m.Name, StringComparison.OrdinalIgnoreCase)))
-            .ToList();
-
-        if (newModules.Count != 0)
+        foreach (var def in modules)
         {
-            await unitOfWork.ModuleRepository.AddRangeAsync(newModules, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            var existing = existingModules.FirstOrDefault(e =>
+                e.Key.Equals(def.Key, StringComparison.OrdinalIgnoreCase) ||
+                (def.Key == "pbms" && (e.Key.Equals("planning", StringComparison.OrdinalIgnoreCase) || e.Name.Equals("Planning", StringComparison.OrdinalIgnoreCase))) ||
+                e.Name.Equals(def.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (existing == null)
+            {
+                await unitOfWork.ModuleRepository.AddAsync(def, cancellationToken);
+            }
+            else
+            {
+                existing.Key = def.Key;
+                existing.Name = def.Name;
+                existing.Description = def.Description;
+                existing.IsActive = def.IsActive;
+                unitOfWork.ModuleRepository.Update(existing);
+            }
         }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

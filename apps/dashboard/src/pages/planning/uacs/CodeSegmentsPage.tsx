@@ -30,15 +30,17 @@ export default function CodeSegmentsPage() {
       {/* Fiscal Year Selector */}
       <FiscalYearSelector />
 
-      <Tabs defaultValue="funding-source" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="funding-source">Funding Source</TabsTrigger>
-          <TabsTrigger value="organization">Organization</TabsTrigger>
-          <TabsTrigger value="location">Location</TabsTrigger>
-          <TabsTrigger value="mfo-pap">MFO/PAP</TabsTrigger>
-          <TabsTrigger value="expense-class">Expense Class</TabsTrigger>
-          <TabsTrigger value="object">Object Code</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="funding-source" className="w-full min-w-0">
+        <div className="overflow-x-auto w-full pb-1">
+          <TabsList className="grid w-full min-w-[640px] grid-cols-6">
+            <TabsTrigger value="funding-source">Funding Source</TabsTrigger>
+            <TabsTrigger value="organization">Organization</TabsTrigger>
+            <TabsTrigger value="location">Location</TabsTrigger>
+            <TabsTrigger value="mfo-pap">MFO/PAP</TabsTrigger>
+            <TabsTrigger value="expense-class">Expense Class</TabsTrigger>
+            <TabsTrigger value="object">Object Code</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="funding-source" className="space-y-4">
           <FundingSourceTab />
         </TabsContent>

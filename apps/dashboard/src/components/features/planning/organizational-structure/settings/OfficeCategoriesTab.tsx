@@ -15,7 +15,7 @@ export function OfficeCategoriesTab() {
 
   const { data: response } = useOfficeCategories({
     pathParams: {},
-    queryParams: {},
+    queryParams: { pageSize: 1000, sorts: 'name' },
   })
 
   const items = response?.data ?? []

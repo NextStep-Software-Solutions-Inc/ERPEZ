@@ -1,9 +1,7 @@
 using ERPEZ.Api;
 using ERPEZ.Api.Extensions;
 using ERPEZ.Application;
-using ERPEZ.Domain.Interfaces;
 using ERPEZ.Infrastructure;
-using ERPEZ.Infrastructure.Persistence.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.ConfigureAppConfiguration();
@@ -14,7 +12,7 @@ builder.ConfigureAppConfiguration();
 builder.Services.AddHttpClient("psdbm", c =>
 {
     c.Timeout = TimeSpan.FromSeconds(20);
-    c.DefaultRequestHeaders.UserAgent.ParseAdd("ERPEZ/1.0"); // ✅ fix #2
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("ERPEZ/1.0");
 });
 
 builder
@@ -22,16 +20,16 @@ builder
     .AddApplicationServices();
 
 await builder.AddInfrastructureServices();
+ERPEZ.TenantManagement.Infrastructure.DependencyInjection.AddInfrastructureServices(builder);
 
 var app = builder.Build();
-// Seed GPPB-standard procurement activity types (idempotent)
+
+// Seed master & prerequisite test data on startup (idempotent)
 using (var scope = app.Services.CreateScope())
 {
-    var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+    var unitOfWork = scope.ServiceProvider.GetRequiredService<ERPEZ.Domain.Interfaces.IUnitOfWork>();
     var dbContext = scope.ServiceProvider.GetRequiredService<ERPEZ.Infrastructure.Persistence.ApplicationDbContext>();
-    await ProcurementActivityTypeSeeder.SeedAsync(unitOfWork);
-    await ERPEZ.Infrastructure.Persistence.Seeders.ItemCategorySeeder.SeedAsync(dbContext);
-    await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedAsync(dbContext);
+    await ERPEZ.Infrastructure.Persistence.Seeders.ProcurementTestDataSeeder.SeedAllAsync(dbContext, unitOfWork);
 }
 
 app.UseApiMiddlewares();
@@ -39,3 +37,4 @@ app.UseApiMiddlewares();
 app.MapControllers();
 
 app.Run();
+

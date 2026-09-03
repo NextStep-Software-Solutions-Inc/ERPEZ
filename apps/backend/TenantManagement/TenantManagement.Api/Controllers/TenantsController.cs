@@ -1,3 +1,5 @@
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.DeleteTenant;
@@ -21,6 +23,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> CreateTenant([FromBody] CreateTenantCommand command)
         {
             var tenant = await mediator.Send(command);
@@ -34,6 +37,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [HttpGet]
         //[Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<TenantDto>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> GetTenants([FromQuery] GetTenantsQuery query)
         {
             var result = await mediator.Send(query);
@@ -44,6 +48,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> GetTenantById(Guid id)
         {
             var tenant = await mediator.Send(new GetTenantByIdQuery(id));
@@ -65,6 +70,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> UpdateTenant(Guid id, [FromBody] UpdateTenantDto updateTenant)
         {
             var request = new UpdateTenantCommand
@@ -81,6 +87,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> DeleteTenant(Guid id)
         {
             var command = new DeleteTenantCommand(id);

@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.KPITarget.Commands.CreateKPITarget;
 using ERPEZ.Application.Features.Planning.KPITarget.Commands.DeleteKPITarget;
 using ERPEZ.Application.Features.Planning.KPITarget.Commands.UpdateKPITarget;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("kpi-targets")]
     [ApiController]
-    public class KPITargetController(ISender mediator) : ControllerBase
+    [Authorize]
+public class KPITargetController(ISender mediator) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<KPITargetResponse>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<KPITargetResponse>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Planning.targetManage)]
         public async Task<IActionResult> CreateKPITarget([FromBody] CreateKPITargetCommand command)
         {
             var result = await mediator.Send(command);
@@ -29,6 +34,7 @@ namespace ERPEZ.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<KPITargetResponse>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Planning.kpiView)]
         public async Task<IActionResult> GetKPITargets([FromQuery] GetKPITargetsQuery query)
         {
             var result = await mediator.Send(query);
@@ -38,6 +44,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<KPITargetResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.kpiView)]
         public async Task<IActionResult> GetKPITargetById(Guid id)
         {
             var result = await mediator.Send(new GetKPITargetByIdQuery(id));
@@ -48,6 +55,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<KPITargetResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.targetManage)]
         public async Task<IActionResult> UpdateKPITarget(Guid id, [FromBody] UpdateKPITargetRequest dto)
         {
             var command = new UpdateKPITargetCommand
@@ -63,6 +71,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.targetManage)]
         public async Task<IActionResult> DeleteKPITarget(Guid id)
         {
             var command = new DeleteKPITargetCommand(id);
