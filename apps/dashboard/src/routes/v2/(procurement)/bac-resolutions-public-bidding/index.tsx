@@ -1,9 +1,9 @@
-﻿import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
-import { PublicBacResolutionsPage } from '@/features/procurement/bac-resolution/pages'
 
 const searchSchema = z.object({
   selectedResolutionId: z.string().optional(),
+  id: z.string().optional(),
   role: z.enum(['procurement-staff', 'bac-chairperson']).optional(),
 })
 
@@ -11,16 +11,15 @@ export const Route = createFileRoute(
   '/v2/(procurement)/bac-resolutions-public-bidding/',
 )({
   validateSearch: searchSchema,
-  component: PublicBacResolutionsRoute,
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: '/v2/bac-resolutions',
+      search: {
+        id: search.id || search.selectedResolutionId,
+      },
+      replace: true,
+    })
+  },
+  component: () => null,
 })
 
-function PublicBacResolutionsRoute() {
-  const search = Route.useSearch()
-
-  return (
-    <PublicBacResolutionsPage
-      selectedResolutionId={search.selectedResolutionId}
-      role={search.role}
-    />
-  )
-}
