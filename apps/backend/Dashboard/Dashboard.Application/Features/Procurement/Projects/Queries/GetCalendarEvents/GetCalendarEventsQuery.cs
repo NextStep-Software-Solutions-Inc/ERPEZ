@@ -12,5 +12,10 @@ public record GetCalendarEventsQuery : IRequest<ApiResponse<CalendarEventsWithSu
     public string? Search { get; init; }
     public DateTime? From { get; init; }
     public DateTime? To { get; init; }
+    public string? Office { get; init; }
+    public string? Category { get; init; }
+    public string? ScheduleStatus { get; init; }
+    public string? MilestoneKey { get; init; }
+    public int? FiscalYear { get; init; }
 }
 
