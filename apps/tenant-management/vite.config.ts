@@ -8,6 +8,12 @@ export default defineConfig({
   resolve: {
     dedupe: ["react", "react-dom"],
   },
+  optimizeDeps: {
+    include: ["react", "react-dom", "react-router", "@tanstack/react-query"],
+  },
+  server: {
+    port: 5173,
+  },
   build: {
     minify: false,
     sourcemap: true,

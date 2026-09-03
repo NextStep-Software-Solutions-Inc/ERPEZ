@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type Keycloak from 'keycloak-js'
 import keycloak from '@/auth/keycloak'
@@ -160,8 +160,12 @@ export function KeycloakProvider({
     return false
   }, [backendUrl])
 
+  const initializedRef = useRef(false)
+
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || initializedRef.current) return
+    initializedRef.current = true
+
     const init = async () => {
       let savedUser = 'dev_planner'
       try {
@@ -169,7 +173,11 @@ export function KeycloakProvider({
       } catch {
         // Fallback
       }
-      await loginAsDevUser(savedUser)
+
+      const stored = localStorage.getItem('erpez_auth_token')
+      if (!stored || !stored.startsWith('ey')) {
+        await loginAsDevUser(savedUser)
+      }
       setIsInitialized(true)
       if (onInitialized) onInitialized(true)
     }
