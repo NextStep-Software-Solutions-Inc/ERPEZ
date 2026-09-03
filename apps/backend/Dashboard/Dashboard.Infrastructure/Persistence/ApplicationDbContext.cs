@@ -3368,6 +3368,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(link => link.ResolutionClauseId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // BiddingActivitySchedule
+        modelBuilder.Entity<BiddingActivitySchedule>(entity =>
+        {
+            entity.HasOne(s => s.BACResolution)
+                .WithMany()
+                .HasForeignKey(s => s.BACResolutionId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
     }
 
     private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)

@@ -75,4 +75,5 @@ public class BiddingActivitySchedule : BaseEntity
     // Navigation properties
     public virtual ProcurementProject ProcurementProject { get; set; } = null!;
     public virtual ProcurementActivityType ProcurementActivityType { get; set; } = null!;
+    public virtual BACResolution? BACResolution { get; set; }
 }
