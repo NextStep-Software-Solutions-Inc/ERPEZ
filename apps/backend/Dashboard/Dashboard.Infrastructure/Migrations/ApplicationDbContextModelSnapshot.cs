@@ -5225,6 +5225,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -5236,6 +5239,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<int?>("MaxDays")
                         .HasColumnType("integer");
+
+                    b.Property<string>("MilestoneKey")
+                        .HasColumnType("text");
 
                     b.Property<int?>("MinDays")
                         .HasColumnType("integer");
@@ -8118,6 +8124,18 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("BACResolutionId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CompletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ConfirmedBy")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8134,11 +8152,26 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateOnly?>("IbPostingDate")
+                        .HasColumnType("date");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsLocked")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LockedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MilestoneKey")
+                        .HasColumnType("text");
+
+                    b.Property<int>("MilestoneOrder")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("OriginalEndDate")
                         .HasColumnType("timestamp with time zone");
@@ -8149,10 +8182,16 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("ProcurementActivityTypeId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ProcurementCategory")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("ProcurementProjectId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ScheduleStatus")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("StartDate")
@@ -9570,6 +9609,53 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("PsdbmSyncRuns", "procurement");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PublicHoliday", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PublicHolidays", "procurement");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PublicSupplierApplication", b =>
@@ -12465,7 +12551,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.PRItem", "PRItem")
-                        .WithMany()
+                        .WithMany("ConsolidatedPRItems")
                         .HasForeignKey("PRItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -13492,6 +13578,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("DocumentProfileItems");
 
                     b.Navigation("ProjectDocumentChecklists");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PRItem", b =>
+                {
+                    b.Navigation("ConsolidatedPRItems");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProcurementProject", b =>

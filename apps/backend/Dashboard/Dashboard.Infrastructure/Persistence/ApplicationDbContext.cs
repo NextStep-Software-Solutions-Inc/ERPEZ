@@ -124,6 +124,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<BACResolutionClauseLink>? BACResolutionClauseLinks { get; set; }
     public DbSet<BACMember>? BACMembers { get; set; }
     public DbSet<BiddingActivitySchedule>? BiddingActivitySchedules { get; set; }
+    public DbSet<PublicHoliday>? PublicHolidays { get; set; }
     public DbSet<SupplierBid>? SupplierBids { get; set; }
     public DbSet<SupplierBidItem>? SupplierBidItems { get; set; }
     public DbSet<AOB>? AOBs { get; set; }
