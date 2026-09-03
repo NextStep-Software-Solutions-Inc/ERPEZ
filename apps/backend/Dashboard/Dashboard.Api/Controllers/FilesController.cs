@@ -13,14 +13,31 @@ namespace ERPEZ.Api.Controllers;
 [Authorize]
 public class FilesController(IFileStorageService fileStorageService) : ControllerBase
 {
-    [AllowAnonymous]
+    private static readonly HashSet<string> allowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".jpg", ".jpeg", ".png", ".gif", ".zip"
+    };
+
+    private const long maxFileSizeBytes = 25 * 1024 * 1024; // 25 MB
+
+    /// <summary>
+    /// Authenticated upload endpoint for internal application attachments.
+    /// </summary>
     [HttpPost("upload")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Upload(IFormFile file)
     {
         if (file == null || file.Length == 0)
             return BadRequest(ApiResponse<Guid>.Fail("No file provided."));
+
+        if (file.Length > maxFileSizeBytes)
+            return BadRequest(ApiResponse<Guid>.Fail($"File size exceeds the maximum limit of {maxFileSizeBytes / (1024 * 1024)}MB."));
+
+        var extension = Path.GetExtension(file.FileName);
+        if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension))
+            return BadRequest(ApiResponse<Guid>.Fail("Unsupported file type."));
 
         using var stream = file.OpenReadStream();
         var fileId = await fileStorageService.UploadTempAsync(stream, file.FileName);
@@ -28,9 +45,57 @@ public class FilesController(IFileStorageService fileStorageService) : Controlle
         return Ok(ApiResponse<Guid>.Success(fileId, "File uploaded successfully."));
     }
 
+    /// <summary>
+    /// Public upload endpoint dedicated for unauthenticated portal submissions (e.g., BAC supplier applications).
+    /// </summary>
     [AllowAnonymous]
+    [HttpPost("public/upload")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> PublicUpload(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(ApiResponse<Guid>.Fail("No file provided."));
+
+        if (file.Length > maxFileSizeBytes)
+            return BadRequest(ApiResponse<Guid>.Fail($"File size exceeds the maximum limit of {maxFileSizeBytes / (1024 * 1024)}MB."));
+
+        var extension = Path.GetExtension(file.FileName);
+        if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension))
+            return BadRequest(ApiResponse<Guid>.Fail("Unsupported file type."));
+
+        using var stream = file.OpenReadStream();
+        var fileId = await fileStorageService.UploadTempAsync(stream, file.FileName);
+
+        return Ok(ApiResponse<Guid>.Success(fileId, "File uploaded successfully."));
+    }
+
+    /// <summary>
+    /// Generates a short-lived pre-signed (SAS) download URL for direct access to cloud storage.
+    /// </summary>
+    [HttpGet("{fileId}/download-url")]
+    [HttpGet("download/{fileId}/url")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetDownloadUrl(Guid fileId, [FromQuery] int expiryMinutes = 30)
+    {
+        var duration = TimeSpan.FromMinutes(Math.Clamp(expiryMinutes, 5, 120));
+        var downloadUrl = await fileStorageService.GetDownloadUrlAsync(fileId, duration);
+
+        return Ok(ApiResponse<object>.Success(new
+        {
+            FileId = fileId,
+            Url = downloadUrl,
+            ExpiresAt = DateTimeOffset.UtcNow.Add(duration)
+        }));
+    }
+
+    /// <summary>
+    /// Authenticated proxy download stream.
+    /// </summary>
     [HttpGet("download/{fileId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Download(Guid fileId)
     {
