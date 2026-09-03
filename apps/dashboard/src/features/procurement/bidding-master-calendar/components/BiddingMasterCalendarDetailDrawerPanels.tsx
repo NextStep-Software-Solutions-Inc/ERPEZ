@@ -1,4 +1,4 @@
-﻿import { format, isBefore, parseISO, startOfDay } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -18,7 +18,7 @@ import type {
   BiddingMasterCalendarConflictGroup,
   BiddingMasterCalendarEvent,
 } from '../types'
-import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/data/mockBiddingScheduleData'
+import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -137,8 +137,9 @@ export function DrawerProjectDetailTab({
               {selectedEvent.primaryProjectName}
             </div>
             <div className="text-sm text-muted-foreground">
-              {selectedResolution.bacResolutionNumber} •{' '}
-              {selectedEvent.officeLabel}
+              {selectedResolution?.resolutionNumber ??
+                selectedEvent.bacResolutionNumber}{' '}
+              • {selectedEvent.officeLabel}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -158,15 +159,16 @@ export function DrawerProjectDetailTab({
             </div>
             <div className="mt-1 text-lg font-semibold">
               {projectOverride?.contractId ??
-                selectedResolution.bacResolutionNumber}
+                selectedResolution?.resolutionNumber ??
+                selectedEvent.bacResolutionNumber}
             </div>
           </div>
           <div className="rounded-xl border border-default-200 bg-default-50/50 p-4">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              Approved budget for contract
+              Procurement Office
             </div>
             <div className="mt-1 text-lg font-semibold">
-              PHP {selectedResolution.totalAmount.toLocaleString()}
+              {selectedEvent.officeLabel}
             </div>
           </div>
           <div className="rounded-xl border border-default-200 bg-default-50/50 p-4">
