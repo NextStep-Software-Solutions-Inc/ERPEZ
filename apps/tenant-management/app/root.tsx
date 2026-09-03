@@ -1,15 +1,12 @@
-
-import { ClerkProvider } from '@clerk/react-router'
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router'
 import type { Route } from './+types/root'
 import stylesheet from './app.css?url'
-import * as erpSharedLib from 'erpez-shared-lib'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Toaster } from 'sonner'
+import { KeycloakProvider } from './providers/KeycloakProvider'
 import { AuthProvider } from './providers/AuthProvider'
 
-const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string
-
-const { Provider: QueryClientProvider } = erpSharedLib;
 export const links: Route.LinksFunction = () => [
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   {
@@ -43,17 +40,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000,
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  )
+
   return (
-    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
-      <QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <KeycloakProvider>
         <AuthProvider>
           <main>
             <Outlet />
             <Toaster position="bottom-right" richColors />
           </main>
         </AuthProvider>
-      </QueryClientProvider>
-    </ClerkProvider >
+      </KeycloakProvider>
+    </QueryClientProvider>
   )
 }
 

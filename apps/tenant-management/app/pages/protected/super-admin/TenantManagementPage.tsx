@@ -65,7 +65,7 @@ export default function TenantManagementPage() {
                         key={tenant.id}
                         id={tenant.id}
                         name={tenant.name}
-                        phone={tenant.billingContactEmail || "N/A"}
+                        phone={tenant.tenantSetting?.billingContactEmail || "N/A"}
                         plan={tenant.tenantSubscription?.plan}
                         tenantStatus={tenant.tenantSubscription?.status}
                         revenue={tenant.tenantSubscription?.amount ?? 0}
