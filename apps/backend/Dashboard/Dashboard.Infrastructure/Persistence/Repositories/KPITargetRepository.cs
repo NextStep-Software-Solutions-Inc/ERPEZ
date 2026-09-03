@@ -3,10 +3,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
 
-#pragma warning disable CS9107 // Parameter is captured into the state of the enclosing type
-public class KPITargetRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) : Repository<Domain.Entities.Planning.KPITarget>(context, sieveProcessor), Domain.Interfaces.IKPITargetRepository
-#pragma warning restore CS9107
+public class KPITargetRepository : Repository<Domain.Entities.Planning.KPITarget>, Domain.Interfaces.IKPITargetRepository
 {
+    private readonly ApplicationDbContext context;
+
+    public KPITargetRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
+        : base(context, sieveProcessor)
+    {
+        this.context = context;
+    }
     public async Task<(Domain.Entities.Planning.KPITarget? KPITarget, decimal TotalAllocated)> GetKPITargetWithTotalAllocatedAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var result = await context.KPITargets!
