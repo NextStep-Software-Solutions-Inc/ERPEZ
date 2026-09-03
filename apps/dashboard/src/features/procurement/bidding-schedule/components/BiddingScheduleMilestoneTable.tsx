@@ -1,25 +1,15 @@
-import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { AlertTriangle, CheckCircle2, Pencil, RotateCcw } from 'lucide-react'
-import { EditMilestoneDialog } from '../dialogs/EditMilestoneDialog'
-import {
-  MOCK_HOLIDAYS_2026,
-  MOCK_INTERVAL_CONFIGS,
-} from '../data/mockBiddingScheduleData'
 import {
   formatScheduleTime,
-  getAllowedWindow,
   getEffectiveMilestoneDate,
-  getMilestoneExecutionLabel,
-  getMilestoneExecutionTone,
   resolveMilestoneExecutionStatus,
 } from '../utils/milestonePresentation'
 import type {
   BiddingMilestone,
   BiddingSchedule,
-  SetMilestoneCompletionPayload,
 } from '../types'
-import { Badge } from '@/components/ui/badge'
+import { MilestoneExecutionStatusBadge } from './MilestoneExecutionStatusBadge'
 import { Button } from '@/components/ui/button'
 import {
   HoverCard,
@@ -44,24 +34,17 @@ import { cn } from '@/lib/utils'
 
 interface BiddingScheduleMilestoneTableProps {
   schedule: BiddingSchedule
-  /** Passed to the edit handler. Defaults to 'current-user' in mock context. */
-  currentUser?: string
   highlightMilestoneKey?: string
-  /**
-   * When provided, edit clicks are delegated upward instead of opening the
-   * table's own internal dialog. The parent is responsible for rendering
-   * EditMilestoneDialog. When omitted the table manages its own edit state.
-   */
   onEditMilestone?: (milestone: BiddingMilestone) => void
-  onSetMilestoneCompletion?: (
-    payload: SetMilestoneCompletionPayload,
-  ) => Promise<void> | void
+  onToggleMilestoneCompletion?: (
+    milestone: BiddingMilestone,
+    completed: boolean,
+  ) => void
 }
 
 /**
  * Returns true when an edited (overrideDate-bearing) milestone's overrideDate
  * is strictly earlier than its own cascaded computedDate — a downstream conflict.
- * Uses ISO string comparison which is safe for YYYY-MM-DD values.
  */
 function hasConflict(milestone: BiddingMilestone): boolean {
   if (!milestone.overrideDate) return false
@@ -86,21 +69,14 @@ function formatTimestamp(isoTs: string): string {
 
 export function BiddingScheduleMilestoneTable({
   schedule,
-  currentUser = 'current-user',
   highlightMilestoneKey,
   onEditMilestone,
-  onSetMilestoneCompletion,
+  onToggleMilestoneCompletion,
 }: BiddingScheduleMilestoneTableProps) {
-  // Internal edit state is only used in standalone mode (no onEditMilestone callback).
-  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(
-    null,
-  )
-
   const { milestones } = schedule
   const isDraft = schedule.status === 'draft'
   const isConfirmed = schedule.status === 'confirmed'
   const showActions = schedule.status !== 'locked'
-  const intervalConfig = MOCK_INTERVAL_CONFIGS[schedule.procurementCategory]
 
   if (milestones.length === 0) {
     return (
@@ -109,19 +85,6 @@ export function BiddingScheduleMilestoneTable({
         populate the timeline.
       </div>
     )
-  }
-
-  const editingMilestone =
-    editingMilestoneId != null
-      ? (milestones.find((m) => m.id === editingMilestoneId) ?? null)
-      : null
-
-  const handleEditClick = (milestone: BiddingMilestone) => {
-    if (onEditMilestone) {
-      onEditMilestone(milestone)
-    } else {
-      setEditingMilestoneId(milestone.id)
-    }
   }
 
   return (
@@ -134,27 +97,13 @@ export function BiddingScheduleMilestoneTable({
               <TableHead>Milestone</TableHead>
               <TableHead>Schedule Date</TableHead>
               <TableHead>Status</TableHead>
-              {showActions && <TableHead className="w-44">Actions</TableHead>}
+              {showActions && <TableHead className="w-44 text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {milestones.map((milestone, index) => {
+            {milestones.map((milestone) => {
               const conflict = hasConflict(milestone)
               const executionStatus = resolveMilestoneExecutionStatus(milestone)
-              const previousEffectiveDate =
-                index === 0
-                  ? schedule.ibPostingDate
-                  : getEffectiveMilestoneDate(milestones[index - 1])
-              const intervalEntry = intervalConfig.milestones[index]
-              const allowedWindow =
-                index === 0 || !intervalEntry
-                  ? null
-                  : getAllowedWindow({
-                      previousEffectiveDate,
-                      minDaysFromPrevious: intervalEntry.minDaysFromPrevious,
-                      maxDaysFromPrevious: intervalEntry.maxDaysFromPrevious,
-                      holidays: MOCK_HOLIDAYS_2026,
-                    })
               const effectiveDate = getEffectiveMilestoneDate(milestone)
               const hasOverride = Boolean(milestone.overrideDate)
 
@@ -188,8 +137,7 @@ export function BiddingScheduleMilestoneTable({
                           <TooltipContent color="warning" side="right">
                             Override date ({milestone.overrideDate}) is earlier
                             than the cascaded computed date (
-                            {milestone.computedDate}). Consider updating this
-                            milestone.
+                            {milestone.computedDate}).
                           </TooltipContent>
                         </Tooltip>
                       )}
@@ -198,25 +146,19 @@ export function BiddingScheduleMilestoneTable({
 
                   {/* Computed date */}
                   <TableCell className="text-default-600">
-                    {hasOverride ? (
-                      <div className="flex items-start gap-1.5">
-                        <div className="space-y-0.5">
-                          <div className="font-medium text-default-800">
-                            {formatDisplayDate(effectiveDate)}
-                            {milestone.time && (
-                              <span className="text-muted-foreground">
-                                {' '}
-                                • {formatScheduleTime(milestone.time)}
-                              </span>
-                            )}
-                          </div>
-                          {allowedWindow ? (
-                            <div className="text-xs text-muted-foreground">
-                              Window: {format(allowedWindow.start, 'MMM d')} –{' '}
-                              {format(allowedWindow.end, 'MMM d, yyyy')}
-                            </div>
-                          ) : null}
+                    <div className="flex items-start gap-1.5">
+                      <div className="space-y-0.5">
+                        <div className="font-medium text-default-800">
+                          {formatDisplayDate(effectiveDate)}
+                          {milestone.time && (
+                            <span className="text-muted-foreground">
+                              {' '}
+                              • {formatScheduleTime(milestone.time)}
+                            </span>
+                          )}
                         </div>
+                      </div>
+                      {hasOverride && (
                         <HoverCard openDelay={150}>
                           <HoverCardTrigger asChild>
                             <button
@@ -285,61 +227,25 @@ export function BiddingScheduleMilestoneTable({
                             </div>
                           </HoverCardContent>
                         </HoverCard>
-                      </div>
-                    ) : index === 0 ? (
-                      <div className="space-y-0.5">
-                        <div className="font-medium text-default-800">
-                          {formatDisplayDate(effectiveDate)}
-                          {milestone.time && (
-                            <span className="text-muted-foreground">
-                              {' '}
-                              • {formatScheduleTime(milestone.time)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-0.5">
-                        <div className="font-medium text-default-800">
-                          {formatDisplayDate(effectiveDate)}
-                          {milestone.time && (
-                            <span className="text-muted-foreground">
-                              {' '}
-                              • {formatScheduleTime(milestone.time)}
-                            </span>
-                          )}
-                        </div>
-                        {allowedWindow ? (
-                          <div className="text-xs text-muted-foreground">
-                            Window: {format(allowedWindow.start, 'MMM d')} –{' '}
-                            {format(allowedWindow.end, 'MMM d, yyyy')}
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </TableCell>
 
                   {/* Status badge */}
                   <TableCell>
-                    <Badge
-                      variant="outline"
-                      color={getMilestoneExecutionTone(executionStatus)}
-                      className="whitespace-nowrap"
-                    >
-                      {getMilestoneExecutionLabel(executionStatus)}
-                    </Badge>
+                    <MilestoneExecutionStatusBadge status={executionStatus} />
                   </TableCell>
 
                   {/* Actions */}
                   {showActions && (
                     <TableCell>
                       <div className="flex flex-wrap justify-end gap-2">
-                        {isDraft && milestone.order !== 0 ? (
+                        {isDraft && milestone.order !== 0 && onEditMilestone ? (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="gap-2"
-                            onClick={() => handleEditClick(milestone)}
+                            onClick={() => onEditMilestone(milestone)}
                             aria-label={`Edit ${milestone.name}`}
                           >
                             <Pencil className="h-4 w-4" />
@@ -347,18 +253,16 @@ export function BiddingScheduleMilestoneTable({
                           </Button>
                         ) : null}
 
-                        {isConfirmed && onSetMilestoneCompletion ? (
+                        {isConfirmed && onToggleMilestoneCompletion ? (
                           <Button
                             variant="outline"
                             size="sm"
                             className="gap-2"
                             onClick={() =>
-                              void onSetMilestoneCompletion({
-                                scheduleId: schedule.id,
-                                milestoneId: milestone.id,
-                                completed: milestone.completedAt == null,
-                                updatedBy: currentUser,
-                              })
+                              onToggleMilestoneCompletion(
+                                milestone,
+                                milestone.completedAt == null,
+                              )
                             }
                           >
                             {milestone.completedAt ? (
@@ -383,20 +287,6 @@ export function BiddingScheduleMilestoneTable({
           </TableBody>
         </Table>
       </div>
-
-      {/* Standalone mode: render own dialog when no onEditMilestone callback is provided */}
-      {!onEditMilestone && editingMilestone && (
-        <EditMilestoneDialog
-          open={editingMilestoneId !== null}
-          onOpenChange={(open) => {
-            if (!open) setEditingMilestoneId(null)
-          }}
-          schedule={schedule}
-          milestone={editingMilestone}
-          currentUser={currentUser}
-          onSuccess={() => setEditingMilestoneId(null)}
-        />
-      )}
     </TooltipProvider>
   )
 }
