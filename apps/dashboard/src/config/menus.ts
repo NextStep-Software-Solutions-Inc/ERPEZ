@@ -1128,16 +1128,6 @@ export const menusConfig = {
             href: '/v2/bac-resolutions',
             icon: Book,
           },
-          {
-            title: 'BAC Resolutions (Public Bidding)',
-            href: '/v2/bac-resolutions-public-bidding',
-            icon: Book,
-          },
-          {
-            title: 'Manage BAC Resolutions',
-            href: '/v2/manage-bac-resolutions',
-            icon: Files,
-          },
         ],
       },
       {
@@ -1473,16 +1463,6 @@ export const menusConfig = {
             title: 'BAC Resolutions',
             href: '/v2/bac-resolutions',
             icon: Book,
-          },
-          {
-            title: 'BAC Resolutions (Public Bidding)',
-            href: '/v2/bac-resolutions-public-bidding',
-            icon: Book,
-          },
-          {
-            title: 'Manage BAC Resolutions',
-            href: '/v2/manage-bac-resolutions',
-            icon: Files,
           },
         ],
       },

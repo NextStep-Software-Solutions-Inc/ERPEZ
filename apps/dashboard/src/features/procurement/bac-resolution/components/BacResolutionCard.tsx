@@ -14,15 +14,19 @@ import type {
   BacResolutionRole,
   BacResolutionWorkspaceScope,
 } from '../types'
+import {
+  getBacProjectProcurementMode,
+  isBacProjectPublicBidding,
+} from '../utils/bacResolutionWorkflow'
 import { cn } from '@/lib/utils'
 
 interface BacResolutionCardProps {
   resolution: BacProject
   isActive: boolean
   onSelect: () => void
-  role: BacResolutionRole
-  workspaceScope: BacResolutionWorkspaceScope
-  bacListRoutePath: BacResolutionListRoutePath
+  role?: BacResolutionRole
+  workspaceScope?: BacResolutionWorkspaceScope
+  bacListRoutePath?: BacResolutionListRoutePath
   onEdit?: (resolution: BacProject) => void
   onDelete?: (id: string) => void
   onViewDetails?: (id: string) => void
@@ -52,6 +56,9 @@ export function BacResolutionCard({
     (status as string).toLowerCase() === 'draft' ||
     (status as string).toLowerCase() === 'returned'
   const resNumber = resolution.resolutionNumber || 'Unassigned'
+  const isPB = isBacProjectPublicBidding(resolution)
+  const modeLabel = getBacProjectProcurementMode(resolution)
+
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -155,17 +162,32 @@ export function BacResolutionCard({
 
       {/* Bottom Row: Minimal Source Tag + Amount */}
       <div className="flex items-center justify-between gap-2 pt-1 text-[11px]">
-        {resolution.sourceType === 'APPItem' ? (
-          <span className="rounded-md bg-blue-50 px-1.5 py-0.5 font-medium text-blue-700 text-[10px] border border-blue-200/60">
-            APP Item
-          </span>
-        ) : (
-          <span className="rounded-md bg-purple-50 px-1.5 py-0.5 font-medium text-purple-700 text-[10px] border border-purple-200/60">
-            Consolidated PR
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {isPB ? (
+            <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 font-medium text-indigo-700 text-[10px] border border-indigo-200/60">
+              Public Bidding
+            </span>
+          ) : modeLabel ? (
+            <span
+              className="rounded-md bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700 text-[10px] border border-amber-200/60 max-w-[120px] truncate"
+              title={modeLabel}
+            >
+              {modeLabel}
+            </span>
+          ) : null}
 
-        <span className="font-bold text-emerald-700 text-xs">
+          {resolution.sourceType === 'APPItem' ? (
+            <span className="rounded-md bg-blue-50 px-1.5 py-0.5 font-medium text-blue-700 text-[10px] border border-blue-200/60">
+              APP Item
+            </span>
+          ) : (
+            <span className="rounded-md bg-purple-50 px-1.5 py-0.5 font-medium text-purple-700 text-[10px] border border-purple-200/60">
+              Consolidated PR
+            </span>
+          )}
+        </div>
+
+        <span className="font-bold text-emerald-700 text-xs shrink-0">
           ₱{totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
         </span>
       </div>
