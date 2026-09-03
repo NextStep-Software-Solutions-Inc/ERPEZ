@@ -217,7 +217,7 @@ public class LoadProfileCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_IncompatibleProcurementCategory_ThrowsConflictException()
+    public async Task Handle_DifferentProcurementCategory_AllowedAndSucceeds()
     {
         // Arrange
         var projectId = Guid.NewGuid();
@@ -248,7 +248,8 @@ public class LoadProfileCommandHandlerTests
         {
             Id = profileId,
             Name = "INFRASTRUCTURE BLUEPRINT",
-            ProcurementCategory = "Infrastructure" // Mismatch with "Goods"
+            ProcurementCategory = "Infrastructure", // Different category
+            DocumentProfileItems = []
         };
 
         mockProjectRepo.Setup(r => r.GetByIdAsync(projectId, It.IsAny<CancellationToken>()))
@@ -259,18 +260,20 @@ public class LoadProfileCommandHandlerTests
             .ReturnsAsync(mode);
         mockProcCatRepo.Setup(r => r.GetByIdAsync(catId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(category);
+        mockChecklistRepo.Setup(r => r.GetByProjectIdAsync(projectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         var handler = new LoadProfileCommandHandler(mockUnitOfWork.Object);
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<ConflictException>(() =>
-            handler.Handle(new LoadProfileCommand
-            {
-                ProcurementProjectId = projectId,
-                DocumentProfileId = profileId
-            }, CancellationToken.None));
+        // Act
+        var result = await handler.Handle(new LoadProfileCommand
+        {
+            ProcurementProjectId = projectId,
+            DocumentProfileId = profileId
+        }, CancellationToken.None);
 
-        Assert.Contains("incompatible", ex.Message, StringComparison.OrdinalIgnoreCase);
+        // Assert
+        Assert.True(result.Succeeded);
     }
 
     [Fact]
@@ -306,6 +309,66 @@ public class LoadProfileCommandHandlerTests
             Id = profileId,
             Name = "GOODS BLUEPRINT",
             ProcurementCategory = "Goods", // Matches project category
+            DocumentProfileItems = []
+        };
+
+        mockProjectRepo.Setup(r => r.GetByIdAsync(projectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(project);
+        mockProfileRepo.Setup(r => r.GetByIdWithItemsAsync(profileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(profile);
+        mockProcModeRepo.Setup(r => r.GetByIdAsync(modeId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mode);
+        mockProcCatRepo.Setup(r => r.GetByIdAsync(catId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(category);
+        mockChecklistRepo.Setup(r => r.GetByProjectIdAsync(projectId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        var handler = new LoadProfileCommandHandler(mockUnitOfWork.Object);
+
+        // Act
+        var result = await handler.Handle(new LoadProfileCommand
+        {
+            ProcurementProjectId = projectId,
+            DocumentProfileId = profileId
+        }, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task Handle_GoodsAndGeneralServices_MatchesGoodsProfile_Succeeds()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var modeId = Guid.NewGuid();
+        var catId = Guid.NewGuid();
+
+        var project = new ProcurementProject
+        {
+            Id = projectId,
+            Status = "Draft",
+            ProcurementModeId = modeId
+        };
+
+        var mode = new ProcurementMode
+        {
+            Id = modeId,
+            ProcurementCategoryId = catId
+        };
+
+        var category = new ProcurementCategory
+        {
+            Id = catId,
+            Name = "Goods and General Services" // Real database category name
+        };
+
+        var profile = new DocumentProfile
+        {
+            Id = profileId,
+            Name = "STANDARD COMPETITIVE BIDDING - GOODS",
+            ProcurementCategory = "Goods", // Profile category from UI
             DocumentProfileItems = []
         };
 

@@ -22,46 +22,6 @@ public class LoadProfileCommandHandler(IUnitOfWork unitOfWork)
                           .GetByIdWithItemsAsync(request.DocumentProfileId, cancellationToken)
                       ?? throw new NotFoundException("Document profile not found.");
 
-        // Validate procurement category compatibility when project category is available
-        string? projectCategory = null;
-
-        if (project.ProcurementModeId.HasValue)
-        {
-            var mode = await unitOfWork.ProcurementModeRepository
-                .GetByIdAsync(project.ProcurementModeId.Value, cancellationToken);
-            if (mode?.ProcurementCategoryId.HasValue == true)
-            {
-                var cat = await unitOfWork.ProcurementCategoryRepository
-                    .GetByIdAsync(mode.ProcurementCategoryId.Value, cancellationToken);
-                projectCategory = cat?.Name;
-            }
-        }
-
-        if (projectCategory == null && project.APPItemId.HasValue)
-        {
-            var appItem = await unitOfWork.APPItemRepository
-                .GetByIdAsync(project.APPItemId.Value, cancellationToken);
-            if (appItem != null && appItem.ProcurementModeId != Guid.Empty)
-            {
-                var mode = await unitOfWork.ProcurementModeRepository
-                    .GetByIdAsync(appItem.ProcurementModeId, cancellationToken);
-                if (mode?.ProcurementCategoryId.HasValue == true)
-                {
-                    var cat = await unitOfWork.ProcurementCategoryRepository
-                        .GetByIdAsync(mode.ProcurementCategoryId.Value, cancellationToken);
-                    projectCategory = cat?.Name;
-                }
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(projectCategory) &&
-            !string.IsNullOrWhiteSpace(profile.ProcurementCategory) &&
-            !string.Equals(projectCategory, profile.ProcurementCategory, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new ConflictException(
-                $"The selected profile's category '{profile.ProcurementCategory}' is incompatible with the project's procurement category '{projectCategory}'.");
-        }
-
         // Wipe any existing draft checklist items before re-scaffolding (replace contract)
         var existing = await unitOfWork.ProjectDocumentChecklistRepository
             .GetByProjectIdAsync(request.ProcurementProjectId, cancellationToken);

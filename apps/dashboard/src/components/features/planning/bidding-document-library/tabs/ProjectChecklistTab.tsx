@@ -204,28 +204,24 @@ export function ProjectChecklistTab({
 
   const projectCategory = currentProject?.category
 
-  // Filter profiles matching the project's procurement category (UX filtering)
-  const compatibleProfiles = useMemo(() => {
-    if (!projectCategory) return profiles
-    const matched = profiles.filter(
-      (p) =>
-        !p.procurementCategory ||
-        p.procurementCategory.toLowerCase() === projectCategory.toLowerCase(),
-    )
-    return matched.length > 0 ? matched : profiles
-  }, [profiles, projectCategory])
-
-  // Automatically select the first compatible profile
+  // Automatically select matching profile (or first available)
   useEffect(() => {
-    if (compatibleProfiles.length > 0) {
+    if (profiles.length > 0) {
       if (
         !selectedProfileId ||
-        !compatibleProfiles.some((p) => p.id === selectedProfileId)
+        !profiles.some((p) => p.id === selectedProfileId)
       ) {
-        setSelectedProfileId(compatibleProfiles[0].id)
+        const matching = projectCategory
+          ? profiles.find(
+              (p) =>
+                p.procurementCategory &&
+                p.procurementCategory.toLowerCase().startsWith(projectCategory.toLowerCase().slice(0, 4)),
+            )
+          : null
+        setSelectedProfileId(matching ? matching.id : profiles[0].id)
       }
     }
-  }, [compatibleProfiles, selectedProfileId])
+  }, [profiles, projectCategory, selectedProfileId])
 
   const selectedProfile = profiles.find((p) => p.id === selectedProfileId)
 
@@ -374,7 +370,7 @@ export function ProjectChecklistTab({
             </Label>
             {projectCategory && (
               <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-normal bg-muted/40">
-                Matching Category: {projectCategory}
+                Category: {projectCategory}
               </Badge>
             )}
           </div>
@@ -388,7 +384,7 @@ export function ProjectChecklistTab({
                 <SelectValue placeholder="Select a reusable profile blueprint..." />
               </SelectTrigger>
               <SelectContent>
-                {compatibleProfiles.map((prof) => (
+                {profiles.map((prof) => (
                   <SelectItem key={prof.id} value={prof.id}>
                     <span className="font-medium">{prof.name}</span>
                     {prof.procurementCategory && (
