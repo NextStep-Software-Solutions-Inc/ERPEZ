@@ -195,12 +195,16 @@ export type BacResolution = {
   procurementProjectId: string
   resolutionType?: string
   resolutionNumber?: string
+  bacResolutionNumber?: string
+  description?: string
   dateResolved: string
   resolvedLocation?: string
   status: string
   whereasClauses: BacResolutionWhereasClause[]
   clauseLinks?: BacResolutionClauseLink[]
   biddingActivitySchedules: {}[]
+  linkedConsolidatedPrs?: ConsolidatedPrLink[]
+  workspaceOrigin?: BacResolutionWorkspaceScope
   endUserRepresentativeId?: string
   endUserRepresentative: { id: string, firstName: string, lastName: string, email: string } | null
   techRepresentativeId?: string
