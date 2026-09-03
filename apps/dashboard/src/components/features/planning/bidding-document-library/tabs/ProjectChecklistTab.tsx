@@ -288,62 +288,74 @@ export function ProjectChecklistTab({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-center justify-between p-4 rounded-lg bg-muted/40 border gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <FolderOpen className="h-8 w-8 text-primary" />
-          <div>
-            <Label className="text-2xs uppercase tracking-wider text-muted-foreground font-semibold">
-              Active Procurement Project — Bidding Preparation
-            </Label>
-            <div className="flex items-center gap-2">
+      {/* Active Procurement Project Banner / Selector */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 rounded-xl bg-card border shadow-xs gap-4">
+        <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full lg:w-auto">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+            <FolderOpen className="h-5 w-5 text-primary" />
+          </div>
+          <div className="space-y-1.5 min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Label className="text-2xs uppercase tracking-wider text-muted-foreground font-bold">
+                Active Procurement Project — Bidding Preparation
+              </Label>
+              <Badge variant="outline" className="text-[10px] font-semibold py-0 px-2 bg-muted/40">
+                {currentProject.category}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2 max-w-xl">
               <Select
-                value={selectedProjectId || currentProject.id}
+                value={selectedProjectId}
                 onValueChange={onSelectedProjectChange}
               >
-                <SelectTrigger className="w-[300px] h-9 mt-0.5">
+                <SelectTrigger
+                  className="w-full max-w-xl h-9 bg-background font-medium text-xs [&>span]:line-clamp-1 [&>span]:text-left"
+                  title={currentProject.title}
+                >
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-w-xl">
                   {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.title}
+                    <SelectItem key={project.id} value={project.id} className="text-xs">
+                      <div className="flex flex-col gap-0.5 py-0.5">
+                        <span className="font-semibold text-foreground">{project.title}</span>
+                        <span className="text-2xs text-muted-foreground">REF: {project.refNumber} • {project.category}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Badge variant="outline" className="bg-background">
-                {currentProject.category}
-              </Badge>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 shrink-0 self-end lg:self-center">
           {isDraft ? (
             <>
               <Button
                 variant="outline"
                 onClick={onAddCustomRequirement}
-                className="gap-1.5"
+                className="gap-1.5 h-9 font-medium"
               >
                 <Plus className="h-4 w-4" /> Add Custom Requirement
               </Button>
               <Button
                 onClick={() => onFinalizeChecklist(currentProject.id)}
-                className="gap-1.5 bg-success hover:bg-success/90"
+                className="gap-1.5 h-9 bg-success hover:bg-success/90 text-white font-semibold"
               >
                 <CheckCircle2 className="h-4 w-4" /> Confirm & Lock Checklist
               </Button>
             </>
           ) : (
             <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <span className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
                 <CheckCircle2 className="h-4 w-4 text-success" />
                 Checklist Confirmed & Locked
               </span>
               <Button
                 variant="outline"
                 size="sm"
+                className="h-9"
                 onClick={() => onResetChecklist(currentProject.id)}
               >
                 Unlock for Editing
@@ -372,7 +384,7 @@ export function ProjectChecklistTab({
               onValueChange={setSelectedProfileId}
               disabled={!isDraft || isApplyingProfile}
             >
-              <SelectTrigger className="w-full max-w-md h-9 bg-background">
+              <SelectTrigger className="w-full max-w-md h-9 bg-background font-medium text-xs [&>span]:line-clamp-1 [&>span]:text-left">
                 <SelectValue placeholder="Select a reusable profile blueprint..." />
               </SelectTrigger>
               <SelectContent>
