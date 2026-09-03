@@ -44,3 +44,5 @@ export interface PublicBiddingProject {
   projectStatus: 'Active' | 'Pending_HoPE_Approval' | 'Approved';
   bacResolutionDraft?: BacResolutionDraft;
 }
+
+export * from './bidEvaluationApi.types';

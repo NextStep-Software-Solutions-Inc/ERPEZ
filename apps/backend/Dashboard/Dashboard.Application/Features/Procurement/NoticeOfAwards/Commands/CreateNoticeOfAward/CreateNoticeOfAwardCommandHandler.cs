@@ -17,7 +17,7 @@ public class CreateNoticeOfAwardCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var bacRes = await unitOfWork.BACResolutionRepository.FindAsync(r => r.Id == request.BacResolutionId, cancellationToken);
+        var bacRes = await unitOfWork.BACResolutionRepository.FindAsync(r => r.Id == request.BacResolutionId && !r.IsDeleted, cancellationToken);
         if (bacRes == null)
         {
             return ApiResponse<Guid>.Fail("Selected BAC Resolution not found.");
@@ -32,19 +32,20 @@ public class CreateNoticeOfAwardCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Guid>.Fail($"A Notice of Award ({existingNoa.NOANumber}) is already active for this BAC Resolution.");
         }
 
-        var project = await unitOfWork.ProcurementProjectRepository.FindAsync(p => p.Id == bacRes.ProcurementProjectId, cancellationToken);
+        var project = await unitOfWork.ProcurementProjectRepository.FindAsync(p => p.Id == bacRes.ProcurementProjectId && !p.IsDeleted, cancellationToken);
         if (project == null)
         {
             return ApiResponse<Guid>.Fail("Procurement Project linked to the BAC Resolution was not found.");
         }
 
+        bool isPublicBidding = true;
         if (project.ProcurementModeId.HasValue)
         {
             var mode = await unitOfWork.ProcurementModeRepository.FindAsync(m => m.Id == project.ProcurementModeId.Value, cancellationToken);
             if (mode != null)
             {
                 var name = mode.Name.ToLowerInvariant();
-                var isPublicBidding = name.Contains("public bidding") || name.Contains("competitive") || (name.Contains("bidding") && !name.Contains("small value"));
+                isPublicBidding = name.Contains("public bidding") || name.Contains("competitive") || (name.Contains("bidding") && !name.Contains("small value"));
                 if (!isPublicBidding)
                 {
                     return ApiResponse<Guid>.Fail($"Notice of Award can only be created for Public Bidding / Competitive Bidding projects. Mode '{mode.Name}' is not eligible.");
@@ -52,19 +53,64 @@ public class CreateNoticeOfAwardCommandHandler(IUnitOfWork unitOfWork)
             }
         }
 
-        var aobMapping = await unitOfWork.AOBProcurementProjectMappingRepository.FindAsync(m => m.ProcurementProjectId == project.Id, cancellationToken);
-        var aob = aobMapping != null ? await unitOfWork.AOBRepository.FindAsync(a => a.Id == aobMapping.AOBId, cancellationToken) : null;
-        var aobAwardedItem = aob != null ? await unitOfWork.AOBAwardedItemRepository.FindAsync(ai => ai.AOBId == aob.Id, cancellationToken) : null;
+        Guid supplierId = Guid.Empty;
+        decimal awardedAmount = 0m;
+        string awardCriterion = "LCRB";
 
-        var supplierId = aobAwardedItem?.WinningSupplierId ?? Guid.Empty;
-        if (supplierId == Guid.Empty)
+        if (isPublicBidding)
         {
-            var fallbackSupplier = (await unitOfWork.SupplierRepository.ToListAsync(unitOfWork.SupplierRepository.Query(), cancellationToken)).FirstOrDefault();
-            if (fallbackSupplier != null) supplierId = fallbackSupplier.Id;
+            // Authoritative Public Bidding Handshake:
+            // Locate BiddingAwardRecommendation via direct FK on resolution or by ProcurementProjectId
+            var awardRec = bacRes.BiddingAwardRecommendationId.HasValue
+                ? await unitOfWork.BiddingAwardRecommendationRepository.FindAsync(a => a.Id == bacRes.BiddingAwardRecommendationId.Value && !a.IsDeleted, cancellationToken)
+                : await unitOfWork.BiddingAwardRecommendationRepository.FindAsync(a => a.ProcurementProjectId == project.Id && !a.IsDeleted, cancellationToken);
+
+            if (awardRec != null)
+            {
+                supplierId = awardRec.WinningSupplierId;
+                awardedAmount = awardRec.AwardedAmount;
+                awardCriterion = awardRec.AwardCriterion;
+            }
+            else
+            {
+                // Fallback check for AOB mapping (for alternative/hybrid projects)
+                var aobMapping = await unitOfWork.AOBProcurementProjectMappingRepository.FindAsync(m => m.ProcurementProjectId == project.Id, cancellationToken);
+                var aob = aobMapping != null ? await unitOfWork.AOBRepository.FindAsync(a => a.Id == aobMapping.AOBId, cancellationToken) : null;
+                var aobAwardedItem = aob != null ? await unitOfWork.AOBAwardedItemRepository.FindAsync(ai => ai.AOBId == aob.Id, cancellationToken) : null;
+
+                if (aobAwardedItem != null && aobAwardedItem.WinningSupplierId != Guid.Empty && aobAwardedItem.TotalAwardedAmount > 0)
+                {
+                    supplierId = aobAwardedItem.WinningSupplierId;
+                    awardedAmount = aobAwardedItem.TotalAwardedAmount;
+                    awardCriterion = aob?.AwardCriterion.ToString() ?? "LCRB";
+                }
+                else
+                {
+                    return ApiResponse<Guid>.Fail("Cannot create Notice of Award for Public Bidding: No authoritative Bidding Award Recommendation or approved Abstract of Bids found for this project.");
+                }
+            }
+        }
+        else
+        {
+            // Alternative Procurement Modes (SVP / Shopping / Direct Contracting)
+            var aobMapping = await unitOfWork.AOBProcurementProjectMappingRepository.FindAsync(m => m.ProcurementProjectId == project.Id, cancellationToken);
+            var aob = aobMapping != null ? await unitOfWork.AOBRepository.FindAsync(a => a.Id == aobMapping.AOBId, cancellationToken) : null;
+            var aobAwardedItem = aob != null ? await unitOfWork.AOBAwardedItemRepository.FindAsync(ai => ai.AOBId == aob.Id, cancellationToken) : null;
+
+            if (aobAwardedItem == null || aobAwardedItem.WinningSupplierId == Guid.Empty)
+            {
+                return ApiResponse<Guid>.Fail("Cannot create Notice of Award: No winning supplier found in Abstract of Bids.");
+            }
+
+            supplierId = aobAwardedItem.WinningSupplierId;
+            awardedAmount = aobAwardedItem.TotalAwardedAmount;
+            awardCriterion = aob?.AwardCriterion.ToString() ?? "LCRB";
         }
 
-        var awardedAmount = aobAwardedItem?.TotalAwardedAmount ?? project.ABC;
-        var awardCriterion = aob?.AwardCriterion.ToString() ?? "LCRB";
+        if (supplierId == Guid.Empty || awardedAmount <= 0)
+        {
+            return ApiResponse<Guid>.Fail("Cannot create Notice of Award: Winning supplier and awarded amount must be valid.");
+        }
 
         var currentYear = DateTime.UtcNow.Year;
         var yearNoas = await unitOfWork.NoticeOfAwardRepository.ToListAsync(

@@ -96,8 +96,13 @@ public class CreateBiddingAwardRecommendationCommandHandler(
         }
 
         // Link with any existing Award BAC Resolution on this project
-        var awardBacRes = project.BACResolutions
-            .FirstOrDefault(r => string.Equals(r.ResolutionType, "award-recommendation", StringComparison.OrdinalIgnoreCase));
+        var projectResolutions = await unitOfWork.BACResolutionRepository.FindAllAsync(
+            r => r.ProcurementProjectId == command.ProjectId && !r.IsDeleted,
+            cancellationToken
+        );
+        var awardBacRes = projectResolutions.FirstOrDefault(
+            r => string.Equals(r.ResolutionType, "award-recommendation", StringComparison.OrdinalIgnoreCase)
+        );
 
         if (awardBacRes != null)
         {

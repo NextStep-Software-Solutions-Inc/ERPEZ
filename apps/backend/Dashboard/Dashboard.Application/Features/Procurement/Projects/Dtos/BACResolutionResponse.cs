@@ -14,6 +14,7 @@ public record BACResolutionResponse
     public string? ResolvedLocation { get; init; }
     public string Status { get; init; } = string.Empty;
     public string? WhereasClause { get; set; }
+    public Guid? BiddingAwardRecommendationId { get; init; }
     public List<BACResolutionWhereasClauseItemResponse> WhereasClauses { get; init; } = [];
     public List<BACResolutionClauseLinkResponse> ClauseLinks { get; init; } = [];
 
