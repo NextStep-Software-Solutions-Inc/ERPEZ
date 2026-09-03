@@ -5,9 +5,15 @@ using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
 
-public class ProcurementProjectRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
-    : Repository<ProcurementProject>(context, sieveProcessor), IProcurementProjectRepository
+public class ProcurementProjectRepository : Repository<ProcurementProject>, IProcurementProjectRepository
 {
+    private readonly ApplicationDbContext context;
+
+    public ProcurementProjectRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
+        : base(context, sieveProcessor)
+    {
+        this.context = context;
+    }
     public async Task<ProcurementProject?> GetWithPublicDetailsByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.ProcurementProjects!

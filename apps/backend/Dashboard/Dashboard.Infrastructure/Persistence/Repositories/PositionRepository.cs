@@ -5,10 +5,17 @@ using ERPEZ.Domain.Interfaces;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
 
-public class PositionRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) : Repository<Position>(context, sieveProcessor), IPositionRepository
+public class PositionRepository : Repository<Position>, IPositionRepository
 {
-    private readonly ApplicationDbContext dbContext = context;
-    private readonly ISieveProcessor sieveProcessor = sieveProcessor;
+    private readonly ApplicationDbContext dbContext;
+    private readonly ISieveProcessor sieveProcessor;
+
+    public PositionRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
+        : base(context, sieveProcessor)
+    {
+        dbContext = context;
+        this.sieveProcessor = sieveProcessor;
+    }
 
     public async Task<int> CountByStatusAsync(string status, CancellationToken cancellationToken = default)
     {
