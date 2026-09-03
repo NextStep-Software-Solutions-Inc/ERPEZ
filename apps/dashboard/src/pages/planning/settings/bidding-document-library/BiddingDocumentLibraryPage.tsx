@@ -41,6 +41,7 @@ import {
   useProfiles,
   useProjectChecklist,
   useResetChecklist,
+  usePostProjectToPortal,
   useUpdateChecklistItem,
   useUpdateMasterDocument,
   useUpdateProfile,
@@ -129,6 +130,7 @@ export default function BiddingDocumentLibraryPage() {
   const updateChecklistItemMutation = useUpdateChecklistItem()
   const confirmChecklistMutation = useConfirmChecklist()
   const resetChecklistMutation = useResetChecklist()
+  const postProjectToPortalMutation = usePostProjectToPortal()
   const loadProfileMutation = useLoadProfile()
 
   const existingChecklistCount = useMemo(() => {
@@ -202,6 +204,7 @@ export default function BiddingDocumentLibraryPage() {
         refNumber: p.id.slice(0, 8).toUpperCase(),
         profileId: '',
         checklist,
+        projectStatus: p.status,
         status:
           isCurrent && projectChecklistApi?.data.isLocked
             ? 'Finalized'
@@ -467,6 +470,32 @@ export default function BiddingDocumentLibraryPage() {
     }
   }
 
+  const handlePostToPublicPortal = async (projectId: string) => {
+    try {
+      await postProjectToPortalMutation.mutateAsync({
+        pathParams: { projectId },
+      })
+      await Promise.all([
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const keyStr = JSON.stringify(query.queryKey)
+            return (
+              keyStr.includes('/bac/projects') ||
+              keyStr.includes('/api/public/projects')
+            )
+          },
+        }),
+      ])
+      toast.success('Project successfully posted to the BAC Public Portal!')
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to post project to public portal.'
+      toast.error(errorMsg)
+    }
+  }
+
   const handleToggleChecklistDoc = async (
     projectId: string,
     checklistItemId: string
@@ -615,6 +644,8 @@ export default function BiddingDocumentLibraryPage() {
             onAddCustomRequirement={() => setCustomReqOpen(true)}
             onFinalizeChecklist={handleFinalizeChecklist}
             onResetChecklist={handleResetChecklist}
+            onPostToPublicPortal={handlePostToPublicPortal}
+            isPostingToPortal={postProjectToPortalMutation.isPending}
             onToggleChecklistDoc={handleToggleChecklistDoc}
             onViewTemplate={(doc) => setTemplateViewerDoc(doc)}
           />

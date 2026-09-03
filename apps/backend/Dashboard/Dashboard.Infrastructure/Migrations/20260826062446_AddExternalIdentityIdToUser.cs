@@ -19,6 +19,8 @@ namespace ERPEZ.Infrastructure.Migrations
                 nullable: false,
                 defaultValue: "");
 
+            migrationBuilder.Sql("UPDATE planning.\"Users\" SET \"ExternalIdentityId\" = \"Id\"::text WHERE \"ExternalIdentityId\" = '' OR \"ExternalIdentityId\" IS NULL;");
+
             migrationBuilder.CreateIndex(
                 name: "IX_Users_ExternalIdentityId",
                 schema: "planning",

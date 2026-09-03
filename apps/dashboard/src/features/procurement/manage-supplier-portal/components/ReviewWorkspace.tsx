@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -6,8 +7,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { FileText, Mail, Phone, User, Building, Download, Loader2, Hash, Award, ShieldCheck, Tag } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import { SupplierBid } from '../types'
+import { previewDocument } from '../utils'
 
 interface ReviewWorkspaceProps {
   selectedBid: SupplierBid | undefined
@@ -30,6 +33,26 @@ export function ReviewWorkspace({
   onBulkDownload,
   isDownloading = false,
 }: ReviewWorkspaceProps) {
+  const { toast } = useToast()
+  const [previewingDocId, setPreviewingDocId] = useState<string | null>(null)
+
+  const handlePreviewDocument = async (doc: { id: string; name: string; url: string; type?: string }) => {
+    if (!doc.url) return
+    setPreviewingDocId(doc.id)
+    try {
+      await previewDocument(doc.url, doc.name, doc.type)
+    } catch (error) {
+      console.error('Failed to preview document:', error)
+      toast({
+        title: 'Document Unavailable',
+        description: 'The requested document could not be retrieved from storage. Please verify that the file exists.',
+        variant: 'destructive',
+      })
+    } finally {
+      setPreviewingDocId(null)
+    }
+  }
+
   if (!selectedBid) {
     return (
       <Card className="md:col-span-8 h-full flex flex-col overflow-hidden">
@@ -229,10 +252,18 @@ export function ReviewWorkspace({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="opacity-0 group-hover:opacity-100 h-8 text-xs"
-                      onClick={() => window.open(doc.url, '_blank')}
+                      disabled={previewingDocId === doc.id}
+                      className="opacity-0 group-hover:opacity-100 h-8 text-xs gap-1.5"
+                      onClick={() => handlePreviewDocument(doc)}
                     >
-                      Preview
+                      {previewingDocId === doc.id ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Loading...</span>
+                        </>
+                      ) : (
+                        'Preview'
+                      )}
                     </Button>
                   )}
                 </div>

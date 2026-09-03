@@ -112,8 +112,8 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
   }
 
   const statusCfg = STATUS_CONFIG[project.status]
-  const templates = project.requiredDocuments.filter((d) => d.isTemplate)
-  const uploads = project.requiredDocuments.filter((d) => !d.isTemplate)
+  const templates = project.requiredDocuments.filter((d) => Boolean(d.downloadUrl || d.viewerDocId))
+  const uploads = project.requiredDocuments
 
   const toggleBidSelection = (id: string) => {
     setSelectedBidIds((prev) => {
@@ -306,6 +306,7 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
                           href={doc.downloadUrl ?? '#'}
                           target="_blank"
                           rel="noopener noreferrer"
+                          download
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
                         >
                           <Download className="h-3 w-3" /> Download
@@ -331,9 +332,7 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
             <div>
               <h3 className="text-white font-semibold text-lg">Ready to submit your bid?</h3>
               <p className="text-blue-200 text-sm mt-1">
-                {selectedBidIds.size > 0
-                  ? `${selectedBidIds.size} bid notice${selectedBidIds.size > 1 ? 's' : ''} selected. Click Submit Now to upload and submit.`
-                  : 'Select the bid notices above that you need to submit, then click Submit Now.'}
+                Click Submit Now to fill out your application and upload the {uploads.length} required documents.
               </p>
             </div>
             <Button

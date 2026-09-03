@@ -72,4 +72,5 @@ export interface Project {
   profileId: string
   checklist: Array<ProjectChecklistItem>
   status: 'Draft Checklist' | 'Finalized'
+  projectStatus?: string
 }

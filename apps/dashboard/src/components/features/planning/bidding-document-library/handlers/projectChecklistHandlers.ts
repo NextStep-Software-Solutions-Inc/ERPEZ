@@ -132,4 +132,17 @@ export const resetChecklistRequest: MutationBlueprintFromTemplate<
     )
     return response.data
   },
+}
+
+export const postProjectToPortalRequest: MutationBlueprintFromTemplate<
+  '/bac/projects/:projectId/post-to-portal',
+  APIResponse<void>
+> = {
+  endpoint: '/bac/projects/:projectId/post-to-portal',
+  fetcher: async ({ finalUrl }) => {
+    const response = await api.post<APIResponse<void>>(
+      finalUrl
+    )
+    return response.data
+  },
 } 

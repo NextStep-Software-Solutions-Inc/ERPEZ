@@ -44,11 +44,14 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
                 DocumentName    = c.MasterDocumentType?.Name ?? c.CustomDocumentName ?? string.Empty,
                 Description     = c.MasterDocumentType?.Description,
                 IsRequired      = c.IsRequired,
-                OrderIndex      = c.OrderIndex
+                OrderIndex      = c.OrderIndex,
+                DownloadUrl     = (c.CustomTemplateFileUrl != null || c.MasterDocumentType?.TemplateFileUrl != null)
+                                    ? $"/api/public/projects/{project.Id}/bid-notices/{c.Id}/download"
+                                    : null
             }).ToList();
 
         var bidNotices = project.ProjectDocumentChecklists
-            .Where(c => c.CustomTemplateFileUrl != null || c.MasterDocumentType?.TemplateFileUrl != null)
+            .Where(c => c.IsRequired && (c.CustomTemplateFileUrl != null || c.MasterDocumentType?.TemplateFileUrl != null))
             .OrderBy(c => c.OrderIndex)
             .Select(c => new BidNoticeDto
             {
@@ -74,7 +77,7 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
             SubmissionDeadline     = GetDate(ProcurementActivitySystemRole.SubmissionOpeningOfBids),
             BidOpeningDate         = GetDate(ProcurementActivitySystemRole.SubmissionOpeningOfBids),
             PreBidConferenceDate   = GetDate(ProcurementActivitySystemRole.PreBidConference),
-            DatePosted             = GetDate(ProcurementActivitySystemRole.AdvertisementPosting),
+            DatePosted             = GetDate(ProcurementActivitySystemRole.AdvertisementPosting) ?? project.UpdatedAt ?? project.CreatedAt,
             RequiredSubmissions    = requiredSubmissions,
             BidNotices             = bidNotices
         };

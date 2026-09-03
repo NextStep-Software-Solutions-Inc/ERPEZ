@@ -38,6 +38,8 @@ public record RequiredSubmissionDto
     public string? Description { get; init; }
     public bool IsRequired { get; init; }
     public int OrderIndex { get; init; }
+    public string? DownloadUrl { get; init; }
+    public bool HasTemplate => !string.IsNullOrEmpty(DownloadUrl);
 }
 
 public record BidNoticeDto

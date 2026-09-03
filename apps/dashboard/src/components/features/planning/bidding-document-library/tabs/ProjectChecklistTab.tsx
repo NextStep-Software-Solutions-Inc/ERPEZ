@@ -6,6 +6,7 @@ import {
   FileCheck,
   FileText,
   FolderOpen,
+  Globe,
   Loader2,
   Plus,
 } from 'lucide-react'
@@ -54,12 +55,14 @@ interface ProjectChecklistTabProps {
   masterDocs: Array<MasterDoc>
   isLoading?: boolean
   isApplyingProfile?: boolean
+  isPostingToPortal?: boolean
   existingChecklistCount?: number
   onSelectedProjectChange: (projectId: string) => void
   onApplyProfile: (projectId: string, profileId: string) => Promise<void>
   onAddCustomRequirement: () => void
   onFinalizeChecklist: (projectId: string) => void
   onResetChecklist: (projectId: string) => void
+  onPostToPublicPortal?: (projectId: string) => void
   onToggleChecklistDoc: (projectId: string, docId: string) => void
   onViewTemplate: (doc: MasterDoc) => void
 }
@@ -190,12 +193,14 @@ export function ProjectChecklistTab({
   masterDocs,
   isLoading,
   isApplyingProfile,
+  isPostingToPortal,
   existingChecklistCount,
   onSelectedProjectChange,
   onApplyProfile,
   onAddCustomRequirement,
   onFinalizeChecklist,
   onResetChecklist,
+  onPostToPublicPortal,
   onToggleChecklistDoc,
   onViewTemplate,
 }: ProjectChecklistTabProps) {
@@ -348,14 +353,35 @@ export function ProjectChecklistTab({
                 <CheckCircle2 className="h-4 w-4 text-success" />
                 Checklist Confirmed & Locked
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9"
-                onClick={() => onResetChecklist(currentProject.id)}
-              >
-                Unlock for Editing
-              </Button>
+              {currentProject.projectStatus === 'Posted' ? (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+                  <Globe className="h-4 w-4 text-emerald-600" />
+                  <span>Posted to BAC Public Portal</span>
+                </div>
+              ) : (
+                <Button
+                  className="gap-1.5 h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs"
+                  onClick={() => onPostToPublicPortal?.(currentProject.id)}
+                  disabled={isPostingToPortal}
+                >
+                  {isPostingToPortal ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Globe className="h-4 w-4" />
+                  )}
+                  Post to BAC Public Portal
+                </Button>
+              )}
+              {currentProject.projectStatus !== 'Posted' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9"
+                  onClick={() => onResetChecklist(currentProject.id)}
+                >
+                  Unlock for Editing
+                </Button>
+              )}
             </div>
           )}
         </div>

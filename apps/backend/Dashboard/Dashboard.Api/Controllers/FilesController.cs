@@ -94,6 +94,7 @@ public class FilesController(IFileStorageService fileStorageService) : Controlle
     /// Authenticated proxy download stream.
     /// </summary>
     [HttpGet("download/{fileId}")]
+    [HttpGet("{fileId}/download")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -113,7 +114,8 @@ public class FilesController(IFileStorageService fileStorageService) : Controlle
         var contentType = GetContentType(fileName);
         Response.Headers["Content-Disposition"] = 
             $"inline; filename=\"{displayName}\"";
-        return File(stream, contentType, displayName);
+        Response.Headers["Access-Control-Expose-Headers"] = "Content-Disposition";
+        return File(stream, contentType);
     }
 
     private static string GetContentType(string fileName)

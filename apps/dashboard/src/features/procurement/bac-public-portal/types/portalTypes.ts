@@ -9,7 +9,8 @@ export interface RequiredDocument {
   downloadUrl?: string
   /** Registry key in documentRegistry — when present, clicking Download opens the print dialog */
   viewerDocId?: string
-  isTemplate: boolean
+  isTemplate?: boolean
+  hasTemplate?: boolean
   postedOn?: string
 }
 

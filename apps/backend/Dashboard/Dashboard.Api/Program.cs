@@ -30,7 +30,6 @@ using (var scope = app.Services.CreateScope())
     var unitOfWork = scope.ServiceProvider.GetRequiredService<ERPEZ.Domain.Interfaces.IUnitOfWork>();
     var dbContext = scope.ServiceProvider.GetRequiredService<ERPEZ.Infrastructure.Persistence.ApplicationDbContext>();
     await ERPEZ.Infrastructure.Persistence.Seeders.ProcurementTestDataSeeder.SeedAllAsync(dbContext, unitOfWork);
-    await NoticeOfAwardDevSeeder.SeedAsync(unitOfWork);
 }
 
 app.UseApiMiddlewares();
