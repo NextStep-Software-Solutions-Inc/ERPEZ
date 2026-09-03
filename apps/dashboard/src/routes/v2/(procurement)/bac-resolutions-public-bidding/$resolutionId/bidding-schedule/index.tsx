@@ -1,6 +1,5 @@
-﻿import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
-import { BiddingSchedulePage } from '@/features/procurement/bidding-schedule/pages'
 
 const searchSchema = z.object({
   highlightMilestoneKey: z.string().optional(),
@@ -10,19 +9,14 @@ export const Route = createFileRoute(
   '/v2/(procurement)/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/',
 )({
   validateSearch: searchSchema,
-  component: PublicBiddingScheduleRoute,
+  beforeLoad: ({ params, search }) => {
+    throw redirect({
+      to: '/v2/bac-resolutions/$resolutionId/bidding-schedule',
+      params: { resolutionId: params.resolutionId },
+      search: { highlightMilestoneKey: search.highlightMilestoneKey },
+      replace: true,
+    })
+  },
+  component: () => null,
 })
 
-function PublicBiddingScheduleRoute() {
-  const { resolutionId } = Route.useParams()
-  const search = Route.useSearch()
-
-  return (
-    <BiddingSchedulePage
-      bacResolutionId={resolutionId}
-      highlightMilestoneKey={search.highlightMilestoneKey}
-      backTo="/v2/bac-resolutions-public-bidding"
-      backLabel="Back to BAC Resolutions (Public Bidding)"
-    />
-  )
-}

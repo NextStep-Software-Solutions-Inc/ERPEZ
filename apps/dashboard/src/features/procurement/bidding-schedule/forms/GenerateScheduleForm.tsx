@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
-import { format, parseISO, startOfToday } from 'date-fns'
+import { format, parseISO, startOfToday, isWeekend, isBefore } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { z } from 'zod'
 import {
-  MOCK_HOLIDAYS_2026,
+  type ProcurementCategory,
   PROCUREMENT_CATEGORY_LABELS,
-} from '../data/mockBiddingScheduleData'
-import { buildDisabledMatcher } from '../utils/dateHelpers'
-import type { ProcurementCategory } from '../types'
+} from '../types'
 import FieldInfo from '@/components/FieldInfo'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -52,10 +50,9 @@ export function GenerateScheduleForm({
 }: GenerateScheduleFormProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false)
 
-  const disabledMatcher = buildDisabledMatcher(
-    startOfToday(),
-    MOCK_HOLIDAYS_2026,
-  )
+  const isDateDisabled = (date: Date) => {
+    return isBefore(date, startOfToday()) || isWeekend(date)
+  }
 
   const form = useForm({
     defaultValues: {
@@ -120,7 +117,7 @@ export function GenerateScheduleForm({
                       setDatePickerOpen(false)
                     }
                   }}
-                  disabled={disabledMatcher}
+                  disabled={isDateDisabled}
                 />
               </PopoverContent>
             </Popover>
