@@ -47,11 +47,8 @@ public static class DependencyInjection
                 npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "public"));
             options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
 
-            if (env != null && env.IsDevelopment())
-            {
-                options.ConfigureWarnings(w =>
-                    w.Ignore(RelationalEventId.PendingModelChangesWarning));
-            }
+            options.ConfigureWarnings(w =>
+                w.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
 
         services.AddHttpContextAccessor();
