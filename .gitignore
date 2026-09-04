@@ -30,6 +30,7 @@ build/
 .output/
 .vinxi/
 .vercel/
+.react-router/
 coverage/
 
 # ------------------------------------------
