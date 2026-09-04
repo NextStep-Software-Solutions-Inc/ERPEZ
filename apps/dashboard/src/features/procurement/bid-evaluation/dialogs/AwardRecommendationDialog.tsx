@@ -162,7 +162,7 @@ export function AwardRecommendationDialog({
                 <span className="text-muted-foreground uppercase text-[10px] tracking-wider font-semibold block">
                   Authoritative Awarded Amount
                 </span>
-                <span className="font-mono font-extrabold text-success text-base flex items-center gap-1 mt-0.5">
+                <span className="font-extrabold text-success text-base flex items-center gap-1 mt-0.5">
                   <DollarSign className="h-4 w-4 shrink-0" />
                   {formatCurrency(winningBid.evaluatedBidPrice)}
                 </span>

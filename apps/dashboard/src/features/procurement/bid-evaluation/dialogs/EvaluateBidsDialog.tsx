@@ -246,7 +246,7 @@ export function EvaluateBidsDialog({
 
                     <div className="flex items-center gap-3">
                       <span className="text-[11px] text-muted-foreground">
-                        As-Read Opening Amount: <strong className="text-default-900 font-mono">₱ {bidder.asReadBidAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong>
+                        As-Read Opening Amount: <strong className="text-default-900">₱ {bidder.asReadBidAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong>
                       </span>
                       <div className="flex items-center gap-2">
                         <Label htmlFor={`resp-${idx}`} className="text-xs font-semibold cursor-pointer">

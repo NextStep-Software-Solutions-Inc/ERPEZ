@@ -76,7 +76,7 @@ export function PostQualificationTab({
     sortedBids.find((b) => b.status !== 'Disqualified') ||
     sortedBids[0]
 
-  const activePq = activeBidder.postQualification
+  const activePq = activeBidder?.postQualification
 
   const formatCurrency = (val: number | null | undefined) => {
     if (val === null || val === undefined) return '-'
@@ -229,7 +229,7 @@ export function PostQualificationTab({
                 Official Rank
               </span>
               <span className="font-extrabold text-primary text-sm mt-0.5 block">
-                Rank #{activeBidder.rank} ({evaluation.awardCriterion === 'LCRB' ? 'LCB' : 'MEARB'})
+                Rank #{activeBidder.rank} ({evaluation?.awardCriterion === 'LCRB' ? 'LCB' : 'MEARB'})
               </span>
             </div>
 
@@ -237,7 +237,7 @@ export function PostQualificationTab({
               <span className="text-muted-foreground uppercase text-[10px] tracking-wider font-semibold block">
                 Evaluated Bid Price
               </span>
-              <span className="font-mono font-bold text-default-900 text-sm mt-0.5 block">
+              <span className="font-bold text-default-900 text-sm mt-0.5 block">
                 {formatCurrency(activeBidder.evaluatedBidPrice)}
               </span>
             </div>
@@ -521,7 +521,7 @@ export function PostQualificationTab({
                     </TableCell>
 
                     {/* Evaluated Price */}
-                    <TableCell className="text-xs font-mono font-semibold text-default-900">
+                    <TableCell className="text-xs font-semibold text-default-900">
                       {formatCurrency(bid.evaluatedBidPrice)}
                     </TableCell>
 

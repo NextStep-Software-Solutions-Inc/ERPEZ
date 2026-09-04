@@ -257,17 +257,17 @@ export function BidEvaluationTab({
                       </TableCell>
 
                       {/* Original Submitted Amount */}
-                      <TableCell className="text-xs font-mono text-muted-foreground">
+                      <TableCell className="text-xs text-muted-foreground">
                         {formatCurrency(bid.originalProposedAmount)}
                       </TableCell>
 
                       {/* As-Read Amount */}
-                      <TableCell className="text-xs font-mono text-default-800">
+                      <TableCell className="text-xs text-default-800">
                         {formatCurrency(bid.asReadBidAmount)}
                       </TableCell>
 
                       {/* Evaluated Bid Price */}
-                      <TableCell className="text-xs font-mono font-bold text-primary bg-primary/5">
+                      <TableCell className="text-xs font-bold text-primary bg-primary/5">
                         {formatCurrency(bid.evaluatedBidPrice)}
                       </TableCell>
 

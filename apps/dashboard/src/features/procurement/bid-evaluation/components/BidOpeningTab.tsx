@@ -264,7 +264,7 @@ export function BidOpeningTab({
                             {sub.bidSecurityType || 'None/Decl.'}
                           </span>
                           {sub.bidSecurityAmount && (
-                            <span className="text-[11px] text-muted-foreground block font-mono">
+                            <span className="text-[11px] text-muted-foreground block">
                               {formatCurrency(sub.bidSecurityAmount)}
                             </span>
                           )}
@@ -272,7 +272,7 @@ export function BidOpeningTab({
                       </TableCell>
 
                       {/* Submitted Amount */}
-                      <TableCell className="text-xs font-mono font-semibold text-default-900">
+                      <TableCell className="text-xs font-semibold text-default-900">
                         {formatCurrency(sub.originalProposedAmount)}
                       </TableCell>
 
@@ -322,7 +322,7 @@ export function BidOpeningTab({
                           </div>
                         ) : sub.openingRecord?.envelope2Opened ? (
                           <div className="space-y-0.5">
-                            <span className="font-mono font-bold text-success text-xs block">
+                            <span className="font-bold text-success text-xs block">
                               {formatCurrency(sub.openingRecord?.asReadBidAmount)}
                             </span>
                             <span className="text-[10px] text-muted-foreground block">

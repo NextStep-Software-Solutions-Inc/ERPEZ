@@ -115,7 +115,7 @@ export function PostQualResultDialog({
                 <span className="text-muted-foreground uppercase text-[10px] tracking-wider font-semibold block">
                   Evaluated Bid Price
                 </span>
-                <span className="font-mono font-bold text-default-900 text-sm mt-0.5 block">
+                <span className="font-bold text-default-900 text-sm mt-0.5 block">
                   ₱ {evaluatedBid.evaluatedBidPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                 </span>
               </div>
