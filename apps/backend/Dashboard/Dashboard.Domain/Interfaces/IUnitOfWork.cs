@@ -121,6 +121,7 @@ public interface IUnitOfWork
     IGeneratedDocumentRepository GeneratedDocumentRepository { get; }
     IOPCRConsolidationRepository OPCRConsolidationRepository { get; }
     IProcurementProjectRepository ProcurementProjectRepository { get; }
+    IRepository<ERPEZ.Domain.Entities.Procurement.ProcurementProjectApprovalEvent> ProcurementProjectApprovalEventRepository { get; }
     IBACResolutionRepository BACResolutionRepository { get; }
     IRepository<ERPEZ.Domain.Entities.Procurement.BACMember> BACMemberRepository { get; }
     IBiddingActivityScheduleRepository BiddingActivityScheduleRepository { get; }
