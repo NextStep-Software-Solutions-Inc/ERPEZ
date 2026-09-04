@@ -131,6 +131,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IGeneratedDocumentRepository generatedDocumentRepository;
     private readonly IOPCRConsolidationRepository opcrConsolidationRepository;
     private readonly IProcurementProjectRepository procurementProjectRepository;
+    private readonly IRepository<ERPEZ.Domain.Entities.Procurement.ProcurementProjectApprovalEvent> procurementProjectApprovalEventRepository;
     private readonly IBACResolutionRepository bacResolutionRepository;
     private readonly IRepository<ERPEZ.Domain.Entities.Procurement.BACMember> bacMemberRepository;
     private readonly IBiddingActivityScheduleRepository biddingActivityScheduleRepository;
@@ -288,6 +289,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         generatedDocumentRepository = new GeneratedDocumentRepository(context, sieveProcessor);
         opcrConsolidationRepository = new OPCRConsolidationRepository(context, sieveProcessor);
         procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
+        procurementProjectApprovalEventRepository = new Repository<ERPEZ.Domain.Entities.Procurement.ProcurementProjectApprovalEvent>(context, sieveProcessor);
         bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
         bacMemberRepository = new Repository<ERPEZ.Domain.Entities.Procurement.BACMember>(context, sieveProcessor);
         biddingActivityScheduleRepository = new BiddingActivityScheduleRepository(context, sieveProcessor);
@@ -439,6 +441,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IGeneratedDocumentRepository GeneratedDocumentRepository => generatedDocumentRepository;
     public IOPCRConsolidationRepository OPCRConsolidationRepository => opcrConsolidationRepository;
     public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
+    public IRepository<ERPEZ.Domain.Entities.Procurement.ProcurementProjectApprovalEvent> ProcurementProjectApprovalEventRepository => procurementProjectApprovalEventRepository;
     public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
     public IRepository<ERPEZ.Domain.Entities.Procurement.BACMember> BACMemberRepository => bacMemberRepository;
     public IBiddingActivityScheduleRepository BiddingActivityScheduleRepository => biddingActivityScheduleRepository;

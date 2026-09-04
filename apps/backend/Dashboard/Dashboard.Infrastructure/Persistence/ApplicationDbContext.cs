@@ -118,6 +118,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementMode>? ProcurementModes { get; set; }
     public DbSet<ProcurementModeThreshold>? ProcurementModeThresholds { get; set; }
     public DbSet<ProcurementProject>? ProcurementProjects { get; set; }
+    public DbSet<ProcurementProjectApprovalEvent>? ProcurementProjectApprovalEvents { get; set; }
     public DbSet<ProcurementProjectAPPItem>? ProcurementProjectAPPItems { get; set; }
     public DbSet<BACResolution>? BACResolutions { get; set; }
     public DbSet<BACResolutionWhereasClauseItem>? BACResolutionWhereasClauseItems { get; set; }
@@ -197,6 +198,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PsdbmDepotProduct>? PsdbmDepotProducts { get; set; }
     public DbSet<PsdbmStockHistory>? PsdbmStockHistories { get; set; }
     public DbSet<PsdbmSyncRun>? PsdbmSyncRuns { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
