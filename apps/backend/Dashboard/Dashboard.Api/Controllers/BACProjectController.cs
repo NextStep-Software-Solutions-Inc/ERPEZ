@@ -288,6 +288,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     }
 
     //[Authorize(Roles = "BAC_Officer")]
+    [HttpPost("projects/{id}/approve")]
     [HttpPatch("projects/{id}/approve")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -295,6 +296,21 @@ public class BACProjectController(ISender mediator) : ControllerBase
     public async Task<IActionResult> ApproveProject(Guid id, [FromBody] ERPEZ.Application.Features.Procurement.Projects.Commands.ApproveProcurementProject.ApproveProcurementProjectRequest request)
     {
         var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.Projects.Commands.ApproveProcurementProject.ApproveProcurementProjectCommand 
+        { 
+            ProjectId = id, 
+            Request = request 
+        });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    //[Authorize(Roles = "BAC_Officer")]
+    [HttpPost("projects/{id}/return")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReturnProject(Guid id, [FromBody] ERPEZ.Application.Features.Procurement.Projects.Commands.ReturnProcurementProject.ReturnProcurementProjectRequest request)
+    {
+        var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.Projects.Commands.ReturnProcurementProject.ReturnProcurementProjectCommand 
         { 
             ProjectId = id, 
             Request = request 
