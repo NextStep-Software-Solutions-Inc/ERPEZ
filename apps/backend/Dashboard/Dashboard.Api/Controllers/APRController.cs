@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.AddCatalogItems;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.ChangeAPRStatus;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.CreateAPR;
@@ -20,6 +23,7 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("aprs")]
 [ApiController]
+[Authorize]
 public class APRController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -27,6 +31,7 @@ public class APRController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet("allocated-app-item-ids")]
     [ProducesResponseType(typeof(ApiResponse<List<Guid>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetAllocatedAPPItemIds([FromQuery] Guid? excludeAprId = null)
     {
         var result = await mediator.Send(new GetAllocatedAPPItemIdsQuery(excludeAprId));
@@ -41,6 +46,7 @@ public class APRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [HasPermission(Permissions.Procurement.prCreate)]
     public async Task<IActionResult> CreateAPR([FromBody] CreateAPRCommand command)
     {
         var result = await mediator.Send(command);
@@ -54,6 +60,7 @@ public class APRController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<APRListItemDto>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetAPRs([FromQuery] GetAPRsQuery query)
     {
         var result = await mediator.Send(query);
@@ -66,6 +73,7 @@ public class APRController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<APRDetailDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<APRDetailDto>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetAPRById(Guid id)
     {
         var result = await mediator.Send(new GetAPRByIdQuery(id));
@@ -79,6 +87,7 @@ public class APRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> UpdateAPR(Guid id, [FromBody] UpdateAPRCommand command)
     {
         if (id != command.Id)
@@ -94,6 +103,7 @@ public class APRController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> DeleteAPR(Guid id)
     {
         var result = await mediator.Send(new DeleteAPRCommand(id));
@@ -107,6 +117,7 @@ public class APRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prCreate)]
     public async Task<IActionResult> SubmitAPR(Guid id)
     {
         var result = await mediator.Send(new SubmitAPRCommand(id));
@@ -120,6 +131,7 @@ public class APRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> ChangeStatus(
         [FromRoute] Guid id,
         [FromBody] ChangeAPRStatusRequest request)
@@ -142,6 +154,7 @@ public class APRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prCreate)]
     public async Task<IActionResult> AddCatalogItems(Guid id, [FromBody] AddCatalogItemsToAPRCommand command)
     {
         if (id != command.APRId)
@@ -160,6 +173,7 @@ public class APRController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.prCreate)]
     public async Task<IActionResult> RemoveAPRItem(Guid id, string itemIdentifier)
     {
         var result = await mediator.Send(new RemoveAPRItemCommand(id, itemIdentifier));

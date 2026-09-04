@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.Category.Commands.UpdateCategory;
 using ERPEZ.Application.Features.Planning.Category.Dtos;
 using ERPEZ.Application.Features.Planning.Category.Queries.GetCategories;
 using ERPEZ.Application.Features.Planning.Category.Queries.GetCategoryById;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,9 +14,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("categories")]
 [ApiController]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class CategoryController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryCommand command)
@@ -24,6 +30,7 @@ public class CategoryController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<CategoryResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCategories([FromQuery] GetCategoriesQuery query)
     {
@@ -32,6 +39,7 @@ public class CategoryController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(ApiResponse<CategoryResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCategoryById(Guid id)
@@ -41,6 +49,7 @@ public class CategoryController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -52,6 +61,7 @@ public class CategoryController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteCategory(Guid id)

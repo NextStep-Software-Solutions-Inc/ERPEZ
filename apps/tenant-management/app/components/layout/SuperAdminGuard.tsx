@@ -1,14 +1,14 @@
-import { useUser } from "@clerk/react-router";
+import { useKeycloak } from "~/providers/KeycloakProvider";
 import Unauthorized from "./Unauthorized";
 
 interface SuperAdminGuardProps {
     children: React.ReactNode;
 }
-export default function SuperAdminGuard({ children }: SuperAdminGuardProps) {
-    const { user } = useUser();
-    const role = user?.publicMetadata?.role;
 
-    if (role !== "super-admin") {
+export default function SuperAdminGuard({ children }: SuperAdminGuardProps) {
+    const { isSuperAdmin } = useKeycloak();
+
+    if (!isSuperAdmin) {
         return <Unauthorized />;
     }
 

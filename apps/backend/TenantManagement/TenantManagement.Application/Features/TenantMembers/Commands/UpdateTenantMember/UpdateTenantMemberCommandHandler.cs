@@ -22,14 +22,30 @@ public class UpdateTenantMemberCommandHandler(IUnitOfWork unitOfWork)
             .FindAsync(ts => ts.Id == request.Id && ts.TenantId == dto.TenantId, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant member not found");
 
         var duplicate = await unitOfWork.TenantMemberRepository
-            .FindAsync(tm => tm.UserId == dto.UserId && tm.Role == dto.Role && tm.TenantId == dto.TenantId && tm.Id != request.Id, cancellationToken: cancellationToken);
+            .FindAsync(tm => tm.UserId == dto.UserId && tm.TenantId == dto.TenantId && tm.Id != request.Id, cancellationToken: cancellationToken);
 
-        if (duplicate != null) throw new ConflictException("Another tenant member with the same UserId and Role already exists for this tenant.");
+        if (duplicate != null) throw new ConflictException("Another tenant member with the same UserId already exists for this tenant.");
 
         tenantMember.TenantId = dto?.TenantId ?? tenantMember.TenantId;
         tenantMember.UserId = dto?.UserId ?? tenantMember.UserId;
-        tenantMember.Role = dto?.Role ?? tenantMember.Role;
+        if (!string.IsNullOrWhiteSpace(dto?.ExternalIdentityId))
+        {
+            tenantMember.ExternalIdentityId = dto.ExternalIdentityId;
+        }
         tenantMember.Status = dto?.Status ?? tenantMember.Status;
+
+        if (dto?.RoleIds != null)
+        {
+            tenantMember.RoleAssignments.Clear();
+            foreach (var roleId in dto.RoleIds.Distinct())
+            {
+                tenantMember.RoleAssignments.Add(new TenantMemberRoleAssignment
+                {
+                    TenantMemberId = tenantMember.Id,
+                    RoleId = roleId
+                });
+            }
+        }
 
         unitOfWork.TenantMemberRepository.Update(tenantMember);
         await unitOfWork.SaveChangesAsync(cancellationToken);

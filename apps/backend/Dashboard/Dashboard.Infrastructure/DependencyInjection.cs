@@ -193,7 +193,8 @@ public static class DependencyInjection
                 await ERPEZ.Infrastructure.Persistence.Seeders.ProcurementActivityTypeSeeder.SeedAsync(unitOfWork);
                 await ERPEZ.Infrastructure.Persistence.Seeders.PublicHolidaySeeder.SeedAsync(unitOfWork);
                 await ERPEZ.Infrastructure.Persistence.Seeders.ItemCategorySeeder.SeedAsync(dbContext);
-                await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedAsync(dbContext);
+                await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedAsync(dbContext); 
+                await ERPEZ.Infrastructure.Persistence.Seeders.OrganizationStructureSeeder.SeedAsync(dbContext);
             }
             catch (InvalidOperationException ex)
             {

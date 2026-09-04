@@ -12,6 +12,8 @@ public record RFQListItemDto
     public DateOnly? Deadline { get; init; }
     public string? DeliveryPeriod { get; init; }
     public StatusEnum Status { get; init; }
+    public decimal TotalAmount { get; init; }
+    public int ApplicantCount { get; init; }
 }
 
 public record RFQDetailDto

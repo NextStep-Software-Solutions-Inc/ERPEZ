@@ -13,7 +13,7 @@ export function SalaryGradesTab() {
   const [editingItem, setEditingItem] = useState<SalaryGradeSetting | null>(null)
   const [deleteItem, setDeleteItem] = useState<SalaryGradeSetting | null>(null)
 
-  const { data: response } = useSalaryGrades({ pathParams: {}, queryParams: {} })
+  const { data: response } = useSalaryGrades({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'gradeNumber' } })
   const items = response?.data ?? []
 
   const actions: MetaActions = ['write', 'delete']

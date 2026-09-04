@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.ProcurementWorkflow.Commands.UpdatePro
 using ERPEZ.Application.Features.Planning.ProcurementWorkflow.Dtos;
 using ERPEZ.Application.Features.Planning.ProcurementWorkflow.Queries.GetProcurementWorkflowById;
 using ERPEZ.Application.Features.Planning.ProcurementWorkflow.Queries.GetProcurementWorkflows;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("procurement-workflows")]
 [ApiController]
+[Authorize]
 public class ProcurementWorkflowController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateProcurementWorkflow([FromBody] CreateProcurementWorkflowCommand command)
     {
         var result = await mediator.Send(command);
@@ -24,7 +30,10 @@ public class ProcurementWorkflowController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<ProcurementWorkflowResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetProcurementWorkflows([FromQuery] GetProcurementWorkflowsQuery query)
     {
         var result = await mediator.Send(query);
@@ -32,8 +41,11 @@ public class ProcurementWorkflowController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(ApiResponse<ProcurementWorkflowResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetProcurementWorkflowById(Guid id)
     {
         var result = await mediator.Send(new GetProcurementWorkflowByIdQuery(id));
@@ -41,9 +53,12 @@ public class ProcurementWorkflowController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateProcurementWorkflow(Guid id, [FromBody] UpdateProcurementWorkflowRequest updateProcurementWorkflow)
     {
         var request = new UpdateProcurementWorkflowCommand
@@ -57,8 +72,11 @@ public class ProcurementWorkflowController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteProcurementWorkflow(Guid id)
     {
         var result = await mediator.Send(new DeleteProcurementWorkflowCommand(id));

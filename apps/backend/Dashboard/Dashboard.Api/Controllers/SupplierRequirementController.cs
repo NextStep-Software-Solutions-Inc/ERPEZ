@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.SupplierRequirement.Commands.UpdateSup
 using ERPEZ.Application.Features.Planning.SupplierRequirement.Dtos;
 using ERPEZ.Application.Features.Planning.SupplierRequirement.Queries.GetSupplierRequirementById;
 using ERPEZ.Application.Features.Planning.SupplierRequirement.Queries.GetSupplierRequirements;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Sieve.Models;
@@ -13,14 +15,18 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("supplier-requirements")]
 [ApiController]
+[Authorize]
 public class SupplierRequirementController(ISender mediator) : ControllerBase
 {
     /// <summary>
     /// Create a new supplier requirement document
     /// </summary>
     [HttpPost]
+    [HasPermission(Permissions.Procurement.supplierManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateSupplierRequirement([FromBody] CreateSupplierRequirementCommand command)
     {
         var result = await mediator.Send(command);
@@ -35,7 +41,10 @@ public class SupplierRequirementController(ISender mediator) : ControllerBase
     /// Get all supplier requirements with filtering, sorting, and pagination
     /// </summary>
     [HttpGet]
+    [HasPermission(Permissions.Procurement.supplierView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<SupplierRequirementResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetSupplierRequirements([FromQuery] SieveModel sieveModel)
     {
         var query = new GetSupplierRequirementsQuery(sieveModel);
@@ -47,8 +56,11 @@ public class SupplierRequirementController(ISender mediator) : ControllerBase
     /// Get supplier requirement by ID
     /// </summary>
     [HttpGet("{id:guid}")]
+    [HasPermission(Permissions.Procurement.supplierView)]
     [ProducesResponseType(typeof(ApiResponse<SupplierRequirementResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<SupplierRequirementResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetSupplierRequirementById(Guid id)
     {
         var query = new GetSupplierRequirementByIdQuery(id);
@@ -60,9 +72,12 @@ public class SupplierRequirementController(ISender mediator) : ControllerBase
     /// Update an existing supplier requirement
     /// </summary>
     [HttpPut("{id:guid}")]
+    [HasPermission(Permissions.Procurement.supplierManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateSupplierRequirement(Guid id, [FromBody] UpdateSupplierRequirementRequest updateSupplierRequirement)
     {
         var command = new UpdateSupplierRequirementCommand
@@ -78,8 +93,11 @@ public class SupplierRequirementController(ISender mediator) : ControllerBase
     /// Delete a supplier requirement
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [HasPermission(Permissions.Procurement.supplierManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteSupplierRequirement(Guid id)
     {
         var command = new DeleteSupplierRequirementCommand(id);

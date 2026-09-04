@@ -1,3 +1,5 @@
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Modules.Commands.CreateModule;
 using ERPEZ.TenantManagement.Application.Features.Modules.Commands.DeleteModule;
@@ -20,6 +22,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> CreateModule([FromBody] CreateModuleCommand command)
         {
             var module = await mediator.Send(command);
@@ -33,6 +36,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [HttpGet]
         //[Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<Module>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> GetModules([FromQuery] GetModulesQuery query)
         {
             var result = await mediator.Send(query);
@@ -43,6 +47,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<ModuleDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> GetModuleById(Guid id)
         {
             var module = await mediator.Send(new GetModuleByIdQuery(id));
@@ -55,6 +60,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> UpdateModule(Guid id, [FromBody] UpdateModuleDto updateModule)
         {
             var request = new UpdateModuleCommand
@@ -71,6 +77,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> DeleteModule(Guid id)
         {
             var command = new DeleteModuleCommand(id);

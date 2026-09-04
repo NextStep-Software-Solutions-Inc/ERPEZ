@@ -43,6 +43,9 @@ public static class MiddlewareExtensions
         // 6. Authentication (after routing)
         app.UseAuthentication();
 
+        // 6.1 Tenant Context resolution (after authentication, before authorization)
+        app.UseMiddleware<ERPEZ.Shared.Middlewares.TenantContextMiddleware>();
+
         // 7. Authorization (after authentication)
         app.UseAuthorization();
 

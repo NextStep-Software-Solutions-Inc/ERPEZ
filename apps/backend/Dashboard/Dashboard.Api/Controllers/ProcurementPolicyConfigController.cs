@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.ProcurementPolicyConfig.Commands.Updat
 using ERPEZ.Application.Features.Planning.ProcurementPolicyConfig.Dtos;
 using ERPEZ.Application.Features.Planning.ProcurementPolicyConfig.Queries.GetProcurementPolicyConfigById;
 using ERPEZ.Application.Features.Planning.ProcurementPolicyConfig.Queries.GetProcurementPolicyConfigs;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("procurement-policy-configs")]
 [ApiController]
+[Authorize]
 public class ProcurementPolicyConfigController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Procurement.procurementThresholdsManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateProcurementPolicyConfig([FromBody] CreateProcurementPolicyConfigCommand command)
     {
         var result = await mediator.Send(command);
@@ -28,7 +34,10 @@ public class ProcurementPolicyConfigController(ISender mediator) : ControllerBas
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<ProcurementPolicyConfigResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetProcurementPolicyConfigs([FromQuery] GetProcurementPolicyConfigsQuery query)
     {
         var result = await mediator.Send(query);
@@ -36,8 +45,11 @@ public class ProcurementPolicyConfigController(ISender mediator) : ControllerBas
     }
 
     [HttpGet("{id:guid}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(ApiResponse<ProcurementPolicyConfigResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<ProcurementPolicyConfigResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetProcurementPolicyConfigById(Guid id)
     {
         var result = await mediator.Send(new GetProcurementPolicyConfigByIdQuery(id));
@@ -45,9 +57,12 @@ public class ProcurementPolicyConfigController(ISender mediator) : ControllerBas
     }
 
     [HttpPut("{id:guid}")]
+    [HasPermission(Permissions.Procurement.procurementThresholdsManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateProcurementPolicyConfig(Guid id, [FromBody] UpdateProcurementPolicyConfigRequest request)
     {
         var command = new UpdateProcurementPolicyConfigCommand
@@ -63,8 +78,11 @@ public class ProcurementPolicyConfigController(ISender mediator) : ControllerBas
     }
 
     [HttpDelete("{id:guid}")]
+    [HasPermission(Permissions.Procurement.procurementThresholdsManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteProcurementPolicyConfig(Guid id)
     {
         var result = await mediator.Send(new DeleteProcurementPolicyConfigCommand(id));

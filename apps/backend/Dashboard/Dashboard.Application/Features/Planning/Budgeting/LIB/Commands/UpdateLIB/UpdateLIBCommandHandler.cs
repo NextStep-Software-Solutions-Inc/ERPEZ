@@ -1,12 +1,17 @@
-using ERPEZ.Application.Features.Planning.Budgeting.Common;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Exceptions;
+using ERPEZ.Shared.Interfaces;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.UpdateLIB;
 
-public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
+public class UpdateLIBCommandHandler(
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUser,
+    IUserAuthorizationService authorizationService,
+    ITenantContextService tenantContext)
     : IRequestHandler<UpdateLIBCommand, ApiResponse<Unit>>
 {
     private static readonly HashSet<string> editableStatuses =
@@ -18,6 +23,24 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
 
         var entity = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(command.Id, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {command.Id} not found.");
+
+        // ── Layer 3: Fail-Closed Office Resource Scoping Guard ─────────────
+        if (!currentUser.IsSuperAdmin)
+        {
+            var hasGlobalAccess = await authorizationService.HasPermissionAsync(
+                currentUser.ExternalIdentityId ?? string.Empty,
+                tenantContext.TenantId,
+                Permissions.Planning.viewGlobalDashboard,
+                cancellationToken);
+
+            if (!hasGlobalAccess)
+            {
+                if (!currentUser.OfficeId.HasValue || entity.OfficeId != currentUser.OfficeId.Value)
+                {
+                    throw new ForbiddenException("You cannot modify a Line Item Budget outside your assigned Office.");
+                }
+            }
+        }
 
         // ── 1. Status gate: only Proposed/Draft/Returned LIBs are editable ────
         if (!editableStatuses.Contains(entity.Status))

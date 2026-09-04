@@ -24,8 +24,7 @@ const createTenantSchema = z.object({
         .min(2, "Name must be at least 2 characters")
         .max(100, "Name cannot exceed 100 characters"),
     onPremise: z.boolean({
-        required_error: "Please specify if the tenant is on-premise",
-        invalid_type_error: "On-premise must be a boolean value"
+        message: "Please specify if the tenant is on-premise",
     }),
     billingContactEmail: z.string()
         .email("Please enter a valid email address"),

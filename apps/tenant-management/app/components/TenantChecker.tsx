@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/react-router";
+import { useKeycloak } from "~/providers/KeycloakProvider";
 import { TenantOverviewSkeleton } from "./features/overview/skeleton/TenantOverviewSkeleton";
 import { useTenant } from "~/providers/TenantProvider";
 
@@ -9,10 +9,10 @@ interface TenantCheckerProps {
 }
 
 export default function TenantChecker({ children, inverted = false, fallback }: TenantCheckerProps) {
-    const { isLoaded } = useUser();
+    const { isInitialized } = useKeycloak();
     const { tenant, isLoading } = useTenant();
 
-    if (!isLoaded || isLoading) {
+    if (!isInitialized || isLoading) {
         return (
             <div className="p-6">
                 <TenantOverviewSkeleton />

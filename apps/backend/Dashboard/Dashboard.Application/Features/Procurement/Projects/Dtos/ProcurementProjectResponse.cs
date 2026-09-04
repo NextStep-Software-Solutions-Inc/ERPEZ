@@ -22,6 +22,10 @@ public record ProcurementProjectResponse
     public string Status { get; init; } = string.Empty;
     public int AppItemCount { get; init; }
     public decimal SumABC { get; init; }
+    public int ApplicantCount { get; init; }
+    public bool HasRFQ { get; init; }
+    public bool HasApprovedRFQ { get; init; }
+    public int RFQCount { get; init; }
 
     // Top-level flattened resolution properties
     public string? ResolutionType { get; init; }
@@ -130,10 +134,16 @@ public record ProcurementProjectResponse
             ModeOfProcurementName = c.ConsolidatedPR.ConsolidatedPRItems
                 .Where(ci => ci.ProcurementMode != null)
                 .Select(ci => ci.ProcurementMode!.Name)
-                .FirstOrDefault() ?? string.Empty
+                .FirstOrDefault() ?? string.Empty,
+            HasRFQ = c.ConsolidatedPR.RFQs.Any(r => !r.IsDeleted),
+            HasApprovedRFQ = c.ConsolidatedPR.RFQs.Any(r => !r.IsDeleted && r.Status == StatusEnum.Approved),
+            RFQCount = c.ConsolidatedPR.RFQs.Count(r => !r.IsDeleted)
         } : null,
         ABC = c.ABC,
         Status = c.Status,
+        HasRFQ = c.ConsolidatedPR != null && c.ConsolidatedPR.RFQs.Any(r => !r.IsDeleted),
+        HasApprovedRFQ = c.ConsolidatedPR != null && c.ConsolidatedPR.RFQs.Any(r => !r.IsDeleted && r.Status == StatusEnum.Approved),
+        RFQCount = c.ConsolidatedPR != null ? c.ConsolidatedPR.RFQs.Count(r => !r.IsDeleted) : 0,
         ResolutionType = c.BACResolutions.Select(r => r.ResolutionType).FirstOrDefault(),
         ResolutionNumber = c.BACResolutions.Select(r => r.ResolutionNumber).FirstOrDefault(),
         DateResolved = c.BACResolutions.Select(r => (DateTime?)r.DateResolved).FirstOrDefault(),
@@ -400,6 +410,9 @@ public record ConsolidatedPRSummaryResponse
     public string Description { get; init; } = string.Empty;
     public Guid? ModeOfProcurementId { get; init; }
     public string ModeOfProcurementName { get; init; } = string.Empty;
+    public bool HasRFQ { get; init; }
+    public bool HasApprovedRFQ { get; init; }
+    public int RFQCount { get; init; }
 }
 
 public record ProjectUserResponse

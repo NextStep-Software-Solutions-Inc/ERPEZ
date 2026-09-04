@@ -6,4 +6,7 @@ namespace ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurement
 
 public record GetProcurementProjectsQuery : PaginatedQuery<PaginatedApiResponse<ProcurementProjectResponse>>
 {
+    public bool? HasRFQ { get; init; }
+    public bool? HasApprovedRFQ { get; init; }
+    public bool? ForSupplierPortal { get; init; }
 }

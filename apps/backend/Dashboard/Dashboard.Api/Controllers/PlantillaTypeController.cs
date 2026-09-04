@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.PlantillaType.Commands.UpdatePlantilla
 using ERPEZ.Application.Features.Planning.PlantillaType.Dtos;
 using ERPEZ.Application.Features.Planning.PlantillaType.Queries.GetPlantillaTypeById;
 using ERPEZ.Application.Features.Planning.PlantillaType.Queries.GetPlantillaTypes;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("plantilla-types")]
 [ApiController]
+[Authorize]
 public class PlantillaTypeController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreatePlantillaType([FromBody] CreatePlantillaTypeCommand command)
     {
         var result = await mediator.Send(command);
@@ -24,7 +30,10 @@ public class PlantillaTypeController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<PlantillaTypeResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPlantillaTypes([FromQuery] GetPlantillaTypesQuery query)
     {
         var result = await mediator.Send(query);
@@ -32,8 +41,11 @@ public class PlantillaTypeController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(ApiResponse<PlantillaTypeResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPlantillaTypeById(Guid id)
     {
         var result = await mediator.Send(new GetPlantillaTypeByIdQuery(id));
@@ -41,9 +53,12 @@ public class PlantillaTypeController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdatePlantillaType(Guid id, [FromBody] UpdatePlantillaTypeRequest updatePlantillaType)
     {
         var request = new UpdatePlantillaTypeCommand
@@ -57,8 +72,11 @@ public class PlantillaTypeController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeletePlantillaType(Guid id)
     {
         var result = await mediator.Send(new DeletePlantillaTypeCommand(id));

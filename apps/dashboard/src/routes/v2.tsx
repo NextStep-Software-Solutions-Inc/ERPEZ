@@ -5,7 +5,6 @@
  */
 
 import { Outlet, createFileRoute } from '@tanstack/react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DashboardLayoutProvider from '@/providers/DashboardLayoutProvider';
 import Providers from '@/providers/v2/Providers';
 import DirectionProvider from '@/providers/v2/DirectionProvider';
@@ -13,7 +12,6 @@ import globals from '@/styles/v2/globals.css?url';
 import theme from '@/styles/v2/theme.css?url';
 import "flatpickr/dist/themes/light.css";
 import "simplebar-react/dist/simplebar.min.css";
-import { useState } from 'react';
 
 export const Route = createFileRoute('/v2')({
     component: RouteComponent,
@@ -32,17 +30,13 @@ export const Route = createFileRoute('/v2')({
 });
 
 function RouteComponent() {
-    const [queryClient] = useState(() => new QueryClient());
-
     return (
-        <QueryClientProvider client={queryClient}>
-            <Providers>
-                <DirectionProvider>
-                    <DashboardLayoutProvider>
-                        <Outlet />
-                    </DashboardLayoutProvider>
-                </DirectionProvider>
-            </Providers>
-        </QueryClientProvider>
+        <Providers>
+            <DirectionProvider>
+                <DashboardLayoutProvider>
+                    <Outlet />
+                </DashboardLayoutProvider>
+            </DirectionProvider>
+        </Providers>
     );
 }

@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import ModeCard from '../components/ModeCard'
 import { Combobox } from '@/components/ui/combobox'
+import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getOfficesRequest } from '@/components/features/planning/office/office/handlers/getOfficesRequest'
 import { getFundSourcesRequest } from '@/components/features/planning/fund-source/handlers/getFundSourcesRequest'
@@ -177,19 +178,6 @@ export default function CreateWFPForm({
     })
   }, [rawOpcrs, selectedOfficeId])
 
-  // Map Fund Sources to options format for searchable Combobox (sorted alphabetically)
-  const fundSourceOptions = useMemo(() => {
-    return fundSources
-      .map((fs: any) => {
-        const codeStr = fs.code ? ` (${fs.code})` : ''
-        return {
-          value: fs.id,
-          label: `${fs.name}${codeStr}`,
-          raw: fs,
-        }
-      })
-      .sort((a: any, b: any) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))
-  }, [fundSources])
 
   // Auto-inherit Fiscal Year Implementation Dates from selected OPCR
   useEffect(() => {
@@ -345,17 +333,18 @@ export default function CreateWFPForm({
             <Label htmlFor={field.name} className="text-slate-800 font-bold text-xs">
               Fund Source <span className="text-rose-500">*</span>
             </Label>
-            <Combobox
-              options={fundSourceOptions}
+            <FundSourceCombobox
+              options={fundSources}
               value={field.state.value || ''}
               onValueChange={(val) => {
                 field.handleChange(val)
                 updateFormData('fundSourceId', val)
               }}
               placeholder={fundSourcesLoading ? 'Loading fund sources...' : '-- Search or select Fund Source --'}
-              searchPlaceholder="Search fund source title or code..."
+              searchPlaceholder="Search by UACS code, fund name, or authorization..."
               emptyMessage="No Fund Source found matching your search."
               disabled={fundSourcesLoading}
+              isLoading={fundSourcesLoading}
               className="w-full text-xs"
             />
             {field.state.meta.errors.length > 0 && (

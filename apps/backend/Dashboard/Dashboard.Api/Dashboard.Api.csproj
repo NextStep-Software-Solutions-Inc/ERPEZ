@@ -22,7 +22,12 @@
   <ItemGroup>
     <ProjectReference Include="..\Dashboard.Application\Dashboard.Application.csproj" />
     <ProjectReference Include="..\Dashboard.Infrastructure\Dashboard.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\TenantManagement\TenantManagement.Infrastructure\TenantManagement.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Shared\Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.AspNetCore.Authorization" />
   </ItemGroup>
 
 </Project>

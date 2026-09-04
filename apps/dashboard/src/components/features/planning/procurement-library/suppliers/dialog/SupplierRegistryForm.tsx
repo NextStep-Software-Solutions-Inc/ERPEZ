@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { toast } from 'sonner'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import FileUpload from '../../../file-upload/FileUpload'
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { PlusCircle, Trash2 } from 'lucide-react'
+import { ExternalLink, PlusCircle, Trash2 } from 'lucide-react'
 import {
   useCreateSupplier,
   useSupplierById,
@@ -50,6 +51,9 @@ const createRequirementRow = (
   requirementName: '',
   file: null,
   fileId: null,
+  url: null,
+  isVerified: false,
+  isExisting: false,
   ...overrides,
 })
 
@@ -115,7 +119,7 @@ export function SupplierRegistryForm({
 
   const { data: categoriesData } = useSupplierCategories({
     pathParams: {},
-    queryParams: {},
+    queryParams: { pageSize: 100 },
   })
 
   const { data: supplierData, isLoading: isSupplierLoading } = useSupplierById({
@@ -128,8 +132,21 @@ export function SupplierRegistryForm({
   const updateMutation = useUpdateSupplier()
   const { mutateAsync: uploadFile, isPending: isUploadingFile } =
     useUploadFile()
-  const categoryOptions = categoriesData?.data ?? []
   const supplierRecord = supplierData?.data
+
+  const categoryOptions = useMemo(() => {
+    const list = Array.isArray(categoriesData?.data)
+      ? [...categoriesData.data]
+      : []
+    if (
+      supplierRecord?.supplierCategory &&
+      supplierRecord.supplierCategory.id &&
+      !list.some((cat) => cat.id === supplierRecord.supplierCategory?.id)
+    ) {
+      list.push(supplierRecord.supplierCategory)
+    }
+    return list
+  }, [categoriesData?.data, supplierRecord?.supplierCategory])
 
   const [formData, setFormData] =
     useState<SupplierFormValues>(createEmptyValues())
@@ -143,6 +160,29 @@ export function SupplierRegistryForm({
     }
 
     if (isEditing && supplierRecord) {
+      const resolvedCategoryId =
+        supplierRecord.supplierCategory?.id ||
+        supplierRecord.supplierCategoryId ||
+        (typeof (supplierRecord as unknown as Record<string, unknown>)
+          .supplierCategory === 'string'
+          ? ((supplierRecord as unknown as Record<string, unknown>)
+              .supplierCategory as string)
+          : '') ||
+        categoryOptions.find(
+          (c) =>
+            c.name?.trim().toLowerCase() ===
+            (
+              (supplierRecord as unknown as Record<string, unknown>)
+                .supplierCategoryName ||
+              supplierRecord.supplierCategory?.name ||
+              ''
+            )
+              .toString()
+              .trim()
+              .toLowerCase(),
+        )?.id ||
+        ''
+
       setFormData({
         name: supplierRecord.name ?? '',
         businessPermitNo: supplierRecord.businessPermitNo ?? '',
@@ -152,18 +192,22 @@ export function SupplierRegistryForm({
         email: supplierRecord.email ?? '',
         tinNumber: supplierRecord.tinNumber ?? '',
         philGEPSNumber: supplierRecord.philGEPSNumber ?? '',
-        supplierCategoryId:
-          supplierRecord.supplierCategory?.id ??
-          supplierRecord.supplierCategoryId,
+        supplierCategoryId: resolvedCategoryId,
         status: normalizeSupplierStatus(supplierRecord.status),
         isBlacklisted: supplierRecord.isBlacklisted,
         requirements:
-          supplierRecord.supplierRequirements?.map((requirement) => ({
-            id: requirement.supplierRequirementId,
-            requirementName: requirement.requirementName ?? '',
-            file: null,
-            fileId: requirement.fileId ?? null,
-          })) ?? [],
+          supplierRecord.supplierRequirements &&
+          supplierRecord.supplierRequirements.length > 0
+            ? supplierRecord.supplierRequirements.map((requirement) => ({
+                id: requirement.supplierRequirementId,
+                requirementName: requirement.requirementName ?? '',
+                file: null,
+                fileId: requirement.fileId ?? null,
+                url: requirement.url ?? null,
+                isVerified: requirement.isVerified ?? false,
+                isExisting: true,
+              }))
+            : [createRequirementRow()],
       })
       setErrors({})
     }
@@ -172,7 +216,7 @@ export function SupplierRegistryForm({
       setFormData(createEmptyValues())
       setErrors({})
     }
-  }, [isEditing, open, supplierRecord])
+  }, [isEditing, open, supplierRecord, categoryOptions])
 
   const handleClose = () => {
     onOpenChange(false)
@@ -204,22 +248,21 @@ export function SupplierRegistryForm({
       nextErrors.email = 'Invalid email format'
     }
 
-    if (!isEditing) {
-      if (!formData.requirements || formData.requirements.length === 0) {
-        nextErrors.requirements = 'At least one requirement is required'
-      } else {
-        formData.requirements.forEach((requirement, index) => {
-          if (!requirement.requirementName.trim()) {
-            nextErrors[`supplierRequirements.${index}.requirementName`] =
-              'Requirement name is required'
-          }
+    if (!formData.requirements || formData.requirements.length === 0) {
+      nextErrors.requirements = 'At least one requirement is required'
+    } else {
+      formData.requirements.forEach((requirement, index) => {
+        if (!requirement.requirementName.trim()) {
+          nextErrors[`supplierRequirements.${index}.requirementName`] =
+            'Requirement name is required'
+        }
 
-          if (!requirement.file) {
-            nextErrors[`supplierRequirements.${index}.file`] =
-              'File is required'
-          }
-        })
-      }
+        // A requirement must have either a newly selected File, an existing URL, or a fileId
+        if (!requirement.file && !requirement.url && !requirement.fileId) {
+          nextErrors[`supplierRequirements.${index}.file`] =
+            'File is required'
+        }
+      })
     }
 
     setErrors(nextErrors)
@@ -234,33 +277,32 @@ export function SupplierRegistryForm({
     }
 
     try {
-      const uploadedRequirements = isEditing
-        ? formData.requirements.map((requirement) => ({
+      const uploadedRequirements = await Promise.all(
+        formData.requirements.map(async (requirement) => {
+          let fileId = requirement.fileId ?? null
+          if (requirement.file) {
+            const uploadResult = await uploadFile({
+              pathParams: {},
+              payload: { file: requirement.file },
+            })
+
+            if (!uploadResult?.data) {
+              throw new Error('File upload failed')
+            }
+            fileId = uploadResult.data
+          }
+
+          return {
+            id: requirement.isExisting ? requirement.id : null,
             requirementName: toNullable(requirement.requirementName),
-            fileId: toNullable(requirement.fileId),
-          }))
-        : await Promise.all(
-            formData.requirements.map(async (requirement) => {
-              if (!requirement.file) {
-                throw new Error('File is required for each requirement')
-              }
-              const uploadResult = await uploadFile({
-                pathParams: {},
-                payload: { file: requirement.file },
-              })
+            fileId: toNullable(fileId),
+            url: requirement.file ? null : toNullable(requirement.url),
+            isVerified: requirement.file ? false : requirement.isVerified,
+          }
+        }),
+      )
 
-              if (!uploadResult?.data) {
-                throw new Error('File upload failed')
-              }
-
-              return {
-                requirementName: toNullable(requirement.requirementName),
-                fileId: uploadResult.data,
-              }
-            }),
-          )
-
-      const createPayload = {
+      const payload = {
         name: toNullable(formData.name),
         businessPermitNo: toNullable(formData.businessPermitNo),
         contactPerson: toNullable(formData.contactPerson),
@@ -278,39 +320,41 @@ export function SupplierRegistryForm({
         await updateMutation.mutateAsync({
           pathParams: { id: supplierId ?? '' },
           payload: {
-            name: createPayload.name,
-            businessPermitNo: createPayload.businessPermitNo,
-            contactPerson: createPayload.contactPerson,
-            contactNumber: createPayload.contactNumber,
-            address: createPayload.address,
-            email: createPayload.email,
-            tinNumber: createPayload.tinNumber,
-            philGEPSNumber: createPayload.philGEPSNumber,
-            supplierCategoryId: createPayload.supplierCategoryId,
+            name: payload.name,
+            businessPermitNo: payload.businessPermitNo,
+            contactPerson: payload.contactPerson,
+            contactNumber: payload.contactNumber,
+            address: payload.address,
+            email: payload.email,
+            tinNumber: payload.tinNumber,
+            philGEPSNumber: payload.philGEPSNumber,
+            supplierCategoryId: payload.supplierCategoryId,
             isBlacklisted: formData.isBlacklisted,
             status: normalizeSupplierStatus(formData.status),
+            requirements: uploadedRequirements,
+            supplierRequirements: uploadedRequirements,
           },
         })
       } else {
-        await createMutation.mutateAsync(
-          {
-            pathParams: {},
-            payload: createPayload,
-          },
-          {
-            onSuccess: () => {
-              void queryClient.invalidateQueries({
-                predicate: (query) => {
-                  const key = query.queryKey[0]
-                  return typeof key === 'string' && key.startsWith('/suppliers')
-                },
-              })
-            },
-          },
-        )
+        await createMutation.mutateAsync({
+          pathParams: {},
+          payload,
+        })
       }
 
+      void queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0]
+          return typeof key === 'string' && key.startsWith('/suppliers')
+        },
+      })
+
       setErrors({})
+      toast.success(
+        isEditing
+          ? 'Supplier updated successfully'
+          : 'Supplier created successfully',
+      )
       onSaved?.()
       handleClose()
     } catch (error) {
@@ -417,7 +461,6 @@ export function SupplierRegistryForm({
               </Label>
               <Select
                 value={formData.supplierCategoryId}
-                disabled={isEditing}
                 onValueChange={(value) =>
                   setFormData((current) => ({
                     ...current,
@@ -425,7 +468,7 @@ export function SupplierRegistryForm({
                   }))
                 }
               >
-                <SelectTrigger id="supplierCategoryId" disabled={isEditing}>
+                <SelectTrigger id="supplierCategoryId">
                   <SelectValue placeholder="Select supplier category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -625,102 +668,133 @@ export function SupplierRegistryForm({
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              {!isEditing && (
-                <>
-                  <div className="flex items-center justify-between gap-3">
-                    <Label className="mb-0">
-                      Requirements <span className="text-destructive">*</span>
-                    </Label>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="inline-flex items-center gap-2 text-primary"
-                      onClick={addRequirement}
-                      disabled={isSaving}
-                    >
-                      <PlusCircle className="h-4 w-4" />
-                      <span className="text-sm">Add Requirement</span>
-                    </Button>
-                  </div>
+              <div className="flex items-center justify-between gap-3">
+                <Label className="mb-0">
+                  Requirements <span className="text-destructive">*</span>
+                </Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="inline-flex items-center gap-2 text-primary"
+                  onClick={addRequirement}
+                  disabled={isSaving}
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  <span className="text-sm">Add Requirement</span>
+                </Button>
+              </div>
 
-                  {errors.requirements && (
-                    <p className="mt-1 text-sm text-destructive">
-                      {errors.requirements}
-                    </p>
-                  )}
+              {errors.requirements && (
+                <p className="mt-1 text-sm text-destructive">
+                  {errors.requirements}
+                </p>
+              )}
 
-                  <div className="mt-2 space-y-3">
-                    {formData.requirements.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        No requirements added yet.
+              <div className="mt-2 space-y-3">
+                {formData.requirements.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No requirements added yet.
+                  </p>
+                )}
+
+                {formData.requirements.map((requirement, index) => (
+                  <div
+                    key={requirement.id}
+                    className="space-y-3 rounded-md border border-border bg-muted/30 p-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id={`req-name-${requirement.id}`}
+                        value={requirement.requirementName}
+                        onChange={(event) =>
+                          updateRequirement(index, {
+                            requirementName: event.target.value,
+                          })
+                        }
+                        placeholder="Enter requirement name"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRequirement(index)}
+                        className="shrink-0 text-destructive"
+                        aria-label="Remove requirement"
+                        disabled={
+                          formData.requirements.length === 1 || isSaving
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {errors[
+                      `supplierRequirements.${index}.requirementName`
+                    ] && (
+                      <p className="text-sm text-destructive">
+                        {
+                          errors[
+                            `supplierRequirements.${index}.requirementName`
+                          ]
+                        }
                       </p>
                     )}
 
-                    {formData.requirements.map((requirement, index) => (
-                      <div
-                        key={requirement.id}
-                        className="space-y-3 rounded-md border border-border bg-muted/30 p-3"
-                      >
+                    {requirement.url && !requirement.file && (
+                      <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-xs">
                         <div className="flex items-center gap-2">
-                          <Input
-                            id={`req-name-${requirement.id}`}
-                            value={requirement.requirementName}
-                            onChange={(event) =>
-                              updateRequirement(index, {
-                                requirementName: event.target.value,
-                              })
-                            }
-                            placeholder="Enter requirement name"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeRequirement(index)}
-                            className="shrink-0 text-destructive"
-                            aria-label="Remove requirement"
-                            disabled={
-                              formData.requirements.length === 1 || isSaving
-                            }
+                          <a
+                            href={requirement.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            View Current Document
+                          </a>
                         </div>
-
-                        {errors[
-                          `supplierRequirements.${index}.requirementName`
-                        ] && (
-                          <p className="text-sm text-destructive">
-                            {
-                              errors[
-                                `supplierRequirements.${index}.requirementName`
-                              ]
-                            }
-                          </p>
-                        )}
-
-                        <FileUpload
-                          onFileChange={(file: File | null) =>
-                            updateRequirement(index, {
-                              file,
-                              fileId: null,
-                            })
+                        <Badge
+                          variant="outline"
+                          className={
+                            requirement.isVerified
+                              ? 'border-green-200 bg-green-50 text-green-700'
+                              : 'border-yellow-200 bg-yellow-50 text-yellow-700'
                           }
-                          acceptedTypes=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          maxSize={10}
-                          disabled={isSaving}
-                        />
-                        {errors[`supplierRequirements.${index}.file`] && (
-                          <p className="text-sm text-destructive">
-                            {errors[`supplierRequirements.${index}.file`]}
-                          </p>
-                        )}
+                        >
+                          {requirement.isVerified
+                            ? 'Verified'
+                            : 'Pending Verification'}
+                        </Badge>
                       </div>
-                    ))}
+                    )}
+
+                    <div className="space-y-1">
+                      {requirement.url && !requirement.file && (
+                        <p className="text-xs text-muted-foreground">
+                          Upload a replacement file below to replace current document:
+                        </p>
+                      )}
+                      <FileUpload
+                        onFileChange={(file: File | null) =>
+                          updateRequirement(index, {
+                            file,
+                            fileId: null,
+                          })
+                        }
+                        acceptedTypes=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        maxSize={10}
+                        disabled={isSaving}
+                      />
+                    </div>
+                    {errors[`supplierRequirements.${index}.file`] && (
+                      <p className="text-sm text-destructive">
+                        {errors[`supplierRequirements.${index}.file`]}
+                      </p>
+                    )}
                   </div>
-                </>
-              )}
+                ))}
+              </div>
             </div>
 
             {isEditing && (

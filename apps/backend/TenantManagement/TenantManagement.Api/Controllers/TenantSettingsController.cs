@@ -1,3 +1,5 @@
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.CreateTenantSetting;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.DeleteTenantSetting;
@@ -20,6 +22,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantSetting>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> CreateTenantSetting([FromBody] CreateTenantSettingCommand command)
         {
             var tenantSetting = await mediator.Send(command);
@@ -30,6 +33,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [HttpGet]
         //[Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<TenantSetting>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> GetTenantSettings([FromQuery] GetTenantSettingsQuery query)
         {
             var result = await mediator.Send(query);
@@ -41,6 +45,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantSetting>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> GetTenantSettingById(Guid id)
         {
             var query = new GetTenantSettingByIdQuery(id);
@@ -54,6 +59,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> UpdateTenantSetting(Guid id, [FromBody] UpdateTenantSettingDto tenantSettingDto)
         {
             var request = new UpdateTenantSettingCommand
@@ -70,6 +76,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> DeleteTenantSetting(Guid id)
         {
             var command = new DeleteTenantSettingCommand(id);

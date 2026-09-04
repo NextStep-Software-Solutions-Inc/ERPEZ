@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Procurement.BiddingActivitySchedules.Commands.CreateBiddingActivitySchedule;
 using ERPEZ.Application.Features.Procurement.BiddingActivitySchedules.Commands.DeleteBiddingActivitySchedule;
 using ERPEZ.Application.Features.Procurement.BiddingActivitySchedules.Commands.UpdateBiddingActivitySchedule;
@@ -38,6 +41,7 @@ public record LockScheduleApiRequest(string? LockedBy = null);
 
 [Route("bac")]
 [ApiController]
+[Authorize]
 public class BACProjectController(ISender mediator) : ControllerBase
 {
     // ── Bidding Schedule & Master Calendar Endpoints ─────────────────────────
@@ -151,6 +155,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [HttpPost("projects")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> CreateProject([FromBody] CreateProcurementProjectCommand command)
     {
         var result = await mediator.Send(command);
@@ -160,6 +165,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     //[Authorize(Roles = "BAC_Officer")]
     [HttpGet("projects")]
     [ProducesResponseType(typeof(PaginatedApiResponse<ProcurementProjectResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> GetProjects([FromQuery] GetProcurementProjectsQuery query)
     {
         var result = await mediator.Send(query);
@@ -170,6 +176,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [HttpGet("projects/{id}")]
     [ProducesResponseType(typeof(ApiResponse<ProcurementProjectDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> GetProjectById(Guid id)
     {
         var result = await mediator.Send(new GetProcurementProjectByIdQuery(id));
@@ -181,6 +188,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> UpdateProject(Guid id, [FromBody] UpdateProcurementProjectRequest request)
     {
         var result = await mediator.Send(new UpdateProcurementProjectCommand { Id = id, UpdateRequest = request });
@@ -191,6 +199,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [HttpDelete("projects/{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> DeleteProject(Guid id)
     {
         var result = await mediator.Send(new DeleteProcurementProjectCommand(id));
@@ -202,6 +211,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> AddConsolidatedPR(Guid id, [FromBody] AddConsolidatedPRRequest request)
     {
         var result = await mediator.Send(new AddConsolidatedPRCommand { ProjectId = id, Request = request });
@@ -213,6 +223,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> CreateSchedule(Guid id, [FromBody] CreateBiddingActivityScheduleRequest request)
     {
         var result = await mediator.Send(new CreateBiddingActivityScheduleCommand { ProjectId = id, ScheduleRequest = request });
@@ -224,6 +235,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> UpdateSchedule(Guid projectId, Guid scheduleId, [FromBody] UpdateBiddingActivityScheduleRequest request)
     {
         var result = await mediator.Send(new UpdateBiddingActivityScheduleCommand { ProjectId = projectId, ScheduleId = scheduleId, ScheduleRequest = request });
@@ -234,6 +246,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [HttpDelete("projects/{projectId}/schedule/{scheduleId}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> DeleteSchedule(Guid projectId, Guid scheduleId)
     {
         var result = await mediator.Send(new DeleteBiddingActivityScheduleCommand(projectId, scheduleId));
@@ -245,6 +258,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> UpdateScheduleStatus(Guid projectId, Guid scheduleId, [FromBody] UpdateBiddingActivityScheduleStatusRequest request)
     {
         var result = await mediator.Send(new UpdateBiddingActivityScheduleStatusCommand { ProjectId = projectId, ScheduleId = scheduleId, StatusRequest = request });
@@ -256,6 +270,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> UpdateProjectStatus(Guid id, [FromBody] UpdateProcurementProjectStatusRequest request)
     {
         var result = await mediator.Send(new UpdateProcurementProjectStatusCommand { Id = id, StatusRequest = request });
@@ -264,6 +279,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
 
     [HttpGet("calendar-events")]
     [ProducesResponseType(typeof(ApiResponse<CalendarEventsWithSummaryResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> GetCalendarEvents([FromQuery] GetCalendarEventsQuery query)
     {
         var result = await mediator.Send(query);
@@ -281,6 +297,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [HttpGet("calendar-events/{id}")]
     [ProducesResponseType(typeof(ApiResponse<CalendarEventResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> GetCalendarEventById(Guid id)
     {
         var result = await mediator.Send(new GetCalendarEventByIdQuery(id));
@@ -293,6 +310,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> ApproveProject(Guid id, [FromBody] ERPEZ.Application.Features.Procurement.Projects.Commands.ApproveProcurementProject.ApproveProcurementProjectRequest request)
     {
         var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.Projects.Commands.ApproveProcurementProject.ApproveProcurementProjectCommand 
@@ -323,6 +341,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet("projects/{projectId}/applications")]
     [ProducesResponseType(typeof(ApiResponse<List<ERPEZ.Application.Features.Procurement.Projects.Queries.GetProjectSupplierApplications.ProjectSupplierApplicationDto>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> GetProjectApplications(Guid projectId)
     {
         var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.Projects.Queries.GetProjectSupplierApplications.GetProjectSupplierApplicationsQuery(projectId));
@@ -336,6 +355,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<ERPEZ.Application.Features.Procurement.Projects.Queries.GetProjectSupplierApplications.ProjectSupplierApplicationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
     public async Task<IActionResult> EvaluateApplication(
         Guid projectId, 
         Guid applicationId, 

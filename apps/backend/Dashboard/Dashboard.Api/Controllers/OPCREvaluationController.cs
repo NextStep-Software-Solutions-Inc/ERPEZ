@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.CreateOPCREvaluation;
 using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.DeleteOPCREvaluation;
 using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.UpdateOPCREvaluation;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("opcr-evaluations")]
     [ApiController]
-    public class OPCREvaluationController(ISender mediator) : ControllerBase
+    [Authorize]
+public class OPCREvaluationController(ISender mediator) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Planning.opcrEvaluate)]
         public async Task<IActionResult> CreateOPCREvaluation([FromBody] CreateOPCREvaluationCommand command)
         {
             var result = await mediator.Send(command);
@@ -30,6 +35,7 @@ namespace ERPEZ.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<OPCREvaluationResponse>), StatusCodes.Status200OK)] // Returns DTO
+        [HasPermission(Permissions.Planning.opcrView)]
         public async Task<IActionResult> GetOPCREvaluations([FromQuery] GetOPCREvaluationsQuery query)
         {
             var result = await mediator.Send(query);
@@ -39,6 +45,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrView)]
         public async Task<IActionResult> GetOPCREvaluationById(Guid id)
         {
             var result = await mediator.Send(new GetOPCREvaluationByIdQuery(id));
@@ -50,6 +57,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrEvaluate)]
         public async Task<IActionResult> UpdateOPCREvaluation(Guid id, [FromBody] UpdateOPCREvaluationRequest dto)
         {
             var command = new UpdateOPCREvaluationCommand
@@ -65,6 +73,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrEvaluate)]
         public async Task<IActionResult> DeleteOPCREvaluation(Guid id)
         {
             var command = new DeleteOPCREvaluationCommand(id);

@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -28,12 +31,14 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("opcrs")]
     [ApiController]
-    public class OPCRController(ISender mediator) : ControllerBase
+    [Authorize]
+public class OPCRController(ISender mediator) : ControllerBase
     {
 
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Planning.opcrCreate)]
         public async Task<IActionResult> CreateOPCR([FromBody] CreateOPCRCommand command)
         {
             var result = await mediator.Send(command);
@@ -44,6 +49,7 @@ namespace ERPEZ.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<OPCRsResponse>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Planning.opcrView)]
         public async Task<IActionResult> GetOPCRs([FromQuery] GetOPCRsQuery query)
         {
             var result = await mediator.Send(query);
@@ -53,6 +59,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<OPCRDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrView)]
         public async Task<IActionResult> GetOPCRById(Guid id)
         {
             var result = await mediator.Send(new GetOPCRByIdQuery(id));
@@ -63,6 +70,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrUpdate)]
         public async Task<IActionResult> UpdateOPCR(Guid id, [FromBody] UpdateOPCRRequest dto)
         {
             var command = new UpdateOPCRCommand
@@ -79,6 +87,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrUpdate)]
         public async Task<IActionResult> UpdateCommitmentStatus(
             Guid id,
             [FromBody] UpdateOPCRCommitmentStatusRequest request,
@@ -98,6 +107,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrSubmit)]
         public async Task<IActionResult> UpdateReviewStatus(
             Guid id,
             [FromBody] UpdateOPCRReviewStatusRequest request,
@@ -117,6 +127,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrEvaluate)]
         public async Task<IActionResult> SubmitOPCRRating(Guid id)
         {
             var command = new UpdateOPCRRatingStatusCommand
@@ -136,6 +147,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrEvaluate)]
         public async Task<IActionResult> ReturnOPCRRating(Guid id)
         {
             var command = new UpdateOPCRRatingStatusCommand
@@ -154,6 +166,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrDelete)]
         public async Task<IActionResult> DeleteOPCR(Guid id)
         {
             var result = await mediator.Send(new DeleteOPCRCommand(id));
@@ -172,6 +185,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrEvaluate)]
         public async Task<IActionResult> EvaluateOPCRItem(
             Guid itemId,
             [FromBody] EvaluateOPCRItemRequest request,
@@ -190,6 +204,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrEvaluate)]
         public async Task<IActionResult> CreateOPCRItemRating(
             Guid itemId,
             [FromBody] CreateOPCRItemRatingCommand command)
@@ -207,6 +222,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("items/{itemId}/ratings")]
         [ProducesResponseType(typeof(ApiResponse<List<OPCRItemRatingResponse>>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrView)]
         public async Task<IActionResult> GetOPCRItemRatings(
             Guid itemId,
             CancellationToken cancellationToken)
@@ -220,6 +236,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrEvaluate)]
         public async Task<IActionResult> UpdateOPCRItemRating(
             Guid ratingId,
             [FromBody] UpdateOPCRItemRatingRequest request)
@@ -237,6 +254,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("items/ratings/{ratingId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrEvaluate)]
         public async Task<IActionResult> DeleteOPCRItemRating(Guid ratingId)
         {
             var result = await mediator.Send(new DeleteOPCRItemRatingCommand(ratingId));
@@ -251,6 +269,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrUpdate)]
         public async Task<IActionResult> CreateOPCRItemMOV(
             Guid itemId,
             [FromBody] CreateOPCRItemMOVRequest request,   // ← body DTO, no OPCRItemId
@@ -274,6 +293,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrUpdate)]
         public async Task<IActionResult> UpdateOPCRItemMOV(
             Guid movId,
             [FromBody] UpdateOPCRItemMOVRequest request,
@@ -291,6 +311,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("items/movs/{movId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.opcrUpdate)]
         public async Task<IActionResult> DeleteOPCRItemMOV(Guid movId)
         {
             var result = await mediator.Send(new DeleteOPCRItemMOVCommand(movId));

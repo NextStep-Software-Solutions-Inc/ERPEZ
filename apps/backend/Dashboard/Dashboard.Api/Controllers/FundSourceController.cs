@@ -5,7 +5,9 @@ using ERPEZ.Application.Features.Planning.FundSource.Commands.UpdateFundSource;
 using ERPEZ.Application.Features.Planning.FundSource.Dtos;
 using ERPEZ.Application.Features.Planning.FundSource.Queries.FundSources;
 using ERPEZ.Application.Features.Planning.FundSource.Queries.GetFundSourceById;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,11 +15,15 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("fund-sources")]
     [ApiController]
+    [Authorize]
     public class FundSourcesController(ISender mediator) : ControllerBase
     {
         [HttpPost]
+        [HasPermission(Permissions.Finance.fundSourceManage)]
         [ProducesResponseType(typeof(ApiResponse<FundSourceResponse>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<FundSourceResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateFundSource([FromBody] CreateFundSourceCommand command)
         {
             var response = await mediator.Send(command);
@@ -29,7 +35,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
+        [HasPermission(Permissions.Finance.uacsView)]
         [ProducesResponseType(typeof(PaginatedApiResponse<FundSourceResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetFundSources([FromQuery] GetFundSourcesQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,8 +46,11 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [HasPermission(Permissions.Finance.uacsView)]
         [ProducesResponseType(typeof(ApiResponse<FundSourceResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetFundSourceById(Guid id)
         {
             var response = await mediator.Send(new GetFundSourceByIdQuery(id));
@@ -46,9 +58,12 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [HasPermission(Permissions.Finance.fundSourceManage)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UpdateFundSource(Guid id, [FromBody] UpdateFundSourceRequest updateFundSource)
         {
             var request = new UpdateFundSourceCommand
@@ -62,8 +77,11 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [HasPermission(Permissions.Finance.fundSourceManage)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> DeleteFundSource(Guid id)
         {
             var command = new DeleteFundSourceCommand(id);
@@ -73,8 +91,11 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPost("organization/{organizationId}/bulk")]
+        [HasPermission(Permissions.Finance.fundSourceManage)]
         [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> BulkAssignOrganizationFundSource(
             Guid organizationId, 
             [FromBody] List<Guid> fundSourceIds)
@@ -87,9 +108,12 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPost("import-excel")]
+        [HasPermission(Permissions.Finance.fundSourceManage)]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> ImportFundSourcesFromExcel(
             IFormFile file,
             CancellationToken cancellationToken)

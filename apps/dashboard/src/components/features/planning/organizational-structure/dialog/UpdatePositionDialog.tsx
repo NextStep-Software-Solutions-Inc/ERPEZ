@@ -76,14 +76,16 @@ function UpdatePositionDialog({ open, onOpenChange, positionId }: UpdatePosition
             </DialogDescription>
           </DialogHeader>
 
-          {positionQuery.isLoading ? (
+          {positionQuery.isLoading || !position ? (
             <div className="flex justify-center py-12">
               <Loader2 className="animate-spin h-6 w-6 text-default-500" />
             </div>
           ) : (
             <div className="px-6 py-6 overflow-y-auto max-h-[80vh]">
               <UpdatePositionForm
-                positionId={positionId!}
+                key={position.id}
+                positionId={positionId}
+                position={position}
                 onUpdated={() => {
                   onOpenChange(false)
                   setIsDirty(false)

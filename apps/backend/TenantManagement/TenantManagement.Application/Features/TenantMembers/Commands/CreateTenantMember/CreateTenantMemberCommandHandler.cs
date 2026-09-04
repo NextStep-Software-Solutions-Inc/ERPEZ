@@ -25,9 +25,31 @@ public class CreateTenantMemberCommandHandler(IUnitOfWork unitOfWork)
         {
             TenantId = command.TenantId,
             UserId = command.UserId,
-            Role = command.Role,
+            ExternalIdentityId = !string.IsNullOrWhiteSpace(command.ExternalIdentityId) ? command.ExternalIdentityId : command.UserId,
             Status = command.Status
         };
+
+        if (command.RoleIds != null && command.RoleIds.Count != 0)
+        {
+            foreach (var roleId in command.RoleIds.Distinct())
+            {
+                tenantMember.RoleAssignments.Add(new TenantMemberRoleAssignment
+                {
+                    RoleId = roleId
+                });
+            }
+        }
+        else
+        {
+            var endUserRole = await unitOfWork.RoleRepository.FindAsync(r => r.NormalizedName == "END USER", cancellationToken);
+            if (endUserRole != null)
+            {
+                tenantMember.RoleAssignments.Add(new TenantMemberRoleAssignment
+                {
+                    RoleId = endUserRole.Id
+                });
+            }
+        }
 
         await unitOfWork.TenantMemberRepository.AddAsync(tenantMember, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

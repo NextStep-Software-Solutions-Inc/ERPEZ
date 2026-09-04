@@ -1,5 +1,8 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
+import { BiddingSchedulePage } from '@/features/procurement/bidding-schedule/pages'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
   highlightMilestoneKey: z.string().optional(),
@@ -9,14 +12,24 @@ export const Route = createFileRoute(
   '/v2/(procurement)/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/',
 )({
   validateSearch: searchSchema,
-  beforeLoad: ({ params, search }) => {
-    throw redirect({
-      to: '/v2/bac-resolutions/$resolutionId/bidding-schedule',
-      params: { resolutionId: params.resolutionId },
-      search: { highlightMilestoneKey: search.highlightMilestoneKey },
-      replace: true,
-    })
-  },
-  component: () => null,
+  component: PublicBiddingScheduleRoute,
 })
 
+function PublicBiddingScheduleRoute() {
+  const { resolutionId } = Route.useParams()
+  const search = Route.useSearch()
+
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.Bac.Manage}
+      message="You do not have permission to view Bidding Schedules."
+    >
+      <BiddingSchedulePage
+        bacResolutionId={resolutionId}
+        highlightMilestoneKey={search.highlightMilestoneKey}
+        backTo="/v2/bac-resolutions-public-bidding"
+        backLabel="Back to BAC Resolutions (Public Bidding)"
+      />
+    </RoutePermissionGuard>
+  )
+}

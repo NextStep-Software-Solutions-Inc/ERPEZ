@@ -7,7 +7,9 @@ using ERPEZ.Application.Features.Planning.Position.Queries.GetPositionById;
 using ERPEZ.Application.Features.Planning.Position.Queries.GetPositions;
 using ERPEZ.Application.Features.Planning.Position.Queries.GetPositionStatistics;
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,11 +17,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("positions")]
 [ApiController]
+[Authorize]
 public class PositionController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreatePosition([FromBody] CreatePositionCommand command)
     {
         var result = await mediator.Send(command);
@@ -27,7 +33,10 @@ public class PositionController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<PositionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPositions([FromQuery] GetPositionsQuery query)
     {
         var result = await mediator.Send(query);
@@ -35,8 +44,11 @@ public class PositionController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(ApiResponse<PositionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPositionById(Guid id)
     {
         var result = await mediator.Send(new GetPositionByIdQuery(id));
@@ -44,9 +56,12 @@ public class PositionController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdatePosition(Guid id, [FromBody] UpdatePositionRequest updatePosition)
     {
         var request = new UpdatePositionCommand
@@ -60,8 +75,11 @@ public class PositionController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeletePosition(Guid id)
     {
         var result = await mediator.Send(new DeletePositionCommand(id));
@@ -69,7 +87,10 @@ public class PositionController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("statistics")]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(ApiResponse<PositionStatisticsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPositionStatistics()
     {
         var result = await mediator.Send(new GetPositionStatisticsQuery());
@@ -77,9 +98,12 @@ public class PositionController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("upload-psi")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ApiResponse<PositionImportResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<PositionImportResult>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UploadPositionPSI([FromForm] UploadPositionPSICommand command)
     {
         var result = await mediator.Send(command);

@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
+import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
 import type { AgencyMasterBudget, OfficeCeiling } from '@/lib/fiscal-year-and-policies/types'
 
 /** Shape of the form data submitted by AddCeilingDialog */
@@ -414,31 +415,26 @@ export function AddCeilingDialog({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <Select
+            <FundSourceCombobox
+              options={getAvailableFundClusters().map((fc) => ({
+                id: fc.code,
+                code: fc.code,
+                name: fc.name,
+              }))}
               value={allocation.fundCluster}
+              valueKey="code"
               onValueChange={(v) => {
                 setAllocation({ ...allocation, fundCluster: v })
                 setErrors({}) // Clear validation errors when fund cluster changes
               }}
+              placeholder={
+                !allocation.fiscalYear
+                  ? 'Select Fiscal Year first'
+                  : 'Select Fund Source'
+              }
+              searchPlaceholder="Search by code, name, authorization..."
               disabled={!allocation.fiscalYear}
-            >
-              <SelectTrigger className={`h-10 border-gray-200 ${!allocation.fiscalYear ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                <SelectValue placeholder={!allocation.fiscalYear ? "Select Fiscal Year first" : "Select Fund Source"} />
-              </SelectTrigger>
-              <SelectContent>
-                {getAvailableFundClusters().length === 0 ? (
-                  <SelectItem value="_none" disabled>
-                    No fund sources for this fiscal year
-                  </SelectItem>
-                ) : (
-                  getAvailableFundClusters().map((fc) => (
-                    <SelectItem key={fc.code} value={fc.code}>
-                      {fc.code} - {fc.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            />
             {!allocation.fiscalYear && (
               <p className="text-xs text-amber-600">Please select a Fiscal Year first to see available fund sources</p>
             )}

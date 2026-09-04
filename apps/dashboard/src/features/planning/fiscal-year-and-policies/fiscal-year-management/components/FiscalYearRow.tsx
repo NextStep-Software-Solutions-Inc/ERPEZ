@@ -59,25 +59,23 @@ export function FiscalYearRow({
 
   return (
     <>
-      <TableRow className="flex flex-1 justify-between items-center border-b hover:bg-muted/50">
-        <TableCell className="flex-1 min-w-0">
-          <div className="flex flex-1 gap-4 items-center">
-            <div className="min-w-0">
-              <div className="font-medium">FY {fiscalYear.year}</div>
-              <div className="text-sm text-muted-foreground">
-                {fiscalYear.description || '—'}
-              </div>
+      <TableRow className="hover:bg-muted/50">
+        <TableCell>
+          <div>
+            <div className="font-medium">FY {fiscalYear.year}</div>
+            <div className="text-sm text-muted-foreground">
+              {fiscalYear.description || '—'}
             </div>
           </div>
         </TableCell>
-        <TableCell className="shrink-0 w-40">
+        <TableCell>
           <Select
             value={fiscalYear.status}
             onValueChange={(value) =>
               onStatusChange(fiscalYear, value as FiscalYear['status'])
             }
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-[140px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -95,32 +93,34 @@ export function FiscalYearRow({
             </SelectContent>
           </Select>
         </TableCell>
-        <TableCell className="shrink-0 w-48 flex items-center gap-2 justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onExpandClick(fiscalYear.id)}
-            className="h-8 px-3"
-          >
-            {isExpanded ? (
-              <>
-                <ChevronUp className="mr-2 h-4 w-4" />
-                Hide Months
-              </>
-            ) : (
-              <>
-                <ChevronDown className="mr-2 h-4 w-4" />
-                Manage Months
-              </>
-            )}
-          </Button>
-          {rowActions}
+        <TableCell className="text-right">
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onExpandClick(fiscalYear.id)}
+              className="h-8 px-3"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="mr-2 h-4 w-4" />
+                  Hide Months
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                  Manage Months
+                </>
+              )}
+            </Button>
+            {rowActions}
+          </div>
         </TableCell>
       </TableRow>
 
       {isExpanded && (
-        <TableRow className="flex flex-1 justify-center items-center border-b">
-          <TableCell colSpan={3} className="w-full py-4">
+        <TableRow className="hover:bg-transparent">
+          <TableCell colSpan={3} className="p-4 bg-muted/20">
             {isLoading ? (
               <MonthLoadingSkeleton />
             ) : isLoaded ? (

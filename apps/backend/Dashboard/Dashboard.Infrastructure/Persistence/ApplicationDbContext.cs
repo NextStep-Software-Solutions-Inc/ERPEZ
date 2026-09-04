@@ -188,6 +188,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DocumentProfile>?           DocumentProfiles           { get; set; }
     public DbSet<DocumentProfileItem>?       DocumentProfileItems       { get; set; }
     public DbSet<ProjectDocumentChecklist>?  ProjectDocumentChecklists  { get; set; }
+    public DbSet<BiddingDocument>?           BiddingDocuments           { get; set; }
 
     public DbSet<PublicSupplierApplication>?   PublicSupplierApplications { get; set; }
     public DbSet<ApplicationUploadedDocument>? ApplicationUploadedDocuments { get; set; }
@@ -209,6 +210,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         // Apply default conventions for all entities
         modelBuilder.ConfigureDefaultEntityConventions();
+
+        modelBuilder.Entity<BiddingDocument>()
+            .ToTable("BiddingDocument", "procurement");
+
+        // User
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.ExternalIdentityId)
+            .IsUnique();
 
         //KPI
         modelBuilder.Entity<KPI>()

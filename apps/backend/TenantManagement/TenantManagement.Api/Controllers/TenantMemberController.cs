@@ -1,3 +1,5 @@
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.CreateTenantMember;
 using ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.DeleteTenantMember;
@@ -20,6 +22,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantMember>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Admin.membersManage)]
         public async Task<IActionResult> CreateTenantMember([FromBody] CreateTenantMemberCommand command)
         {
             var tenantMember = await mediator.Send(command);
@@ -33,6 +36,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [HttpGet]
         //[Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<TenantMember>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Admin.membersManage)]
         public async Task<IActionResult> GetTenantMembers([FromQuery] GetTenantMembersQuery query)
         {
             var result = await mediator.Send(query);
@@ -43,6 +47,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantMember>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.membersManage)]
         public async Task<IActionResult> GetTenantMemberById(Guid id)
         {
             var query = new GetTenantMemberByIdQuery(id);
@@ -56,6 +61,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.membersManage)]
         public async Task<IActionResult> UpdateTenantMember(Guid id, [FromBody] UpdateTenantMemberDto tenantMemberDto)
         {
             var request = new UpdateTenantMemberCommand
@@ -72,6 +78,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.membersManage)]
         public async Task<IActionResult> DeleteTenantMember(Guid id)
         {
             var command = new DeleteTenantMemberCommand(id);

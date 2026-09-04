@@ -2,6 +2,8 @@ import CommitmentsPage from '@/pages/planning/commitments/CommitmentsPage'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { FunctionCategory } from '@/features/planning/master-kpi/types'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 export const commitmentSearchSchema = z.object({
   tab: z
@@ -43,5 +45,12 @@ export const Route = createFileRoute('/v2/commitments/')({
 })
 
 function RouteComponent() {
-  return <CommitmentsPage />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Planning.Opcr.View}
+      message="You do not have permission to view Commitments (OPCR)."
+    >
+      <CommitmentsPage />
+    </RoutePermissionGuard>
+  )
 }

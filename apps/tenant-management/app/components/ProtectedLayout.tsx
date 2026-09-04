@@ -1,22 +1,26 @@
-import { useAuth, useUser } from '@clerk/react-router';
+import { useKeycloak } from '~/providers/KeycloakProvider';
 import { Navigate, Outlet, useLocation } from 'react-router';
+import LoadingSpinner from '~/components/LoadingSpinner';
 
 export default function ProtectedLayout() {
-    const { isSignedIn } = useAuth();
-    const { user } = useUser();
+    const { isAuthenticated, isInitialized, isSuperAdmin } = useKeycloak();
     const location = useLocation();
 
-    if (!isSignedIn) {
+    if (!isInitialized) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <LoadingSpinner size="lg" message="Authenticating..." />
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
         return <Navigate to="/sign-in" replace />;
     }
 
-    const role = user?.publicMetadata?.role;
-
-    if (role === "super-admin" && !location.pathname.startsWith("/super-admin")) { // Changed to match your routes; update Clerk metadata accordingly
-        // Always navigate super-admin to their overview
+    if (isSuperAdmin && !location.pathname.startsWith("/super-admin")) {
         return <Navigate to="/super-admin/overview" replace />;
-    } else {
-    // Render tenant outlet (OverviewLayout and its routes)
-        return <Outlet />;
     }
+
+    return <Outlet />;
 }

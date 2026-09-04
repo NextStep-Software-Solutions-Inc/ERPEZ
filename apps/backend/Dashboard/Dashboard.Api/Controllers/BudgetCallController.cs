@@ -5,7 +5,9 @@ using ERPEZ.Application.Features.Planning.BudgetCall.Commands.UpdateBudgetCall;
 using ERPEZ.Application.Features.Planning.BudgetCall.Dtos;
 using ERPEZ.Application.Features.Planning.BudgetCall.Queries.GetBudgetCallById;
 using ERPEZ.Application.Features.Planning.BudgetCall.Queries.GetBudgetCalls;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,9 +15,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("budget-calls")]
 [ApiController]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class BudgetCallController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Planning.budgetCallManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateBudgetCall([FromBody] CreateBudgetCallCommand command)
@@ -26,6 +32,7 @@ public class BudgetCallController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Planning.budgetCallView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<BudgetCallResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBudgetCalls([FromQuery] GetBudgetCallsQuery query)
     {
@@ -34,6 +41,7 @@ public class BudgetCallController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Planning.budgetCallView)]
     [ProducesResponseType(typeof(ApiResponse<BudgetCallDetailedResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBudgetCallById(Guid id)
@@ -44,6 +52,7 @@ public class BudgetCallController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Planning.budgetCallManage)]
     [ProducesResponseType(typeof(ApiResponse<BudgetCallResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<BudgetCallResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<BudgetCallResponse>), StatusCodes.Status404NotFound)]
@@ -60,6 +69,7 @@ public class BudgetCallController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Planning.budgetCallManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteBudgetCall(Guid id)
@@ -71,6 +81,7 @@ public class BudgetCallController(ISender mediator) : ControllerBase
     }
 
     [HttpPatch("{id}/status")]
+    [HasPermission(Permissions.Planning.budgetCallManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]

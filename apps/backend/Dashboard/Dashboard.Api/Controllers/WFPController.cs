@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +16,13 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("wfps")]
     [ApiController]
-    public class WFPController(ISender mediator) : ControllerBase
+    [Authorize]
+public class WFPController(ISender mediator) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Planning.wfpCreate)]
         public async Task<IActionResult> CreateWFP([FromBody] CreateWFPCommand command)
         {
             var result = await mediator.Send(command);
@@ -30,6 +35,7 @@ namespace ERPEZ.Api.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<WFPsResponse>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Planning.wfpView)]
         public async Task<IActionResult> GetWFPs([FromQuery] GetWFPsQuery query)
         {
             var result = await mediator.Send(query);
@@ -39,6 +45,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<WFPsDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.wfpView)]
         public async Task<IActionResult> GetWFPById(Guid id)
         {
             var result = await mediator.Send(new GetWFPByIdQuery(id));
@@ -49,6 +56,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.wfpUpdate)]
         public async Task<IActionResult> UpdateWFP(Guid id, [FromBody] UpdateWFPRequest dto)
         {
             var command = new UpdateWFPCommand
@@ -65,6 +73,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.wfpSubmit)]
         public async Task<IActionResult> UpdateWFPStatus(Guid id, [FromBody] UpdateWFPStatusRequest request)
         {
             var command = new UpdateWFPStatusCommand
@@ -80,6 +89,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Planning.wfpDelete)]
         public async Task<IActionResult> DeleteWFP(Guid id)
         {
             var command = new DeleteWFPCommand(id);

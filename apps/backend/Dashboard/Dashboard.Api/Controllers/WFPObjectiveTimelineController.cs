@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.CreateWFPObjectiveTimeline;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.DeleteWFPObjectiveTimeline;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.UpdateWFPObjectiveTimeline;
@@ -12,11 +15,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("wfp-objective-timelines")]
 [ApiController]
+[Authorize]
 public class WFPObjectiveTimelineController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.wfpUpdate)]
     public async Task<IActionResult> CreateWFPObjectiveTimeline([FromBody] CreateWFPObjectiveTimelineCommand command)
     {
         var result = await mediator.Send(command);
@@ -29,6 +34,7 @@ public class WFPObjectiveTimelineController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<WFPObjectiveTimelineResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Planning.wfpView)]
     public async Task<IActionResult> GetWFPObjectiveTimelines([FromQuery] GetWFPObjectiveTimelinesQuery query)
     {
         var result = await mediator.Send(query);
@@ -38,6 +44,7 @@ public class WFPObjectiveTimelineController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<WFPObjectiveTimelineResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.wfpView)]
     public async Task<IActionResult> GetWFPObjectiveTimelineById(Guid id)
     {
         var result = await mediator.Send(new GetWFPObjectiveTimelineByIdQuery(id));
@@ -48,6 +55,7 @@ public class WFPObjectiveTimelineController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.wfpUpdate)]
     public async Task<IActionResult> UpdateWFPObjectiveTimeline(Guid id, [FromBody] UpdateWFPObjectiveTimelineRequest dto)
     {
         var command = new UpdateWFPObjectiveTimelineCommand
@@ -63,6 +71,7 @@ public class WFPObjectiveTimelineController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.wfpUpdate)]
     public async Task<IActionResult> DeleteWFPObjectiveTimeline(Guid id)
     {
         var command = new DeleteWFPObjectiveTimelineCommand(id);

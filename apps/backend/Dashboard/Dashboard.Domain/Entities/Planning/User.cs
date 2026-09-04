@@ -11,6 +11,12 @@ namespace ERPEZ.Domain.Entities.Planning;
 public class User : BaseEntity
 {
     /// <summary>
+    /// Keycloak subject identifier (sub claim) representing the federated external identity.
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string ExternalIdentityId { get; set; } = string.Empty;
+
+    /// <summary>
     /// Employee number or personnel ID.
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]

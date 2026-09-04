@@ -25,14 +25,16 @@ function mapApiPositionToTablePosition(apiPosition: any): TablePosition {
     orgUnitId: apiPosition.officeId || apiPosition.orgUnitId,
     description: apiPosition.jobDescription || apiPosition.description,
     salaryGrade: apiPosition.salaryGrade
-      ? {
-          id: apiPosition.salaryGrade.id,
-          name: apiPosition.salaryGrade.name,
-        }
+      ? typeof apiPosition.salaryGrade === 'string'
+        ? apiPosition.salaryGrade
+        : {
+            id: apiPosition.salaryGrade.id,
+            name: apiPosition.salaryGrade.name,
+          }
       : undefined,
     itemNumber: apiPosition.itemNumber,
     authorizedFTE: apiPosition.fte || apiPosition.authorizedFTE,
-    status: (apiPosition.operationalStatus?.toLowerCase() || 'active') as 'active' | 'inactive' | 'filled' | 'vacant' | 'frozen',
+    status: (apiPosition.operationalStatus?.toLowerCase() || apiPosition.status?.toLowerCase() || 'vacant') as 'active' | 'inactive' | 'filled' | 'vacant' | 'frozen',
     createdAt: apiPosition.createdAt || new Date().toISOString(),
     updatedAt: apiPosition.updatedAt || apiPosition.createdAt || new Date().toISOString(),
   }
@@ -69,6 +71,7 @@ function StaffingAndPlantillaTab({ staffingSearch, unitId }: StaffingAndPlantill
       .filter((p) =>
         p.title?.toLowerCase().includes(searchValue.toLowerCase()) ||
         p.code?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        p.itemNumber?.toLowerCase().includes(searchValue.toLowerCase()) ||
         (
           typeof p.salaryGrade === 'string'
             ? p.salaryGrade.toLowerCase().includes(searchValue.toLowerCase())
@@ -91,7 +94,8 @@ function StaffingAndPlantillaTab({ staffingSearch, unitId }: StaffingAndPlantill
     status: unit.status as 'active' | 'inactive',
   }))
 
-  const columns = createPositionColumns([] as MetaActions, tableUnits)
+  const actions: MetaActions = ['read', 'write', 'delete']
+  const columns = createPositionColumns(actions, tableUnits)
 
   return (
     <div className="space-y-6 pt-4">
@@ -121,13 +125,13 @@ function StaffingAndPlantillaTab({ staffingSearch, unitId }: StaffingAndPlantill
           <TemplateTable
             columns={columns}
             data={displayPositions}
-            actions={[] as MetaActions}
+            actions={actions}
             readonly={false}
             toolbar={() => (
               <PositionToolbar
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
-                actions={[] as MetaActions}
+                actions={actions}
                 selectedOrgUnitId={unitId ?? undefined}
                 subUnits={subUnits}
                 selectedSubUnitId={selectedSubUnitId}

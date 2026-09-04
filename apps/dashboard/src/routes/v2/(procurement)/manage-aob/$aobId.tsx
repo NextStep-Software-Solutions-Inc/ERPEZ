@@ -4,6 +4,8 @@ import { ApproveAOBDialog } from '@/features/procurement/aob/dialogs/ApproveAOBD
 import { ReturnAOBDialog, type ReturnReason } from '@/features/procurement/aob/dialogs/ReturnAOBDialog'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 import {
   createQueryHookFromTemplate,
   createMutationHookFromTemplate,
@@ -167,30 +169,35 @@ function RouteComponent() {
   }
 
   return (
-    <div className="space-y-4 p-6">
-      <AOBDetailsPage
-        aob={aob}
-        bidMatrix={bidMatrix}
-        onBack={handleBack}
-        onApprove={handleApprove}
-        onReturn={handleReturn}
-        isProcessing={isProcessing}
-        isAdmin={true}
-      />
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.Aob.Manage}
+      message="You do not have permission to manage this Abstract of Bids (AOB)."
+    >
+      <div className="space-y-4 p-6">
+        <AOBDetailsPage
+          aob={aob}
+          bidMatrix={bidMatrix}
+          onBack={handleBack}
+          onApprove={handleApprove}
+          onReturn={handleReturn}
+          isProcessing={isProcessing}
+          isAdmin={true}
+        />
 
-      <ApproveAOBDialog
-        open={isApproveDialogOpen}
-        onOpenChange={setIsApproveDialogOpen}
-        aob={aob}
-        onApprove={handleApproveSubmit}
-      />
+        <ApproveAOBDialog
+          open={isApproveDialogOpen}
+          onOpenChange={setIsApproveDialogOpen}
+          aob={aob}
+          onApprove={handleApproveSubmit}
+        />
 
-      <ReturnAOBDialog
-        open={isReturnDialogOpen}
-        onOpenChange={setIsReturnDialogOpen}
-        aob={aob}
-        onReturn={handleReturnSubmit}
-      />
-    </div>
+        <ReturnAOBDialog
+          open={isReturnDialogOpen}
+          onOpenChange={setIsReturnDialogOpen}
+          aob={aob}
+          onReturn={handleReturnSubmit}
+        />
+      </div>
+    </RoutePermissionGuard>
   )
 }

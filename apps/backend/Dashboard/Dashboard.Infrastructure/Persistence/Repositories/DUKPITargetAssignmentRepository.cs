@@ -3,10 +3,17 @@ using Microsoft.EntityFrameworkCore;
 using ERPEZ.Domain.Dtos.Planning;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
-public class DUKPITargetAssignmentRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) : Repository<Domain.Entities.Planning.DUKPITargetAssignment>(context, sieveProcessor), Domain.Interfaces.IDUKPITargetAssignmentRepository
+public class DUKPITargetAssignmentRepository : Repository<Domain.Entities.Planning.DUKPITargetAssignment>, Domain.Interfaces.IDUKPITargetAssignmentRepository
 {
-    private readonly ApplicationDbContext context = context;
-    private readonly ISieveProcessor sieveProcessor = sieveProcessor;
+    private readonly ApplicationDbContext context;
+    private readonly ISieveProcessor sieveProcessor;
+
+    public DUKPITargetAssignmentRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
+        : base(context, sieveProcessor)
+    {
+        this.context = context;
+        this.sieveProcessor = sieveProcessor;
+    }
     public async Task<Dictionary<Guid, decimal>> GetTotalAllocatedByKPITargetIdsAsync(IEnumerable<Guid> kpiTargetIds, CancellationToken cancellationToken = default)
     {
         var aggregatedAllocations = await ToListAsync(

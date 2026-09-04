@@ -1,3 +1,5 @@
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Commands.CreateTenantSubscription;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Commands.DeleteTenantSubscription;
@@ -20,6 +22,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantSubscription>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> CreateTenantSubscription([FromBody] CreateTenantSubscriptionCommand command)
         {
             var tenantSubscription = await mediator.Send(command);
@@ -30,6 +33,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [HttpGet]
         //[Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<TenantSubscription>), StatusCodes.Status200OK)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> GetTenantSubscriptions([FromQuery] GetTenantSubscriptionsQuery query)
         {
             var result = await mediator.Send(query);
@@ -40,6 +44,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantSubscription>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> GetTenantSubscriptionById(Guid id)
         {
             var query = new GetTenantSubscriptionByIdQuery(id);
@@ -53,6 +58,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> UpdateTenantSubscription(Guid id, [FromBody] UpdateTenantSubscriptionDto tenantSubscriptionDto)
         {
             var request = new UpdateTenantSubscriptionCommand
@@ -69,6 +75,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         //[Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> DeleteTenantSubscription(Guid id)
         {
             var command = new DeleteTenantSubscriptionCommand(id);

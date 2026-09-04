@@ -94,7 +94,7 @@ export default function FiscalYearManagement({
   const { data: fiscalMonths } = useFiscalMonths({
     pathParams: {},
     queryParams: {
-      pageSize: 100,
+      pageSize: 500,
     },
   })
   const { mutate: lockFiscalMonth } = useLockFiscalMonth()

@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.PersonnelPosition.Commands.UpdatePerso
 using ERPEZ.Application.Features.Planning.PersonnelPosition.Dtos;
 using ERPEZ.Application.Features.Planning.PersonnelPosition.Queries.GetPersonnelPositionById;
 using ERPEZ.Application.Features.Planning.PersonnelPosition.Queries.GetPersonnelPositions;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("personnel-positions")]
 [ApiController]
+[Authorize]
 public class PersonnelPositionController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreatePersonnelPosition([FromBody] CreatePersonnelPositionCommand command)
     {
         var result = await mediator.Send(command);
@@ -24,7 +30,10 @@ public class PersonnelPositionController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<PersonnelPositionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPersonnelPositions([FromQuery] GetPersonnelPositionsQuery query)
     {
         var result = await mediator.Send(query);
@@ -32,8 +41,11 @@ public class PersonnelPositionController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(ApiResponse<PersonnelPositionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPersonnelPositionById(Guid id)
     {
         var result = await mediator.Send(new GetPersonnelPositionByIdQuery(id));
@@ -41,9 +53,12 @@ public class PersonnelPositionController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdatePersonnelPosition(Guid id, [FromBody] UpdatePersonnelPositionRequest updatePersonnelPosition)
     {
         var request = new UpdatePersonnelPositionCommand
@@ -57,8 +72,11 @@ public class PersonnelPositionController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeletePersonnelPosition(Guid id)
     {
         var result = await mediator.Send(new DeletePersonnelPositionCommand(id));

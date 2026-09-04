@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.CreatePurchaseOrder;
 using ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.UpdatePurchaseOrder;
 using ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.DeletePurchaseOrder;
@@ -15,6 +18,7 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("purchase-orders")]
 [ApiController]
+[Authorize]
 public class PurchaseOrdersController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -22,6 +26,7 @@ public class PurchaseOrdersController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<PurchaseOrderListItemDto>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.poManage)]
     public async Task<IActionResult> GetPurchaseOrders([FromQuery] GetPurchaseOrdersQuery query)
     {
         var result = await mediator.Send(query);
@@ -34,6 +39,7 @@ public class PurchaseOrdersController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.poManage)]
     public async Task<IActionResult> GetPurchaseOrderById(Guid id)
     {
         var result = await mediator.Send(new GetPurchaseOrderByIdQuery(id));
@@ -45,6 +51,7 @@ public class PurchaseOrdersController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet("{id}/items")]
     [ProducesResponseType(typeof(PaginatedApiResponse<PurchaseOrderItemDto>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.poManage)]
     public async Task<IActionResult> GetPurchaseOrderItems(Guid id, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? filters = null, [FromQuery] string? sorts = null)
     {
         var query = new GetPurchaseOrderItemsQuery(id, pageNumber, pageSize, filters, sorts);
@@ -58,6 +65,7 @@ public class PurchaseOrdersController(ISender mediator) : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.poManage)]
     public async Task<IActionResult> CreatePurchaseOrder([FromBody] CreatePurchaseOrderCommand command)
     {
         var result = await mediator.Send(command);
@@ -72,6 +80,7 @@ public class PurchaseOrdersController(ISender mediator) : ControllerBase
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.poManage)]
     public async Task<IActionResult> UpdatePurchaseOrder(Guid id, [FromBody] UpdatePurchaseOrderCommand command)
     {
         var result = await mediator.Send(command with { Id = id });
@@ -84,6 +93,7 @@ public class PurchaseOrdersController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.poManage)]
     public async Task<IActionResult> DeletePurchaseOrder(Guid id)
     {
         var result = await mediator.Send(new DeletePurchaseOrderCommand(id));

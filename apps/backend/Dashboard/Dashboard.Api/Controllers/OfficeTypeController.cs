@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.OfficeType.Commands.UpdateOfficeType;
 using ERPEZ.Application.Features.Planning.OfficeType.Dtos;
 using ERPEZ.Application.Features.Planning.OfficeType.Queries.GetOfficeTypeById;
 using ERPEZ.Application.Features.Planning.OfficeType.Queries.GetOfficeTypes;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("office-types")]
 [ApiController]
+[Authorize]
 public class OfficeTypeController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateOfficeType([FromBody] CreateOfficeTypeCommand command)
     {
         var result = await mediator.Send(command);
@@ -24,7 +30,10 @@ public class OfficeTypeController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<OfficeTypeResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetOfficeTypes([FromQuery] GetOfficeTypesQuery query)
     {
         var result = await mediator.Send(query);
@@ -32,8 +41,11 @@ public class OfficeTypeController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(ApiResponse<OfficeTypeResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetOfficeTypeById(Guid id)
     {
         var result = await mediator.Send(new GetOfficeTypeByIdQuery(id));
@@ -41,9 +53,12 @@ public class OfficeTypeController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateOfficeType(Guid id, [FromBody] UpdateOfficeTypeRequest dto)
     {
         var command = new UpdateOfficeTypeCommand { Id = id, UpdateOfficeType = dto };
@@ -52,8 +67,11 @@ public class OfficeTypeController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteOfficeType(Guid id)
     {
         var result = await mediator.Send(new DeleteOfficeTypeCommand(id));

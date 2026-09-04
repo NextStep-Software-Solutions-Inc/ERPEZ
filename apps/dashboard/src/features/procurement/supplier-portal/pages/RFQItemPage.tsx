@@ -69,7 +69,11 @@ export function RFQItemPage() {
         fund: 'General Fund',
       })),
       invitedSuppliers: [],
-      quotationStatus: r.hasSubmittedBid ? 'submitted' : 'draft',
+      quotationStatus: r.bidStatus
+        ? r.bidStatus.toLowerCase()
+        : r.hasSubmittedBid
+        ? 'submitted'
+        : 'pending',
       quotationApprovalStatus: r.bidStatus?.toLowerCase(),
     }))
   }, [apiRfqs])
@@ -91,10 +95,10 @@ export function RFQItemPage() {
 
   const stats = {
     available: supplierViewRFQs.length,
-    submitted: supplierViewRFQs.filter((r) => r.quotationStatus === 'submitted' && !r.quotationApprovalStatus).length,
-    approved: supplierViewRFQs.filter((r) => r.quotationApprovalStatus === 'approved').length,
-    returned: supplierViewRFQs.filter((r) => r.quotationApprovalStatus === 'returned').length,
-    pending: supplierViewRFQs.filter((r) => !r.quotationStatus || r.quotationStatus === 'draft').length,
+    submitted: supplierViewRFQs.filter((r) => r.quotationStatus === 'submitted').length,
+    approved: supplierViewRFQs.filter((r) => r.quotationStatus === 'approved').length,
+    returned: supplierViewRFQs.filter((r) => r.quotationStatus === 'returned').length,
+    pending: supplierViewRFQs.filter((r) => !r.quotationStatus || r.quotationStatus === 'pending' || r.quotationStatus === 'draft').length,
   }
 
   const selectedSupplierObj = registeredSuppliers.find((s) => s.id === activeSupplierId)
@@ -240,7 +244,6 @@ export function RFQItemPage() {
                 ) : (
                   pagedRFQs.map((r) => {
                     const isSelected = selectedIds.includes(r.id)
-                    const isSubmitted = r.quotationStatus === 'submitted'
                     return (
                       <TableRow key={r.id} className={isSelected ? 'bg-muted/40' : undefined}>
                         <TableCell>
@@ -259,10 +262,20 @@ export function RFQItemPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {isSubmitted ? (
-                            <Badge className="bg-blue-600">Submitted</Badge>
+                          {r.quotationStatus === 'submitted' ? (
+                            <Badge className="bg-blue-600 text-white font-medium">Submitted</Badge>
+                          ) : r.quotationStatus === 'approved' ? (
+                            <Badge className="bg-green-600 text-white font-medium">Approved</Badge>
+                          ) : r.quotationStatus === 'returned' ? (
+                            <Badge variant="outline" className="text-red-700 border-red-300 bg-red-50 font-medium">
+                              Returned
+                            </Badge>
+                          ) : r.quotationStatus === 'draft' ? (
+                            <Badge variant="outline" className="text-amber-800 border-amber-300 bg-amber-50 font-medium">
+                              Draft Bid
+                            </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
+                            <Badge variant="outline" className="text-slate-600 border-slate-300 bg-slate-50 font-medium">
                               Pending
                             </Badge>
                           )}

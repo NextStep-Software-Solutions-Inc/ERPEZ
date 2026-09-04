@@ -13,4 +13,27 @@ public record UpdateSupplierRequest
     public bool IsBlacklisted { get; init; }
     public string Status { get; init; } = string.Empty;
     public Guid SupplierCategoryId { get; init; }
+
+    private List<UpdateSupplierRequirementItemDto>? requirements;
+
+    public List<UpdateSupplierRequirementItemDto>? Requirements
+    {
+        get => requirements;
+        init => requirements = value;
+    }
+
+    public List<UpdateSupplierRequirementItemDto>? SupplierRequirements
+    {
+        get => requirements;
+        init => requirements = value;
+    }
+}
+
+public record UpdateSupplierRequirementItemDto
+{
+    public Guid? Id { get; init; }
+    public string RequirementName { get; init; } = string.Empty;
+    public Guid? FileId { get; init; }
+    public string? Url { get; init; }
+    public bool? IsVerified { get; init; }
 }

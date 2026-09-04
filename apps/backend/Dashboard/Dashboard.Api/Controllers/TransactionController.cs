@@ -5,7 +5,9 @@ using ERPEZ.Application.Features.Planning.Transaction.Dtos;
 using ERPEZ.Application.Features.Planning.Transaction.Queries.GetTransactionById;
 using ERPEZ.Application.Features.Planning.Transaction.Queries.GetTransactions;
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,9 +15,13 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("transactions")]
     [ApiController]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public class TransactionController(ISender mediator) : ControllerBase
     {
         [HttpPost]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateTransaction([FromBody] CreateTransactionCommand command)
@@ -29,6 +35,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
+        [HasPermission(Permissions.Finance.uacsView)]
         [ProducesResponseType(typeof(PaginatedApiResponse<TransactionResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTransactions([FromQuery] GetTransactionsQuery query)
         {
@@ -37,6 +44,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [HasPermission(Permissions.Finance.uacsView)]
         [ProducesResponseType(typeof(ApiResponse<TransactionDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTransactionById(Guid id)
@@ -47,9 +55,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateTransaction(Guid id, [FromBody] UpdateTransactionRequest updateTransaction)
         {
             var request = new UpdateTransactionCommand
@@ -63,6 +72,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteTransaction(Guid id)

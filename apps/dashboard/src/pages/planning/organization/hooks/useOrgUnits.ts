@@ -238,7 +238,10 @@ export function useCreatePosition() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (payload: Omit<Position, 'id'>) => createPosition(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['positions'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+    },
   })
 }
 
@@ -246,7 +249,10 @@ export function useUpdatePosition() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Position> }) => updatePosition(id, updates),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['positions'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+    },
   })
 }
 
@@ -254,7 +260,10 @@ export function useDeletePosition() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deletePosition(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['positions'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+    },
   })
 }
 

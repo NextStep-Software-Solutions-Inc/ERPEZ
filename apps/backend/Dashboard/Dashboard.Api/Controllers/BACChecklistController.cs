@@ -6,7 +6,9 @@ using ERPEZ.Application.Features.Procurement.ProjectDocumentChecklist.Dtos;
 using ERPEZ.Application.Features.Procurement.ProjectDocumentChecklist.Queries.GetProjectChecklist;
 using ERPEZ.Application.Features.Procurement.ProjectDocumentChecklist.Commands.ConfirmChecklist;
 using ERPEZ.Application.Features.Procurement.ProjectDocumentChecklist.Commands.ResetChecklist;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,6 +16,7 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("bac/projects")]
 [ApiController]
+[Authorize]
 public class BACChecklistController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -22,10 +25,13 @@ public class BACChecklistController(ISender mediator) : ControllerBase
     /// Rejected if project status is Posted or beyond.
     /// </summary>
     [HttpPost("{projectId:guid}/checklists/load-profile")]
+    [HasPermission(Permissions.Procurement.biddingDocumentsManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> LoadProfile(
         Guid projectId,
         [FromBody] LoadProfileRequest request,     // ← was LoadProfileCommand
@@ -45,8 +51,11 @@ public class BACChecklistController(ISender mediator) : ControllerBase
     /// ordered by OrderIndex within each envelope.
     /// </summary>
     [HttpGet("{projectId:guid}/checklists")]
+    [HasPermission(Permissions.Procurement.biddingDocumentsView)]
     [ProducesResponseType(typeof(ApiResponse<ProjectChecklistResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetProjectChecklist(
         Guid projectId, CancellationToken cancellationToken)
     {
@@ -60,9 +69,12 @@ public class BACChecklistController(ISender mediator) : ControllerBase
     /// Does NOT insert into the global MasterDocumentType table.
     /// </summary>
     [HttpPost("{projectId:guid}/checklists/custom")]
+    [HasPermission(Permissions.Procurement.biddingDocumentsManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> AddCustomRequirement(
         Guid projectId,
         [FromBody] AddCustomRequirementRequest request,     // ← was AddCustomRequirementCommand
@@ -86,10 +98,13 @@ public class BACChecklistController(ISender mediator) : ControllerBase
     /// Toggles IsRequired or updates OrderIndex (drag-and-drop reorder).
     /// </summary>
     [HttpPut("{projectId:guid}/checklists/{checklistItemId:guid}")]
+    [HasPermission(Permissions.Procurement.biddingDocumentsManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateChecklistItem(
         Guid projectId,
         Guid checklistItemId,
@@ -110,9 +125,12 @@ public class BACChecklistController(ISender mediator) : ControllerBase
     /// <summary>Removes a checklist item. Only custom items should typically be deleted;
     /// profile-sourced items are toggled off via IsRequired.</summary>
     [HttpDelete("{projectId:guid}/checklists/{checklistItemId:guid}")]
+    [HasPermission(Permissions.Procurement.biddingDocumentsManage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteChecklistItem(
         Guid projectId,
         Guid checklistItemId,
@@ -128,9 +146,12 @@ public class BACChecklistController(ISender mediator) : ControllerBase
     /// the exact upload slots matching this checklist.
     /// </summary>
     [HttpPost("{projectId:guid}/checklists/confirm")]
+    [HasPermission(Permissions.Procurement.biddingDocumentsManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ConfirmChecklist(
         Guid projectId, CancellationToken cancellationToken)
     {
@@ -144,9 +165,12 @@ public class BACChecklistController(ISender mediator) : ControllerBase
     /// Only allowed if the project has not yet been Posted.
     /// </summary>
     [HttpPost("{projectId:guid}/checklists/reset")]
+    [HasPermission(Permissions.Procurement.biddingDocumentsManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ResetChecklist(
         Guid projectId, CancellationToken cancellationToken)
     {

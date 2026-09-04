@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.ActivateFYActiveKPI;
 using ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.UpdateFYActiveKPI;
 using ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.DeleteFYActiveKPI;
@@ -16,6 +19,7 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("fy-active-kpis")]
 [ApiController]
+[Authorize]
 public class FYActiveKPIController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -24,6 +28,7 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     [HttpPost("activate/bulk")]
     [ProducesResponseType(typeof(ApiResponse<List<FYActiveKPIResponse>>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<List<FYActiveKPIResponse>>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.kpiCreate)]
     public async Task<IActionResult> ActivateFYActiveKPI([FromBody] ActivateFYActiveKPICommand command)
     {
         var result = await mediator.Send(command);
@@ -41,6 +46,7 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     [HttpPut("targets/bulk")]
     [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Planning.kpiUpdate)]
     public async Task<IActionResult> SetTargets([FromBody] List<SetTargetRequest> targets)
     {
         var command = new SetFYActiveKPITargetsCommand(targets);
@@ -51,6 +57,7 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     [HttpPut("fiscal-years/{fiscalYearId}/lock-status")]
     [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiUpdate)]
     public async Task<IActionResult> SetLockStatus(Guid fiscalYearId, [FromBody] SetFYActiveKPILockStatusCommand command)
     {
         var result = await mediator.Send(command with { FiscalYearId = fiscalYearId });
@@ -62,6 +69,7 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet("validate-for-assignment")]
     [ProducesResponseType(typeof(ApiResponse<ValidationResult>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Planning.kpiView)]
     public async Task<IActionResult> ValidateForAssignment([FromQuery] Guid fiscalYearId)
     {
         var result = await mediator.Send(new ValidateForAssignmentQuery(fiscalYearId));
@@ -70,6 +78,7 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<FYActiveKPIResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Planning.kpiView)]
     public async Task<IActionResult> GetFYActiveKPIs([FromQuery] GetFYActiveKPIsQuery query)
     {
         var result = await mediator.Send(query);
@@ -79,6 +88,7 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<FYActiveKPIDetails>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<FYActiveKPIDetails>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiView)]
     public async Task<IActionResult> GetFYActiveKPIById(Guid id)
     {
         var result = await mediator.Send(new GetFYActiveKPIByIdQuery(id));
@@ -89,6 +99,7 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiUpdate)]
     public async Task<IActionResult> UpdateFYActiveKPI(Guid id, [FromBody] UpdateFYActiveKPICommand command)
     {
         var result = await mediator.Send(command with { Id = id });
@@ -98,6 +109,7 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiUpdate)]
     public async Task<IActionResult> DeleteFYActiveKPI(Guid id)
     {
         var result = await mediator.Send(new DeleteFYActiveKPICommand(id));

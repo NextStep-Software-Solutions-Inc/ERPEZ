@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import WFPPage from '@/pages/planning/wfp/WFPPage'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
   page: z.number().optional().default(1),
@@ -22,6 +24,11 @@ export const Route = createFileRoute('/v2/(planning)/wfp/')({
 
 function RouteComponent() {
   return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Planning.Wfp.View}
+      message="You do not have permission to view Work and Financial Plans."
+    >
       <WFPPage />
+    </RoutePermissionGuard>
   )
 }

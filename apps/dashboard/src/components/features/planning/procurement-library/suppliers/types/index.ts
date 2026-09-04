@@ -78,6 +78,9 @@ export type SupplierRequirementFormValue = {
   requirementName: string
   file: File | null
   fileId: string | null
+  url?: string | null
+  isVerified?: boolean
+  isExisting?: boolean
 }
 
 export type SupplierStatus = 'Pending' | 'Approved' | 'Declined'
@@ -105,6 +108,14 @@ export type VerifySupplierRequirementsPayload = {
   requirements: SupplierRequirementVerificationItem[]
 }
 
+export type UpdateSupplierRequirementItem = {
+  id?: string | null
+  requirementName: string | null
+  fileId?: string | null
+  url?: string | null
+  isVerified?: boolean | null
+}
+
 export type UpdateSupplierPayload = {
   name?: string | null
   businessPermitNo?: string | null
@@ -117,6 +128,8 @@ export type UpdateSupplierPayload = {
   isBlacklisted: boolean
   status?: SupplierStatus | null
   supplierCategoryId: string
+  requirements?: UpdateSupplierRequirementItem[] | null
+  supplierRequirements?: UpdateSupplierRequirementItem[] | null
 }
 
 export type UpdateSupplierStatusPayload =

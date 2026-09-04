@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Constants;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Commands.UpdateFYActiveKPIMeasurement;
 using ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Dtos;
 using ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Queries.GetFYActiveKPIMeasurements;
@@ -10,6 +13,7 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("fy-active-kpi-measurements")]
 [ApiController]
+[Authorize]
 public class FYActiveKPIMeasurementController(ISender mediator) : ControllerBase
 {
     /// <summary>
@@ -18,6 +22,7 @@ public class FYActiveKPIMeasurementController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<FYActiveKPIMeasurementResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Planning.kpiView)]
     public async Task<IActionResult> GetFYActiveKPIMeasurements([FromQuery] GetFYActiveKPIMeasurementsQuery query)
     {
         var result = await mediator.Send(query);
@@ -30,6 +35,7 @@ public class FYActiveKPIMeasurementController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<FYActiveKPIMeasurementResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<FYActiveKPIMeasurementResponse>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiView)]
     public async Task<IActionResult> GetFYActiveKPIMeasurementById(Guid id)
     {
         var result = await mediator.Send(new GetFYActiveKPIMeasurementByIdQuery(id));
@@ -43,6 +49,7 @@ public class FYActiveKPIMeasurementController(ISender mediator) : ControllerBase
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Planning.kpiUpdate)]
     public async Task<IActionResult> UpdateFYActiveKPIMeasurement(Guid id, [FromBody] UpdateFYActiveKPIMeasurementRequest dto)
     {
         var command = new UpdateFYActiveKPIMeasurementCommand { Id = id, UpdateFYActiveKPIMeasurement = dto };
