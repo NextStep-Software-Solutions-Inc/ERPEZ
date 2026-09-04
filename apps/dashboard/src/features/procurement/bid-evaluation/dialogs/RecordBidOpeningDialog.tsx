@@ -6,10 +6,12 @@ import {
   DollarSign,
   FileCheck2,
   FileText,
+  Loader2,
   Lock,
   ShieldCheck,
   XCircle,
 } from 'lucide-react'
+import { previewDocument } from '@/features/procurement/manage-supplier-portal/utils'
 import { useRecordBidOpening } from '../hooks/useBidEvaluationApi'
 import type { BiddingSubmissionResponse } from '../types/bidEvaluationApi.types'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -50,6 +52,19 @@ export function RecordBidOpeningDialog({
   const [asReadBidAmount, setAsReadBidAmount] = useState<string>('')
   const [remarks, setRemarks] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [previewingDocId, setPreviewingDocId] = useState<string | null>(null)
+
+  const handlePreview = async (doc: { id: string; name: string; url: string; type?: string }) => {
+    if (!doc.url) return
+    setPreviewingDocId(doc.id)
+    try {
+      await previewDocument(doc.url, doc.name, doc.type)
+    } catch (err) {
+      console.error('Failed to preview document:', err)
+    } finally {
+      setPreviewingDocId(null)
+    }
+  }
 
   useEffect(() => {
     if (submission) {
@@ -61,13 +76,13 @@ export function RecordBidOpeningDialog({
         setAsReadBidAmount(
           submission.openingRecord.asReadBidAmount
             ? String(submission.openingRecord.asReadBidAmount)
-            : String(submission.originalProposedAmount)
+            : ''
         )
         setRemarks(submission.openingRecord.remarks ?? '')
       } else {
         setEnvelope1Result('Passed')
         setDisqualificationReason('')
-        setAsReadBidAmount(String(submission.originalProposedAmount))
+        setAsReadBidAmount('')
         setRemarks('')
       }
       setValidationError(null)
@@ -76,15 +91,15 @@ export function RecordBidOpeningDialog({
 
   if (!submission) return null
 
+  const firstEnvelopeDocs = (submission.documents || []).filter((d) => (d.envelopeType ?? 1) === 1)
+  const secondEnvelopeDocs = (submission.documents || []).filter((d) => d.envelopeType === 2)
+
   const handleEnvelope1Change = (val: 'Passed' | 'Failed') => {
     setEnvelope1Result(val)
     setValidationError(null)
     if (val === 'Failed') {
       setAsReadBidAmount('')
     } else {
-      if (!asReadBidAmount || asReadBidAmount === '0') {
-        setAsReadBidAmount(String(submission.originalProposedAmount))
-      }
       setDisqualificationReason('')
     }
   }
@@ -275,6 +290,49 @@ export function RecordBidOpeningDialog({
                 </label>
               </RadioGroup>
 
+              {/* Envelope 1 Documents List */}
+              {firstEnvelopeDocs.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-default-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-default-700 uppercase tracking-wider">
+                      Submitted Eligibility & Technical Documents ({firstEnvelopeDocs.length})
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">Envelope 1 Requirements</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {firstEnvelopeDocs.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-2 rounded-md border border-default-200 bg-default-50/50 hover:border-primary/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 overflow-hidden min-w-0">
+                          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="text-xs font-medium truncate text-default-800" title={doc.name}>
+                            {doc.name}
+                          </span>
+                        </div>
+                        {doc.url && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={previewingDocId === doc.id}
+                            className="h-6 text-[11px] px-2 text-primary hover:text-primary hover:bg-primary/10 gap-1 shrink-0 font-semibold"
+                            onClick={() => handlePreview(doc)}
+                          >
+                            {previewingDocId === doc.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              'Preview'
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {envelope1Result === 'Failed' && (
                 <div className="space-y-1.5 pt-2 animate-in fade-in slide-in-from-top-1">
                   <Label htmlFor="disqual-reason" className="text-xs font-bold text-destructive">
@@ -372,6 +430,49 @@ export function RecordBidOpeningDialog({
                       className="text-xs"
                     />
                   </div>
+
+                  {/* Envelope 2 Documents List */}
+                  {secondEnvelopeDocs.length > 0 && (
+                    <div className="space-y-2 pt-2 border-t border-default-100 col-span-1 md:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wider">
+                          Submitted Financial Documents ({secondEnvelopeDocs.length})
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">Envelope 2 Requirements</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {secondEnvelopeDocs.map((doc) => (
+                          <div
+                            key={doc.id}
+                            className="flex items-center justify-between p-2 rounded-md border border-purple-200 bg-purple-50/30 hover:border-purple-400 transition-colors"
+                          >
+                            <div className="flex items-center gap-2 overflow-hidden min-w-0">
+                              <FileText className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                              <span className="text-xs font-medium truncate text-default-800" title={doc.name}>
+                                {doc.name}
+                              </span>
+                            </div>
+                            {doc.url && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={previewingDocId === doc.id}
+                                className="h-6 text-[11px] px-2 text-purple-700 hover:text-purple-800 hover:bg-purple-100 gap-1 shrink-0 font-semibold"
+                                onClick={() => handlePreview(doc)}
+                              >
+                                {previewingDocId === doc.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  'Preview'
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="p-3 bg-default-100 rounded text-xs text-muted-foreground flex items-center gap-2 italic">

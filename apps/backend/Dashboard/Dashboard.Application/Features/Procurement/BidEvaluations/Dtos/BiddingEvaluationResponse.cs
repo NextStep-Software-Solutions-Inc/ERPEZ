@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProjectSupplierApplications;
 
 namespace ERPEZ.Application.Features.Procurement.BidEvaluations.Dtos;
 
@@ -20,6 +21,7 @@ public class BiddingSubmissionResponse
     public DateTime SubmittedAt { get; set; }
     public string? Remarks { get; set; }
     public BidOpeningRecordResponse? OpeningRecord { get; set; }
+    public List<ApplicationDocumentDto> Documents { get; set; } = [];
 }
 
 public class BidOpeningRecordResponse

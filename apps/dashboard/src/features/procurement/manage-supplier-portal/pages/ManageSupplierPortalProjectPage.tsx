@@ -74,6 +74,13 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
     }
   }, [source, rfqResponse, bacProjectResponse, projectId])
 
+  const isCompetitiveBidding = useMemo(() => {
+    if (source !== 'bac') return false
+    const mode = (projectInfo?.modeOfProcurementName || '').toLowerCase()
+    return (mode.includes('competitive') || mode.includes('public') || mode.includes('bidding'))
+      && !mode.includes('small value') && !mode.includes('svp')
+  }, [source, projectInfo])
+
   const {
     bids,
     selectedBid,
@@ -290,6 +297,8 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
           />
           <ReviewWorkspace
             selectedBid={selectedBid}
+            projectId={projectId}
+            isCompetitiveBidding={isCompetitiveBidding}
             evalStatus={evalStatus}
             evalRemarks={evalRemarks}
             onEvalStatusChange={setEvalStatus}

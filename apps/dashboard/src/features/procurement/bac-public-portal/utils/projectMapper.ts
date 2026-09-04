@@ -23,6 +23,7 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
         isTemplate: false,
         postedOn: matchingNotice?.postedOn,
         viewerDocId: matchingNotice?.viewerDocId,
+        envelopeType: s.envelopeType ?? 1,
       })
     })
   }

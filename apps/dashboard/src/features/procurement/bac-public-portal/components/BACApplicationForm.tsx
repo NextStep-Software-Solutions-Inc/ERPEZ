@@ -316,7 +316,18 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
                           <div className="h-4 w-4 rounded-full border-2 border-slate-300 shrink-0 mt-0.5" />
                         )}
                         <div className="min-w-0">
-                          <span className="text-sm font-semibold text-slate-800">{doc.name}</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-slate-800">{doc.name}</span>
+                            {project.mop === 'public-bidding' && (
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                doc.envelopeType === 2
+                                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                  : 'bg-blue-50 text-blue-700 border-blue-200'
+                              }`}>
+                                {doc.envelopeType === 2 ? 'Second Envelope — Financial' : 'First Envelope — Eligibility & Technical'}
+                              </span>
+                            )}
+                          </div>
                           {doc.description && (
                             <p className="text-xs text-slate-500 mt-0.5">{doc.description}</p>
                           )}

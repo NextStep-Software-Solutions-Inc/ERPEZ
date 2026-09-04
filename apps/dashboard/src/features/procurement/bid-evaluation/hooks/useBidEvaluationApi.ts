@@ -31,13 +31,16 @@ export const bidEvaluationQueryKeys = {
 
 // ─── Query Hooks ─────────────────────────────────────────────────────────────
 
+const isValidGuid = (id: string | null | undefined): boolean =>
+  !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
 export function useProjectBidEvaluation(
   projectId: string | null | undefined
 ): UseQueryResult<BiddingEvaluationResponse> {
   return useQuery({
     queryKey: bidEvaluationQueryKeys.evaluation(projectId ?? ''),
     queryFn: () => getProjectBidEvaluationRequest.fetcher(projectId!),
-    enabled: !!projectId,
+    enabled: isValidGuid(projectId),
     staleTime: 30_000,
   })
 }
@@ -48,7 +51,7 @@ export function useProjectBiddingSubmissions(
   return useQuery({
     queryKey: bidEvaluationQueryKeys.submissions(projectId ?? ''),
     queryFn: () => getProjectBiddingSubmissionsRequest.fetcher(projectId!),
-    enabled: !!projectId,
+    enabled: isValidGuid(projectId),
     staleTime: 30_000,
   })
 }

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ERPEZ.Application.Features.Procurement.BidEvaluations.Dtos;
+using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProjectSupplierApplications;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -20,7 +21,7 @@ public class GetProjectBiddingSubmissionsQueryHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException("Procurement project not found.");
 
         var submissions = await unitOfWork.BiddingSubmissionRepository
-            .FindAllAsync(s => s.ProcurementProjectId == request.ProjectId && !s.IsDeleted, cancellationToken);
+            .GetByProjectIdWithDetailsAsync(request.ProjectId, cancellationToken);
 
         var response = submissions.Select(s =>
         {
@@ -32,8 +33,8 @@ public class GetProjectBiddingSubmissionsQueryHandler(IUnitOfWork unitOfWork)
                 Id = s.Id,
                 ProcurementProjectId = s.ProcurementProjectId,
                 SupplierId = s.SupplierId,
-                SupplierName = supplier?.Name ?? "Registered Bidder",
-                TinNumber = supplier?.TINNumber,
+                SupplierName = supplier?.Name ?? s.PublicSupplierApplication?.CompanyName ?? "Registered Bidder",
+                TinNumber = supplier?.TINNumber ?? s.PublicSupplierApplication?.TinNumber,
                 PublicSupplierApplicationId = s.PublicSupplierApplicationId,
                 OriginalProposedAmount = s.OriginalProposedAmount,
                 BidSecurityType = s.BidSecurityType,
@@ -56,7 +57,20 @@ public class GetProjectBiddingSubmissionsQueryHandler(IUnitOfWork unitOfWork)
                     OpenedById = opening.OpenedById,
                     OpenedByName = opening.OpenedByName,
                     OpenedAt = opening.OpenedAt
-                }
+                },
+                Documents = s.PublicSupplierApplication?.UploadedDocuments.Select(d => new ApplicationDocumentDto
+                {
+                    Id = d.Id,
+                    ChecklistItemId = d.ChecklistItemId,
+                    Name = d.ChecklistItem?.MasterDocumentType?.Name ?? d.ChecklistItem?.CustomDocumentName ?? d.OriginalFileName,
+                    Type = System.IO.Path.GetExtension(d.OriginalFileName).TrimStart('.').ToUpperInvariant(),
+                    Size = 0,
+                    UploadedAt = d.UploadedAt,
+                    Url = d.BlobStorageUrl,
+                    EnvelopeType = d.ChecklistItem != null && d.ChecklistItem.EnvelopeType != 0
+                        ? d.ChecklistItem.EnvelopeType
+                        : (d.ChecklistItem?.MasterDocumentType?.EnvelopeType ?? 1)
+                }).ToList() ?? []
             };
         }).ToList();
 

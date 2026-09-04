@@ -12,6 +12,7 @@ export interface RequiredDocument {
   isTemplate?: boolean
   hasTemplate?: boolean
   postedOn?: string
+  envelopeType?: number
 }
 
 export interface PublicProject {

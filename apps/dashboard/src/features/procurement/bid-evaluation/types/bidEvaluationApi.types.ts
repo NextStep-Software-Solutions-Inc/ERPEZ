@@ -21,6 +21,14 @@ export interface BiddingSubmissionResponse {
   submittedAt: string
   remarks?: string | null
   openingRecord?: BidOpeningRecordResponse | null
+  documents?: Array<{
+    id: string
+    checklistItemId: string
+    name: string
+    url: string
+    type: string
+    envelopeType: number
+  }>
 }
 
 export interface BidOpeningRecordResponse {

@@ -53,7 +53,7 @@ public class RecordBidOpeningCommandHandler(
 
         var envelope2Opened = isPassed && command.Request.Envelope2Opened;
         var asReadAmount = envelope2Opened 
-            ? (command.Request.AsReadBidAmount ?? submission.OriginalProposedAmount)
+            ? command.Request.AsReadBidAmount
             : (decimal?)null;
 
         var actorName = currentUserService.Name ?? currentUserService.Username ?? "BAC Officer";

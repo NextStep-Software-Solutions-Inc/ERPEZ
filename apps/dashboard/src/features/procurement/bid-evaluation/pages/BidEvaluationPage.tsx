@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useSearch, useNavigate } from '@tanstack/react-router'
+import api from '@/services/api'
 import {
   AlertTriangle,
   Award,
@@ -27,6 +30,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export function BidEvaluationPage() {
+  const search = useSearch({ strict: false }) as { projectId?: string }
+  const navigate = useNavigate()
+
   const {
     projects,
     selectedProjectId,
@@ -34,10 +40,53 @@ export function BidEvaluationPage() {
     resetProject,
   } = useBidEvaluationStore()
 
+  const { data: realProjects = [] } = useQuery({
+    queryKey: ['bac-projects-for-evaluation'],
+    queryFn: async () => {
+      const res = await api.get('/bac/projects?pageSize=50')
+      const items = res.data?.data?.items || res.data?.data || []
+      return items.map((p: any) => ({
+        id: p.id,
+        projectName: p.title || 'Untitled Project',
+        abc: Number(p.abc || 0),
+        resolutionNumber: p.contractNo || (p.id ? p.id.substring(0, 8) : 'BAC-PROJ'),
+        governingLaw: 'RA_9184' as const,
+        awardCriterion: 'LCRB' as const,
+        projectStatus: (p.status === 'Approved' ? 'Approved' : 'Active') as any,
+        suppliers: [],
+      }))
+    },
+    staleTime: 60_000,
+  })
+
+  // Combine real projects with mock projects (real projects first)
+  const combinedProjects = useMemo(() => {
+    if (realProjects.length > 0) return realProjects
+    return projects
+  }, [realProjects, projects])
+
+  const selectedId = useMemo(() => {
+    if (search.projectId && combinedProjects.some((p) => p.id === search.projectId)) {
+      return search.projectId
+    }
+    if (selectedProjectId && combinedProjects.some((p) => p.id === selectedProjectId)) {
+      return selectedProjectId
+    }
+    return combinedProjects[0]?.id || ''
+  }, [search.projectId, selectedProjectId, combinedProjects])
+
+  const activeProject = combinedProjects.find((p) => p.id === selectedId) ?? combinedProjects[0]
+
+  const handleSelectProject = (newId: string) => {
+    selectProject(newId)
+    void navigate({
+      to: '/v2/bid-evaluation',
+      search: { projectId: newId },
+    })
+  }
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('opening')
-
-  const activeProject = projects.find((p) => p.id === selectedProjectId) ?? projects[0]
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-PH', {
@@ -48,10 +97,11 @@ export function BidEvaluationPage() {
 
   // Check for overdue SLA timers in mock data (retained for backward compatibility during phased migration)
   const checkOverdueTimers = () => {
+    if (!activeProject) return []
     const nowMs = Date.now()
     const overdueList: Array<{ supplierName: string; type: 'Bidder' | 'BAC'; days: number }> = []
 
-    activeProject.suppliers.forEach((sup) => {
+    ;(activeProject.suppliers || []).forEach((sup: any) => {
       if (sup.status === 'LCB_Notified' && sup.lcbNoticeSentDate) {
         const startMs = new Date(sup.lcbNoticeSentDate).getTime()
         const limitMs = BIDDER_SLA_DAYS * 24 * 60 * 60 * 1000
@@ -72,6 +122,15 @@ export function BidEvaluationPage() {
   }
 
   const overdueTimers = checkOverdueTimers()
+
+  if (!activeProject) {
+    return (
+      <div className="w-full h-64 flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="h-7 w-7 animate-spin text-primary" />
+        <p className="text-xs text-muted-foreground">Loading public bidding projects...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full space-y-6">
@@ -107,12 +166,12 @@ export function BidEvaluationPage() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-default-800 whitespace-nowrap">Active Project:</span>
-            <Select value={activeProject.id} onValueChange={selectProject}>
+            <Select value={activeProject?.id} onValueChange={handleSelectProject}>
               <SelectTrigger className="w-[380px] bg-white text-default-900 border-default-300 hover:border-default-400 shadow-sm focus:ring-2 focus:ring-primary/20 h-10 transition-colors">
                 <SelectValue placeholder="Choose project..." />
               </SelectTrigger>
               <SelectContent className="max-w-[450px]">
-                {projects.map((p) => (
+                {combinedProjects.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     <span className="font-semibold text-primary">{p.resolutionNumber}</span> - {p.projectName}
                   </SelectItem>
@@ -303,7 +362,7 @@ export function BidEvaluationPage() {
       <BacResolutionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        draft={activeProject.bacResolutionDraft}
+        draft={activeProject?.bacResolutionDraft}
       />
     </div>
   )

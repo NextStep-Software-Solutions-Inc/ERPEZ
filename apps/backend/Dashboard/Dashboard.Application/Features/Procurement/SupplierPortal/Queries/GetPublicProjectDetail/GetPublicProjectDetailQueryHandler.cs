@@ -45,6 +45,7 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
                 Description     = c.MasterDocumentType?.Description,
                 IsRequired      = c.IsRequired,
                 OrderIndex      = c.OrderIndex,
+                EnvelopeType    = c.EnvelopeType != 0 ? c.EnvelopeType : (c.MasterDocumentType?.EnvelopeType ?? 1),
                 DownloadUrl     = (c.CustomTemplateFileUrl != null || c.MasterDocumentType?.TemplateFileUrl != null)
                                     ? $"/api/public/projects/{project.Id}/bid-notices/{c.Id}/download"
                                     : null

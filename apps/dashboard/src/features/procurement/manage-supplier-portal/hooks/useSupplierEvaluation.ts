@@ -112,6 +112,8 @@ export function useSupplierEvaluation(projectId: string, source: 'rfq' | 'bac' =
         name: d.name,
         url: d.url || '',
         type: (d.type as any) || 'PDF',
+        envelopeType: d.envelopeType ?? 1,
+        checklistItemId: d.checklistItemId,
       })),
       items: (a.items || []).map((it: any) => ({
         id: it.id,

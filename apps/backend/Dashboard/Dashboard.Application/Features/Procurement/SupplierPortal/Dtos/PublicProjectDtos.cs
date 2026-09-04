@@ -38,6 +38,7 @@ public record RequiredSubmissionDto
     public string? Description { get; init; }
     public bool IsRequired { get; init; }
     public int OrderIndex { get; init; }
+    public int EnvelopeType { get; init; } = 1;
     public string? DownloadUrl { get; init; }
     public bool HasTemplate => !string.IsNullOrEmpty(DownloadUrl);
 }

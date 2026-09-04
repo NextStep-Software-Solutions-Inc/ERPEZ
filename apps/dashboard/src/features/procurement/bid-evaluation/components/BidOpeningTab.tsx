@@ -6,6 +6,7 @@ import {
   Clock,
   FileCheck2,
   FileText,
+  FolderOpen,
   Lock,
   RefreshCw,
   ShieldCheck,
@@ -74,6 +75,20 @@ export function BidOpeningTab({
   const env1Passed = submissions.filter((s) => s.openingRecord?.envelope1Result === 'Passed').length
   const env1Failed = submissions.filter((s) => s.openingRecord?.envelope1Result === 'Failed').length
   const pendingOpening = submissions.filter((s) => !s.openingRecord).length
+
+  const isValidGuid = !!projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)
+
+  if (!isValidGuid) {
+    return (
+      <div className="w-full py-12 px-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center text-center my-4">
+        <FolderOpen className="h-10 w-10 text-slate-400 mb-2" />
+        <p className="text-sm font-semibold text-slate-700">Select an Active Public Bidding Project</p>
+        <p className="text-xs text-muted-foreground mt-1 max-w-md">
+          Please select a live public bidding project from the dropdown above to load submitted bidding packages and conduct the bid opening session.
+        </p>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -263,32 +278,48 @@ export function BidOpeningTab({
 
                       {/* Envelope 1 Result */}
                       <TableCell>
-                        {!hasOpening ? (
-                          <Badge color="warning" variant="soft" className="font-semibold text-[10px]">
-                            Pending Opening
-                          </Badge>
-                        ) : isPass ? (
-                          <Badge color="success" className="font-bold text-[10px] flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3" /> Passed
-                          </Badge>
-                        ) : (
-                          <div className="space-y-1">
-                            <Badge color="destructive" className="font-bold text-[10px] flex items-center gap-1">
-                              <XCircle className="h-3 w-3" /> Disqualified
+                        <div className="space-y-1">
+                          {!hasOpening ? (
+                            <Badge color="warning" variant="soft" className="font-semibold text-[10px]">
+                              Pending Opening
                             </Badge>
-                            {sub.openingRecord?.disqualificationReason && (
-                              <p className="text-[10px] text-destructive italic max-w-xs truncate">
-                                {sub.openingRecord.disqualificationReason}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                          ) : isPass ? (
+                            <Badge color="success" className="font-bold text-[10px] flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" /> Passed
+                            </Badge>
+                          ) : (
+                            <div className="space-y-1">
+                              <Badge color="destructive" className="font-bold text-[10px] flex items-center gap-1">
+                                <XCircle className="h-3 w-3" /> Disqualified
+                              </Badge>
+                              {sub.openingRecord?.disqualificationReason && (
+                                <p className="text-[10px] text-destructive italic max-w-xs truncate">
+                                  {sub.openingRecord.disqualificationReason}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {sub.documents && sub.documents.length > 0 && (
+                            <span className="text-[10px] text-muted-foreground block font-medium">
+                              {sub.documents.filter((d) => (d.envelopeType ?? 1) === 1).length} Envelope 1 docs
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
 
                       {/* Envelope 2 Status & As-Read Amount */}
                       <TableCell>
                         {!hasOpening ? (
-                          <span className="text-xs text-muted-foreground">-</span>
+                          <div className="space-y-0.5">
+                            <Badge color="secondary" variant="soft" className="font-semibold text-[10px] flex items-center gap-1">
+                              <Lock className="h-3 w-3" /> Sealed
+                            </Badge>
+                            {sub.documents && sub.documents.length > 0 && (
+                              <span className="text-[10px] text-muted-foreground block font-medium">
+                                {sub.documents.filter((d) => d.envelopeType === 2).length} Envelope 2 docs
+                              </span>
+                            )}
+                          </div>
                         ) : isPass ? (
                           <div className="space-y-0.5">
                             <span className="font-mono font-bold text-success text-xs block">
@@ -297,11 +328,23 @@ export function BidOpeningTab({
                             <span className="text-[10px] text-muted-foreground block">
                               (As-Read Bid Amount)
                             </span>
+                            {sub.documents && sub.documents.length > 0 && (
+                              <span className="text-[10px] text-muted-foreground block font-medium">
+                                {sub.documents.filter((d) => d.envelopeType === 2).length} Envelope 2 docs
+                              </span>
+                            )}
                           </div>
                         ) : (
-                          <Badge color="secondary" variant="soft" className="font-semibold text-[10px] flex items-center gap-1">
-                            <Lock className="h-3 w-3" /> Sealed / Locked
-                          </Badge>
+                          <div className="space-y-0.5">
+                            <Badge color="secondary" variant="soft" className="font-semibold text-[10px] flex items-center gap-1">
+                              <Lock className="h-3 w-3" /> Sealed / Locked
+                            </Badge>
+                            {sub.documents && sub.documents.length > 0 && (
+                              <span className="text-[10px] text-muted-foreground block font-medium">
+                                {sub.documents.filter((d) => d.envelopeType === 2).length} Envelope 2 docs
+                              </span>
+                            )}
+                          </div>
                         )}
                       </TableCell>
 
