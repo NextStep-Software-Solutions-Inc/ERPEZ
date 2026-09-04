@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Input } from '@/components/ui/input'
@@ -63,10 +69,18 @@ import { getResolutionClausesRequest } from '../handlers/getResolutionClausesReq
 import { createResolutionClauseRequest } from '../handlers/createResolutionClauseRequest'
 import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
 
-const useEligibleAppsForProcurement = createQueryHookFromTemplate(getEligibleAppsForProcurementRequest)
-const useEligibleConsolidatedPRs = createQueryHookFromTemplate(getEligibleConsolidatedPRsRequest)
-const useResolutionClauses = createQueryHookFromTemplate(getResolutionClausesRequest)
-const useCreateResolutionClause = createMutationHookFromTemplate(createResolutionClauseRequest)
+const useEligibleAppsForProcurement = createQueryHookFromTemplate(
+  getEligibleAppsForProcurementRequest,
+)
+const useEligibleConsolidatedPRs = createQueryHookFromTemplate(
+  getEligibleConsolidatedPRsRequest,
+)
+const useResolutionClauses = createQueryHookFromTemplate(
+  getResolutionClausesRequest,
+)
+const useCreateResolutionClause = createMutationHookFromTemplate(
+  createResolutionClauseRequest,
+)
 const useUsers = createQueryHookFromTemplate(getUsersRequest)
 
 import FieldInfo from '@/components/FieldInfo'
@@ -88,22 +102,28 @@ export const createBacResolutionSchema = z.object({
   dateResolved: z.string().min(1, 'Date resolved is required.'),
   resolvedLocation: z.string().optional(),
   whereasClauses: z
-    .array(z.object({
-      resolutionClauseId: z.string(),
-      order: z.number(),
-    }))
+    .array(
+      z.object({
+        resolutionClauseId: z.string(),
+        order: z.number(),
+      }),
+    )
     .min(1, 'At least one WHEREAS clause must be selected.'),
   nowThereforeClauses: z
-    .array(z.object({
-      resolutionClauseId: z.string(),
-      order: z.number(),
-    }))
+    .array(
+      z.object({
+        resolutionClauseId: z.string(),
+        order: z.number(),
+      }),
+    )
     .optional(),
   resolvedClauses: z
-    .array(z.object({
-      resolutionClauseId: z.string(),
-      order: z.number(),
-    }))
+    .array(
+      z.object({
+        resolutionClauseId: z.string(),
+        order: z.number(),
+      }),
+    )
     .optional(),
   endUserRepresentativeId: z.string().optional(),
   techRepresentativeId: z.string().optional(),
@@ -166,21 +186,32 @@ export const CreateBacResolutionForm = forwardRef<
 
     // Multi-APP and Multi-APP Item selection state:
     const [selectedAppIds, setSelectedAppIds] = useState<string[]>(
-      initialValues?.appIds || (initialValues?.appId ? [initialValues.appId] : []),
+      initialValues?.appIds ||
+        (initialValues?.appId ? [initialValues.appId] : []),
     )
-    const [selectedAppItems, setSelectedAppItems] = useState<EligibleAppItem[]>([])
+    const [selectedAppItems, setSelectedAppItems] = useState<EligibleAppItem[]>(
+      [],
+    )
 
     const [selectedConsolidatedPr, setSelectedConsolidatedPr] =
       useState<EligibleConsolidatedPR | null>(null)
 
     // Clause state:
-    const [whereasClauses, setWhereasClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
-    const [nowThereforeClauses, setNowThereforeClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
-    const [resolvedClauses, setResolvedClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
+    const [whereasClauses, setWhereasClauses] = useState<
+      { resolutionClauseId: string; order: number }[]
+    >([])
+    const [nowThereforeClauses, setNowThereforeClauses] = useState<
+      { resolutionClauseId: string; order: number }[]
+    >([])
+    const [resolvedClauses, setResolvedClauses] = useState<
+      { resolutionClauseId: string; order: number }[]
+    >([])
 
     // Modals state:
-    const [pickerModalType, setPickerModalType] = useState<ResolutionClauseType | null>(null)
-    const [createModalType, setCreateModalType] = useState<ResolutionClauseType | null>(null)
+    const [pickerModalType, setPickerModalType] =
+      useState<ResolutionClauseType | null>(null)
+    const [createModalType, setCreateModalType] =
+      useState<ResolutionClauseType | null>(null)
 
     // Collapsible sections state:
     const [isWhereasExpanded, setIsWhereasExpanded] = useState(true)
@@ -191,7 +222,10 @@ export const CreateBacResolutionForm = forwardRef<
     const { data: resolutionClausesData, isPending: isClausesPending } =
       useResolutionClauses({
         pathParams: {},
-        queryParams: { PageSize: 200, ClauseType: pickerModalType || undefined },
+        queryParams: {
+          pageSize: 200,
+          filters: pickerModalType || undefined,
+        },
         enabled: pickerModalType !== null,
       })
 
@@ -209,7 +243,7 @@ export const CreateBacResolutionForm = forwardRef<
     // Load full clause lookup for rendering names/bodies
     const { data: allClausesData } = useResolutionClauses({
       pathParams: {},
-      queryParams: { PageSize: 500 },
+      queryParams: { pageSize: 500 },
     })
 
     const allClausesMap = useMemo(() => {
@@ -217,8 +251,8 @@ export const CreateBacResolutionForm = forwardRef<
       const list = Array.isArray(allClausesData?.data)
         ? allClausesData.data
         : Array.isArray(allClausesData)
-        ? allClausesData
-        : []
+          ? allClausesData
+          : []
       for (const item of list) {
         map.set(item.id, item)
       }
@@ -237,7 +271,9 @@ export const CreateBacResolutionForm = forwardRef<
     const handleToggleAppId = (appId: string) => {
       setSelectedAppIds((prev) => {
         const exists = prev.includes(appId)
-        const next = exists ? prev.filter((id) => id !== appId) : [...prev, appId]
+        const next = exists
+          ? prev.filter((id) => id !== appId)
+          : [...prev, appId]
 
         // Cross-validation / Auto-clean: remove items that belonged to deselected APP(s)
         setSelectedAppItems((prevItems) => {
@@ -289,11 +325,19 @@ export const CreateBacResolutionForm = forwardRef<
         )
       }
       return ''
-    }, [selectedSourceType, selectedAppItems, selectedApps, selectedConsolidatedPr])
+    }, [
+      selectedSourceType,
+      selectedAppItems,
+      selectedApps,
+      selectedConsolidatedPr,
+    ])
 
     const inheritedAbc = useMemo(() => {
       if (selectedSourceType === 'AppItem') {
-        return selectedAppItems.reduce((sum, item) => sum + item.effectiveABC, 0)
+        return selectedAppItems.reduce(
+          (sum, item) => sum + item.effectiveABC,
+          0,
+        )
       }
       if (selectedSourceType === 'ConsolidatedPr' && selectedConsolidatedPr) {
         return selectedConsolidatedPr.totalAmount
@@ -351,8 +395,10 @@ export const CreateBacResolutionForm = forwardRef<
 
     const form = useForm({
       defaultValues: {
-        appId: initialValues?.appId || (initialValues?.appIds?.[0]) || undefined,
-        appIds: initialValues?.appIds || (initialValues?.appId ? [initialValues.appId] : []),
+        appId: initialValues?.appId || initialValues?.appIds?.[0] || undefined,
+        appIds:
+          initialValues?.appIds ||
+          (initialValues?.appId ? [initialValues.appId] : []),
         appItemId: initialValues?.appItemId || undefined,
         appItemIds: initialValues?.appItemIds || [],
         consolidatedPRId: initialValues?.consolidatedPRId || undefined,
@@ -361,13 +407,13 @@ export const CreateBacResolutionForm = forwardRef<
         resolutionType: initialValues?.resolutionType ?? 'award-recommendation',
         resolutionNumber: initialValues?.resolutionNumber ?? defaultResNumber,
         dateResolved:
-          initialValues?.dateResolved ??
-          new Date().toISOString().split('T')[0],
+          initialValues?.dateResolved ?? new Date().toISOString().split('T')[0],
         resolvedLocation: initialValues?.resolvedLocation || '',
         whereasClauses: whereasClauses,
         nowThereforeClauses: nowThereforeClauses,
         resolvedClauses: resolvedClauses,
-        endUserRepresentativeId: initialValues?.endUserRepresentativeId || undefined,
+        endUserRepresentativeId:
+          initialValues?.endUserRepresentativeId || undefined,
         techRepresentativeId: initialValues?.techRepresentativeId || undefined,
       },
       onSubmit: async ({ value }) => {
@@ -376,7 +422,8 @@ export const CreateBacResolutionForm = forwardRef<
 
         try {
           const payload: CreateBacResolutionPayload = {
-            sourceType: selectedSourceType === 'AppItem' ? 'APPItem' : 'ConsolidatedPR',
+            sourceType:
+              selectedSourceType === 'AppItem' ? 'APPItem' : 'ConsolidatedPR',
             appId: selectedAppIds[0],
             appIds: selectedAppIds,
             appItemId: selectedAppItems[0]?.id,
@@ -408,7 +455,9 @@ export const CreateBacResolutionForm = forwardRef<
           onSuccess?.()
         } catch (error) {
           const errorMsg =
-            error instanceof Error ? error.message : 'Failed to create BAC Resolution'
+            error instanceof Error
+              ? error.message
+              : 'Failed to create BAC Resolution'
           setSubmitError(errorMsg)
           toast.error(errorMsg)
         } finally {
@@ -485,9 +534,13 @@ export const CreateBacResolutionForm = forwardRef<
               .filter((a) => selectedAppIds.includes(a.id))
               .flatMap((a) => a.eligibleItems.map((i) => i.id)),
           )
-          const invalidItems = selectedAppItems.filter((i) => !allowedItemIds.has(i.id))
+          const invalidItems = selectedAppItems.filter(
+            (i) => !allowedItemIds.has(i.id),
+          )
           if (invalidItems.length > 0) {
-            toast.error('One or more selected APP items do not belong to the selected APPs.')
+            toast.error(
+              'One or more selected APP items do not belong to the selected APPs.',
+            )
             return
           }
         }
@@ -520,7 +573,15 @@ export const CreateBacResolutionForm = forwardRef<
         backStep: handleBackStep,
         submit: handleSubmit,
       }),
-      [currentStep, isSubmitting, form.state.values, selectedSourceType, selectedAppIds, selectedAppItems, selectedConsolidatedPr],
+      [
+        currentStep,
+        isSubmitting,
+        form.state.values,
+        selectedSourceType,
+        selectedAppIds,
+        selectedAppItems,
+        selectedConsolidatedPr,
+      ],
     )
 
     return (
@@ -616,113 +677,178 @@ export const CreateBacResolutionForm = forwardRef<
             )}
 
             {/* Read-Only Selected Items Summary Table (when APPItem source) */}
-            {selectedSourceType === 'AppItem' && selectedAppItems.length > 0 && (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <PackageCheck className="h-4 w-4 text-primary" />
-                    <h4 className="font-bold text-sm text-default-900">
-                      Selected APP Line Items ({selectedAppItems.length})
-                    </h4>
-                    {selectedApps.map((app) => (
-                      <Badge key={app.id} variant="outline" className="bg-white text-primary border-primary/30 text-xs font-semibold">
-                        {app.appNumber}
-                      </Badge>
-                    ))}
+            {selectedSourceType === 'AppItem' &&
+              selectedAppItems.length > 0 && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <PackageCheck className="h-4 w-4 text-primary" />
+                      <h4 className="font-bold text-sm text-default-900">
+                        Selected APP Line Items ({selectedAppItems.length})
+                      </h4>
+                      {selectedApps.map((app) => (
+                        <Badge
+                          key={app.id}
+                          variant="outline"
+                          className="bg-white text-primary border-primary/30 text-xs font-semibold"
+                        >
+                          {app.appNumber}
+                        </Badge>
+                      ))}
+                    </div>
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {selectedApps.length} Parent APP
+                      {selectedApps.length !== 1 ? 's' : ''} Selected
+                    </span>
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    {selectedApps.length} Parent APP{selectedApps.length !== 1 ? 's' : ''} Selected
-                  </span>
-                </div>
 
-                <div className="overflow-hidden rounded-md border border-default-200 bg-white">
-                  <Table>
-                    <TableHeader className="bg-default-50">
-                      <TableRow>
-                        <TableHead className="w-[120px] text-xs font-bold">APP #</TableHead>
-                        <TableHead className="w-[90px] text-xs font-bold">Item #</TableHead>
-                        <TableHead className="text-xs font-bold">Description / Line Item</TableHead>
-                        <TableHead className="text-xs font-bold">Implementing Office</TableHead>
-                        <TableHead className="text-xs font-bold">Mode of Procurement</TableHead>
-                        <TableHead className="text-right text-xs font-bold">Approved Budget (ABC)</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selectedAppItems.map((item, idx) => {
-                        const parentAppNumber = item.appNumber || allApps.find((a) => a.eligibleItems.some((i) => i.id === item.id))?.appNumber || 'APP'
-                        return (
-                          <TableRow key={item.id} className="text-xs">
-                            <TableCell className="font-semibold text-default-700">
-                              <Badge variant="secondary" className="text-[10px] font-medium">
-                                {parentAppNumber}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-semibold text-primary">
-                              {item.itemNumber || `Item ${(idx + 1).toString().padStart(2, '0')}`}
-                            </TableCell>
-                            <TableCell className="font-medium text-default-900 max-w-[260px]">
-                              <p className="truncate font-semibold">{item.ppmpItemName || item.description}</p>
-                              {item.remarks && (
-                                <p className="text-[11px] text-muted-foreground truncate">{item.remarks}</p>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-default-700">{item.officeName || '—'}</TableCell>
-                            <TableCell className="text-default-700">{item.procurementModeName || '—'}</TableCell>
-                            <TableCell className="text-right font-semibold text-emerald-700">
-                              ₱{item.effectiveABC.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                      {/* Total ABC Summary Footer Row */}
-                      <TableRow className="bg-default-50/80 font-bold border-t-2 border-default-300">
-                        <TableCell colSpan={5} className="text-right text-xs uppercase tracking-wider text-default-800">
-                          Total Approved Budget for Contract (ABC):
-                        </TableCell>
-                        <TableCell className="text-right text-sm font-bold text-emerald-700">
-                          ₱{inheritedAbc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                  <div className="overflow-hidden rounded-md border border-default-200 bg-white">
+                    <Table>
+                      <TableHeader className="bg-default-50">
+                        <TableRow>
+                          <TableHead className="w-[120px] text-xs font-bold">
+                            APP #
+                          </TableHead>
+                          <TableHead className="w-[90px] text-xs font-bold">
+                            Item #
+                          </TableHead>
+                          <TableHead className="text-xs font-bold">
+                            Description / Line Item
+                          </TableHead>
+                          <TableHead className="text-xs font-bold">
+                            Implementing Office
+                          </TableHead>
+                          <TableHead className="text-xs font-bold">
+                            Mode of Procurement
+                          </TableHead>
+                          <TableHead className="text-right text-xs font-bold">
+                            Approved Budget (ABC)
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedAppItems.map((item, idx) => {
+                          const parentAppNumber =
+                            item.appNumber ||
+                            allApps.find((a) =>
+                              a.eligibleItems.some((i) => i.id === item.id),
+                            )?.appNumber ||
+                            'APP'
+                          return (
+                            <TableRow key={item.id} className="text-xs">
+                              <TableCell className="font-semibold text-default-700">
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] font-medium"
+                                >
+                                  {parentAppNumber}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-semibold text-primary">
+                                {item.itemNumber ||
+                                  `Item ${(idx + 1).toString().padStart(2, '0')}`}
+                              </TableCell>
+                              <TableCell className="font-medium text-default-900 max-w-[260px]">
+                                <p className="truncate font-semibold">
+                                  {item.ppmpItemName || item.description}
+                                </p>
+                                {item.remarks && (
+                                  <p className="text-[11px] text-muted-foreground truncate">
+                                    {item.remarks}
+                                  </p>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-default-700">
+                                {item.officeName || '—'}
+                              </TableCell>
+                              <TableCell className="text-default-700">
+                                {item.procurementModeName || '—'}
+                              </TableCell>
+                              <TableCell className="text-right font-semibold text-emerald-700">
+                                ₱
+                                {item.effectiveABC.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                })}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                        {/* Total ABC Summary Footer Row */}
+                        <TableRow className="bg-default-50/80 font-bold border-t-2 border-default-300">
+                          <TableCell
+                            colSpan={5}
+                            className="text-right text-xs uppercase tracking-wider text-default-800"
+                          >
+                            Total Approved Budget for Contract (ABC):
+                          </TableCell>
+                          <TableCell className="text-right text-sm font-bold text-emerald-700">
+                            ₱
+                            {inheritedAbc.toLocaleString('en-US', {
+                              minimumFractionDigits: 2,
+                            })}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Read-Only CPR Summary Table (when ConsolidatedPR source) */}
-            {selectedSourceType === 'ConsolidatedPr' && selectedConsolidatedPr && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-4 space-y-2 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-emerald-700" />
-                    <h4 className="font-bold text-sm text-default-900">
-                      Linked Consolidated Purchase Request
-                    </h4>
+            {selectedSourceType === 'ConsolidatedPr' &&
+              selectedConsolidatedPr && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-4 space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-emerald-700" />
+                      <h4 className="font-bold text-sm text-default-900">
+                        Linked Consolidated Purchase Request
+                      </h4>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="bg-white text-emerald-800 border-emerald-300 font-semibold"
+                    >
+                      {selectedConsolidatedPr.prNumber}
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="bg-white text-emerald-800 border-emerald-300 font-semibold">
-                    {selectedConsolidatedPr.prNumber}
-                  </Badge>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Project:</span>
+                      <p className="font-semibold text-default-900 truncate">
+                        {selectedConsolidatedPr.projectName ||
+                          selectedConsolidatedPr.description}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">
+                        End-User Office:
+                      </span>
+                      <p className="font-semibold text-default-900">
+                        {selectedConsolidatedPr.endUser || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Mode:</span>
+                      <p className="font-semibold text-default-900">
+                        {selectedConsolidatedPr.modeOfProcurementName || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">
+                        Total Budget:
+                      </span>
+                      <p className="font-bold text-emerald-700">
+                        ₱
+                        {selectedConsolidatedPr.totalAmount.toLocaleString(
+                          'en-US',
+                          { minimumFractionDigits: 2 },
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Project:</span>
-                    <p className="font-semibold text-default-900 truncate">{selectedConsolidatedPr.projectName || selectedConsolidatedPr.description}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">End-User Office:</span>
-                    <p className="font-semibold text-default-900">{selectedConsolidatedPr.endUser || '—'}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Mode:</span>
-                    <p className="font-semibold text-default-900">{selectedConsolidatedPr.modeOfProcurementName || '—'}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Total Budget:</span>
-                    <p className="font-bold text-emerald-700">₱{selectedConsolidatedPr.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+              )}
 
             {/* General Project & Resolution Info */}
             <div className="rounded-lg border border-default-200 bg-white p-4 space-y-5 shadow-xs">
@@ -755,7 +881,9 @@ export const CreateBacResolutionForm = forwardRef<
                   <form.Field name="abc">
                     {(field) => (
                       <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Approved Budget (ABC) *</Label>
+                        <Label htmlFor={field.name}>
+                          Approved Budget (ABC) *
+                        </Label>
                         <Input
                           id={field.name}
                           type="number"
@@ -861,7 +989,9 @@ export const CreateBacResolutionForm = forwardRef<
                 <form.Field name="endUserRepresentativeId">
                   {(field) => (
                     <div className="grid gap-2">
-                      <Label htmlFor={field.name}>End-User Representative</Label>
+                      <Label htmlFor={field.name}>
+                        End-User Representative
+                      </Label>
                       {isUsersLoading ? (
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
@@ -884,7 +1014,9 @@ export const CreateBacResolutionForm = forwardRef<
                 <form.Field name="techRepresentativeId">
                   {(field) => (
                     <div className="grid gap-2">
-                      <Label htmlFor={field.name}>Technical Representative</Label>
+                      <Label htmlFor={field.name}>
+                        Technical Representative
+                      </Label>
                       {isUsersLoading ? (
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
@@ -930,7 +1062,9 @@ export const CreateBacResolutionForm = forwardRef<
                 items={nowThereforeClauses}
                 clausesMap={allClausesMap}
                 isExpanded={isNowThereforeExpanded}
-                onToggleExpand={() => setIsNowThereforeExpanded((prev) => !prev)}
+                onToggleExpand={() =>
+                  setIsNowThereforeExpanded((prev) => !prev)
+                }
                 onOpenPicker={() => setPickerModalType('NowTherefore')}
                 onOpenCreate={() => setCreateModalType('NowTherefore')}
                 onChangeItems={setNowThereforeClauses}
@@ -966,8 +1100,8 @@ export const CreateBacResolutionForm = forwardRef<
               pickerModalType === 'Whereas'
                 ? whereasClauses
                 : pickerModalType === 'NowTherefore'
-                ? nowThereforeClauses
-                : resolvedClauses
+                  ? nowThereforeClauses
+                  : resolvedClauses
             }
             onApply={(selected) => {
               if (pickerModalType === 'Whereas') {
@@ -1061,13 +1195,16 @@ export function SourceTypeSelectorStep({
                 From Annual Procurement Plan (APP)
               </h4>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Create a BAC Resolution directly by multi-selecting approved APP items within the same Annual Procurement Plan.
+                Create a BAC Resolution directly by multi-selecting approved APP
+                items within the same Annual Procurement Plan.
               </p>
             </div>
           </div>
 
           <div className="mt-4 rounded-lg bg-default-100 p-2.5 text-xs text-default-600">
-            <span className="font-semibold text-default-700">Workflow:</span> APP → APP Items (Multi-select) → ProcurementProject → BAC Resolution → Execution
+            <span className="font-semibold text-default-700">Workflow:</span>{' '}
+            APP → APP Items (Multi-select) → ProcurementProject → BAC Resolution
+            → Execution
           </div>
         </div>
 
@@ -1101,13 +1238,16 @@ export function SourceTypeSelectorStep({
                 From Consolidated PR
               </h4>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Create a BAC Resolution from an approved Consolidated Purchase Request (CPR) containing multiple combined PR items.
+                Create a BAC Resolution from an approved Consolidated Purchase
+                Request (CPR) containing multiple combined PR items.
               </p>
             </div>
           </div>
 
           <div className="mt-4 rounded-lg bg-default-100 p-2.5 text-xs text-default-600">
-            <span className="font-semibold text-default-700">Workflow:</span> APP → PR → Consolidated PR → ProcurementProject → BAC Resolution → Execution
+            <span className="font-semibold text-default-700">Workflow:</span>{' '}
+            APP → PR → Consolidated PR → ProcurementProject → BAC Resolution →
+            Execution
           </div>
         </div>
       </div>
@@ -1184,8 +1324,11 @@ export function SourceRecordPickerStep({
         item.description.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
         item.itemNumber.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
         item.officeName.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
-        item.procurementModeName.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
-        (item.appNumber && item.appNumber.toLowerCase().includes(itemSearchTerm.toLowerCase()))
+        item.procurementModeName
+          .toLowerCase()
+          .includes(itemSearchTerm.toLowerCase()) ||
+        (item.appNumber &&
+          item.appNumber.toLowerCase().includes(itemSearchTerm.toLowerCase()))
       const matchesOffice =
         officeFilter === 'ALL' || item.officeName === officeFilter
       return matchesSearch && matchesOffice
@@ -1234,7 +1377,9 @@ export function SourceRecordPickerStep({
         cpr.prNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         cpr.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         cpr.endUser.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cpr.modeOfProcurementName.toLowerCase().includes(searchTerm.toLowerCase())
+        cpr.modeOfProcurementName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
       const matchesOffice =
         officeFilter === 'ALL' || cpr.endUser === officeFilter
       return matchesSearch && matchesOffice
@@ -1249,7 +1394,8 @@ export function SourceRecordPickerStep({
             Select Approved Consolidated PR
           </h3>
           <p className="text-xs text-muted-foreground">
-            Only approved Consolidated PRs available for BAC resolution are listed.
+            Only approved Consolidated PRs available for BAC resolution are
+            listed.
           </p>
         </div>
 
@@ -1284,7 +1430,9 @@ export function SourceRecordPickerStep({
                   <TableHead>End-User Office</TableHead>
                   <TableHead>Procurement Mode</TableHead>
                   <TableHead className="text-right">Total Amount</TableHead>
-                  <TableHead className="w-[100px] text-center">Action</TableHead>
+                  <TableHead className="w-[100px] text-center">
+                    Action
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1295,16 +1443,29 @@ export function SourceRecordPickerStep({
                       key={cpr.id}
                       className={cn(
                         'cursor-pointer transition-colors',
-                        isSelected ? 'bg-primary/5 font-semibold' : 'hover:bg-default-50',
+                        isSelected
+                          ? 'bg-primary/5 font-semibold'
+                          : 'hover:bg-default-50',
                       )}
                       onClick={() => onSelectConsolidatedPr(cpr)}
                     >
-                      <TableCell className="font-bold text-primary">{cpr.prNumber}</TableCell>
-                      <TableCell className="font-medium text-default-900">{cpr.projectName || cpr.description}</TableCell>
-                      <TableCell className="text-default-700">{cpr.endUser}</TableCell>
-                      <TableCell className="text-default-700">{cpr.modeOfProcurementName}</TableCell>
+                      <TableCell className="font-bold text-primary">
+                        {cpr.prNumber}
+                      </TableCell>
+                      <TableCell className="font-medium text-default-900">
+                        {cpr.projectName || cpr.description}
+                      </TableCell>
+                      <TableCell className="text-default-700">
+                        {cpr.endUser}
+                      </TableCell>
+                      <TableCell className="text-default-700">
+                        {cpr.modeOfProcurementName}
+                      </TableCell>
                       <TableCell className="text-right font-bold text-emerald-700">
-                        ₱{cpr.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        ₱
+                        {cpr.totalAmount.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                        })}
                       </TableCell>
                       <TableCell className="text-center">
                         <Button
@@ -1340,13 +1501,18 @@ export function SourceRecordPickerStep({
             Step 2: Select APPs & Multi-Select Line Items
           </h3>
           <p className="text-xs text-muted-foreground">
-            Select one or multiple Annual Procurement Plans on the left, then select one or multiple line items on the right.
+            Select one or multiple Annual Procurement Plans on the left, then
+            select one or multiple line items on the right.
           </p>
         </div>
         {selectedApps.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             {selectedApps.map((app) => (
-              <Badge key={app.id} variant="outline" className="bg-primary/10 text-primary border-primary/30 font-semibold px-2 py-0.5 text-xs">
+              <Badge
+                key={app.id}
+                variant="outline"
+                className="bg-primary/10 text-primary border-primary/30 font-semibold px-2 py-0.5 text-xs"
+              >
                 {app.appNumber}
               </Badge>
             ))}
@@ -1408,7 +1574,10 @@ export function SourceRecordPickerStep({
               {filteredApps.map((app) => {
                 const isSelected = selectedAppIds.includes(app.id)
                 const count = app.eligibleItems.length
-                const totalBudget = app.eligibleItems.reduce((s, i) => s + i.effectiveABC, 0)
+                const totalBudget = app.eligibleItems.reduce(
+                  (s, i) => s + i.effectiveABC,
+                  0,
+                )
 
                 return (
                   <div
@@ -1446,7 +1615,10 @@ export function SourceRecordPickerStep({
                         {count} item{count !== 1 ? 's' : ''}
                       </span>
                       <span className="font-bold text-emerald-700">
-                        ₱{totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        ₱
+                        {totalBudget.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                        })}
                       </span>
                     </div>
                   </div>
@@ -1466,9 +1638,12 @@ export function SourceRecordPickerStep({
             {selectedAppIds.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-muted-foreground border border-dashed border-default-200 rounded-lg">
                 <FileSpreadsheet className="h-10 w-10 text-muted-foreground/30 mb-3" />
-                <h4 className="text-sm font-bold text-default-800">No Annual Procurement Plan Selected</h4>
+                <h4 className="text-sm font-bold text-default-800">
+                  No Annual Procurement Plan Selected
+                </h4>
                 <p className="text-xs text-muted-foreground max-w-sm mt-1">
-                  Check one or more Annual Procurement Plans from the left list to view and multi-select their eligible line items.
+                  Check one or more Annual Procurement Plans from the left list
+                  to view and multi-select their eligible line items.
                 </p>
               </div>
             ) : (
@@ -1480,12 +1655,16 @@ export function SourceRecordPickerStep({
                       <span className="font-bold text-sm text-default-900">
                         Eligible Line Items ({aggregatedItems.length})
                       </span>
-                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs">
+                      <Badge
+                        variant="outline"
+                        className="bg-primary/5 text-primary border-primary/20 text-xs"
+                      >
                         {selectedAppItems.length} selected
                       </Badge>
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[400px]">
-                      From {selectedApps.length} selected APP{selectedApps.length !== 1 ? 's' : ''}
+                      From {selectedApps.length} selected APP
+                      {selectedApps.length !== 1 ? 's' : ''}
                     </p>
                   </div>
 
@@ -1546,48 +1725,85 @@ export function SourceRecordPickerStep({
                     <TableHeader className="bg-default-50 sticky top-0 z-10">
                       <TableRow>
                         <TableHead className="w-[44px] text-center"></TableHead>
-                        <TableHead className="w-[110px] text-xs font-bold">APP #</TableHead>
-                        <TableHead className="w-[80px] text-xs font-bold">Item #</TableHead>
-                        <TableHead className="text-xs font-bold">Description</TableHead>
-                        <TableHead className="text-xs font-bold">Office</TableHead>
-                        <TableHead className="text-xs font-bold">Mode</TableHead>
-                        <TableHead className="text-right text-xs font-bold">Effective ABC</TableHead>
+                        <TableHead className="w-[110px] text-xs font-bold">
+                          APP #
+                        </TableHead>
+                        <TableHead className="w-[80px] text-xs font-bold">
+                          Item #
+                        </TableHead>
+                        <TableHead className="text-xs font-bold">
+                          Description
+                        </TableHead>
+                        <TableHead className="text-xs font-bold">
+                          Office
+                        </TableHead>
+                        <TableHead className="text-xs font-bold">
+                          Mode
+                        </TableHead>
+                        <TableHead className="text-right text-xs font-bold">
+                          Effective ABC
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredItems.map((item) => {
-                        const isChecked = selectedAppItems.some((i) => i.id === item.id)
+                        const isChecked = selectedAppItems.some(
+                          (i) => i.id === item.id,
+                        )
                         return (
                           <TableRow
                             key={item.id}
                             onClick={() => handleToggleAppItem(item)}
                             className={cn(
                               'cursor-pointer text-xs select-none transition-colors',
-                              isChecked ? 'bg-primary/5 font-semibold' : 'hover:bg-default-50/70',
+                              isChecked
+                                ? 'bg-primary/5 font-semibold'
+                                : 'hover:bg-default-50/70',
                             )}
                           >
-                            <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
+                            <TableCell
+                              className="text-center p-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <Checkbox
                                 checked={isChecked}
-                                onCheckedChange={() => handleToggleAppItem(item)}
+                                onCheckedChange={() =>
+                                  handleToggleAppItem(item)
+                                }
                               />
                             </TableCell>
                             <TableCell className="font-semibold text-default-700">
-                              <Badge variant="secondary" className="text-[10px] font-medium">
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] font-medium"
+                              >
                                 {item.appNumber || 'APP'}
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-bold text-primary">{item.itemNumber}</TableCell>
+                            <TableCell className="font-bold text-primary">
+                              {item.itemNumber}
+                            </TableCell>
                             <TableCell className="font-medium text-default-900 max-w-[200px]">
-                              <p className="truncate">{item.ppMPItemName || item.description}</p>
+                              <p className="truncate">
+                                {item.ppmpItemName || item.description}
+                              </p>
                               {item.remarks && (
-                                <p className="text-[10px] text-muted-foreground truncate">{item.remarks}</p>
+                                <p className="text-[10px] text-muted-foreground truncate">
+                                  {item.remarks}
+                                </p>
                               )}
                             </TableCell>
-                            <TableCell className="text-default-700">{item.officeName || '—'}</TableCell>
-                            <TableCell className="text-default-700">{item.procurementModeName || '—'}</TableCell>
+                            <TableCell className="text-default-700">
+                              {item.officeName || '—'}
+                            </TableCell>
+                            <TableCell className="text-default-700">
+                              {item.procurementModeName || '—'}
+                            </TableCell>
                             <TableCell className="text-right font-bold text-emerald-700">
-                              ₱{item.effectiveABC.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                              ₱
+                              {item.effectiveABC.toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                              })}
                             </TableCell>
                           </TableRow>
                         )
@@ -1595,7 +1811,10 @@ export function SourceRecordPickerStep({
 
                       {filteredItems.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-xs text-muted-foreground">
+                          <TableCell
+                            colSpan={7}
+                            className="text-center py-8 text-xs text-muted-foreground"
+                          >
                             No eligible line items match your search.
                           </TableCell>
                         </TableRow>
@@ -1607,12 +1826,16 @@ export function SourceRecordPickerStep({
                 {/* Selection Summary Bar */}
                 <div className="rounded-lg bg-default-50 border border-default-200 p-2.5 flex items-center justify-between text-xs">
                   <span className="font-semibold text-default-700">
-                    {selectedAppItems.length} of {aggregatedItems.length} items selected
+                    {selectedAppItems.length} of {aggregatedItems.length} items
+                    selected
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">Combined ABC:</span>
                     <span className="text-sm font-bold text-emerald-700">
-                      ₱{totalSelectedABC.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      ₱
+                      {totalSelectedABC.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                      })}
                     </span>
                   </div>
                 </div>
@@ -1636,7 +1859,9 @@ interface ClauseSectionProps {
   onToggleExpand: () => void
   onOpenPicker: () => void
   onOpenCreate: () => void
-  onChangeItems: (items: { resolutionClauseId: string; order: number }[]) => void
+  onChangeItems: (
+    items: { resolutionClauseId: string; order: number }[],
+  ) => void
 }
 
 function ClauseSection({
@@ -1656,7 +1881,10 @@ function ClauseSection({
   const removeItem = (id: string) => {
     const next = items
       .filter((c) => c.resolutionClauseId !== id)
-      .map((c, idx) => ({ resolutionClauseId: c.resolutionClauseId, order: idx }))
+      .map((c, idx) => ({
+        resolutionClauseId: c.resolutionClauseId,
+        order: idx,
+      }))
     onChangeItems(next)
   }
 
@@ -1690,8 +1918,15 @@ function ClauseSection({
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault()
     const sourceIndexStr = e.dataTransfer.getData('text/plain')
-    const sourceIndex = sourceIndexStr ? parseInt(sourceIndexStr, 10) : draggedIndex
-    if (sourceIndex === null || sourceIndex === undefined || isNaN(sourceIndex) || sourceIndex === targetIndex) {
+    const sourceIndex = sourceIndexStr
+      ? parseInt(sourceIndexStr, 10)
+      : draggedIndex
+    if (
+      sourceIndex === null ||
+      sourceIndex === undefined ||
+      isNaN(sourceIndex) ||
+      sourceIndex === targetIndex
+    ) {
       setDraggedIndex(null)
       return
     }
@@ -1713,11 +1948,17 @@ function ClauseSection({
           <FileText className="h-4 w-4 text-primary" />
           <h4 className="font-bold text-sm text-default-900">{title}</h4>
           {badgeRequired ? (
-            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold">
+            <Badge
+              variant="outline"
+              className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold"
+            >
               Required (≥1)
             </Badge>
           ) : (
-            <Badge variant="secondary" className="text-[10px] text-muted-foreground">
+            <Badge
+              variant="secondary"
+              className="text-[10px] text-muted-foreground"
+            >
               Optional
             </Badge>
           )}
@@ -1726,7 +1967,10 @@ function ClauseSection({
           </Badge>
         </div>
 
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="flex items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Button
             type="button"
             variant="outline"
@@ -1752,7 +1996,11 @@ function ClauseSection({
             onClick={onToggleExpand}
             className="h-7 w-7 text-muted-foreground"
           >
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
@@ -1763,7 +2011,8 @@ function ClauseSection({
 
           {items.length === 0 ? (
             <div className="rounded-lg border border-dashed border-default-200 bg-default-50/50 p-6 text-center text-xs text-muted-foreground">
-              No clauses added yet. Click &quot;Add from Library&quot; or &quot;Custom&quot; to add clauses.
+              No clauses added yet. Click &quot;Add from Library&quot; or
+              &quot;Custom&quot; to add clauses.
             </div>
           ) : (
             <div className="space-y-2">
@@ -1889,7 +2138,8 @@ export function UserPickerCombobox({
         >
           {selectedUser ? (
             <span className="truncate">
-              {selectedUser.firstName} {selectedUser.lastName} ({selectedUser.email})
+              {selectedUser.firstName} {selectedUser.lastName} (
+              {selectedUser.email})
             </span>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
@@ -1917,14 +2167,22 @@ export function UserPickerCombobox({
               }}
               className={cn(
                 'flex items-center justify-between px-2.5 py-1.5 rounded-sm text-xs cursor-pointer hover:bg-default-100 transition-colors',
-                value === user.id ? 'bg-primary/10 font-semibold text-primary' : 'text-default-900',
+                value === user.id
+                  ? 'bg-primary/10 font-semibold text-primary'
+                  : 'text-default-900',
               )}
             >
               <div>
-                <p>{user.firstName} {user.lastName}</p>
-                <p className="text-[10px] text-muted-foreground">{user.email}</p>
+                <p>
+                  {user.firstName} {user.lastName}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {user.email}
+                </p>
               </div>
-              {value === user.id && <Check className="h-3.5 w-3.5 text-primary" />}
+              {value === user.id && (
+                <Check className="h-3.5 w-3.5 text-primary" />
+              )}
             </div>
           ))}
 

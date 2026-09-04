@@ -13,7 +13,7 @@ export const approveBacResolutionRequest: MutationBlueprintFromTemplate<
 
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.patch<BacResolution>(finalUrl, payload)
+    const response = await api.post<BacResolution>(finalUrl, payload)
     return response.data
   },
 }

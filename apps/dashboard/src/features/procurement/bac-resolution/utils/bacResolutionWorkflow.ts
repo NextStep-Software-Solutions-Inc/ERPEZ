@@ -257,19 +257,67 @@ export function resolveBacScheduleEntryState({
 
 export function getBacProjectProcurementMode(project: BacProject | null | undefined): string {
   if (!project) return ''
+
+  // 1. APP Item source mode
+  const appItem = project.appItem as any
   const appItemMode =
-    (project.appItem as any)?.ProcurementMode?.name ||
-    (project.appItem as any)?.procurementModeName ||
-    (project.appItem as any)?.modeOfProcurement ||
+    appItem?.procurementModeName ||
+    appItem?.ProcurementModeName ||
+    appItem?.ProcurementMode?.name ||
+    appItem?.procurementMode?.name ||
+    appItem?.modeOfProcurement ||
     ''
   if (appItemMode) return appItemMode
 
+  // 2. Consolidated PR source mode
+  const cpr = project.consolidatedPR as any
   const cprMode =
-    (project.consolidatedPR as any)?.modeOfProcurement ||
+    cpr?.modeOfProcurementName ||
+    cpr?.ModeOfProcurementName ||
+    cpr?.modeOfProcurement ||
+    cpr?.ModeOfProcurement ||
+    cpr?.procurementMode?.name ||
+    cpr?.ProcurementMode?.name ||
     ''
   if (cprMode) return cprMode
 
-  const directMode = (project as any)?.procurementMode || ''
+  // Check store for consolidated PR if needed
+  if (project.consolidatedPRId || cpr?.id || cpr?.cprNumber) {
+    const cprId = project.consolidatedPRId || cpr?.id
+    const cprNum = cpr?.cprNumber
+    const storePr = useConsolidatedPRStore
+      .getState()
+      .consolidatedPRs.find(
+        (candidate) =>
+          (cprId && candidate.id === cprId) ||
+          (cprNum && candidate.prNumber === cprNum),
+      )
+    if (storePr) {
+      const storeMop =
+        (storePr as any).modeOfProcurementName ||
+        (storePr as any).modeOfProcurement ||
+        ''
+      if (storeMop) return storeMop
+      if (storePr.itemMOPs) {
+        const firstMop = Object.values(storePr.itemMOPs)[0]?.mop
+        if (firstMop) {
+          return firstMop === 'public-bidding'
+            ? 'Public Bidding'
+            : firstMop === 'limited-bidding' || firstMop === 'limited-source-bidding'
+              ? 'Limited Source Bidding'
+              : firstMop.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+        }
+      }
+    }
+  }
+
+  // 3. Direct project procurement mode
+  const directMode =
+    (project as any)?.procurementMode?.name ||
+    (project as any)?.ProcurementMode?.name ||
+    (project as any)?.procurementModeName ||
+    (project as any)?.procurementMode ||
+    ''
   return directMode
 }
 
@@ -284,6 +332,25 @@ export function isBacProjectPublicBidding(project: BacProject | null | undefined
     return true
   }
   return false
+}
+
+export function isBacProjectReadyForScheduling(
+  project: BacProject | null | undefined,
+): boolean {
+  if (!project) return false
+  const status = (project.status || '').toLowerCase()
+  if (status !== 'approved') return false
+
+  // Must be ConsolidatedPR source type
+  const isConsolidatedPR =
+    project.sourceType === 'ConsolidatedPR' ||
+    (project.sourceType as any) === '0' ||
+    (project.sourceType as any) === 0
+
+  if (!isConsolidatedPR) return false
+
+  // Must be Public Bidding procurement mode
+  return isBacProjectPublicBidding(project)
 }
 
 export function getBacResolutionListRoutePath(_isPublicBiddingView?: boolean) {
