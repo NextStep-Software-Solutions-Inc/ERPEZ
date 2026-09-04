@@ -41,10 +41,11 @@ import api from '@/services/api'
 import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
 import { generateBACResolutionDocumentRequest } from '../handlers/generateBacResolutionDocumentRequest'
 import { downloadBacResolutionDocumentRequest } from '../handlers/downloadBacResolutionDocumentRequest'
-import { useApproveBacResolution, useReturnBacResolution } from '../handlers/hooks'
 import { ApproveBacResolutionDialog } from '../dialogs/ApproveBacResolutionDialog'
 import { ReturnBacResolutionDialog } from '../dialogs/ReturnBacResolutionDialog'
 import type { ApproveBacResolutionFormValues } from '../forms/ApproveBacResolutionForm'
+import { isBacProjectReadyForScheduling } from '../utils/bacResolutionWorkflow'
+import { useApproveBacResolution, useReturnBacResolution } from '../handlers'
 
 const useBacResolution = createQueryHookFromTemplate(getBacResolutionRequest)
 const useGenerateBACResolutionDocument = createMutationHookFromTemplate(
@@ -154,7 +155,8 @@ export function DetailsPanel({
         returnBacResolution(
           {
             payload: values,
-            pathParams: { id: selectedId || '' }
+            pathParams: { id: selectedId || '' },
+            queryParams: { id: selectedId || '' }
           },
           {
             onSuccess: async () => {
@@ -351,8 +353,21 @@ export function DetailsPanel({
 
   const activeWhereasList = whereasClauseLinks.length > 0 ? whereasClauseLinks : legacyWhereasClauses
 
-  const activityLog: BacResolutionLogEntry[] =
-    []
+  const activityLog: BacResolutionLogEntry[] = (selectedProject.approvalEvents || []).map((e) => ({
+    id: e.id,
+    action: e.action === 'Approved' ? 'BAC Resolution Approved' : e.action === 'Returned' ? 'BAC Resolution Returned' : e.action,
+    actor: e.actorName ? `${e.actorName}${e.role ? ` (${e.role})` : ''}` : (e.role || 'System'),
+    timestamp: new Date(e.timestamp).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    note: e.remarks || (e.attachmentFileId ? 'Signed resolution document attached' : null),
+  }))
+
+  const isReadyForScheduling = isBacProjectReadyForScheduling(selectedProject)
 
   return (
     <div className="space-y-4">
@@ -367,7 +382,7 @@ export function DetailsPanel({
                   {resolutionNumber}
                 </span>
                 <BacResolutionStatusBadge status={status} />
-                {isApproved && selectedId && (
+                {isReadyForScheduling && selectedId && (
                   <Link
                     to="/v2/bac-resolutions/$resolutionId/bidding-schedule"
                     params={{ resolutionId: selectedId }}
@@ -385,7 +400,7 @@ export function DetailsPanel({
 
             {/* Quick Actions in Header Banner */}
             <div className="flex flex-wrap items-center gap-2">
-              {selectedId && isApproved && (
+              {selectedId && isReadyForScheduling && (
                 <Button
                   asChild
                   size="sm"
