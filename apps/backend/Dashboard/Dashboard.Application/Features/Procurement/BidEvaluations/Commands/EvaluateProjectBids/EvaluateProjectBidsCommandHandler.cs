@@ -31,7 +31,7 @@ public class EvaluateProjectBidsCommandHandler(
 
         // Retrieve valid submissions and opening records for this project
         var submissions = await unitOfWork.BiddingSubmissionRepository
-            .FindAllAsync(s => s.ProcurementProjectId == command.ProjectId && !s.IsDeleted, cancellationToken);
+            .GetByProjectIdWithDetailsAsync(command.ProjectId, cancellationToken);
 
         var validOpeningRecords = submissions
             .Where(s => s.BidOpeningRecord != null && string.Equals(s.BidOpeningRecord.Envelope1Result, "Passed", StringComparison.OrdinalIgnoreCase))
@@ -113,10 +113,8 @@ public class EvaluateProjectBidsCommandHandler(
         var actorId = Guid.TryParse(currentUserService.UserId, out var parsedId) ? parsedId : (Guid?)null;
 
         // Find or create BiddingEvaluation aggregate root
-        var evaluations = await unitOfWork.BiddingEvaluationRepository
-            .FindAllAsync(e => e.ProcurementProjectId == command.ProjectId && !e.IsDeleted, cancellationToken);
-
-        var evaluation = evaluations.FirstOrDefault();
+        var evaluation = await unitOfWork.BiddingEvaluationRepository
+            .GetByProjectIdWithDetailsAsync(command.ProjectId, cancellationToken);
         if (evaluation == null)
         {
             evaluation = new BiddingEvaluation
@@ -152,7 +150,8 @@ public class EvaluateProjectBidsCommandHandler(
         // Update/create child EvaluatedBids
         foreach (var row in evaluatedRows)
         {
-            var supplierId = row.Record.BiddingSubmission.SupplierId;
+            var supplierId = row.Record.BiddingSubmission?.SupplierId
+                ?? submissions.First(s => s.BidOpeningRecord?.Id == row.Record.Id).SupplierId;
             var evaluatedBid = evaluation.EvaluatedBids
                 .FirstOrDefault(b => b.SupplierId == supplierId);
 

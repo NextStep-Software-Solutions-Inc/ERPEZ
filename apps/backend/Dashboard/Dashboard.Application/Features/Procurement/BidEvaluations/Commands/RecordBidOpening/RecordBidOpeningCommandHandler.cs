@@ -21,7 +21,8 @@ public class RecordBidOpeningCommandHandler(
     public async Task<ApiResponse<Guid>> Handle(RecordBidOpeningCommand command, CancellationToken cancellationToken)
     {
         var project = await unitOfWork.ProcurementProjectRepository
-            .GetByIdAsync(command.ProjectId, cancellationToken)
+            .GetWithPublicDetailsByIdAsync(command.ProjectId, cancellationToken)
+            ?? await unitOfWork.ProcurementProjectRepository.GetByIdAsync(command.ProjectId, cancellationToken)
             ?? throw new NotFoundException("Procurement project not found.");
 
         var submission = await unitOfWork.BiddingSubmissionRepository
@@ -34,32 +35,122 @@ public class RecordBidOpeningCommandHandler(
         }
 
         // Determine Opening Schedule ID
-        var openingSchedule = project.BiddingActivitySchedules
-            .FirstOrDefault(s => s.ProcurementActivityType?.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids);
+        var openingSchedule = project.BiddingActivitySchedules?
+            .FirstOrDefault(s => s.ProcurementActivityType?.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids)
+            ?? project.BiddingActivitySchedules?.FirstOrDefault();
 
-        var scheduleId = command.Request.BiddingActivityScheduleId 
-            ?? openingSchedule?.Id 
-            ?? throw new FluentValidation.ValidationException("No opening of bids activity schedule found for this project.");
+        Guid scheduleId;
+        if (command.Request.BiddingActivityScheduleId.HasValue && command.Request.BiddingActivityScheduleId.Value != Guid.Empty)
+        {
+            scheduleId = command.Request.BiddingActivityScheduleId.Value;
+        }
+        else if (openingSchedule != null)
+        {
+            scheduleId = openingSchedule.Id;
+        }
+        else
+        {
+            var existingSchedule = await unitOfWork.BiddingActivityScheduleRepository.FindAsync(
+                s => s.ProcurementProjectId == command.ProjectId && !s.IsDeleted, cancellationToken);
 
-        // Enforce Envelope 1 & 2 Gating Invariant
+            if (existingSchedule != null)
+            {
+                scheduleId = existingSchedule.Id;
+            }
+            else
+            {
+                var openingActivityType = await unitOfWork.ProcurementActivityTypeRepository.FindAsync(
+                    a => a.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids, cancellationToken)
+                    ?? await unitOfWork.ProcurementActivityTypeRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
+
+                var newSchedule = new BiddingActivitySchedule
+                {
+                    Id = Guid.NewGuid(),
+                    ProcurementProjectId = command.ProjectId,
+                    ProcurementActivityTypeId = openingActivityType?.Id ?? Guid.Empty,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddDays(7),
+                    Venue = "BAC Conference Room",
+                    Status = "Completed",
+                    CreatedBy = "BAC Officer"
+                };
+                await unitOfWork.BiddingActivityScheduleRepository.AddAsync(newSchedule, cancellationToken);
+                scheduleId = newSchedule.Id;
+            }
+        }
+
+        // ── 1. Enforce Envelope 1 Examination ─────────────────────────────────
+        if (string.IsNullOrWhiteSpace(command.Request.Envelope1Result) ||
+            command.Request.Envelope1Result.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new FluentValidation.ValidationException("Envelope 1 examination result must be explicitly recorded as Passed or Failed.");
+        }
+
         var isPassed = string.Equals(command.Request.Envelope1Result, "Passed", StringComparison.OrdinalIgnoreCase);
-        if (!isPassed)
+        var isFailed = string.Equals(command.Request.Envelope1Result, "Failed", StringComparison.OrdinalIgnoreCase);
+
+        if (!isPassed && !isFailed)
+        {
+            throw new FluentValidation.ValidationException("Envelope 1 result must be either 'Passed' or 'Failed'.");
+        }
+
+        if (isFailed)
         {
             if (string.IsNullOrWhiteSpace(command.Request.DisqualificationReason))
             {
                 throw new FluentValidation.ValidationException("Disqualification reason is required when Envelope 1 fails.");
             }
+
+            if (command.Request.Envelope2Opened)
+            {
+                throw new FluentValidation.ValidationException("Envelope 2 cannot be opened when Envelope 1 has failed the initial examination.");
+            }
+
+            if (command.Request.AsReadBidAmount.HasValue)
+            {
+                throw new FluentValidation.ValidationException("As-Read Bid Amount cannot be accepted for a disqualified bidder.");
+            }
+        }
+
+        // ── 2. Enforce Envelope 2 Gating & As-Read Invariants ──────────────────
+        if (command.Request.Envelope2Opened && !isPassed)
+        {
+            throw new FluentValidation.ValidationException("Envelope 2 cannot be opened unless Envelope 1 has been examined and marked as Passed.");
         }
 
         var envelope2Opened = isPassed && command.Request.Envelope2Opened;
+
+        if (command.Request.AsReadBidAmount.HasValue && !envelope2Opened)
+        {
+            throw new FluentValidation.ValidationException("As-Read Bid Amount cannot be accepted while Envelope 2 remains sealed.");
+        }
+
+        if (envelope2Opened)
+        {
+            if (!command.Request.AsReadBidAmount.HasValue || command.Request.AsReadBidAmount.Value <= 0)
+            {
+                throw new FluentValidation.ValidationException("A valid positive As-Read Bid Amount is required when Envelope 2 is opened.");
+            }
+        }
+
         var asReadAmount = envelope2Opened 
             ? command.Request.AsReadBidAmount
             : (decimal?)null;
 
+        var openingRecord = submission.BidOpeningRecord;
+
+        // ── 3. Preserve Historical State: Cannot silently revert opened Envelope 2 ──
+        if (openingRecord != null && openingRecord.Envelope2Opened)
+        {
+            if (!isPassed || !envelope2Opened)
+            {
+                throw new FluentValidation.ValidationException("An already-opened Envelope 2 cannot be reverted to sealed or failed.");
+            }
+        }
+
         var actorName = currentUserService.Name ?? currentUserService.Username ?? "BAC Officer";
         var actorId = Guid.TryParse(currentUserService.UserId, out var parsedId) ? parsedId : (Guid?)null;
 
-        var openingRecord = submission.BidOpeningRecord;
         if (openingRecord == null)
         {
             openingRecord = new BidOpeningRecord

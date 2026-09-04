@@ -74,7 +74,7 @@ export function BidOpeningTab({
   const totalSubmissions = submissions.length
   const env1Passed = submissions.filter((s) => s.openingRecord?.envelope1Result === 'Passed').length
   const env1Failed = submissions.filter((s) => s.openingRecord?.envelope1Result === 'Failed').length
-  const pendingOpening = submissions.filter((s) => !s.openingRecord).length
+  const pendingOpening = submissions.filter((s) => !s.openingRecord || s.openingRecord.envelope1Result === 'Pending').length
 
   const isValidGuid = !!projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)
 
@@ -279,9 +279,9 @@ export function BidOpeningTab({
                       {/* Envelope 1 Result */}
                       <TableCell>
                         <div className="space-y-1">
-                          {!hasOpening ? (
+                          {!hasOpening || sub.openingRecord?.envelope1Result === 'Pending' ? (
                             <Badge color="warning" variant="soft" className="font-semibold text-[10px]">
-                              Pending Opening
+                              Pending Examination
                             </Badge>
                           ) : isPass ? (
                             <Badge color="success" className="font-bold text-[10px] flex items-center gap-1">
@@ -309,7 +309,7 @@ export function BidOpeningTab({
 
                       {/* Envelope 2 Status & As-Read Amount */}
                       <TableCell>
-                        {!hasOpening ? (
+                        {!hasOpening || sub.openingRecord?.envelope1Result === 'Pending' ? (
                           <div className="space-y-0.5">
                             <Badge color="secondary" variant="soft" className="font-semibold text-[10px] flex items-center gap-1">
                               <Lock className="h-3 w-3" /> Sealed
@@ -320,7 +320,7 @@ export function BidOpeningTab({
                               </span>
                             )}
                           </div>
-                        ) : isPass ? (
+                        ) : sub.openingRecord?.envelope2Opened ? (
                           <div className="space-y-0.5">
                             <span className="font-mono font-bold text-success text-xs block">
                               {formatCurrency(sub.openingRecord?.asReadBidAmount)}
@@ -334,10 +334,21 @@ export function BidOpeningTab({
                               </span>
                             )}
                           </div>
+                        ) : isPass ? (
+                          <div className="space-y-0.5">
+                            <Badge color="info" variant="soft" className="font-semibold text-[10px] flex items-center gap-1">
+                              <Lock className="h-3 w-3" /> Sealed (Eligible)
+                            </Badge>
+                            {sub.documents && sub.documents.length > 0 && (
+                              <span className="text-[10px] text-muted-foreground block font-medium">
+                                {sub.documents.filter((d) => d.envelopeType === 2).length} Envelope 2 docs
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <div className="space-y-0.5">
                             <Badge color="secondary" variant="soft" className="font-semibold text-[10px] flex items-center gap-1">
-                              <Lock className="h-3 w-3" /> Sealed / Locked
+                              <Lock className="h-3 w-3" /> Sealed / Disqualified
                             </Badge>
                             {sub.documents && sub.documents.length > 0 && (
                               <span className="text-[10px] text-muted-foreground block font-medium">

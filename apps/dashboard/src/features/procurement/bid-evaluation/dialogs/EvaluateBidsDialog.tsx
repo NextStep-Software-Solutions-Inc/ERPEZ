@@ -7,6 +7,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useEvaluateProjectBids } from '../hooks/useBidEvaluationApi'
+import { extractErrorMessage } from '@/services/utils/messages'
 import type {
   BidderEvaluationInputPayload,
   BiddingSubmissionResponse,
@@ -64,7 +65,7 @@ export function EvaluateBidsDialog({
   useEffect(() => {
     if (open && admittedSubmissions.length > 0) {
       const initialStates: Array<BidderInputState> = admittedSubmissions
-        .filter((s) => s.openingRecord && s.openingRecord.envelope1Result === 'Passed')
+        .filter((s) => s.openingRecord && s.openingRecord.envelope1Result === 'Passed' && s.openingRecord.envelope2Opened)
         .map((s) => ({
           bidOpeningRecordId: s.openingRecord!.id,
           supplierName: s.supplierName,
@@ -170,7 +171,7 @@ export function EvaluateBidsDialog({
       })
       onOpenChange(false)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to execute bid evaluation.'
+      const msg = extractErrorMessage(err as any)
       setValidationError(msg)
     }
   }

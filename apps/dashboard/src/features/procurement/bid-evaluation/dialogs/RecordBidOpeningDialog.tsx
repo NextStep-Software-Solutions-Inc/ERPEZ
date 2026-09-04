@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import {
   AlertCircle,
+  ArrowDown,
   Building2,
   CheckCircle2,
   DollarSign,
   FileCheck2,
   FileText,
+  FolderOpen,
   Loader2,
   Lock,
   ShieldCheck,
+  Unlock,
   XCircle,
 } from 'lucide-react'
 import { previewDocument } from '@/features/procurement/manage-supplier-portal/utils'
@@ -47,12 +50,18 @@ export function RecordBidOpeningDialog({
 }: RecordBidOpeningDialogProps) {
   const recordOpeningMutation = useRecordBidOpening()
 
-  const [envelope1Result, setEnvelope1Result] = useState<'Passed' | 'Failed'>('Passed')
+  // 1. Envelope 1 must default to Pending / Not Yet Examined. NEVER default to Passed.
+  const [envelope1Result, setEnvelope1Result] = useState<'Pending' | 'Passed' | 'Failed'>('Pending')
+  // 2. Envelope 2 defaults to Sealed (false)
+  const [envelope2Opened, setEnvelope2Opened] = useState<boolean>(false)
   const [disqualificationReason, setDisqualificationReason] = useState('')
   const [asReadBidAmount, setAsReadBidAmount] = useState<string>('')
   const [remarks, setRemarks] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
   const [previewingDocId, setPreviewingDocId] = useState<string | null>(null)
+
+  // 8. Historical state preservation: once Envelope 2 was opened, lock reversal
+  const isAlreadyOpened = submission?.openingRecord?.envelope2Opened === true
 
   const handlePreview = async (doc: { id: string; name: string; url: string; type?: string }) => {
     if (!doc.url) return
@@ -69,9 +78,15 @@ export function RecordBidOpeningDialog({
   useEffect(() => {
     if (submission) {
       if (submission.openingRecord) {
-        setEnvelope1Result(
-          submission.openingRecord.envelope1Result === 'Failed' ? 'Failed' : 'Passed'
-        )
+        const rawRes = submission.openingRecord.envelope1Result
+        if (rawRes === 'Passed') {
+          setEnvelope1Result('Passed')
+        } else if (rawRes === 'Failed') {
+          setEnvelope1Result('Failed')
+        } else {
+          setEnvelope1Result('Pending')
+        }
+        setEnvelope2Opened(Boolean(submission.openingRecord.envelope2Opened))
         setDisqualificationReason(submission.openingRecord.disqualificationReason ?? '')
         setAsReadBidAmount(
           submission.openingRecord.asReadBidAmount
@@ -80,7 +95,9 @@ export function RecordBidOpeningDialog({
         )
         setRemarks(submission.openingRecord.remarks ?? '')
       } else {
-        setEnvelope1Result('Passed')
+        // Defaults when opening a new submission: Pending & Sealed
+        setEnvelope1Result('Pending')
+        setEnvelope2Opened(false)
         setDisqualificationReason('')
         setAsReadBidAmount('')
         setRemarks('')
@@ -95,28 +112,53 @@ export function RecordBidOpeningDialog({
   const secondEnvelopeDocs = (submission.documents || []).filter((d) => d.envelopeType === 2)
 
   const handleEnvelope1Change = (val: 'Passed' | 'Failed') => {
+    if (isAlreadyOpened) {
+      return
+    }
     setEnvelope1Result(val)
     setValidationError(null)
     if (val === 'Failed') {
+      // If Failed, Envelope 2 must remain sealed and cannot have as-read amount
+      setEnvelope2Opened(false)
       setAsReadBidAmount('')
     } else {
+      // If Passed, clear disqualification reason.
+      // NOTE: Envelope 2 is NOT automatically opened! It only becomes eligible to open.
       setDisqualificationReason('')
     }
+  }
+
+  const handleOpenSecondEnvelope = () => {
+    if (envelope1Result !== 'Passed') return
+    setEnvelope2Opened(true)
+    setValidationError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setValidationError(null)
 
+    if (envelope1Result === 'Pending') {
+      setValidationError('Please record the First Envelope examination result by selecting Passed or Failed.')
+      return
+    }
+
     if (envelope1Result === 'Failed') {
       if (!disqualificationReason.trim()) {
         setValidationError('A reason for Envelope 1 disqualification is mandatory.')
         return
       }
-    } else {
+    } else if (envelope1Result === 'Passed') {
+      if (!envelope2Opened) {
+        setValidationError(
+          'Envelope 2 is eligible to be opened. Please click "Open Second Envelope" to unseal Envelope 2 and record the As-Read Bid Amount.'
+        )
+        return
+      }
+
       const parsedAmount = parseFloat(asReadBidAmount)
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        setValidationError('Please enter a valid As-Read Bid Amount for Envelope 2.')
+        setValidationError('Please enter a valid positive As-Read Bid Amount for Envelope 2.')
         return
       }
     }
@@ -128,15 +170,21 @@ export function RecordBidOpeningDialog({
           biddingSubmissionId: submission.id,
           biddingActivityScheduleId: biddingActivityScheduleId ?? undefined,
           envelope1Result,
-          envelope2Opened: envelope1Result === 'Passed',
-          asReadBidAmount: envelope1Result === 'Passed' ? parseFloat(asReadBidAmount) : null,
-          disqualificationReason: envelope1Result === 'Failed' ? disqualificationReason.trim() : null,
+          envelope2Opened: envelope1Result === 'Passed' && envelope2Opened,
+          asReadBidAmount:
+            envelope1Result === 'Passed' && envelope2Opened
+              ? parseFloat(asReadBidAmount)
+              : null,
+          disqualificationReason:
+            envelope1Result === 'Failed' ? disqualificationReason.trim() : null,
           remarks: remarks.trim() ? remarks.trim() : null,
         },
       })
       onOpenChange(false)
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to record bid opening.'
+      const errorMsg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (err instanceof Error ? err.message : 'Failed to record bid opening.')
       setValidationError(errorMsg)
     }
   }
@@ -154,7 +202,7 @@ export function RecordBidOpeningDialog({
                   Official Bid Opening Session
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Record BAC verification for Envelope 1 (Eligibility/Technical) and unseal Envelope 2 (Financial).
+                  Sequential Pass/Fail examination for Envelope 1 (Eligibility & Technical) and unsealing of Envelope 2 (Financial).
                 </DialogDescription>
               </div>
               <Badge variant="outline" className="font-semibold bg-white shadow-sm border-primary/20 text-primary">
@@ -221,74 +269,96 @@ export function RecordBidOpeningDialog({
               </Alert>
             )}
 
-            {/* STEP 1: ENVELOPE 1 VERIFICATION */}
-            <div className="space-y-3 p-4 rounded-lg border border-default-200 bg-white">
+            {/* ── STEP 1: FIRST ENVELOPE (ELIGIBILITY & TECHNICAL) ── */}
+            <div className="space-y-3 p-4 rounded-lg border border-default-200 bg-white shadow-xs">
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-sm font-bold text-default-900 flex items-center gap-2">
-                    <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary text-white text-xs">
+                    <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary text-white text-xs font-bold">
                       1
                     </span>
-                    Envelope 1: Eligibility & Technical Checklist
+                    First Envelope: Eligibility & Technical Examination
                   </Label>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Non-discretionary Pass/Fail criterion under RA 12009 / RA 9184 IRR.
                   </p>
                 </div>
-                <Badge
-                  color={envelope1Result === 'Passed' ? 'success' : 'destructive'}
-                  variant="soft"
-                  className="font-bold uppercase text-[10px]"
-                >
-                  {envelope1Result}
-                </Badge>
+                {envelope1Result === 'Passed' ? (
+                  <Badge color="success" variant="soft" className="font-bold uppercase text-[10px] flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Passed
+                  </Badge>
+                ) : envelope1Result === 'Failed' ? (
+                  <Badge color="destructive" variant="soft" className="font-bold uppercase text-[10px] flex items-center gap-1">
+                    <XCircle className="h-3 w-3" /> Failed
+                  </Badge>
+                ) : (
+                  <Badge color="warning" variant="soft" className="font-bold uppercase text-[10px]">
+                    Pending Examination
+                  </Badge>
+                )}
               </div>
 
-              <RadioGroup
-                value={envelope1Result}
-                onValueChange={(val) => handleEnvelope1Change(val as 'Passed' | 'Failed')}
-                className="grid grid-cols-2 gap-3 pt-2"
-              >
-                <label
-                  htmlFor="env1-pass"
-                  className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
-                    envelope1Result === 'Passed'
-                      ? 'border-success bg-success/5 shadow-sm'
-                      : 'border-default-200 hover:bg-default-50'
-                  }`}
-                >
-                  <RadioGroupItem value="Passed" id="env1-pass" />
-                  <div>
-                    <div className="text-xs font-bold text-default-900 flex items-center gap-1.5">
-                      <CheckCircle2 className="h-4 w-4 text-success" />
-                      Passed (Compliant)
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      All required eligibility & technical documents are complete.
-                    </p>
-                  </div>
-                </label>
+              {isAlreadyOpened && (
+                <div className="p-2.5 bg-blue-50/70 border border-blue-200 rounded text-xs text-blue-800 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
+                  <span>
+                    Envelope 1 passed and Envelope 2 was already unsealed during this official session. Historical decisions cannot be reversed.
+                  </span>
+                </div>
+              )}
 
-                <label
-                  htmlFor="env1-fail"
-                  className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
-                    envelope1Result === 'Failed'
-                      ? 'border-destructive bg-destructive/5 shadow-sm'
-                      : 'border-default-200 hover:bg-default-50'
-                  }`}
+              {/* Action Selection */}
+              <div className="pt-1">
+                <span className="text-[11px] font-semibold text-default-700 block mb-2">
+                  BAC Examination Decision:
+                </span>
+                <RadioGroup
+                  value={envelope1Result}
+                  onValueChange={(val) => handleEnvelope1Change(val as 'Passed' | 'Failed')}
+                  disabled={isAlreadyOpened}
+                  className="grid grid-cols-2 gap-3"
                 >
-                  <RadioGroupItem value="Failed" id="env1-fail" />
-                  <div>
-                    <div className="text-xs font-bold text-default-900 flex items-center gap-1.5">
-                      <XCircle className="h-4 w-4 text-destructive" />
-                      Failed (Disqualified)
+                  <label
+                    htmlFor="env1-pass"
+                    className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
+                      envelope1Result === 'Passed'
+                        ? 'border-success bg-success/5 shadow-sm ring-1 ring-success'
+                        : 'border-default-200 hover:bg-default-50'
+                    } ${isAlreadyOpened ? 'opacity-80 cursor-not-allowed' : ''}`}
+                  >
+                    <RadioGroupItem value="Passed" id="env1-pass" disabled={isAlreadyOpened} />
+                    <div>
+                      <div className="text-xs font-bold text-default-900 flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                        Passed (Compliant)
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        All eligibility, legal, and technical requirements are verified complete and compliant.
+                      </p>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Missing or non-compliant document. Envelope 2 remains sealed.
-                    </p>
-                  </div>
-                </label>
-              </RadioGroup>
+                  </label>
+
+                  <label
+                    htmlFor="env1-fail"
+                    className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
+                      envelope1Result === 'Failed'
+                        ? 'border-destructive bg-destructive/5 shadow-sm ring-1 ring-destructive'
+                        : 'border-default-200 hover:bg-default-50'
+                    } ${isAlreadyOpened ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  >
+                    <RadioGroupItem value="Failed" id="env1-fail" disabled={isAlreadyOpened} />
+                    <div>
+                      <div className="text-xs font-bold text-default-900 flex items-center gap-1.5">
+                        <XCircle className="h-4 w-4 text-destructive" />
+                        Failed (Disqualified)
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Missing or non-compliant document. Envelope 2 remains sealed.
+                      </p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              </div>
 
               {/* Envelope 1 Documents List */}
               {firstEnvelopeDocs.length > 0 && (
@@ -334,7 +404,7 @@ export function RecordBidOpeningDialog({
               )}
 
               {envelope1Result === 'Failed' && (
-                <div className="space-y-1.5 pt-2 animate-in fade-in slide-in-from-top-1">
+                <div className="space-y-1.5 pt-2 border-t border-destructive/20 animate-in fade-in slide-in-from-top-1">
                   <Label htmlFor="disqual-reason" className="text-xs font-bold text-destructive">
                     Disqualification Reason <span className="text-destructive">*</span>
                   </Label>
@@ -351,35 +421,53 @@ export function RecordBidOpeningDialog({
               )}
             </div>
 
-            {/* STEP 2: ENVELOPE 2 OPENING */}
+            {/* Step Sequence Arrow Indicator */}
+            <div className="flex items-center justify-center -my-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-default-100 px-3 py-1 rounded-full shadow-xs border border-default-200">
+                <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                {envelope1Result === 'Passed'
+                  ? 'Envelope 1 Passed — Proceed to Second Envelope'
+                  : envelope1Result === 'Failed'
+                  ? 'Disqualified — Envelope 2 Remains Sealed'
+                  : 'Awaiting Envelope 1 Examination'}
+              </div>
+            </div>
+
+            {/* ── STEP 2: SECOND ENVELOPE (FINANCIAL) ── */}
             <div
               className={`space-y-3 p-4 rounded-lg border transition-all ${
-                envelope1Result === 'Passed'
-                  ? 'border-default-200 bg-white'
-                  : 'border-default-100 bg-default-50/60 opacity-60'
+                envelope1Result === 'Passed' && envelope2Opened
+                  ? 'border-purple-200 bg-white shadow-xs'
+                  : envelope1Result === 'Passed'
+                  ? 'border-primary/30 bg-primary/5'
+                  : envelope1Result === 'Failed'
+                  ? 'border-destructive/20 bg-destructive/5'
+                  : 'border-dashed border-default-200 bg-default-50/60 opacity-80'
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-sm font-bold text-default-900 flex items-center gap-2">
                     <span
-                      className={`flex items-center justify-center h-5 w-5 rounded-full text-white text-xs ${
-                        envelope1Result === 'Passed' ? 'bg-primary' : 'bg-default-400'
+                      className={`flex items-center justify-center h-5 w-5 rounded-full text-white text-xs font-bold ${
+                        envelope2Opened
+                          ? 'bg-purple-600'
+                          : envelope1Result === 'Passed'
+                          ? 'bg-primary'
+                          : 'bg-default-400'
                       }`}
                     >
                       2
                     </span>
-                    Envelope 2: Financial Bid Envelope (As-Read Amount)
+                    Second Envelope: Financial Bid Envelope
                   </Label>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {envelope1Result === 'Passed'
-                      ? 'Unsealed and read publicly during the Opening of Bids session.'
-                      : 'Locked & Sealed because Envelope 1 resulted in Disqualification.'}
+                    Financial proposal and bill of quantities. Must be unsealed only after Envelope 1 passes.
                   </p>
                 </div>
-                {envelope1Result === 'Passed' ? (
-                  <Badge color="success" variant="soft" className="font-bold text-[10px]">
-                    Unsealed
+                {envelope2Opened ? (
+                  <Badge color="success" variant="soft" className="font-bold text-[10px] flex items-center gap-1">
+                    <FolderOpen className="h-3 w-3" /> Opened (Unsealed)
                   </Badge>
                 ) : (
                   <Badge color="secondary" variant="soft" className="font-bold text-[10px] flex items-center gap-1">
@@ -388,7 +476,58 @@ export function RecordBidOpeningDialog({
                 )}
               </div>
 
-              {envelope1Result === 'Passed' ? (
+              {/* State A: Envelope 1 is Pending */}
+              {envelope1Result === 'Pending' && (
+                <div className="p-3 bg-default-100/70 rounded-md text-xs text-muted-foreground flex items-center gap-2.5">
+                  <Lock className="h-4 w-4 text-default-400 shrink-0" />
+                  <span>
+                    Envelope 2 remains sealed. Examination of the First Envelope (Eligibility & Technical) must be recorded first.
+                  </span>
+                </div>
+              )}
+
+              {/* State B: Envelope 1 is Failed */}
+              {envelope1Result === 'Failed' && (
+                <div className="p-3 bg-destructive/10 rounded-md text-xs text-destructive flex items-center gap-2.5 font-medium">
+                  <Lock className="h-4 w-4 text-destructive shrink-0" />
+                  <span>
+                    Envelope 2 remains sealed because the First Envelope did not pass the initial examination. Under statutory bidding procedures (RA 9184 / RA 12009), the financial envelope of a disqualified bidder shall not be opened.
+                  </span>
+                </div>
+              )}
+
+              {/* State C: Envelope 1 Passed, but Envelope 2 Not Yet Opened */}
+              {envelope1Result === 'Passed' && !envelope2Opened && (
+                <div className="p-4 bg-white rounded-md border border-primary/20 space-y-3 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-bold text-default-900 flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                        First Envelope Passed — Eligible for Opening
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        The bidder satisfies all eligibility & technical requirements. Envelope 2 is ready to be unsealed.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      color="primary"
+                      size="sm"
+                      onClick={handleOpenSecondEnvelope}
+                      className="gap-1.5 text-xs font-bold shrink-0 shadow-sm"
+                    >
+                      <Unlock className="h-3.5 w-3.5" />
+                      Open Second Envelope
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground italic border-t border-default-100 pt-2">
+                    Notice: Envelope 2 remains sealed until you explicitly click &ldquo;Open Second Envelope&rdquo;. The As-Read Bid Amount field will be revealed upon unsealing.
+                  </p>
+                </div>
+              )}
+
+              {/* State D: Envelope 2 is Officially Opened */}
+              {envelope1Result === 'Passed' && envelope2Opened && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="as-read-amount" className="text-xs font-bold text-default-900">
@@ -408,6 +547,7 @@ export function RecordBidOpeningDialog({
                         placeholder="0.00"
                         className="pl-7 text-xs font-mono font-bold"
                         required
+                        autoFocus
                       />
                     </div>
                     <p className="text-[11px] text-muted-foreground">
@@ -415,6 +555,7 @@ export function RecordBidOpeningDialog({
                       {submission.originalProposedAmount.toLocaleString('en-PH', {
                         minimumFractionDigits: 2,
                       })}
+                      . Enter the actual financial bid read publicly during opening.
                     </p>
                   </div>
 
@@ -473,11 +614,6 @@ export function RecordBidOpeningDialog({
                       </div>
                     </div>
                   )}
-                </div>
-              ) : (
-                <div className="p-3 bg-default-100 rounded text-xs text-muted-foreground flex items-center gap-2 italic">
-                  <Lock className="h-4 w-4 text-default-400 shrink-0" />
-                  In accordance with statutory bidding procedures, Envelope 2 cannot be unsealed for non-compliant bidders.
                 </div>
               )}
             </div>

@@ -20,10 +20,8 @@ public class GetProjectBidEvaluationQueryHandler(IUnitOfWork unitOfWork)
             .GetByIdAsync(request.ProjectId, cancellationToken)
             ?? throw new NotFoundException("Procurement project not found.");
 
-        var evaluations = await unitOfWork.BiddingEvaluationRepository
-            .FindAllAsync(e => e.ProcurementProjectId == request.ProjectId && !e.IsDeleted, cancellationToken);
-
-        var evaluation = evaluations.FirstOrDefault();
+        var evaluation = await unitOfWork.BiddingEvaluationRepository
+            .GetByProjectIdWithDetailsAsync(request.ProjectId, cancellationToken);
 
         var awardRecommendations = await unitOfWork.BiddingAwardRecommendationRepository
             .FindAllAsync(a => a.ProcurementProjectId == request.ProjectId && !a.IsDeleted, cancellationToken);
@@ -119,7 +117,7 @@ public class GetProjectBidEvaluationQueryHandler(IUnitOfWork unitOfWork)
         {
             // If evaluation hasn't been executed yet, list passing opened bids in draft format
             var submissions = await unitOfWork.BiddingSubmissionRepository
-                .FindAllAsync(s => s.ProcurementProjectId == request.ProjectId && !s.IsDeleted, cancellationToken);
+                .GetByProjectIdWithDetailsAsync(request.ProjectId, cancellationToken);
 
             var passingSubmissions = submissions
                 .Where(s => s.BidOpeningRecord != null && string.Equals(s.BidOpeningRecord.Envelope1Result, "Passed", StringComparison.OrdinalIgnoreCase))

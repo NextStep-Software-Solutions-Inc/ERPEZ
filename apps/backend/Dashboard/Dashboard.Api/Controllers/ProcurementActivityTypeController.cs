@@ -13,7 +13,7 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("procurement-activity-types")]
 [ApiController]
-[Authorize]
+// [Authorize]
 public class ProcurementActivityTypeController(ISender mediator) : ControllerBase
 {
     [HttpPost]
@@ -35,8 +35,8 @@ public class ProcurementActivityTypeController(ISender mediator) : ControllerBas
     [HttpGet]
     [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    // [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetProcurementActivityTypes(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
