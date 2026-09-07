@@ -9,4 +9,6 @@ public interface IProcurementProjectRepository : IRepository<ProcurementProject>
     Task<ProcurementProject?> GetWithDetailsForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
     Task<ProcurementProject?> GetWithPublicDetailsByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<List<ProcurementProject>> GetAllPublicProjectsWithModeAsync(CancellationToken cancellationToken = default);
+    Task<ProcurementProject?> GetWithAwardDetailsByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<List<ProcurementProject>> GetByIdsWithAPPItemLinksAsync(IEnumerable<Guid> projectIds, CancellationToken cancellationToken = default);
 }

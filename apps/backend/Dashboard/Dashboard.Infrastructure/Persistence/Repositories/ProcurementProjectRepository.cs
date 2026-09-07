@@ -82,4 +82,35 @@ public class ProcurementProjectRepository : Repository<ProcurementProject>, IPro
                 || p.Status == "Closed"))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<ProcurementProject?> GetWithAwardDetailsByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await context.Set<ProcurementProject>()
+            .Include(p => p.EndUserRepresentative)
+            .Include(p => p.ProcurementMode)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.PPMPItem)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.APP)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.Office)
+            .Include(p => p.APPItemLinks)
+                .ThenInclude(l => l.APPItem)
+                    .ThenInclude(ai => ai.PPMPItem)
+            .Include(p => p.APPItemLinks)
+                .ThenInclude(l => l.APPItem)
+                    .ThenInclude(ai => ai.APP)
+            .Include(p => p.ConsolidatedPR)
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, cancellationToken);
+    }
+
+    public async Task<List<ProcurementProject>> GetByIdsWithAPPItemLinksAsync(IEnumerable<Guid> projectIds, CancellationToken cancellationToken = default)
+    {
+        var idList = projectIds.ToList();
+        return await context.Set<ProcurementProject>()
+            .Include(p => p.APPItemLinks)
+            .Where(p => idList.Contains(p.Id) && !p.IsDeleted)
+            .ToListAsync(cancellationToken);
+    }
 }

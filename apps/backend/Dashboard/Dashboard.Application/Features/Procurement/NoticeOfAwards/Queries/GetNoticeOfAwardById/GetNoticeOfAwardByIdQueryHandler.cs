@@ -23,7 +23,8 @@ public class GetNoticeOfAwardByIdQueryHandler(IUnitOfWork unitOfWork)
         }
 
         var bacRes = await unitOfWork.BACResolutionRepository.FindAsync(r => r.Id == noa.BACResolutionId, cancellationToken);
-        var project = await unitOfWork.ProcurementProjectRepository.FindAsync(p => p.Id == noa.ProcurementProjectId, cancellationToken);
+        var project = await unitOfWork.ProcurementProjectRepository.GetWithAwardDetailsByIdAsync(noa.ProcurementProjectId, cancellationToken);
+
         var supplier = await unitOfWork.SupplierRepository.FindAsync(s => s.Id == noa.SupplierId, cancellationToken);
 
         var milestones = await unitOfWork.NoticeOfAwardMilestoneRepository.ToListAsync(
@@ -48,10 +49,12 @@ public class GetNoticeOfAwardByIdQueryHandler(IUnitOfWork unitOfWork)
             : [];
 
         var prItemIds = cprItems.Select(ci => ci.PRItemId).Distinct().ToList();
-        var prItems = await unitOfWork.PRItemRepository.ToListAsync(
-            unitOfWork.PRItemRepository.Query(pi => prItemIds.Contains(pi.Id)),
-            cancellationToken
-        );
+        var prItems = prItemIds.Count > 0
+            ? await unitOfWork.PRItemRepository.ToListAsync(
+                unitOfWork.PRItemRepository.Query(pi => prItemIds.Contains(pi.Id)),
+                cancellationToken
+            )
+            : [];
 
         var lineItems = cprItems.Select(ci =>
         {
@@ -68,6 +71,90 @@ public class GetNoticeOfAwardByIdQueryHandler(IUnitOfWork unitOfWork)
                 Amount = pi?.Amount ?? 0
             };
         }).ToList();
+
+        if (lineItems.Count == 0 && project?.APPItemLinks != null && project.APPItemLinks.Count > 0)
+        {
+            lineItems = project.APPItemLinks
+                .OrderBy(l => l.Order)
+                .Select(l =>
+                {
+                    var appItem = l.APPItem;
+                    var ppmpItem = appItem?.PPMPItem;
+                    var category = ppmpItem?.ProjectType switch
+                    {
+                        ProcurementProjectType.Infrastructure => "Infrastructure",
+                        ProcurementProjectType.ConsultingServices => "Consulting",
+                        _ => "Goods & Services"
+                    };
+                    var unitPrice = ppmpItem?.UnitPrice > 0 ? ppmpItem.UnitPrice : (project.ABC > 0 ? project.ABC : noa.AwardedAmount);
+                    var qty = ppmpItem?.PlannedQuantity > 0 ? ppmpItem.PlannedQuantity : 1;
+                    var amount = (appItem?.EstimatedBudgetOverride.HasValue == true && appItem.EstimatedBudgetOverride.Value > 0)
+                        ? appItem.EstimatedBudgetOverride.Value
+                        : (ppmpItem != null && ppmpItem.PlannedQuantity > 0 && ppmpItem.UnitPrice > 0 ? ppmpItem.PlannedQuantity * ppmpItem.UnitPrice : (project.ABC > 0 ? project.ABC : noa.AwardedAmount));
+
+                    return new AwardedLineItemDto
+                    {
+                        Id = (appItem?.Id ?? l.Id).ToString(),
+                        ItemName = ppmpItem?.Name ?? appItem?.Remarks ?? project.Title,
+                        Category = category,
+                        Description = ppmpItem?.Description ?? appItem?.Remarks ?? string.Empty,
+                        Quantity = qty,
+                        Unit = !string.IsNullOrWhiteSpace(ppmpItem?.Unit) ? ppmpItem.Unit : "unit",
+                        UnitPrice = unitPrice,
+                        Amount = amount
+                    };
+                }).ToList();
+        }
+
+        if (lineItems.Count == 0 && project?.APPItemId.HasValue == true)
+        {
+            var appItem = project.APPItem ?? await unitOfWork.APPItemRepository.FindAsync(a => a.Id == project.APPItemId.Value, cancellationToken);
+            var ppmpItem = appItem?.PPMPItem ?? (appItem != null && appItem.PPMPItemId != Guid.Empty
+                ? await unitOfWork.PPMPItemRepository.FindAsync(p => p.Id == appItem.PPMPItemId, cancellationToken)
+                : null);
+
+            if (appItem != null || ppmpItem != null)
+            {
+                var category = ppmpItem?.ProjectType switch
+                {
+                    ProcurementProjectType.Infrastructure => "Infrastructure",
+                    ProcurementProjectType.ConsultingServices => "Consulting",
+                    _ => "Goods & Services"
+                };
+                var unitPrice = ppmpItem?.UnitPrice > 0 ? ppmpItem.UnitPrice : (project.ABC > 0 ? project.ABC : noa.AwardedAmount);
+                var qty = ppmpItem?.PlannedQuantity > 0 ? ppmpItem.PlannedQuantity : 1;
+                var amount = (appItem?.EstimatedBudgetOverride.HasValue == true && appItem.EstimatedBudgetOverride.Value > 0)
+                    ? appItem.EstimatedBudgetOverride.Value
+                    : (ppmpItem != null && ppmpItem.PlannedQuantity > 0 && ppmpItem.UnitPrice > 0 ? ppmpItem.PlannedQuantity * ppmpItem.UnitPrice : (project.ABC > 0 ? project.ABC : noa.AwardedAmount));
+
+                lineItems.Add(new AwardedLineItemDto
+                {
+                    Id = (appItem?.Id ?? project.APPItemId.Value).ToString(),
+                    ItemName = ppmpItem?.Name ?? appItem?.Remarks ?? project.Title,
+                    Category = category,
+                    Description = ppmpItem?.Description ?? appItem?.Remarks ?? string.Empty,
+                    Quantity = qty,
+                    Unit = !string.IsNullOrWhiteSpace(ppmpItem?.Unit) ? ppmpItem.Unit : "unit",
+                    UnitPrice = unitPrice,
+                    Amount = amount
+                });
+            }
+        }
+
+        if (lineItems.Count == 0 && project != null)
+        {
+            lineItems.Add(new AwardedLineItemDto
+            {
+                Id = project.Id.ToString(),
+                ItemName = !string.IsNullOrWhiteSpace(project.Title) ? project.Title : "Procurement Package Item",
+                Category = "Goods & Services",
+                Description = project.ScopeOfWork ?? string.Empty,
+                Quantity = 1,
+                Unit = "lot",
+                UnitPrice = noa.AwardedAmount > 0 ? noa.AwardedAmount : project.ABC,
+                Amount = noa.AwardedAmount > 0 ? noa.AwardedAmount : project.ABC
+            });
+        }
 
         var conformeMilestone = milestones.FirstOrDefault(m => m.MilestoneType == NoticeOfAwardMilestoneType.ConformeReceived);
         var securityMilestone = milestones.FirstOrDefault(m => m.MilestoneType == NoticeOfAwardMilestoneType.PerformanceSecurityPosted);
@@ -102,8 +189,14 @@ public class GetNoticeOfAwardByIdQueryHandler(IUnitOfWork unitOfWork)
             ProcurementProjectId = noa.ProcurementProjectId,
             ProjectName = project?.Title ?? string.Empty,
             ProjectDescription = project?.ScopeOfWork ?? string.Empty,
-            PRNumber = cpr?.CPRNumber ?? string.Empty,
-            EndUser = project?.EndUserRepresentative != null ? $"{project.EndUserRepresentative.FirstName} {project.EndUserRepresentative.LastName}" : "Procurement Office",
+            PRNumber = !string.IsNullOrWhiteSpace(cpr?.CPRNumber)
+                ? cpr.CPRNumber
+                : (!string.IsNullOrWhiteSpace(project?.APPItem?.APP?.APPNumber)
+                    ? project.APPItem.APP.APPNumber
+                    : (project?.APPItemLinks.FirstOrDefault()?.APPItem?.APP?.APPNumber ?? string.Empty)),
+            EndUser = project?.EndUserRepresentative != null
+                ? $"{project.EndUserRepresentative.FirstName} {project.EndUserRepresentative.LastName}"
+                : (!string.IsNullOrWhiteSpace(project?.APPItem?.Office?.Name) ? project.APPItem.Office.Name : "Procurement Office"),
             ModeOfProcurement = project?.ProcurementMode?.Name ?? "Public Bidding",
             ApprovedBudget = project?.ABC ?? 0,
 

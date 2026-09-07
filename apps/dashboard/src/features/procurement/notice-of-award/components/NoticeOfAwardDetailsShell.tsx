@@ -310,7 +310,7 @@ export function NoticeOfAwardDetailsShell({
                         colSpan={7}
                         className="py-10 text-center text-sm text-default-500"
                       >
-                        No Consolidated PR line items are available yet.
+                        No awarded line items are available yet.
                       </TableCell>
                     </TableRow>
                   )}

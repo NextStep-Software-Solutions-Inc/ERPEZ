@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Dtos;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Utils;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -18,7 +19,7 @@ public class GetNoticeOfAwardsQueryHandler(IUnitOfWork unitOfWork, ISieveProcess
 {
     public async Task<PaginatedApiResponse<NoticeOfAwardListDto>> Handle(GetNoticeOfAwardsQuery query, CancellationToken cancellationToken)
     {
-        var dbQuery = unitOfWork.NoticeOfAwardRepository.Query();
+        var dbQuery = unitOfWork.NoticeOfAwardRepository.QueryWithDetails();
 
         if (!string.IsNullOrWhiteSpace(query.Status) && Enum.TryParse<NoticeOfAwardStatus>(query.Status, true, out var parsedStatus))
         {
@@ -66,7 +67,9 @@ public class GetNoticeOfAwardsQueryHandler(IUnitOfWork unitOfWork, ISieveProcess
             var supplierName = noa.Supplier?.Name ?? string.Empty;
             var bacResNumber = noa.BACResolution?.ResolutionNumber ?? string.Empty;
             var projectName = noa.ProcurementProject?.Title ?? string.Empty;
-            var prNumber = noa.ProcurementProject?.ConsolidatedPR?.CPRNumber ?? string.Empty;
+            var prNumber = !string.IsNullOrWhiteSpace(noa.ProcurementProject?.ConsolidatedPR?.CPRNumber)
+                ? noa.ProcurementProject.ConsolidatedPR.CPRNumber
+                : (noa.ProcurementProject?.APPItem?.APP?.APPNumber ?? string.Empty);
 
             return new NoticeOfAwardListDto
             {
