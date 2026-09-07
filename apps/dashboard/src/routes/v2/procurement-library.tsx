@@ -14,6 +14,7 @@ const searchSchema = z.object({
       'Pricing',
       'Suppliers',
       'Activities',
+      'ResolutionClauses',
       'Settings',
     ])
     .optional()
