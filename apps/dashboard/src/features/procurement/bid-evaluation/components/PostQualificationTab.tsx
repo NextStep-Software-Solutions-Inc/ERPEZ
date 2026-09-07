@@ -5,9 +5,12 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  ExternalLink,
   FileCheck2,
   FileText,
+  Files,
   History,
+  Loader2,
   RefreshCw,
   Send,
   Sparkles,
@@ -20,6 +23,7 @@ import {
   useProjectBidEvaluation,
   useSendPostQualificationNotice,
 } from '../hooks/useBidEvaluationApi'
+import { previewDocument } from '@/features/procurement/manage-supplier-portal/utils'
 import { SlaDeadlineBadge } from './SlaDeadlineBadge'
 import type { BiddingEvaluatedBidResponse } from '../types/bidEvaluationApi.types'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -57,6 +61,7 @@ export function PostQualificationTab({
   const [selectedBidderForResult, setSelectedBidderForResult] =
     useState<BiddingEvaluatedBidResponse | null>(null)
   const [isResultDialogOpen, setIsResultDialogOpen] = useState(false)
+  const [previewingDocId, setPreviewingDocId] = useState<string | null>(null)
 
   const evaluatedBids = evaluation?.evaluatedBids ?? []
   const hasEvaluation = evaluatedBids.length > 0
@@ -92,6 +97,14 @@ export function PostQualificationTab({
     return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
   }
 
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes || bytes === 0) return ''
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
+  }
+
   const handleSendNotice = async (bid: BiddingEvaluatedBidResponse) => {
     try {
       await sendNoticeMutation.mutateAsync({
@@ -121,6 +134,18 @@ export function PostQualificationTab({
   const handleOpenResultDialog = (bid: BiddingEvaluatedBidResponse) => {
     setSelectedBidderForResult(bid)
     setIsResultDialogOpen(true)
+  }
+
+  const handlePreview = async (doc: { id: string; name: string; url?: string }) => {
+    if (!doc.url) return
+    setPreviewingDocId(doc.id)
+    try {
+      await previewDocument(doc.url, doc.name)
+    } catch (err) {
+      console.error('Failed to preview document:', err)
+    } finally {
+      setPreviewingDocId(null)
+    }
   }
 
   if (isLoading) {
@@ -419,6 +444,86 @@ export function PostQualificationTab({
                   </Button>
                 )}
             </div>
+          </div>
+
+          {/* Candidate Submitted Documents Dossier */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between border-b border-default-200 pb-2">
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-default-900 flex items-center gap-1.5">
+                  <Files className="h-4 w-4 text-primary" />
+                  Candidate Submitted Application Dossier ({activeBidder.supplierName})
+                </span>
+                <p className="text-[11px] text-muted-foreground">
+                  Envelope 1 (Eligibility & Technical) and Envelope 2 (Financial) documents submitted by the bidder for BAC post-qualification review.
+                </p>
+              </div>
+              <Badge variant="outline" className="text-[10px] font-bold">
+                {activeBidder.documents?.length || 0} Document{(activeBidder.documents?.length || 0) === 1 ? '' : 's'} Uploaded
+              </Badge>
+            </div>
+
+            {(!activeBidder.documents || activeBidder.documents.length === 0) ? (
+              <div className="p-4 rounded-lg bg-default-50 border border-default-200 text-center text-xs text-muted-foreground">
+                No electronic documents were attached to this candidate&apos;s portal application.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {activeBidder.documents.map((doc) => {
+                  const isEnv1 = doc.envelopeType === 1
+                  return (
+                    <div
+                      key={doc.id}
+                      className="p-3 rounded-lg border border-default-200 bg-white hover:border-primary/40 transition-colors flex items-start justify-between gap-3 shadow-sm"
+                    >
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge
+                            color={isEnv1 ? 'info' : 'success'}
+                            variant="soft"
+                            className="text-[10px] font-bold shrink-0"
+                          >
+                            {isEnv1 ? 'Env 1: Technical' : 'Env 2: Financial'}
+                          </Badge>
+                          <span className="text-xs font-bold text-default-900 truncate block" title={doc.name}>
+                            {doc.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                          {doc.size ? <span>{formatFileSize(doc.size)}</span> : null}
+                          {doc.size && doc.uploadedAt ? <span>•</span> : null}
+                          {doc.uploadedAt ? <span>Uploaded: {formatDate(doc.uploadedAt)}</span> : null}
+                        </div>
+                      </div>
+
+                      {doc.url ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={previewingDocId === doc.id}
+                          className="h-7 text-[11px] px-2 text-primary hover:text-primary hover:bg-primary/10 gap-1 shrink-0 font-bold"
+                          onClick={() => void handlePreview(doc)}
+                        >
+                          {previewingDocId === doc.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              View
+                            </>
+                          )}
+                        </Button>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground italic shrink-0 pt-1">
+                          Attached
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Findings Display if present */}
