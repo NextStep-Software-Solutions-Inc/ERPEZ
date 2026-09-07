@@ -7,9 +7,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useProcurementActivityTypes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementActivityTypes'
 import api from '@/services/api'
-import { toast } from 'sonner'
-import { Calendar, Search, MapPin, AlignLeft, CalendarDays, Loader2, Plus, ArrowUpDown } from 'lucide-react'
+import { Calendar, Search, MapPin, AlignLeft, CalendarDays, Loader2, Plus, ArrowUpDown, Clock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import { computeRemainingDays, getRemainingDaysBadgeClass } from '../utils/remainingDays'
+import type { ProcurementActivityType } from '@/lib/fiscal-year-and-policies/types/procurementActivityTypes'
 
 interface CalendarEvent {
   id: string
@@ -255,6 +257,19 @@ export function BiddingCalendarDialog({
     }
   }, [open, searchQuery])
 
+  // Fetch activity types to compute remaining days from maxDays
+  const { data: activityTypesData } = useProcurementActivityTypes({
+    pathParams: {},
+    queryParams: {},
+  })
+  const activityTypeMap = useMemo(() => {
+    const map = new Map<string, ProcurementActivityType>()
+    for (const item of (activityTypesData?.data || [])) {
+      map.set(item.id, item)
+    }
+    return map
+  }, [activityTypesData])
+
   // Computed Sorted Events for Visual Organization
   const sortedEvents = useMemo(() => {
     const arr = Array.isArray(events) ? events : []
@@ -333,60 +348,95 @@ export function BiddingCalendarDialog({
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
-                {sortedEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="border border-default-200 rounded-xl p-4 space-y-3 bg-card hover:shadow-sm transition-all"
-                  >
-                    <div className="flex items-start justify-between gap-2 border-b pb-2">
-                      <div className="space-y-1">
-                        <h4 className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                          <Calendar className="h-4 w-4 text-primary" />
-                          {event.projectTitle}
-                        </h4>
-                        <p className="text-xs text-muted-foreground">
-                          Activity: <span className="font-medium text-foreground">{event.procurementActivityTypeName}</span>
-                        </p>
-                      </div>
-                      <Badge variant="soft" color="secondary" className="capitalize text-xs">
-                        {event.status || 'Scheduled'}
-                      </Badge>
-                    </div>
+                {sortedEvents.map((event) => {
+                  const actType = activityTypeMap.get(event.procurementActivityTypeId)
+                  const isCompleted =
+                    event.status === 'Completed' ||
+                    (event as any).executionStatus === 'completed'
+                  const remainingInfo = computeRemainingDays(event.endDate, {
+                    isCompleted,
+                    maxDays: actType?.maxDays,
+                  })
 
-                    <div className="text-xs space-y-2 text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <CalendarDays className="h-3.5 w-3.5 text-default-400" />
-                        <span>
-                          {new Date(event.startDate).toLocaleString('en-PH', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}{' '}
-                          -{' '}
-                          {new Date(event.endDate).toLocaleString('en-PH', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3.5 w-3.5 text-default-400" />
-                        <span>Venue: <span className="font-medium text-foreground">{event.venue}</span></span>
-                      </div>
-                      {event.remarks && (
-                        <div className="flex items-start gap-2 bg-muted/20 p-2 rounded-lg mt-1 border border-default-100">
-                          <AlignLeft className="h-3.5 w-3.5 text-default-400 mt-0.5" />
-                          <p className="leading-relaxed">Remarks: {event.remarks}</p>
+                  return (
+                    <div
+                      key={event.id}
+                      className="border border-default-200 rounded-xl p-4 space-y-3 bg-card hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-2 border-b pb-2">
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            {event.projectTitle}
+                          </h4>
+                          <p className="text-xs text-muted-foreground">
+                            Activity: <span className="font-medium text-foreground">{event.procurementActivityTypeName}</span>
+                          </p>
                         </div>
-                      )}
+                        <Badge variant="soft" color="secondary" className="capitalize text-xs">
+                          {event.status || 'Scheduled'}
+                        </Badge>
+                      </div>
+
+                      <div className="text-xs space-y-2 text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="h-3.5 w-3.5 text-default-400" />
+                          <span>
+                            {new Date(event.startDate).toLocaleString('en-PH', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}{' '}
+                            -{' '}
+                            {new Date(event.endDate).toLocaleString('en-PH', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-default-400" />
+                          <span>Venue: <span className="font-medium text-foreground">{event.venue}</span></span>
+                        </div>
+                        {event.remarks && (
+                          <div className="flex items-start gap-2 bg-muted/20 p-2 rounded-lg mt-1 border border-default-100">
+                            <AlignLeft className="h-3.5 w-3.5 text-default-400 mt-0.5" />
+                            <p className="leading-relaxed">Remarks: {event.remarks}</p>
+                          </div>
+                        )}
+
+                        {/* Remaining Days & Max Days Indicator */}
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-default-100">
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>Max:</span>
+                            <span className="font-medium text-foreground">
+                              {actType?.maxDays !== null && actType?.maxDays !== undefined
+                                ? `${actType.maxDays}d`
+                                : '—'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] text-muted-foreground">Remaining:</span>
+                            <span
+                              className={cn(
+                                'px-2 py-0.5 rounded-full text-xs font-semibold border',
+                                getRemainingDaysBadgeClass(remainingInfo.variant),
+                              )}
+                            >
+                              {remainingInfo.label}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
