@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { format, parseISO } from 'date-fns'
 import { AlertTriangle, CheckCircle2, Pencil, RotateCcw } from 'lucide-react'
 import {
@@ -11,6 +12,13 @@ import type {
 } from '../types'
 import { MilestoneExecutionStatusBadge } from './MilestoneExecutionStatusBadge'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  computeRemainingDays,
+  getRemainingDaysBadgeClass,
+} from '@/features/procurement/bac-resolution'
+import { useProcurementActivityTypes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementActivityTypes'
+import type { ProcurementActivityType } from '@/lib/fiscal-year-and-policies/types/procurementActivityTypes'
 import {
   HoverCard,
   HoverCardContent,
@@ -67,6 +75,47 @@ function formatTimestamp(isoTs: string): string {
   }
 }
 
+const DEFAULT_MAX_DAYS_BY_KEY: Record<string, number | null> = {
+  'ib-posting': null,
+  'bid-documents-issuance': 1,
+  'pre-bid-conference': 12,
+  'clarification-deadline': 5,
+  'bid-submission-opening': 30,
+  'bid-evaluation': 15,
+  'post-qualification': 30,
+  'bac-resolution-award': 7,
+  'approval-resolution': 7,
+  'notice-of-award': 3,
+  'contract-signing': 10,
+  'notice-to-proceed': 7,
+}
+
+const DEFAULT_MAX_DAYS_BY_NAME: Array<{ pattern: RegExp; maxDays: number | null }> = [
+  { pattern: /advertisement|posting of ib/i, maxDays: null },
+  { pattern: /issuance|availability of bid doc/i, maxDays: 1 },
+  { pattern: /pre-bid/i, maxDays: 12 },
+  { pattern: /clarification/i, maxDays: 5 },
+  { pattern: /submission.*opening/i, maxDays: 30 },
+  { pattern: /bid evaluation/i, maxDays: 15 },
+  { pattern: /post-qualification/i, maxDays: 30 },
+  { pattern: /resolution of award/i, maxDays: 7 },
+  { pattern: /approval of bac resolution/i, maxDays: 7 },
+  { pattern: /notice of award/i, maxDays: 3 },
+  { pattern: /contract signing/i, maxDays: 10 },
+  { pattern: /notice to proceed/i, maxDays: 7 },
+]
+
+function resolveFallbackMaxDays(milestone: BiddingMilestone): number | null | undefined {
+  if (milestone.milestoneKey in DEFAULT_MAX_DAYS_BY_KEY) {
+    return DEFAULT_MAX_DAYS_BY_KEY[milestone.milestoneKey]
+  }
+  const byName = DEFAULT_MAX_DAYS_BY_NAME.find((d) => d.pattern.test(milestone.name))
+  if (byName) {
+    return byName.maxDays
+  }
+  return null
+}
+
 export function BiddingScheduleMilestoneTable({
   schedule,
   highlightMilestoneKey,
@@ -77,6 +126,42 @@ export function BiddingScheduleMilestoneTable({
   const isDraft = schedule.status === 'draft'
   const isConfirmed = schedule.status === 'confirmed'
   const showActions = schedule.status !== 'locked'
+
+  const { data: activityTypesData } = useProcurementActivityTypes({
+    pathParams: {},
+    queryParams: {},
+  })
+
+  const activityTypeMap = useMemo(() => {
+    const map = new Map<string, ProcurementActivityType>()
+    for (const item of activityTypesData?.data || []) {
+      if (item.id) map.set(item.id, item)
+      if ((item as any).milestoneKey) {
+        map.set(String((item as any).milestoneKey).toLowerCase(), item)
+      }
+      if (item.name) {
+        map.set(item.name.toLowerCase().trim(), item)
+      }
+    }
+    return map
+  }, [activityTypesData])
+
+  const findActivityType = (milestone: BiddingMilestone): ProcurementActivityType | undefined => {
+    if (!milestone) return undefined
+    if (milestone.milestoneKey && activityTypeMap.has(milestone.milestoneKey.toLowerCase())) {
+      return activityTypeMap.get(milestone.milestoneKey.toLowerCase())
+    }
+    if (milestone.name && activityTypeMap.has(milestone.name.toLowerCase().trim())) {
+      return activityTypeMap.get(milestone.name.toLowerCase().trim())
+    }
+    const nameLower = (milestone.name || '').toLowerCase()
+    for (const [key, val] of activityTypeMap.entries()) {
+      if (nameLower.includes(key) || key.includes(nameLower)) {
+        return val
+      }
+    }
+    return undefined
+  }
 
   if (milestones.length === 0) {
     return (
@@ -96,16 +181,36 @@ export function BiddingScheduleMilestoneTable({
               <TableHead className="w-12 text-center">#</TableHead>
               <TableHead>Milestone</TableHead>
               <TableHead>Schedule Date</TableHead>
+              <TableHead>Remaining Days</TableHead>
               <TableHead>Status</TableHead>
               {showActions && <TableHead className="w-44 text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {milestones.map((milestone) => {
+            {milestones.map((milestone, index) => {
               const conflict = hasConflict(milestone)
               const executionStatus = resolveMilestoneExecutionStatus(milestone)
               const effectiveDate = getEffectiveMilestoneDate(milestone)
               const hasOverride = Boolean(milestone.overrideDate)
+
+              const previousMilestone = index > 0 ? milestones[index - 1] : null
+              const startDate = previousMilestone
+                ? getEffectiveMilestoneDate(previousMilestone)
+                : (schedule.ibPostingDate || effectiveDate)
+              const endDate = effectiveDate
+
+              const actType = findActivityType(milestone)
+              const maxDays =
+                actType?.maxDays !== undefined && actType?.maxDays !== null
+                  ? actType.maxDays
+                  : resolveFallbackMaxDays(milestone)
+
+              const isCompleted =
+                executionStatus === 'completed' || Boolean(milestone.completedAt)
+              const remainingInfo = computeRemainingDays(effectiveDate, {
+                isCompleted,
+                maxDays,
+              })
 
               return (
                 <TableRow
@@ -231,6 +336,26 @@ export function BiddingScheduleMilestoneTable({
                     </div>
                   </TableCell>
 
+                  {/* Remaining Days */}
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'text-xs font-semibold px-2 py-0.5 border',
+                          getRemainingDaysBadgeClass(remainingInfo.variant),
+                        )}
+                      >
+                        {remainingInfo.label}
+                      </Badge>
+                      {remainingInfo.maxDays !== null && (
+                        <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                          (max {remainingInfo.maxDays}d)
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+
                   {/* Status badge */}
                   <TableCell>
                     <MilestoneExecutionStatusBadge status={executionStatus} />
@@ -240,7 +365,7 @@ export function BiddingScheduleMilestoneTable({
                   {showActions && (
                     <TableCell>
                       <div className="flex flex-wrap justify-end gap-2">
-                        {isDraft && milestone.order !== 0 && onEditMilestone ? (
+                        {isDraft && onEditMilestone ? (
                           <Button
                             variant="ghost"
                             size="sm"
