@@ -25,10 +25,8 @@ public class CreateBiddingAwardRecommendationCommandHandler(
             ?? throw new NotFoundException("Procurement project not found.");
 
         // 2. Validate evaluation exists and is completed
-        var evaluations = await unitOfWork.BiddingEvaluationRepository
-            .FindAllAsync(e => e.ProcurementProjectId == command.ProjectId && !e.IsDeleted, cancellationToken);
-
-        var evaluation = evaluations.FirstOrDefault()
+        var evaluation = await unitOfWork.BiddingEvaluationRepository
+            .GetByProjectIdWithDetailsAsync(command.ProjectId, cancellationToken)
             ?? throw new NotFoundException("No bid evaluation found for this project.");
 
         if (!string.Equals(evaluation.Status, "Completed", StringComparison.OrdinalIgnoreCase))

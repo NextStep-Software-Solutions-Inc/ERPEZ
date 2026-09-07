@@ -22,10 +22,8 @@ public class LogPostQualificationDocsReceivedCommandHandler(
             .GetByIdAsync(command.ProjectId, cancellationToken)
             ?? throw new NotFoundException("Procurement project not found.");
 
-        var evaluations = await unitOfWork.BiddingEvaluationRepository
-            .FindAllAsync(e => e.ProcurementProjectId == command.ProjectId && !e.IsDeleted, cancellationToken);
-
-        var evaluation = evaluations.FirstOrDefault()
+        var evaluation = await unitOfWork.BiddingEvaluationRepository
+            .GetByProjectIdWithDetailsAsync(command.ProjectId, cancellationToken)
             ?? throw new NotFoundException("No bid evaluation found for this project.");
 
         var evaluatedBid = evaluation.EvaluatedBids
