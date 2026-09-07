@@ -57,6 +57,7 @@ public class BiddingEvaluatedBidResponse
     public bool IsResponsive { get; set; }
     public string? NonResponsiveReason { get; set; }
     public BiddingPostQualificationResponse? PostQualification { get; set; }
+    public List<ApplicationDocumentDto> Documents { get; set; } = [];
 }
 
 public class BiddingPostQualificationResponse
@@ -80,7 +81,7 @@ public class BiddingEvaluationResponse
     public Guid ProcurementProjectId { get; set; }
     public string ProjectName { get; set; } = string.Empty;
     public decimal ABC { get; set; }
-    public string AwardCriterion { get; set; } = "LCRB";
+    public string AwardCriterion { get; set; } = string.Empty;
     public decimal? TechnicalWeight { get; set; }
     public decimal? FinancialWeight { get; set; }
     public string Status { get; set; } = string.Empty;

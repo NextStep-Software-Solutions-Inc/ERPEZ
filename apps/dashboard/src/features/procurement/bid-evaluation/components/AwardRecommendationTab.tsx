@@ -132,7 +132,7 @@ export function AwardRecommendationTab({
                       Award Recommendation Active
                     </Badge>
                     <h3 className="text-xl font-extrabold text-default-900">
-                      Recommendation of Award to {awardRecommendation.supplierName}
+                      Recommendation of Award to {awardRecommendation.winningSupplierName}
                     </h3>
                     <p className="text-xs text-emerald-900 font-medium">
                       Formally recommended for contract award following successful post-qualification verification.
@@ -140,7 +140,7 @@ export function AwardRecommendationTab({
                   </div>
 
                   <Badge variant="outline" className="font-bold text-xs bg-white border-emerald-300 text-emerald-800">
-                    Status: {awardRecommendation.status}
+                    Status: Recommended
                   </Badge>
                 </div>
 
@@ -152,7 +152,7 @@ export function AwardRecommendationTab({
                     </span>
                     <span className="font-bold text-default-900 text-sm flex items-center gap-1.5 mt-0.5">
                       <Building2 className="h-4 w-4 text-primary shrink-0" />
-                      {awardRecommendation.supplierName}
+                      {awardRecommendation.winningSupplierName}
                     </span>
                   </div>
 
@@ -187,22 +187,15 @@ export function AwardRecommendationTab({
                   </div>
                 </div>
 
-                {/* Legal Justification */}
-                {awardRecommendation.justification && (
+                {/* Legal Justification / BAC Deliberation */}
+                {awardRecommendation.remarks && (
                   <div className="mt-4 p-3.5 rounded-lg bg-white border border-emerald-200 text-xs space-y-1">
                     <span className="font-bold text-emerald-950 uppercase text-[10px] tracking-wider block">
-                      Official Legal Justification:
+                      BAC Deliberation / Justification:
                     </span>
                     <p className="text-default-800 leading-relaxed italic">
-                      "{awardRecommendation.justification}"
+                      "{awardRecommendation.remarks}"
                     </p>
-                  </div>
-                )}
-
-                {/* Optional Remarks */}
-                {awardRecommendation.remarks && (
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    <span className="font-semibold text-default-700">Remarks:</span> {awardRecommendation.remarks}
                   </div>
                 )}
 
@@ -225,7 +218,10 @@ export function AwardRecommendationTab({
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => void navigate({ to: '/v2/bac-resolutions-public-bidding' })}
+                      onClick={() => void navigate({
+                        to: '/v2/bac-resolutions-public-bidding',
+                        search: { selectedResolutionId: projectId, id: projectId },
+                      })}
                       className="h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -336,7 +332,8 @@ export function AwardRecommendationTab({
       <BacResolutionModal
         isOpen={isPreviewModalOpen}
         onClose={() => setIsPreviewModalOpen(false)}
-        projectName={projectName}
+        projectName={projectName || evaluation?.projectName}
+        abc={evaluation?.abc}
         awardRecommendation={awardRecommendation}
       />
     </div>

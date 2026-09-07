@@ -1,18 +1,35 @@
+import { CheckCircle2, Clock3, FileClock, RotateCcw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import type { NoticeOfAwardStatus } from '../types'
 
-const STATUS_VARIANTS: Record<NoticeOfAwardStatus, string> = {
-  draft: 'border border-border/80 text-foreground bg-transparent rounded-full px-2.5 py-0.5 text-xs font-normal',
-  'for-approval': 'border border-sky-500 text-sky-600 dark:text-sky-400 bg-transparent rounded-full px-2.5 py-0.5 text-xs font-normal',
-  returned: 'border border-rose-500 text-rose-600 dark:text-rose-400 bg-transparent rounded-full px-2.5 py-0.5 text-xs font-normal',
-  approved: 'border border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-transparent rounded-full px-2.5 py-0.5 text-xs font-normal',
-}
-
-const STATUS_LABELS: Record<NoticeOfAwardStatus, string> = {
-  draft: 'Draft',
-  'for-approval': 'For Approval',
-  returned: 'Returned',
-  approved: 'Approved',
+const STATUS_CONFIG: Record<
+  NoticeOfAwardStatus,
+  {
+    label: string
+    className: string
+    icon: typeof CheckCircle2
+  }
+> = {
+  draft: {
+    label: 'Draft',
+    className: 'bg-slate-50 text-slate-700 border-slate-300 font-bold text-xs shadow-2xs',
+    icon: FileClock,
+  },
+  'for-approval': {
+    label: 'For Approval',
+    className: 'bg-sky-50 text-sky-700 border-sky-300 font-bold text-xs shadow-2xs',
+    icon: Clock3,
+  },
+  returned: {
+    label: 'Returned',
+    className: 'bg-rose-50 text-rose-700 border-rose-300 font-bold text-xs shadow-2xs',
+    icon: RotateCcw,
+  },
+  approved: {
+    label: 'Approved / Issued',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold text-xs shadow-2xs',
+    icon: CheckCircle2,
+  },
 }
 
 export function NoticeOfAwardStatusBadge({
@@ -20,9 +37,13 @@ export function NoticeOfAwardStatusBadge({
 }: {
   status: NoticeOfAwardStatus
 }) {
+  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.draft
+  const Icon = config.icon
+
   return (
-    <Badge variant="outline" className={STATUS_VARIANTS[status]}>
-      {STATUS_LABELS[status]}
+    <Badge variant="outline" className={config.className}>
+      <Icon className="h-3 w-3 mr-1 shrink-0" />
+      {config.label}
     </Badge>
   )
 }

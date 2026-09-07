@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ERPEZ.Application.Features.Procurement.BidEvaluations.Dtos;
+using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProjectSupplierApplications;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -34,9 +35,9 @@ public class GetProjectBidEvaluationQueryHandler(IUnitOfWork unitOfWork)
             ProcurementProjectId = project.Id,
             ProjectName = project.Title,
             ABC = project.ABC,
-            AwardCriterion = evaluation?.AwardCriterion ?? "LCRB",
-            TechnicalWeight = evaluation?.TechnicalWeight ?? 70m,
-            FinancialWeight = evaluation?.FinancialWeight ?? 30m,
+            AwardCriterion = evaluation?.AwardCriterion ?? string.Empty,
+            TechnicalWeight = evaluation?.TechnicalWeight,
+            FinancialWeight = evaluation?.FinancialWeight,
             Status = evaluation?.Status ?? "Draft",
             EvaluatedById = evaluation?.EvaluatedById,
             EvaluatedByName = evaluation?.EvaluatedByName,
@@ -78,6 +79,17 @@ public class GetProjectBidEvaluationQueryHandler(IUnitOfWork unitOfWork)
                     var supplier = b.Supplier;
                     var opening = b.BidOpeningRecord;
                     var postQual = b.PostQualification;
+                    var submission = opening?.BiddingSubmission;
+                    var appDocs = submission?.PublicSupplierApplication?.UploadedDocuments;
+                    var documents = appDocs?.Select(d => new ApplicationDocumentDto
+                    {
+                        Id = d.Id,
+                        ChecklistItemId = d.ChecklistItemId,
+                        Name = d.ChecklistItem?.MasterDocumentType?.Name ?? d.ChecklistItem?.CustomDocumentName ?? d.OriginalFileName,
+                        EnvelopeType = d.ChecklistItem?.EnvelopeType ?? 1,
+                        Url = d.BlobStorageUrl,
+                        UploadedAt = d.UploadedAt
+                    }).ToList() ?? [];
 
                     return new BiddingEvaluatedBidResponse
                     {
@@ -109,7 +121,8 @@ public class GetProjectBidEvaluationQueryHandler(IUnitOfWork unitOfWork)
                             VerifiedById = postQual.VerifiedById,
                             VerifiedByName = postQual.VerifiedByName,
                             CompletedAt = postQual.CompletedAt
-                        }
+                        },
+                        Documents = documents
                     };
                 }).ToList();
         }
@@ -135,7 +148,16 @@ public class GetProjectBidEvaluationQueryHandler(IUnitOfWork unitOfWork)
                 EvaluatedBidPrice = s.BidOpeningRecord.AsReadBidAmount ?? s.OriginalProposedAmount,
                 Rank = index + 1,
                 Status = "Ranked",
-                IsResponsive = true
+                IsResponsive = true,
+                Documents = s.PublicSupplierApplication?.UploadedDocuments?.Select(d => new ApplicationDocumentDto
+                {
+                    Id = d.Id,
+                    ChecklistItemId = d.ChecklistItemId,
+                    Name = d.ChecklistItem?.MasterDocumentType?.Name ?? d.ChecklistItem?.CustomDocumentName ?? d.OriginalFileName,
+                    EnvelopeType = d.ChecklistItem?.EnvelopeType ?? 1,
+                    Url = d.BlobStorageUrl,
+                    UploadedAt = d.UploadedAt
+                }).ToList() ?? []
             }).ToList();
         }
 

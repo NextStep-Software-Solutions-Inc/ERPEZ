@@ -74,9 +74,7 @@ export function BacResolutionWorkspace({
   workspaceScope = 'all',
   bacListRoutePath = '/v2/bac-resolutions',
 }: BacResolutionWorkspaceProps) {
-  const navigate = useNavigate({
-    from: '/v2/bac-resolutions/'
-  })
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { mutateAsync: deleteBacProject } = useDeleteBacResolution()
   const { mutateAsync: updateBacProject } = useUpdateBacResolution()
@@ -149,7 +147,7 @@ export function BacResolutionWorkspace({
               })
               if (selectedId === idToDelete) {
                 void navigate({
-                  search: (prev: Record<string, unknown>) => ({ ...prev, id: undefined }),
+                  search: (prev: Record<string, unknown>) => ({ ...prev, id: undefined, selectedResolutionId: undefined }),
                   replace: true,
                 })
               }
@@ -301,7 +299,7 @@ export function BacResolutionWorkspace({
               selectedId={selectedId ?? null}
               onSelectId={(id) =>
                 void navigate({
-                  search: (prev: Record<string, unknown>) => ({ ...prev, id }),
+                  search: (prev: Record<string, unknown>) => ({ ...prev, id, selectedResolutionId: id }),
                   replace: true,
                 })
               }

@@ -14,7 +14,7 @@ public class BidderEvaluationInput
 
 public class EvaluateProjectBidsRequest
 {
-    public string AwardCriterion { get; set; } = "LCRB"; // "LCRB" | "MEARB"
+    public string AwardCriterion { get; set; } = string.Empty;
     public decimal? TechnicalWeight { get; set; } // e.g. 70.00
     public decimal? FinancialWeight { get; set; } // e.g. 30.00
     public List<BidderEvaluationInput> Bidders { get; set; } = [];

@@ -4,9 +4,6 @@ import {
   Building2,
   Calculator,
   CheckCircle2,
-  DollarSign,
-  FileText,
-  Info,
   RefreshCw,
   Sparkles,
   UserCheck,
@@ -48,7 +45,7 @@ interface BidEvaluationTabProps {
 
 export function BidEvaluationTab({
   projectId,
-  awardCriterion = 'LCRB',
+  awardCriterion = '',
   technicalWeight,
   financialWeight,
 }: BidEvaluationTabProps) {
@@ -114,6 +111,17 @@ export function BidEvaluationTab({
 
   return (
     <div className="space-y-6">
+      {/* Missing Criterion Warning Banner */}
+      {!activeCriterion && !hasEvaluation && (
+        <Alert variant="outline" className="border-amber-300 bg-amber-50/50 text-amber-900">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-xs font-bold">Authoritative Evaluation Criterion Required</AlertTitle>
+          <AlertDescription className="text-xs mt-1">
+            No bid evaluation criterion has been established for this project. Under RA 12009 (NGPA) / RA 9184, an authoritative criterion (such as LCRB for Goods/Civil Works or MEARB) must be selected before bid evaluation can proceed.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* 1. TOP ACTION & CRITERION SUMMARY */}
       <Card className="border border-default-200 shadow-sm bg-white overflow-hidden">
         <CardHeader className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-default-50/50 border-b border-default-100">
@@ -123,19 +131,32 @@ export function BidEvaluationTab({
                 <Calculator className="h-5 w-5 text-primary" />
                 Authoritative Bid Evaluation & Ranking Matrix
               </CardTitle>
-              <Badge
-                variant="outline"
-                className="font-bold border-purple-200 bg-purple-50 text-purple-700 text-xs shadow-sm"
-              >
-                {activeCriterion === 'MEARB'
-                  ? `MEARB (${activeTechWeight}% Tech / ${activeFinWeight}% Fin)`
-                  : 'LCRB (Lowest Price)'}
-              </Badge>
+              {activeCriterion ? (
+                <Badge
+                  variant="outline"
+                  className="font-bold border-purple-200 bg-purple-50 text-purple-700 text-xs shadow-sm"
+                >
+                  {activeCriterion === 'MEARB'
+                    ? `MEARB (${activeTechWeight}% Tech / ${activeFinWeight}% Fin)`
+                    : activeCriterion === 'LCRB'
+                    ? 'LCRB (Lowest Price)'
+                    : activeCriterion}
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="font-bold border-amber-300 bg-amber-50 text-amber-800 text-xs shadow-sm"
+                >
+                  Criterion Required
+                </Badge>
+              )}
             </div>
             <CardDescription className="text-xs text-muted-foreground">
               {activeCriterion === 'MEARB'
                 ? 'Mathematical ranking by weighted quality-price formula calculated authoritatively on the backend.'
-                : 'Mathematical ranking by lowest evaluated price after arithmetic corrections calculated by the backend.'}
+                : activeCriterion === 'LCRB'
+                ? 'Mathematical ranking by lowest evaluated price after arithmetic corrections calculated by the backend.'
+                : 'An authoritative bid evaluation criterion must be established before executing bid evaluation.'}
             </CardDescription>
           </div>
 

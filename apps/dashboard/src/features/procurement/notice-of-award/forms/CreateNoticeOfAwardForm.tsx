@@ -28,6 +28,7 @@ import {
   FileCode,
   FolderGit2,
   ArrowRight,
+  type LucideIcon,
 } from 'lucide-react'
 
 const createNoticeOfAwardSchema = z.object({
@@ -450,7 +451,7 @@ function ReadOnlyValue({
 }: {
   label: string
   value: string
-  icon?: any
+  icon?: LucideIcon
   variant?: 'default' | 'success' | 'info' | 'warning'
   className?: string
 }) {

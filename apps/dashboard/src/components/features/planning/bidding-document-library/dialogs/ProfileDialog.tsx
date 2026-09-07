@@ -31,6 +31,9 @@ export interface ProfileFormData {
   description: string
   procurementCategory: string
   documentIds: Array<string>
+  itemCount?: number
+  techCount?: number
+  finCount?: number
 }
 
 interface ProfileDialogProps {

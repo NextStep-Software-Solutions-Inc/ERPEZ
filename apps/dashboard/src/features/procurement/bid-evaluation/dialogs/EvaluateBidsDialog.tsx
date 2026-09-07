@@ -31,7 +31,7 @@ interface EvaluateBidsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   projectId: string
-  awardCriterion: 'LCRB' | 'MEARB' | string
+  awardCriterion?: 'LCRB' | 'MEARB' | string
   technicalWeight?: number | null
   financialWeight?: number | null
   admittedSubmissions: Array<BiddingSubmissionResponse>
@@ -58,28 +58,36 @@ export function EvaluateBidsDialog({
 }: EvaluateBidsDialogProps) {
   const evaluateBidsMutation = useEvaluateProjectBids()
 
+  const [selectedCriterion, setSelectedCriterion] = useState<string>(awardCriterion || '')
+  const [techWeight, setTechWeight] = useState<string>(String(technicalWeight ?? 70))
+  const [finWeight, setFinWeight] = useState<string>(String(financialWeight ?? 30))
   const [bidderInputs, setBidderInputs] = useState<Array<BidderInputState>>([])
   const [remarks, setRemarks] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (open && admittedSubmissions.length > 0) {
-      const initialStates: Array<BidderInputState> = admittedSubmissions
-        .filter((s) => s.openingRecord && s.openingRecord.envelope1Result === 'Passed' && s.openingRecord.envelope2Opened)
-        .map((s) => ({
-          bidOpeningRecordId: s.openingRecord!.id,
-          supplierName: s.supplierName,
-          asReadBidAmount: s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount,
-          evaluatedBidPrice: String(s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount),
-          technicalScore: '90',
-          isResponsive: true,
-          nonResponsiveReason: '',
-        }))
-      setBidderInputs(initialStates)
+    if (open) {
+      setSelectedCriterion(awardCriterion || '')
+      setTechWeight(String(technicalWeight ?? 70))
+      setFinWeight(String(financialWeight ?? 30))
+      if (admittedSubmissions.length > 0) {
+        const initialStates: Array<BidderInputState> = admittedSubmissions
+          .filter((s) => s.openingRecord && s.openingRecord.envelope1Result === 'Passed' && s.openingRecord.envelope2Opened)
+          .map((s) => ({
+            bidOpeningRecordId: s.openingRecord!.id,
+            supplierName: s.supplierName,
+            asReadBidAmount: s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount,
+            evaluatedBidPrice: String(s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount),
+            technicalScore: '90',
+            isResponsive: true,
+            nonResponsiveReason: '',
+          }))
+        setBidderInputs(initialStates)
+      }
       setRemarks('')
       setValidationError(null)
     }
-  }, [open, admittedSubmissions])
+  }, [open, awardCriterion, technicalWeight, financialWeight, admittedSubmissions])
 
   const handlePriceChange = (index: number, val: string) => {
     setBidderInputs((prev) => {
@@ -126,6 +134,22 @@ export function EvaluateBidsDialog({
       return
     }
 
+    if (!selectedCriterion || !selectedCriterion.trim()) {
+      setValidationError('Bid evaluation criterion has not been established for this procurement project.')
+      return
+    }
+
+    let tw: number | null = null
+    let fw: number | null = null
+    if (selectedCriterion === 'MEARB') {
+      tw = parseFloat(techWeight)
+      fw = parseFloat(finWeight)
+      if (isNaN(tw) || isNaN(fw) || Math.abs((tw + fw) - 100) > 0.01) {
+        setValidationError('For MEARB, Technical weight and Financial weight must sum to 100%.')
+        return
+      }
+    }
+
     const payloadBidders: Array<BidderEvaluationInputPayload> = []
 
     for (const b of bidderInputs) {
@@ -136,7 +160,7 @@ export function EvaluateBidsDialog({
       }
 
       let techScore: number | null = null
-      if (awardCriterion === 'MEARB') {
+      if (selectedCriterion === 'MEARB') {
         techScore = parseFloat(b.technicalScore)
         if (isNaN(techScore) || techScore < 0 || techScore > 100) {
           setValidationError(`Technical score for ${b.supplierName} must be between 0 and 100.`)
@@ -162,16 +186,16 @@ export function EvaluateBidsDialog({
       await evaluateBidsMutation.mutateAsync({
         projectId,
         data: {
-          awardCriterion,
-          technicalWeight: technicalWeight ?? undefined,
-          financialWeight: financialWeight ?? undefined,
+          awardCriterion: selectedCriterion,
+          technicalWeight: selectedCriterion === 'MEARB' ? (tw ?? undefined) : undefined,
+          financialWeight: selectedCriterion === 'MEARB' ? (fw ?? undefined) : undefined,
           remarks: remarks.trim() ? remarks.trim() : null,
           bidders: payloadBidders,
         },
       })
       onOpenChange(false)
     } catch (err: unknown) {
-      const msg = extractErrorMessage(err as any)
+      const msg = err instanceof Error ? err.message : 'An unexpected error occurred during evaluation.'
       setValidationError(msg)
     }
   }
@@ -193,25 +217,68 @@ export function EvaluateBidsDialog({
                 </DialogDescription>
               </div>
               <Badge variant="outline" className="font-bold bg-white shadow-sm border-purple-200 text-purple-700">
-                Criterion: {awardCriterion === 'MEARB' ? 'MEARB (Weighted)' : 'LCRB (Lowest Price)'}
+                Criterion: {selectedCriterion === 'MEARB' ? 'MEARB (Weighted)' : selectedCriterion === 'LCRB' ? 'LCRB (Lowest Price)' : selectedCriterion || 'Pending Selection'}
               </Badge>
             </div>
           </DialogHeader>
 
           <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-            {/* Criterion context banner */}
-            <div className="p-3.5 rounded-lg bg-default-50 border border-default-200 flex items-start gap-3 text-xs">
-              <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-              <div className="space-y-1 text-default-700">
-                <p className="font-semibold text-default-900">
-                  Authoritative Evaluation Protocol ({awardCriterion}):
-                </p>
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  {awardCriterion === 'MEARB'
-                    ? `Under RA 12009 / RA 9184 MEARB, the backend applies the project's configured weights (${technicalWeight ?? 70}% Technical / ${financialWeight ?? 30}% Financial) and calculates normalized financial scores against the lowest evaluated bid.`
-                    : 'Under LCRB, the backend mathematically ranks all responsive bids strictly by lowest evaluated price after arithmetic corrections.'}
-                </p>
+            {/* Criterion Selection / Configuration */}
+            <div className="p-4 rounded-lg bg-default-50 border border-default-200 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label className="text-xs font-bold text-default-900 flex items-center gap-1.5">
+                    <Info className="h-3.5 w-3.5 text-primary" />
+                    Authoritative Evaluation Criterion <span className="text-destructive">*</span>
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Required under RA 12009 (NGPA) / RA 9184 before bid ranking.
+                  </p>
+                </div>
+                <select
+                  value={selectedCriterion}
+                  onChange={(e) => setSelectedCriterion(e.target.value)}
+                  className="h-8 rounded-md border border-input bg-white px-2.5 py-1 text-xs font-semibold text-default-900 focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+                >
+                  <option value="">-- Select Criterion --</option>
+                  <option value="LCRB">Lowest Calculated Responsive Bid (LCRB)</option>
+                  <option value="MEARB">Most Economically Advantageous Responsive Bid (MEARB)</option>
+                </select>
               </div>
+
+              {selectedCriterion === 'MEARB' && (
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-default-200/70">
+                  <div>
+                    <Label className="text-[11px] font-bold text-default-800">
+                      Technical Weight (%) <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={techWeight}
+                      onChange={(e) => setTechWeight(e.target.value)}
+                      className="h-8 text-xs font-mono mt-1 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-bold text-default-800">
+                      Financial Weight (%) <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={finWeight}
+                      onChange={(e) => setFinWeight(e.target.value)}
+                      className="h-8 text-xs font-mono mt-1 bg-white"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground col-span-2">
+                    Weights must sum to exactly 100% (currently: {(parseFloat(techWeight) || 0) + (parseFloat(finWeight) || 0)}%).
+                  </p>
+                </div>
+              )}
             </div>
 
             {validationError && (
@@ -289,7 +356,7 @@ export function EvaluateBidsDialog({
                     </div>
 
                     {/* Technical Score (for MEARB) */}
-                    {awardCriterion === 'MEARB' ? (
+                    {selectedCriterion === 'MEARB' ? (
                       <div className="space-y-1">
                         <Label htmlFor={`tech-score-${idx}`} className="text-xs font-bold text-default-900">
                           Technical / Quality Score (0–100) <span className="text-destructive">*</span>
@@ -316,7 +383,11 @@ export function EvaluateBidsDialog({
                           Criterion Rule
                         </Label>
                         <div className="h-9 flex items-center px-3 rounded-md bg-default-50 border text-xs text-muted-foreground">
-                          Lowest Price Evaluation (LCRB)
+                          {selectedCriterion === 'LCRB'
+                            ? 'Lowest Price Evaluation (LCRB)'
+                            : selectedCriterion
+                            ? selectedCriterion
+                            : 'Select Criterion Above'}
                         </div>
                       </div>
                     )}

@@ -6,6 +6,7 @@ import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
   selectedResolutionId: z.string().optional(),
+  id: z.string().optional(),
   role: z.enum(['procurement-staff', 'bac-chairperson']).optional(),
 })
 
@@ -25,7 +26,7 @@ function PublicBacResolutionsRoute() {
       message="You do not have permission to view Public Bidding BAC Resolutions."
     >
       <PublicBacResolutionsPage
-        selectedResolutionId={search.selectedResolutionId}
+        selectedResolutionId={search.selectedResolutionId || search.id}
         role={search.role}
       />
     </RoutePermissionGuard>

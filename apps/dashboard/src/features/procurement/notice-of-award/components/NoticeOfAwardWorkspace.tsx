@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  CircleCheckBig,
-  Clock3,
-  FileClock,
-  LayoutList,
-  RotateCcw,
   Award,
   AlertTriangle,
+  RefreshCw,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { PageContainerDashtail } from '@/components/v2'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   approveNoticeOfAwardRequest,
   createNoticeOfAwardRequest,
@@ -25,7 +21,6 @@ import type {
   NoticeOfAwardRole,
 } from '../types'
 import { NoticeOfAwardActionBar } from './NoticeOfAwardActionBar'
-import { NoticeOfAwardSummaryCard } from './NoticeOfAwardSummaryCard'
 import { NoticeOfAwardTable } from './NoticeOfAwardTable'
 import {
   ApproveNoticeOfAwardDialog,
@@ -170,103 +165,6 @@ export function NoticeOfAwardWorkspace({
 
   const overdueSlaCount = slaStates.filter((state) => state.isOverdue).length
 
-  const filterCards = useMemo(() => {
-    if (role === 'hope') {
-      return [
-        {
-          id: 'all' as NoticeOfAwardInboxFilter,
-          title: 'All',
-          count: countAll,
-          icon: LayoutList,
-          colorTheme: 'indigo' as const,
-        },
-        {
-          id: 'for-approval' as NoticeOfAwardInboxFilter,
-          title: 'For Approval',
-          count: countForApproval,
-          icon: Clock3,
-          colorTheme: 'sky' as const,
-        },
-        {
-          id: 'approved' as NoticeOfAwardInboxFilter,
-          title: 'Approved / Issued',
-          count: countApproved,
-          icon: CircleCheckBig,
-          colorTheme: 'emerald' as const,
-        },
-      ]
-    }
-
-    return [
-      {
-        id: 'all' as NoticeOfAwardInboxFilter,
-        title: 'All',
-        count: countAll,
-        icon: LayoutList,
-        colorTheme: 'indigo' as const,
-      },
-      {
-        id: 'draft' as NoticeOfAwardInboxFilter,
-        title: 'Draft',
-        count: countDraft,
-        icon: FileClock,
-        colorTheme: 'slate' as const,
-      },
-      {
-        id: 'for-approval' as NoticeOfAwardInboxFilter,
-        title: 'For Approval',
-        count: countForApproval,
-        icon: Clock3,
-        colorTheme: 'sky' as const,
-      },
-      {
-        id: 'returned' as NoticeOfAwardInboxFilter,
-        title: 'Returned',
-        count: countReturned,
-        icon: RotateCcw,
-        colorTheme: 'rose' as const,
-      },
-      {
-        id: 'approved' as NoticeOfAwardInboxFilter,
-        title: 'Approved / Issued',
-        count: countApproved,
-        icon: CircleCheckBig,
-        colorTheme: 'emerald' as const,
-      },
-    ]
-  }, [
-    role,
-    countAll,
-    countDraft,
-    countForApproval,
-    countReturned,
-    countApproved,
-  ])
-
-  const handleRefreshSelected = (updated: NoticeOfAward) => {
-    setNoticesOfAward((current) =>
-      current.map((item) => (item.id === updated.id ? updated : item)),
-    )
-    setSelectedNoaId(updated.id)
-  }
-
-  if (isLoading) {
-    return (
-      <PageContainerDashtail
-        title={title}
-        description={description}
-        headerVariant="branded"
-        headerSize="large"
-      >
-        <Card className="border-default-200/70 shadow-sm">
-          <CardContent className="p-6 text-sm text-default-600">
-            Loading NOA records...
-          </CardContent>
-        </Card>
-      </PageContainerDashtail>
-    )
-  }
-
   const handleOpenCreate = async () => {
     try {
       const resolutions = await getAvailableAwardBacResolutionsRequest.fetcher()
@@ -277,70 +175,51 @@ export function NoticeOfAwardWorkspace({
     setCreateOpen(true)
   }
 
-  return (
-    <PageContainerDashtail
-      title={title}
-      description={description}
-      headerVariant="branded"
-      headerSize="large"
-      actions={
-        <div className="flex flex-wrap items-center gap-2">
-          {totalAwardedValue > 0 && (
-            <Badge
-              variant="outline"
-              className="h-8 px-3 py-1 font-semibold text-xs border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/40 shadow-xs"
-            >
-              Total Awarded: ₱{totalAwardedValue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </Badge>
-          )}
-          {role === 'procurement-staff' ? (
-            <Badge variant="outline" className="h-8 px-3 py-1 font-semibold text-xs border-primary/30 text-primary-700 bg-primary/5 shadow-xs">
-              <Award className="h-3.5 w-3.5 mr-1.5 text-primary" /> Notice of Award
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="h-8 px-3 py-1 font-semibold text-xs border-primary/30 text-primary-700 bg-primary/5 shadow-xs">
-              <Award className="h-3.5 w-3.5 mr-1.5 text-primary" /> Approver Queue
-            </Badge>
-          )}
-        </div>
-      }
-      contentClassName="space-y-4 pt-4"
-    >
-      {/* Interactive Compact Status Filter Cards */}
-      <div
-        className={`grid gap-3 grid-cols-2 sm:grid-cols-3 ${
-          role === 'hope' ? 'lg:grid-cols-3' : 'lg:grid-cols-5'
-        }`}
-      >
-        {filterCards.map((card) => (
-          <NoticeOfAwardSummaryCard
-            key={card.id}
-            id={card.id}
-            title={card.title}
-            count={card.count}
-            icon={card.icon}
-            isSelected={activeFilter === card.id}
-            onClick={() => setActiveFilter(card.id)}
-            colorTheme={card.colorTheme}
-          />
-        ))}
+  if (isLoading && noticesOfAward.length === 0) {
+    return (
+      <div className="w-full h-64 flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="h-7 w-7 animate-spin text-primary" />
+        <p className="text-xs text-muted-foreground">Loading Notice of Award records...</p>
       </div>
+    )
+  }
 
-      {role !== 'hope' && overdueSlaCount > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 dark:border-rose-900 bg-rose-50/90 dark:bg-rose-950/40 px-4 py-2.5 text-xs text-rose-800 dark:text-rose-300 shadow-xs">
-          <div className="flex items-center gap-2 font-medium">
-            <AlertTriangle className="h-4 w-4 text-rose-600" />
-            <span>
-              <strong className="font-bold">{overdueSlaCount}</strong> NOA contract execution SLA
-              {overdueSlaCount === 1 ? ' is' : 's are'} overdue.
-            </span>
+  return (
+    <div className="w-full space-y-6">
+      {/* 1. HEADER CARD (No purple feature name header; clean gradient display design) */}
+      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 shadow-sm overflow-hidden relative">
+        <CardHeader className="py-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="space-y-2">
+              <CardTitle className="text-3xl font-extrabold tracking-tight text-default-900">
+                {title}
+              </CardTitle>
+              <CardDescription className="text-base text-muted-foreground max-w-3xl">
+                {description}
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {totalAwardedValue > 0 && (
+                <Badge
+                  variant="outline"
+                  className="h-fit px-3 py-1 font-semibold border-emerald-300 text-emerald-800 bg-emerald-50/90 shadow-sm"
+                >
+                  Total Awarded: ₱{totalAwardedValue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Badge>
+              )}
+              <Badge
+                variant="outline"
+                className="h-fit px-3 py-1 font-semibold border-primary/30 text-primary-700 bg-primary/5 shadow-sm"
+              >
+                <Award className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                {role === 'hope' ? 'Approver Queue' : 'BAC Public Bidding Workspace'}
+              </Badge>
+            </div>
           </div>
-          <div className="text-rose-700 dark:text-rose-400">
-            Review the record and log a justification or trigger the next-ranked bidder cascade.
-          </div>
-        </div>
-      ) : null}
+        </CardHeader>
+      </Card>
 
+      {/* 2. WORKSPACE CONTROLS & SEARCH */}
       <NoticeOfAwardActionBar
         search={search}
         onSearchChange={setSearch}
@@ -348,12 +227,115 @@ export function NoticeOfAwardWorkspace({
           role === 'procurement-staff' ? 'Create NOA' : undefined
         }
         onPrimaryAction={handleOpenCreate}
+        onRefresh={() => void loadNoticesOfAward()}
+        isLoading={isLoading}
       />
 
+      {/* 3. NON-DISMISSABLE COMPLIANCE WARNING BANNER */}
+      {role !== 'hope' && overdueSlaCount > 0 ? (
+        <Alert variant="outline" color="destructive" className="border-destructive/30 bg-destructive/5 text-destructive animate-in fade-in slide-in-from-top-1">
+          <AlertTriangle className="h-5 w-5 text-destructive animate-bounce" />
+          <div>
+            <AlertTitle className="font-bold text-sm text-destructive-900">🚨 COMPLIANCE ALERT: Contract Execution SLA Overdue</AlertTitle>
+            <AlertDescription className="text-xs text-destructive-800 mt-1 space-y-1">
+              <p>
+                There {overdueSlaCount === 1 ? 'is' : 'are'} <strong>{overdueSlaCount} Notice of Award record{overdueSlaCount === 1 ? '' : 's'}</strong> exceeding the statutory 10-calendar-day contract execution window.
+                Review the records immediately to log legal justifications or initiate next-ranked bidder forfeiture procedures under RA 9184 / RA 12009.
+              </p>
+            </AlertDescription>
+          </div>
+        </Alert>
+      ) : null}
+
+      {/* 4. 4-COLUMN KPI METRIC BRIEF */}
+      <div className="grid gap-4 md:grid-cols-4">
+        {/* Governing Law */}
+        <Card className="border border-default-200 shadow-sm bg-white border-l-4 border-l-blue-500 hover:translate-y-[-2px] transition-all duration-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Governing Law</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-extrabold text-default-900">
+              RA 9184 / RA 12009
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Execution SLA: <span className="font-semibold text-blue-600">10 Calendar Days</span>
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Award Basis */}
+        <Card className="border border-default-200 shadow-sm bg-white border-l-4 border-l-purple-500 hover:translate-y-[-2px] transition-all duration-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Award Basis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-extrabold text-default-900">
+              LCRB / MEARB
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Approved BAC Resolution Award
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Total Awarded Value */}
+        <Card className="border border-default-200 shadow-sm bg-white border-l-4 border-l-amber-500 hover:translate-y-[-2px] transition-all duration-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Awarded Value</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-extrabold text-default-900">
+              ₱{totalAwardedValue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Across {countApproved} approved contract award{countApproved === 1 ? '' : 's'}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Statutory Compliance */}
+        <Card className={`border border-default-200 shadow-sm bg-white border-l-4 hover:translate-y-[-2px] transition-all duration-200 ${
+          overdueSlaCount === 0 ? 'border-l-emerald-500' : 'border-l-rose-500'
+        }`}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Statutory Compliance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Badge
+                variant="outline"
+                className={`font-bold ${
+                  overdueSlaCount === 0
+                    ? 'border-emerald-300 text-emerald-700 bg-emerald-50'
+                    : 'border-rose-300 text-rose-700 bg-rose-50'
+                }`}
+              >
+                {overdueSlaCount === 0 ? 'All Compliant' : `${overdueSlaCount} SLA Overdue`}
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {overdueSlaCount === 0 ? 'All active NOAs within 10-day window' : 'SLA exception logged for audit review'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 5. DATA TABLE (WITH INTEGRATED STATUS FILTERS) */}
       <NoticeOfAwardTable
         rows={filteredNoticesOfAward}
         detailsTo={detailsTo}
         onCreateClick={role === 'procurement-staff' ? handleOpenCreate : undefined}
+        activeStatus={activeFilter}
+        onStatusChange={setActiveFilter}
+        statusCounts={{
+          all: countAll,
+          draft: countDraft,
+          forApproval: countForApproval,
+          returned: countReturned,
+          approved: countApproved,
+        }}
+        role={role}
       />
 
       <CreateNoticeOfAwardDialog
@@ -425,6 +407,7 @@ export function NoticeOfAwardWorkspace({
           }}
         />
       ) : null}
-    </PageContainerDashtail>
+    </div>
   )
 }
+

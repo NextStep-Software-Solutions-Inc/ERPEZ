@@ -5,6 +5,17 @@
 
 // ─── Core Response DTOs ────────────────────────────────────────────────────────
 
+export interface ApplicationDocumentDto {
+  id: string
+  checklistItemId: string
+  name: string
+  url: string
+  type: string
+  size?: number
+  uploadedAt?: string
+  envelopeType: number
+}
+
 export interface BiddingSubmissionResponse {
   id: string
   procurementProjectId: string
@@ -21,14 +32,7 @@ export interface BiddingSubmissionResponse {
   submittedAt: string
   remarks?: string | null
   openingRecord?: BidOpeningRecordResponse | null
-  documents?: Array<{
-    id: string
-    checklistItemId: string
-    name: string
-    url: string
-    type: string
-    envelopeType: number
-  }>
+  documents?: Array<ApplicationDocumentDto>
 }
 
 export interface BidOpeningRecordResponse {
@@ -76,6 +80,7 @@ export interface BiddingEvaluatedBidResponse {
   isResponsive: boolean
   nonResponsiveReason?: string | null
   postQualification?: BiddingPostQualificationResponse | null
+  documents?: Array<ApplicationDocumentDto>
 }
 
 export interface BiddingAwardRecommendationResponse {

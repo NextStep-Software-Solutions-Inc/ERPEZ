@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearch, useNavigate } from '@tanstack/react-router'
 import api from '@/services/api'
@@ -28,6 +28,19 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { PublicBiddingProject, SupplierBid } from '../types'
+
+interface ApiProjectItem {
+  id: string
+  title?: string
+  abc?: number
+  contractNo?: string
+  status?: string
+  bidEvaluationCriteria?: string
+  appItem?: {
+    bidEvaluationCriteria?: string
+  }
+}
 
 export function BidEvaluationPage() {
   const search = useSearch({ strict: false }) as { projectId?: string }
@@ -40,19 +53,23 @@ export function BidEvaluationPage() {
     resetProject,
   } = useBidEvaluationStore()
 
-  const { data: realProjects = [] } = useQuery({
+  const { data: realProjects = [] } = useQuery<PublicBiddingProject[]>({
     queryKey: ['bac-projects-for-evaluation'],
     queryFn: async () => {
-      const res = await api.get('/bac/projects?pageSize=50')
-      const items = res.data?.data?.items || res.data?.data || []
-      return items.map((p: any) => ({
+      const res = await api.get<{ data?: { items?: ApiProjectItem[] } | ApiProjectItem[] }>('/bac/projects?pageSize=50')
+      const rawData = res.data?.data
+      const items: ApiProjectItem[] = Array.isArray(rawData)
+        ? rawData
+        : (rawData?.items ?? [])
+
+      return items.map((p): PublicBiddingProject => ({
         id: p.id,
         projectName: p.title || 'Untitled Project',
         abc: Number(p.abc || 0),
         resolutionNumber: p.contractNo || (p.id ? p.id.substring(0, 8) : 'BAC-PROJ'),
-        governingLaw: 'RA_9184' as const,
-        awardCriterion: 'LCRB' as const,
-        projectStatus: (p.status === 'Approved' ? 'Approved' : 'Active') as any,
+        governingLaw: 'RA_9184',
+        awardCriterion: p.appItem?.bidEvaluationCriteria || p.bidEvaluationCriteria || undefined,
+        projectStatus: p.status === 'Approved' ? 'Approved' : 'Active',
         suppliers: [],
       }))
     },
@@ -60,7 +77,7 @@ export function BidEvaluationPage() {
   })
 
   // Combine real projects with mock projects (real projects first)
-  const combinedProjects = useMemo(() => {
+  const combinedProjects: Array<PublicBiddingProject> = useMemo(() => {
     if (realProjects.length > 0) return realProjects
     return projects
   }, [realProjects, projects])
@@ -101,7 +118,7 @@ export function BidEvaluationPage() {
     const nowMs = Date.now()
     const overdueList: Array<{ supplierName: string; type: 'Bidder' | 'BAC'; days: number }> = []
 
-    ;(activeProject.suppliers || []).forEach((sup: any) => {
+    ;(activeProject.suppliers || []).forEach((sup: SupplierBid) => {
       if (sup.status === 'LCB_Notified' && sup.lcbNoticeSentDate) {
         const startMs = new Date(sup.lcbNoticeSentDate).getTime()
         const limitMs = BIDDER_SLA_DAYS * 24 * 60 * 60 * 1000
@@ -233,12 +250,20 @@ export function BidEvaluationPage() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-extrabold text-default-900">
-              {activeProject.awardCriterion === 'LCRB' ? 'LCRB (Lowest Price)' : 'MEARB (Weighted Total)'}
+              {activeProject.awardCriterion === 'LCRB'
+                ? 'LCRB (Lowest Price)'
+                : activeProject.awardCriterion === 'MEARB'
+                ? 'MEARB (Weighted Total)'
+                : activeProject.awardCriterion
+                ? activeProject.awardCriterion
+                : 'Not Established'}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
               {activeProject.awardCriterion === 'MEARB' 
-                ? `Split: ${activeProject.technicalWeight}% Tech / ${activeProject.financialWeight}% Fin` 
-                : 'Criteria: Lowest Financial Bid'}
+                ? `Split: ${activeProject.technicalWeight ?? 70}% Tech / ${activeProject.financialWeight ?? 30}% Fin` 
+                : activeProject.awardCriterion === 'LCRB'
+                ? 'Criteria: Lowest Financial Bid'
+                : 'Criterion established during evaluation'}
             </p>
           </CardContent>
         </Card>

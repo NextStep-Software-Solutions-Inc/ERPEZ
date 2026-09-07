@@ -112,7 +112,7 @@ export function NoticeOfAwardDetailsPage({
     <PageContainerDashtail
       title={noticeOfAward.noaNumber}
       description={noticeOfAward.description}
-      headerVariant="branded"
+      headerVariant="default"
       headerSize="large"
       actions={
         <div className="flex flex-wrap items-center gap-2">

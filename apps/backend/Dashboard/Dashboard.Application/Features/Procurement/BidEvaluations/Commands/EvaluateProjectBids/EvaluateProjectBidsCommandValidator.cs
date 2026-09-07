@@ -10,9 +10,7 @@ public class EvaluateProjectBidsCommandValidator : AbstractValidator<EvaluatePro
             .NotEmpty().WithMessage("Project ID is required.");
 
         RuleFor(x => x.Request.AwardCriterion)
-            .Must(c => string.Equals(c, "LCRB", System.StringComparison.OrdinalIgnoreCase) || 
-                       string.Equals(c, "MEARB", System.StringComparison.OrdinalIgnoreCase))
-            .WithMessage("Award criterion must be either 'LCRB' or 'MEARB'.");
+            .NotEmpty().WithMessage("Bid evaluation criterion has not been established for this procurement project.");
 
         RuleFor(x => x.Request.Bidders)
             .NotEmpty().WithMessage("At least one bidder is required for evaluation.");
