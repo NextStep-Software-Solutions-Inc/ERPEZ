@@ -23,6 +23,21 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
+export function safeFormatDate(
+  dateStr?: string | null,
+  formatPattern = 'MMM d, yyyy',
+): string {
+  if (!dateStr) return '—'
+  try {
+    const raw = dateStr.includes('T') ? dateStr : dateStr.split(' ')[0]
+    const parsed = parseISO(raw)
+    if (isNaN(parsed.getTime())) return dateStr
+    return format(parsed, formatPattern)
+  } catch {
+    return dateStr
+  }
+}
+
 export interface BiddingMasterCalendarProjectListItem {
   bacResolutionId: string
   bacResolutionNumber: string
@@ -176,7 +191,7 @@ export function DrawerProjectDetailTab({
               IB posting date
             </div>
             <div className="mt-1 text-lg font-semibold">
-              {format(parseISO(selectedSchedule.ibPostingDate), 'MMM d, yyyy')}
+              {safeFormatDate(selectedSchedule?.ibPostingDate)}
             </div>
           </div>
           <div className="rounded-xl border border-default-200 bg-default-50/50 p-4">
@@ -184,8 +199,8 @@ export function DrawerProjectDetailTab({
               Schedule generated
             </div>
             <div className="mt-1 text-lg font-semibold">
-              {format(parseISO(selectedSchedule.createdAt), 'MMM d, yyyy')} •{' '}
-              {selectedSchedule.createdBy}
+              {safeFormatDate(selectedSchedule?.createdAt)} •{' '}
+              {selectedSchedule?.createdBy || 'BAC Secretariat'}
             </div>
           </div>
         </div>
@@ -224,7 +239,7 @@ export function DrawerProjectDetailTab({
                   </Badge>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {format(parseISO(event.eventDate), 'MMM d, yyyy')}
+                  {safeFormatDate(event.eventDate)}
                   {event.eventTime ? ` • ${event.eventTime}` : ''}
                 </div>
               </div>
@@ -258,7 +273,7 @@ export function DrawerMilestonesTab({
                 </Badge>
               </div>
               <div className="text-sm text-muted-foreground">
-                {format(parseISO(event.eventDate), 'MMM d, yyyy')}
+                {safeFormatDate(event.eventDate)}
                 {event.eventTime ? ` • ${event.eventTime}` : ''}
               </div>
             </div>
@@ -315,7 +330,7 @@ export function DrawerConflictsTab({
         >
           <CardHeader className="pb-3">
             <CardTitle className="text-base text-amber-900">
-              {format(parseISO(conflict.date), 'MMM d, yyyy')} •{' '}
+              {safeFormatDate(conflict.date)} •{' '}
               {conflict.milestoneName}
             </CardTitle>
           </CardHeader>
@@ -374,7 +389,7 @@ export function DrawerNotificationsTab({
               </div>
               <div className="text-muted-foreground">
                 {event.milestoneName} should have completed on{' '}
-                {format(parseISO(event.eventDate), 'MMM d, yyyy')}.
+                {safeFormatDate(event.eventDate)}.
               </div>
             </div>
           </CardContent>
@@ -390,7 +405,7 @@ export function DrawerNotificationsTab({
               </div>
               <div className="text-muted-foreground">
                 {event.milestoneName} is scheduled for{' '}
-                {format(parseISO(event.eventDate), 'MMM d, yyyy')}.
+                {safeFormatDate(event.eventDate)}.
               </div>
             </div>
           </CardContent>
@@ -438,7 +453,7 @@ export function DrawerAuditLogTab({ auditEntries }: DrawerAuditLogTabProps) {
               <div className="font-semibold">{entry.label}</div>
               <div className="text-muted-foreground">
                 {entry.actor} •{' '}
-                {format(parseISO(entry.timestamp), 'MMM d, yyyy h:mm a')}
+                {safeFormatDate(entry.timestamp, 'MMM d, yyyy h:mm a')}
               </div>
               {entry.note ? (
                 <div className="text-muted-foreground">{entry.note}</div>

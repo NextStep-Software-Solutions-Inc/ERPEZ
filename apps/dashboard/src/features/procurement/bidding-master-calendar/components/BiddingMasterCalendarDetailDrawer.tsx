@@ -10,6 +10,7 @@ import {
   DrawerMilestonesTab,
   DrawerNotificationsTab,
   DrawerProjectDetailTab,
+  safeFormatDate,
 } from './BiddingMasterCalendarDetailDrawerPanels'
 import type { BacResolution } from '../../bac-resolution/types'
 import type { BiddingSchedule } from '../../bidding-schedule/types'
@@ -122,7 +123,7 @@ export function BiddingMasterCalendarDetailDrawer({
               </SheetTitle>
               <SheetDescription>
                 {selectedResolution
-                  ? `${selectedResolution.resolutionNumber ?? selectedResolution.id} • ${selectedResolution.dateResolved ? format(parseISO(selectedResolution.dateResolved), 'MMM d, yyyy') : ''}`
+                  ? `${selectedResolution.resolutionNumber ?? selectedResolution.id} • ${safeFormatDate(selectedResolution.dateResolved)}`
                   : 'Select a project from the calendar to inspect its schedule context.'}
               </SheetDescription>
             </div>
@@ -146,7 +147,7 @@ export function BiddingMasterCalendarDetailDrawer({
         </SheetHeader>
 
         <div className="px-6 py-5">
-          {!selectedResolution || !selectedSchedule || !selectedEvent ? (
+          {!selectedEvent ? (
             <Card className="border border-dashed border-default-300 shadow-sm">
               <CardContent className="py-12 text-center text-sm text-muted-foreground">
                 Select a calendar item to open project detail, milestones,
