@@ -16,26 +16,15 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "Users",
                 type: "text",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.Sql(@"
-                UPDATE planning.""Users""
-                SET ""ExternalIdentityId"" = CASE
-                    WHEN ""Username"" IS NOT NULL AND ""Username"" <> ''
-                         AND ""Username"" NOT IN (SELECT u.""Username"" FROM planning.""Users"" u GROUP BY u.""Username"" HAVING COUNT(*) > 1)
-                    THEN ""Username""
-                    ELSE ""Id""::text
-                END
-                WHERE ""ExternalIdentityId"" = '' OR ""ExternalIdentityId"" IS NULL;
-            ");
+                nullable: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_ExternalIdentityId",
                 schema: "planning",
                 table: "Users",
                 column: "ExternalIdentityId",
-                unique: true);
+                unique: true,
+                filter: "\"ExternalIdentityId\" IS NOT NULL");
         }
 
         /// <inheritdoc />

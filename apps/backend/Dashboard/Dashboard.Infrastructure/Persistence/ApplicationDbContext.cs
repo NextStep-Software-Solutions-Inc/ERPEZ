@@ -217,7 +217,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // User
         modelBuilder.Entity<User>()
             .HasIndex(u => u.ExternalIdentityId)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"ExternalIdentityId\" IS NOT NULL");
 
         //KPI
         modelBuilder.Entity<KPI>()
