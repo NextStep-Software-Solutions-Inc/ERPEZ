@@ -23,6 +23,7 @@ import {
   GripVertical,
   PackageCheck,
   Layers,
+  AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -110,6 +111,7 @@ export const EditBacResolutionForm = forwardRef<
     const [isWhereasExpanded, setIsWhereasExpanded] = useState(true)
     const [isNowThereforeExpanded, setIsNowThereforeExpanded] = useState(false)
     const [isResolvedExpanded, setIsResolvedExpanded] = useState(false)
+    const [showClauseErrors, setShowClauseErrors] = useState(false)
 
     // Load clauses for picker
     const { data: resolutionClausesData, isPending: isClausesPending } =
@@ -227,6 +229,20 @@ export const EditBacResolutionForm = forwardRef<
       onSubmit: async ({ value }) => {
         setIsSubmitting(true)
         setSubmitError(null)
+
+        const missingWhereas = whereasClauses.length === 0
+        const missingNowTherefore = nowThereforeClauses.length === 0
+        const missingResolved = resolvedClauses.length === 0
+
+        if (missingWhereas || missingNowTherefore || missingResolved) {
+          setShowClauseErrors(true)
+          if (missingWhereas) setIsWhereasExpanded(true)
+          if (missingNowTherefore) setIsNowThereforeExpanded(true)
+          if (missingResolved) setIsResolvedExpanded(true)
+          setIsSubmitting(false)
+          toast.error('Please add at least one clause for Whereas, Now Therefore, and Resolved sections.')
+          return
+        }
 
         try {
           const payload: UpdateBacProjectPayload = {
@@ -569,12 +585,17 @@ export const EditBacResolutionForm = forwardRef<
             onOpenPicker={() => setPickerModalType('Whereas')}
             onOpenCreate={() => setCreateModalType('Whereas')}
             onChangeItems={setWhereasClauses}
+            errorMessage={
+              showClauseErrors && whereasClauses.length === 0
+                ? 'At least one WHEREAS clause is required.'
+                : null
+            }
           />
 
           <EditClauseSection
             title="NOW, THEREFORE Clauses"
             description="Committee premise and transition clauses."
-            badgeRequired={false}
+            badgeRequired={true}
             items={nowThereforeClauses}
             clausesMap={allClausesMap}
             isExpanded={isNowThereforeExpanded}
@@ -582,12 +603,17 @@ export const EditBacResolutionForm = forwardRef<
             onOpenPicker={() => setPickerModalType('NowTherefore')}
             onOpenCreate={() => setCreateModalType('NowTherefore')}
             onChangeItems={setNowThereforeClauses}
+            errorMessage={
+              showClauseErrors && nowThereforeClauses.length === 0
+                ? 'At least one NOW, THEREFORE clause is required.'
+                : null
+            }
           />
 
           <EditClauseSection
             title="RESOLVED Clauses"
             description="Final resolution decisions and award recommendations."
-            badgeRequired={false}
+            badgeRequired={true}
             items={resolvedClauses}
             clausesMap={allClausesMap}
             isExpanded={isResolvedExpanded}
@@ -595,6 +621,11 @@ export const EditBacResolutionForm = forwardRef<
             onOpenPicker={() => setPickerModalType('Resolved')}
             onOpenCreate={() => setCreateModalType('Resolved')}
             onChangeItems={setResolvedClauses}
+            errorMessage={
+              showClauseErrors && resolvedClauses.length === 0
+                ? 'At least one RESOLVED clause is required.'
+                : null
+            }
           />
         </div>
 
@@ -666,6 +697,7 @@ interface EditClauseSectionProps {
   onOpenPicker: () => void
   onOpenCreate: () => void
   onChangeItems: (items: { resolutionClauseId: string; order: number }[]) => void
+  errorMessage?: string | null
 }
 
 function EditClauseSection({
@@ -679,6 +711,7 @@ function EditClauseSection({
   onOpenPicker,
   onOpenCreate,
   onChangeItems,
+  errorMessage,
 }: EditClauseSectionProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
@@ -733,7 +766,12 @@ function EditClauseSection({
   }
 
   return (
-    <div className="rounded-lg border border-default-200 bg-white overflow-hidden shadow-xs">
+    <div
+      className={cn(
+        'rounded-lg border bg-white overflow-hidden shadow-xs transition-colors',
+        errorMessage ? 'border-destructive/50 ring-1 ring-destructive/20' : 'border-default-200',
+      )}
+    >
       <div
         onClick={onToggleExpand}
         className="p-3.5 bg-default-50/70 flex items-center justify-between cursor-pointer select-none hover:bg-default-100/70 transition-colors"
@@ -781,10 +819,21 @@ function EditClauseSection({
             onClick={onToggleExpand}
             className="h-7 w-7 text-muted-foreground"
           >
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="mx-3.5 my-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-2 text-xs text-destructive font-medium shadow-2xs">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       {isExpanded && (
         <div className="p-4 space-y-3 border-t border-default-200">
