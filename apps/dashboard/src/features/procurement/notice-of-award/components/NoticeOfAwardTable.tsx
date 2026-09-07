@@ -303,7 +303,7 @@ export function NoticeOfAwardTable({
 
   return (
     <Card className="border border-default-200 shadow-sm bg-white overflow-hidden">
-      <CardHeader className="py-4 border-b border-default-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <CardHeader className="py-4 border-b border-default-100 flex flex-row items-center justify-between">
         <div className="space-y-0.5">
           <CardTitle className="text-base font-bold text-default-900 flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary" /> Notice of Award Records & Statutory SLAs
@@ -312,39 +312,6 @@ export function NoticeOfAwardTable({
             Official records of issued NOAs, winning bidders, awarded values, and 10-day execution milestones.
           </CardDescription>
         </div>
-
-        {onStatusChange && (
-          <div className="flex flex-wrap items-center gap-1.5 bg-default-100/90 p-1 rounded-lg border border-default-200/80">
-            {filterOptions.map((opt) => {
-              const isSelected = activeStatus === opt.id
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => onStatusChange(opt.id)}
-                  className={cn(
-                    'px-2.5 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer',
-                    isSelected
-                      ? 'bg-white text-default-900 shadow-xs border border-default-200'
-                      : 'text-muted-foreground hover:text-default-800 hover:bg-default-200/50'
-                  )}
-                >
-                  <span>{opt.label}</span>
-                  <span
-                    className={cn(
-                      'text-[10px] px-1.5 py-0.2 rounded-full font-bold',
-                      isSelected
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-default-200/80 text-muted-foreground'
-                    )}
-                  >
-                    {opt.count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        )}
       </CardHeader>
 
       <CardContent className="p-0">
