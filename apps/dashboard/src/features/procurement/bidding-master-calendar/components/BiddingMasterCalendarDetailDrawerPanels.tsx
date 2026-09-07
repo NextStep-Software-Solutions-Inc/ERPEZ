@@ -58,8 +58,8 @@ interface AuditEntry {
 
 interface DrawerProjectDetailTabProps {
   projectOverride: { contractId?: string } | undefined
-  selectedResolution: BacResolution
-  selectedSchedule: BiddingSchedule
+  selectedResolution: BacResolution | null
+  selectedSchedule: BiddingSchedule | null
   selectedEvent: BiddingMasterCalendarEvent
   selectedEvents: Array<BiddingMasterCalendarEvent>
 }
