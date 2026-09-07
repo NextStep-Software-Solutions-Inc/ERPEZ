@@ -41,6 +41,12 @@ public class ProcurementActivityType : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; } = true;
     
+    [Sieve(CanFilter = true, CanSort = true)]
+    public int DisplayOrder { get; set; } = 0;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? MilestoneKey { get; set; }
+
     // Navigation properties
     public virtual List<APPProcurementSchedule> APPProcurementSchedules { get; set; } = [];
 }

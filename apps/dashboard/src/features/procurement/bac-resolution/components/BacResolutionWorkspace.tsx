@@ -83,6 +83,7 @@ export function BacResolutionWorkspace({
   // Filter & Queue Search States
   const [searchValue, setSearchValue] = useState('')
   const [filter, setFilter] = useState<BacResolutionInboxFilter>(defaultFilter)
+  const [procurementModeFilter, setProcurementModeFilter] = useState<'all' | 'public-bidding' | 'alternative-methods'>('all')
   const [sourceTypeFilter, setSourceTypeFilter] = useState<'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'>('all')
   const [budgetTier, setBudgetTier] = useState<'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'>('all')
   const [customMinBudget, setCustomMinBudget] = useState<number | null>(null)
@@ -92,6 +93,7 @@ export function BacResolutionWorkspace({
   const resetAllFilters = () => {
     setSearchValue('')
     setFilter('all')
+    setProcurementModeFilter('all')
     setSourceTypeFilter('all')
     setBudgetTier('all')
     setCustomMinBudget(null)
@@ -307,6 +309,8 @@ export function BacResolutionWorkspace({
               setSearchValue={setSearchValue}
               filter={filter}
               setFilter={setFilter}
+              procurementModeFilter={procurementModeFilter}
+              setProcurementModeFilter={setProcurementModeFilter}
               sourceTypeFilter={sourceTypeFilter}
               setSourceTypeFilter={setSourceTypeFilter}
               budgetTier={budgetTier}

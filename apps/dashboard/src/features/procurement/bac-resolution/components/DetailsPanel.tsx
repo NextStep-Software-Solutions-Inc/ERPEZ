@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import {
   FileText,
   ScrollText,
@@ -13,6 +14,7 @@ import {
   Trash2,
   AlertTriangle,
   Calendar,
+  CalendarRange,
   History,
   Link as LinkIcon,
   CheckCircle2,
@@ -39,10 +41,11 @@ import api from '@/services/api'
 import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
 import { generateBACResolutionDocumentRequest } from '../handlers/generateBacResolutionDocumentRequest'
 import { downloadBacResolutionDocumentRequest } from '../handlers/downloadBacResolutionDocumentRequest'
-import { useApproveBacResolution, useReturnBacResolution } from '../handlers/hooks'
 import { ApproveBacResolutionDialog } from '../dialogs/ApproveBacResolutionDialog'
 import { ReturnBacResolutionDialog } from '../dialogs/ReturnBacResolutionDialog'
 import type { ApproveBacResolutionFormValues } from '../forms/ApproveBacResolutionForm'
+import { isBacProjectReadyForScheduling } from '../utils/bacResolutionWorkflow'
+import { useApproveBacResolution, useReturnBacResolution } from '../handlers'
 
 const useBacResolution = createQueryHookFromTemplate(getBacResolutionRequest)
 const useGenerateBACResolutionDocument = createMutationHookFromTemplate(
@@ -72,7 +75,7 @@ export function DetailsPanel({
   role,
   isLoading = false,
   onEdit,
-  onLinkPrs,
+  onLinkPrs: _onLinkPrs,
   onPrint,
   onSubmit,
   onCreatePr,
@@ -152,7 +155,8 @@ export function DetailsPanel({
         returnBacResolution(
           {
             payload: values,
-            pathParams: { id: selectedId || '' }
+            pathParams: { id: selectedId || '' },
+            queryParams: { id: selectedId || '' }
           },
           {
             onSuccess: async () => {
@@ -349,8 +353,21 @@ export function DetailsPanel({
 
   const activeWhereasList = whereasClauseLinks.length > 0 ? whereasClauseLinks : legacyWhereasClauses
 
-  const activityLog: BacResolutionLogEntry[] =
-    []
+  const activityLog: BacResolutionLogEntry[] = (selectedProject.approvalEvents || []).map((e) => ({
+    id: e.id,
+    action: e.action === 'Approved' ? 'BAC Resolution Approved' : e.action === 'Returned' ? 'BAC Resolution Returned' : e.action,
+    actor: e.actorName ? `${e.actorName}${e.role ? ` (${e.role})` : ''}` : (e.role || 'System'),
+    timestamp: new Date(e.timestamp).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    note: e.remarks || (e.attachmentFileId ? 'Signed resolution document attached' : null),
+  }))
+
+  const isReadyForScheduling = isBacProjectReadyForScheduling(selectedProject)
 
   return (
     <div className="space-y-4">
@@ -365,10 +382,15 @@ export function DetailsPanel({
                   {resolutionNumber}
                 </span>
                 <BacResolutionStatusBadge status={status} />
-                {isApproved && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border border-teal-400 text-teal-600 bg-teal-50/70">
+                {isReadyForScheduling && selectedId && (
+                  <Link
+                    to="/v2/bac-resolutions/$resolutionId/bidding-schedule"
+                    params={{ resolutionId: selectedId }}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border border-teal-400 text-teal-700 bg-teal-50 hover:bg-teal-100 hover:border-teal-500 transition-colors shadow-2xs"
+                  >
+                    <CalendarRange className="h-3 w-3 text-teal-600" />
                     Ready for Scheduling
-                  </span>
+                  </Link>
                 )}
               </div>
               <h2 className="text-lg font-bold text-foreground line-clamp-2">
@@ -378,6 +400,23 @@ export function DetailsPanel({
 
             {/* Quick Actions in Header Banner */}
             <div className="flex flex-wrap items-center gap-2">
+              {selectedId && isReadyForScheduling && (
+                <Button
+                  asChild
+                  size="sm"
+                  variant="default"
+                  className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-white shadow-xs"
+                >
+                  <Link
+                    to="/v2/bac-resolutions/$resolutionId/bidding-schedule"
+                    params={{ resolutionId: selectedId }}
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    Bidding Schedule
+                  </Link>
+                </Button>
+              )}
+
               {onEdit && (
                 <Button
                   size="sm"
@@ -904,6 +943,36 @@ export function DetailsPanel({
                     </p>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-default-200 shadow-sm">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  Bidding Activity Timeline & Schedule
+                </CardTitle>
+                {selectedId && (
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/5"
+                  >
+                    <Link
+                      to="/v2/bac-resolutions/$resolutionId/bidding-schedule"
+                      params={{ resolutionId: selectedId }}
+                    >
+                      <CalendarRange className="h-3.5 w-3.5" />
+                      Open Schedule Workspace
+                    </Link>
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <p className="text-xs text-muted-foreground">
+                  Manage the legally compliant RA 9184 bidding milestones, computed dates, overrides, and calendar tracking for this resolution.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>

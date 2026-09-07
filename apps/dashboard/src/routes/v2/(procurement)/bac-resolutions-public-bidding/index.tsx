@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
 import { PublicBacResolutionsPage } from '@/features/procurement/bac-resolution/pages'
 import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'

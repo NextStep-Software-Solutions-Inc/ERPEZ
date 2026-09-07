@@ -16,8 +16,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "Users",
                 type: "text",
-                nullable: false,
-                defaultValue: "");
+                nullable: true);
 
             migrationBuilder.Sql("UPDATE planning.\"Users\" SET \"ExternalIdentityId\" = \"Id\"::text WHERE \"ExternalIdentityId\" = '' OR \"ExternalIdentityId\" IS NULL;");
 
@@ -26,7 +25,8 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "Users",
                 column: "ExternalIdentityId",
-                unique: true);
+                unique: true,
+                filter: "\"ExternalIdentityId\" IS NOT NULL");
         }
 
         /// <inheritdoc />

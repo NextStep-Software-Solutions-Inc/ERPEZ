@@ -1,142 +1,111 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, type UseMutationResult } from '@tanstack/react-query'
 import {
-  confirmScheduleRequest,
-  createBiddingScheduleRequest,
-  fetchBiddingScheduleRequest,
-  lockScheduleRequest,
-  regenerateBiddingScheduleRequest,
-  setMilestoneCompletionRequest,
+  createMutationHookFromTemplate,
+  createQueryHookFromTemplate,
+} from 'erpez-shared-lib'
+import { getBiddingScheduleRequest } from './getBiddingScheduleRequest'
+import { generateScheduleRequest } from './generateScheduleRequest'
+import { regenerateScheduleRequest } from './regenerateScheduleRequest'
+import { updateMilestoneRequest } from './updateMilestoneRequest'
+import { setMilestoneCompletionRequest } from './setMilestoneCompletionRequest'
+import { confirmScheduleRequest } from './confirmScheduleRequest'
+import { lockScheduleRequest } from './lockScheduleRequest'
+
+export const biddingScheduleQueryKeys = [
+  ['/bac/resolutions'],
+  ['bidding-schedule'],
+  ['/bac/calendar-events'],
+  ['bac/calendar-events'],
+] as const
+
+type MutationResult<TData, TVariables> = UseMutationResult<
+  TData,
+  unknown,
+  TVariables,
+  unknown
+>
+
+function makeBiddingScheduleMutationWithRefresh<TData, TVariables>(
+  baseHook: () => MutationResult<TData, TVariables>,
+) {
+  return function useMutationWithRefresh(): MutationResult<TData, TVariables> {
+    const queryClient = useQueryClient()
+    const mutation = baseHook()
+
+    const invalidateSchedulesAndCalendar = () => {
+      void Promise.all(
+        biddingScheduleQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      )
+    }
+
+    return {
+      ...mutation,
+      mutate: ((variables, options) => {
+        mutation.mutate(variables, {
+          ...options,
+          onSuccess: (data, mutationVariables, onMutateResult, context) => {
+            options?.onSuccess?.(data, mutationVariables, onMutateResult, context)
+            invalidateSchedulesAndCalendar()
+          },
+        })
+      }) as MutationResult<TData, TVariables>['mutate'],
+      mutateAsync: (async (variables, options) => {
+        const result = await mutation.mutateAsync(variables, options)
+        invalidateSchedulesAndCalendar()
+        return result
+      }) as MutationResult<TData, TVariables>['mutateAsync'],
+    }
+  }
+}
+
+export const useBiddingSchedule = createQueryHookFromTemplate(
+  getBiddingScheduleRequest,
+)
+
+const useGenerateScheduleBase = createMutationHookFromTemplate(
+  generateScheduleRequest,
+)
+export const useGenerateSchedule = makeBiddingScheduleMutationWithRefresh(
+  useGenerateScheduleBase,
+)
+export const useCreateBiddingSchedule = useGenerateSchedule
+
+const useRegenerateScheduleBase = createMutationHookFromTemplate(
+  regenerateScheduleRequest,
+)
+export const useRegenerateSchedule = makeBiddingScheduleMutationWithRefresh(
+  useRegenerateScheduleBase,
+)
+export const useRegenerateBiddingSchedule = useRegenerateSchedule
+
+const useUpdateMilestoneBase = createMutationHookFromTemplate(
   updateMilestoneRequest,
-} from './index'
-import type { UseMutationResult, UseQueryResult } from '@tanstack/react-query'
-import type {
-  BiddingSchedule,
-  ConfirmSchedulePayload,
-  CreateSchedulePayload,
-  LockSchedulePayload,
-  RegenerateSchedulePayload,
-  SetMilestoneCompletionPayload,
-  UpdateMilestonePayload,
-} from '../types'
+)
+export const useUpdateMilestone = makeBiddingScheduleMutationWithRefresh(
+  useUpdateMilestoneBase,
+)
 
-// ─── Query keys ───────────────────────────────────────────────────────────────
+const useSetMilestoneCompletionBase = createMutationHookFromTemplate(
+  setMilestoneCompletionRequest,
+)
+export const useSetMilestoneCompletion = makeBiddingScheduleMutationWithRefresh(
+  useSetMilestoneCompletionBase,
+)
 
-export const biddingScheduleQueryKey = (bacResolutionId: string) =>
-  ['bidding-schedule', bacResolutionId] as const
+const useConfirmScheduleBase = createMutationHookFromTemplate(
+  confirmScheduleRequest,
+)
+export const useConfirmSchedule = makeBiddingScheduleMutationWithRefresh(
+  useConfirmScheduleBase,
+)
+export const useConfirmBiddingSchedule = useConfirmSchedule
 
-// ─── Query hooks ──────────────────────────────────────────────────────────────
-
-export function useBiddingSchedule(
-  bacResolutionId: string,
-): UseQueryResult<BiddingSchedule | null> {
-  return useQuery({
-    queryKey: biddingScheduleQueryKey(bacResolutionId),
-    queryFn: () => fetchBiddingScheduleRequest(bacResolutionId),
-    enabled: !!bacResolutionId,
-  })
-}
-
-// ─── Mutation hooks ───────────────────────────────────────────────────────────
-
-export function useCreateBiddingSchedule(): UseMutationResult<
-  BiddingSchedule,
-  unknown,
-  CreateSchedulePayload
-> {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: createBiddingScheduleRequest,
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: biddingScheduleQueryKey(variables.bacResolutionId),
-      })
-    },
-  })
-}
-
-export function useRegenerateBiddingSchedule(): UseMutationResult<
-  BiddingSchedule,
-  unknown,
-  RegenerateSchedulePayload
-> {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: regenerateBiddingScheduleRequest,
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: biddingScheduleQueryKey(variables.bacResolutionId),
-      })
-    },
-  })
-}
-
-export function useUpdateMilestone(): UseMutationResult<
-  void,
-  unknown,
-  UpdateMilestonePayload
-> {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: updateMilestoneRequest,
-    onSuccess: () => {
-      // TODO: when backed by a real API, include bacResolutionId in the
-      // UpdateMilestonePayload so we can narrow the invalidation to
-      // biddingScheduleQueryKey(bacResolutionId) instead of the full prefix.
-      // Tracked in dashboard/docs/BIDDING_SCHEDULE_BACKLOG.md.
-      // scheduleId alone is insufficient to derive bacResolutionId here,
-      // so invalidate all bidding-schedule queries for now.
-      void queryClient.invalidateQueries({ queryKey: ['bidding-schedule'] })
-    },
-  })
-}
-
-export function useSetMilestoneCompletion(): UseMutationResult<
-  void,
-  unknown,
-  SetMilestoneCompletionPayload & { bacResolutionId: string }
-> {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ bacResolutionId: _id, ...payload }) =>
-      setMilestoneCompletionRequest(payload),
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: biddingScheduleQueryKey(variables.bacResolutionId),
-      })
-    },
-  })
-}
-
-export function useConfirmBiddingSchedule(): UseMutationResult<
-  void,
-  unknown,
-  ConfirmSchedulePayload & { bacResolutionId: string }
-> {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ bacResolutionId: _id, ...payload }) =>
-      confirmScheduleRequest(payload),
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: biddingScheduleQueryKey(variables.bacResolutionId),
-      })
-    },
-  })
-}
-
-export function useLockBiddingSchedule(): UseMutationResult<
-  void,
-  unknown,
-  LockSchedulePayload & { bacResolutionId: string }
-> {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ bacResolutionId: _id, ...payload }) =>
-      lockScheduleRequest(payload),
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: biddingScheduleQueryKey(variables.bacResolutionId),
-      })
-    },
-  })
-}
+const useLockScheduleBase = createMutationHookFromTemplate(
+  lockScheduleRequest,
+)
+export const useLockSchedule = makeBiddingScheduleMutationWithRefresh(
+  useLockScheduleBase,
+)
+export const useLockBiddingSchedule = useLockSchedule
