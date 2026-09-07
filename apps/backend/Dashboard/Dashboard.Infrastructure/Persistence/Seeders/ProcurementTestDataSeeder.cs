@@ -243,7 +243,10 @@ public static class ProcurementTestDataSeeder
         await context.SaveChangesAsync();
 
         // 7. Supplier Categories & Approved Suppliers (Supplier Registry)
-        var ictSupplierCat = await context.SupplierCategories!.FirstOrDefaultAsync(sc => sc.Name.Contains("Information") || sc.Name.Contains("ICT"));
+        var ictSupplierCat = await context.SupplierCategories!.FirstOrDefaultAsync(sc => 
+            sc.Name == "Information & Communications Technology (ICT)" || 
+            sc.Name.Contains("Information") || 
+            sc.Name.Contains("ICT"));
         if (ictSupplierCat == null)
         {
             ictSupplierCat = new SupplierCategory
@@ -255,7 +258,9 @@ public static class ProcurementTestDataSeeder
             await context.SupplierCategories!.AddAsync(ictSupplierCat);
         }
 
-        var officeSuppliesCat = await context.SupplierCategories!.FirstOrDefaultAsync(sc => sc.Name.Contains("Office Supplies"));
+        var officeSuppliesCat = await context.SupplierCategories!.FirstOrDefaultAsync(sc => 
+            sc.Name == "Office Supplies & Devices" || 
+            sc.Name.Contains("Office Supplies"));
         if (officeSuppliesCat == null)
         {
             officeSuppliesCat = new SupplierCategory
@@ -267,7 +272,10 @@ public static class ProcurementTestDataSeeder
             await context.SupplierCategories!.AddAsync(officeSuppliesCat);
         }
 
-        var generalServicesCat = await context.SupplierCategories!.FirstOrDefaultAsync(sc => sc.Name.Contains("General Services"));
+        var generalServicesCat = await context.SupplierCategories!.FirstOrDefaultAsync(sc => 
+            sc.Name == "General Merchandise & Catering" || 
+            sc.Name.Contains("General Merchandise") || 
+            sc.Name.Contains("General Services"));
         if (generalServicesCat == null)
         {
             generalServicesCat = new SupplierCategory

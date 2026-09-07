@@ -16,11 +16,13 @@ namespace ERPEZ.Dashboard.Application.UnitTests.Features.Procurement.Commands.Cr
 public class CreateProcurementProjectCommandHandlerTests
 {
     private readonly Mock<IUnitOfWork> mockUnitOfWork = new();
+    private readonly Mock<IAPPRepository> mockAppRepo = new();
     private readonly Mock<IAPPItemRepository> mockAppItemRepo = new();
     private readonly Mock<IProcurementProjectRepository> mockProjectRepo = new();
 
     public CreateProcurementProjectCommandHandlerTests()
     {
+        mockUnitOfWork.Setup(u => u.APPRepository).Returns(mockAppRepo.Object);
         mockUnitOfWork.Setup(u => u.APPItemRepository).Returns(mockAppItemRepo.Object);
         mockUnitOfWork.Setup(u => u.ProcurementProjectRepository).Returns(mockProjectRepo.Object);
     }
@@ -28,13 +30,19 @@ public class CreateProcurementProjectCommandHandlerTests
     [Fact]
     public async Task Handle_AppItemSource_WithoutAbcPayload_InheritsAppItemEffectiveAbc()
     {
+        var appId = Guid.NewGuid();
         var appItemId = Guid.NewGuid();
         var appItem = new APPItem
         {
             Id = appItemId,
+            APPId = appId,
             EstimatedBudgetOverride = 250000m,
             Remarks = "Test Procurement Line"
         };
+
+        mockAppRepo
+            .Setup(r => r.GetByIdAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new APP { Id = appId, APPNumber = "APP-2026-001" });
 
         mockAppItemRepo
             .Setup(r => r.GetWithDetailsAsync(appItemId, It.IsAny<CancellationToken>()))
@@ -54,6 +62,7 @@ public class CreateProcurementProjectCommandHandlerTests
         var command = new CreateProcurementProjectCommand
         {
             SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = appId,
             APPItemId = appItemId,
             ABC = null,
             ResolutionNumber = "BAC-RES-2026-001"
@@ -67,15 +76,107 @@ public class CreateProcurementProjectCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_AppItemSource_MultiApp_CalculatesTotalAbcAndLinksAllItems()
+    {
+        var app1Id = Guid.NewGuid();
+        var app2Id = Guid.NewGuid();
+        var item1Id = Guid.NewGuid();
+        var item2Id = Guid.NewGuid();
+
+        var item1 = new APPItem { Id = item1Id, APPId = app1Id, EstimatedBudgetOverride = 150000m };
+        var item2 = new APPItem { Id = item2Id, APPId = app2Id, EstimatedBudgetOverride = 200000m };
+
+        mockAppRepo
+            .Setup(r => r.GetByIdAsync(app1Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new APP { Id = app1Id, APPNumber = "APP-2026-001" });
+        mockAppRepo
+            .Setup(r => r.GetByIdAsync(app2Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new APP { Id = app2Id, APPNumber = "APP-2026-002" });
+
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(item1Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item1);
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(item2Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item2);
+
+        mockProjectRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<ProcurementProject, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProcurementProject?)null);
+
+        ProcurementProject? savedProject = null;
+        mockProjectRepo
+            .Setup(r => r.AddAsync(It.IsAny<ProcurementProject>(), It.IsAny<CancellationToken>()))
+            .Callback<ProcurementProject, CancellationToken>((p, _) => savedProject = p)
+            .Returns(Task.CompletedTask);
+
+        var handler = new CreateProcurementProjectCommandHandler(mockUnitOfWork.Object);
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPIds = new List<Guid> { app1Id, app2Id },
+            APPItemIds = new List<Guid> { item1Id, item2Id },
+            ResolutionNumber = "BAC-RES-2026-MULTI"
+        };
+
+        var response = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(response.Succeeded);
+        Assert.NotNull(savedProject);
+        Assert.Equal(350000m, savedProject!.ABC);
+        Assert.Equal("Consolidated APP Project (2 Items)", savedProject.Title);
+        Assert.Equal(2, savedProject.APPItemLinks.Count);
+    }
+
+    [Fact]
+    public async Task Handle_AppItemSource_AppItemDoesNotBelongToSelectedApps_FailsValidation()
+    {
+        var app1Id = Guid.NewGuid();
+        var app2Id = Guid.NewGuid();
+        var item1Id = Guid.NewGuid();
+
+        // item belongs to app2, but command only selected app1
+        var item1 = new APPItem { Id = item1Id, APPId = app2Id, EstimatedBudgetOverride = 150000m };
+
+        mockAppRepo
+            .Setup(r => r.GetByIdAsync(app1Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new APP { Id = app1Id, APPNumber = "APP-2026-001" });
+
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(item1Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item1);
+
+        var handler = new CreateProcurementProjectCommandHandler(mockUnitOfWork.Object);
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPIds = new List<Guid> { app1Id },
+            APPItemIds = new List<Guid> { item1Id },
+            ResolutionNumber = "BAC-RES-2026-INVALID"
+        };
+
+        var response = await handler.Handle(command, CancellationToken.None);
+
+        Assert.False(response.Succeeded);
+        Assert.Contains("does not belong to any of the selected APPs", response.Message);
+    }
+
+    [Fact]
     public async Task Handle_AppItemSource_WithConflictingAbcPayloadOverride_FailsValidation()
     {
+        var appId = Guid.NewGuid();
         var appItemId = Guid.NewGuid();
         var appItem = new APPItem
         {
             Id = appItemId,
+            APPId = appId,
             EstimatedBudgetOverride = 250000m,
             Remarks = "Test Procurement Line"
         };
+
+        mockAppRepo
+            .Setup(r => r.GetByIdAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new APP { Id = appId, APPNumber = "APP-2026-001" });
 
         mockAppItemRepo
             .Setup(r => r.GetWithDetailsAsync(appItemId, It.IsAny<CancellationToken>()))
@@ -89,6 +190,7 @@ public class CreateProcurementProjectCommandHandlerTests
         var command = new CreateProcurementProjectCommand
         {
             SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = appId,
             APPItemId = appItemId,
             ABC = 300000m,
             ResolutionNumber = "BAC-RES-2026-002"
@@ -103,15 +205,21 @@ public class CreateProcurementProjectCommandHandlerTests
     [Fact]
     public async Task Handle_WithWhereasClauseIds_PopulatesWhereasClauseItemsWithOrder()
     {
+        var appId = Guid.NewGuid();
         var appItemId = Guid.NewGuid();
         var appItem = new APPItem
         {
             Id = appItemId,
+            APPId = appId,
             EstimatedBudgetOverride = 100000m,
             Remarks = "Test Item"
         };
         var clauseId1 = Guid.NewGuid();
         var clauseId2 = Guid.NewGuid();
+
+        mockAppRepo
+            .Setup(r => r.GetByIdAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new APP { Id = appId, APPNumber = "APP-2026-001" });
 
         mockAppItemRepo
             .Setup(r => r.GetWithDetailsAsync(appItemId, It.IsAny<CancellationToken>()))
@@ -137,6 +245,7 @@ public class CreateProcurementProjectCommandHandlerTests
         var command = new CreateProcurementProjectCommand
         {
             SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = appId,
             APPItemId = appItemId,
             ResolutionNumber = "BAC-RES-2026-003",
             ResolvedLocation = "BAC Conference Room",

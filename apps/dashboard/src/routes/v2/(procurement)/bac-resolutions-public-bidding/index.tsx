@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
 import { PublicBacResolutionsPage } from '@/features/procurement/bac-resolution/pages'
 import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
@@ -6,6 +6,7 @@ import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
   selectedResolutionId: z.string().optional(),
+  id: z.string().optional(),
   role: z.enum(['procurement-staff', 'bac-chairperson']).optional(),
 })
 

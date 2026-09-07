@@ -118,12 +118,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementMode>? ProcurementModes { get; set; }
     public DbSet<ProcurementModeThreshold>? ProcurementModeThresholds { get; set; }
     public DbSet<ProcurementProject>? ProcurementProjects { get; set; }
+    public DbSet<ProcurementProjectApprovalEvent>? ProcurementProjectApprovalEvents { get; set; }
     public DbSet<ProcurementProjectAPPItem>? ProcurementProjectAPPItems { get; set; }
     public DbSet<BACResolution>? BACResolutions { get; set; }
     public DbSet<BACResolutionWhereasClauseItem>? BACResolutionWhereasClauseItems { get; set; }
     public DbSet<BACResolutionClauseLink>? BACResolutionClauseLinks { get; set; }
     public DbSet<BACMember>? BACMembers { get; set; }
     public DbSet<BiddingActivitySchedule>? BiddingActivitySchedules { get; set; }
+    public DbSet<PublicHoliday>? PublicHolidays { get; set; }
     public DbSet<SupplierBid>? SupplierBids { get; set; }
     public DbSet<SupplierBidItem>? SupplierBidItems { get; set; }
     public DbSet<AOB>? AOBs { get; set; }
@@ -198,6 +200,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PsdbmStockHistory>? PsdbmStockHistories { get; set; }
     public DbSet<PsdbmSyncRun>? PsdbmSyncRuns { get; set; }
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -209,7 +217,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // User
         modelBuilder.Entity<User>()
             .HasIndex(u => u.ExternalIdentityId)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"ExternalIdentityId\" IS NOT NULL");
 
         //KPI
         modelBuilder.Entity<KPI>()
@@ -3375,6 +3384,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(link => link.ResolutionClauseId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // BiddingActivitySchedule
+        modelBuilder.Entity<BiddingActivitySchedule>(entity =>
+        {
+            entity.HasOne(s => s.BACResolution)
+                .WithMany()
+                .HasForeignKey(s => s.BACResolutionId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 

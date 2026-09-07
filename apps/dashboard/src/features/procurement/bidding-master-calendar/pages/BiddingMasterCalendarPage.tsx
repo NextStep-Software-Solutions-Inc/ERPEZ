@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { format, startOfMonth, endOfMonth } from 'date-fns'
+import { format } from 'date-fns'
 import { CalendarRange, Download, FileSpreadsheet, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 import { BiddingMasterCalendarAgendaView } from '../components/BiddingMasterCalendarAgendaView'
@@ -12,20 +12,18 @@ import { BiddingMasterCalendarMonthView } from '../components/BiddingMasterCalen
 import { BiddingMasterCalendarSummary } from '../components/BiddingMasterCalendarSummary'
 import { useBiddingMasterCalendarData } from '../hooks'
 import { useSetMilestoneCompletion } from '../../bidding-schedule/handlers/hooks'
-import { MOCK_CURRENT_USER } from '../../bidding-schedule/hooks/useBiddingScheduleWorkspaceState'
 import {
   type BiddingMasterCalendarDrawerTab,
   DEFAULT_BIDDING_MASTER_CALENDAR_FILTERS,
   type BiddingMasterCalendarFilters,
   type BiddingMasterCalendarEvent,
-  BiddingMasterCalendarSummaryMetrics,
 } from '../types'
+import { DEFAULT_OFFICER_NAME } from '../../bidding-schedule/types'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageContainerDashtail } from '@/components/v2'
-import api from '@/services/api'
 import {
   exportCalendarAgendaPrint,
   exportCalendarAgendaTable,
@@ -48,19 +46,6 @@ const MASTER_CALENDAR_TABS = [
 const DEFAULT_DRAWER_TAB: BiddingMasterCalendarDrawerTab = 'project-detail'
 const DRAWER_TAB_STORAGE_KEY = 'procurement.master-bac-calendar.drawer-tab'
 
-interface CalendarEvent {
-  id: string
-  projectId: string
-  projectTitle: string
-  procurementActivityTypeId: string
-  procurementActivityTypeName: string
-  startDate: string
-  endDate: string
-  venue: string
-  status: string
-  remarks: string
-}
-
 interface BiddingMasterCalendarPageProps {
   selectedResolutionId?: string
   selectedEventId?: string
@@ -79,7 +64,6 @@ export function BiddingMasterCalendarPage({
     DEFAULT_BIDDING_MASTER_CALENDAR_FILTERS,
   )
   const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [refreshToken, setRefreshToken] = useState(0)
   const [previewEvent, setPreviewEvent] =
     useState<BiddingMasterCalendarEvent | null>(null)
   const [rememberedDrawerTab, setRememberedDrawerTab] =
@@ -88,106 +72,11 @@ export function BiddingMasterCalendarPage({
       DEFAULT_DRAWER_TAB,
     )
   const deferredFilters = useDeferredValue(filters)
-  const calendarData = useBiddingMasterCalendarData(
-    deferredFilters,
-    refreshToken,
-  )
+  const calendarData = useBiddingMasterCalendarData(deferredFilters)
   const {
     mutateAsync: setMilestoneCompletion,
     isPending: isUpdatingMilestoneStatus,
   } = useSetMilestoneCompletion()
-
-  const [apiEvents, setApiEvents] = useState<CalendarEvent[]>([])
-  const [apiSummary, setApiSummary] = useState<BiddingMasterCalendarSummaryMetrics>({
-    totalSchedules: 0,
-    totalVisibleMilestones: 0,
-    conflictDays: 0,
-    overloadedDays: 0,
-    dueSoonItems: 0,
-    overdueItems: 0,
-  })
-  const [isLoadingApi, setIsLoadingApi] = useState(false)
-
-  useEffect(() => {
-    let active = true
-    const fetchApiEvents = async () => {
-      setIsLoadingApi(true)
-      try {
-        const from = startOfMonth(currentMonth).toISOString()
-        const to = endOfMonth(currentMonth).toISOString()
-        const response = await api.get<any>(
-          `/bac/calendar-events?From=${encodeURIComponent(from)}&To=${encodeURIComponent(to)}`
-        )
-        if (active && response.data?.succeeded) {
-          const rawData = response.data.data
-          const events = rawData && Array.isArray(rawData.events)
-            ? rawData.events
-            : (Array.isArray(rawData) ? rawData : [])
-          setApiEvents(events)
-
-          if (rawData && rawData.summary) {
-            setApiSummary({
-              totalSchedules: rawData.summary.activeSchedules ?? 0,
-              totalVisibleMilestones: rawData.summary.visibleMilestones ?? 0,
-              conflictDays: rawData.summary.conflictDays ?? 0,
-              overloadedDays: rawData.summary.overloadedDays ?? 0,
-              dueSoonItems: rawData.summary.dueSoon ?? 0,
-              overdueItems: rawData.summary.overdue ?? 0,
-            })
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching calendar events:', error)
-      } finally {
-        if (active) {
-          setIsLoadingApi(false)
-        }
-      }
-    }
-    fetchApiEvents()
-    return () => {
-      active = false
-    }
-  }, [currentMonth, refreshToken])
-
-  const mappedApiEvents = useMemo<BiddingMasterCalendarEvent[]>(() => {
-    const events = Array.isArray(apiEvents) ? apiEvents : []
-    return events.map((evt) => ({
-      id: evt.id,
-      bacResolutionId: evt.projectId,
-      bacResolutionNumber: evt.status || 'Pending',
-      scheduleId: evt.projectId,
-      scheduleStatus: 'confirmed',
-      fiscalYear: '2026',
-      procurementCategory: 'goods',
-      projectNames: [evt.projectTitle],
-      primaryProjectName: evt.projectTitle,
-      officeLabel: evt.venue || 'N/A',
-      linkedCprCount: 0,
-      milestoneId: evt.procurementActivityTypeId,
-      milestoneKey: evt.procurementActivityTypeId,
-      milestoneName: evt.procurementActivityTypeName,
-      milestoneOrder: 0,
-      eventDate: evt.startDate,
-      eventTime: format(new Date(evt.startDate), 'HH:mm'),
-      isEdited: false,
-      executionStatus: 'pending',
-      sourceType: 'confirmed',
-      derivedProjectStatus: 'in-progress',
-      appTargetMonth: null,
-      isDueSoon: false,
-      isOverdue: false,
-      isProvisional: false,
-    }))
-  }, [apiEvents])
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setRefreshToken((value) => value + 1)
-    }, 30000)
-
-    return () => window.clearInterval(intervalId)
-  }, [])
 
   const visibleMonthBuckets = useMemo(
     () =>
@@ -205,108 +94,25 @@ export function BiddingMasterCalendarPage({
     }
   }, [drawerTab, rememberedDrawerTab, setRememberedDrawerTab])
 
-  const selectedEvent = useMemo(
-    () => {
-      if (!selectedEventId) return null
-      const apiEvt = mappedApiEvents.find((event) => event.id === selectedEventId)
-      if (apiEvt) return apiEvt
-      return calendarData.events.find((event) => event.id === selectedEventId) ?? null
-    },
-    [calendarData.events, mappedApiEvents, selectedEventId],
-  )
+  const selectedEvent = useMemo(() => {
+    if (!selectedEventId) return null
+    return (
+      calendarData.events.find((event) => event.id === selectedEventId) ?? null
+    )
+  }, [calendarData.events, selectedEventId])
+
   const effectiveSelectedResolutionId =
     selectedResolutionId ?? selectedEvent?.bacResolutionId ?? null
-  const selectedResolution = useMemo(
-    () => {
-      if (!effectiveSelectedResolutionId) return null
-      const found = calendarData.resolutions.find(
-        (resolution) => resolution.id === effectiveSelectedResolutionId,
-      )
-      if (found) return found
 
-      const apiEvt = mappedApiEvents.find((e) => e.bacResolutionId === effectiveSelectedResolutionId)
-      if (apiEvt) {
-        return {
-          id: apiEvt.bacResolutionId,
-          bacResolutionNumber: apiEvt.bacResolutionNumber,
-          resolutionDate: apiEvt.eventDate,
-          description: apiEvt.primaryProjectName,
-          resolvedDateText: '',
-          resolvedLocationText: apiEvt.officeLabel,
-          whereasClauses: [],
-          provisionalMembers: [],
-          status: 'approved',
-          createdBy: 'System',
-          createdAt: apiEvt.eventDate,
-          updatedAt: apiEvt.eventDate,
-          totalAmount: 0,
-          linkedConsolidatedPrs: [],
-          activityLog: [],
-        } as any
-      }
-      return null
-    },
-    [calendarData.resolutions, effectiveSelectedResolutionId, mappedApiEvents],
-  )
-  const selectedSchedule = useMemo(
-    () => {
-      if (!effectiveSelectedResolutionId) return null
-      const found = calendarData.sourceSchedules.find(
-        (schedule) => schedule.bacResolutionId === effectiveSelectedResolutionId,
-      )
-      if (found) return found
+  const selectedEvents = useMemo(() => {
+    if (!effectiveSelectedResolutionId) return []
+    return calendarData.events.filter(
+      (event) => event.bacResolutionId === effectiveSelectedResolutionId,
+    )
+  }, [calendarData.events, effectiveSelectedResolutionId])
 
-      const apiEvt = mappedApiEvents.find((e) => e.bacResolutionId === effectiveSelectedResolutionId)
-      if (apiEvt) {
-        return {
-          id: apiEvt.bacResolutionId,
-          bacResolutionId: apiEvt.bacResolutionId,
-          bacResolutionNumber: apiEvt.bacResolutionNumber,
-          procurementCategory: 'goods',
-          ibPostingDate: apiEvt.eventDate,
-          status: 'confirmed',
-          milestones: [
-            {
-              id: apiEvt.id,
-              order: 0,
-              milestoneKey: apiEvt.milestoneKey,
-              name: apiEvt.milestoneName,
-              computedDate: apiEvt.eventDate,
-              overrideDate: null,
-              time: apiEvt.eventTime,
-              status: 'auto-generated',
-              isEdited: false,
-              completedAt: null,
-              completedBy: null,
-              editHistory: [],
-            }
-          ],
-          createdBy: 'System',
-          createdAt: apiEvt.eventDate,
-          confirmedAt: apiEvt.eventDate,
-          confirmedBy: 'System',
-          lockedAt: null,
-          lockedBy: null,
-        } as any
-      }
-      return null
-    },
-    [calendarData.sourceSchedules, effectiveSelectedResolutionId, mappedApiEvents],
-  )
-  const selectedEvents = useMemo(
-    () => {
-      if (!effectiveSelectedResolutionId) return []
-      const foundList = calendarData.events.filter(
-        (event) => event.bacResolutionId === effectiveSelectedResolutionId,
-      )
-      if (foundList.length > 0) return foundList
-
-      const apiEvts = mappedApiEvents.filter((e) => e.bacResolutionId === effectiveSelectedResolutionId)
-      return apiEvts
-    },
-    [calendarData.events, effectiveSelectedResolutionId, mappedApiEvents],
-  )
   const effectiveSelectedEvent = selectedEvent ?? selectedEvents[0] ?? null
+
   const conflictGroups = useMemo(
     () =>
       calendarData.agendaGroups.flatMap(
@@ -314,6 +120,7 @@ export function BiddingMasterCalendarPage({
       ),
     [calendarData.agendaGroups],
   )
+
   const projectConflicts = useMemo(
     () =>
       effectiveSelectedResolutionId
@@ -326,6 +133,7 @@ export function BiddingMasterCalendarPage({
         : [],
     [conflictGroups, effectiveSelectedResolutionId],
   )
+
   const allProjects = useMemo(() => {
     const grouped = new Map<string, BiddingMasterCalendarEvent[]>()
 
@@ -354,7 +162,7 @@ export function BiddingMasterCalendarPage({
             leadEvent?.bacResolutionNumber ?? bacResolutionId,
           projectTitle: leadEvent?.primaryProjectName ?? bacResolutionId,
           procurementCategory:
-            leadEvent?.procurementCategory ?? 'goods-and-services',
+            leadEvent?.procurementCategory ?? 'goods',
           derivedProjectStatus: nextStage?.derivedProjectStatus ?? 'upcoming',
           nextStageLabel: nextStage
             ? `${nextStage.milestoneName} • ${format(new Date(nextStage.eventDate), 'MMM d')}`
@@ -403,7 +211,7 @@ export function BiddingMasterCalendarPage({
     }
 
     void navigate({
-      to: '/v2/bac-resolutions-public-bidding/$resolutionId/bidding-schedule',
+      to: '/v2/bac-resolutions/$resolutionId/bidding-schedule',
       params: { resolutionId: effectiveSelectedEvent.bacResolutionId },
       search: { highlightMilestoneKey: effectiveSelectedEvent.milestoneKey },
     })
@@ -415,16 +223,15 @@ export function BiddingMasterCalendarPage({
     }
 
     void navigate({
-      to: '/v2/bidding-documents/$bacResolutionId',
-      params: { bacResolutionId: effectiveSelectedResolutionId },
+      to: '/v2/bidding-documents',
     })
   }
 
   const handleOpenBacResolutions = () => {
     void navigate({
-      to: '/v2/bac-resolutions-public-bidding',
+      to: '/v2/bac-resolutions',
       search: {
-        selectedResolutionId: effectiveSelectedResolutionId ?? undefined,
+        id: effectiveSelectedResolutionId ?? undefined,
       },
     })
   }
@@ -435,11 +242,17 @@ export function BiddingMasterCalendarPage({
   ) => {
     try {
       await setMilestoneCompletion({
-        scheduleId: event.scheduleId,
-        milestoneId: event.milestoneId,
-        completed,
-        updatedBy: MOCK_CURRENT_USER,
-        bacResolutionId: event.bacResolutionId,
+        pathParams: {
+          scheduleId: event.scheduleId,
+          milestoneId: event.milestoneId,
+        },
+        payload: {
+          scheduleId: event.scheduleId,
+          milestoneId: event.milestoneId,
+          completed,
+          updatedBy: DEFAULT_OFFICER_NAME,
+          bacResolutionId: event.bacResolutionId,
+        },
       })
       toast.success(
         completed
@@ -529,10 +342,10 @@ export function BiddingMasterCalendarPage({
       }
       contentClassName="space-y-4 pt-4"
     >
-      <BiddingMasterCalendarSummary summary={apiSummary} />
+      <BiddingMasterCalendarSummary summary={calendarData.summary} />
 
       <BiddingMasterCalendarAlertBanner
-        summary={apiSummary}
+        summary={calendarData.summary}
         dayBuckets={calendarData.dayBuckets}
         conflictGroups={conflictGroups}
       />
@@ -556,8 +369,7 @@ export function BiddingMasterCalendarPage({
               selectedEventId={selectedEventId ?? null}
               onPreviewMilestone={setPreviewEvent}
               onOpenMilestone={handleOpenMilestone}
-              apiEvents={apiEvents}
-              isLoading={isLoadingApi}
+              isLoading={calendarData.isLoading}
             />
           ) : (
             <BiddingMasterCalendarAgendaView
@@ -595,16 +407,13 @@ export function BiddingMasterCalendarPage({
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>
-                Confirmed and locked schedules are recalculated from the shared
-                store.
+                Confirmed and locked schedules are updated from the backend.
               </p>
               <p>
-                Derived statuses and due-soon buckets are reevaluated every 30
-                seconds.
+                Milestone completion and schedule mutations instantly invalidate and refresh both schedule and calendar views.
               </p>
               <p>
-                Milestone click-through opens the TC-01 workspace with row
-                highlighting.
+                Milestone click-through opens the workspace with row highlighting.
               </p>
             </CardContent>
           </Card>
@@ -614,8 +423,8 @@ export function BiddingMasterCalendarPage({
       <BiddingMasterCalendarDetailDrawer
         open={drawerOpen}
         activeTab={activeDrawerTab}
-        selectedResolution={selectedResolution}
-        selectedSchedule={selectedSchedule}
+        selectedResolution={null}
+        selectedSchedule={null}
         selectedEvent={effectiveSelectedEvent}
         selectedEvents={selectedEvents}
         projectConflicts={projectConflicts}

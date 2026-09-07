@@ -1,5 +1,8 @@
-﻿import { RotateCcw, Search } from 'lucide-react'
-import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/data/mockBiddingScheduleData'
+import { RotateCcw, Search } from 'lucide-react'
+import {
+  PROCUREMENT_CATEGORY_LABELS,
+  type ProcurementCategory,
+} from '../../bidding-schedule/types'
 import type {
   BiddingMasterCalendarFilters,
   DerivedCalendarProjectStatus,
@@ -38,7 +41,7 @@ function toSelectValue(value: string[] | undefined) {
   return value && value.length > 0 ? value[0] : 'all'
 }
 
-function toArrayValue(value: string) {
+function toArrayValue(value: string): string[] {
   return value === 'all' ? [] : [value]
 }
 
@@ -51,16 +54,16 @@ export function BiddingMasterCalendarFiltersPanel({
   onReset,
 }: BiddingMasterCalendarFiltersPanelProps) {
   return (
-    <div className="grid gap-3 rounded-xl border border-default-200 bg-background p-4 shadow-sm lg:grid-cols-4 xl:grid-cols-8">
-      <div className="relative xl:col-span-2">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
+          placeholder="Search projects or BAC..."
           value={filters.searchTerm}
-          onChange={(event) =>
-            onChange({ ...filters, searchTerm: event.target.value })
+          onChange={(e) =>
+            onChange({ ...filters, searchTerm: e.target.value })
           }
-          placeholder="Search project or BAC resolution"
-          className="pl-10"
+          className="pl-8"
         />
       </div>
 
@@ -90,7 +93,7 @@ export function BiddingMasterCalendarFiltersPanel({
             ...filters,
             procurementCategories: toArrayValue(
               value,
-            ) as typeof filters.procurementCategories,
+            ) as ProcurementCategory[],
           })
         }
       >
@@ -99,7 +102,12 @@ export function BiddingMasterCalendarFiltersPanel({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Categories</SelectItem>
-          {Object.entries(PROCUREMENT_CATEGORY_LABELS).map(([value, label]) => (
+          {(
+            Object.entries(PROCUREMENT_CATEGORY_LABELS) as [
+              ProcurementCategory,
+              string,
+            ][]
+          ).map(([value, label]) => (
             <SelectItem key={value} value={value}>
               {label}
             </SelectItem>

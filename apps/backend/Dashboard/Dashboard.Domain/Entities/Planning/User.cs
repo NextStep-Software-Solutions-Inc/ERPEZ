@@ -14,7 +14,7 @@ public class User : BaseEntity
     /// Keycloak subject identifier (sub claim) representing the federated external identity.
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public string ExternalIdentityId { get; set; } = string.Empty;
+    public string? ExternalIdentityId { get; set; }
 
     /// <summary>
     /// Employee number or personnel ID.

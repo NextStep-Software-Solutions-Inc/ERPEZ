@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo } from 'react'
-import { format, parseISO, startOfMonth, endOfMonth, addMonths } from 'date-fns'
+import { format, startOfMonth, endOfMonth, addMonths } from 'date-fns'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { BiddingMasterCalendarConflictBadge } from './BiddingMasterCalendarConflictBadge'
 import { BiddingMasterCalendarOverloadBadge } from './BiddingMasterCalendarOverloadBadge'
@@ -8,6 +8,14 @@ import type {
   BiddingMasterCalendarEvent,
   BiddingMasterCalendarFilters,
 } from '../types'
+import type {
+  ApiResponse,
+  CalendarEventsWithSummary,
+  CalendarEvent,
+  MilestoneExecutionStatus,
+  ProcurementCategory,
+  BiddingScheduleStatus,
+} from '../../bidding-schedule/types'
 import { getStatusLabel, getStatusTone } from '../utils/statusUtils'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,7 +36,9 @@ export function BiddingMasterCalendarAgendaView({
   selectedEventId = null,
 }: BiddingMasterCalendarAgendaViewProps) {
   const parentRef = useRef<HTMLDivElement | null>(null)
-  const [accumulatedEvents, setAccumulatedEvents] = useState<BiddingMasterCalendarEvent[]>([])
+  const [accumulatedEvents, setAccumulatedEvents] = useState<
+    BiddingMasterCalendarEvent[]
+  >([])
   const [loadedMonths, setLoadedMonths] = useState<string[]>([])
   const [nextMonthToFetch, setNextMonthToFetch] = useState<Date>(new Date())
   const [isLoading, setIsLoading] = useState(false)
@@ -36,51 +46,76 @@ export function BiddingMasterCalendarAgendaView({
   const fetchMonth = async (monthDate: Date) => {
     const monthStr = format(monthDate, 'yyyy-MM')
     if (loadedMonths.includes(monthStr)) return
-    
+
     setIsLoading(true)
     try {
       const from = startOfMonth(monthDate).toISOString()
       const to = endOfMonth(monthDate).toISOString()
-      const response = await api.get<any>(
-        `/bac/calendar-events?From=${encodeURIComponent(from)}&To=${encodeURIComponent(to)}`
+      const response = await api.get<ApiResponse<CalendarEventsWithSummary>>(
+        `/bac/calendar-events?From=${encodeURIComponent(from)}&To=${encodeURIComponent(to)}`,
       )
-      if (response.data?.succeeded) {
+      if (response.data?.succeeded && response.data.data) {
         const rawData = response.data.data
-        const rawEvents = rawData && Array.isArray(rawData.events)
+        const rawEvents: CalendarEvent[] = Array.isArray(rawData.events)
           ? rawData.events
-          : (Array.isArray(rawData) ? rawData : [])
-        
-        const mappedEvents: BiddingMasterCalendarEvent[] = rawEvents.map((evt: any) => ({
-          id: evt.id,
-          bacResolutionId: evt.projectId,
-          bacResolutionNumber: evt.status || 'Pending',
-          scheduleId: evt.projectId,
-          scheduleStatus: 'confirmed',
-          fiscalYear: '2026',
-          procurementCategory: 'goods',
-          projectNames: [evt.projectTitle],
-          primaryProjectName: evt.projectTitle,
-          officeLabel: evt.venue || 'N/A',
-          linkedCprCount: 0,
-          milestoneId: evt.procurementActivityTypeId,
-          milestoneKey: evt.procurementActivityTypeId,
-          milestoneName: evt.procurementActivityTypeName,
-          milestoneOrder: 0,
-          eventDate: evt.startDate,
-          eventTime: format(new Date(evt.startDate), 'HH:mm'),
-          isEdited: false,
-          executionStatus: 'pending',
-          sourceType: 'confirmed',
-          derivedProjectStatus: 'in-progress',
-          appTargetMonth: null,
-          isDueSoon: false,
-          isOverdue: false,
-          isProvisional: false,
-        }))
+          : []
+
+        const mappedEvents: BiddingMasterCalendarEvent[] = rawEvents.map(
+          (evt) => {
+            const eventDate = evt.startDate.includes('T')
+              ? evt.startDate.split('T')[0]
+              : evt.startDate
+            let eventTime: string | null = null
+            try {
+              eventTime = format(new Date(evt.startDate), 'HH:mm')
+            } catch {
+              eventTime = null
+            }
+
+            const executionStatus =
+              (evt.status.toLowerCase() as MilestoneExecutionStatus) ||
+              'pending'
+            const procurementCategory: ProcurementCategory =
+              evt.procurementCategory || 'goods'
+            const scheduleStatus: BiddingScheduleStatus =
+              evt.scheduleStatus || 'draft'
+
+            return {
+              id: evt.id,
+              bacResolutionId: evt.bacResolutionId || evt.projectId,
+              bacResolutionNumber:
+                evt.bacResolutionNumber || evt.status || 'Pending',
+              scheduleId: evt.projectId,
+              scheduleStatus,
+              fiscalYear: evt.fiscalYear
+                ? String(evt.fiscalYear)
+                : String(new Date(evt.startDate).getFullYear()),
+              procurementCategory,
+              projectNames: [evt.projectTitle],
+              primaryProjectName: evt.projectTitle,
+              officeLabel: evt.officeLabel || evt.venue || 'BAC Office',
+              linkedCprCount: 0,
+              milestoneId: evt.procurementActivityTypeId,
+              milestoneKey: evt.milestoneKey || evt.procurementActivityTypeId,
+              milestoneName: evt.procurementActivityTypeName,
+              milestoneOrder: 0,
+              eventDate,
+              eventTime,
+              isEdited: false,
+              executionStatus,
+              sourceType: scheduleStatus,
+              derivedProjectStatus: 'in-progress',
+              appTargetMonth: null,
+              isDueSoon: false,
+              isOverdue: false,
+              isProvisional: scheduleStatus === 'draft',
+            }
+          },
+        )
 
         setAccumulatedEvents((prev) => {
-          const existingIds = new Set(prev.map(e => e.id))
-          const newEvents = mappedEvents.filter(e => !existingIds.has(e.id))
+          const existingIds = new Set(prev.map((e) => e.id))
+          const newEvents = mappedEvents.filter((e) => !existingIds.has(e.id))
           return [...prev, ...newEvents]
         })
         setLoadedMonths((prev) => [...prev, monthStr])
@@ -95,170 +130,145 @@ export function BiddingMasterCalendarAgendaView({
   // Fetch initial month on mount
   useEffect(() => {
     fetchMonth(nextMonthToFetch)
-    setNextMonthToFetch(addMonths(nextMonthToFetch, 1))
+    setNextMonthToFetch((prev) => addMonths(prev, 1))
   }, [])
 
-  const agendaGroups = useMemo(() => {
-    const filtered = applyCalendarFilters(accumulatedEvents, filters)
-    return buildAgendaGroups(filtered, [])
+  // Filter the accumulated events by the active UI filters
+  const filteredEvents = useMemo(() => {
+    return applyCalendarFilters(accumulatedEvents, filters)
   }, [accumulatedEvents, filters])
+
+  // Group filtered events into agenda day buckets
+  const agendaGroups: BiddingMasterCalendarAgendaGroup[] = useMemo(() => {
+    return buildAgendaGroups(filteredEvents, [])
+  }, [filteredEvents])
 
   const rowVirtualizer = useVirtualizer({
     count: agendaGroups.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 240,
-    overscan: 4,
+    estimateSize: () => 140,
+    overscan: 5,
   })
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget
-    const threshold = 150 // pixels from bottom to trigger fetch
-    const isAtBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + threshold
-    
-    if (isAtBottom && !isLoading) {
+  // Infinite scroll threshold check
+  const handleScroll = () => {
+    if (!parentRef.current || isLoading) return
+    const { scrollTop, scrollHeight, clientHeight } = parentRef.current
+    if (scrollHeight - scrollTop - clientHeight < 300) {
       fetchMonth(nextMonthToFetch)
-      setNextMonthToFetch(addMonths(nextMonthToFetch, 1))
+      setNextMonthToFetch((prev) => addMonths(prev, 1))
     }
   }
 
+  if (agendaGroups.length === 0 && !isLoading) {
+    return (
+      <Card className="border-dashed p-8 text-center text-muted-foreground">
+        No calendar events match the selected filters.
+      </Card>
+    )
+  }
+
   return (
-    <Card className="border border-default-200 shadow-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Agenda View</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div
-          ref={parentRef}
-          onScroll={handleScroll}
-          className="h-[720px] overflow-auto rounded-lg border border-default-200 bg-default-50/30"
-        >
-          <div
-            className="relative w-full"
-            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const group = agendaGroups[virtualRow.index]
+    <div
+      ref={parentRef}
+      onScroll={handleScroll}
+      className="max-h-[700px] overflow-auto rounded-lg border border-default-200 bg-background"
+    >
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          const group = agendaGroups[virtualRow.index]
+          if (!group) return null
 
-              return (
-                <div
-                  key={group.date}
-                  className="absolute left-0 top-0 w-full px-4 py-3"
-                  style={{ transform: `translateY(${virtualRow.start}px)` }}
-                >
-                  <div className="rounded-xl border border-default-200 bg-background p-4 shadow-sm">
-                    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-base font-semibold">
-                          {group.label}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {group.bucket.events.length} milestone
-                          {group.bucket.events.length === 1 ? '' : 's'}{' '}
-                          scheduled
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {group.bucket.hardConflictCount > 0 ? (
-                          <BiddingMasterCalendarConflictBadge
-                            count={group.bucket.hardConflictCount}
-                          />
-                        ) : null}
-                        {group.bucket.isOverloaded ? (
-                          <BiddingMasterCalendarOverloadBadge
-                            count={group.bucket.overloadCount}
-                          />
-                        ) : null}
-                        {group.bucket.appBands.length > 0 ? (
-                          <Badge variant="outline" color="secondary">
-                            APP target month
-                          </Badge>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {group.bucket.hardConflictGroups.length > 0 ? (
-                      <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                        <div className="font-semibold">
-                          Hard conflict detected
-                        </div>
-                        <div className="mt-1">
-                          {group.bucket.hardConflictGroups
-                            .map((conflict) => conflict.milestoneName)
-                            .join(', ')}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="space-y-3">
-                      {group.bucket.events.map((event) => (
-                        <button
-                          key={event.id}
-                          type="button"
-                          onMouseEnter={() => onPreviewMilestone?.(event)}
-                          onMouseLeave={() => onPreviewMilestone?.(null)}
-                          onClick={() => onOpenMilestone(event)}
-                          className={[
-                            'flex w-full flex-col gap-2 rounded-lg border border-default-200 bg-background px-3 py-3 text-left transition-colors hover:bg-default-50 md:flex-row md:items-center md:justify-between',
-                            selectedEventId === event.id
-                              ? 'ring-2 ring-info/40'
-                              : '',
-                          ].join(' ')}
-                        >
-                          <div className="space-y-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-semibold">
-                                {event.milestoneName}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                color={getStatusTone(event)}
-                              >
-                                {getStatusTone(event) ? getStatusLabel(event) : 'Scheduled'}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {event.primaryProjectName} •{' '}
-                              {event.bacResolutionNumber}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {event.officeLabel} • {event.linkedCprCount}{' '}
-                              linked CPR{event.linkedCprCount === 1 ? '' : 's'}
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground md:justify-end">
-                            <Badge variant="outline" color="secondary">
-                              {event.procurementCategory}
-                            </Badge>
-                            <Badge variant="outline" color="secondary">
-                              {format(parseISO(event.eventDate), 'MMM d, yyyy')}
-                              {event.eventTime ? ` • ${event.eventTime}` : ''}
-                            </Badge>
-                            {event.appTargetMonth ? (
-                              <Badge variant="outline" color="secondary">
-                                APP {event.appTargetMonth}
-                              </Badge>
-                            ) : null}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+          return (
+            <div
+              key={group.date}
+              data-index={virtualRow.index}
+              ref={rowVirtualizer.measureElement}
+              className="absolute left-0 top-0 w-full p-3"
+              style={{
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <Card className="border border-default-200 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-2 pt-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-sm font-semibold text-default-800">
+                      {group.label}
+                    </CardTitle>
+                    {group.bucket.hardConflictCount > 0 && (
+                      <BiddingMasterCalendarConflictBadge
+                        count={group.bucket.hardConflictCount}
+                      />
+                    )}
+                    {group.bucket.isOverloaded && (
+                      <BiddingMasterCalendarOverloadBadge
+                        count={group.bucket.overloadCount}
+                      />
+                    )}
                   </div>
-                </div>
-              )
-            })}
-          </div>
-          {isLoading && (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              Loading more events...
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {group.bucket.events.length} event
+                    {group.bucket.events.length === 1 ? '' : 's'}
+                  </span>
+                </CardHeader>
+                <CardContent className="px-4 pb-3 pt-1 space-y-2">
+                  {group.bucket.events.map((event) => {
+                    const isSelected = selectedEventId === event.id
+                    return (
+                      <div
+                        key={event.id}
+                        onClick={() => onOpenMilestone(event)}
+                        onMouseEnter={() => onPreviewMilestone?.(event)}
+                        onMouseLeave={() => onPreviewMilestone?.(null)}
+                        className={`flex items-center justify-between rounded-md border p-2.5 text-xs transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                            : 'border-default-100 hover:border-default-300 hover:bg-muted/40'
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-default-800">
+                              {event.primaryProjectName}
+                            </span>
+                            <Badge
+                              variant="outline"
+                              color={getStatusTone(event)}
+                              className="text-[10px] px-1.5 py-0"
+                            >
+                              {getStatusLabel(event)}
+                            </Badge>
+                          </div>
+                          <p className="text-default-600">
+                            {event.milestoneName} •{' '}
+                            <span className="text-muted-foreground font-mono">
+                              {event.officeLabel}
+                            </span>
+                          </p>
+                        </div>
+                        <div className="text-right font-mono text-muted-foreground shrink-0">
+                          {event.eventTime ? event.eventTime : 'All Day'}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
             </div>
-          )}
-          {!isLoading && agendaGroups.length === 0 && (
-            <div className="py-16 text-center text-sm text-muted-foreground">
-              No agenda items match the current filters.
-            </div>
-          )}
+          )
+        })}
+      </div>
+      {isLoading && (
+        <div className="p-4 text-center text-xs text-muted-foreground">
+          Loading more events…
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }

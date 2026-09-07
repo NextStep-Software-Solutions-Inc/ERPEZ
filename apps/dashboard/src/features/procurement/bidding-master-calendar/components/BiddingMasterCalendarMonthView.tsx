@@ -1,5 +1,4 @@
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import {
   addDays,
   addMonths,
@@ -21,19 +20,6 @@ import type {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-interface CalendarEvent {
-  id: string
-  projectId: string
-  projectTitle: string
-  procurementActivityTypeId: string
-  procurementActivityTypeName: string
-  startDate: string
-  endDate: string
-  venue: string
-  status: string
-  remarks: string
-}
-
 interface BiddingMasterCalendarMonthViewProps {
   currentMonth: Date
   dayBuckets: BiddingMasterCalendarDayBucket[]
@@ -41,7 +27,6 @@ interface BiddingMasterCalendarMonthViewProps {
   onOpenMilestone: (event: BiddingMasterCalendarEvent) => void
   onPreviewMilestone?: (event: BiddingMasterCalendarEvent | null) => void
   selectedEventId?: string | null
-  apiEvents: CalendarEvent[]
   isLoading?: boolean
 }
 
@@ -60,7 +45,7 @@ function getHeatMapClass(eventCount: number) {
     return 'bg-emerald-50/70 border-emerald-200'
   }
 
-  return 'bg-background border-default-200'
+  return 'bg-slate-50/40 border-slate-200'
 }
 
 export function BiddingMasterCalendarMonthView({
@@ -70,185 +55,137 @@ export function BiddingMasterCalendarMonthView({
   onOpenMilestone,
   onPreviewMilestone,
   selectedEventId = null,
-  apiEvents,
   isLoading = false,
 }: BiddingMasterCalendarMonthViewProps) {
+  const monthStart = startOfMonth(currentMonth)
+  const monthEnd = endOfMonth(monthStart)
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 0 })
+  const endDate = endOfWeek(monthEnd, { weekStartsOn: 0 })
 
   const bucketMap = new Map(dayBuckets.map((bucket) => [bucket.date, bucket]))
-  const monthStart = startOfMonth(currentMonth)
-  const gridStart = startOfWeek(monthStart)
-  const gridEnd = endOfWeek(endOfMonth(currentMonth))
   const days: Date[] = []
+  let day = startDate
 
-  for (let cursor = gridStart; cursor <= gridEnd; cursor = addDays(cursor, 1)) {
-    days.push(cursor)
+  while (day <= endDate) {
+    days.push(day)
+    day = addDays(day, 1)
   }
 
-
   return (
-    <Card className="border border-default-200 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <div>
-          <CardTitle className="text-lg flex items-center gap-2">
-            {format(currentMonth, 'MMMM yyyy')}
-            {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Cross-project bidding milestones, conflicts, and APP reference cues.
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <Card className="shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardTitle className="text-base font-semibold text-slate-900">
+          Monthly Overview — {format(currentMonth, 'MMMM yyyy')}
+        </CardTitle>
+        <div className="flex items-center gap-2">
           <Button
-            type="button"
             variant="outline"
-            color="secondary"
-            size="icon"
-            onClick={() => onMonthChange(subMonths(monthStart, 1))}
+            size="sm"
+            onClick={() => onMonthChange(subMonths(currentMonth, 1))}
+            className="h-8 px-2"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
-            type="button"
             variant="outline"
-            color="secondary"
-            size="icon"
-            onClick={() => onMonthChange(addMonths(monthStart, 1))}
+            size="sm"
+            onClick={() => onMonthChange(new Date())}
+            className="h-8 text-xs font-medium"
+          >
+            Today
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onMonthChange(addMonths(currentMonth, 1))}
+            className="h-8 px-2"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {WEEKDAY_LABELS.map((label) => (
-            <div key={label} className="rounded-md bg-default-50 py-2">
-              {label}
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-7">
-          {days.map((date) => {
-            const key = format(date, 'yyyy-MM-dd')
-            const bucket = bucketMap.get(key)
-            const isCurrentMonth = isSameMonth(date, currentMonth)
-
-            const events = Array.isArray(apiEvents) ? apiEvents : []
-            const dayEvents = events.filter((evt) => {
-              const start = new Date(evt.startDate)
-              const end = new Date(evt.endDate)
-              const checkDate = new Date(date)
-              checkDate.setHours(0, 0, 0, 0)
-
-              const startDay = new Date(start)
-              startDay.setHours(0, 0, 0, 0)
-
-              const endDay = new Date(end)
-              endDay.setHours(0, 0, 0, 0)
-
-              return checkDate >= startDay && checkDate <= endDay
-            })
-
-            const mappedApiEvents: BiddingMasterCalendarEvent[] = dayEvents.map((evt) => ({
-              id: evt.id,
-              bacResolutionId: evt.projectId,
-              bacResolutionNumber: evt.status || 'Pending',
-              scheduleId: evt.projectId,
-              scheduleStatus: 'confirmed',
-              fiscalYear: '2026',
-              procurementCategory: 'goods',
-              projectNames: [evt.projectTitle],
-              primaryProjectName: evt.projectTitle,
-              officeLabel: evt.venue || 'N/A',
-              linkedCprCount: 0,
-              milestoneId: evt.procurementActivityTypeId,
-              milestoneKey: evt.procurementActivityTypeId,
-              milestoneName: evt.procurementActivityTypeName,
-              milestoneOrder: 0,
-              eventDate: evt.startDate,
-              eventTime: format(new Date(evt.startDate), 'HH:mm'),
-              isEdited: false,
-              executionStatus: 'pending',
-              sourceType: 'confirmed',
-              derivedProjectStatus: 'in-progress',
-              appTargetMonth: null,
-              isDueSoon: false,
-              isOverdue: false,
-              isProvisional: false,
-            }))
-
-            const combinedEvents = mappedApiEvents
-            const visibleEvents = combinedEvents.slice(0, 3)
-            const hiddenCount = Math.max(combinedEvents.length - visibleEvents.length, 0)
-
-            // Compute conflict and overload badges based on real events
-            const realConflictCount = combinedEvents.length > 1 ? combinedEvents.length : 0
-            const realIsOverloaded = combinedEvents.length >= 3
-
-            return (
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-7 gap-px rounded-lg bg-slate-200 border border-slate-200 overflow-hidden text-xs">
+            {WEEKDAY_LABELS.map((label) => (
               <div
-                key={key}
-                className={[
-                  'min-h-40 rounded-xl border p-3 shadow-sm',
-                  isCurrentMonth
-                    ? getHeatMapClass(combinedEvents.length)
-                    : 'border-default-100 bg-default-50/70 text-muted-foreground',
-                  realIsOverloaded ? 'ring-1 ring-warning/40' : '',
-                ].join(' ')}
+                key={label}
+                className="bg-slate-50 py-2 text-center font-medium text-slate-600 border-b border-slate-200"
               >
-                <div className="mb-3 flex items-start justify-between gap-2">
-                  <div>
-                    <div className="text-sm font-semibold">
-                      {format(date, 'd')}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {format(date, 'MMM')}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap justify-end gap-1">
-                    {realConflictCount ? (
-                      <BiddingMasterCalendarConflictBadge
-                        count={realConflictCount}
-                        compact
-                      />
-                    ) : null}
-                    {realIsOverloaded ? (
-                      <BiddingMasterCalendarOverloadBadge
-                        count={combinedEvents.length}
-                        compact
-                      />
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {visibleEvents.map((event) => (
-                    <BiddingMasterCalendarEventChip
-                      key={event.id}
-                      event={event}
-                      isSelected={selectedEventId === event.id}
-                      onMouseEnter={() => onPreviewMilestone?.(event)}
-                      onMouseLeave={() => onPreviewMilestone?.(null)}
-                      onClick={() => onOpenMilestone(event)}
-                    />
-                  ))}
-
-                  {hiddenCount > 0 ? (
-                    <div className="rounded-md border border-dashed border-default-200 px-2 py-1 text-[11px] text-muted-foreground">
-                      +{hiddenCount} more events
-                    </div>
-                  ) : null}
-
-                  {!combinedEvents.length ? (
-                    <div className="pt-6 text-[11px] text-muted-foreground">
-                      No milestones scheduled.
-                    </div>
-                  ) : null}
-                </div>
+                {label}
               </div>
-            )
-          })}
-        </div>
+            ))}
+            {days.map((date) => {
+              const dateKey = format(date, 'yyyy-MM-dd')
+              const bucket = bucketMap.get(dateKey)
+              const isCurrentMonth = isSameMonth(date, currentMonth)
+
+              const events = bucket?.events ?? []
+              const visibleEvents = events.slice(0, 3)
+              const hiddenCount = Math.max(events.length - visibleEvents.length, 0)
+              const conflictCount = bucket?.hardConflictCount ?? 0
+              const isOverloaded = bucket?.isOverloaded ?? false
+
+              return (
+                <div
+                  key={dateKey}
+                  className={[
+                    'min-h-40 rounded-none bg-background p-2 transition-colors',
+                    isCurrentMonth
+                      ? getHeatMapClass(events.length)
+                      : 'bg-slate-50/50 text-muted-foreground opacity-60',
+                    isOverloaded ? 'ring-1 ring-inset ring-amber-400' : '',
+                  ].join(' ')}
+                >
+                  <div className="mb-2 flex items-start justify-between gap-1">
+                    <div>
+                      <div className="text-xs font-semibold">
+                        {format(date, 'd')}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-1">
+                      {conflictCount > 0 ? (
+                        <BiddingMasterCalendarConflictBadge
+                          count={conflictCount}
+                          compact
+                        />
+                      ) : null}
+                      {isOverloaded ? (
+                        <BiddingMasterCalendarOverloadBadge
+                          count={events.length}
+                          compact
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {visibleEvents.map((event) => (
+                      <BiddingMasterCalendarEventChip
+                        key={event.id}
+                        event={event}
+                        isSelected={selectedEventId === event.id}
+                        onMouseEnter={() => onPreviewMilestone?.(event)}
+                        onMouseLeave={() => onPreviewMilestone?.(null)}
+                        onClick={() => onOpenMilestone(event)}
+                      />
+                    ))}
+
+                    {hiddenCount > 0 ? (
+                      <div className="rounded border border-dashed border-default-200 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                        +{hiddenCount} more
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   )

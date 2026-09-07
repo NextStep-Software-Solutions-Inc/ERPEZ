@@ -1,7 +1,7 @@
 import type { BiddingSchedule } from '../../bidding-schedule/types'
-import { useBiddingScheduleStore } from '../../bidding-schedule/store/biddingScheduleStore'
 import { useConsolidatedPRStore } from '../../consolidated-pr/store/consolidatedPRStore'
 import type {
+  BacProject,
   BacResolution,
   BacResolutionListRoutePath,
   BacResolutionRole,
@@ -65,13 +65,13 @@ function isLinkedPrPublicBidding(linkedPr: ConsolidatedPrLink) {
 export function getPrimaryLinkedConsolidatedPr(
   resolution: Pick<BacResolution, 'linkedConsolidatedPrs'>,
 ) {
-  return resolution.linkedConsolidatedPrs[0] ?? null
+  return (resolution.linkedConsolidatedPrs ?? [])[0] ?? null
 }
 
 export function hasExactlyOneLinkedConsolidatedPr(
   resolution: Pick<BacResolution, 'linkedConsolidatedPrs'>,
 ) {
-  return resolution.linkedConsolidatedPrs.length === 1
+  return (resolution.linkedConsolidatedPrs ?? []).length === 1
 }
 
 export function isBacResolutionPublicBiddingEligible(
@@ -89,21 +89,21 @@ export function isBacResolutionPublicBiddingEligible(
 export function isBacResolutionInPublicBiddingScope(
   resolution: Pick<BacResolution, 'linkedConsolidatedPrs' | 'workspaceOrigin'>,
 ) {
+  const linkedPrs = resolution.linkedConsolidatedPrs ?? []
+
   // Grace period: newly created PB-origin records have no linked CPR yet.
   if (
     resolution.workspaceOrigin === 'public-bidding' &&
-    resolution.linkedConsolidatedPrs.length === 0
+    linkedPrs.length === 0
   ) {
     return true
   }
 
-  if (resolution.linkedConsolidatedPrs.length === 0) {
+  if (linkedPrs.length === 0) {
     return false
   }
 
-  return resolution.linkedConsolidatedPrs.some((linkedPr) =>
-    isLinkedPrPublicBidding(linkedPr),
-  )
+  return linkedPrs.some((linkedPr) => isLinkedPrPublicBidding(linkedPr))
 }
 
 export function findOwningBacResolution(
@@ -117,7 +117,7 @@ export function findOwningBacResolution(
         return false
       }
 
-      return resolution.linkedConsolidatedPrs.some(
+      return (resolution.linkedConsolidatedPrs ?? []).some(
         (linkedPr) =>
           linkedPr.id === consolidatedPrId ||
           linkedPr.prNumber === consolidatedPrId,
@@ -146,16 +146,19 @@ export function buildLinkableConsolidatedPrs({
       ...pr,
       owner: owner
         ? {
-            bacResolutionId: owner.id,
-            bacResolutionNumber: owner.bacResolutionNumber,
-          }
+          bacResolutionId: owner.id,
+          bacResolutionNumber:
+            owner.resolutionNumber ??
+            owner.bacResolutionNumber ??
+            owner.id,
+        }
         : null,
       isOwnedByCurrentResolution:
         owner?.id === currentResolutionId ||
         resolutions.some(
           (resolution) =>
             resolution.id === currentResolutionId &&
-            resolution.linkedConsolidatedPrs.some(
+            (resolution.linkedConsolidatedPrs ?? []).some(
               (linkedPr) =>
                 linkedPr.id === pr.id || linkedPr.prNumber === pr.prNumber,
             ),
@@ -212,27 +215,18 @@ export function resolveBacExecutionState({
   }
 }
 
-export function getBacResolutionScheduleById(bacResolutionId: string) {
-  const scheduleStoreSchedules = useBiddingScheduleStore.getState().schedules
-
-  return (
-    scheduleStoreSchedules.find(
-      (candidate) => candidate.bacResolutionId === bacResolutionId,
-    ) ??
-    ([] as BiddingSchedule[]).find(
-      (candidate) => candidate.bacResolutionId === bacResolutionId,
-    ) ??
-    null
-  )
+export function getBacResolutionScheduleById(_bacResolutionId: string): BiddingSchedule | null {
+  return null
 }
 
 export function resolveBacScheduleEntryState({
   resolution,
+  schedule = null,
 }: {
   resolution: BacResolution
-  role: BacResolutionRole
+  role?: BacResolutionRole
+  schedule?: BiddingSchedule | null
 }): BacScheduleEntryState {
-  const schedule = getBacResolutionScheduleById(resolution.id)
   const isPublicBidding = isBacResolutionInPublicBiddingScope(resolution)
   const hasStrictOwnership = hasExactlyOneLinkedConsolidatedPr(resolution)
   const isApproved = resolution.status === 'approved'
@@ -261,20 +255,111 @@ export function resolveBacScheduleEntryState({
   }
 }
 
-export function getBacResolutionListRoutePath(isPublicBiddingView: boolean) {
-  return (
-    isPublicBiddingView
-      ? '/v2/bac-resolutions-public-bidding'
-      : '/v2/bac-resolutions'
-  ) as BacResolutionListRoutePath
+export function getBacProjectProcurementMode(project: BacProject | null | undefined): string {
+  if (!project) return ''
+
+  // 1. APP Item source mode
+  const appItem = project.appItem as any
+  const appItemMode =
+    appItem?.procurementModeName ||
+    appItem?.ProcurementModeName ||
+    appItem?.ProcurementMode?.name ||
+    appItem?.procurementMode?.name ||
+    appItem?.modeOfProcurement ||
+    ''
+  if (appItemMode) return appItemMode
+
+  // 2. Consolidated PR source mode
+  const cpr = project.consolidatedPR as any
+  const cprMode =
+    cpr?.modeOfProcurementName ||
+    cpr?.ModeOfProcurementName ||
+    cpr?.modeOfProcurement ||
+    cpr?.ModeOfProcurement ||
+    cpr?.procurementMode?.name ||
+    cpr?.ProcurementMode?.name ||
+    ''
+  if (cprMode) return cprMode
+
+  // Check store for consolidated PR if needed
+  if (project.consolidatedPRId || cpr?.id || cpr?.cprNumber) {
+    const cprId = project.consolidatedPRId || cpr?.id
+    const cprNum = cpr?.cprNumber
+    const storePr = useConsolidatedPRStore
+      .getState()
+      .consolidatedPRs.find(
+        (candidate) =>
+          (cprId && candidate.id === cprId) ||
+          (cprNum && candidate.prNumber === cprNum),
+      )
+    if (storePr) {
+      const storeMop =
+        (storePr as any).modeOfProcurementName ||
+        (storePr as any).modeOfProcurement ||
+        ''
+      if (storeMop) return storeMop
+      if (storePr.itemMOPs) {
+        const firstMop = Object.values(storePr.itemMOPs)[0]?.mop
+        if (firstMop) {
+          return firstMop === 'public-bidding'
+            ? 'Public Bidding'
+            : firstMop === 'limited-bidding' || firstMop === 'limited-source-bidding'
+              ? 'Limited Source Bidding'
+              : firstMop.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+        }
+      }
+    }
+  }
+
+  // 3. Direct project procurement mode
+  const directMode =
+    (project as any)?.procurementMode?.name ||
+    (project as any)?.ProcurementMode?.name ||
+    (project as any)?.procurementModeName ||
+    (project as any)?.procurementMode ||
+    ''
+  return directMode
+}
+
+export function isBacProjectPublicBidding(project: BacProject | null | undefined): boolean {
+  if (!project) return false
+  const mode = getBacProjectProcurementMode(project).toLowerCase()
+  if (
+    mode.includes('public') ||
+    mode.includes('competitive') ||
+    mode.includes('bidding')
+  ) {
+    return true
+  }
+  return false
+}
+
+export function isBacProjectReadyForScheduling(
+  project: BacProject | null | undefined,
+): boolean {
+  if (!project) return false
+  const status = (project.status || '').toLowerCase()
+  if (status !== 'approved') return false
+
+  // Must be ConsolidatedPR source type
+  const isConsolidatedPR =
+    project.sourceType === 'ConsolidatedPR' ||
+    (project.sourceType as any) === '0' ||
+    (project.sourceType as any) === 0
+
+  if (!isConsolidatedPR) return false
+
+  // Must be Public Bidding procurement mode
+  return isBacProjectPublicBidding(project)
+}
+
+export function getBacResolutionListRoutePath(_isPublicBiddingView?: boolean) {
+  return '/v2/bac-resolutions' as BacResolutionListRoutePath
 }
 
 export function getBacResolutionScheduleRoutePath(
-  isPublicBiddingView: boolean,
+  _isPublicBiddingView?: boolean,
 ) {
-  return (
-    isPublicBiddingView
-      ? '/v2/bac-resolutions-public-bidding/$resolutionId/bidding-schedule'
-      : '/v2/bac-resolutions/$resolutionId/bidding-schedule'
-  ) as BacResolutionScheduleRoutePath
+  return '/v2/bac-resolutions/$resolutionId/bidding-schedule' as BacResolutionScheduleRoutePath
 }
+

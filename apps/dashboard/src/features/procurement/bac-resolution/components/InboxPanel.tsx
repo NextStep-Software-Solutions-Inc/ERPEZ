@@ -25,11 +25,16 @@ import type {
   BacResolutionRole,
   BacResolutionWorkspaceScope,
 } from '../types'
+import {
+  isBacProjectPublicBidding,
+} from '../utils/bacResolutionWorkflow'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getBacResolutionsRequest } from '../handlers/getBacResolutionsRequest'
 import { cn } from '@/lib/utils'
 
 const useBacResolutions = createQueryHookFromTemplate(getBacResolutionsRequest)
+
+export type ProcurementModeFilter = 'all' | 'public-bidding' | 'alternative-methods'
 
 interface InboxPanelProps {
   inboxCards: {
@@ -43,6 +48,8 @@ interface InboxPanelProps {
   setSearchValue: (v: string) => void
   filter: BacResolutionInboxFilter
   setFilter: (v: BacResolutionInboxFilter) => void
+  procurementModeFilter?: ProcurementModeFilter
+  setProcurementModeFilter?: (v: ProcurementModeFilter) => void
   sourceTypeFilter?: 'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'
   setSourceTypeFilter?: (v: 'all' | 'APP_ITEM' | 'CONSOLIDATED_PR') => void
   budgetTier?: 'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'
@@ -57,8 +64,8 @@ interface InboxPanelProps {
   setSortBy?: (v: 'newest' | 'oldest' | 'amount-desc' | 'amount-asc') => void
   resetAllFilters?: () => void
   role: BacResolutionRole
-  workspaceScope: BacResolutionWorkspaceScope
-  bacListRoutePath: BacResolutionListRoutePath
+  workspaceScope?: BacResolutionWorkspaceScope
+  bacListRoutePath?: BacResolutionListRoutePath
   onEdit?: (resolution: BacProject) => void
   onDelete?: (id: string) => void
   onViewDetails?: (id: string) => void
@@ -72,6 +79,8 @@ export function InboxPanel({
   setSearchValue,
   filter,
   setFilter,
+  procurementModeFilter: procurementModeFilterProp,
+  setProcurementModeFilter: setProcurementModeFilterProp,
   sourceTypeFilter = 'all',
   setSourceTypeFilter,
   budgetTier = 'all',
@@ -84,12 +93,15 @@ export function InboxPanel({
   setSortBy,
   resetAllFilters,
   role,
-  workspaceScope,
-  bacListRoutePath,
+  workspaceScope = 'all',
+  bacListRoutePath = '/v2/bac-resolutions',
   onEdit,
   onDelete,
   onViewDetails,
 }: InboxPanelProps) {
+  const [internalModeFilter, setInternalModeFilter] = useState<ProcurementModeFilter>('all')
+  const activeModeFilter = procurementModeFilterProp ?? internalModeFilter
+  const handleSetModeFilter = setProcurementModeFilterProp ?? setInternalModeFilter
   const [filterPopoverOpen, setFilterPopoverOpen] = useState(false)
 
   // Fetch real list from API
@@ -122,6 +134,13 @@ export function InboxPanel({
           } else if (itemStatus !== targetFilter) {
             return false
           }
+        }
+
+        // Procurement Mode filter
+        if (activeModeFilter !== 'all') {
+          const isPB = isBacProjectPublicBidding(item)
+          if (activeModeFilter === 'public-bidding' && !isPB) return false
+          if (activeModeFilter === 'alternative-methods' && isPB) return false
         }
 
         // Source type filter
@@ -158,6 +177,7 @@ export function InboxPanel({
   }, [
     rawProjects,
     filter,
+    activeModeFilter,
     sourceTypeFilter,
     budgetTier,
     customMinBudget,
@@ -169,6 +189,7 @@ export function InboxPanel({
   // Count active non-default filters
   const activeFiltersCount =
     (filter !== 'all' ? 1 : 0) +
+    (activeModeFilter !== 'all' ? 1 : 0) +
     (sourceTypeFilter !== 'all' ? 1 : 0) +
     (budgetTier !== 'all' ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0)
@@ -178,6 +199,7 @@ export function InboxPanel({
       resetAllFilters()
     } else {
       setFilter('all')
+      handleSetModeFilter('all')
       setSourceTypeFilter?.('all')
       setBudgetTier?.('all')
       setCustomMinBudget?.(null)
@@ -447,9 +469,62 @@ export function InboxPanel({
           </Popover>
         </div>
 
+        {/* Quick Procurement Mode Filter Segmented Control */}
+        <div className="grid grid-cols-3 gap-1 p-1 bg-default-100 rounded-lg text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => handleSetModeFilter('all')}
+            className={cn(
+              'py-1.5 px-2 rounded-md transition-all text-center text-[11px]',
+              activeModeFilter === 'all'
+                ? 'bg-white text-primary font-bold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            All Modes
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSetModeFilter('public-bidding')}
+            className={cn(
+              'py-1.5 px-2 rounded-md transition-all text-center text-[11px]',
+              activeModeFilter === 'public-bidding'
+                ? 'bg-white text-primary font-bold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Public Bidding
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSetModeFilter('alternative-methods')}
+            className={cn(
+              'py-1.5 px-2 rounded-md transition-all text-center text-[11px]',
+              activeModeFilter === 'alternative-methods'
+                ? 'bg-white text-primary font-bold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Alternative
+          </button>
+        </div>
+
         {/* Active Filters Chips Bar */}
         {activeFiltersCount > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            {activeModeFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700 border border-indigo-200">
+                Mode: {activeModeFilter === 'public-bidding' ? 'Public Bidding' : 'Alternative'}
+                <button
+                  type="button"
+                  onClick={() => handleSetModeFilter('all')}
+                  className="hover:text-indigo-500"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
             {filter !== 'all' && (
               <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary border border-primary/20">
                 Status: {filter}

@@ -52,6 +52,7 @@ public class GetProcurementProjectByIdQueryHandler(IUnitOfWork unitOfWork)
                     .ThenInclude(cl => cl.ResolutionClause)
             .Include(p => p.BiddingActivitySchedules)
                 .ThenInclude(s => s.ProcurementActivityType)
+            .Include(p => p.ApprovalEvents)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
         if (entity == null)

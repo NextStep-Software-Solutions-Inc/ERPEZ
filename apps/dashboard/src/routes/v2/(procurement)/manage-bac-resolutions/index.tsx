@@ -1,10 +1,17 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { ManageBacResolutionsPage } from '@/features/procurement/bac-resolution/pages'
 import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
 import { PERMISSIONS } from '@/constants/permissions'
 
 export const Route = createFileRoute('/v2/(procurement)/manage-bac-resolutions/')({
-  component: ManageBacResolutionsRoute,
+  beforeLoad: () => {
+    throw redirect({
+      to: '/v2/bac-resolutions',
+      search: { id: undefined },
+      replace: true,
+    })
+  },
+  component: () => null,
 })
 
 function ManageBacResolutionsRoute() {
