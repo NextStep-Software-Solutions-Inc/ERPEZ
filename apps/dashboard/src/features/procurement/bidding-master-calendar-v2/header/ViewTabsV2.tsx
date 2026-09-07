@@ -73,7 +73,7 @@ export const ViewTabsV2 = memo(function ViewTabsV2() {
               }}
               transition={{
                 type: 'spring',
-                stiffness: 450,
+                stiffness: 2000,
                 damping: 30,
               }}
             >
