@@ -4,6 +4,7 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
+  useRef,
 } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
@@ -24,10 +25,6 @@ import {
   Layers,
   CheckCircle2,
   Search,
-  Filter,
-  Building2,
-  Wallet,
-  ChevronRight,
   ChevronUp,
   ChevronDown,
   FileSpreadsheet,
@@ -35,10 +32,9 @@ import {
   Plus,
   Trash2,
   GripVertical,
-  Lock,
-  Unlock,
   CheckCheck,
   RotateCcw,
+  AlertTriangle,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -87,7 +83,10 @@ import FieldInfo from '@/components/FieldInfo'
 import type { User } from '@/services/api/users'
 import type { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import { CreateEditResolutionClauseDialog } from '../dialogs/CreateEditResolutionClauseDialog'
-import { ResolutionClausePickerModal } from '../dialogs/ResolutionClausePickerModal'
+import {
+  ResolutionClausePickerModal,
+  normalizeClauseType,
+} from '../dialogs/ResolutionClausePickerModal'
 
 export const createBacResolutionSchema = z.object({
   appId: z.string().optional(),
@@ -108,7 +107,7 @@ export const createBacResolutionSchema = z.object({
         order: z.number(),
       }),
     )
-    .min(1, 'At least one WHEREAS clause must be selected.'),
+    .min(1, 'At least one WHEREAS clause is required.'),
   nowThereforeClauses: z
     .array(
       z.object({
@@ -116,7 +115,7 @@ export const createBacResolutionSchema = z.object({
         order: z.number(),
       }),
     )
-    .optional(),
+    .min(1, 'At least one NOW, THEREFORE clause is required.'),
   resolvedClauses: z
     .array(
       z.object({
@@ -124,7 +123,7 @@ export const createBacResolutionSchema = z.object({
         order: z.number(),
       }),
     )
-    .optional(),
+    .min(1, 'At least one RESOLVED clause is required.'),
   endUserRepresentativeId: z.string().optional(),
   techRepresentativeId: z.string().optional(),
 })
@@ -207,6 +206,31 @@ export const CreateBacResolutionForm = forwardRef<
       { resolutionClauseId: string; order: number }[]
     >([])
 
+    // Locally created custom clauses for instant preview:
+    const [createdClauses, setCreatedClauses] = useState<ResolutionClause[]>([])
+
+    // Stable references to prevent stale closures in callbacks:
+    const whereasClausesRef = useRef(whereasClauses)
+    whereasClausesRef.current = whereasClauses
+
+    const nowThereforeClausesRef = useRef(nowThereforeClauses)
+    nowThereforeClausesRef.current = nowThereforeClauses
+
+    const resolvedClausesRef = useRef(resolvedClauses)
+    resolvedClausesRef.current = resolvedClauses
+
+    const sourceTypeRef = useRef(selectedSourceType)
+    sourceTypeRef.current = selectedSourceType
+
+    const appIdsRef = useRef(selectedAppIds)
+    appIdsRef.current = selectedAppIds
+
+    const appItemsRef = useRef(selectedAppItems)
+    appItemsRef.current = selectedAppItems
+
+    const consolidatedPrRef = useRef(selectedConsolidatedPr)
+    consolidatedPrRef.current = selectedConsolidatedPr
+
     // Modals state:
     const [pickerModalType, setPickerModalType] =
       useState<ResolutionClauseType | null>(null)
@@ -217,6 +241,7 @@ export const CreateBacResolutionForm = forwardRef<
     const [isWhereasExpanded, setIsWhereasExpanded] = useState(true)
     const [isNowThereforeExpanded, setIsNowThereforeExpanded] = useState(false)
     const [isResolvedExpanded, setIsResolvedExpanded] = useState(false)
+    const [showClauseErrors, setShowClauseErrors] = useState(false)
 
     // Fetch clauses for the picker modal based on active type
     const { data: resolutionClausesData, isPending: isClausesPending } =
@@ -228,17 +253,6 @@ export const CreateBacResolutionForm = forwardRef<
         },
         enabled: pickerModalType !== null,
       })
-
-    const clauseTemplates = useMemo<ResolutionClause[]>(() => {
-      if (!resolutionClausesData) return []
-      if (Array.isArray(resolutionClausesData.data)) {
-        return resolutionClausesData.data
-      }
-      if (Array.isArray(resolutionClausesData)) {
-        return resolutionClausesData
-      }
-      return []
-    }, [resolutionClausesData])
 
     // Load full clause lookup for rendering names/bodies
     const { data: allClausesData } = useResolutionClauses({
@@ -256,8 +270,42 @@ export const CreateBacResolutionForm = forwardRef<
       for (const item of list) {
         map.set(item.id, item)
       }
+      for (const item of createdClauses) {
+        map.set(item.id, item)
+      }
       return map
-    }, [allClausesData])
+    }, [allClausesData, createdClauses])
+
+    const clauseTemplates = useMemo<ResolutionClause[]>(() => {
+      const map = new Map<string, ResolutionClause>()
+      const addItems = (data: unknown) => {
+        if (!data) return
+        const list = Array.isArray((data as { data?: unknown })?.data)
+          ? (data as { data: ResolutionClause[] }).data
+          : Array.isArray(data)
+            ? (data as ResolutionClause[])
+            : []
+        for (const item of list) {
+          if (item?.id) {
+            map.set(item.id, item)
+          }
+        }
+      }
+
+      addItems(allClausesData)
+      addItems(resolutionClausesData)
+      for (const item of createdClauses) {
+        map.set(item.id, item)
+      }
+
+      const allList = Array.from(map.values())
+      if (!pickerModalType) return allList
+
+      const targetType = normalizeClauseType(pickerModalType)
+      return allList.filter(
+        (c) => normalizeClauseType(c.clauseType) === targetType,
+      )
+    }, [allClausesData, resolutionClausesData, createdClauses, pickerModalType])
 
     const { data: appsData } = useEligibleAppsForProcurement({})
     const allApps = useMemo<EligibleAppForProcurement[]>(() => {
@@ -345,6 +393,9 @@ export const CreateBacResolutionForm = forwardRef<
       return 0
     }, [selectedSourceType, selectedAppItems, selectedConsolidatedPr])
 
+    const inheritedAbcRef = useRef(inheritedAbc)
+    inheritedAbcRef.current = inheritedAbc
+
     const { data: usersData, isPending: isUsersLoading } = useUsers({
       pathParams: {},
       queryParams: { PageSize: 100 },
@@ -368,6 +419,8 @@ export const CreateBacResolutionForm = forwardRef<
         pathParams: {},
         payload: { name, body, clauseType: type },
       })
+
+      setCreatedClauses((prev) => [...prev, created])
 
       if (type === 'Whereas') {
         setWhereasClauses((prev) => [
@@ -420,30 +473,70 @@ export const CreateBacResolutionForm = forwardRef<
         setIsSubmitting(true)
         setSubmitError(null)
 
+        const currentWhereas = whereasClausesRef.current
+        const currentNowTherefore = nowThereforeClausesRef.current
+        const currentResolved = resolvedClausesRef.current
+
+        const missingWhereas = currentWhereas.length === 0
+        const missingNowTherefore = currentNowTherefore.length === 0
+        const missingResolved = currentResolved.length === 0
+
+        if (missingWhereas || missingNowTherefore || missingResolved) {
+          setShowClauseErrors(true)
+          if (missingWhereas) setIsWhereasExpanded(true)
+          if (missingNowTherefore) setIsNowThereforeExpanded(true)
+          if (missingResolved) setIsResolvedExpanded(true)
+          setIsSubmitting(false)
+
+          const targetId = missingWhereas
+            ? 'section-whereas-clauses'
+            : missingNowTherefore
+              ? 'section-now-therefore-clauses'
+              : 'section-resolved-clauses'
+          setTimeout(() => {
+            document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }, 50)
+
+          const missingParts: string[] = []
+          if (missingWhereas) missingParts.push('WHEREAS')
+          if (missingNowTherefore) missingParts.push('NOW, THEREFORE')
+          if (missingResolved) missingParts.push('RESOLVED')
+          toast.error(
+            `Please add at least one clause for: ${missingParts.join(', ')}.`,
+          )
+          return
+        }
+
         try {
+          const currentSourceType = sourceTypeRef.current
+          const currentAppIds = appIdsRef.current
+          const currentAppItems = appItemsRef.current
+          const currentConsolidatedPr = consolidatedPrRef.current
+          const currentInheritedAbc = inheritedAbcRef.current
+
           const payload: CreateBacResolutionPayload = {
             sourceType:
-              selectedSourceType === 'AppItem' ? 'APPItem' : 'ConsolidatedPR',
-            appId: selectedAppIds[0],
-            appIds: selectedAppIds,
-            appItemId: selectedAppItems[0]?.id,
-            appItemIds: selectedAppItems.map((i) => i.id),
-            consolidatedPRId: selectedConsolidatedPr?.id,
+              currentSourceType === 'AppItem' ? 'APPItem' : 'ConsolidatedPR',
+            appId: currentAppIds[0],
+            appIds: currentAppIds,
+            appItemId: currentAppItems[0]?.id,
+            appItemIds: currentAppItems.map((i) => i.id),
+            consolidatedPRId: currentConsolidatedPr?.id,
             title: value.title,
-            abc: inheritedAbc > 0 ? inheritedAbc : value.abc,
+            abc: currentInheritedAbc > 0 ? currentInheritedAbc : value.abc,
             resolutionType: value.resolutionType,
             resolutionNumber: value.resolutionNumber,
             dateResolved: value.dateResolved,
             resolvedLocation: value.resolvedLocation,
-            whereasClauseLinks: whereasClauses.map((c, idx) => ({
+            whereasClauseLinks: currentWhereas.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
-            nowThereforeClauses: nowThereforeClauses.map((c, idx) => ({
+            nowThereforeClauses: currentNowTherefore.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
-            resolvedClauses: resolvedClauses.map((c, idx) => ({
+            resolvedClauses: currentResolved.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
@@ -465,6 +558,13 @@ export const CreateBacResolutionForm = forwardRef<
         }
       },
     })
+
+    // Keep TanStack form values in sync with clause arrays
+    useEffect(() => {
+      form.setFieldValue('whereasClauses', whereasClauses)
+      form.setFieldValue('nowThereforeClauses', nowThereforeClauses)
+      form.setFieldValue('resolvedClauses', resolvedClauses)
+    }, [whereasClauses, nowThereforeClauses, resolvedClauses, form])
 
     // Sync title & ABC when source selection changes
     useEffect(() => {
@@ -499,8 +599,19 @@ export const CreateBacResolutionForm = forwardRef<
     ])
 
     useEffect(() => {
-      onDirtyChange?.(form.state.isDirty || currentStep > 1)
-    }, [form.state.isDirty, currentStep, onDirtyChange])
+      const hasClauses =
+        whereasClauses.length > 0 ||
+        nowThereforeClauses.length > 0 ||
+        resolvedClauses.length > 0
+      onDirtyChange?.(form.state.isDirty || currentStep > 1 || hasClauses)
+    }, [
+      form.state.isDirty,
+      currentStep,
+      whereasClauses.length,
+      nowThereforeClauses.length,
+      resolvedClauses.length,
+      onDirtyChange,
+    ])
 
     const handleNextStep = async () => {
       if (currentStep === 1) {
@@ -557,6 +668,50 @@ export const CreateBacResolutionForm = forwardRef<
 
     const handleSubmit = async () => {
       setSubmitError(null)
+
+      const currentWhereas = whereasClausesRef.current
+      const currentNowTherefore = nowThereforeClausesRef.current
+      const currentResolved = resolvedClausesRef.current
+
+      const missingWhereas = currentWhereas.length === 0
+      const missingNowTherefore = currentNowTherefore.length === 0
+      const missingResolved = currentResolved.length === 0
+
+      if (missingWhereas || missingNowTherefore || missingResolved) {
+        setShowClauseErrors(true)
+        if (missingWhereas) setIsWhereasExpanded(true)
+        if (missingNowTherefore) setIsNowThereforeExpanded(true)
+        if (missingResolved) setIsResolvedExpanded(true)
+
+        const missingParts: string[] = []
+        if (missingWhereas) missingParts.push('WHEREAS')
+        if (missingNowTherefore) missingParts.push('NOW, THEREFORE')
+        if (missingResolved) missingParts.push('RESOLVED')
+
+        toast.error(
+          `Please add at least one clause for: ${missingParts.join(', ')}.`,
+        )
+        return
+      }
+
+      const values = form.state.values
+      if (!values.title?.trim()) {
+        toast.error('Project Title is required.')
+        return
+      }
+      if (!values.resolutionNumber?.trim()) {
+        toast.error('Resolution Number is required.')
+        return
+      }
+      if (!values.resolutionType?.trim()) {
+        toast.error('Resolution Type is required.')
+        return
+      }
+      if (!values.dateResolved?.trim()) {
+        toast.error('Date Resolved is required.')
+        return
+      }
+
       await form.handleSubmit()
     }
 
@@ -581,6 +736,9 @@ export const CreateBacResolutionForm = forwardRef<
         selectedAppIds,
         selectedAppItems,
         selectedConsolidatedPr,
+        whereasClauses,
+        nowThereforeClauses,
+        resolvedClauses,
       ],
     )
 
@@ -665,7 +823,7 @@ export const CreateBacResolutionForm = forwardRef<
             onSubmit={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              form.handleSubmit()
+              handleSubmit()
             }}
             className="space-y-6"
           >
@@ -1042,6 +1200,7 @@ export const CreateBacResolutionForm = forwardRef<
             <div className="space-y-4">
               {/* 1. WHEREAS CLAUSES (REQUIRED) */}
               <ClauseSection
+                id="section-whereas-clauses"
                 title="WHEREAS Clauses"
                 description="Legal context and background clauses for this resolution."
                 badgeRequired={true}
@@ -1052,13 +1211,19 @@ export const CreateBacResolutionForm = forwardRef<
                 onOpenPicker={() => setPickerModalType('Whereas')}
                 onOpenCreate={() => setCreateModalType('Whereas')}
                 onChangeItems={setWhereasClauses}
+                errorMessage={
+                  showClauseErrors && whereasClauses.length === 0
+                    ? 'At least one WHEREAS clause is required.'
+                    : null
+                }
               />
 
-              {/* 2. NOW, THEREFORE CLAUSES (OPTIONAL) */}
+              {/* 2. NOW, THEREFORE CLAUSES (REQUIRED) */}
               <ClauseSection
+                id="section-now-therefore-clauses"
                 title="NOW, THEREFORE Clauses"
                 description="Committee premise and transition clauses."
-                badgeRequired={false}
+                badgeRequired={true}
                 items={nowThereforeClauses}
                 clausesMap={allClausesMap}
                 isExpanded={isNowThereforeExpanded}
@@ -1068,13 +1233,19 @@ export const CreateBacResolutionForm = forwardRef<
                 onOpenPicker={() => setPickerModalType('NowTherefore')}
                 onOpenCreate={() => setCreateModalType('NowTherefore')}
                 onChangeItems={setNowThereforeClauses}
+                errorMessage={
+                  showClauseErrors && nowThereforeClauses.length === 0
+                    ? 'At least one NOW, THEREFORE clause is required.'
+                    : null
+                }
               />
 
-              {/* 3. RESOLVED CLAUSES (OPTIONAL) */}
+              {/* 3. RESOLVED CLAUSES (REQUIRED) */}
               <ClauseSection
+                id="section-resolved-clauses"
                 title="RESOLVED Clauses"
                 description="Final resolution decisions and award recommendations."
-                badgeRequired={false}
+                badgeRequired={true}
                 items={resolvedClauses}
                 clausesMap={allClausesMap}
                 isExpanded={isResolvedExpanded}
@@ -1082,6 +1253,11 @@ export const CreateBacResolutionForm = forwardRef<
                 onOpenPicker={() => setPickerModalType('Resolved')}
                 onOpenCreate={() => setCreateModalType('Resolved')}
                 onChangeItems={setResolvedClauses}
+                errorMessage={
+                  showClauseErrors && resolvedClauses.length === 0
+                    ? 'At least one RESOLVED clause is required.'
+                    : null
+                }
               />
             </div>
           </form>
@@ -1850,6 +2026,7 @@ export function SourceRecordPickerStep({
 
 /* ── CLAUSE SECTION COMPONENT (COLLAPSIBLE) ──────────────────────────────── */
 interface ClauseSectionProps {
+  id?: string
   title: string
   description: string
   badgeRequired: boolean
@@ -1862,9 +2039,11 @@ interface ClauseSectionProps {
   onChangeItems: (
     items: { resolutionClauseId: string; order: number }[],
   ) => void
+  errorMessage?: string | null
 }
 
 function ClauseSection({
+  id,
   title,
   description,
   badgeRequired,
@@ -1875,6 +2054,7 @@ function ClauseSection({
   onOpenPicker,
   onOpenCreate,
   onChangeItems,
+  errorMessage,
 }: ClauseSectionProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
@@ -1939,7 +2119,15 @@ function ClauseSection({
   }
 
   return (
-    <div className="rounded-lg border border-default-200 bg-white overflow-hidden shadow-xs">
+    <div
+      id={id}
+      className={cn(
+        'rounded-lg border bg-white overflow-hidden shadow-xs transition-colors',
+        errorMessage
+          ? 'border-destructive/50 ring-1 ring-destructive/20'
+          : 'border-default-200',
+      )}
+    >
       <div
         onClick={onToggleExpand}
         className="p-3.5 bg-default-50/70 flex items-center justify-between cursor-pointer select-none hover:bg-default-100/70 transition-colors"
@@ -1948,12 +2136,28 @@ function ClauseSection({
           <FileText className="h-4 w-4 text-primary" />
           <h4 className="font-bold text-sm text-default-900">{title}</h4>
           {badgeRequired ? (
-            <Badge
-              variant="outline"
-              className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold"
-            >
-              Required (≥1)
-            </Badge>
+            items.length >= 1 ? (
+              <Badge
+                variant="outline"
+                className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[10px] font-semibold flex items-center gap-1"
+              >
+                <Check className="h-2.5 w-2.5" /> Satisfied
+              </Badge>
+            ) : errorMessage ? (
+              <Badge
+                variant="outline"
+                className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold"
+              >
+                Required (≥1)
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] font-semibold"
+              >
+                Required (≥1)
+              </Badge>
+            )
           ) : (
             <Badge
               variant="secondary"
@@ -2004,6 +2208,13 @@ function ClauseSection({
           </Button>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="mx-3.5 my-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-2 text-xs text-destructive font-medium shadow-2xs">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       {isExpanded && (
         <div className="p-4 space-y-3 border-t border-default-200">

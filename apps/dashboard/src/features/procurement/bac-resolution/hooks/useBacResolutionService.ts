@@ -1,9 +1,10 @@
-﻿import {
+import {
   CircleCheckBig,
   Clock3,
   FileClock,
   LayoutList,
   RotateCcw,
+  type LucideIcon,
 } from 'lucide-react'
 import { useBacResolutionWorkspaceState } from './useBacResolutionWorkspaceState'
 import type {
@@ -15,7 +16,7 @@ export type MetricCard = {
   key: string
   label: string
   count: number
-  icon: any
+  icon: LucideIcon
   containerClass: string
   iconClass: string
   valueClass: string

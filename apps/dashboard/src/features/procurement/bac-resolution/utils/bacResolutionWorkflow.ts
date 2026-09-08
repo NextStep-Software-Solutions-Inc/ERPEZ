@@ -255,29 +255,42 @@ export function resolveBacScheduleEntryState({
   }
 }
 
+interface FlexibleProcurementModeContainer {
+  procurementModeName?: string | null
+  ProcurementModeName?: string | null
+  modeOfProcurementName?: string | null
+  ModeOfProcurementName?: string | null
+  modeOfProcurement?: string | null
+  ModeOfProcurement?: string | null
+  procurementMode?: { name?: string | null } | string | null
+  ProcurementMode?: { name?: string | null } | string | null
+  id?: string | null
+  cprNumber?: string | null
+}
+
 export function getBacProjectProcurementMode(project: BacProject | null | undefined): string {
   if (!project) return ''
 
   // 1. APP Item source mode
-  const appItem = project.appItem as any
+  const appItem = project.appItem as unknown as FlexibleProcurementModeContainer | undefined
   const appItemMode =
     appItem?.procurementModeName ||
     appItem?.ProcurementModeName ||
-    appItem?.ProcurementMode?.name ||
-    appItem?.procurementMode?.name ||
+    (typeof appItem?.ProcurementMode === 'object' && appItem.ProcurementMode !== null ? appItem.ProcurementMode.name : null) ||
+    (typeof appItem?.procurementMode === 'object' && appItem.procurementMode !== null ? appItem.procurementMode.name : null) ||
     appItem?.modeOfProcurement ||
     ''
   if (appItemMode) return appItemMode
 
   // 2. Consolidated PR source mode
-  const cpr = project.consolidatedPR as any
+  const cpr = project.consolidatedPR as unknown as FlexibleProcurementModeContainer | undefined
   const cprMode =
     cpr?.modeOfProcurementName ||
     cpr?.ModeOfProcurementName ||
     cpr?.modeOfProcurement ||
     cpr?.ModeOfProcurement ||
-    cpr?.procurementMode?.name ||
-    cpr?.ProcurementMode?.name ||
+    (typeof cpr?.procurementMode === 'object' && cpr.procurementMode !== null ? cpr.procurementMode.name : null) ||
+    (typeof cpr?.ProcurementMode === 'object' && cpr.ProcurementMode !== null ? cpr.ProcurementMode.name : null) ||
     ''
   if (cprMode) return cprMode
 
@@ -293,9 +306,10 @@ export function getBacProjectProcurementMode(project: BacProject | null | undefi
           (cprNum && candidate.prNumber === cprNum),
       )
     if (storePr) {
+      const storePrCandidate = storePr as unknown as FlexibleProcurementModeContainer
       const storeMop =
-        (storePr as any).modeOfProcurementName ||
-        (storePr as any).modeOfProcurement ||
+        storePrCandidate.modeOfProcurementName ||
+        storePrCandidate.modeOfProcurement ||
         ''
       if (storeMop) return storeMop
       if (storePr.itemMOPs) {
@@ -312,11 +326,17 @@ export function getBacProjectProcurementMode(project: BacProject | null | undefi
   }
 
   // 3. Direct project procurement mode
+  const projectContainer = project as unknown as FlexibleProcurementModeContainer
   const directMode =
-    (project as any)?.procurementMode?.name ||
-    (project as any)?.ProcurementMode?.name ||
-    (project as any)?.procurementModeName ||
-    (project as any)?.procurementMode ||
+    (typeof projectContainer.procurementMode === 'object' && projectContainer.procurementMode !== null
+      ? projectContainer.procurementMode.name
+      : typeof projectContainer.procurementMode === 'string'
+        ? projectContainer.procurementMode
+        : null) ||
+    (typeof projectContainer.ProcurementMode === 'object' && projectContainer.ProcurementMode !== null
+      ? projectContainer.ProcurementMode.name
+      : null) ||
+    projectContainer.procurementModeName ||
     ''
   return directMode
 }
@@ -344,8 +364,7 @@ export function isBacProjectReadyForScheduling(
   // Must be ConsolidatedPR source type
   const isConsolidatedPR =
     project.sourceType === 'ConsolidatedPR' ||
-    (project.sourceType as any) === '0' ||
-    (project.sourceType as any) === 0
+    String(project.sourceType) === '0'
 
   if (!isConsolidatedPR) return false
 

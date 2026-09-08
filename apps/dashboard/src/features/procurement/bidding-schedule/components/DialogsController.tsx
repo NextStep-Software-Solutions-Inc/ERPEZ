@@ -64,7 +64,7 @@ export function DialogsController({
         isSubmitting={isSubmitting}
       />
 
-      {schedule && selectedMilestone && (
+      {schedule && selectedMilestone && schedule.status === 'draft' && (
         <EditMilestoneDialog
           open={editOpen}
           onOpenChange={setEditOpen}

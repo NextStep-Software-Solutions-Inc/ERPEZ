@@ -5,6 +5,7 @@ import {
 } from '../../bidding-schedule/types'
 import type {
   BiddingMasterCalendarFilters,
+  BiddingMasterCalendarResolutionOption,
   DerivedCalendarProjectStatus,
 } from '../types'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,7 @@ import {
 
 interface BiddingMasterCalendarFiltersPanelProps {
   filters: BiddingMasterCalendarFilters
+  resolutionOptions?: BiddingMasterCalendarResolutionOption[]
   milestoneOptions: Array<{ value: string; label: string }>
   officeOptions: string[]
   fiscalYearOptions: string[]
@@ -47,6 +49,7 @@ function toArrayValue(value: string): string[] {
 
 export function BiddingMasterCalendarFiltersPanel({
   filters,
+  resolutionOptions = [],
   milestoneOptions,
   officeOptions,
   fiscalYearOptions,
@@ -54,7 +57,7 @@ export function BiddingMasterCalendarFiltersPanel({
   onReset,
 }: BiddingMasterCalendarFiltersPanelProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
@@ -66,6 +69,28 @@ export function BiddingMasterCalendarFiltersPanel({
           className="pl-8"
         />
       </div>
+
+      <Select
+        value={filters.bacResolutionId || 'all'}
+        onValueChange={(value) =>
+          onChange({
+            ...filters,
+            bacResolutionId: value === 'all' ? null : value,
+          })
+        }
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="BAC Resolution" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All BAC Resolutions</SelectItem>
+          {resolutionOptions.map((option) => (
+            <SelectItem key={option.id} value={option.id}>
+              {option.number} — {option.title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <Select
         value={toSelectValue(filters.milestoneKeys)}

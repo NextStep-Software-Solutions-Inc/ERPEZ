@@ -27,13 +27,12 @@ import type {
   BacProject,
   BacProjectDetails,
 } from '../types'
-import { ClauseTemplateManagerDialog } from './ClauseTemplateManagerDialog'
 import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
 import { useSubmitBacResolution } from '../handlers/hooks'
 import { deleteBacResolutionRequest } from '../handlers/deleteBacResolutionRequest'
 import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
-import { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import { toast } from 'sonner'
+import { CreateBacResolutionPayload } from '../handlers'
 
 const useDeleteBacResolution = createMutationHookFromTemplate(deleteBacResolutionRequest)
 const useUpdateBacResolution = createMutationHookFromTemplate(updateBacResolutionRequest)
@@ -75,7 +74,7 @@ export function BacResolutionWorkspace({
   bacListRoutePath = '/v2/bac-resolutions',
 }: BacResolutionWorkspaceProps) {
   const navigate = useNavigate({
-    from: '/v2/bac-resolutions/'
+    from: '/v2/bac-resolutions'
   })
   const queryClient = useQueryClient()
   const { mutateAsync: deleteBacProject } = useDeleteBacResolution()
@@ -116,7 +115,6 @@ export function BacResolutionWorkspace({
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [docPreviewOpen, setDocPreviewOpen] = useState(false)
   const [createPrModalOpen, setCreatePrModalOpen] = useState(false)
-  const [clauseManagerOpen, setClauseManagerOpen] = useState(false)
 
   // Inbox cards definition
   const inboxCards = useMemo(() => {
@@ -270,7 +268,7 @@ export function BacResolutionWorkspace({
                   className="gap-1.5 text-xs h-9 bg-white/80 hover:bg-white shadow-xs border-default-300"
                 >
                   <BookOpen className="h-3.5 w-3.5 text-primary" />
-                  Manage WHEREAS Clauses
+                  Manage Resolution Clauses
                 </Button>
               )}
 
@@ -430,11 +428,6 @@ export function BacResolutionWorkspace({
           open={createPrModalOpen}
           onOpenChange={setCreatePrModalOpen}
           resolution={null}
-        />
-
-        <ClauseTemplateManagerDialog
-          open={clauseManagerOpen}
-          onOpenChange={setClauseManagerOpen}
         />
       </PageContainerDashtail>
     </div>

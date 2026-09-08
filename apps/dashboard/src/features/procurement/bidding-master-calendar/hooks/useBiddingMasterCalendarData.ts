@@ -103,6 +103,8 @@ export function useBiddingMasterCalendarData(
         isDueSoon,
         isOverdue,
         isProvisional: evt.scheduleStatus === 'draft',
+        startDate: evt.startDate,
+        endDate: evt.endDate || evt.startDate,
       }
     })
 
@@ -130,6 +132,19 @@ export function useBiddingMasterCalendarData(
         filteredEvents.filter((event) => event.isOverdue).length,
     }
 
+    const resolutionOptions = Array.from(
+      new Map(
+        events.map((event) => [
+          event.bacResolutionId,
+          {
+            id: event.bacResolutionId,
+            number: event.bacResolutionNumber,
+            title: event.primaryProjectName,
+          },
+        ]),
+      ).values(),
+    ).sort((left, right) => left.number.localeCompare(right.number))
+
     return {
       isLoading,
       error,
@@ -143,6 +158,7 @@ export function useBiddingMasterCalendarData(
       summary,
       conflictDetails: summaryData?.conflictDetails ?? [],
       options: {
+        resolutionOptions,
         milestoneOptions: Array.from(
           new Map(
             events.map((event) => [event.milestoneKey, event.milestoneName]),
