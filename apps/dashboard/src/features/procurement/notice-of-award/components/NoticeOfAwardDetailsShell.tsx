@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,6 +15,8 @@ import {
   Calendar,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   FileCheck2,
   FileDown,
   FileSignature,
@@ -274,7 +277,7 @@ export function NoticeOfAwardDetailsShell({
                   <TableRow>
                     <TableHead className="font-bold text-default-900 py-3">Category</TableHead>
                     <TableHead className="font-bold text-default-900 py-3">Item Name</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Description</TableHead>
+                    <TableHead className="font-bold text-default-900 py-3 min-w-[280px] max-w-md">Description</TableHead>
                     <TableHead className="font-bold text-default-900 py-3">Qty</TableHead>
                     <TableHead className="font-bold text-default-900 py-3">Unit</TableHead>
                     <TableHead className="font-bold text-default-900 py-3">Unit Price</TableHead>
@@ -285,18 +288,20 @@ export function NoticeOfAwardDetailsShell({
                   {noticeOfAward.lineItems.length ? (
                     noticeOfAward.lineItems.map((lineItem) => (
                       <TableRow key={lineItem.id} className="transition-colors duration-150 hover:bg-default-50/50">
-                        <TableCell className="font-medium text-default-800">{lineItem.category}</TableCell>
-                        <TableCell className="font-semibold text-default-950">{lineItem.itemName}</TableCell>
-                        <TableCell className="text-default-600">{lineItem.description}</TableCell>
-                        <TableCell className="font-semibold text-default-900">{lineItem.quantity}</TableCell>
-                        <TableCell className="text-default-500">{lineItem.unit}</TableCell>
-                        <TableCell className="font-mono text-default-700">
+                        <TableCell className="font-medium text-default-800 align-top">{lineItem.category}</TableCell>
+                        <TableCell className="font-semibold text-default-950 align-top">{lineItem.itemName}</TableCell>
+                        <TableCell className="text-default-600 min-w-[280px] max-w-md align-top">
+                          <ExpandableItemDescription description={lineItem.description} />
+                        </TableCell>
+                        <TableCell className="font-semibold text-default-900 align-top">{lineItem.quantity}</TableCell>
+                        <TableCell className="text-default-500 align-top">{lineItem.unit}</TableCell>
+                        <TableCell className="text-default-700 align-top">
                           {lineItem.unitPrice.toLocaleString('en-PH', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
                         </TableCell>
-                        <TableCell className="font-mono font-bold text-default-900 text-right">
+                        <TableCell className="font-bold text-default-900 text-right align-top">
                           {lineItem.amount.toLocaleString('en-PH', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
@@ -830,6 +835,86 @@ function InfoBlock({
           {value}
         </div>
       </div>
+    </div>
+  )
+}
+
+function parseDescriptionSections(description: string) {
+  const specKey = 'Specifications:'
+  const justKey = 'Justification:'
+
+  const specIdx = description.indexOf(specKey)
+  const justIdx = description.indexOf(justKey)
+
+  if (specIdx !== -1 && justIdx !== -1 && specIdx < justIdx) {
+    const specs = description.slice(specIdx + specKey.length, justIdx).trim()
+    const justification = description.slice(justIdx + justKey.length).trim()
+    return { specs, justification }
+  }
+
+  return null
+}
+
+function ExpandableItemDescription({ description }: { description?: string | null }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  if (!description || !description.trim()) {
+    return <span className="text-default-400 text-xs italic">-</span>
+  }
+
+  const trimmed = description.trim()
+  const isLong = trimmed.length > 90
+  const parsed = isExpanded ? parseDescriptionSections(trimmed) : null
+
+  if (!isLong) {
+    return (
+      <p className="text-xs text-default-600 leading-relaxed break-words">
+        {trimmed}
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {isExpanded ? (
+        parsed ? (
+          <div className="space-y-2 text-xs leading-relaxed">
+            <div className="rounded-lg bg-default-50/80 p-2.5 border border-default-200/60 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-default-600 mb-1">
+                Specifications
+              </div>
+              <p className="text-default-800 break-words">{parsed.specs}</p>
+            </div>
+            <div className="rounded-lg bg-default-50/80 p-2.5 border border-default-200/60 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-default-600 mb-1">
+                Justification
+              </div>
+              <p className="text-default-800 break-words">{parsed.justification}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-default-700 whitespace-pre-line leading-relaxed break-words">
+            {trimmed}
+          </p>
+        )
+      ) : (
+        <p className="text-xs text-default-600 line-clamp-2 leading-relaxed break-words">
+          {trimmed}
+        </p>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setIsExpanded((prev) => !prev)}
+        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary-600 hover:underline transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded cursor-pointer"
+      >
+        <span>{isExpanded ? 'Show less' : 'Show more'}</span>
+        {isExpanded ? (
+          <ChevronUp className="h-3 w-3" />
+        ) : (
+          <ChevronDown className="h-3 w-3" />
+        )}
+      </button>
     </div>
   )
 }
