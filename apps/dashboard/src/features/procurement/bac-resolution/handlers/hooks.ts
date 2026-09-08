@@ -50,6 +50,11 @@ function makeMutationWithRefresh<TData, TVariables>(
           queryClient.invalidateQueries({ queryKey }),
         ),
       )
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/bac/projects'),
+      })
     }
 
     return {
