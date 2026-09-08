@@ -374,10 +374,10 @@ export function DetailsPanel({
     selectedProject.bacResolutions?.flatMap((item) =>
       Array.isArray(item.whereasClauses)
         ? item.whereasClauses.map((clause) => ({
-            id: clause.id,
-            name: clause.name || 'Whereas Clause',
-            body: clause.body || '',
-          }))
+          id: clause.id,
+          name: clause.name || 'Whereas Clause',
+          body: clause.body || '',
+        }))
         : [],
     ) || []
 
@@ -696,11 +696,11 @@ export function DetailsPanel({
                   <p className="font-medium text-foreground">
                     {dateResolved
                       ? new Date(dateResolved).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })
                       : 'Pending Resolution Date'}{' '}
                     at {resolvedLocation || 'BAC Office'}
                   </p>
@@ -777,13 +777,7 @@ export function DetailsPanel({
             </Card>
           </div>
 
-          {/* Bidding Activity Timeline & Interval Strip (shown only for single selected resolution) */}
-          {selectedId && (
-            <BiddingScheduleGanttStrip
-              bacResolutionId={selectedId}
-              bacResolutionNumber={resolutionNumber}
-            />
-          )}
+
         </TabsContent>
 
         {/* TAB 2: PROCUREMENT SOURCE */}

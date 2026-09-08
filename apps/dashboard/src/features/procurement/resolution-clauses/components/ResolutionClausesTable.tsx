@@ -173,9 +173,14 @@ export function ResolutionClausesTable({
                             {clause.body}
                           </p>
                         </TooltipTrigger>
-                        <TooltipContent side="bottom" align="start" className="max-w-md p-3 text-xs leading-relaxed">
-                          <p className="font-semibold mb-1 text-foreground">{clause.name}</p>
-                          <p className="font-serif text-muted-foreground">{clause.body}</p>
+                        <TooltipContent
+                          side="bottom"
+                          align="start"
+                          color="secondary"
+                          className="max-w-md p-3 text-xs leading-relaxed bg-white dark:bg-card border border-default-200 text-default-900 shadow-md"
+                        >
+                          <p className="font-semibold mb-1 text-default-900">{clause.name}</p>
+                          <p className="font-serif text-default-700 leading-relaxed whitespace-pre-wrap">{clause.body}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TableCell>
