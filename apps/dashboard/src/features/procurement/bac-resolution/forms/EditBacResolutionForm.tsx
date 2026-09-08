@@ -21,8 +21,6 @@ import {
   ChevronUp,
   ChevronDown,
   GripVertical,
-  PackageCheck,
-  Layers,
   AlertTriangle,
   Check,
 } from 'lucide-react'
@@ -134,7 +132,7 @@ export const EditBacResolutionForm = forwardRef<
     const { data: resolutionClausesData, isPending: isClausesPending } =
       useResolutionClauses({
         pathParams: {},
-        queryParams: { pageSize: 200, ClauseType: pickerModalType || undefined },
+        queryParams: { pageSize: 200, filters: pickerModalType || undefined },
         enabled: pickerModalType !== null,
       })
 

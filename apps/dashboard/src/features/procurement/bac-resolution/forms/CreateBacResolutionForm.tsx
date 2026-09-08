@@ -85,6 +85,7 @@ import type { CreateBacResolutionPayload } from '../handlers/createBacResolution
 import { CreateEditResolutionClauseDialog } from '../dialogs/CreateEditResolutionClauseDialog'
 import {
   ResolutionClausePickerModal,
+  normalizeClauseType,
 } from '../dialogs/ResolutionClausePickerModal'
 
 export const createBacResolutionSchema = z.object({
@@ -185,7 +186,7 @@ export const CreateBacResolutionForm = forwardRef<
     // Multi-APP and Multi-APP Item selection state:
     const [selectedAppIds, setSelectedAppIds] = useState<string[]>(
       initialValues?.appIds ||
-      (initialValues?.appId ? [initialValues.appId] : []),
+        (initialValues?.appId ? [initialValues.appId] : []),
     )
     const [selectedAppItems, setSelectedAppItems] = useState<EligibleAppItem[]>(
       [],
@@ -204,6 +205,31 @@ export const CreateBacResolutionForm = forwardRef<
     const [resolvedClauses, setResolvedClauses] = useState<
       { resolutionClauseId: string; order: number }[]
     >([])
+
+    // Locally created custom clauses for instant preview:
+    const [createdClauses, setCreatedClauses] = useState<ResolutionClause[]>([])
+
+    // Stable references to prevent stale closures in callbacks:
+    const whereasClausesRef = useRef(whereasClauses)
+    whereasClausesRef.current = whereasClauses
+
+    const nowThereforeClausesRef = useRef(nowThereforeClauses)
+    nowThereforeClausesRef.current = nowThereforeClauses
+
+    const resolvedClausesRef = useRef(resolvedClauses)
+    resolvedClausesRef.current = resolvedClauses
+
+    const sourceTypeRef = useRef(selectedSourceType)
+    sourceTypeRef.current = selectedSourceType
+
+    const appIdsRef = useRef(selectedAppIds)
+    appIdsRef.current = selectedAppIds
+
+    const appItemsRef = useRef(selectedAppItems)
+    appItemsRef.current = selectedAppItems
+
+    const consolidatedPrRef = useRef(selectedConsolidatedPr)
+    consolidatedPrRef.current = selectedConsolidatedPr
 
     // Modals state:
     const [pickerModalType, setPickerModalType] =
@@ -228,17 +254,6 @@ export const CreateBacResolutionForm = forwardRef<
         enabled: pickerModalType !== null,
       })
 
-    const clauseTemplates = useMemo<ResolutionClause[]>(() => {
-      if (!resolutionClausesData) return []
-      if (Array.isArray(resolutionClausesData.data)) {
-        return resolutionClausesData.data
-      }
-      if (Array.isArray(resolutionClausesData)) {
-        return resolutionClausesData
-      }
-      return []
-    }, [resolutionClausesData])
-
     // Load full clause lookup for rendering names/bodies
     const { data: allClausesData } = useResolutionClauses({
       pathParams: {},
@@ -255,8 +270,42 @@ export const CreateBacResolutionForm = forwardRef<
       for (const item of list) {
         map.set(item.id, item)
       }
+      for (const item of createdClauses) {
+        map.set(item.id, item)
+      }
       return map
-    }, [allClausesData])
+    }, [allClausesData, createdClauses])
+
+    const clauseTemplates = useMemo<ResolutionClause[]>(() => {
+      const map = new Map<string, ResolutionClause>()
+      const addItems = (data: unknown) => {
+        if (!data) return
+        const list = Array.isArray((data as { data?: unknown })?.data)
+          ? (data as { data: ResolutionClause[] }).data
+          : Array.isArray(data)
+            ? (data as ResolutionClause[])
+            : []
+        for (const item of list) {
+          if (item?.id) {
+            map.set(item.id, item)
+          }
+        }
+      }
+
+      addItems(allClausesData)
+      addItems(resolutionClausesData)
+      for (const item of createdClauses) {
+        map.set(item.id, item)
+      }
+
+      const allList = Array.from(map.values())
+      if (!pickerModalType) return allList
+
+      const targetType = normalizeClauseType(pickerModalType)
+      return allList.filter(
+        (c) => normalizeClauseType(c.clauseType) === targetType,
+      )
+    }, [allClausesData, resolutionClausesData, createdClauses, pickerModalType])
 
     const { data: appsData } = useEligibleAppsForProcurement({})
     const allApps = useMemo<EligibleAppForProcurement[]>(() => {
@@ -2059,7 +2108,9 @@ function ClauseSection({
     <div
       className={cn(
         'rounded-lg border bg-white overflow-hidden shadow-xs transition-colors',
-        errorMessage ? 'border-destructive/50 ring-1 ring-destructive/20' : 'border-default-200',
+        errorMessage
+          ? 'border-destructive/50 ring-1 ring-destructive/20'
+          : 'border-default-200',
       )}
     >
       <div
