@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react'
+import { useEffect, useMemo, useState, forwardRef, useImperativeHandle, useRef } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Input } from '@/components/ui/input'
@@ -24,6 +24,7 @@ import {
   PackageCheck,
   Layers,
   AlertTriangle,
+  Check,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -44,7 +45,10 @@ import type {
   ResolutionClauseType,
 } from '../types'
 import { CreateEditResolutionClauseDialog } from '../dialogs/CreateEditResolutionClauseDialog'
-import { ResolutionClausePickerModal } from '../dialogs/ResolutionClausePickerModal'
+import {
+  ResolutionClausePickerModal,
+  normalizeClauseType,
+} from '../dialogs/ResolutionClausePickerModal'
 import { UserPickerCombobox } from './CreateBacResolutionForm'
 
 const useResolutionClauses = createQueryHookFromTemplate(getResolutionClausesRequest)
@@ -103,6 +107,19 @@ export const EditBacResolutionForm = forwardRef<
     const [nowThereforeClauses, setNowThereforeClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
     const [resolvedClauses, setResolvedClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
 
+    // Locally created custom clauses for instant preview
+    const [createdClauses, setCreatedClauses] = useState<ResolutionClause[]>([])
+
+    // Stable references to prevent stale closures
+    const whereasClausesRef = useRef(whereasClauses)
+    whereasClausesRef.current = whereasClauses
+
+    const nowThereforeClausesRef = useRef(nowThereforeClauses)
+    nowThereforeClausesRef.current = nowThereforeClauses
+
+    const resolvedClausesRef = useRef(resolvedClauses)
+    resolvedClausesRef.current = resolvedClauses
+
     // Modal state:
     const [pickerModalType, setPickerModalType] = useState<ResolutionClauseType | null>(null)
     const [createModalType, setCreateModalType] = useState<ResolutionClauseType | null>(null)
@@ -121,13 +138,6 @@ export const EditBacResolutionForm = forwardRef<
         enabled: pickerModalType !== null,
       })
 
-    const clauseTemplates = useMemo<ResolutionClause[]>(() => {
-      if (!resolutionClausesData) return []
-      if (Array.isArray(resolutionClausesData.data)) return resolutionClausesData.data
-      if (Array.isArray(resolutionClausesData)) return resolutionClausesData
-      return []
-    }, [resolutionClausesData])
-
     // Load all clauses for lookup
     const { data: allClausesData } = useResolutionClauses({
       pathParams: {},
@@ -144,8 +154,40 @@ export const EditBacResolutionForm = forwardRef<
       for (const item of list) {
         map.set(item.id, item)
       }
+      for (const item of createdClauses) {
+        map.set(item.id, item)
+      }
       return map
-    }, [allClausesData])
+    }, [allClausesData, createdClauses])
+
+    const clauseTemplates = useMemo<ResolutionClause[]>(() => {
+      const map = new Map<string, ResolutionClause>()
+      const addItems = (data: unknown) => {
+        if (!data) return
+        const list = Array.isArray((data as { data?: unknown })?.data)
+          ? ((data as { data: ResolutionClause[] }).data)
+          : Array.isArray(data)
+            ? (data as ResolutionClause[])
+            : []
+        for (const item of list) {
+          if (item?.id) {
+            map.set(item.id, item)
+          }
+        }
+      }
+
+      addItems(allClausesData)
+      addItems(resolutionClausesData)
+      for (const item of createdClauses) {
+        map.set(item.id, item)
+      }
+
+      const allList = Array.from(map.values())
+      if (!pickerModalType) return allList
+
+      const targetType = normalizeClauseType(pickerModalType)
+      return allList.filter((c) => normalizeClauseType(c.clauseType) === targetType)
+    }, [allClausesData, resolutionClausesData, createdClauses, pickerModalType])
 
     // Populate initial clauses
     useEffect(() => {
@@ -193,6 +235,8 @@ export const EditBacResolutionForm = forwardRef<
         payload: { name, body, clauseType: type },
       })
 
+      setCreatedClauses((prev) => [...prev, created])
+
       if (type === 'Whereas') {
         setWhereasClauses((prev) => [
           ...prev,
@@ -230,9 +274,13 @@ export const EditBacResolutionForm = forwardRef<
         setIsSubmitting(true)
         setSubmitError(null)
 
-        const missingWhereas = whereasClauses.length === 0
-        const missingNowTherefore = nowThereforeClauses.length === 0
-        const missingResolved = resolvedClauses.length === 0
+        const currentWhereas = whereasClausesRef.current
+        const currentNowTherefore = nowThereforeClausesRef.current
+        const currentResolved = resolvedClausesRef.current
+
+        const missingWhereas = currentWhereas.length === 0
+        const missingNowTherefore = currentNowTherefore.length === 0
+        const missingResolved = currentResolved.length === 0
 
         if (missingWhereas || missingNowTherefore || missingResolved) {
           setShowClauseErrors(true)
@@ -240,7 +288,12 @@ export const EditBacResolutionForm = forwardRef<
           if (missingNowTherefore) setIsNowThereforeExpanded(true)
           if (missingResolved) setIsResolvedExpanded(true)
           setIsSubmitting(false)
-          toast.error('Please add at least one clause for Whereas, Now Therefore, and Resolved sections.')
+
+          const missingParts: string[] = []
+          if (missingWhereas) missingParts.push('WHEREAS')
+          if (missingNowTherefore) missingParts.push('NOW, THEREFORE')
+          if (missingResolved) missingParts.push('RESOLVED')
+          toast.error(`Please add at least one clause for: ${missingParts.join(', ')}.`)
           return
         }
 
@@ -251,15 +304,15 @@ export const EditBacResolutionForm = forwardRef<
             resolutionNumber: value.resolutionNumber,
             dateResolved: value.dateResolved,
             resolvedLocation: value.resolvedLocation,
-            whereasClauseLinks: whereasClauses.map((c, idx) => ({
+            whereasClauseLinks: currentWhereas.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
-            nowThereforeClauses: nowThereforeClauses.map((c, idx) => ({
+            nowThereforeClauses: currentNowTherefore.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
-            resolvedClauses: resolvedClauses.map((c, idx) => ({
+            resolvedClauses: currentResolved.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
@@ -283,12 +336,41 @@ export const EditBacResolutionForm = forwardRef<
       onDirtyChange?.(form.state.isDirty)
     }, [form.state.isDirty, onDirtyChange])
 
-    useImperativeHandle(ref, () => ({
-      submit: async () => {
-        setSubmitError(null)
-        await form.handleSubmit()
-      },
-    }))
+    const handleSubmit = async () => {
+      setSubmitError(null)
+
+      const currentWhereas = whereasClausesRef.current
+      const currentNowTherefore = nowThereforeClausesRef.current
+      const currentResolved = resolvedClausesRef.current
+
+      const missingWhereas = currentWhereas.length === 0
+      const missingNowTherefore = currentNowTherefore.length === 0
+      const missingResolved = currentResolved.length === 0
+
+      if (missingWhereas || missingNowTherefore || missingResolved) {
+        setShowClauseErrors(true)
+        if (missingWhereas) setIsWhereasExpanded(true)
+        if (missingNowTherefore) setIsNowThereforeExpanded(true)
+        if (missingResolved) setIsResolvedExpanded(true)
+
+        const missingParts: string[] = []
+        if (missingWhereas) missingParts.push('WHEREAS')
+        if (missingNowTherefore) missingParts.push('NOW, THEREFORE')
+        if (missingResolved) missingParts.push('RESOLVED')
+        toast.error(`Please add at least one clause for: ${missingParts.join(', ')}.`)
+        return
+      }
+
+      await form.handleSubmit()
+    }
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        submit: handleSubmit,
+      }),
+      [whereasClauses, nowThereforeClauses, resolvedClauses],
+    )
 
     const appItemLinks: AppItemLinkItem[] = projectDetails?.appItemLinks || []
 
@@ -298,7 +380,7 @@ export const EditBacResolutionForm = forwardRef<
         onSubmit={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          form.handleSubmit()
+          handleSubmit()
         }}
         className="space-y-6"
       >
@@ -780,9 +862,28 @@ function EditClauseSection({
           <FileText className="h-4 w-4 text-primary" />
           <h4 className="font-bold text-sm text-default-900">{title}</h4>
           {badgeRequired ? (
-            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold">
-              Required (≥1)
-            </Badge>
+            items.length >= 1 ? (
+              <Badge
+                variant="outline"
+                className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[10px] font-semibold flex items-center gap-1"
+              >
+                <Check className="h-2.5 w-2.5" /> Satisfied
+              </Badge>
+            ) : errorMessage ? (
+              <Badge
+                variant="outline"
+                className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold"
+              >
+                Required (≥1)
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] font-semibold"
+              >
+                Required (≥1)
+              </Badge>
+            )
           ) : (
             <Badge variant="secondary" className="text-[10px] text-muted-foreground">
               Optional

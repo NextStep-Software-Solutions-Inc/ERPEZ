@@ -4,6 +4,7 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
+  useRef,
 } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
@@ -24,10 +25,6 @@ import {
   Layers,
   CheckCircle2,
   Search,
-  Filter,
-  Building2,
-  Wallet,
-  ChevronRight,
   ChevronUp,
   ChevronDown,
   FileSpreadsheet,
@@ -35,8 +32,6 @@ import {
   Plus,
   Trash2,
   GripVertical,
-  Lock,
-  Unlock,
   CheckCheck,
   RotateCcw,
   AlertTriangle,
@@ -88,7 +83,9 @@ import FieldInfo from '@/components/FieldInfo'
 import type { User } from '@/services/api/users'
 import type { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import { CreateEditResolutionClauseDialog } from '../dialogs/CreateEditResolutionClauseDialog'
-import { ResolutionClausePickerModal } from '../dialogs/ResolutionClausePickerModal'
+import {
+  ResolutionClausePickerModal,
+} from '../dialogs/ResolutionClausePickerModal'
 
 export const createBacResolutionSchema = z.object({
   appId: z.string().optional(),
@@ -188,7 +185,7 @@ export const CreateBacResolutionForm = forwardRef<
     // Multi-APP and Multi-APP Item selection state:
     const [selectedAppIds, setSelectedAppIds] = useState<string[]>(
       initialValues?.appIds ||
-        (initialValues?.appId ? [initialValues.appId] : []),
+      (initialValues?.appId ? [initialValues.appId] : []),
     )
     const [selectedAppItems, setSelectedAppItems] = useState<EligibleAppItem[]>(
       [],
@@ -347,6 +344,9 @@ export const CreateBacResolutionForm = forwardRef<
       return 0
     }, [selectedSourceType, selectedAppItems, selectedConsolidatedPr])
 
+    const inheritedAbcRef = useRef(inheritedAbc)
+    inheritedAbcRef.current = inheritedAbc
+
     const { data: usersData, isPending: isUsersLoading } = useUsers({
       pathParams: {},
       queryParams: { PageSize: 100 },
@@ -370,6 +370,8 @@ export const CreateBacResolutionForm = forwardRef<
         pathParams: {},
         payload: { name, body, clauseType: type },
       })
+
+      setCreatedClauses((prev) => [...prev, created])
 
       if (type === 'Whereas') {
         setWhereasClauses((prev) => [
@@ -422,9 +424,13 @@ export const CreateBacResolutionForm = forwardRef<
         setIsSubmitting(true)
         setSubmitError(null)
 
-        const missingWhereas = whereasClauses.length === 0
-        const missingNowTherefore = nowThereforeClauses.length === 0
-        const missingResolved = resolvedClauses.length === 0
+        const currentWhereas = whereasClausesRef.current
+        const currentNowTherefore = nowThereforeClausesRef.current
+        const currentResolved = resolvedClausesRef.current
+
+        const missingWhereas = currentWhereas.length === 0
+        const missingNowTherefore = currentNowTherefore.length === 0
+        const missingResolved = currentResolved.length === 0
 
         if (missingWhereas || missingNowTherefore || missingResolved) {
           setShowClauseErrors(true)
@@ -432,34 +438,47 @@ export const CreateBacResolutionForm = forwardRef<
           if (missingNowTherefore) setIsNowThereforeExpanded(true)
           if (missingResolved) setIsResolvedExpanded(true)
           setIsSubmitting(false)
-          toast.error('Please add at least one clause for Whereas, Now Therefore, and Resolved sections.')
+
+          const missingParts: string[] = []
+          if (missingWhereas) missingParts.push('WHEREAS')
+          if (missingNowTherefore) missingParts.push('NOW, THEREFORE')
+          if (missingResolved) missingParts.push('RESOLVED')
+          toast.error(
+            `Please add at least one clause for: ${missingParts.join(', ')}.`,
+          )
           return
         }
 
         try {
+          const currentSourceType = sourceTypeRef.current
+          const currentAppIds = appIdsRef.current
+          const currentAppItems = appItemsRef.current
+          const currentConsolidatedPr = consolidatedPrRef.current
+          const currentInheritedAbc = inheritedAbcRef.current
+
           const payload: CreateBacResolutionPayload = {
             sourceType:
-              selectedSourceType === 'AppItem' ? 'APPItem' : 'ConsolidatedPR',
-            appId: selectedAppIds[0],
-            appIds: selectedAppIds,
-            appItemId: selectedAppItems[0]?.id,
-            appItemIds: selectedAppItems.map((i) => i.id),
-            consolidatedPRId: selectedConsolidatedPr?.id,
+              currentSourceType === 'AppItem' ? 'APPItem' : 'ConsolidatedPR',
+            appId: currentAppIds[0],
+            appIds: currentAppIds,
+            appItemId: currentAppItems[0]?.id,
+            appItemIds: currentAppItems.map((i) => i.id),
+            consolidatedPRId: currentConsolidatedPr?.id,
             title: value.title,
-            abc: inheritedAbc > 0 ? inheritedAbc : value.abc,
+            abc: currentInheritedAbc > 0 ? currentInheritedAbc : value.abc,
             resolutionType: value.resolutionType,
             resolutionNumber: value.resolutionNumber,
             dateResolved: value.dateResolved,
             resolvedLocation: value.resolvedLocation,
-            whereasClauseLinks: whereasClauses.map((c, idx) => ({
+            whereasClauseLinks: currentWhereas.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
-            nowThereforeClauses: nowThereforeClauses.map((c, idx) => ({
+            nowThereforeClauses: currentNowTherefore.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
-            resolvedClauses: resolvedClauses.map((c, idx) => ({
+            resolvedClauses: currentResolved.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
@@ -481,6 +500,13 @@ export const CreateBacResolutionForm = forwardRef<
         }
       },
     })
+
+    // Keep TanStack form values in sync with clause arrays
+    useEffect(() => {
+      form.setFieldValue('whereasClauses', whereasClauses)
+      form.setFieldValue('nowThereforeClauses', nowThereforeClauses)
+      form.setFieldValue('resolvedClauses', resolvedClauses)
+    }, [whereasClauses, nowThereforeClauses, resolvedClauses, form])
 
     // Sync title & ABC when source selection changes
     useEffect(() => {
@@ -515,8 +541,19 @@ export const CreateBacResolutionForm = forwardRef<
     ])
 
     useEffect(() => {
-      onDirtyChange?.(form.state.isDirty || currentStep > 1)
-    }, [form.state.isDirty, currentStep, onDirtyChange])
+      const hasClauses =
+        whereasClauses.length > 0 ||
+        nowThereforeClauses.length > 0 ||
+        resolvedClauses.length > 0
+      onDirtyChange?.(form.state.isDirty || currentStep > 1 || hasClauses)
+    }, [
+      form.state.isDirty,
+      currentStep,
+      whereasClauses.length,
+      nowThereforeClauses.length,
+      resolvedClauses.length,
+      onDirtyChange,
+    ])
 
     const handleNextStep = async () => {
       if (currentStep === 1) {
@@ -574,16 +611,46 @@ export const CreateBacResolutionForm = forwardRef<
     const handleSubmit = async () => {
       setSubmitError(null)
 
-      const missingWhereas = whereasClauses.length === 0
-      const missingNowTherefore = nowThereforeClauses.length === 0
-      const missingResolved = resolvedClauses.length === 0
+      const currentWhereas = whereasClausesRef.current
+      const currentNowTherefore = nowThereforeClausesRef.current
+      const currentResolved = resolvedClausesRef.current
+
+      const missingWhereas = currentWhereas.length === 0
+      const missingNowTherefore = currentNowTherefore.length === 0
+      const missingResolved = currentResolved.length === 0
 
       if (missingWhereas || missingNowTherefore || missingResolved) {
         setShowClauseErrors(true)
         if (missingWhereas) setIsWhereasExpanded(true)
         if (missingNowTherefore) setIsNowThereforeExpanded(true)
         if (missingResolved) setIsResolvedExpanded(true)
-        toast.error('Please add at least one clause for Whereas, Now Therefore, and Resolved sections.')
+
+        const missingParts: string[] = []
+        if (missingWhereas) missingParts.push('WHEREAS')
+        if (missingNowTherefore) missingParts.push('NOW, THEREFORE')
+        if (missingResolved) missingParts.push('RESOLVED')
+
+        toast.error(
+          `Please add at least one clause for: ${missingParts.join(', ')}.`,
+        )
+        return
+      }
+
+      const values = form.state.values
+      if (!values.title?.trim()) {
+        toast.error('Project Title is required.')
+        return
+      }
+      if (!values.resolutionNumber?.trim()) {
+        toast.error('Resolution Number is required.')
+        return
+      }
+      if (!values.resolutionType?.trim()) {
+        toast.error('Resolution Type is required.')
+        return
+      }
+      if (!values.dateResolved?.trim()) {
+        toast.error('Date Resolved is required.')
         return
       }
 
@@ -611,6 +678,9 @@ export const CreateBacResolutionForm = forwardRef<
         selectedAppIds,
         selectedAppItems,
         selectedConsolidatedPr,
+        whereasClauses,
+        nowThereforeClauses,
+        resolvedClauses,
       ],
     )
 
@@ -695,7 +765,7 @@ export const CreateBacResolutionForm = forwardRef<
             onSubmit={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              form.handleSubmit()
+              handleSubmit()
             }}
             className="space-y-6"
           >
@@ -2000,12 +2070,28 @@ function ClauseSection({
           <FileText className="h-4 w-4 text-primary" />
           <h4 className="font-bold text-sm text-default-900">{title}</h4>
           {badgeRequired ? (
-            <Badge
-              variant="outline"
-              className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold"
-            >
-              Required (≥1)
-            </Badge>
+            items.length >= 1 ? (
+              <Badge
+                variant="outline"
+                className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[10px] font-semibold flex items-center gap-1"
+              >
+                <Check className="h-2.5 w-2.5" /> Satisfied
+              </Badge>
+            ) : errorMessage ? (
+              <Badge
+                variant="outline"
+                className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold"
+              >
+                Required (≥1)
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] font-semibold"
+              >
+                Required (≥1)
+              </Badge>
+            )
           ) : (
             <Badge
               variant="secondary"
