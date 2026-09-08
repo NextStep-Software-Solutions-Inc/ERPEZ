@@ -965,14 +965,16 @@ export function DetailsPanel({
                 activeWhereasList.map((clause, idx) => (
                   <div
                     key={clause.id || idx}
-                    className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1"
+                    className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1.5"
                   >
-                    <span className="font-bold text-purple-600 block text-xs">
-                      {clause.name}
-                    </span>
-                    <p className="text-foreground text-xs font-serif leading-relaxed">
-                      {clause.body}
-                    </p>
+                    <div className="text-xs font-serif leading-relaxed">
+                      <span className="font-bold font-sans text-purple-600 mr-1.5 inline-block">
+                        {clause.name}
+                      </span>
+                      <span className="text-foreground">
+                        {clause.body}
+                      </span>
+                    </div>
                   </div>
                 ))
               ) : (
@@ -996,14 +998,16 @@ export function DetailsPanel({
                 {nowThereforeClauseLinks.map((clause, idx) => (
                   <div
                     key={clause.id || idx}
-                    className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1"
+                    className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1.5"
                   >
-                    <span className="font-bold text-primary block text-xs">
-                      {clause.name}
-                    </span>
-                    <p className="text-foreground text-xs font-serif leading-relaxed">
-                      {clause.body}
-                    </p>
+                    <div className="text-xs font-serif leading-relaxed">
+                      <span className="font-bold font-sans text-primary mr-1.5 inline-block">
+                        {clause.name}
+                      </span>
+                      <span className="text-foreground">
+                        {clause.body}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </CardContent>
@@ -1023,14 +1027,16 @@ export function DetailsPanel({
                 {resolvedClauseLinks.map((clause, idx) => (
                   <div
                     key={clause.id || idx}
-                    className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1"
+                    className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1.5"
                   >
-                    <span className="font-bold text-emerald-700 block text-xs">
-                      {clause.name}
-                    </span>
-                    <p className="text-foreground text-xs font-serif leading-relaxed">
-                      {clause.body}
-                    </p>
+                    <div className="text-xs font-serif leading-relaxed">
+                      <span className="font-bold font-sans text-emerald-700 mr-1.5 inline-block">
+                        {clause.name}
+                      </span>
+                      <span className="text-foreground">
+                        {clause.body}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </CardContent>
@@ -1045,7 +1051,7 @@ export function DetailsPanel({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <div className="p-3.5 rounded-xl bg-default-50 border border-default-200">
                   <p className="font-bold text-default-900 text-xs">
                     BAC CHAIRPERSON
@@ -1069,7 +1075,7 @@ export function DetailsPanel({
                     {endUserRep}
                   </p>
                   <p className="text-muted-foreground text-[11px]">
-                    End-user Representative ({officeName})
+                    End-user Representative{officeName ? ` (${officeName})` : ''}
                   </p>
                 </div>
               </div>
@@ -1111,18 +1117,16 @@ export function DetailsPanel({
               </CardContent>
             </Card>
 
-            <Card className="border border-default-200 shadow-sm">
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  Bidding Activity Timeline & Schedule
-                </CardTitle>
-                {selectedId && (
+            {selectedId && (
+              <BiddingScheduleGanttStrip
+                bacResolutionId={selectedId}
+                bacResolutionNumber={resolutionNumber}
+                action={
                   <Button
                     asChild
                     size="sm"
                     variant="outline"
-                    className="gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/5"
+                    className="gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/5 shadow-2xs"
                   >
                     <Link
                       to="/v2/bac-resolutions/$resolutionId/bidding-schedule"
@@ -1132,22 +1136,9 @@ export function DetailsPanel({
                       Open Schedule Workspace
                     </Link>
                   </Button>
-                )}
-              </CardHeader>
-              <CardContent className="p-4 pt-0 space-y-3">
-                <p className="text-xs text-muted-foreground">
-                  Manage the legally compliant RA 9184 bidding milestones,
-                  computed dates, overrides, and calendar tracking for this
-                  resolution.
-                </p>
-                {selectedId && (
-                  <BiddingScheduleGanttStrip
-                    bacResolutionId={selectedId}
-                    bacResolutionNumber={resolutionNumber}
-                  />
-                )}
-              </CardContent>
-            </Card>
+                }
+              />
+            )}
           </TabsContent>
         )}
 

@@ -26,12 +26,16 @@ interface BiddingScheduleGanttStripProps {
   bacResolutionId?: string | null
   bacResolutionNumber?: string | null
   className?: string
+  action?: React.ReactNode
+  description?: string
 }
 
 export function BiddingScheduleGanttStrip({
   bacResolutionId,
   bacResolutionNumber,
   className,
+  action,
+  description,
 }: BiddingScheduleGanttStripProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -165,21 +169,31 @@ export function BiddingScheduleGanttStrip({
 
   return (
     <Card className={cn('border border-default-200 shadow-sm overflow-hidden bg-white dark:bg-card', className)}>
-      <CardHeader className="py-3 px-4 bg-muted/20 border-b border-default-100 flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CalendarRange className="h-4 w-4 text-primary" />
-          <CardTitle className="text-xs font-semibold text-foreground">
-            Bidding Activity Date Interval & Milestone Window
-          </CardTitle>
-          <Badge variant="outline" className="text-[10px] py-0 px-2 font-normal">
-            Single Resolution View
-          </Badge>
+      <CardHeader className="py-3 px-4 bg-muted/20 border-b border-default-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="space-y-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <CalendarRange className="h-4 w-4 text-primary shrink-0" />
+            <CardTitle className="text-sm font-semibold text-foreground">
+              Bidding Activity Timeline & Schedule
+            </CardTitle>
+            <Badge variant="outline" className="text-[10px] py-0 px-2 font-normal">
+              Single Resolution View
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {description ||
+              'Manage the legally compliant RA 9184 bidding milestones, computed dates, overrides, and calendar tracking for this resolution.'}
+          </p>
         </div>
-        {timelineData && (
-          <span className="text-[11px] text-muted-foreground">
-            Window Span: <strong className="text-foreground">{timelineData.totalDays} calendar days</strong>
-          </span>
-        )}
+
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          {timelineData && (
+            <div className="text-xs text-muted-foreground bg-white dark:bg-card px-2.5 py-1 rounded-md border border-default-200 shadow-2xs whitespace-nowrap">
+              Window Span: <strong className="text-foreground font-semibold">{timelineData.totalDays} calendar days</strong>
+            </div>
+          )}
+          {action}
+        </div>
       </CardHeader>
 
       <CardContent className="p-4 space-y-3">
