@@ -12,16 +12,16 @@ import {
   FilePlus,
   Loader2,
   Trash2,
-  AlertTriangle,
   Calendar,
-  CalendarRange,
   History,
   Link as LinkIcon,
   CheckCircle2,
-  Clock,
   Edit,
   Download,
   RotateCcw,
+  Clock,
+  CalendarRange,
+  AlertTriangle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,10 +38,7 @@ import type {
 import {
   createQueryHookFromTemplate,
   createMutationHookFromTemplate,
-  useQueryClient,
-  type APIResponse,
 } from 'erpez-shared-lib'
-import api from '@/services/api'
 import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
 import { generateBACResolutionDocumentRequest } from '../handlers/generateBacResolutionDocumentRequest'
 import { downloadBacResolutionDocumentRequest } from '../handlers/downloadBacResolutionDocumentRequest'
@@ -89,7 +86,6 @@ export function DetailsPanel({
   const [approveOpen, setApproveOpen] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
 
-  const queryClient = useQueryClient()
   const { mutateAsync: approveBacResolution, isPending: isApproving } =
     useApproveBacResolution()
   const { mutateAsync: returnBacResolution, isPending: isReturning } =
@@ -115,48 +111,22 @@ export function DetailsPanel({
   }: ApproveBacResolutionFormValues) => {
     if (!selectedId) return
 
-    const approveTask = async () => {
-      // 1. Upload signed document file first to obtain attachmentFileId
-      const formData = new FormData()
-      formData.append('file', signedDocument)
-
-      const uploadResponse = await api.post<APIResponse<string>>(
-        '/files/upload',
-        formData,
+    try {
+      await toast.promise(
+        approveBacResolution({
+          pathParams: { id: selectedId },
+          payload: { signedDocument },
+          queryParams: { id: selectedId },
+        }),
         {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          loading: 'Uploading document and approving BAC Resolution...',
+          success: 'BAC Resolution approved successfully!',
+          error: (err) =>
+            err instanceof Error
+              ? err.message
+              : 'Failed to approve BAC Resolution.',
         },
       )
-
-      const attachmentFileId = uploadResponse.data?.data
-      if (!attachmentFileId) {
-        throw new Error('Failed to upload signed document.')
-      }
-
-      await approveBacResolution({
-        pathParams: { id: selectedId },
-        payload: { attachmentFileId },
-        queryParams: { id: selectedId },
-      })
-
-      void queryClient.invalidateQueries({
-        predicate: (query) =>
-          typeof query.queryKey[0] === 'string' &&
-          query.queryKey[0].startsWith('/bac/projects'),
-      })
-    }
-
-    try {
-      await toast.promise(approveTask(), {
-        loading: 'Uploading document and approving BAC Resolution...',
-        success: 'BAC Resolution approved successfully!',
-        error: (err) =>
-          err instanceof Error
-            ? err.message
-            : 'Failed to approve BAC Resolution.',
-      })
       setApproveOpen(false)
     } catch {
       // handled by toast
@@ -166,22 +136,11 @@ export function DetailsPanel({
   const handleReturn = async (values: ReturnBacResolutionPayload) => {
     try {
       await toast.promise(
-        returnBacResolution(
-          {
-            payload: values,
-            pathParams: { id: selectedId || '' },
-            queryParams: { id: selectedId || '' },
-          },
-          {
-            onSuccess: async () => {
-              void queryClient.invalidateQueries({
-                predicate: (query) =>
-                  typeof query.queryKey[0] === 'string' &&
-                  query.queryKey[0].startsWith('/bac/projects'),
-              })
-            },
-          },
-        ),
+        returnBacResolution({
+          payload: values,
+          pathParams: { id: selectedId || '' },
+          queryParams: { id: selectedId || '' },
+        }),
         {
           loading: 'Returning BAC Resolution...',
           success: 'BAC Resolution returned for revision.',
@@ -304,7 +263,14 @@ export function DetailsPanel({
   const isAppItemSource = sourceType === 'APPItem'
 
   const consolidatedPR = selectedProject.consolidatedPR as
-    Record<string, any> | undefined
+    | {
+        cprNumber?: string
+        prNumber?: string
+        description?: string
+        modeOfProcurementName?: string
+        modeOfProcurement?: string
+      }
+    | undefined
   const cprNumber = consolidatedPR?.cprNumber || consolidatedPR?.prNumber
   const cprDescription = consolidatedPR?.description
   const cprProcurementMode =
@@ -374,10 +340,10 @@ export function DetailsPanel({
     selectedProject.bacResolutions?.flatMap((item) =>
       Array.isArray(item.whereasClauses)
         ? item.whereasClauses.map((clause) => ({
-          id: clause.id,
-          name: clause.name || 'Whereas Clause',
-          body: clause.body || '',
-        }))
+            id: clause.id,
+            name: clause.name || 'Whereas Clause',
+            body: clause.body || '',
+          }))
         : [],
     ) || []
 
@@ -696,11 +662,11 @@ export function DetailsPanel({
                   <p className="font-medium text-foreground">
                     {dateResolved
                       ? new Date(dateResolved).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })
                       : 'Pending Resolution Date'}{' '}
                     at {resolvedLocation || 'BAC Office'}
                   </p>
@@ -776,8 +742,6 @@ export function DetailsPanel({
               </CardContent>
             </Card>
           </div>
-
-
         </TabsContent>
 
         {/* TAB 2: PROCUREMENT SOURCE */}
@@ -971,9 +935,7 @@ export function DetailsPanel({
                       <span className="font-bold font-sans text-purple-600 mr-1.5 inline-block">
                         {clause.name}
                       </span>
-                      <span className="text-foreground">
-                        {clause.body}
-                      </span>
+                      <span className="text-foreground">{clause.body}</span>
                     </div>
                   </div>
                 ))
@@ -1004,9 +966,7 @@ export function DetailsPanel({
                       <span className="font-bold font-sans text-primary mr-1.5 inline-block">
                         {clause.name}
                       </span>
-                      <span className="text-foreground">
-                        {clause.body}
-                      </span>
+                      <span className="text-foreground">{clause.body}</span>
                     </div>
                   </div>
                 ))}
@@ -1033,9 +993,7 @@ export function DetailsPanel({
                       <span className="font-bold font-sans text-emerald-700 mr-1.5 inline-block">
                         {clause.name}
                       </span>
-                      <span className="text-foreground">
-                        {clause.body}
-                      </span>
+                      <span className="text-foreground">{clause.body}</span>
                     </div>
                   </div>
                 ))}
@@ -1075,7 +1033,8 @@ export function DetailsPanel({
                     {endUserRep}
                   </p>
                   <p className="text-muted-foreground text-[11px]">
-                    End-user Representative{officeName ? ` (${officeName})` : ''}
+                    End-user Representative
+                    {officeName ? ` (${officeName})` : ''}
                   </p>
                 </div>
               </div>

@@ -31,8 +31,8 @@ import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib
 import { useSubmitBacResolution } from '../handlers/hooks'
 import { deleteBacResolutionRequest } from '../handlers/deleteBacResolutionRequest'
 import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
-import { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import { toast } from 'sonner'
+import { CreateBacResolutionPayload } from '../handlers'
 
 const useDeleteBacResolution = createMutationHookFromTemplate(deleteBacResolutionRequest)
 const useUpdateBacResolution = createMutationHookFromTemplate(updateBacResolutionRequest)

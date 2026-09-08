@@ -488,6 +488,15 @@ export const CreateBacResolutionForm = forwardRef<
           if (missingResolved) setIsResolvedExpanded(true)
           setIsSubmitting(false)
 
+          const targetId = missingWhereas
+            ? 'section-whereas-clauses'
+            : missingNowTherefore
+              ? 'section-now-therefore-clauses'
+              : 'section-resolved-clauses'
+          setTimeout(() => {
+            document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }, 50)
+
           const missingParts: string[] = []
           if (missingWhereas) missingParts.push('WHEREAS')
           if (missingNowTherefore) missingParts.push('NOW, THEREFORE')
@@ -1191,6 +1200,7 @@ export const CreateBacResolutionForm = forwardRef<
             <div className="space-y-4">
               {/* 1. WHEREAS CLAUSES (REQUIRED) */}
               <ClauseSection
+                id="section-whereas-clauses"
                 title="WHEREAS Clauses"
                 description="Legal context and background clauses for this resolution."
                 badgeRequired={true}
@@ -1210,6 +1220,7 @@ export const CreateBacResolutionForm = forwardRef<
 
               {/* 2. NOW, THEREFORE CLAUSES (REQUIRED) */}
               <ClauseSection
+                id="section-now-therefore-clauses"
                 title="NOW, THEREFORE Clauses"
                 description="Committee premise and transition clauses."
                 badgeRequired={true}
@@ -1231,6 +1242,7 @@ export const CreateBacResolutionForm = forwardRef<
 
               {/* 3. RESOLVED CLAUSES (REQUIRED) */}
               <ClauseSection
+                id="section-resolved-clauses"
                 title="RESOLVED Clauses"
                 description="Final resolution decisions and award recommendations."
                 badgeRequired={true}
@@ -2014,6 +2026,7 @@ export function SourceRecordPickerStep({
 
 /* ── CLAUSE SECTION COMPONENT (COLLAPSIBLE) ──────────────────────────────── */
 interface ClauseSectionProps {
+  id?: string
   title: string
   description: string
   badgeRequired: boolean
@@ -2030,6 +2043,7 @@ interface ClauseSectionProps {
 }
 
 function ClauseSection({
+  id,
   title,
   description,
   badgeRequired,
@@ -2106,6 +2120,7 @@ function ClauseSection({
 
   return (
     <div
+      id={id}
       className={cn(
         'rounded-lg border bg-white overflow-hidden shadow-xs transition-colors',
         errorMessage

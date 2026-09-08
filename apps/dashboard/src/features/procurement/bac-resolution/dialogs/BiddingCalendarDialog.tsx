@@ -7,12 +7,27 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useProcurementActivityTypes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementActivityTypes'
 import api from '@/services/api'
-import { Calendar, Search, MapPin, Loader2, Plus, ArrowUpDown } from 'lucide-react'
+import {
+  Calendar,
+  Search,
+  MapPin,
+  Loader2,
+  Plus,
+  ArrowUpDown,
+  AlignLeft,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { computeRemainingDays, getRemainingDaysBadgeClass } from '../utils/remainingDays'
+import {
+  computeRemainingDays,
+  getRemainingDaysBadgeClass,
+} from '../utils/remainingDays'
 import type { ProcurementActivityType } from '@/lib/fiscal-year-and-policies/types/procurementActivityTypes'
-import type { ApiResponse, CalendarEventsWithSummary } from '../../bidding-schedule/types'
+import type {
+  ApiResponse,
+  CalendarEventsWithSummary,
+} from '../../bidding-schedule/types'
+import { toast } from 'sonner'
 
 interface CalendarEvent {
   id: string
@@ -103,7 +118,8 @@ function CreateCalendarEventDialog({
     } catch (error: unknown) {
       const msg =
         error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to create bidding schedule.'
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message || 'Failed to create bidding schedule.'
           : error instanceof Error
             ? error.message
             : 'Failed to create bidding schedule.'
@@ -125,7 +141,10 @@ function CreateCalendarEventDialog({
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="dialogActivityType">Procurement Activity Type <span className="text-destructive">*</span></Label>
+            <Label htmlFor="dialogActivityType">
+              Procurement Activity Type{' '}
+              <span className="text-destructive">*</span>
+            </Label>
             <select
               id="dialogActivityType"
               value={activityTypeId}
@@ -144,7 +163,9 @@ function CreateCalendarEventDialog({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="dialogStartDate">Start Date & Time <span className="text-destructive">*</span></Label>
+              <Label htmlFor="dialogStartDate">
+                Start Date & Time <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="dialogStartDate"
                 type="datetime-local"
@@ -154,7 +175,9 @@ function CreateCalendarEventDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="dialogEndDate">End Date & Time <span className="text-destructive">*</span></Label>
+              <Label htmlFor="dialogEndDate">
+                End Date & Time <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="dialogEndDate"
                 type="datetime-local"
@@ -166,7 +189,9 @@ function CreateCalendarEventDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="dialogVenue">Venue <span className="text-destructive">*</span></Label>
+            <Label htmlFor="dialogVenue">
+              Venue <span className="text-destructive">*</span>
+            </Label>
             <div className="relative">
               <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -195,11 +220,17 @@ function CreateCalendarEventDialog({
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Schedule Event
             </Button>
           </div>
@@ -230,9 +261,11 @@ export function BiddingCalendarDialog({
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoadingEvents, setIsLoadingEvents] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  
+
   // Sort State
-  const [sortBy, setSortBy] = useState<'date-asc' | 'date-desc' | 'title-asc' | 'title-desc'>('date-asc')
+  const [sortBy, setSortBy] = useState<
+    'date-asc' | 'date-desc' | 'title-asc' | 'title-desc'
+  >('date-asc')
 
   // Fetch calendar events from API
   const fetchEvents = async (search = '') => {
@@ -241,13 +274,19 @@ export function BiddingCalendarDialog({
       const url = search
         ? `/bac/calendar-events?Search=${encodeURIComponent(search)}`
         : '/bac/calendar-events'
-      const response = await api.get<ApiResponse<CalendarEventsWithSummary | CalendarEvent[]>>(url)
+      const response =
+        await api.get<ApiResponse<CalendarEventsWithSummary | CalendarEvent[]>>(
+          url,
+        )
       const rawData = response.data?.data
       // NOTE: The API contract returns either a wrapped { events: CalendarEvent[] } object
       // or a flat array of CalendarEvent[]. Handling both shapes for backwards compatibility / migration safety.
       // Normalize to flat array here.
       const parsedEvents: CalendarEvent[] =
-        rawData && typeof rawData === 'object' && 'events' in rawData && Array.isArray(rawData.events)
+        rawData &&
+        typeof rawData === 'object' &&
+        'events' in rawData &&
+        Array.isArray(rawData.events)
           ? rawData.events
           : Array.isArray(rawData)
             ? rawData
@@ -274,7 +313,7 @@ export function BiddingCalendarDialog({
   })
   const activityTypeMap = useMemo(() => {
     const map = new Map<string, ProcurementActivityType>()
-    for (const item of (activityTypesData?.data || [])) {
+    for (const item of activityTypesData?.data || []) {
       map.set(item.id, item)
     }
     return map
@@ -326,7 +365,12 @@ export function BiddingCalendarDialog({
                 <ArrowUpDown className="h-4 w-4 text-muted-foreground shrink-0" />
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'date-asc' | 'date-desc' | 'title-asc' | 'title-desc')}
+                  onChange={(e) =>
+                    setSortBy(
+                      e.target.value as
+                        'date-asc' | 'date-desc' | 'title-asc' | 'title-desc',
+                    )
+                  }
                   className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="date-asc">Date (Oldest First)</option>
@@ -338,7 +382,10 @@ export function BiddingCalendarDialog({
             </div>
 
             {bacResolutionId && (
-              <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 shrink-0">
+              <Button
+                onClick={() => setCreateDialogOpen(true)}
+                className="gap-2 shrink-0"
+              >
                 <Plus className="h-4 w-4" />
                 Schedule {bacResolutionNumber || 'Resolution'}
               </Button>
@@ -350,7 +397,9 @@ export function BiddingCalendarDialog({
             {isLoadingEvents ? (
               <div className="flex flex-col items-center justify-center p-12 space-y-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Fetching calendar events...</p>
+                <p className="text-sm text-muted-foreground">
+                  Fetching calendar events...
+                </p>
               </div>
             ) : sortedEvents.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl bg-muted/5">
@@ -359,7 +408,9 @@ export function BiddingCalendarDialog({
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {sortedEvents.map((event) => {
-                  const actType = activityTypeMap.get(event.procurementActivityTypeId)
+                  const actType = activityTypeMap.get(
+                    event.procurementActivityTypeId,
+                  )
                   const isCompleted =
                     event.status === 'Completed' ||
                     event.executionStatus === 'completed'
@@ -380,10 +431,17 @@ export function BiddingCalendarDialog({
                             {event.projectTitle}
                           </h4>
                           <p className="text-xs text-muted-foreground">
-                            Activity: <span className="font-medium text-foreground">{event.procurementActivityTypeName}</span>
+                            Activity:{' '}
+                            <span className="font-medium text-foreground">
+                              {event.procurementActivityTypeName}
+                            </span>
                           </p>
                         </div>
-                        <Badge variant="soft" color="secondary" className="capitalize text-xs">
+                        <Badge
+                          variant="soft"
+                          color="secondary"
+                          className="capitalize text-xs"
+                        >
                           {event.status || 'Scheduled'}
                         </Badge>
                       </div>
@@ -411,12 +469,19 @@ export function BiddingCalendarDialog({
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin className="h-3.5 w-3.5 text-default-400" />
-                          <span>Venue: <span className="font-medium text-foreground">{event.venue}</span></span>
+                          <span>
+                            Venue:{' '}
+                            <span className="font-medium text-foreground">
+                              {event.venue}
+                            </span>
+                          </span>
                         </div>
                         {event.remarks && (
                           <div className="flex items-start gap-2 bg-muted/20 p-2 rounded-lg mt-1 border border-default-100">
                             <AlignLeft className="h-3.5 w-3.5 text-default-400 mt-0.5" />
-                            <p className="leading-relaxed">Remarks: {event.remarks}</p>
+                            <p className="leading-relaxed">
+                              Remarks: {event.remarks}
+                            </p>
                           </div>
                         )}
 
@@ -426,17 +491,22 @@ export function BiddingCalendarDialog({
                             <Clock className="h-3 w-3" />
                             <span>Max:</span>
                             <span className="font-medium text-foreground">
-                              {actType?.maxDays !== null && actType?.maxDays !== undefined
+                              {actType?.maxDays !== null &&
+                              actType?.maxDays !== undefined
                                 ? `${actType.maxDays}d`
                                 : '—'}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] text-muted-foreground">Remaining:</span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Remaining:
+                            </span>
                             <span
                               className={cn(
                                 'px-2 py-0.5 rounded-full text-xs font-semibold border',
-                                getRemainingDaysBadgeClass(remainingInfo.variant),
+                                getRemainingDaysBadgeClass(
+                                  remainingInfo.variant,
+                                ),
                               )}
                             >
                               {remainingInfo.label}
