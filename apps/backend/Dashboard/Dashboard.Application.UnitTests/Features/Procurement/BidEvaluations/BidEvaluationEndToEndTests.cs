@@ -55,7 +55,7 @@ public class BidEvaluationEndToEndTests
             Status = "Approved",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
 
         var openingSchedule = new BiddingActivitySchedule
         {
@@ -72,11 +72,11 @@ public class BidEvaluationEndToEndTests
             },
             CreatedBy = "Admin"
         };
-        await context.BiddingActivitySchedules.AddAsync(openingSchedule);
+        await context.BiddingActivitySchedules!.AddAsync(openingSchedule);
 
         var supplier1 = new Supplier { Id = Guid.NewGuid(), Name = "Alpha Tech Corp", CreatedBy = "Admin" };
         var supplier2 = new Supplier { Id = Guid.NewGuid(), Name = "Beta Solutions Inc", CreatedBy = "Admin" };
-        await context.Suppliers.AddRangeAsync(supplier1, supplier2);
+        await context.Suppliers!.AddRangeAsync(supplier1, supplier2);
         await context.SaveChangesAsync();
 
         // 2. Submit Bidding Packages for Supplier 1 and 2
@@ -160,7 +160,7 @@ public class BidEvaluationEndToEndTests
         var evalQuery = await queryHandler.Handle(new GetProjectBidEvaluationQuery(project.Id), CancellationToken.None);
 
         evalQuery.Succeeded.Should().BeTrue();
-        evalQuery.Data.EvaluatedBids.Should().HaveCount(2);
+        evalQuery.Data!.EvaluatedBids.Should().HaveCount(2);
         evalQuery.Data.EvaluatedBids[0].SupplierId.Should().Be(supplier2.Id); // Lowest price = Rank 1
         evalQuery.Data.EvaluatedBids[0].Rank.Should().Be(1);
         evalQuery.Data.EvaluatedBids[0].PostQualification.Should().NotBeNull();
@@ -239,7 +239,7 @@ public class BidEvaluationEndToEndTests
             BiddingAwardRecommendationId = awardRecResult.Data,
             CreatedBy = "Admin"
         };
-        await context.BACResolutions.AddAsync(bacResolution);
+        await context.BACResolutions!.AddAsync(bacResolution);
         await context.SaveChangesAsync();
 
         // 10. Verify NOA Upstream Query consumes authoritative award recommendation
@@ -248,7 +248,7 @@ public class BidEvaluationEndToEndTests
 
         availableNoas.Succeeded.Should().BeTrue();
         availableNoas.Data.Should().ContainSingle();
-        availableNoas.Data[0].SupplierId.Should().Be(supplier2.Id);
+        availableNoas.Data![0].SupplierId.Should().Be(supplier2.Id);
         availableNoas.Data[0].WinningSupplierName.Should().Be("Beta Solutions Inc");
         availableNoas.Data[0].AwardedAmount.Should().Be(4_200_000m);
         availableNoas.Data[0].AwardCriterion.Should().Be("LCRB");
@@ -268,21 +268,21 @@ public class BidEvaluationEndToEndTests
             Status = "Approved",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
 
         var supplier1 = new Supplier { Id = Guid.NewGuid(), Name = "Supplier 1", CreatedBy = "Admin" };
         var supplier2 = new Supplier { Id = Guid.NewGuid(), Name = "Supplier 2", CreatedBy = "Admin" };
-        await context.Suppliers.AddRangeAsync(supplier1, supplier2);
+        await context.Suppliers!.AddRangeAsync(supplier1, supplier2);
 
         var sub1 = new BiddingSubmission { Id = Guid.NewGuid(), ProcurementProjectId = project.Id, SupplierId = supplier1.Id, OriginalProposedAmount = 1_500_000m, CreatedBy = "Admin" };
         var sub2 = new BiddingSubmission { Id = Guid.NewGuid(), ProcurementProjectId = project.Id, SupplierId = supplier2.Id, OriginalProposedAmount = 1_700_000m, CreatedBy = "Admin" };
-        await context.BiddingSubmissions.AddRangeAsync(sub1, sub2);
+        await context.BiddingSubmissions!.AddRangeAsync(sub1, sub2);
 
         var open1 = new BidOpeningRecord { Id = Guid.NewGuid(), BiddingSubmissionId = sub1.Id, Envelope1Result = "Passed", Envelope2Opened = true, AsReadBidAmount = 1_500_000m, CreatedBy = "Admin" };
         var open2 = new BidOpeningRecord { Id = Guid.NewGuid(), BiddingSubmissionId = sub2.Id, Envelope1Result = "Passed", Envelope2Opened = true, AsReadBidAmount = 1_700_000m, CreatedBy = "Admin" };
         sub1.BidOpeningRecord = open1;
         sub2.BidOpeningRecord = open2;
-        await context.BidOpeningRecords.AddRangeAsync(open1, open2);
+        await context.BidOpeningRecords!.AddRangeAsync(open1, open2);
         await context.SaveChangesAsync();
 
         // Evaluate Bids
@@ -304,8 +304,8 @@ public class BidEvaluationEndToEndTests
         var queryHandler = new GetProjectBidEvaluationQueryHandler(uow);
         var evalQuery = await queryHandler.Handle(new GetProjectBidEvaluationQuery(project.Id), CancellationToken.None);
 
-        var rank1Bid = evalQuery.Data.EvaluatedBids[0];
-        var rank2Bid = evalQuery.Data.EvaluatedBids[1];
+        var rank1Bid = evalQuery.Data!.EvaluatedBids[0];
+        var rank2Bid = evalQuery.Data!.EvaluatedBids[1];
 
         // Fail Post-Qualification for Rank 1
         var postQualResultHandler = new RecordPostQualificationResultCommandHandler(uow, currentUserService);
@@ -325,8 +325,8 @@ public class BidEvaluationEndToEndTests
         // Query again: Rank 1 should be Disqualified, and Rank 2 should now have an active Post-Qualification record
         var updatedQuery = await queryHandler.Handle(new GetProjectBidEvaluationQuery(project.Id), CancellationToken.None);
         
-        var updatedRank1 = updatedQuery.Data.EvaluatedBids.First(b => b.Id == rank1Bid.Id);
-        var updatedRank2 = updatedQuery.Data.EvaluatedBids.First(b => b.Id == rank2Bid.Id);
+        var updatedRank1 = updatedQuery.Data!.EvaluatedBids.First(b => b.Id == rank1Bid.Id);
+        var updatedRank2 = updatedQuery.Data!.EvaluatedBids.First(b => b.Id == rank2Bid.Id);
 
         updatedRank1.Status.Should().Be("Disqualified");
         updatedRank1.PostQualification!.Status.Should().Be("Disqualified");

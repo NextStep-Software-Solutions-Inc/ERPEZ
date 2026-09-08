@@ -114,7 +114,7 @@ public class NoticeOfAwardEndToEndLifecycleTests
         var availableResResult = await queryHandler.Handle(new GetAvailableAwardBacResolutionsQuery(), CancellationToken.None);
         availableResResult.Succeeded.Should().BeTrue();
         availableResResult.Data.Should().ContainSingle(r => r.Id == bacRes.Id);
-        var resolvedItem = availableResResult.Data.First(r => r.Id == bacRes.Id);
+        var resolvedItem = availableResResult.Data!.First(r => r.Id == bacRes.Id);
         resolvedItem.WinningSupplierName.Should().Be("Northstar Systems Inc.");
         resolvedItem.AwardedAmount.Should().Be(235000m);
 
@@ -173,10 +173,10 @@ public class NoticeOfAwardEndToEndLifecycleTests
         var preConformeSla = NoticeOfAwardSlaCalculator.CalculateSla(approvedNoa);
         preConformeSla.IsIssued.Should().BeTrue();
         preConformeSla.IsOpen.Should().BeFalse("Statutory countdown is awaiting bidder receipt");
-        preConformeSla.Label.Should().Be("Issued — Awaiting Conforme");
+        preConformeSla.Label.Should().Be("Issued â€” Awaiting Conforme");
         preConformeSla.DaysRemaining.Should().BeNull();
 
-        // -- TEST 5: Sequence Enforcement — Reject Skipping to Security ----------
+        // -- TEST 5: Sequence Enforcement â€” Reject Skipping to Security ----------
         var milestoneHandler = new LogNoticeOfAwardMilestoneCommandHandler(unitOfWork);
         var invalidSecRequest = new LogNoticeOfAwardMilestoneRequest(
             NoticeOfAwardMilestoneType.PerformanceSecurityPosted,

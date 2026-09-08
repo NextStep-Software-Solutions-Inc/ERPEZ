@@ -136,7 +136,7 @@ public class GetConsolidatedPRByIdQueryHandlerTests
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
-        Assert.NotNull(result.Data.BacResolutions);
+        Assert.NotNull(result.Data!.BacResolutions);
         Assert.Single(result.Data.BacResolutions!);
 
         var res = result.Data.BacResolutions!.First();
@@ -198,7 +198,7 @@ public class GetConsolidatedPRByIdQueryHandlerTests
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
-        Assert.NotNull(result.Data.BacResolutions);
+        Assert.NotNull(result.Data!.BacResolutions);
         Assert.Single(result.Data.BacResolutions!);
 
         var res = result.Data.BacResolutions!.First();
@@ -237,7 +237,7 @@ public class GetConsolidatedPRByIdQueryHandlerTests
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Succeeded);
-        Assert.NotNull(result.Data.BacResolutions);
+        Assert.NotNull(result.Data!.BacResolutions);
         Assert.Empty(result.Data.BacResolutions!);
     }
 

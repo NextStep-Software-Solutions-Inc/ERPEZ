@@ -37,12 +37,12 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Posted",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
 
         var supplier1 = new Supplier { Id = Guid.NewGuid(), Name = "PaxSilica Inc.", CreatedBy = "Admin" };
         var supplier2 = new Supplier { Id = Guid.NewGuid(), Name = "Techstart Inc.", CreatedBy = "Admin" };
         var supplier3 = new Supplier { Id = Guid.NewGuid(), Name = "NLink Inc.", CreatedBy = "Admin" };
-        await context.Suppliers.AddRangeAsync(supplier1, supplier2, supplier3);
+        await context.Suppliers!.AddRangeAsync(supplier1, supplier2, supplier3);
 
         var sub1 = new BiddingSubmission
         {
@@ -68,7 +68,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             OriginalProposedAmount = 15_000m,
             CreatedBy = "Admin"
         };
-        await context.BiddingSubmissions.AddRangeAsync(sub1, sub2, sub3);
+        await context.BiddingSubmissions!.AddRangeAsync(sub1, sub2, sub3);
 
         var open1 = new BidOpeningRecord
         {
@@ -97,7 +97,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             AsReadBidAmount = 13_800m,
             CreatedBy = "Admin"
         };
-        await context.BidOpeningRecords.AddRangeAsync(open1, open2, open3);
+        await context.BidOpeningRecords!.AddRangeAsync(open1, open2, open3);
         await context.SaveChangesAsync();
 
         var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
@@ -126,7 +126,7 @@ public class EvaluateProjectBidsCommandHandlerTests
         var queryResult = await queryHandler.Handle(new GetProjectBidEvaluationQuery(project.Id), CancellationToken.None);
 
         queryResult.Succeeded.Should().BeTrue();
-        queryResult.Data.EvaluatedBids.Should().HaveCount(3);
+        queryResult.Data!.EvaluatedBids.Should().HaveCount(3);
 
         // Rank 1: Lowest price (₱12,900) - PaxSilica Inc.
         queryResult.Data.EvaluatedBids[0].SupplierId.Should().Be(supplier1.Id);
@@ -160,10 +160,10 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Posted",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
 
         var supplier = new Supplier { Id = Guid.NewGuid(), Name = "Failed Bidder", CreatedBy = "Admin" };
-        await context.Suppliers.AddAsync(supplier);
+        await context.Suppliers!.AddAsync(supplier);
 
         var sub = new BiddingSubmission
         {
@@ -173,7 +173,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             OriginalProposedAmount = 10_000m,
             CreatedBy = "Admin"
         };
-        await context.BiddingSubmissions.AddAsync(sub);
+        await context.BiddingSubmissions!.AddAsync(sub);
 
         var open = new BidOpeningRecord
         {
@@ -183,7 +183,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Envelope2Opened = false,
             CreatedBy = "Admin"
         };
-        await context.BidOpeningRecords.AddAsync(open);
+        await context.BidOpeningRecords!.AddAsync(open);
         await context.SaveChangesAsync();
 
         var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
@@ -281,7 +281,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Posted",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
         await context.SaveChangesAsync();
 
         var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
@@ -319,7 +319,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Posted",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
         await context.SaveChangesAsync();
 
         var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
@@ -351,7 +351,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Name = "Consulting Services",
             CreatedBy = "Admin"
         };
-        await context.ProcurementModes.AddAsync(mode);
+        await context.ProcurementModes!.AddAsync(mode);
 
         var project = new ProcurementProject
         {
@@ -362,7 +362,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Posted",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
         await context.SaveChangesAsync();
 
         var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
@@ -396,7 +396,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Posted",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
         await context.SaveChangesAsync();
 
         var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
@@ -432,11 +432,11 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Posted",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
 
         var s1 = new Supplier { Id = Guid.NewGuid(), Name = "Supplier HighQuality", CreatedBy = "Admin" };
         var s2 = new Supplier { Id = Guid.NewGuid(), Name = "Supplier LowCost", CreatedBy = "Admin" };
-        await context.Suppliers.AddRangeAsync(s1, s2);
+        await context.Suppliers!.AddRangeAsync(s1, s2);
 
         var sub1 = new BiddingSubmission
         {
@@ -454,7 +454,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             OriginalProposedAmount = 12_000m,
             CreatedBy = "Admin"
         };
-        await context.BiddingSubmissions.AddRangeAsync(sub1, sub2);
+        await context.BiddingSubmissions!.AddRangeAsync(sub1, sub2);
 
         var open1 = new BidOpeningRecord
         {
@@ -474,7 +474,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             AsReadBidAmount = 12_000m,
             CreatedBy = "Admin"
         };
-        await context.BidOpeningRecords.AddRangeAsync(open1, open2);
+        await context.BidOpeningRecords!.AddRangeAsync(open1, open2);
         await context.SaveChangesAsync();
 
         var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
@@ -501,19 +501,19 @@ public class EvaluateProjectBidsCommandHandlerTests
         var evalResult = await queryHandler.Handle(new GetProjectBidEvaluationQuery(project.Id), CancellationToken.None);
 
         evalResult.Succeeded.Should().BeTrue();
-        evalResult.Data.AwardCriterion.Should().Be("MEARB");
-        evalResult.Data.TechnicalWeight.Should().Be(70m);
-        evalResult.Data.FinancialWeight.Should().Be(30m);
-        evalResult.Data.EvaluatedBids.Should().HaveCount(2);
+        evalResult.Data!.AwardCriterion.Should().Be("MEARB");
+        evalResult.Data!.TechnicalWeight.Should().Be(70m);
+        evalResult.Data!.FinancialWeight.Should().Be(30m);
+        evalResult.Data!.EvaluatedBids.Should().HaveCount(2);
 
         // s1 wins Rank 1 under MEARB due to 95 tech score:
-        evalResult.Data.EvaluatedBids[0].SupplierId.Should().Be(s1.Id);
-        evalResult.Data.EvaluatedBids[0].Rank.Should().Be(1);
-        evalResult.Data.EvaluatedBids[0].TotalScore.Should().BeApproximately(92.21m, 0.05m);
+        evalResult.Data!.EvaluatedBids[0].SupplierId.Should().Be(s1.Id);
+        evalResult.Data!.EvaluatedBids[0].Rank.Should().Be(1);
+        evalResult.Data!.EvaluatedBids[0].TotalScore.Should().BeApproximately(92.21m, 0.05m);
 
-        evalResult.Data.EvaluatedBids[1].SupplierId.Should().Be(s2.Id);
-        evalResult.Data.EvaluatedBids[1].Rank.Should().Be(2);
-        evalResult.Data.EvaluatedBids[1].TotalScore.Should().Be(79.00m);
+        evalResult.Data!.EvaluatedBids[1].SupplierId.Should().Be(s2.Id);
+        evalResult.Data!.EvaluatedBids[1].Rank.Should().Be(2);
+        evalResult.Data!.EvaluatedBids[1].TotalScore.Should().Be(79.00m);
     }
 
     [Fact]
@@ -530,7 +530,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Posted",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
 
         var evaluation = new BiddingEvaluation
         {
@@ -540,10 +540,10 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Draft",
             CreatedBy = "Admin"
         };
-        await context.BiddingEvaluations.AddAsync(evaluation);
+        await context.BiddingEvaluations!.AddAsync(evaluation);
 
         var supplier = new Supplier { Id = Guid.NewGuid(), Name = "PaxSilica Inc.", CreatedBy = "Admin" };
-        await context.Suppliers.AddAsync(supplier);
+        await context.Suppliers!.AddAsync(supplier);
 
         var awardRec = new BiddingAwardRecommendation
         {
@@ -555,7 +555,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             AwardCriterion = "LCRB",
             CreatedBy = "Admin"
         };
-        await context.BiddingAwardRecommendations.AddAsync(awardRec);
+        await context.BiddingAwardRecommendations!.AddAsync(awardRec);
         await context.SaveChangesAsync();
 
         var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
@@ -589,7 +589,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Posted",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
 
         var evaluation = new BiddingEvaluation
         {
@@ -599,7 +599,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Draft",
             CreatedBy = "Admin"
         };
-        await context.BiddingEvaluations.AddAsync(evaluation);
+        await context.BiddingEvaluations!.AddAsync(evaluation);
 
         var evaluatedBid = new BiddingEvaluatedBid
         {
@@ -613,7 +613,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             IsResponsive = true,
             CreatedBy = "Admin"
         };
-        await context.BiddingEvaluatedBids.AddAsync(evaluatedBid);
+        await context.BiddingEvaluatedBids!.AddAsync(evaluatedBid);
         await context.SaveChangesAsync();
 
         var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
@@ -647,7 +647,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Posted",
             CreatedBy = "Admin"
         };
-        await context.ProcurementProjects.AddAsync(project);
+        await context.ProcurementProjects!.AddAsync(project);
 
         var evaluation = new BiddingEvaluation
         {
@@ -657,7 +657,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Status = "Draft",
             CreatedBy = "Admin"
         };
-        await context.BiddingEvaluations.AddAsync(evaluation);
+        await context.BiddingEvaluations!.AddAsync(evaluation);
 
         var evaluatedBid = new BiddingEvaluatedBid
         {
@@ -671,7 +671,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             IsResponsive = true,
             CreatedBy = "Admin"
         };
-        await context.BiddingEvaluatedBids.AddAsync(evaluatedBid);
+        await context.BiddingEvaluatedBids!.AddAsync(evaluatedBid);
 
         var postQual = new BiddingPostQualification
         {
@@ -681,7 +681,7 @@ public class EvaluateProjectBidsCommandHandlerTests
             Passed = false,
             CreatedBy = "Admin"
         };
-        await context.BiddingPostQualifications.AddAsync(postQual);
+        await context.BiddingPostQualifications!.AddAsync(postQual);
         await context.SaveChangesAsync();
 
         var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
