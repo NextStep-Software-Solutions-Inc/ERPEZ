@@ -27,7 +27,11 @@ public class UpdateMasterDocumentTypeCommandHandler(
         entity.EnvelopeType = request.EnvelopeType;
         entity.UpdatedAt    = DateTime.UtcNow;
 
-        if (request.FileId.HasValue)
+        if (request.RemoveFile)
+        {
+            entity.TemplateFileUrl = null;
+        }
+        else if (request.FileId.HasValue)
         {
             var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(request.FileId.Value, cancellationToken);
             entity.TemplateFileUrl = promotedUrl;

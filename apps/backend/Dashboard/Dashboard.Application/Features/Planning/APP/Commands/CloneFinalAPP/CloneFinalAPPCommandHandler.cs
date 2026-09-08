@@ -48,6 +48,19 @@ public class CloneFinalAPPCommandHandler(IUnitOfWork unitOfWork)
                 $"The source APP is currently '{sourceApp.Status}'.");
         }
 
+        // 3.1 Validate: A Final APP must not already exist for this Indicative APP
+        var existingFinalQuery = unitOfWork.APPRepository
+            .Query(a => a.SourceAPPId == sourceApp.Id && a.APPType == "Final" && !a.IsDeleted)
+            .OrderByDescending(a => a.CreatedAt);
+
+        var existingFinal = await unitOfWork.APPRepository.GetFirstAsync(existingFinalQuery, cancellationToken);
+        if (existingFinal != null)
+        {
+            throw new ConflictException(
+                $"A Final APP already exists for this Indicative APP ({existingFinal.APPNumber}). " +
+                "View the existing Final APP or create an Updated APP from the latest valid version.");
+        }
+
         // 4. Build the Final APP number / name
         var appNumber = string.IsNullOrWhiteSpace(request.APPNumber)
             ? $"{sourceApp.APPNumber}-FINAL"

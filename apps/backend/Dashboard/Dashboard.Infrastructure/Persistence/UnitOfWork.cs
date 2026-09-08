@@ -164,6 +164,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IPublicSupplierApplicationRepository publicSupplierApplicationRepository;
     private readonly IPurchaseOrderRepository purchaseOrderRepository;
     private readonly IPurchaseOrderItemRepository purchaseOrderItemRepository;
+    private readonly INoticeOfAwardRepository noticeOfAwardRepository;
+    private readonly INoticeOfAwardMilestoneRepository noticeOfAwardMilestoneRepository;
+    private readonly INoticeOfAwardActivityRepository noticeOfAwardActivityRepository;
+    private readonly IBiddingSubmissionRepository biddingSubmissionRepository;
+    private readonly IBiddingEvaluationRepository biddingEvaluationRepository;
+    private readonly IBiddingAwardRecommendationRepository biddingAwardRecommendationRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -321,6 +327,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         publicSupplierApplicationRepository = new PublicSupplierApplicationRepository (context, sieveProcessor);
         purchaseOrderRepository = new PurchaseOrderRepository(context, sieveProcessor);
         purchaseOrderItemRepository = new PurchaseOrderItemRepository(context, sieveProcessor);
+        noticeOfAwardRepository = new NoticeOfAwardRepository(context, sieveProcessor);
+        noticeOfAwardMilestoneRepository = new NoticeOfAwardMilestoneRepository(context, sieveProcessor);
+        noticeOfAwardActivityRepository = new NoticeOfAwardActivityRepository(context, sieveProcessor);
+        biddingSubmissionRepository = new BiddingSubmissionRepository(context, sieveProcessor);
+        biddingEvaluationRepository = new BiddingEvaluationRepository(context, sieveProcessor);
+        biddingAwardRecommendationRepository = new BiddingAwardRecommendationRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -473,6 +485,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => publicSupplierApplicationRepository;
     public IPurchaseOrderRepository PurchaseOrderRepository => purchaseOrderRepository;
     public IPurchaseOrderItemRepository PurchaseOrderItemRepository => purchaseOrderItemRepository;
+    public INoticeOfAwardRepository NoticeOfAwardRepository => noticeOfAwardRepository;
+    public INoticeOfAwardMilestoneRepository NoticeOfAwardMilestoneRepository => noticeOfAwardMilestoneRepository;
+    public INoticeOfAwardActivityRepository NoticeOfAwardActivityRepository => noticeOfAwardActivityRepository;
+    public IBiddingSubmissionRepository BiddingSubmissionRepository => biddingSubmissionRepository;
+    public IBiddingEvaluationRepository BiddingEvaluationRepository => biddingEvaluationRepository;
+    public IBiddingAwardRecommendationRepository BiddingAwardRecommendationRepository => biddingAwardRecommendationRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

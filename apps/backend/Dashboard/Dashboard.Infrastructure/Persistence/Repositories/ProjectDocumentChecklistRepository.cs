@@ -19,6 +19,7 @@ public class ProjectDocumentChecklistRepository : Repository<ProjectDocumentChec
         Guid projectId, CancellationToken cancellationToken = default)
     {
         return await context.Set<ProjectDocumentChecklist>()
+            .Include(c => c.MasterDocumentType)
             .Where(c => c.ProcurementProjectId == projectId && !c.IsDeleted)
             .ToListAsync(cancellationToken);
     }

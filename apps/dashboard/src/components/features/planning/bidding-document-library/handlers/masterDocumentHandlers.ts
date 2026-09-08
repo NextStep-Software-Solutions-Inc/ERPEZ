@@ -6,8 +6,8 @@ import type {
   QueryKey,
   QueryParams,
 } from 'erpez-shared-lib'
-import api from '@/services/api'
 import type { MasterDocumentTypeDto } from '../types/api'
+import api from '@/services/api'
 
 const getEndpoint = '/admin/bidding-documents'
 const itemEndpoint = '/admin/bidding-documents/:id'
@@ -54,6 +54,7 @@ export type UpdateMasterDocumentPayload = {
   description?: string
   envelopeType: number
   fileId?: string
+  removeFile?: boolean
 }
 
 export const updateMasterDocumentRequest: MutationBlueprintFromTemplate<

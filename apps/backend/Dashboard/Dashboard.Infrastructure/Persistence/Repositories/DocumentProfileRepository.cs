@@ -17,7 +17,8 @@ public class DocumentProfileRepository
     public async Task<DocumentProfile?> GetByIdWithItemsAsync(
         Guid id, CancellationToken cancellationToken = default) =>
         await context.Set<DocumentProfile>()
-            .Include(p => p.DocumentProfileItems.Where(i => !i.IsDeleted))
+            .IgnoreQueryFilters()
+            .Include(p => p.DocumentProfileItems)
                 .ThenInclude(i => i.MasterDocumentType)
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, cancellationToken);
 }

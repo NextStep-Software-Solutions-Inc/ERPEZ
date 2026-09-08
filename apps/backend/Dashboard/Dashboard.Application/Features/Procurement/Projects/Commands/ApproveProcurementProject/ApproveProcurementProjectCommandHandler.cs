@@ -60,6 +60,16 @@ public class ApproveProcurementProjectCommandHandler(
         };
 
         unitOfWork.ProcurementProjectRepository.Update(project);
+
+        var resolutions = await unitOfWork.BACResolutionRepository.ToListAsync(
+            unitOfWork.BACResolutionRepository.Query(r => r.ProcurementProjectId == project.Id),
+            cancellationToken);
+        foreach (var res in resolutions)
+        {
+            res.Status = nameof(StatusEnum.Approved);
+            unitOfWork.BACResolutionRepository.Update(res);
+        }
+
         await unitOfWork.ProcurementProjectApprovalEventRepository.AddAsync(approvalEvent, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

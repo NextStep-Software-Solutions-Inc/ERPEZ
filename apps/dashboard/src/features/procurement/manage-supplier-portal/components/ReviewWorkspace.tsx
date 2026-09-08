@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -5,12 +6,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { FileText, Mail, Phone, User, Building, Download, Loader2, Hash, Award, ShieldCheck, Tag } from 'lucide-react'
+import { FileText, Mail, Phone, User, Building, Download, Loader2, Hash, Award, ShieldCheck, Tag, FolderOpen, Info } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import { SupplierBid } from '../types'
+import { previewDocument } from '../utils'
 
 interface ReviewWorkspaceProps {
   selectedBid: SupplierBid | undefined
+  projectId?: string
+  isCompetitiveBidding?: boolean
   evalStatus: string
   evalRemarks?: string
   onEvalStatusChange: (status: string) => void
@@ -22,6 +28,8 @@ interface ReviewWorkspaceProps {
 
 export function ReviewWorkspace({
   selectedBid,
+  projectId,
+  isCompetitiveBidding = false,
   evalStatus,
   evalRemarks = '',
   onEvalStatusChange,
@@ -30,6 +38,27 @@ export function ReviewWorkspace({
   onBulkDownload,
   isDownloading = false,
 }: ReviewWorkspaceProps) {
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const [previewingDocId, setPreviewingDocId] = useState<string | null>(null)
+
+  const handlePreviewDocument = async (doc: { id: string; name: string; url: string; type?: string }) => {
+    if (!doc.url) return
+    setPreviewingDocId(doc.id)
+    try {
+      await previewDocument(doc.url, doc.name, doc.type)
+    } catch (error) {
+      console.error('Failed to preview document:', error)
+      toast({
+        title: 'Document Unavailable',
+        description: 'The requested document could not be retrieved from storage. Please verify that the file exists.',
+        variant: 'destructive',
+      })
+    } finally {
+      setPreviewingDocId(null)
+    }
+  }
+
   if (!selectedBid) {
     return (
       <Card className="md:col-span-8 h-full flex flex-col overflow-hidden">
@@ -186,9 +215,13 @@ export function ReviewWorkspace({
 
         {/* Documents Section */}
         {selectedBid.documents && selectedBid.documents.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold">Submitted Documents / Brochures ({selectedBid.documents.length})</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">
+                {isCompetitiveBidding
+                  ? `Submitted Bid Envelopes (${selectedBid.documents.length} Requirements)`
+                  : `Submitted Documents / Brochures (${selectedBid.documents.length})`}
+              </h3>
               {onBulkDownload && selectedBid.documents.length > 0 && (
                 <Button
                   size="sm"
@@ -211,52 +244,212 @@ export function ReviewWorkspace({
                 </Button>
               )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {selectedBid.documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="border rounded-md p-3 flex items-center justify-between hover:border-primary/50 transition-colors group"
-                >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="h-8 w-8 bg-primary/10 text-primary rounded flex items-center justify-center shrink-0">
-                      <FileText className="h-4 w-4" />
+
+            {isCompetitiveBidding ? (
+              <div className="space-y-4">
+                {/* FIRST ENVELOPE: Technical & Eligibility */}
+                <div className="rounded-lg border border-blue-200 bg-blue-50/30 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                        <span className="flex items-center justify-center h-4 w-4 rounded-full bg-blue-600 text-white text-[10px]">1</span>
+                        First Envelope — Eligibility & Technical
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {selectedBid.documents.filter((d) => (d.envelopeType ?? 1) === 1).length} active documents submitted
+                      </p>
                     </div>
-                    <span className="text-sm font-medium truncate" title={doc.name}>
-                      {doc.name}
-                    </span>
+                    <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50 text-[10px] font-semibold">
+                      Envelope 1
+                    </Badge>
                   </div>
-                  {doc.url && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 h-8 text-xs"
-                      onClick={() => window.open(doc.url, '_blank')}
-                    >
-                      Preview
-                    </Button>
-                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    {selectedBid.documents
+                      .filter((d) => (d.envelopeType ?? 1) === 1)
+                      .map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="border border-slate-200 bg-white rounded-md p-2.5 flex items-center justify-between hover:border-blue-400 transition-colors group shadow-2xs"
+                        >
+                          <div className="flex items-center gap-2.5 overflow-hidden">
+                            <div className="h-7 w-7 bg-blue-50 text-blue-600 rounded flex items-center justify-center shrink-0">
+                              <FileText className="h-3.5 w-3.5" />
+                            </div>
+                            <span className="text-xs font-medium truncate text-slate-800" title={doc.name}>
+                              {doc.name}
+                            </span>
+                          </div>
+                          {doc.url && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={previewingDocId === doc.id}
+                              className="opacity-0 group-hover:opacity-100 h-7 text-[11px] gap-1 px-2"
+                              onClick={() => handlePreviewDocument(doc)}
+                            >
+                              {previewingDocId === doc.id ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  <span>Loading...</span>
+                                </>
+                              ) : (
+                                'Preview'
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                {/* SECOND ENVELOPE: Financial */}
+                <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
+                        <span className="flex items-center justify-center h-4 w-4 rounded-full bg-purple-600 text-white text-[10px]">2</span>
+                        Second Envelope — Financial
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {selectedBid.documents.filter((d) => d.envelopeType === 2).length} active documents submitted
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="border-purple-300 text-purple-700 bg-purple-50 text-[10px] font-semibold">
+                      Envelope 2
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    {selectedBid.documents
+                      .filter((d) => d.envelopeType === 2)
+                      .map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="border border-slate-200 bg-white rounded-md p-2.5 flex items-center justify-between hover:border-purple-400 transition-colors group shadow-2xs"
+                        >
+                          <div className="flex items-center gap-2.5 overflow-hidden">
+                            <div className="h-7 w-7 bg-purple-50 text-purple-600 rounded flex items-center justify-center shrink-0">
+                              <FileText className="h-3.5 w-3.5" />
+                            </div>
+                            <span className="text-xs font-medium truncate text-slate-800" title={doc.name}>
+                              {doc.name}
+                            </span>
+                          </div>
+                          {doc.url && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={previewingDocId === doc.id}
+                              className="opacity-0 group-hover:opacity-100 h-7 text-[11px] gap-1 px-2"
+                              onClick={() => handlePreviewDocument(doc)}
+                            >
+                              {previewingDocId === doc.id ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  <span>Loading...</span>
+                                </>
+                              ) : (
+                                'Preview'
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Non-bidding modes (SVP / RFQ): flat list */
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {selectedBid.documents.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="border rounded-md p-3 flex items-center justify-between hover:border-primary/50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="h-8 w-8 bg-primary/10 text-primary rounded flex items-center justify-center shrink-0">
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-medium truncate" title={doc.name}>
+                        {doc.name}
+                      </span>
+                    </div>
+                    {doc.url && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={previewingDocId === doc.id}
+                        className="opacity-0 group-hover:opacity-100 h-8 text-xs gap-1.5"
+                        onClick={() => handlePreviewDocument(doc)}
+                      >
+                        {previewingDocId === doc.id ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <span>Loading...</span>
+                          </>
+                        ) : (
+                          'Preview'
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Evaluation Controls Section */}
         <div className="bg-muted/30 p-4 rounded-lg border space-y-4">
-          <h3 className="text-sm font-semibold">Evaluation & Compliance</h3>
+          <div>
+            <h3 className="text-sm font-semibold">
+              {isCompetitiveBidding ? 'Administrative Submission Review' : 'Evaluation & Compliance'}
+            </h3>
+            {isCompetitiveBidding && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Administrative receipt and completeness check. Formal Envelope unsealing and bid examination occur in the BAC Bid Opening session.
+              </p>
+            )}
+          </div>
+
+          {isCompetitiveBidding && (
+            <div className="rounded-md bg-blue-50/80 border border-blue-200 p-3 text-xs space-y-2">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-blue-900">BAC Bid Opening Stage</p>
+                  <p className="text-blue-700 leading-relaxed text-[11px]">
+                    To conduct the formal opening session (unsealing Envelope 1, recording non-discretionary pass/fail results, and unsealing Envelope 2), proceed to the dedicated BAC Public Bidding Workspace.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full h-8 text-xs font-semibold bg-white text-blue-700 border-blue-300 hover:bg-blue-50 gap-1.5"
+                onClick={() => navigate({ to: '/v2/bid-evaluation', search: projectId ? { projectId } : undefined })}
+              >
+                <FolderOpen className="h-3.5 w-3.5" />
+                Proceed to BAC Bid Opening & Evaluation &rarr;
+              </Button>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="eval-status" className="text-sm font-medium">
-              Evaluation Status *
+              {isCompetitiveBidding ? 'Submission Receipt Status *' : 'Evaluation Status *'}
             </Label>
             <Select value={evalStatus} onValueChange={onEvalStatusChange}>
               <SelectTrigger id="eval-status">
-                <SelectValue placeholder="Select evaluation status" />
+                <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Pending">Pending Review</SelectItem>
-                <SelectItem value="Passed">Passed / Responsive</SelectItem>
-                <SelectItem value="Failed">Failed / Disqualified</SelectItem>
+                <SelectItem value="Passed">
+                  {isCompetitiveBidding ? 'Documents Complete / Verified' : 'Passed / Responsive'}
+                </SelectItem>
+                <SelectItem value="Failed">
+                  {isCompetitiveBidding ? 'Incomplete / Non-Compliant' : 'Failed / Disqualified'}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>

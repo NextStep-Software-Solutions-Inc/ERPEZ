@@ -18,8 +18,12 @@ public class GetEligiblePRsForCPRQueryHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException(
                 $"Consolidated PR with ID {query.ConsolidatedPRId} not found.");
 
-        // PRs already in this CPR — exclude them
-        var alreadyAddedPRIds = cpr.ConsolidatedPRItems
+        // Find all PR IDs already consolidated into ANY active/non-deleted Consolidated PR
+        var allConsolidatedPRItems = await unitOfWork.ConsolidatedPRItemRepository.ToListAsync(
+            unitOfWork.ConsolidatedPRItemRepository.Query(ci => !ci.IsDeleted && !ci.ConsolidatedPR.IsDeleted),
+            cancellationToken);
+
+        var alreadyConsolidatedPRIds = allConsolidatedPRItems
             .Select(ci => ci.PurchaseRequestId)
             .ToHashSet();
 
@@ -27,7 +31,7 @@ public class GetEligiblePRsForCPRQueryHandler(IUnitOfWork unitOfWork)
             .GetApprovedPRsWithItemsAsync(cancellationToken);
 
         var result = approvedPRs
-            .Where(pr => !alreadyAddedPRIds.Contains(pr.Id))
+            .Where(pr => !alreadyConsolidatedPRIds.Contains(pr.Id))
             .Select(pr => new EligiblePRResponse(
                 PurchaseRequestId: pr.Id,
                 PRNumber:          pr.PRNumber,

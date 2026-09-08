@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Dtos;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -48,17 +49,79 @@ public class GetConsolidatedPRByIdQueryHandler(IUnitOfWork unitOfWork)
                         TotalAmount:          ci.PRItem.Amount,
                         StockNo:              ci.PRItem.StockNo,
                         MonthlyQuantities:    new Dictionary<string, int> { { ((int)ci.PRItem.RequestedMonth).ToString("D2"), ci.PRItem.RequestedQuantity } },
-                        ProcurementModeId:    ci.ProcurementModeId ?? ci.PRItem.PPMPItem?.ProcurementModeId,
+                        ProcurementModeId:    ci.ProcurementModeId 
+                                              ?? ci.PRItem.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                                                  .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Approved || ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Active) ? 2 : 1)
+                                                  .ThenByDescending(ai => ai.CreatedAt)
+                                                  .FirstOrDefault()?.ProcurementModeId
+                                              ?? (ci.PRItem.PPMPItem?.ProcurementModeId != Guid.Empty ? ci.PRItem.PPMPItem?.ProcurementModeId : null),
                         AllowPartial:         ci.AllowPartial,
-                        ProcurementModeName:  ci.ProcurementMode?.Name ?? ci.PRItem.PPMPItem?.ProcurementMode?.Name
+                        ProcurementModeName:  ci.ProcurementMode?.Name 
+                                              ?? ci.PRItem.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                                                  .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Approved || ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Active) ? 2 : 1)
+                                                  .ThenByDescending(ai => ai.CreatedAt)
+                                                  .FirstOrDefault()?.ProcurementMode?.Name
+                                              ?? ci.PRItem.PPMPItem?.ProcurementMode?.Name
                     )).ToList()
                 );
             })
             .ToList();
 
         var firstMode = activeItems
-            .Select(ci => ci.ProcurementMode?.Name ?? ci.PRItem.PPMPItem?.ProcurementMode?.Name)
+            .Select(ci => ci.ProcurementMode?.Name 
+                       ?? ci.PRItem.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                           .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Approved || ai.APP.Status == ERPEZ.Domain.Enums.StatusEnum.Active) ? 2 : 1)
+                           .ThenByDescending(ai => ai.CreatedAt)
+                           .FirstOrDefault()?.ProcurementMode?.Name
+                       ?? ci.PRItem.PPMPItem?.ProcurementMode?.Name)
             .FirstOrDefault(m => !string.IsNullOrEmpty(m));
+
+        // 1. Direct CPR Project (Route 2)
+        var directProject = await unitOfWork.ProcurementProjectRepository
+            .GetByConsolidatedPRIdWithResolutionsAsync(cpr.Id, cancellationToken);
+
+        ProcurementProject? authoritativeProject = directProject;
+
+        // 2. Lineage Resolution via APP Items (Route 1)
+        if (authoritativeProject == null)
+        {
+            var appItemIds = activeItems
+                .SelectMany(ci => ci.PRItem.PPMPItem?.APPItems ?? Enumerable.Empty<ERPEZ.Domain.Entities.Planning.APPItem>())
+                .Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                .Select(ai => ai.Id)
+                .Distinct()
+                .ToList();
+
+            if (appItemIds.Count > 0)
+            {
+                var lineageProjects = await unitOfWork.ProcurementProjectRepository
+                    .GetByAPPItemIdsWithResolutionsAsync(appItemIds, cancellationToken);
+
+                authoritativeProject = lineageProjects
+                    .OrderByDescending(p => p.Status == "Approved" ? 2 : (p.Status == "Active" ? 1 : 0))
+                    .ThenByDescending(p => p.CreatedAt)
+                    .FirstOrDefault();
+            }
+        }
+
+        var bacResolutions = authoritativeProject?.BACResolutions
+            .Where(r => !r.IsDeleted)
+            .OrderByDescending(r => r.Status == "Approved" ? 2 : (r.Status == "Active" ? 1 : 0))
+            .ThenByDescending(r => r.DateResolved)
+            .ThenByDescending(r => r.CreatedAt)
+            .Select(r => new ConsolidatedPRBacResolutionResponse(
+                Id:                   r.Id,
+                ProcurementProjectId: authoritativeProject.Id,
+                ProjectTitle:         authoritativeProject.Title,
+                ResolutionNumber:     r.ResolutionNumber,
+                ResolutionType:       r.ResolutionType,
+                DateResolved:         r.DateResolved,
+                Status:               r.Status,
+                ResolvedLocation:     r.ResolvedLocation,
+                ABC:                  authoritativeProject.ABC,
+                SourceType:           authoritativeProject.SourceType.ToString()
+            ))
+            .ToList() ?? [];
 
         var response = new ConsolidatedPRDetailResponse(
             Id:                cpr.Id,
@@ -70,7 +133,8 @@ public class GetConsolidatedPRByIdQueryHandler(IUnitOfWork unitOfWork)
             TotalAmount:       activeItems.Sum(ci => ci.PRItem.Amount), // computed, not stale cpr.TotalAmount
             Remarks:           cpr.Remarks,
             Prs:               prs,
-            ModeOfProcurement: firstMode
+            ModeOfProcurement: firstMode,
+            BacResolutions:    bacResolutions
         );
 
         return ApiResponse<ConsolidatedPRDetailResponse>.Success(response);

@@ -31,9 +31,19 @@ public class GetDocumentProfilesQueryHandler(IUnitOfWork unitOfWork)
                 ItemCount           = p.DocumentProfileItems.Count(i => !i.IsDeleted),
                 TechCount           = p.DocumentProfileItems.Count(i => !i.IsDeleted && i.MasterDocumentType.EnvelopeType == 1),
                 FinCount            = p.DocumentProfileItems.Count(i => !i.IsDeleted && i.MasterDocumentType.EnvelopeType == 2),
-                CreatedAt           = p.CreatedAt
-                // Items list is omitted from the list response for performance;
-                // use GetById for the full items breakdown
+                CreatedAt           = p.CreatedAt,
+                Items               = p.DocumentProfileItems
+                    .Where(i => !i.IsDeleted)
+                    .OrderBy(i => i.OrderIndex)
+                    .Select(i => new DocumentProfileItemDto
+                    {
+                        Id                   = i.Id,
+                        MasterDocumentTypeId = i.MasterDocumentTypeId,
+                        DocumentName         = i.MasterDocumentType.Name,
+                        EnvelopeType         = i.MasterDocumentType.EnvelopeType,
+                        OrderIndex           = i.OrderIndex,
+                        TemplateFileUrl      = i.MasterDocumentType.TemplateFileUrl
+                    }).ToList()
             };
 
         var (items, total) = await unitOfWork.DocumentProfileRepository

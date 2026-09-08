@@ -14,8 +14,9 @@ using ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEventsS
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEventById;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjectById;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjects;
-using ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProjectStatus;
 using ERPEZ.Application.Features.Procurement.BiddingActivitySchedules.Commands.UpdateBiddingActivityScheduleStatus;
+using ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProjectStatus;
+using ERPEZ.Application.Features.Procurement.Projects.Commands.PostProcurementProjectToPublicPortal;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -333,6 +334,22 @@ public class BACProjectController(ISender mediator) : ControllerBase
             ProjectId = id, 
             Request = request 
         });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Posts an approved procurement project with a confirmed checklist to the BAC Public Portal.
+    /// Transitions project status to 'Posted'.
+    /// </summary>
+    [HttpPost("projects/{id}/post-to-portal")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    public async Task<IActionResult> PostProjectToPortal(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new PostProcurementProjectToPublicPortalCommand(id), cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

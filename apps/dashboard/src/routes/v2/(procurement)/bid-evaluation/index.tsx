@@ -4,6 +4,9 @@ import { RoutePermissionGuard } from '@/components/RoutePermissionGuard';
 import { PERMISSIONS } from '@/constants/permissions';
 
 export const Route = createFileRoute('/v2/(procurement)/bid-evaluation/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    projectId: typeof search.projectId === 'string' ? search.projectId : undefined,
+  }),
   component: BidEvaluationRoute,
 });
 

@@ -53,6 +53,8 @@ export interface DocumentResponse {
   size: number
   uploadedAt: string
   url?: string
+  envelopeType?: number
+  checklistItemId?: string
 }
 
 export interface UpdateApplicationEvaluationPayload {

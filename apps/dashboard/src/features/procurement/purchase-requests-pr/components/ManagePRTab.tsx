@@ -40,6 +40,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { PurchaseRequest, PRStatus, PRType } from '../types'
 import { usePurchaseRequests, useUpdatePurchaseRequestStatus } from '../handlers/hooks'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
+import { openSignedDocument } from '../utils/openSignedDocument'
 
 const STATUS_BADGE_CONFIG: Record<
   PRStatus,
@@ -419,16 +420,12 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                             </DropdownMenuItem>
 
                             {pr.signedPdfUrl && (
-                              <DropdownMenuItem asChild>
-                                <a
-                                  href={pr.signedPdfUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center text-purple-700 dark:text-purple-400"
-                                >
-                                  <FileText className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
-                                  View Signed Document
-                                </a>
+                              <DropdownMenuItem
+                                onClick={() => openSignedDocument(pr.signedPdfUrl, 'Signed PR Document')}
+                                className="flex items-center text-purple-700 dark:text-purple-400 cursor-pointer"
+                              >
+                                <FileText className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
+                                View Signed Document
                               </DropdownMenuItem>
                             )}
 

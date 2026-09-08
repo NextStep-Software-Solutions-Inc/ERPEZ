@@ -99,6 +99,9 @@ public class PPMPRepository : Repository<PPMP>, IPPMPRepository
                 .ThenInclude(child => child.FundSource)
             .Include(p => p.ChildPPMPs)
                 .ThenInclude(child => child.LineItemBudget)
+            .Include(p => p.APPPPMPs.Where(ap => !ap.IsDeleted))
+                .ThenInclude(ap => ap.APP)
+                    .ThenInclude(a => a!.SourceAPP)
             .AsSplitQuery();
     }
 

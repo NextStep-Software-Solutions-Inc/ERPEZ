@@ -287,7 +287,17 @@ export function DetailsPanel({
 
   const statusLower = (selectedProject.status || 'draft').toLowerCase()
   const isDraft = statusLower === 'draft'
-  const isApproved = statusLower === 'approved' || statusLower === 'approve'
+  const hasApprovalAttachment = Boolean(selectedProject.approvalAttachmentFileId)
+  const isResolutionApproved =
+    selectedProject.bacResolutions?.some(
+      (r) => (r.status || '').toLowerCase() === 'approved',
+    ) ?? false
+  const isApproved =
+    statusLower === 'approved' ||
+    statusLower === 'approve' ||
+    statusLower === 'posted' ||
+    hasApprovalAttachment ||
+    isResolutionApproved
   const isReturned = statusLower === 'returned' || statusLower === 'decline'
   const isForApproval =
     statusLower === 'for-approval' ||

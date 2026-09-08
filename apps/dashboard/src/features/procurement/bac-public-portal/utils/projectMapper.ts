@@ -4,25 +4,26 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
   const requiredDocuments: RequiredDocument[] = []
   
   if (p.requiredSubmissions) {
+    const bidNoticesMap = new Map<string, any>()
+    if (p.bidNotices) {
+      p.bidNotices.forEach((b: any) => {
+        bidNoticesMap.set(b.checklistItemId, b)
+      })
+    }
+
     p.requiredSubmissions.forEach((s: any) => {
+      const matchingNotice = bidNoticesMap.get(s.checklistItemId)
+      const downloadUrl = s.downloadUrl || matchingNotice?.downloadUrl
       requiredDocuments.push({
         id: s.checklistItemId,
         name: s.documentName,
         description: s.description || '',
+        downloadUrl: downloadUrl ? `${import.meta.env.VITE_ERPEZ_BACKEND_URL || ''}${downloadUrl}` : undefined,
+        hasTemplate: !!downloadUrl,
         isTemplate: false,
-      })
-    })
-  }
-  
-  if (p.bidNotices) {
-    p.bidNotices.forEach((b: any) => {
-      requiredDocuments.push({
-        id: b.checklistItemId,
-        name: b.documentName,
-        description: b.description || '',
-        downloadUrl: b.downloadUrl ? `${import.meta.env.VITE_ERPEZ_BACKEND_URL}${b.downloadUrl}` : undefined,
-        isTemplate: true,
-        postedOn: b.postedOn,
+        postedOn: matchingNotice?.postedOn,
+        viewerDocId: matchingNotice?.viewerDocId,
+        envelopeType: s.envelopeType ?? 1,
       })
     })
   }

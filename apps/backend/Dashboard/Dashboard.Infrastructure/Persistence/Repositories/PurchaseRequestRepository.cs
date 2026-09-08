@@ -193,7 +193,11 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
                 var ppmp = pi.PPMPExpenditureItem?.PPMP ?? pi.PPMPExpenditureItem?.PPMPActivity?.PPMP;
                 if (ppmp == null) return Enumerable.Empty<EligiblePPMPItemResult>();
 
-                var appItem = pi.APPItems?.FirstOrDefault(ai => !ai.IsDeleted && !ai.APP.IsDeleted && ai.APP.Status == StatusEnum.Approved);
+                var appItem = pi.APPItems?
+                    .Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                    .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
+                    .ThenByDescending(ai => ai.CreatedAt)
+                    .FirstOrDefault();
                 var effectiveModeId = appItem?.ProcurementModeId ?? (pi.ProcurementModeId != Guid.Empty ? pi.ProcurementModeId : (Guid?)null);
                 var effectiveModeName = appItem?.ProcurementMode?.Name ?? pi.ProcurementMode?.Name;
 

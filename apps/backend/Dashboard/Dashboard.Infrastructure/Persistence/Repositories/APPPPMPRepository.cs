@@ -99,4 +99,14 @@ public class APPPPMPRepository : Repository<APPPPMP>, IAPPPPMPRepository
             .Where(ap => ap.APPId == appId && (idList.Contains(ap.PPMPId) || idList.Contains(ap.Id)))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<List<APPPPMP>> GetActiveLinksByPPMPIdsAsync(IEnumerable<Guid> ppmpIds, CancellationToken cancellationToken = default)
+    {
+        var idList = ppmpIds.ToList();
+        return await context.Set<APPPPMP>()
+            .Where(l => idList.Contains(l.PPMPId) && !l.IsDeleted && l.APP != null && !l.APP.IsDeleted)
+            .Include(l => l.APP)
+                .ThenInclude(a => a!.SourceAPP)
+            .ToListAsync(cancellationToken);
+    }
 }

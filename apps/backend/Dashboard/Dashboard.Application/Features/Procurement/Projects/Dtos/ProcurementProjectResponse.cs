@@ -326,6 +326,7 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
             DateResolved = r.DateResolved,
             ResolvedLocation = r.ResolvedLocation,
             Status = r.Status,
+            BiddingAwardRecommendationId = r.BiddingAwardRecommendationId,
             WhereasClauses = r.WhereasClauseItems != null
                 ? r.WhereasClauseItems
                     .OrderBy(item => item.Order)

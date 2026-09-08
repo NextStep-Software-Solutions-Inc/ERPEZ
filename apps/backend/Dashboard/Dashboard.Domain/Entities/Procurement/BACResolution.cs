@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using ERPEZ.Domain.Common;
 using Sieve.Attributes;
 
@@ -6,6 +7,9 @@ namespace ERPEZ.Domain.Entities.Procurement;
 
 /// <summary>
 /// Represents a BAC resolution linked to a procurement project.
+/// Dual purpose:
+/// 1. Pre-bidding: Mode/Proceeding decision (BiddingAwardRecommendationId is null)
+/// 2. Post-qualification: Award Recommendation resolution (BiddingAwardRecommendationId points to authoritative award recommendation)
 /// </summary>
 public class BACResolution : BaseEntity
 {
@@ -27,8 +31,12 @@ public class BACResolution : BaseEntity
     public string? WhereasClause { get; set; }
     public string? ResolvedLocation { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? BiddingAwardRecommendationId { get; set; }
+
     // Navigation properties
     public virtual ProcurementProject ProcurementProject { get; set; } = null!;
+    public virtual BiddingAwardRecommendation? BiddingAwardRecommendation { get; set; }
     public virtual ICollection<BACResolutionWhereasClauseItem> WhereasClauseItems { get; set; } = new List<BACResolutionWhereasClauseItem>();
     public virtual ICollection<BACResolutionClauseLink> ClauseLinks { get; set; } = new List<BACResolutionClauseLink>();
 }

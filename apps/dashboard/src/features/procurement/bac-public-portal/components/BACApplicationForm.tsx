@@ -69,58 +69,17 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
     tinNumber: '',
   })
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
-  const [bidNoticeFiles, setBidNoticeFiles] = useState<Record<string, File>>({})
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [result, setResult] = useState<SubmissionResult | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
-  const requiredUploads = project.requiredDocuments.filter((d) => !d.isTemplate)
+  const requiredUploads = project.requiredDocuments
 
   const handleContactChange = (field: keyof ContactInfo, value: string) => {
     setContactInfo((prev) => ({ ...prev, [field]: value }))
     setErrors((prev) => ({ ...prev, [field]: '' }))
-  }
-
-  const handleBidNoticeFileDrop = useCallback(
-    (docId: string, files: FileList | null) => {
-      if (!files || files.length === 0) return
-      const file = files[0]
-      const acceptedExtensions = ACCEPTED_TYPES.split(',').map((s) => s.trim().replace(/^\./, '').toLowerCase())
-      const fileExt = (file.name.split('.').pop() || '').toLowerCase()
-      const mime = file.type || ''
-      const mimeAllowed = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      ]
-      const isAccepted =
-        (fileExt && acceptedExtensions.includes(fileExt)) ||
-        mimeAllowed.includes(mime) ||
-        mime.startsWith('image/')
-      if (!isAccepted) {
-        setErrors((prev) => ({ ...prev, [`bid_${docId}`]: `Unsupported file type` }))
-        return
-      }
-      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-        setErrors((prev) => ({ ...prev, [`bid_${docId}`]: `File exceeds ${MAX_SIZE_MB}MB limit` }))
-        return
-      }
-      setErrors((prev) => ({ ...prev, [`bid_${docId}`]: '' }))
-      setBidNoticeFiles((prev) => ({ ...prev, [docId]: file }))
-    },
-    [],
-  )
-
-  const removeBidNoticeFile = (docId: string) => {
-    setBidNoticeFiles((prev) => {
-      const next = { ...prev }
-      delete next[docId]
-      return next
-    })
   }
 
   const handleFileDrop = useCallback(
@@ -185,11 +144,6 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
         newErrors[doc.id] = 'This document is required'
       }
     })
-    selectedBidNotices.forEach((doc) => {
-      if (!bidNoticeFiles[doc.id]) {
-        newErrors[`bid_${doc.id}`] = 'Please upload the filled document'
-      }
-    })
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -212,24 +166,18 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
     if (!validate()) return
     setIsSubmitting(true)
     try {
-      // 1. Upload required documents
+      // Upload each required document
       const uploadPromises = uploadedFiles.map(async (uf) => {
         const fileId = await uploadFile(uf.file)
         return { checklistItemId: uf.documentId, fileId }
       })
 
-      // 2. Upload filled templates (bid notices)
-      const bidNoticePromises = Object.entries(bidNoticeFiles).map(async ([docId, file]) => {
-        const fileId = await uploadFile(file)
-        return { checklistItemId: docId, fileId }
-      })
+      const uploadedDocs = await Promise.all(uploadPromises)
 
-      const uploadedDocs = await Promise.all([...uploadPromises, ...bidNoticePromises])
-
-      // 3. Submit application
+      // Submit application
       const payload = {
         companyName: contactInfo.supplierName,
-        contactPerson: contactInfo.supplierName, // use supplier name as contact person
+        contactPerson: contactInfo.supplierName,
         emailAddress: contactInfo.email,
         contactNumber: contactInfo.contactNumber,
         tinNumber: contactInfo.tinNumber,
@@ -341,13 +289,13 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
           </div>
         </div>
 
-        {/* Document Uploads */}
+        {/* Required Documents Uploads */}
         {requiredUploads.length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
               <Upload className="h-4 w-4 text-slate-600" />
-              <h2 className="font-semibold text-slate-800">Upload Required Documents</h2>
-              <span className="ml-auto text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+              <h2 className="font-semibold text-slate-800">Required Documents</h2>
+              <span className="ml-auto text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
                 {uploadedFiles.length}/{requiredUploads.length} uploaded
               </span>
             </div>
@@ -359,17 +307,61 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
                 const uploaded = uploadedFiles.find((f) => f.documentId === doc.id)
                 const isDragOver = dragOverId === doc.id
                 return (
-                  <div key={doc.id} className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      {uploaded ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                      ) : (
-                        <div className="h-4 w-4 rounded-full border-2 border-slate-300 shrink-0" />
+                  <div key={doc.id} className="space-y-2 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                        {uploaded ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                        ) : (
+                          <div className="h-4 w-4 rounded-full border-2 border-slate-300 shrink-0 mt-0.5" />
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-slate-800">{doc.name}</span>
+                            {project.mop === 'public-bidding' && (
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                doc.envelopeType === 2
+                                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                  : 'bg-blue-50 text-blue-700 border-blue-200'
+                              }`}>
+                                {doc.envelopeType === 2 ? 'Second Envelope — Financial' : 'First Envelope — Eligibility & Technical'}
+                              </span>
+                            )}
+                          </div>
+                          {doc.description && (
+                            <p className="text-xs text-slate-500 mt-0.5">{doc.description}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Download Template button if template is attached */}
+                      {(doc.downloadUrl || doc.viewerDocId) && (
+                        doc.viewerDocId ? (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); printDocument(doc.viewerDocId!) }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            Download Template
+                          </button>
+                        ) : (
+                          <a
+                            href={doc.downloadUrl ?? '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-sm"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            Download Template
+                          </a>
+                        )
                       )}
-                      <span className="text-sm font-medium text-slate-700">{doc.name}</span>
-                      <span className="text-xs text-slate-400">— {doc.description}</span>
                     </div>
 
+                    {/* Single Upload slot */}
                     {uploaded ? (
                       <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200">
                         <div className="flex items-center gap-2 min-w-0">
@@ -400,7 +392,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
                             ? 'border-blue-400 bg-blue-50'
                             : errors[doc.id]
                             ? 'border-red-300 bg-red-50 hover:border-red-400'
-                            : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50'
+                            : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50'
                         }`}
                       >
                         <CloudUpload className={`h-7 w-7 mx-auto mb-2 ${isDragOver ? 'text-blue-500' : 'text-slate-400'}`} />
@@ -421,118 +413,6 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
                     {errors[doc.id] && (
                       <p className="text-xs text-red-500 flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" /> {errors[doc.id]}
-                      </p>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Selected Bid Notices Upload */}
-        {selectedBidNotices.length > 0 && (
-          <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-blue-600" />
-              <h2 className="font-semibold text-slate-800">Upload Filled Bid Notices</h2>
-              <span className="ml-auto text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
-                {Object.keys(bidNoticeFiles).length}/{selectedBidNotices.length} uploaded
-              </span>
-            </div>
-            <div className="p-6 space-y-5">
-              <p className="text-xs text-slate-500">
-                Upload the filled-out versions of the bid notice documents you selected. Accepted: PDF, Word, Excel, or image files. Max {MAX_SIZE_MB}MB per file.
-              </p>
-              {selectedBidNotices.map((doc) => {
-                const uploaded = bidNoticeFiles[doc.id]
-                const isDragOver = dragOverId === `bid_${doc.id}`
-                return (
-                  <div key={doc.id} className="space-y-2">
-                    {/* Document label */}
-                    <div className="flex items-start gap-2 p-3 rounded-xl border border-blue-100 bg-blue-50">
-                      <FileText className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-slate-800">{doc.name}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{doc.description}</p>
-                      </div>
-                      {(doc.downloadUrl || doc.viewerDocId) && (
-                        doc.viewerDocId ? (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); printDocument(doc.viewerDocId!) }}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0"
-                          >
-                            <Download className="h-3 w-3" />
-                            Template
-                          </button>
-                        ) : (
-                          <a
-                            href={doc.downloadUrl ?? '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Download className="h-3 w-3" />
-                            Template
-                          </a>
-                        )
-                      )}
-                    </div>
-
-                    {/* Upload area */}
-                    {uploaded ? (
-                      <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                          <span className="text-sm text-emerald-700 font-medium truncate">{uploaded.name}</span>
-                          <span className="text-xs text-emerald-500 shrink-0">({formatFileSize(uploaded.size)})</span>
-                        </div>
-                        <button
-                          onClick={() => removeBidNoticeFile(doc.id)}
-                          className="text-emerald-400 hover:text-red-500 transition-colors shrink-0"
-                          title="Remove file"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div
-                        onDragOver={(e) => { e.preventDefault(); setDragOverId(`bid_${doc.id}`) }}
-                        onDragLeave={() => setDragOverId(null)}
-                        onDrop={(e) => {
-                          e.preventDefault()
-                          setDragOverId(null)
-                          handleBidNoticeFileDrop(doc.id, e.dataTransfer.files)
-                        }}
-                        onClick={() => fileInputRefs.current[`bid_${doc.id}`]?.click()}
-                        className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
-                          isDragOver
-                            ? 'border-blue-400 bg-blue-50'
-                            : errors[`bid_${doc.id}`]
-                            ? 'border-red-300 bg-red-50 hover:border-red-400'
-                            : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50'
-                        }`}
-                      >
-                        <CloudUpload className={`h-7 w-7 mx-auto mb-2 ${isDragOver ? 'text-blue-500' : 'text-slate-400'}`} />
-                        <p className="text-sm font-medium text-slate-600">
-                          {isDragOver ? 'Drop file here' : 'Drag & drop or click to upload'}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-0.5">PDF, Word, Excel, Images up to {MAX_SIZE_MB}MB</p>
-                        <input
-                          ref={(el) => { fileInputRefs.current[`bid_${doc.id}`] = el }}
-                          type="file"
-                          accept={ACCEPTED_TYPES}
-                          className="hidden"
-                          onChange={(e) => handleBidNoticeFileDrop(doc.id, e.target.files)}
-                        />
-                      </div>
-                    )}
-
-                    {errors[`bid_${doc.id}`] && (
-                      <p className="text-xs text-red-500 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" /> {errors[`bid_${doc.id}`]}
                       </p>
                     )}
                   </div>

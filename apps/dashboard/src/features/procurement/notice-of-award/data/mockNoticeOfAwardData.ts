@@ -397,7 +397,7 @@ function requireAwardSource(
   sources: AwardBacResolutionSource[],
   index: number,
 ) {
-  const source = sources[index]
+  const source = sources[index] ?? sources[index % sources.length]
 
   if (!source) {
     throw new Error(
@@ -411,7 +411,7 @@ function requireAwardSource(
 function buildSeededNoticeOfAwardDatabase() {
   const awardSources = getApprovedAwardBacResolutionSources()
 
-  if (awardSources.length < 10) {
+  if (awardSources.length === 0) {
     return []
   }
 
@@ -588,13 +588,6 @@ export function cloneNoticeOfAward(noa: NoticeOfAward): NoticeOfAward {
 
 export function getApprovedAwardBacResolutionSources() {
   const sourceMap = new Map<string, AwardBacResolutionSource>()
-
-  getMockBacResolutionDatabase()
-    .map(buildAwardSourceFromResolution)
-    .filter((source): source is AwardBacResolutionSource => source !== null)
-    .forEach((source) => {
-      sourceMap.set(source.bacResolutionNumber, source)
-    })
 
   getBidEvaluationAwardBacResolutionSources().forEach((source) => {
     sourceMap.set(source.bacResolutionNumber, source)
