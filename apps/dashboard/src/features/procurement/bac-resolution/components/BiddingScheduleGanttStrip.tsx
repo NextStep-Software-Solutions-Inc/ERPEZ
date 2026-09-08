@@ -274,29 +274,71 @@ export function BiddingScheduleGanttStrip({
                               </span>
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="text-xs p-2.5 max-w-xs space-y-1.5 shadow-md">
-                            <p className="font-bold text-foreground">{item.procurementActivityTypeName || item.projectTitle}</p>
-                            <div className="text-[11px] text-muted-foreground space-y-0.5">
-                              <p>
-                                <strong>Period:</strong>{' '}
-                                {new Date(item.startDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{' '}
-                                –{' '}
-                                {new Date(item.endDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          <TooltipContent
+                            side="top"
+                            color="secondary"
+                            className="p-3 text-xs max-w-xs space-y-2 bg-white dark:bg-card border border-default-200 text-default-900 shadow-xl rounded-lg z-50"
+                          >
+                            <div className="border-b border-default-100 pb-1.5">
+                              <p className="font-bold text-xs text-default-900 leading-snug">
+                                {item.procurementActivityTypeName || item.projectTitle}
                               </p>
+                            </div>
+                            <div className="text-[11px] text-default-600 space-y-1.5">
+                              <div className="flex items-start gap-1.5">
+                                <span className="font-semibold text-default-700 min-w-[75px] shrink-0">
+                                  Period:
+                                </span>
+                                <span className="text-default-900 font-medium">
+                                  {new Date(item.startDate).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}{' '}
+                                  –{' '}
+                                  {new Date(item.endDate).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </div>
                               {item.venue && (
-                                <p className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3 inline" /> {item.venue}
-                                </p>
+                                <div className="flex items-start gap-1.5">
+                                  <span className="font-semibold text-default-700 min-w-[75px] shrink-0">
+                                    Venue:
+                                  </span>
+                                  <span className="flex items-center gap-1 text-default-800">
+                                    <MapPin className="h-3 w-3 inline text-default-400 shrink-0" />
+                                    {item.venue}
+                                  </span>
+                                </div>
                               )}
-                              <p>
-                                <strong>Max Allowed:</strong>{' '}
-                                {item.actType?.maxDays !== null && item.actType?.maxDays !== undefined
-                                  ? `${item.actType.maxDays} days`
-                                  : 'No limit defined'}
-                              </p>
-                              <p className={cn('font-semibold', item.remainingInfo.variant === 'destructive' ? 'text-red-600' : item.remainingInfo.variant === 'warning' ? 'text-amber-600' : 'text-emerald-600')}>
-                                Status: {item.remainingInfo.label}
-                              </p>
+                              <div className="flex items-start gap-1.5">
+                                <span className="font-semibold text-default-700 min-w-[75px] shrink-0">
+                                  Max Allowed:
+                                </span>
+                                <span className="text-default-800 font-medium">
+                                  {item.actType?.maxDays !== null && item.actType?.maxDays !== undefined
+                                    ? `${item.actType.maxDays} calendar days`
+                                    : 'No limit defined'}
+                                </span>
+                              </div>
+                              <div className="pt-1.5 border-t border-default-100 flex items-center justify-between">
+                                <span className="text-[10px] text-default-500 font-medium">
+                                  Status:
+                                </span>
+                                <span
+                                  className={cn(
+                                    'text-[10px] font-bold px-2 py-0.5 rounded-full border',
+                                    getRemainingDaysBadgeClass(item.remainingInfo.variant),
+                                  )}
+                                >
+                                  {item.remainingInfo.label}
+                                </span>
+                              </div>
                             </div>
                           </TooltipContent>
                         </Tooltip>

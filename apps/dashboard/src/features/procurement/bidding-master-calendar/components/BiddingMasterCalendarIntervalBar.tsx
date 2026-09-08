@@ -119,34 +119,39 @@ export function BiddingMasterCalendarIntervalBar({
           </TooltipTrigger>
           <TooltipContent
             side="top"
-            className="p-3 text-xs max-w-sm space-y-1.5 bg-slate-900 text-white shadow-xl border-slate-800"
+            color="secondary"
+            className="p-3 text-xs max-w-sm space-y-2 bg-white dark:bg-card text-default-900 shadow-xl border border-default-200 rounded-lg z-50"
           >
-            <div className="font-bold text-sm text-slate-100 flex items-center justify-between gap-2">
+            <div className="font-bold text-sm text-default-900 flex items-center justify-between gap-2 border-b border-default-100 pb-1.5">
               <span>{interval.milestoneName}</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/20">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold border bg-default-100 text-default-800 border-default-300">
                 {remainingInfo.label}
               </span>
             </div>
-            <div className="text-[11px] text-slate-300 space-y-1">
-              <p className="text-slate-200">
-                <strong>Project:</strong> {event.primaryProjectName}
+            <div className="text-[11px] text-default-600 space-y-1.5">
+              <p>
+                <strong className="text-default-700">Project:</strong> <span className="text-default-900">{event.primaryProjectName}</span>
               </p>
               <p>
-                <strong>Resolution:</strong> {event.bacResolutionNumber}
+                <strong className="text-default-700">Resolution:</strong> <span className="text-default-800">{event.bacResolutionNumber}</span>
               </p>
               <p>
-                <strong>Period:</strong>{' '}
-                {format(interval.startDate, 'MMM d, yyyy')} –{' '}
-                {format(interval.endDate, 'MMM d, yyyy')}{' '}
-                <span className="font-mono">({interval.durationDays} days)</span>
+                <strong className="text-default-700">Period:</strong>{' '}
+                <span className="text-default-900 font-medium">
+                  {format(interval.startDate, 'MMM d, yyyy')} –{' '}
+                  {format(interval.endDate, 'MMM d, yyyy')}{' '}
+                </span>
+                <span className="font-mono text-default-500">({interval.durationDays} days)</span>
               </p>
               <p>
-                <strong>Statutory Limit:</strong>{' '}
-                {remainingInfo.maxDays !== null
-                  ? `${remainingInfo.maxDays} calendar days`
-                  : 'No statutory maximum (em-dash)'}
+                <strong className="text-default-700">Statutory Limit:</strong>{' '}
+                <span className="text-default-800">
+                  {remainingInfo.maxDays !== null
+                    ? `${remainingInfo.maxDays} calendar days`
+                    : 'No statutory maximum (em-dash)'}
+                </span>
               </p>
-              <p className="pt-0.5 text-[10px] text-slate-400">
+              <p className="pt-1 border-t border-default-100 text-[10px] text-default-400">
                 Click bar to open milestone details in drawer.
               </p>
             </div>
