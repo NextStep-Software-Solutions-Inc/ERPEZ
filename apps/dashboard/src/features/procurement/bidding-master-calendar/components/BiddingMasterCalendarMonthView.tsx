@@ -160,8 +160,9 @@ export function BiddingMasterCalendarMonthView({
     const map = new Map<string, ProcurementActivityType>()
     for (const item of activityTypesData?.data || []) {
       if (item.id) map.set(item.id, item)
-      if ((item as any).milestoneKey) {
-        map.set(String((item as any).milestoneKey).toLowerCase(), item)
+      const typedItem = item as ProcurementActivityType & { milestoneKey?: string | null }
+      if (typedItem.milestoneKey) {
+        map.set(String(typedItem.milestoneKey).toLowerCase(), item)
       }
       if (item.name) {
         map.set(item.name.toLowerCase().trim(), item)
