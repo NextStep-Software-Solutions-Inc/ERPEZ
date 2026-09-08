@@ -88,7 +88,7 @@ export function CreateBacResolutionDialog({
     } catch {
       // toast.promise handles presentation
     } finally {
-
+      setIsSubmitting(false)
     }
   }
 

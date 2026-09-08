@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   BiddingMasterCalendarEvent,
   BiddingMasterCalendarFilters,
 } from '../types'
@@ -17,6 +17,13 @@ export function applyCalendarFilters(
       !event.projectNames.some((projectName) =>
         projectName.toLowerCase().includes(searchTerm),
       )
+    ) {
+      return false
+    }
+
+    if (
+      filters.bacResolutionId &&
+      event.bacResolutionId !== filters.bacResolutionId
     ) {
       return false
     }

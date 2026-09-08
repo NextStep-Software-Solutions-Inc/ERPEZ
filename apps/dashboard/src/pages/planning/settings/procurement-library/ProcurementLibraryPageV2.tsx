@@ -19,6 +19,7 @@ import { UnitOfMeasurementTab } from '@/components/features/planning/procurement
 import { SuppliersTab } from '@/components/features/planning/procurement-library/tabs/SuppliersTab'
 import { ProcurementActivitiesTab } from '@/components/features/planning/procurement-library/tabs/ProcurementActivitiesTab'
 import { SettingsTab } from '@/components/features/planning/procurement-library/tabs/SettingsTab'
+import { ResolutionClausesTab } from '@/components/features/planning/procurement-library/tabs/ResolutionClausesTab'
 
 const CatalogMasterPage = lazy(() =>
   import('@/features/planning/ppmp/catalog/components/CatalogMasterPage').then(
@@ -73,6 +74,12 @@ const TAB_CONFIG = [
     icon: '⏱️',
   },
   {
+    id: 'ResolutionClauses',
+    label: 'Resolution Clauses',
+    description: 'Manage BAC resolution legal clause templates',
+    icon: '📜',
+  },
+  {
     id: 'Settings',
     label: 'Settings',
     description: 'Manage categories and UNSPSC codes',
@@ -91,6 +98,7 @@ const TAB_COMPONENTS: Record<string, React.ComponentType> = {
   'UOM': UnitOfMeasurementTab,
   'Suppliers': SuppliersTab,
   'Activities': ProcurementActivitiesTab,
+  'ResolutionClauses': ResolutionClausesTab,
   'Settings': SettingsTab,
 }
 

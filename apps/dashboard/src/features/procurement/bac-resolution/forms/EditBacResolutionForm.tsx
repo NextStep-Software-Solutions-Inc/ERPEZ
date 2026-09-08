@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+} from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Input } from '@/components/ui/input'
@@ -21,8 +28,11 @@ import {
   ChevronUp,
   ChevronDown,
   GripVertical,
+  AlertTriangle,
+  Check,
   PackageCheck,
   Layers,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -43,11 +53,18 @@ import type {
   ResolutionClauseType,
 } from '../types'
 import { CreateEditResolutionClauseDialog } from '../dialogs/CreateEditResolutionClauseDialog'
-import { ResolutionClausePickerModal } from '../dialogs/ResolutionClausePickerModal'
+import {
+  ResolutionClausePickerModal,
+  normalizeClauseType,
+} from '../dialogs/ResolutionClausePickerModal'
 import { UserPickerCombobox } from './CreateBacResolutionForm'
 
-const useResolutionClauses = createQueryHookFromTemplate(getResolutionClausesRequest)
-const useCreateResolutionClause = createMutationHookFromTemplate(createResolutionClauseRequest)
+const useResolutionClauses = createQueryHookFromTemplate(
+  getResolutionClausesRequest,
+)
+const useCreateResolutionClause = createMutationHookFromTemplate(
+  createResolutionClauseRequest,
+)
 const useUsers = createQueryHookFromTemplate(getUsersRequest)
 
 export const editBacResolutionSchema = z.object({
@@ -98,33 +115,48 @@ export const EditBacResolutionForm = forwardRef<
     const [submitError, setSubmitError] = useState<string | null>(null)
 
     // Clause state:
-    const [whereasClauses, setWhereasClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
-    const [nowThereforeClauses, setNowThereforeClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
-    const [resolvedClauses, setResolvedClauses] = useState<{ resolutionClauseId: string; order: number }[]>([])
+    const [whereasClauses, setWhereasClauses] = useState<
+      { resolutionClauseId: string; order: number }[]
+    >([])
+    const [nowThereforeClauses, setNowThereforeClauses] = useState<
+      { resolutionClauseId: string; order: number }[]
+    >([])
+    const [resolvedClauses, setResolvedClauses] = useState<
+      { resolutionClauseId: string; order: number }[]
+    >([])
+
+    // Locally created custom clauses for instant preview
+    const [createdClauses, setCreatedClauses] = useState<ResolutionClause[]>([])
+
+    // Stable references to prevent stale closures
+    const whereasClausesRef = useRef(whereasClauses)
+    whereasClausesRef.current = whereasClauses
+
+    const nowThereforeClausesRef = useRef(nowThereforeClauses)
+    nowThereforeClausesRef.current = nowThereforeClauses
+
+    const resolvedClausesRef = useRef(resolvedClauses)
+    resolvedClausesRef.current = resolvedClauses
 
     // Modal state:
-    const [pickerModalType, setPickerModalType] = useState<ResolutionClauseType | null>(null)
-    const [createModalType, setCreateModalType] = useState<ResolutionClauseType | null>(null)
+    const [pickerModalType, setPickerModalType] =
+      useState<ResolutionClauseType | null>(null)
+    const [createModalType, setCreateModalType] =
+      useState<ResolutionClauseType | null>(null)
 
     // Collapsible sections:
     const [isWhereasExpanded, setIsWhereasExpanded] = useState(true)
     const [isNowThereforeExpanded, setIsNowThereforeExpanded] = useState(false)
     const [isResolvedExpanded, setIsResolvedExpanded] = useState(false)
+    const [showClauseErrors, setShowClauseErrors] = useState(false)
 
     // Load clauses for picker
     const { data: resolutionClausesData, isPending: isClausesPending } =
       useResolutionClauses({
         pathParams: {},
-        queryParams: { pageSize: 200, ClauseType: pickerModalType || undefined },
+        queryParams: { pageSize: 200, filters: pickerModalType || undefined },
         enabled: pickerModalType !== null,
       })
-
-    const clauseTemplates = useMemo<ResolutionClause[]>(() => {
-      if (!resolutionClausesData) return []
-      if (Array.isArray(resolutionClausesData.data)) return resolutionClausesData.data
-      if (Array.isArray(resolutionClausesData)) return resolutionClausesData
-      return []
-    }, [resolutionClausesData])
 
     // Load all clauses for lookup
     const { data: allClausesData } = useResolutionClauses({
@@ -142,8 +174,42 @@ export const EditBacResolutionForm = forwardRef<
       for (const item of list) {
         map.set(item.id, item)
       }
+      for (const item of createdClauses) {
+        map.set(item.id, item)
+      }
       return map
-    }, [allClausesData])
+    }, [allClausesData, createdClauses])
+
+    const clauseTemplates = useMemo<ResolutionClause[]>(() => {
+      const map = new Map<string, ResolutionClause>()
+      const addItems = (data: unknown) => {
+        if (!data) return
+        const list = Array.isArray((data as { data?: unknown })?.data)
+          ? (data as { data: ResolutionClause[] }).data
+          : Array.isArray(data)
+            ? (data as ResolutionClause[])
+            : []
+        for (const item of list) {
+          if (item?.id) {
+            map.set(item.id, item)
+          }
+        }
+      }
+
+      addItems(allClausesData)
+      addItems(resolutionClausesData)
+      for (const item of createdClauses) {
+        map.set(item.id, item)
+      }
+
+      const allList = Array.from(map.values())
+      if (!pickerModalType) return allList
+
+      const targetType = normalizeClauseType(pickerModalType)
+      return allList.filter(
+        (c) => normalizeClauseType(c.clauseType) === targetType,
+      )
+    }, [allClausesData, resolutionClausesData, createdClauses, pickerModalType])
 
     // Populate initial clauses
     useEffect(() => {
@@ -191,6 +257,8 @@ export const EditBacResolutionForm = forwardRef<
         payload: { name, body, clauseType: type },
       })
 
+      setCreatedClauses((prev) => [...prev, created])
+
       if (type === 'Whereas') {
         setWhereasClauses((prev) => [
           ...prev,
@@ -221,12 +289,38 @@ export const EditBacResolutionForm = forwardRef<
           ? initialValues.dateResolved.split('T')[0]
           : '',
         resolvedLocation: initialValues?.resolvedLocation || '',
-        endUserRepresentativeId: initialValues?.endUserRepresentativeId || undefined,
+        endUserRepresentativeId:
+          initialValues?.endUserRepresentativeId || undefined,
         techRepresentativeId: initialValues?.techRepresentativeId || undefined,
       },
       onSubmit: async ({ value }) => {
         setIsSubmitting(true)
         setSubmitError(null)
+
+        const currentWhereas = whereasClausesRef.current
+        const currentNowTherefore = nowThereforeClausesRef.current
+        const currentResolved = resolvedClausesRef.current
+
+        const missingWhereas = currentWhereas.length === 0
+        const missingNowTherefore = currentNowTherefore.length === 0
+        const missingResolved = currentResolved.length === 0
+
+        if (missingWhereas || missingNowTherefore || missingResolved) {
+          setShowClauseErrors(true)
+          if (missingWhereas) setIsWhereasExpanded(true)
+          if (missingNowTherefore) setIsNowThereforeExpanded(true)
+          if (missingResolved) setIsResolvedExpanded(true)
+          setIsSubmitting(false)
+
+          const missingParts: string[] = []
+          if (missingWhereas) missingParts.push('WHEREAS')
+          if (missingNowTherefore) missingParts.push('NOW, THEREFORE')
+          if (missingResolved) missingParts.push('RESOLVED')
+          toast.error(
+            `Please add at least one clause for: ${missingParts.join(', ')}.`,
+          )
+          return
+        }
 
         try {
           const payload: UpdateBacProjectPayload = {
@@ -235,15 +329,15 @@ export const EditBacResolutionForm = forwardRef<
             resolutionNumber: value.resolutionNumber,
             dateResolved: value.dateResolved,
             resolvedLocation: value.resolvedLocation,
-            whereasClauseLinks: whereasClauses.map((c, idx) => ({
+            whereasClauseLinks: currentWhereas.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
-            nowThereforeClauses: nowThereforeClauses.map((c, idx) => ({
+            nowThereforeClauses: currentNowTherefore.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
-            resolvedClauses: resolvedClauses.map((c, idx) => ({
+            resolvedClauses: currentResolved.map((c, idx) => ({
               resolutionClauseId: c.resolutionClauseId,
               order: idx,
             })),
@@ -254,7 +348,9 @@ export const EditBacResolutionForm = forwardRef<
           await onSubmit(payload)
         } catch (error) {
           const msg =
-            error instanceof Error ? error.message : 'Failed to update BAC Resolution'
+            error instanceof Error
+              ? error.message
+              : 'Failed to update BAC Resolution'
           setSubmitError(msg)
           toast.error(msg)
         } finally {
@@ -267,12 +363,43 @@ export const EditBacResolutionForm = forwardRef<
       onDirtyChange?.(form.state.isDirty)
     }, [form.state.isDirty, onDirtyChange])
 
-    useImperativeHandle(ref, () => ({
-      submit: async () => {
-        setSubmitError(null)
-        await form.handleSubmit()
-      },
-    }))
+    const handleSubmit = async () => {
+      setSubmitError(null)
+
+      const currentWhereas = whereasClausesRef.current
+      const currentNowTherefore = nowThereforeClausesRef.current
+      const currentResolved = resolvedClausesRef.current
+
+      const missingWhereas = currentWhereas.length === 0
+      const missingNowTherefore = currentNowTherefore.length === 0
+      const missingResolved = currentResolved.length === 0
+
+      if (missingWhereas || missingNowTherefore || missingResolved) {
+        setShowClauseErrors(true)
+        if (missingWhereas) setIsWhereasExpanded(true)
+        if (missingNowTherefore) setIsNowThereforeExpanded(true)
+        if (missingResolved) setIsResolvedExpanded(true)
+
+        const missingParts: string[] = []
+        if (missingWhereas) missingParts.push('WHEREAS')
+        if (missingNowTherefore) missingParts.push('NOW, THEREFORE')
+        if (missingResolved) missingParts.push('RESOLVED')
+        toast.error(
+          `Please add at least one clause for: ${missingParts.join(', ')}.`,
+        )
+        return
+      }
+
+      await form.handleSubmit()
+    }
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        submit: handleSubmit,
+      }),
+      [whereasClauses, nowThereforeClauses, resolvedClauses],
+    )
 
     const appItemLinks: AppItemLinkItem[] = projectDetails?.appItemLinks || []
 
@@ -282,7 +409,7 @@ export const EditBacResolutionForm = forwardRef<
         onSubmit={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          form.handleSubmit()
+          handleSubmit()
         }}
         className="space-y-6"
       >
@@ -303,13 +430,19 @@ export const EditBacResolutionForm = forwardRef<
                   Linked APP Items ({appItemLinks.length})
                 </h4>
                 {appItemLinks[0]?.appNumber && (
-                  <Badge variant="outline" className="bg-white text-primary border-primary/30 text-xs">
+                  <Badge
+                    variant="outline"
+                    className="bg-white text-primary border-primary/30 text-xs"
+                  >
                     {appItemLinks[0].appNumber}
                   </Badge>
                 )}
               </div>
               <span className="text-xs font-semibold text-muted-foreground">
-                Parent APP: <span className="text-default-900">{appItemLinks[0]?.appName || 'Annual Procurement Plan'}</span>
+                Parent APP:{' '}
+                <span className="text-default-900">
+                  {appItemLinks[0]?.appName || 'Annual Procurement Plan'}
+                </span>
               </span>
             </div>
 
@@ -317,33 +450,56 @@ export const EditBacResolutionForm = forwardRef<
               <Table>
                 <TableHeader className="bg-default-50">
                   <TableRow>
-                    <TableHead className="w-[100px] text-xs font-bold">Item #</TableHead>
-                    <TableHead className="text-xs font-bold">Description / Line Item</TableHead>
+                    <TableHead className="w-[100px] text-xs font-bold">
+                      Item #
+                    </TableHead>
+                    <TableHead className="text-xs font-bold">
+                      Description / Line Item
+                    </TableHead>
                     <TableHead className="text-xs font-bold">Office</TableHead>
-                    <TableHead className="text-right text-xs font-bold">Approved Budget (ABC)</TableHead>
+                    <TableHead className="text-right text-xs font-bold">
+                      Approved Budget (ABC)
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {appItemLinks.map((item, idx) => (
-                    <TableRow key={item.id || item.appItemId} className="text-xs">
+                    <TableRow
+                      key={item.id || item.appItemId}
+                      className="text-xs"
+                    >
                       <TableCell className="font-semibold text-primary">
-                        {item.itemNumber || `Item ${(idx + 1).toString().padStart(2, '0')}`}
+                        {item.itemNumber ||
+                          `Item ${(idx + 1).toString().padStart(2, '0')}`}
                       </TableCell>
                       <TableCell className="font-medium text-default-900 max-w-[280px]">
-                        <p className="truncate font-semibold">{item.description}</p>
+                        <p className="truncate font-semibold">
+                          {item.description}
+                        </p>
                       </TableCell>
-                      <TableCell className="text-default-700">{item.officeName || '—'}</TableCell>
+                      <TableCell className="text-default-700">
+                        {item.officeName || '—'}
+                      </TableCell>
                       <TableCell className="text-right font-semibold text-emerald-700">
-                        ₱{item.effectiveABC.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        ₱
+                        {item.effectiveABC.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                        })}
                       </TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="bg-default-50/80 font-bold border-t-2 border-default-300">
-                    <TableCell colSpan={3} className="text-right text-xs uppercase tracking-wider text-default-800">
+                    <TableCell
+                      colSpan={3}
+                      className="text-right text-xs uppercase tracking-wider text-default-800"
+                    >
                       Total Approved Budget for Contract (ABC):
                     </TableCell>
                     <TableCell className="text-right text-sm font-bold text-emerald-700">
-                      ₱{appItemLinks.reduce((s, i) => s + i.effectiveABC, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      ₱
+                      {appItemLinks
+                        .reduce((s, i) => s + i.effectiveABC, 0)
+                        .toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -362,22 +518,34 @@ export const EditBacResolutionForm = forwardRef<
                   Linked Consolidated Purchase Request
                 </h4>
               </div>
-              <Badge variant="outline" className="bg-white text-emerald-800 border-emerald-300 font-semibold">
+              <Badge
+                variant="outline"
+                className="bg-white text-emerald-800 border-emerald-300 font-semibold"
+              >
                 {projectDetails.consolidatedPR.prNumber}
               </Badge>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
               <div>
                 <span className="text-muted-foreground">Project:</span>
-                <p className="font-semibold text-default-900 truncate">{projectDetails.consolidatedPR.description}</p>
+                <p className="font-semibold text-default-900 truncate">
+                  {projectDetails.consolidatedPR.description}
+                </p>
               </div>
               <div>
                 <span className="text-muted-foreground">End-User:</span>
-                <p className="font-semibold text-default-900">{projectDetails.consolidatedPR.endUser || '—'}</p>
+                <p className="font-semibold text-default-900">
+                  {projectDetails.consolidatedPR.endUser || '—'}
+                </p>
               </div>
               <div>
                 <span className="text-muted-foreground">Total Budget:</span>
-                <p className="font-bold text-emerald-700">₱{(projectDetails.consolidatedPR.totalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                <p className="font-bold text-emerald-700">
+                  ₱
+                  {(
+                    projectDetails.consolidatedPR.totalAmount || 0
+                  ).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </p>
               </div>
             </div>
           </div>
@@ -458,8 +626,12 @@ export const EditBacResolutionForm = forwardRef<
                     disabled={isLoading || isSubmitting}
                     className="h-10 rounded-md border border-default-300 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
                   >
-                    <option value="award-recommendation">Award Recommendation</option>
-                    <option value="procurement-mode-recommendation">Procurement Mode Recommendation</option>
+                    <option value="award-recommendation">
+                      Award Recommendation
+                    </option>
+                    <option value="procurement-mode-recommendation">
+                      Procurement Mode Recommendation
+                    </option>
                   </select>
                   <FieldInfo field={field} />
                 </div>
@@ -569,12 +741,17 @@ export const EditBacResolutionForm = forwardRef<
             onOpenPicker={() => setPickerModalType('Whereas')}
             onOpenCreate={() => setCreateModalType('Whereas')}
             onChangeItems={setWhereasClauses}
+            errorMessage={
+              showClauseErrors && whereasClauses.length === 0
+                ? 'At least one WHEREAS clause is required.'
+                : null
+            }
           />
 
           <EditClauseSection
             title="NOW, THEREFORE Clauses"
             description="Committee premise and transition clauses."
-            badgeRequired={false}
+            badgeRequired={true}
             items={nowThereforeClauses}
             clausesMap={allClausesMap}
             isExpanded={isNowThereforeExpanded}
@@ -582,12 +759,17 @@ export const EditBacResolutionForm = forwardRef<
             onOpenPicker={() => setPickerModalType('NowTherefore')}
             onOpenCreate={() => setCreateModalType('NowTherefore')}
             onChangeItems={setNowThereforeClauses}
+            errorMessage={
+              showClauseErrors && nowThereforeClauses.length === 0
+                ? 'At least one NOW, THEREFORE clause is required.'
+                : null
+            }
           />
 
           <EditClauseSection
             title="RESOLVED Clauses"
             description="Final resolution decisions and award recommendations."
-            badgeRequired={false}
+            badgeRequired={true}
             items={resolvedClauses}
             clausesMap={allClausesMap}
             isExpanded={isResolvedExpanded}
@@ -595,6 +777,11 @@ export const EditBacResolutionForm = forwardRef<
             onOpenPicker={() => setPickerModalType('Resolved')}
             onOpenCreate={() => setCreateModalType('Resolved')}
             onChangeItems={setResolvedClauses}
+            errorMessage={
+              showClauseErrors && resolvedClauses.length === 0
+                ? 'At least one RESOLVED clause is required.'
+                : null
+            }
           />
         </div>
 
@@ -665,7 +852,10 @@ interface EditClauseSectionProps {
   onToggleExpand: () => void
   onOpenPicker: () => void
   onOpenCreate: () => void
-  onChangeItems: (items: { resolutionClauseId: string; order: number }[]) => void
+  onChangeItems: (
+    items: { resolutionClauseId: string; order: number }[],
+  ) => void
+  errorMessage?: string | null
 }
 
 function EditClauseSection({
@@ -679,13 +869,17 @@ function EditClauseSection({
   onOpenPicker,
   onOpenCreate,
   onChangeItems,
+  errorMessage,
 }: EditClauseSectionProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
   const removeItem = (id: string) => {
     const next = items
       .filter((c) => c.resolutionClauseId !== id)
-      .map((c, idx) => ({ resolutionClauseId: c.resolutionClauseId, order: idx }))
+      .map((c, idx) => ({
+        resolutionClauseId: c.resolutionClauseId,
+        order: idx,
+      }))
     onChangeItems(next)
   }
 
@@ -719,8 +913,15 @@ function EditClauseSection({
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault()
     const sourceIndexStr = e.dataTransfer.getData('text/plain')
-    const sourceIndex = sourceIndexStr ? parseInt(sourceIndexStr, 10) : draggedIndex
-    if (sourceIndex === null || sourceIndex === undefined || isNaN(sourceIndex) || sourceIndex === targetIndex) {
+    const sourceIndex = sourceIndexStr
+      ? parseInt(sourceIndexStr, 10)
+      : draggedIndex
+    if (
+      sourceIndex === null ||
+      sourceIndex === undefined ||
+      isNaN(sourceIndex) ||
+      sourceIndex === targetIndex
+    ) {
       setDraggedIndex(null)
       return
     }
@@ -733,7 +934,14 @@ function EditClauseSection({
   }
 
   return (
-    <div className="rounded-lg border border-default-200 bg-white overflow-hidden shadow-xs">
+    <div
+      className={cn(
+        'rounded-lg border bg-white overflow-hidden shadow-xs transition-colors',
+        errorMessage
+          ? 'border-destructive/50 ring-1 ring-destructive/20'
+          : 'border-default-200',
+      )}
+    >
       <div
         onClick={onToggleExpand}
         className="p-3.5 bg-default-50/70 flex items-center justify-between cursor-pointer select-none hover:bg-default-100/70 transition-colors"
@@ -742,11 +950,33 @@ function EditClauseSection({
           <FileText className="h-4 w-4 text-primary" />
           <h4 className="font-bold text-sm text-default-900">{title}</h4>
           {badgeRequired ? (
-            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold">
-              Required (≥1)
-            </Badge>
+            items.length >= 1 ? (
+              <Badge
+                variant="outline"
+                className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[10px] font-semibold flex items-center gap-1"
+              >
+                <Check className="h-2.5 w-2.5" /> Satisfied
+              </Badge>
+            ) : errorMessage ? (
+              <Badge
+                variant="outline"
+                className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold"
+              >
+                Required (≥1)
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] font-semibold"
+              >
+                Required (≥1)
+              </Badge>
+            )
           ) : (
-            <Badge variant="secondary" className="text-[10px] text-muted-foreground">
+            <Badge
+              variant="secondary"
+              className="text-[10px] text-muted-foreground"
+            >
               Optional
             </Badge>
           )}
@@ -755,7 +985,10 @@ function EditClauseSection({
           </Badge>
         </div>
 
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="flex items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Button
             type="button"
             variant="outline"
@@ -781,10 +1014,21 @@ function EditClauseSection({
             onClick={onToggleExpand}
             className="h-7 w-7 text-muted-foreground"
           >
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="mx-3.5 my-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-2 text-xs text-destructive font-medium shadow-2xs">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       {isExpanded && (
         <div className="p-4 space-y-3 border-t border-default-200">
@@ -792,7 +1036,8 @@ function EditClauseSection({
 
           {items.length === 0 ? (
             <div className="rounded-lg border border-dashed border-default-200 bg-default-50/50 p-6 text-center text-xs text-muted-foreground">
-              No clauses added yet. Click &quot;Add from Library&quot; or &quot;Custom&quot; to add clauses.
+              No clauses added yet. Click &quot;Add from Library&quot; or
+              &quot;Custom&quot; to add clauses.
             </div>
           ) : (
             <div className="space-y-2">
