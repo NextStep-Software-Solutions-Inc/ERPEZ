@@ -172,6 +172,7 @@ export type CalendarEvent = {
   procurementCategory: ProcurementCategory
   milestoneKey: string | null
   fiscalYear: number | null
+  executionStatus?: string | null
 }
 
 export type CalendarSummary = {

@@ -133,11 +133,13 @@ export function BiddingScheduleMilestoneTable({
   })
 
   const activityTypeMap = useMemo(() => {
+    type ActivityTypeWithKey = ProcurementActivityType & { milestoneKey?: string | null }
     const map = new Map<string, ProcurementActivityType>()
-    for (const item of activityTypesData?.data || []) {
+    const items = (activityTypesData?.data || []) as ActivityTypeWithKey[]
+    for (const item of items) {
       if (item.id) map.set(item.id, item)
-      if ((item as any).milestoneKey) {
-        map.set(String((item as any).milestoneKey).toLowerCase(), item)
+      if (item.milestoneKey) {
+        map.set(item.milestoneKey.toLowerCase(), item)
       }
       if (item.name) {
         map.set(item.name.toLowerCase().trim(), item)

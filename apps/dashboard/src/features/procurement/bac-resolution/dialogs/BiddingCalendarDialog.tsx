@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useProcurementActivityTypes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementActivityTypes'
 import api from '@/services/api'
-import { Calendar, Search, MapPin, AlignLeft, CalendarDays, Loader2, Plus, ArrowUpDown, Clock } from 'lucide-react'
+import { Calendar, Search, MapPin, Loader2, Plus, ArrowUpDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { computeRemainingDays, getRemainingDaysBadgeClass } from '../utils/remainingDays'
 import type { ProcurementActivityType } from '@/lib/fiscal-year-and-policies/types/procurementActivityTypes'
+import type { ApiResponse, CalendarEventsWithSummary } from '../../bidding-schedule/types'
 
 interface CalendarEvent {
   id: string
@@ -24,6 +25,7 @@ interface CalendarEvent {
   venue: string
   status: string
   remarks: string
+  executionStatus?: string
 }
 
 interface BiddingCalendarDialogProps {
@@ -98,8 +100,13 @@ function CreateCalendarEventDialog({
       setStatus('Pending')
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || 'Failed to create bidding schedule.'
+    } catch (error: unknown) {
+      const msg =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to create bidding schedule.'
+          : error instanceof Error
+            ? error.message
+            : 'Failed to create bidding schedule.'
       toast.error(msg)
     } finally {
       setIsSubmitting(false)
@@ -234,14 +241,17 @@ export function BiddingCalendarDialog({
       const url = search
         ? `/bac/calendar-events?Search=${encodeURIComponent(search)}`
         : '/bac/calendar-events'
-      const response = await api.get<any>(url)
+      const response = await api.get<ApiResponse<CalendarEventsWithSummary | CalendarEvent[]>>(url)
       const rawData = response.data?.data
       // NOTE: The API contract returns either a wrapped { events: CalendarEvent[] } object
       // or a flat array of CalendarEvent[]. Handling both shapes for backwards compatibility / migration safety.
       // Normalize to flat array here.
-      const parsedEvents = rawData && Array.isArray(rawData.events)
-        ? rawData.events
-        : (Array.isArray(rawData) ? rawData : [])
+      const parsedEvents: CalendarEvent[] =
+        rawData && typeof rawData === 'object' && 'events' in rawData && Array.isArray(rawData.events)
+          ? rawData.events
+          : Array.isArray(rawData)
+            ? rawData
+            : []
       setEvents(parsedEvents)
     } catch (error) {
       console.error(error)
@@ -352,7 +362,7 @@ export function BiddingCalendarDialog({
                   const actType = activityTypeMap.get(event.procurementActivityTypeId)
                   const isCompleted =
                     event.status === 'Completed' ||
-                    (event as any).executionStatus === 'completed'
+                    event.executionStatus === 'completed'
                   const remainingInfo = computeRemainingDays(event.endDate, {
                     isCompleted,
                     maxDays: actType?.maxDays,

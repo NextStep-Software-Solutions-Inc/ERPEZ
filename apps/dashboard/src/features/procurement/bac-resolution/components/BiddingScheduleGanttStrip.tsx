@@ -1,26 +1,17 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { CalendarRange, Clock, AlertTriangle, CheckCircle2, Loader2, MapPin } from 'lucide-react'
+import { CalendarRange, Loader2, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import api from '@/services/api'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { useProcurementActivityTypes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementActivityTypes'
 import { computeRemainingDays, getRemainingDaysBadgeClass } from '../utils/remainingDays'
 import type { ProcurementActivityType } from '@/lib/fiscal-year-and-policies/types/procurementActivityTypes'
+import type { CalendarEvent } from '../../bidding-schedule/types'
+import { getBacCalendarEventsRequest } from '../handlers/getBacCalendarEventsRequest'
 
-interface CalendarEvent {
-  id: string
-  projectId: string
-  projectTitle: string
-  procurementActivityTypeId: string
-  procurementActivityTypeName: string
-  startDate: string
-  endDate: string
-  venue: string
-  status: string
-  remarks?: string
-}
+const useBacCalendarEvents = createQueryHookFromTemplate(getBacCalendarEventsRequest)
 
 interface BiddingScheduleGanttStripProps {
   bacResolutionId?: string | null
@@ -37,9 +28,6 @@ export function BiddingScheduleGanttStrip({
   action,
   description,
 }: BiddingScheduleGanttStripProps) {
-  const [events, setEvents] = useState<CalendarEvent[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-
   // Fetch activity types for maxDays
   const { data: activityTypesData } = useProcurementActivityTypes({
     pathParams: {},
@@ -54,54 +42,32 @@ export function BiddingScheduleGanttStrip({
     return map
   }, [activityTypesData])
 
-  // Fetch events only when a single resolution ID is provided
-  useEffect(() => {
-    if (!bacResolutionId) {
-      setEvents([])
-      return
-    }
+  // Dedicated query hook for calendar events
+  const { data: calendarEventsResponse, isPending: isLoading } =
+    useBacCalendarEvents({
+      pathParams: {},
+      queryParams: {},
+      enabled: Boolean(bacResolutionId),
+    })
 
-    let isMounted = true
-    setIsLoading(true)
+  const events = useMemo<CalendarEvent[]>(() => {
+    if (!bacResolutionId || !calendarEventsResponse?.data) return []
 
-    const fetchProjectEvents = async () => {
-      try {
-        const response = await api.get<any>('/bac/calendar-events')
-        const rawData = response.data?.data
-        const allEvents: CalendarEvent[] =
-          rawData && Array.isArray(rawData.events)
-            ? rawData.events
-            : Array.isArray(rawData)
-              ? rawData
-              : []
+    const rawData = calendarEventsResponse.data
+    const allEvents: CalendarEvent[] = Array.isArray(rawData.events)
+      ? rawData.events
+      : []
 
-        // Filter events specifically for this BAC project/resolution
-        const filtered = allEvents.filter(
-          (e) =>
-            e.projectId === bacResolutionId ||
-            (bacResolutionNumber && e.projectTitle?.includes(bacResolutionNumber)),
-        )
+    // Filter events specifically for this BAC project/resolution
+    const filtered = allEvents.filter(
+      (e) =>
+        e.projectId === bacResolutionId ||
+        e.bacResolutionId === bacResolutionId ||
+        (bacResolutionNumber && e.projectTitle?.includes(bacResolutionNumber)),
+    )
 
-        if (isMounted) {
-          setEvents(filtered.length > 0 ? filtered : allEvents.slice(0, 5)) // Graceful fallback if no exact project match
-        }
-      } catch {
-        if (isMounted) {
-          setEvents([])
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    void fetchProjectEvents()
-
-    return () => {
-      isMounted = false
-    }
-  }, [bacResolutionId, bacResolutionNumber])
+    return filtered.length > 0 ? filtered : allEvents.slice(0, 5) // Graceful fallback if no exact project match
+  }, [bacResolutionId, bacResolutionNumber, calendarEventsResponse])
 
   // DO NOT render if no resolution is selected
   if (!bacResolutionId) {
@@ -144,7 +110,8 @@ export function BiddingScheduleGanttStrip({
       const actType = activityTypeMap.get(event.procurementActivityTypeId)
       const isCompleted =
         event.status === 'Completed' ||
-        (event as any).executionStatus === 'completed'
+        event.scheduleStatus === 'locked' ||
+        event.executionStatus === 'completed'
       const remainingInfo = computeRemainingDays(event.endDate, {
         isCompleted,
         maxDays: actType?.maxDays,
