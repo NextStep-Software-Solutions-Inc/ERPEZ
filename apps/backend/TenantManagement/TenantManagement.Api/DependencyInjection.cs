@@ -1,5 +1,7 @@
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Middlewares;
 using ERPEZ.TenantManagement.Api.Extensions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
 
 namespace ERPEZ.TenantManagement.Api;
@@ -10,8 +12,28 @@ public static class DependencyInjection
     {
         var services = builder.Services;
         services.AddControllers();
+        var devSecurityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+            System.Text.Encoding.UTF8.GetBytes("ERPEZ_Development_Symmetric_Signing_Key_2026_Secure_Secret_12345!"));
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            {
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = false,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = devSecurityKey
+            };
+        });
         services.AddEndpointsApiExplorer();
-        services.AddAuthentication();
+        services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddAuthorization();
         services.AddResponseCaching();
         services.AddResponseCompression();

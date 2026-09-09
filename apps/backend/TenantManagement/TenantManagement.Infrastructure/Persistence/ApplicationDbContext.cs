@@ -16,6 +16,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Permission>? Permissions { get; set; }
     public DbSet<RolePermission>? RolePermissions { get; set; }
     public DbSet<TenantMemberRoleAssignment>? TenantMemberRoleAssignments { get; set; }
+    public DbSet<LicenseKey>? LicenseKeys { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -125,6 +126,31 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // TenantMemberRoleAssignment composite key
         modelBuilder.Entity<TenantMemberRoleAssignment>()
             .HasKey(ra => new { ra.TenantMemberId, ra.RoleId });
+
+        // LicenseKey
+        modelBuilder.Entity<LicenseKey>()
+            .HasIndex(lk => lk.Key)
+            .IsUnique();
+
+        modelBuilder.Entity<LicenseKey>()
+            .HasOne(lk => lk.Tenant)
+            .WithMany(t => t.LicenseKeys)
+            .HasForeignKey(lk => lk.TenantId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<LicenseKey>()
+            .HasOne(lk => lk.TenantSubscription)
+            .WithMany()
+            .HasForeignKey(lk => lk.TenantSubscriptionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<LicenseKey>()
+            .Property(lk => lk.Plan)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<LicenseKey>()
+            .Property(lk => lk.Status)
+            .HasConversion<string>();
 
         base.OnModelCreating(modelBuilder);
     }

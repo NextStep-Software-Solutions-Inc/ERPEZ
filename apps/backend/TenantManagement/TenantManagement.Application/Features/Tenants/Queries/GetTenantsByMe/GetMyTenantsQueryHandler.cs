@@ -27,20 +27,38 @@ public class GetMyTenantsQueryHandler(
             Sorts = query.Sorts
         };
 
-        Expression<Func<Tenant, bool>> customFilter = t => t.TenantMembers.Any(tm => tm.UserId == currentUserService.UserId);
+        var userId = currentUserService.UserId;
+        var extId = currentUserService.ExternalIdentityId;
+        Expression<Func<Tenant, bool>> customFilter;
+
+        if (string.IsNullOrWhiteSpace(userId) && string.IsNullOrWhiteSpace(extId))
+        {
+            var defaultId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+            customFilter = t => t.Id == defaultId;
+        }
+        else
+        {
+            customFilter = t => t.TenantMembers.Any(tm =>
+                (!string.IsNullOrEmpty(userId) && tm.UserId == userId) ||
+                (!string.IsNullOrEmpty(extId) && tm.ExternalIdentityId == extId) ||
+                (!string.IsNullOrEmpty(extId) && tm.UserId == extId));
+        }
 
         Expression<Func<Tenant, TenantDto>> projection = t => new()
         {
             Id = t.Id,
             Name = t.Name,
             Description = t.Description,
+            IsDisabled = t.IsDisabled,
             TenantSetting = new()
             {
                 Id = t.TenantSetting.Id,
                 OnPremise = t.TenantSetting.OnPremise,
                 BaseURL = t.TenantSetting.BaseURL,
                 DbConnectionString = t.TenantSetting.DbConnectionString,
-                BillingContactEmail = t.TenantSetting.BillingContactEmail
+                BillingContactEmail = t.TenantSetting.BillingContactEmail,
+                AllowedDomain = t.TenantSetting.AllowedDomain,
+                MaxAllowedTenants = t.TenantSetting.MaxAllowedTenants
             },
             TenantSubscriptions = t.TenantSubscriptions
                 .Where(ts => ts.TenantId == t.Id)
@@ -55,7 +73,15 @@ public class GetMyTenantsQueryHandler(
                     EndDate = ts.EndDate,
                     AutoRenew = ts.AutoRenew
                 })
-                .ToList()
+                .ToList(),
+            Modules = t.Modules.Select(m => new TenantModuleDto
+            {
+                Id = m.Id,
+                Key = m.Key,
+                Name = m.Name,
+                Description = m.Description,
+                IsActive = m.IsActive
+            }).ToList()
         };
 
         var (tenantDtos, totalCount) = await unitOfWork.TenantRepository.GetAllAsync(sieveModel, projection, customFilter, cancellationToken);

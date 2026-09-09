@@ -2,6 +2,8 @@ using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
 
@@ -127,19 +129,101 @@ public static class DevTenantAndMemberSeeder
 
         if (existingSetting == null)
         {
-            var setting = new TenantSetting
+            existingSetting = new TenantSetting
             {
                 Id = DevTenantSettingId,
                 TenantId = DevTenantId,
-                OnPremise = false,
+                OnPremise = true,
                 BaseURL = "http://localhost:5245",
                 DbConnectionString = string.Empty,
                 BillingContactEmail = "dev@erpez.local",
+                AllowedDomain = "localhost",
+                MaxAllowedTenants = 10,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = "system"
             };
 
-            await dbContext.TenantSettings!.AddAsync(setting, cancellationToken);
+            await dbContext.TenantSettings!.AddAsync(existingSetting, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(existingSetting.AllowedDomain))
+            {
+                existingSetting.AllowedDomain = "localhost";
+            }
+            if (existingSetting.MaxAllowedTenants <= 0)
+            {
+                existingSetting.MaxAllowedTenants = 10;
+            }
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        // 2b. Ensure Dev Tenant Subscription exists
+        var existingSubscription = await dbContext.TenantSubscriptions!
+            .FirstOrDefaultAsync(ts => ts.TenantId == DevTenantId, cancellationToken);
+
+        if (existingSubscription == null)
+        {
+            existingSubscription = new TenantSubscription
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000003"),
+                TenantId = DevTenantId,
+                Amount = 299.00m,
+                Plan = Plan.Enterprise,
+                StartDate = DateTime.UtcNow.AddMonths(-1),
+                EndDate = DateTime.UtcNow.AddYears(2),
+                Status = Status.Active,
+                BillingCycle = BillingCycle.Monthly,
+                AutoRenew = true,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = "system"
+            };
+
+            await dbContext.TenantSubscriptions!.AddAsync(existingSubscription, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        // 2c. Ensure Dev Tenant Sovereign License Key exists
+        var existingLicense = await dbContext.LicenseKeys!
+            .FirstOrDefaultAsync(lk => lk.TenantId == DevTenantId, cancellationToken);
+
+        if (existingLicense == null)
+        {
+            var keyString = "EPZ-ENTERPRISE-20281231-DEV9-7A8B";
+            var boundEmail = "admin@erpez.dev";
+            var allowedDomain = "localhost";
+            var expiresAt = DateTime.UtcNow.AddYears(2);
+            var salt = "ERPEZ_OFFLINE_LICENSE_INTEGRITY_SALT_2026_SOVEREIGN_KEY!";
+            var rawData = $"{keyString}|{boundEmail}|{allowedDomain}|{expiresAt:yyyy-MM-dd}|{salt}";
+
+            using var sha = SHA256.Create();
+            var sigBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+            var signature = Convert.ToHexString(sigBytes);
+
+            var licenseKey = new LicenseKey
+            {
+                Id = Guid.Parse("00000000-0000-0000-0000-000000000004"),
+                TenantId = DevTenantId,
+                TenantSubscriptionId = existingSubscription.Id,
+                Key = keyString,
+                Prefix = "EPZ",
+                BoundEmail = boundEmail,
+                Plan = Plan.Enterprise,
+                AllowedDomain = allowedDomain,
+                MaxTenants = 10,
+                MaxUsers = 100,
+                IssuedAt = DateTime.UtcNow.AddMonths(-1),
+                ExpiresAt = expiresAt,
+                Status = LicenseStatus.Active,
+                IsAirGapped = true,
+                Signature = signature,
+                Notes = "Pre-provisioned developer sandbox air-gapped sovereign license",
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = "system"
+            };
+
+            await dbContext.LicenseKeys!.AddAsync(licenseKey, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 

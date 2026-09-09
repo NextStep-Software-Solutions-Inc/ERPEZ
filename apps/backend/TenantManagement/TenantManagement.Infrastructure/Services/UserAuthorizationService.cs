@@ -55,7 +55,7 @@ public class UserAuthorizationService(
         // Query TenantManagement database
         var rawPermissions = await dbContext.TenantMembers!
             .AsNoTracking()
-            .Where(tm => tm.ExternalIdentityId == externalIdentityId &&
+            .Where(tm => (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId) &&
                          tm.TenantId == tenantId.Value &&
                          tm.Status == Status.Active &&
                          !tm.IsDeleted)

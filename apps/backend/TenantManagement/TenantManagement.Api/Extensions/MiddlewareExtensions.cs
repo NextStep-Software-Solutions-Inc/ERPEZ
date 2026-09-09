@@ -1,3 +1,4 @@
+using ERPEZ.Shared.Middlewares;
 using Hangfire;
 
 namespace ERPEZ.TenantManagement.Api.Extensions;
@@ -40,6 +41,9 @@ public static class MiddlewareExtensions
 
         // 6. Authentication (after routing)
         app.UseAuthentication();
+
+        // 6.1 Tenant Context resolution (after authentication, before authorization)
+        app.UseMiddleware<TenantContextMiddleware>();
 
         // 7. Authorization (after authentication)
         app.UseAuthorization();

@@ -1,6 +1,7 @@
 using ERPEZ.Shared.Interfaces;
 using ERPEZ.Shared.Interceptors;
 using ERPEZ.Shared.Services;
+using ERPEZ.TenantManagement.Application.Common.Interfaces;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
@@ -54,6 +55,8 @@ public static class DependencyInjection
         services.AddScoped<ITenantSubscriptionRepository, TenantSubscriptionRepository>();
         services.AddScoped<ITenantMemberRepository, TenantMemberRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<ILicenseKeyRepository, LicenseKeyRepository>();
+        services.AddScoped<ILicenseService, LicenseService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire

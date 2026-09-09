@@ -8,5 +8,6 @@ public interface IUnitOfWork
     ITenantMemberRepository TenantMemberRepository { get; }
     ITenantSubscriptionRepository TenantSubscriptionRepository { get; }
     IRoleRepository RoleRepository { get; }
+    ILicenseKeyRepository LicenseKeyRepository { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

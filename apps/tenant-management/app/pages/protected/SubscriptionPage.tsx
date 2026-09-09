@@ -2,16 +2,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Badge } from "~/components/ui/badge"
 import { Switch } from "~/components/ui/switch"
 import { Separator } from "~/components/ui/separator"
-import { Settings, FileText, CalendarClockIcon, Calendar, CalendarDaysIcon, CalendarFold } from "lucide-react"
+import { Settings, FileText, CalendarClockIcon, Calendar, CalendarDaysIcon, CalendarFold, KeyRound, ExternalLink, ShieldCheck } from "lucide-react"
 import { PageContainer } from "~/components/PageContainer"
 import { Button } from "~/components/ui/button"
-import { Link } from "react-router"
-
+import { Link, useNavigate } from "react-router"
 import { useTenant } from "~/providers/TenantProvider"
+import { createQueryHookFromTemplate } from "erpez-shared-lib"
+import { getTenantLicenseRequest } from "~/features/license/handlers/getTenantLicenseRequest"
+
+const useTenantLicense = createQueryHookFromTemplate(getTenantLicenseRequest);
 
 export default function SubscriptionPage() {
+    const navigate = useNavigate();
     const { tenant } = useTenant();
-    const sub = tenant?.tenantSubscription;
+    const sub = tenant?.tenantSubscription || tenant?.tenantSubscriptions?.[0];
     const planName = sub?.plan || "Enterprise";
     const status = sub?.status || "Active";
     const amount = sub?.amount ? `$${sub.amount.toFixed(2)}` : "$99.00";
@@ -19,10 +23,16 @@ export default function SubscriptionPage() {
     const nextBilling = sub?.endDate ? new Date(sub.endDate).toLocaleDateString() : "Ongoing";
     const autoRenew = sub?.autoRenew ?? true;
 
+    const { data: licenseResponse } = useTenantLicense({
+        pathParams: { id: tenant?.id || "00000000-0000-0000-0000-000000000001" },
+        queryParams: { domain: typeof window !== "undefined" ? window.location.hostname : "" },
+    });
+    const license = licenseResponse?.data;
+
     return (
         <PageContainer
             title="Subscription"
-            description="Manage your subscription preferences and billing settings"
+            description="Manage your subscription preferences, sovereign licenses, and billing settings"
         >
             <div className="space-y-6">
                 <Card className="shadow-sm">
@@ -64,6 +74,60 @@ export default function SubscriptionPage() {
                             <p className="text-muted-foreground">Amount</p>
                             <p className="font-medium">{amount} per {billingCycle.toLowerCase()}</p>
                         </div>
+                    </CardContent>
+                </Card> 
+
+                {/* Linked License Key Banner */}
+                <Card className="shadow-sm border-slate-200 bg-slate-50/60">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <KeyRound className="h-5 w-5 text-blue-600" />
+                                <CardTitle className="text-base">Linked Sovereign License Key</CardTitle>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate("/license-management")}
+                                className="text-xs flex items-center gap-1.5"
+                            >
+                                Manage License
+                                <ExternalLink className="w-3.5 h-3.5" />
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            1 Subscription = 1 Cryptographic Key. Bound to your admin email with domain constraint enforcement.
+                        </p>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        {license ? (
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white rounded-lg border font-mono text-xs">
+                                <div>
+                                    <span className="font-bold text-slate-900 block truncate">{license.key}</span>
+                                    <span className="text-[11px] text-slate-500 font-sans">
+                                        Bound to: {license.boundEmail} &bull; Domain: {license.allowedDomain}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <Badge className="bg-emerald-100 text-emerald-800 text-[11px]">
+                                        <ShieldCheck className="w-3 h-3 mr-1" />
+                                        {license.remainingDays} days remaining
+                                    </Badge>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="p-3 bg-white rounded-lg border text-xs text-slate-500 flex items-center justify-between">
+                                <span>No license key activated for this subscription.</span>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => navigate("/license-management")}
+                                    className="text-blue-600 hover:text-blue-700 text-xs h-7"
+                                >
+                                    Activate Now &rarr;
+                                </Button>
+                            </div>
+                        )}
                     </CardContent>
                 </Card> 
                 <Card className="shadow-sm">

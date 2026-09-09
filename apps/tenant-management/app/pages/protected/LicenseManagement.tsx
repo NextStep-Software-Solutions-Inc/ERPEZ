@@ -1,113 +1,280 @@
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
-import { Badge } from "~/components/ui/badge"
-import { Input } from "~/components/ui/input"
-import { Button } from "~/components/ui/button"
-import { Separator } from "~/components/ui/separator"
-import { CheckCircle2, Copy, FileKey } from "lucide-react"
-import { PageContainer } from "~/components/PageContainer"
+import { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
+import { Badge } from "~/components/ui/badge";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { Button } from "~/components/ui/button";
+import {
+    FileKey,
+    ShieldCheck,
+    ShieldAlert,
+    Copy,
+    Check,
+    Server,
+    KeyRound,
+    Clock,
+    Globe,
+    Mail,
+    AlertTriangle,
+    Loader2
+} from "lucide-react";
+import { PageContainer } from "~/components/PageContainer";
+import { useTenant } from "~/providers/TenantProvider";
+import { createQueryHookFromTemplate, createMutationHookFromTemplate } from "erpez-shared-lib";
+import { getTenantLicenseRequest } from "~/features/license/handlers/getTenantLicenseRequest";
+import { activateLicenseRequest } from "~/features/license/handlers/activateLicenseRequest";
+import { toast } from "sonner";
+
+const useTenantLicense = createQueryHookFromTemplate(getTenantLicenseRequest);
+const useActivateLicense = createMutationHookFromTemplate(activateLicenseRequest);
 
 export default function LicenseManagementPage() {
+    const { tenant } = useTenant();
+    const activeTenantId = tenant?.id || "00000000-0000-0000-0000-000000000001";
+    const currentHostname = typeof window !== "undefined" ? window.location.hostname : "localhost";
+
+    const [copied, setCopied] = useState(false);
+    const [activationKey, setActivationKey] = useState("");
+
+    const { data: licenseResponse, isLoading, refetch } = useTenantLicense({
+        pathParams: { id: activeTenantId },
+        queryParams: { domain: currentHostname },
+    });
+
+    const activateMutation = useActivateLicense();
+    const license = licenseResponse?.data;
+
+    const isDomainValid = useMemo(() => {
+        if (!license?.allowedDomain) return true;
+        const allowed = license.allowedDomain.toLowerCase().trim();
+        if (allowed === "*" || allowed === "") return true;
+        const host = currentHostname.toLowerCase().trim();
+        if (allowed.startsWith("*.")) {
+            const rootDomain = allowed.slice(2);
+            return host === rootDomain || host.endsWith("." + rootDomain);
+        }
+        return host === allowed || host.includes(allowed);
+    }, [license?.allowedDomain, currentHostname]);
+
+    const handleCopyKey = () => {
+        if (!license?.key) return;
+        navigator.clipboard.writeText(license.key);
+        setCopied(true);
+        toast.success("License key copied to clipboard");
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleActivateKey = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!activationKey.trim()) {
+            toast.error("Please enter a valid cryptographic license key.");
+            return;
+        }
+
+        try {
+            await activateMutation.mutateAsync({
+                pathParams: {},
+                payload: {
+                    key: activationKey.trim(),
+                    tenantId: activeTenantId,
+                    currentDomain: currentHostname,
+                },
+            });
+            toast.success("License successfully activated for this tenant!");
+            setActivationKey("");
+            await refetch();
+        } catch {
+            // Error toast handled by axios interceptor
+        }
+    };
+
     return (
         <PageContainer
-            title="License Management"
-            description="Manage your software licenses and deployment configuration"
+            title="License & Sovereignty Management"
+            description="Manage cryptographic license keys, domain isolation constraints, and offline activation"
         >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Current License */}
-                <Card className="shadow-sm">
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <FileKey className="h-5 w-5 text-muted-foreground" />
-                            <CardTitle className="text-lg">Current License</CardTitle>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            Your active license information and status
-                        </p>
-                    </CardHeader>
-                    <CardContent className="space-y-4 text-sm">
-                        <div className="grid grid-cols-2 gap-y-2">
-                            <div>
-                                <p className="text-muted-foreground">License Type</p>
-                                <Badge variant="secondary">Free Trial</Badge>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground">Status</p>
-                                <Badge className="bg-green-100 text-green-700 border-green-200">
-                                    Active
-                                </Badge>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground">Max Users</p>
-                                <p className="font-medium">5</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground">Expires</p>
-                                <p className="font-medium">10/8/2025</p>
-                            </div>
-                        </div>
-
-                        {/* License Key */}
-                        <div className="space-y-2">
-                            <p className="font-medium">License Key</p>
-                            <div className="flex gap-2">
-                                <Input
-                                    value="TRIAL - TENANT_D8K1QOUXM"
-                                    readOnly
-                                    className="text-xs"
-                                />
-                                <Button variant="outline" size="icon">
-                                    <Copy className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* Features */}
-                        <div className="space-y-2">
-                            <p className="font-medium">Features</p>
-                            <ul className="space-y-1">
-                                {[
-                                    "Up to 50 users",
-                                    "Advanced financial reporting",
-                                    "Supply chain management",
-                                    "Project management",
-                                    "Priority support",
-                                ].map((feature, idx) => (
-                                    <li key={idx} className="flex items-center gap-2 text-sm">
-                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                        {feature}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* License History */}
-                <Card className="shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="text-lg">License History</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                            Track your license activation and changes
-                        </p>
-                    </CardHeader>
-                    <CardContent className="space-y-4 text-sm">
-                        <div className="flex items-center justify-between">
-                            <p>
-                                <span className="font-medium">Current License Activated</span>{" "}
-                                <br />
-                                track license - 9/24/2025
+            <div className="space-y-6">
+                {/* Domain Constraint Warning Banner */}
+                {license && !isDomainValid && (
+                    <div className="p-4 rounded-xl border border-red-300 bg-red-50 text-red-900 flex items-start gap-3 shadow-xs">
+                        <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                        <div>
+                            <h4 className="font-bold text-sm">Domain Constraint Violation Detected!</h4>
+                            <p className="text-xs text-red-700 mt-1">
+                                You are accessing this tenant via <strong>{currentHostname}</strong>, but the active license is cryptographically bound to <strong>{license.allowedDomain}</strong>. System authentication will be disabled if domain enforcement is active.
                             </p>
-                            <Badge className="bg-green-100 text-green-700 border-green-200">
-                                Active
-                            </Badge>
                         </div>
-                        <Separator />
-                        <p className="text-muted-foreground text-sm">
-                            License History will appear here after upgrading from trial
-                        </p>
-                    </CardContent>
-                </Card>
+                    </div>
+                )}
+
+                {license && isDomainValid && (
+                    <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/80 text-emerald-900 flex items-center justify-between shadow-xs">
+                        <div className="flex items-center gap-3">
+                            <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0" />
+                            <div>
+                                <h4 className="font-bold text-sm">Domain Constraint Verified</h4>
+                                <p className="text-xs text-emerald-700">
+                                    Current host (<strong>{currentHostname}</strong>) matches allowed domain rule: <strong>{license.allowedDomain}</strong>.
+                                </p>
+                            </div>
+                        </div>
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300">
+                            Active & Verified
+                        </Badge>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Active License Details Card */}
+                    <Card className="lg:col-span-2 shadow-sm border-slate-200">
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <FileKey className="h-5 w-5 text-blue-600" />
+                                    <CardTitle className="text-lg">Active License</CardTitle>
+                                </div>
+                                {license ? (
+                                    <Badge className={license.isExpired ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}>
+                                        {license.isExpired ? "Expired" : "Active Key"}
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="outline" className="text-slate-500">No License Active</Badge>
+                                )}
+                            </div>
+                            <CardDescription>
+                                1 Subscription = 1 Cryptographic Key bound to authorized email and domain constraints.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {license ? (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs text-slate-500 font-semibold">CRYPTOGRAPHIC LICENSE KEY</Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={license.key}
+                                                readOnly
+                                                className="font-mono text-xs bg-slate-50 font-semibold"
+                                            />
+                                            <Button variant="outline" size="icon" onClick={handleCopyKey} title="Copy Key">
+                                                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+                                        <div className="p-3 bg-slate-50 rounded-lg border text-xs">
+                                            <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                                                <Mail className="w-3.5 h-3.5 text-blue-600" />
+                                                <span>Bound Account Email</span>
+                                            </div>
+                                            <p className="font-semibold text-slate-900 truncate">{license.boundEmail}</p>
+                                        </div>
+
+                                        <div className="p-3 bg-slate-50 rounded-lg border text-xs">
+                                            <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                                                <Globe className="w-3.5 h-3.5 text-indigo-600" />
+                                                <span>Allowed Domain</span>
+                                            </div>
+                                            <p className="font-mono font-semibold text-slate-900 truncate">{license.allowedDomain}</p>
+                                        </div>
+
+                                        <div className="p-3 bg-slate-50 rounded-lg border text-xs">
+                                            <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                                                <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                                                <span>Remaining Validity</span>
+                                            </div>
+                                            <p className="font-semibold text-slate-900">{license.remainingDays} days left</p>
+                                        </div>
+
+                                        <div className="p-3 bg-slate-50 rounded-lg border text-xs">
+                                            <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                                                <Server className="w-3.5 h-3.5 text-amber-600" />
+                                                <span>Deployment Plan</span>
+                                            </div>
+                                            <p className="font-semibold text-slate-900">{license.plan}</p>
+                                        </div>
+
+                                        <div className="p-3 bg-slate-50 rounded-lg border text-xs">
+                                            <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                                <span>Air-Gapped Sovereign</span>
+                                            </div>
+                                            <p className="font-semibold text-slate-900">{license.isAirGapped ? "Yes (Offline Verified)" : "Cloud SaaS"}</p>
+                                        </div>
+
+                                        <div className="p-3 bg-slate-50 rounded-lg border text-xs">
+                                            <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                                                <KeyRound className="w-3.5 h-3.5 text-purple-600" />
+                                                <span>Capacity Limit</span>
+                                            </div>
+                                            <p className="font-semibold text-slate-900">{license.maxTenants} Tenants / {license.maxUsers} Users</p>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center py-10 border border-dashed rounded-lg text-slate-500 text-xs">
+                                    <FileKey className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                                    No cryptographic license key currently activated for this tenant.
+                                    Use the offline activation form to activate a license.
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Offline License Activation Form */}
+                    <Card className="shadow-sm border-slate-200">
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <KeyRound className="h-5 w-5 text-indigo-600" />
+                                <CardTitle className="text-lg">Activate License Key</CardTitle>
+                            </div>
+                            <CardDescription className="text-xs">
+                                Activate an air-gapped or on-premise subscription key offline.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleActivateKey} className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="licenseKeyInput" className="text-xs">
+                                        License Key String *
+                                    </Label>
+                                    <Input
+                                        id="licenseKeyInput"
+                                        placeholder="e.g. EPZ-ONPREM-20270101-ABCD-1234"
+                                        value={activationKey}
+                                        onChange={(e) => setActivationKey(e.target.value)}
+                                        className="font-mono text-xs uppercase"
+                                    />
+                                    <p className="text-[11px] text-slate-500">
+                                        Format: [PREFIX]-[PLAN]-[EXPIRY]-[TOKEN]-[CHECKSUM]
+                                    </p>
+                                </div>
+
+                                <div className="p-3 rounded-lg bg-slate-50 border text-xs space-y-1 text-slate-600">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-400">Target Tenant:</span>
+                                        <span className="font-semibold text-slate-800">{tenant?.name || "Current Tenant"}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-400">Current Domain:</span>
+                                        <span className="font-mono font-semibold text-slate-800">{currentHostname}</span>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    type="submit"
+                                    disabled={activateMutation.isPending || !activationKey.trim()}
+                                    className="w-full btn-blue text-xs font-semibold"
+                                >
+                                    {activateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Activate License
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </PageContainer>
-    )
+    );
 }

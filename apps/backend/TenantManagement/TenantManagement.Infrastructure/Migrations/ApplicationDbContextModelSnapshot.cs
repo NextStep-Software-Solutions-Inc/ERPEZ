@@ -23,6 +23,101 @@ namespace ERP_EZ.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.LicenseKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AllowedDomain")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BoundEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsAirGapped")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("MaxTenants")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxUsers")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Signature")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TenantSubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantSubscriptionId");
+
+                    b.ToTable("LicenseKeys", "public");
+                });
+
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Module", b =>
                 {
                     b.Property<Guid>("Id")
@@ -217,6 +312,9 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsDisabled")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -325,6 +423,10 @@ namespace ERP_EZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AllowedDomain")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("BaseURL")
                         .IsRequired()
                         .HasColumnType("text");
@@ -352,6 +454,9 @@ namespace ERP_EZ.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("MaxAllowedTenants")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("OnPremise")
                         .HasColumnType("boolean");
@@ -449,6 +554,23 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.HasIndex("TenantsId");
 
                     b.ToTable("TenantModule", "public");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.LicenseKey", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
+                        .WithMany("LicenseKeys")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.TenantSubscription", "TenantSubscription")
+                        .WithMany()
+                        .HasForeignKey("TenantSubscriptionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("TenantSubscription");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Role", b =>
@@ -561,6 +683,8 @@ namespace ERP_EZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Tenant", b =>
                 {
+                    b.Navigation("LicenseKeys");
+
                     b.Navigation("TenantMembers");
 
                     b.Navigation("TenantSetting")

@@ -7,4 +7,6 @@ public class TenantSettingDto
     public string BaseURL { get; set; } = string.Empty;
     public string DbConnectionString { get; set; } = string.Empty;
     public string BillingContactEmail { get; set; } = string.Empty;
+    public string AllowedDomain { get; set; } = string.Empty;
+    public int MaxAllowedTenants { get; set; } = 1;
 }
