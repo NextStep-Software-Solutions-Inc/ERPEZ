@@ -43,6 +43,7 @@ export type NoticeOfAwardContractExecutionSlaState = {
   isOverdue: boolean
   requiresCascadeDecision: boolean
   issuedDate: string | null
+  receivedDate: string | null
   deadlineDate: string | null
   daysRemaining: number | null
   elapsedDays: number | null
@@ -81,9 +82,11 @@ export function addCalendarDaysToDateOnly(value: string, days: number): string {
 export function getNoaContractExecutionDeadline(noa: NoticeOfAward) {
   return (
     normalizeDateOnly(noa.contractExecutionDeadline) ??
-    (noa.conformeReceivedDate
-      ? addCalendarDaysToDateOnly(noa.conformeReceivedDate, NOA_CONTRACT_EXECUTION_SLA_DAYS)
-      : null)
+    (noa.receivedAt
+      ? addCalendarDaysToDateOnly(noa.receivedAt, NOA_CONTRACT_EXECUTION_SLA_DAYS)
+      : noa.conformeReceivedDate
+        ? addCalendarDaysToDateOnly(noa.conformeReceivedDate, NOA_CONTRACT_EXECUTION_SLA_DAYS)
+        : null)
   )
 }
 
@@ -93,7 +96,7 @@ export function getNoaMilestoneDate(
 ) {
   switch (milestone) {
     case 'conforme_received_date':
-      return normalizeDateOnly(noa.conformeReceivedDate)
+      return normalizeDateOnly(noa.receivedAt) ?? normalizeDateOnly(noa.conformeReceivedDate)
     case 'performance_security_posted_date':
       return normalizeDateOnly(noa.performanceSecurityPostedDate)
     case 'contract_execution_date':
@@ -126,7 +129,7 @@ export function getNoaContractExecutionSlaState(
   const now = currentDateInput ? new Date(currentDateInput) : new Date()
   const isIssued = Boolean(noa.issuedAt && noa.status === 'approved')
   const issuedDate = normalizeDateOnly(noa.issuedAt)
-  const conformeDate = normalizeDateOnly(noa.conformeReceivedDate)
+  const receivedDate = normalizeDateOnly(noa.receivedAt) ?? normalizeDateOnly(noa.conformeReceivedDate)
   const deadlineDate = getNoaContractExecutionDeadline(noa)
   const completedMilestones = NOA_CONTRACT_EXECUTION_MILESTONES.filter(
     (milestone) => Boolean(getNoaMilestoneDate(noa, milestone.key)),
@@ -145,6 +148,7 @@ export function getNoaContractExecutionSlaState(
       isOverdue: false,
       requiresCascadeDecision: false,
       issuedDate: null,
+      receivedDate: null,
       deadlineDate: null,
       daysRemaining: null,
       elapsedDays: null,
@@ -158,7 +162,7 @@ export function getNoaContractExecutionSlaState(
   }
 
   // Before receipt/conforme, NOA is issued but statutory 10-day clock is awaiting receipt
-  if (!conformeDate || !deadlineDate) {
+  if (!receivedDate || !deadlineDate) {
     const issued = parseDateOnly(issuedDate)
     const today = parseDateOnly(now.toISOString())
     const elapsedDays =
@@ -173,6 +177,7 @@ export function getNoaContractExecutionSlaState(
       isOverdue: false,
       requiresCascadeDecision: false,
       issuedDate,
+      receivedDate: null,
       deadlineDate: null,
       daysRemaining: null,
       elapsedDays,
@@ -189,10 +194,11 @@ export function getNoaContractExecutionSlaState(
   }
 
   const issued = parseDateOnly(issuedDate)
+  const received = parseDateOnly(receivedDate)
   const deadline = parseDateOnly(deadlineDate)
   const today = parseDateOnly(now.toISOString())
 
-  if (!issued || !deadline || !today) {
+  if (!issued || !received || !deadline || !today) {
     return {
       isIssued,
       isComplete,
@@ -200,6 +206,7 @@ export function getNoaContractExecutionSlaState(
       isOverdue: false,
       requiresCascadeDecision: false,
       issuedDate,
+      receivedDate,
       deadlineDate,
       daysRemaining: null,
       elapsedDays: null,
@@ -214,7 +221,7 @@ export function getNoaContractExecutionSlaState(
 
   const elapsedDays = Math.max(
     0,
-    Math.floor((today.getTime() - issued.getTime()) / DAY_IN_MS),
+    Math.floor((today.getTime() - received.getTime()) / DAY_IN_MS),
   )
   const daysRemaining = Math.ceil(
     (deadline.getTime() - today.getTime()) / DAY_IN_MS,
@@ -234,6 +241,7 @@ export function getNoaContractExecutionSlaState(
       isOverdue: false,
       requiresCascadeDecision: false,
       issuedDate,
+      receivedDate,
       deadlineDate,
       daysRemaining,
       elapsedDays,
@@ -254,6 +262,7 @@ export function getNoaContractExecutionSlaState(
       isOverdue,
       requiresCascadeDecision,
       issuedDate,
+      receivedDate,
       deadlineDate,
       daysRemaining,
       elapsedDays,
@@ -273,6 +282,7 @@ export function getNoaContractExecutionSlaState(
     isOverdue,
     requiresCascadeDecision,
     issuedDate,
+    receivedDate,
     deadlineDate,
     daysRemaining,
     elapsedDays,
