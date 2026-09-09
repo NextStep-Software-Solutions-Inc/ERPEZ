@@ -178,6 +178,7 @@ export interface SupplierRegistryFormData {
 export interface ProcurementActivity {
   id: string
   activityName: string
+  activityCode?: string | null
   description?: string
   minDays: number
   maxDays: number
@@ -188,6 +189,7 @@ export interface ProcurementActivity {
 
 export interface ProcurementActivityFormData {
   activityName: string
+  activityCode: string
   description?: string
   minDays: number
   maxDays: number
