@@ -4,6 +4,7 @@ public record ProcurementActivityTypeResponse
 {
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
+    public string? ActivityCode { get; init; }
     public string Description { get; init; } = string.Empty;
     public int? MinDays { get; init; }
     public int? MaxDays { get; init; }
