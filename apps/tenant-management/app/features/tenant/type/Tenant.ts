@@ -22,6 +22,13 @@ export type Tenant = {
     endDate: string;
     autoRenew: boolean;
   };
+  modules?: Array<{
+    id: string;
+    key: string;
+    name: string;
+    description?: string;
+    isActive: boolean;
+  }>;
 };
 
 export type TenantDetails = Tenant;

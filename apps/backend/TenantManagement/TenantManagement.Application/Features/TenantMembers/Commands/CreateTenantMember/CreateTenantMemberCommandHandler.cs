@@ -26,6 +26,9 @@ public class CreateTenantMemberCommandHandler(IUnitOfWork unitOfWork)
             TenantId = command.TenantId,
             UserId = command.UserId,
             ExternalIdentityId = !string.IsNullOrWhiteSpace(command.ExternalIdentityId) ? command.ExternalIdentityId : command.UserId,
+            Email = command.Email,
+            FirstName = command.FirstName,
+            LastName = command.LastName,
             Status = command.Status
         };
 

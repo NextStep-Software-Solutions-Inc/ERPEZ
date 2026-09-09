@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router';
 import { useKeycloak } from '~/providers/KeycloakProvider';
 import {
   DropdownMenu,
@@ -18,6 +19,16 @@ interface UserMenuProps {
 
 export function UserMenu({ className = '', showDetails = true }: UserMenuProps) {
   const { user, isSuperAdmin, logout, switchDevUser, activeDevUser } = useKeycloak();
+  const navigate = useNavigate();
+
+  const handleSwitchUser = async (newUsername: string) => {
+    await switchDevUser(newUsername);
+    if (newUsername === 'dev_superadmin') {
+      navigate('/super-admin/overview');
+    } else {
+      navigate('/overview');
+    }
+  };
 
   if (!user) {
     return null;
@@ -76,21 +87,21 @@ export function UserMenu({ className = '', showDetails = true }: UserMenuProps) 
               Dev Persona Switcher
             </DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => switchDevUser('dev_admin')}
+              onClick={() => handleSwitchUser('dev_admin')}
               className={`text-xs cursor-pointer ${activeDevUser === 'dev_admin' ? 'font-semibold bg-accent' : ''}`}
             >
               <Building className="mr-2 h-3.5 w-3.5 text-orange-500" />
               <span>Tenant Admin</span>
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => switchDevUser('dev_superadmin')}
+              onClick={() => handleSwitchUser('dev_superadmin')}
               className={`text-xs cursor-pointer ${activeDevUser === 'dev_superadmin' ? 'font-semibold bg-accent' : ''}`}
             >
               <Shield className="mr-2 h-3.5 w-3.5 text-rose-500" />
               <span>Super Administrator</span>
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => switchDevUser('dev_planner')}
+              onClick={() => handleSwitchUser('dev_planner')}
               className={`text-xs cursor-pointer ${activeDevUser === 'dev_planner' ? 'font-semibold bg-accent' : ''}`}
             >
               <UserCheck className="mr-2 h-3.5 w-3.5 text-blue-500" />

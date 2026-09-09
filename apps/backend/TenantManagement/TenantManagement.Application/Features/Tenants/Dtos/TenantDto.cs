@@ -12,4 +12,5 @@ public class TenantDto
     public TenantSettingDto? TenantSetting { get; set; }
     public List<TenantSubscriptionDto> TenantSubscriptions { get; set; } = [];
     public List<TenantMemberDto> TenantMembers { get; set; } = [];
+    public List<TenantModuleDto> Modules { get; set; } = [];
 }

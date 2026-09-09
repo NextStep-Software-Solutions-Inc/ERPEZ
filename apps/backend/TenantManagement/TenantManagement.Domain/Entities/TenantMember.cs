@@ -18,6 +18,15 @@ public class TenantMember : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string ExternalIdentityId { get; set; } = string.Empty;
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string Email { get; set; } = string.Empty;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string LastName { get; set; } = string.Empty;
+
     /// <summary>
     /// Legacy role enum - maintained for backwards compatibility during migration.
     /// Functional RBAC queries use RoleAssignments.

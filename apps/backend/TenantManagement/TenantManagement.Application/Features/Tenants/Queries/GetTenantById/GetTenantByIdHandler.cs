@@ -37,6 +37,14 @@ public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork) : IRequest
                     StartDate = ts.StartDate,
                     EndDate = ts.EndDate,
                     AutoRenew = ts.AutoRenew
+                }).ToList(),
+                Modules = t.Modules.Select(m => new TenantModuleDto
+                {
+                    Id = m.Id,
+                    Key = m.Key,
+                    Name = m.Name,
+                    Description = m.Description,
+                    IsActive = m.IsActive
                 }).ToList()
             });
 

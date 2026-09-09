@@ -172,6 +172,10 @@ public static class DevTenantAndMemberSeeder
                                           (tm.Id == persona.MemberId || tm.UserId == persona.UserId || tm.ExternalIdentityId == persona.ExternalIdentityId),
                                      cancellationToken);
 
+            var nameParts = persona.DisplayName.Split(' ', 2);
+            var firstName = nameParts[0];
+            var lastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
+
             if (member == null)
             {
                 member = new TenantMember
@@ -180,6 +184,9 @@ public static class DevTenantAndMemberSeeder
                     TenantId = DevTenantId,
                     UserId = persona.UserId,
                     ExternalIdentityId = persona.ExternalIdentityId,
+                    Email = persona.Email,
+                    FirstName = firstName,
+                    LastName = lastName,
                     Status = Status.Active,
 #pragma warning disable CS0618
                     Role = persona.LegacyRole,
@@ -194,6 +201,9 @@ public static class DevTenantAndMemberSeeder
             else
             {
                 member.ExternalIdentityId = persona.ExternalIdentityId;
+                member.Email = persona.Email;
+                member.FirstName = firstName;
+                member.LastName = lastName;
                 member.Status = Status.Active;
             }
 

@@ -83,9 +83,9 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
   const [userName, setUserName] = useState<string | null>('dev_admin');
   const [email, setEmail] = useState<string | null>('admin@erpez.dev');
   const [displayName, setDisplayName] = useState<string | null>('Tenant Administrator');
-  const [roles, setRoles] = useState<string[]>(['Tenant Administrator', 'super-admin']);
+  const [roles, setRoles] = useState<string[]>(['Tenant Administrator']);
   const [tenantId, setTenantId] = useState<string | null>('00000000-0000-0000-0000-000000000001');
-  const [isSuperAdmin, setIsSuperAdmin] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [activeDevUser, setActiveDevUser] = useState<string>('dev_admin');
 
   const backendUrl = import.meta.env.VITE_ERPEZ_BACKEND_URL || 'http://localhost:5245';
@@ -113,7 +113,7 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
         if (authData?.token) {
           const jwtToken = authData.token;
           const userObj = authData.user;
-          const superAdminFlag = Boolean(userObj.isSuperAdmin || username === 'dev_superadmin' || username === 'dev_admin');
+          const superAdminFlag = Boolean(userObj?.isSuperAdmin || username === 'dev_superadmin');
 
           setToken(jwtToken);
           setAuthToken(jwtToken);

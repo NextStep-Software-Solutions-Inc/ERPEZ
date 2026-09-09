@@ -35,7 +35,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
 
         [HttpGet]
         //[Authorize]
-        [ProducesResponseType(typeof(PaginatedApiResponse<TenantMember>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<TenantMemberDto>), StatusCodes.Status200OK)]
         [HasPermission(Permissions.Admin.membersManage)]
         public async Task<IActionResult> GetTenantMembers([FromQuery] GetTenantMembersQuery query)
         {

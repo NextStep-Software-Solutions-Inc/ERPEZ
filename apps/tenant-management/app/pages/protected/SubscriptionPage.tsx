@@ -7,10 +7,21 @@ import { PageContainer } from "~/components/PageContainer"
 import { Button } from "~/components/ui/button"
 import { Link } from "react-router"
 
+import { useTenant } from "~/providers/TenantProvider"
+
 export default function SubscriptionPage() {
+    const { tenant } = useTenant();
+    const sub = tenant?.tenantSubscription;
+    const planName = sub?.plan || "Enterprise";
+    const status = sub?.status || "Active";
+    const amount = sub?.amount ? `$${sub.amount.toFixed(2)}` : "$99.00";
+    const billingCycle = sub?.billingCycle || "Monthly";
+    const nextBilling = sub?.endDate ? new Date(sub.endDate).toLocaleDateString() : "Ongoing";
+    const autoRenew = sub?.autoRenew ?? true;
+
     return (
         <PageContainer
-            title="Subscription  "
+            title="Subscription"
             description="Manage your subscription preferences and billing settings"
         >
             <div className="space-y-6">
@@ -27,31 +38,31 @@ export default function SubscriptionPage() {
                     <CardContent className="grid grid-cols-2 gap-y-4 text-sm">
                         <div>
                             <p className="text-muted-foreground">Plan</p>
-                            <p className="font-medium">Enterprise</p>
+                            <p className="font-medium">{planName}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground">Next Billing</p>
-                            <p className="font-medium">10/9/2025</p>
+                            <p className="font-medium">{nextBilling}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground">Status</p>
                             <Badge className="bg-green-100 text-green-700 border-green-200">
-                                Active
+                                {status}
                             </Badge>
                         </div>
                         <div>
                             <p className="text-muted-foreground">Auto Renew</p>
-                            <Badge className="bg-green-100 text-green-700 border-green-200">
-                                Enabled
+                            <Badge className={autoRenew ? "bg-green-100 text-green-700 border-green-200" : "bg-gray-100 text-gray-700"}>
+                                {autoRenew ? "Enabled" : "Disabled"}
                             </Badge>
                         </div>
                         <div>
                             <p className="text-muted-foreground">Billing Cycle</p>
-                            <p className="font-medium">Monthly</p>
+                            <p className="font-medium">{billingCycle}</p>
                         </div>
                         <div>
                             <p className="text-muted-foreground">Amount</p>
-                            <p className="font-medium">$99.00 per month</p>
+                            <p className="font-medium">{amount} per {billingCycle.toLowerCase()}</p>
                         </div>
                     </CardContent>
                 </Card> 

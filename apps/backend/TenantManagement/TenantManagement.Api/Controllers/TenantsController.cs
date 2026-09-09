@@ -4,6 +4,7 @@ using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.DeleteTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.UpdateTenant;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.UpdateTenantModules;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantById;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
@@ -81,6 +82,24 @@ namespace ERPEZ.TenantManagement.Api.Controllers
 
             var tenant = await mediator.Send(request);
             return tenant.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(tenant);
+        }
+
+        [HttpPut("{id}/modules")]
+        //[Authorize]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.tenantsManage)]
+        public async Task<IActionResult> UpdateTenantModules(Guid id, [FromBody] List<string> moduleKeys)
+        {
+            var command = new UpdateTenantModulesCommand
+            {
+                TenantId = id,
+                ModuleKeys = moduleKeys
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
