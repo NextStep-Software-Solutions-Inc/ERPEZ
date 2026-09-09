@@ -260,7 +260,9 @@ export function BidEvaluationPage() {
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
               {activeProject.awardCriterion === 'MEARB' 
-                ? `Split: ${activeProject.technicalWeight ?? 70}% Tech / ${activeProject.financialWeight ?? 30}% Fin` 
+                ? (activeProject.technicalWeight != null && activeProject.financialWeight != null
+                    ? `Split: ${activeProject.technicalWeight}% Tech / ${activeProject.financialWeight}% Fin`
+                    : 'Weights Not Configured')
                 : activeProject.awardCriterion === 'LCRB'
                 ? 'Criteria: Lowest Financial Bid'
                 : 'Criterion established during evaluation'}
