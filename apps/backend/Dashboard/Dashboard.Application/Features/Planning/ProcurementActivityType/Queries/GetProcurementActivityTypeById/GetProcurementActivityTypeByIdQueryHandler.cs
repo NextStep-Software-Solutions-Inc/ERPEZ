@@ -20,6 +20,7 @@ public class GetProcurementActivityTypeByIdQueryHandler(IUnitOfWork unitOfWork)
         {
             Id = entity.Id,
             Name = entity.Name,
+            ActivityCode = entity.ActivityCode,
             Description = entity.Description,
             MinDays = entity.MinDays,
             MaxDays = entity.MaxDays,
