@@ -15,6 +15,13 @@ public class UpdateProcurementActivityTypeCommandValidator : AbstractValidator<U
             .WithMessage("Name cannot exceed 250 characters.")
             .When(x => !string.IsNullOrEmpty(x.Name));
 
+        RuleFor(x => x.ActivityCode)
+            .MaximumLength(10)
+            .WithMessage("Activity code cannot exceed 10 characters.")
+            .Matches(@"^[A-Z0-9]+$")
+            .WithMessage("Activity code must contain only uppercase letters and digits.")
+            .When(x => !string.IsNullOrEmpty(x.ActivityCode));
+
         RuleFor(x => x.Description)
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
