@@ -1113,6 +1113,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProcurementActivityType>()
             .HasIndex(e => e.Name);
 
+        modelBuilder.Entity<ProcurementActivityType>()
+            .Property(e => e.ActivityCode)
+            .HasMaxLength(10);
+
+        modelBuilder.Entity<ProcurementActivityType>()
+            .HasIndex(e => e.ActivityCode)
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
+
         // CSEItem
         modelBuilder.Entity<CSEItem>()
             .Property(e => e.Type)
