@@ -39,13 +39,14 @@ public class ProcurementActivityTypeController(ISender mediator) : ControllerBas
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetProcurementActivityTypes(
         [FromQuery] int page = 1,
+        [FromQuery] int? pageNumber = null,
         [FromQuery] int pageSize = 10,
         [FromQuery] string? filters = null,
         [FromQuery] string? sorts = null)
     {
         var query = new GetProcurementActivityTypesQuery
         {
-            Page = page,
+            Page = pageNumber ?? page,
             PageSize = pageSize,
             Filters = filters,
             Sorts = sorts
