@@ -1,24 +1,26 @@
 import type {
+  PaginationResponse,
   QueryBlueprintFromTemplate,
   QueryKey,
   QueryParams,
 } from 'erpez-shared-lib'
-import type { ProcurementActivityType } from '../types/procurementActivityTypes'
+import type {
+  ProcurementActivityType
+} from '../types/procurementActivityTypes'
 import api from '@/services/api'
-import { PaginatedResponse } from '../shared'
 
 const endpoint = '/procurement-activity-types'
 
 export const getProcurementActivityTypesRequest: QueryBlueprintFromTemplate<
   typeof endpoint,
-  PaginatedResponse<ProcurementActivityType>,
+  PaginationResponse<ProcurementActivityType>,
   QueryParams,
   QueryKey
 > = {
   endpoint,
   key: ({ url }) => [url],
   fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<PaginatedResponse<ProcurementActivityType>>(
+    const response = await api.get<PaginationResponse<ProcurementActivityType>>(
       finalUrl,
       {
         signal,

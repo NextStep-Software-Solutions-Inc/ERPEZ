@@ -36,6 +36,7 @@ import DebouncedInput from '@/components/DebouncedInput'
 import { useThemeStore } from '@/store'
 import type { ProcurementActivity, ProcurementActivityFormData } from '../types'
 import type { MetaActions } from '@/types/global'
+import type { QueryParams } from 'erpez-shared-lib'
 import {
   useProcurementActivityTypes,
   useDeleteProcurementActivityType,
@@ -80,6 +81,16 @@ export function ProcurementActivitiesTab() {
     return `Name@=*${trimmed}|ActivityCode@=*${trimmed}|Description@=*${trimmed}`
   }, [searchTerm])
 
+  // QueryParams from erpez-shared-lib
+  const queryParams: QueryParams = useMemo(
+    () => ({
+      pageNumber,
+      pageSize,
+      filters: sieveFilters,
+    }),
+    [pageNumber, pageSize, sieveFilters],
+  )
+
   // API hooks with dynamic pagination queryParams
   const {
     data: activityTypesData,
@@ -87,11 +98,7 @@ export function ProcurementActivitiesTab() {
     refetch,
   } = useProcurementActivityTypes({
     pathParams: {},
-    queryParams: {
-      pageNumber: pageNumber,
-      pageSize,
-      filters: sieveFilters,
-    },
+    queryParams,
   })
   const { mutate: deleteActivityType, isPending: isDeleting } =
     useDeleteProcurementActivityType()
@@ -119,9 +126,9 @@ export function ProcurementActivitiesTab() {
     )
   }, [allData, searchTerm])
 
-  const totalCount = activityTypesData?.meta.totalItems ?? allData.length
+  const totalCount = activityTypesData?.totalRows ?? allData.length
   const totalPages =
-    activityTypesData?.meta.totalPages ??
+    activityTypesData?.totalPageNumber ??
     Math.max(1, Math.ceil(totalCount / pageSize))
   const startItem = totalCount === 0 ? 0 : (pageNumber - 1) * pageSize + 1
   const endItem = Math.min(pageNumber * pageSize, totalCount)
