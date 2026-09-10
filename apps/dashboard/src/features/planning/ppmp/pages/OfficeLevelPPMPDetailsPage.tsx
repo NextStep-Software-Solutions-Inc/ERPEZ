@@ -474,6 +474,9 @@ function ActivityCard({
           onClick={onSelect}
           className="flex-1 min-w-0 text-left"
         >
+          <span className="text-[10px] font-bold text-primary/80 uppercase tracking-wider block mb-0.5">
+            Activity Indicator
+          </span>
           <h3
             className="text-sm font-semibold text-default-900 group-hover:text-primary transition-colors leading-snug line-clamp-2"
             title={activity.activityName || 'Unnamed'}
@@ -547,7 +550,7 @@ function ActivityCard({
                 Market Scoping
               </div>
               {(() => {
-                const msf = activity.LinkedMarketScoping || (activity as any).linkedMarketScoping
+                const msf = activity.LinkedMarketScoping || activity.linkedMarketScoping
                 return msf ? (
                   <div
                     className="font-medium text-default-800 flex items-center gap-1 text-xs truncate text-success"
@@ -755,11 +758,27 @@ const isUUID = (val: string | null | undefined): boolean => {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
 }
 
+interface ReferencedItemDetails {
+  name?: string
+  specifications?: string
+  description?: string
+  imageURL?: string
+  productCode?: string
+  objectCodeName?: string
+  unspscCodeName?: string
+  uomName?: string
+  procurementCategoryName?: string
+  unitPrice?: number
+  currentPrice?: number
+  isActive?: boolean
+  remarks?: string
+}
+
 interface ReferencedItemModalProps {
   isOpen: boolean
   onClose: () => void
   type: 'cse' | 'non-cse'
-  itemDetails: any
+  itemDetails: ReferencedItemDetails | null | undefined
 }
 
 function ReferencedItemModal({
@@ -1317,6 +1336,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
 
 interface ItemRowProps {
   item: PPMPItem
+  activityIndicatorName?: string
   expanded: boolean
   onToggle: () => void
   onEdit?: (item: PPMPItem) => void
@@ -1326,6 +1346,7 @@ interface ItemRowProps {
 
 function ItemRow({
   item,
+  activityIndicatorName,
   expanded,
   onToggle,
   onEdit,
@@ -1419,6 +1440,9 @@ function ItemRow({
               {item.description}
             </p>
           )}
+        </td>
+        <td className="px-5 py-3 text-xs text-default-600 font-medium whitespace-nowrap">
+          {activityIndicatorName || item.activityIndicatorName || '—'}
         </td>
         <td className="px-5 py-3 text-center">
           <Badge
@@ -1530,7 +1554,7 @@ function ItemRow({
       </tr>
       {expanded && (
         <tr className="bg-default-50/20">
-          <td colSpan={6} className="px-5 py-4 border-b border-default-200">
+          <td colSpan={7} className="px-5 py-4 border-b border-default-200">
             <ItemDetail item={item} onEditAllocations={onEditAllocations} />
           </td>
         </tr>
@@ -1613,7 +1637,7 @@ export function ExpenditureItemGroup({
       group.objectId,
       itemName,
       itemCode,
-      objectInfo?.parent as any,
+      objectInfo?.parent,
     )
 
     return {
@@ -1735,6 +1759,7 @@ export function ExpenditureItemGroup({
             <tr className="border-b border-default-200 bg-default-50/10 text-xs font-medium text-default-500 uppercase tracking-wide">
               <th className="w-12 px-5 py-3 text-center" />
               <th className="px-5 py-3">Item Name</th>
+              <th className="px-5 py-3">Activity Indicator</th>
               <th className="px-5 py-3 text-center">Type</th>
               <th className="px-5 py-3 text-right">Unit Price</th>
               <th className="px-5 py-3 text-right">Total Allocation</th>
@@ -1745,7 +1770,7 @@ export function ExpenditureItemGroup({
             {isItemsLoading && items.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-5 py-6 text-center text-xs text-default-400 italic"
                 >
                   Loading items...
@@ -1754,7 +1779,7 @@ export function ExpenditureItemGroup({
             ) : items.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-5 py-6 text-center text-xs text-default-400 italic"
                 >
                   No items in this expenditure item.
@@ -1765,6 +1790,7 @@ export function ExpenditureItemGroup({
                 <ItemRow
                   key={item.id}
                   item={item}
+                  activityIndicatorName={group.ppmpActivityName}
                   expanded={expandedItemIds.has(item.id)}
                   onToggle={() => onToggleItem(item.id)}
                   onEdit={onEditItem}
@@ -2033,7 +2059,7 @@ function RightPane({
 
       {/* Market Scoping Form Banner for Selected Activity */}
       {(() => {
-        const msf = activity.LinkedMarketScoping || (activity as any).linkedMarketScoping
+        const msf = activity.LinkedMarketScoping || activity.linkedMarketScoping
         return (
           <div className="px-5 pt-4">
             {msf ? (
@@ -2317,8 +2343,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const isProjectScope =
     lib?.scope === 'Project' ||
-    (lib as any)?.scope === 'ProjectLevel' ||
-    (lib as any)?.scopeLevel === 'Project'
+    lib?.scope === 'ProjectLevel' ||
+    lib?.scopeLevel === 'Project'
 
   // State management
   const [activeTab, setActiveTab] = useState<string>('overview')
@@ -2374,7 +2400,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           queryClient.invalidateQueries({ queryKey: ['/ppmps'] })
           queryClient.invalidateQueries({ queryKey: ['/market-scopings'] })
         },
-        onError: (err: any) => {
+        onError: (err: { message?: string } | Error) => {
           toast.error(err?.message || 'Failed to unlink Market Scoping Form.')
         },
       }
@@ -2716,8 +2742,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       URL.revokeObjectURL(link.href)
 
       toast.success(`${format} document downloaded successfully.`)
-    } catch (err: any) {
-      toast.error(err?.message ?? `Failed to generate ${format} document`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : `Failed to generate ${format} document`
+      toast.error(message)
     } finally {
       setIsExporting(false)
     }

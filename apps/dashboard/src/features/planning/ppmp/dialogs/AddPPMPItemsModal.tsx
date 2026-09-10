@@ -70,6 +70,7 @@ import {
   useTriggerPSDBMSync,
 } from '@/features/procurement/psdbm/hooks'
 import { PSDBMCatalogMode, type PSDBMItem } from '@/features/procurement/psdbm/types'
+import { getPPMPItemsRequest } from '../handlers/getPPMPItemsRequest'
 import { createPPMPItemRequest } from '../handlers/createPPMPItemRequest'
 import { createPPMPItemAllocationRequest } from '../handlers/createPPMPItemAllocationRequest'
 import type { AllocationMonth, ProcurementProjectType } from '../types'
@@ -77,7 +78,7 @@ import type { AllocationMonth, ProcurementProjectType } from '../types'
 import type { ProcurementItem } from '@/components/features/planning/procurement-item/types/procurementItem.types'
 import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
 
-function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem {
+function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem & { availableStock?: number } {
   return {
     id: psdbm.id || psdbm.itemCode,
     name: psdbm.description,
@@ -90,13 +91,15 @@ function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem {
     isActive: true,
     productCode: psdbm.itemCode,
     imageURL: psdbm.imageUrl,
-  } as ProcurementItem
+    availableStock: psdbm.availableStock,
+  } as ProcurementItem & { availableStock?: number }
 }
 
 const useNONCSEItems = createQueryHookFromTemplate(getNONCSEItemsRequest)
 const useProcurementModes = createQueryHookFromTemplate(
   getProcurementModesRequest,
 )
+const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
 const useCreatePPMPItem = createMutationHookFromTemplate(createPPMPItemRequest)
 const useCreatePPMPItemAllocation = createMutationHookFromTemplate(
   createPPMPItemAllocationRequest,
@@ -370,6 +373,47 @@ export default function AddPPMPItemsModal({
     [modesResponse],
   )
 
+  // Query existing PPMP items in this expenditure block to prevent duplicates
+  const { data: existingPPMPItemsResponse } = usePPMPItems({
+    queryParams: {
+      filters: ppmpExpenditureItemId ? `ppmpExpenditureItemId==${ppmpExpenditureItemId}` : undefined,
+      pageSize: 1000,
+    },
+    enabled: isOpen && Boolean(ppmpExpenditureItemId),
+  })
+
+  const existingItemsData = useMemo(() => {
+    const items = existingPPMPItemsResponse?.data || []
+    const itemNames = new Set<string>()
+    const cseIds = new Set<string>()
+    const nonCseIds = new Set<string>()
+    const ids = new Set<string>()
+
+    for (const it of items) {
+      if (it.name) itemNames.add(it.name.trim().toLowerCase())
+      if (it.cseItemId) cseIds.add(it.cseItemId.toLowerCase())
+      if (it.nonCseItemId) nonCseIds.add(it.nonCseItemId.toLowerCase())
+      if (it.id) ids.add(it.id.toLowerCase())
+    }
+
+    return { itemNames, cseIds, nonCseIds, ids }
+  }, [existingPPMPItemsResponse])
+
+  const isItemAlreadyInPPMP = useCallback(
+    (item: ProcurementItem | NONCSEItem, type: CatalogTab) => {
+      const idLower = (item.id || '').toLowerCase()
+      const nameLower = (item.name || '').trim().toLowerCase()
+      if (nameLower && existingItemsData.itemNames.has(nameLower)) return true
+      if (type === 'cse') {
+        if (existingItemsData.cseIds.has(idLower) || existingItemsData.ids.has(idLower)) return true
+      } else {
+        if (existingItemsData.nonCseIds.has(idLower) || existingItemsData.ids.has(idLower)) return true
+      }
+      return false
+    },
+    [existingItemsData],
+  )
+
   const currentItems =
     activeTab === 'cse' ? procurementItems : nonCseItems
   const isCatalogLoading =
@@ -534,6 +578,10 @@ export default function AddPPMPItemsModal({
 
   const toggleSelected = useCallback(
     (item: ProcurementItem | NONCSEItem, type: CatalogTab) => {
+      if (isItemAlreadyInPPMP(item, type)) {
+        toast.warning(`"${item.name || 'This item'}" is already added to this PPMP expenditure block.`)
+        return
+      }
       setSelectedItems((prev) => {
         const next = new Map(prev)
         if (next.has(item.id)) {
@@ -648,10 +696,40 @@ export default function AddPPMPItemsModal({
       return
     }
 
+    // Duplicate guard: prevent adding if item already exists in this expenditure item
+    const duplicateSelected = selectedList.filter(({ item, type }) =>
+      isItemAlreadyInPPMP(item, type),
+    )
+    if (duplicateSelected.length > 0) {
+      toast.warning(
+        `Cannot add: "${duplicateSelected[0].item.name || 'Selected item'}" is already in this PPMP expenditure block.`,
+      )
+      return
+    }
+
+    // Stock availability guard: prevent adding if planned quantity exceeds available stock
+    const stockExceededItem = selectedList.find(({ item }) => {
+      const config = configs[item.id]
+      const availStock = item.availableStock ?? item.stockOnHand
+      return (
+        typeof availStock === 'number' &&
+        availStock > 0 &&
+        (config?.plannedQuantity || 0) > availStock
+      )
+    })
+    if (stockExceededItem) {
+      toast.warning(
+        `Planned quantity for "${stockExceededItem.item.name}" cannot exceed available stock (${stockExceededItem.item.availableStock}).`,
+      )
+      return
+    }
+
     const invalidItems = selectedList.filter(({ item }) => {
       const config = configs[item.id]
       if (!config) return true
       if (!config.plannedQuantity || config.plannedQuantity < 1) return true
+      const availStock = item.availableStock ?? item.stockOnHand
+      if (typeof availStock === 'number' && availStock > 0 && config.plannedQuantity > availStock) return true
       if (!config.procurementModeId) return true
       if (config.unitPrice < 0.01) return true
       if (!config.procurementStartDate || !config.procurementEndDate || config.procurementEndDate < config.procurementStartDate) return true
@@ -669,7 +747,7 @@ export default function AddPPMPItemsModal({
 
     if (invalidItems.length > 0) {
       toast.warning(
-        'All items must have a Planned Quantity (>= 1), selected Procurement Mode, unit price >= ₱0.01, valid timeline dates, and monthly allocations not exceeding planned quantity.',
+        'All items must have a Planned Quantity (>= 1, not exceeding available stock), selected Procurement Mode, unit price >= ₱0.01, valid timeline dates, and monthly allocations not exceeding planned quantity.',
       )
       return
     }
@@ -805,8 +883,9 @@ export default function AddPPMPItemsModal({
         toast.error(`Failed to add ${failedCount} item(s).`)
       }
 
-      // If all items succeeded, mark committed and close cleanly
+      // If all items succeeded, wait a 600ms safety delay for list updates, mark committed and close cleanly
       if (failedCount === 0 && successCount > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 600))
         isCommittedRef.current = true
         forceClose()
       }
@@ -1513,6 +1592,8 @@ export default function AddPPMPItemsModal({
                             <div className="grid gap-3 min-[350px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
                               {pageItems.map((item) => {
                                 const isSelected = selectedItems.has(item.id)
+                                const isDuplicate = isItemAlreadyInPPMP(item, tab)
+                                const availableStock = item.availableStock ?? item.stockOnHand
                                 const bgTone = tone(item.name || item.id)
                                 const categoryText =
                                   tab === 'cse'
@@ -1525,9 +1606,14 @@ export default function AddPPMPItemsModal({
                                     key={item.id}
                                     role="button"
                                     aria-pressed={isSelected}
-                                    tabIndex={0}
-                                    onClick={() => toggleSelected(item, tab)}
+                                    aria-disabled={isDuplicate}
+                                    tabIndex={isDuplicate ? -1 : 0}
+                                    onClick={() => {
+                                      if (isDuplicate) return
+                                      toggleSelected(item, tab)
+                                    }}
                                     onKeyDown={(e) => {
+                                      if (isDuplicate) return
                                       if (e.key === ' ' || e.key === 'Enter') {
                                         e.preventDefault()
                                         toggleSelected(item, tab)
@@ -1535,9 +1621,11 @@ export default function AddPPMPItemsModal({
                                     }}
                                     className={cn(
                                       'group flex flex-col justify-between rounded-2xl border p-3.5 text-left bg-background transition-all duration-300 relative select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                                      isSelected
-                                        ? 'border-primary bg-primary/2 ring-1 ring-primary shadow-md scale-[1.01]'
-                                        : 'border-slate-100 hover:border-slate-300 hover:shadow-lg hover:scale-[1.01]',
+                                      isDuplicate
+                                        ? 'opacity-60 bg-muted/20 border-dashed border-border cursor-not-allowed'
+                                        : isSelected
+                                          ? 'border-primary bg-primary/2 ring-1 ring-primary shadow-md scale-[1.01]'
+                                          : 'border-slate-100 hover:border-slate-300 hover:shadow-lg hover:scale-[1.01]',
                                     )}
                                   >
                                     {/* Top Row: Floating Tags / Checkbox */}
@@ -1545,22 +1633,33 @@ export default function AddPPMPItemsModal({
                                       className="absolute top-5 left-5 right-5 z-10 flex items-center justify-between pointer-events-none"
                                       onClick={(e) => e.stopPropagation()}
                                     >
-                                      <Badge
-                                        variant="soft"
-                                        color={
-                                          tab === 'cse' ? 'success' : 'info'
-                                        }
-                                        className="text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider backdrop-blur-md bg-white/85 shadow-sm border border-slate-100/50"
-                                      >
-                                        {tab === 'cse' ? 'CSE' : 'Non-CSE'}
-                                      </Badge>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <Badge
+                                          variant="soft"
+                                          color={
+                                            tab === 'cse' ? 'success' : 'info'
+                                          }
+                                          className="text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider backdrop-blur-md bg-white/85 shadow-sm border border-slate-100/50"
+                                        >
+                                          {tab === 'cse' ? 'CSE' : 'Non-CSE'}
+                                        </Badge>
+                                        {isDuplicate && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[9px] px-1.5 py-0.5 font-bold border-amber-500/50 bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
+                                          >
+                                            Already in PPMP
+                                          </Badge>
+                                        )}
+                                      </div>
                                       <div className="pointer-events-auto">
                                         <Checkbox
                                           checked={isSelected}
+                                          disabled={isDuplicate}
                                           onCheckedChange={() =>
                                             toggleSelected(item, tab)
                                           }
-                                          className="h-5 w-5 rounded-md border-slate-300 bg-white/95 shadow-sm data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                          className="h-5 w-5 rounded-md border-slate-300 bg-white/95 shadow-sm data-[state=checked]:bg-primary data-[state=checked]:border-primary disabled:opacity-40 disabled:cursor-not-allowed"
                                           onClick={(e) => e.stopPropagation()}
                                         />
                                       </div>
@@ -1645,6 +1744,18 @@ export default function AddPPMPItemsModal({
                                           <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium bg-slate-100/80 px-2 py-0.5 rounded-full shrink-0">
                                             UOM: {item.uomName || 'pcs'}
                                           </span>
+                                          {availableStock !== undefined && availableStock !== null && (
+                                            <span
+                                              className={cn(
+                                                'inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0',
+                                                availableStock > 0
+                                                  ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                                  : 'text-rose-700 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300',
+                                              )}
+                                            >
+                                              Stock: {availableStock}
+                                            </span>
+                                          )}
                                         </div>
 
                                         {((tab === 'cse' &&
@@ -1944,11 +2055,12 @@ export default function AddPPMPItemsModal({
                           0,
                         )
                       : 0
-                    const remainingQty = Math.max(0, plannedQty - allocatedQty)
-                    const calculatedTotal = plannedQty * config.unitPrice
+                    const availableStock = item.availableStock ?? item.stockOnHand
+                    const hasStockLimit = typeof availableStock === 'number' && availableStock > 0
+                    const hasExceededStock = hasStockLimit && plannedQty > availableStock
 
                     const hasQtyError =
-                      !config.plannedQuantity || config.plannedQuantity < 1
+                      !config.plannedQuantity || config.plannedQuantity < 1 || hasExceededStock
                     const hasPriceError =
                       !config.unitPrice || config.unitPrice < 0.01
                     const hasMopError = !config.procurementModeId
@@ -1992,7 +2104,7 @@ export default function AddPPMPItemsModal({
                         ? (item as ProcurementItem).productCode
                         : (item as NONCSEItem).productCode
                     const imgUrl =
-                      (item as ProcurementItem).imageURL || (item as any).imageUrl
+                      (item as ProcurementItem).imageURL || item.imageUrl
 
                     const MONTH_NAMES: AllocationMonth[] = [
                       'January',
@@ -2228,25 +2340,32 @@ export default function AddPPMPItemsModal({
                                     id={`qty-${item.id}`}
                                     type="number"
                                     min="1"
+                                    max={hasStockLimit ? availableStock : undefined}
                                     placeholder="e.g. 100"
                                     value={config.plannedQuantity ?? ''}
                                     onChange={(e) =>
-                                      updateConfig(item.id, {
-                                        plannedQuantity:
-                                          e.target.value === ''
-                                            ? undefined
-                                            : Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                                      })
-                                    }
-                                    className={cn(
-                                      'text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
-                                      hasQtyError && 'border-red-500 bg-red-50/20',
-                                    )}
-                                  />
-                                  {hasQtyError && (
-                                    <p className="text-[10px] text-red-500 font-medium mt-0.5">Planned quantity is required (≥ 1)</p>
-                                  )}
-                                </div>
+                                       updateConfig(item.id, {
+                                         plannedQuantity:
+                                           e.target.value === ''
+                                             ? undefined
+                                             : Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                                       })
+                                     }
+                                     className={cn(
+                                       'text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
+                                       hasQtyError && 'border-red-500 bg-red-50/20',
+                                     )}
+                                   />
+                                   {hasQtyError && !hasExceededStock && (
+                                     <p className="text-[10px] text-red-500 font-medium mt-0.5">Planned quantity is required (≥ 1)</p>
+                                   )}
+                                   {hasStockLimit && (
+                                     <p className={cn('text-[10px] font-medium mt-0.5', hasExceededStock ? 'text-red-500 font-semibold' : 'text-muted-foreground')}>
+                                       Available Stock: {availableStock} {item.uomName || 'units'}
+                                       {hasExceededStock && ' (Cannot exceed available stock)'}
+                                     </p>
+                                   )}
+                                 </div>
 
                                 {/* Unit Price */}
                                 <div className="space-y-1.5">
