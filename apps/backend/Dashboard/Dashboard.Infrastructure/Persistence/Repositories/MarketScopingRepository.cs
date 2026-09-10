@@ -25,7 +25,7 @@ public class MarketScopingRepository : Repository<MarketScoping>, IMarketScoping
                 .ThenInclude(u => u.Office)
             .Include(x => x.TargetLineItemBudget)
             .Include(x => x.TargetLineItemBudgetActivity)
-                .ThenInclude(a => a.LineItemBudget)
+                .ThenInclude(a => a!.LineItemBudget)
             .Include(x => x.ActivitiesConducted)
                 .ThenInclude(a => a.ActivitySettings)
             .Include(x => x.ActivitiesConducted)

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, Link2, FileText, CheckCircle2, AlertCircle, Plus } from 'lucide-react'
+import { Search, Link2, FileText, CheckCircle2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -46,10 +46,11 @@ export default function AssociateMarketScopingDialog({
   const [search, setSearch] = useState('')
   const [selectedMsfId, setSelectedMsfId] = useState<string | null>(null)
 
-  const { data: msfResponse, isLoading } = useMarketScopings(
-    { pageSize: 100 },
-    { enabled: open }
-  )
+  const { data: msfResponse, isLoading } = useMarketScopings({
+    pathParams: {},
+    queryParams: { pageSize: 100 },
+    enabled: open,
+  })
 
   const { mutate: linkMsf, isPending: isLinking } = useLinkMarketScoping()
 
@@ -96,7 +97,7 @@ export default function AssociateMarketScopingDialog({
 
     linkMsf(
       {
-        params: { id: selectedMsfId },
+        pathParams: { id: selectedMsfId },
         payload: {
           targetLineItemBudgetId: targetType === 'project' ? targetLineItemBudgetId : undefined,
           targetLineItemBudgetActivityId: targetType === 'activity' ? targetLineItemBudgetActivityId : undefined,

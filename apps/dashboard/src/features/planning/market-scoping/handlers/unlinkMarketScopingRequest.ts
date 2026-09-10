@@ -17,7 +17,7 @@ const endpoint = '/market-scopings/:id/unlink' as const
 export const unlinkMarketScopingRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
   APIResponse<undefined>,
-  { id: string },
+  undefined,
   undefined
 > = {
   endpoint,

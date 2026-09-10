@@ -18,7 +18,7 @@ const endpoint = '/market-scopings/:id/link' as const
 export const linkMarketScopingRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
   APIResponse<undefined>,
-  { id: string },
+  undefined,
   LinkPayload
 > = {
   endpoint,
