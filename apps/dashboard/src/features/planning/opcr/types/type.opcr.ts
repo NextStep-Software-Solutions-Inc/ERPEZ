@@ -68,6 +68,7 @@ type OpcrEvaluation = {
 
 // ─── List item (GET /opcrs) ───────────────────────────────────────────────────
 type OPCR = {
+  updatedAt: string | number | Date
   id: string
   name: string | null
   deliveryUnit: DeliveryUnit

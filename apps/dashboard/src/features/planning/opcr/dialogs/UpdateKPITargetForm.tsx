@@ -12,7 +12,9 @@ const updateKPITargetSchema = z
     assignedTargetQ2: z.number().min(0, 'Q2 target must be non-negative'),
     assignedTargetQ3: z.number().min(0, 'Q3 target must be non-negative'),
     assignedTargetQ4: z.number().min(0, 'Q4 target must be non-negative'),
-    assignedTargetAnnual: z.number().min(0, 'Annual target must be non-negative'),
+    assignedTargetAnnual: z
+      .number()
+      .min(0, 'Annual target must be non-negative'),
     isLocked: z.boolean().default(false),
   })
   .refine(
@@ -114,17 +116,19 @@ export default function UpdateKPITargetForm({
       <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
         <p className="text-sm text-gray-600">
           <span className="font-semibold text-gray-900">
-            {opcrItem.kpiAssignment.fyActiveKPI?.name || 'Unnamed KPI'}
+            {opcrItem.kpiAssignment?.fyActiveKPI?.name || 'Unnamed KPI'}
           </span>
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          {opcrItem.kpiAssignment.fyActiveKPI?.code}
+          {opcrItem.kpiAssignment?.fyActiveKPI?.code}
         </p>
       </div>
 
       {isExceeded && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
-          Exceeded Annual Target: The sum of quarterly targets ({quarterlySum.toLocaleString()}) exceeds the annual target ({(values.assignedTargetAnnual || 0).toLocaleString()}).
+          Exceeded Annual Target: The sum of quarterly targets (
+          {quarterlySum.toLocaleString()}) exceeds the annual target (
+          {(values.assignedTargetAnnual || 0).toLocaleString()}).
         </div>
       )}
 
