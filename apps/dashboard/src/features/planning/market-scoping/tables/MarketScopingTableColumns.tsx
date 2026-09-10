@@ -18,7 +18,6 @@ interface MarketScopingTableColumnsProps {
   onDelete: (id: string) => void
 }
 
-
 export function createMarketScopingTableColumns({
   onViewDetails,
   onEdit,

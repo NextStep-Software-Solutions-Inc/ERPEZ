@@ -6,9 +6,18 @@
 
 import { useState } from 'react'
 import { Check, X, Clock, FileText, Eye } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import type { FileAttachment, MarketScopingForm } from '../types/marketScopingTypes'
+import type {
+  FileAttachment,
+  MarketScopingForm,
+} from '../types/marketScopingTypes'
 import { DocumentPreviewModal } from '../dialogs/DocumentPreviewModal'
 
 interface ApprovalRoutingSectionProps {
@@ -22,7 +31,8 @@ export function ApprovalRoutingSection({
   onApprovalAction,
   isLoading,
 }: ApprovalRoutingSectionProps) {
-  const [signedDocPreview, setSignedDocPreview] = useState<FileAttachment | null>(null)
+  const [signedDocPreview, setSignedDocPreview] =
+    useState<FileAttachment | null>(null)
 
   return (
     <div className="space-y-4">
@@ -83,7 +93,9 @@ export function ApprovalRoutingSection({
                 </div>
               ))
             ) : (
-              <p className="text-gray-600 text-sm text-center py-6">No approval history</p>
+              <p className="text-gray-600 text-sm text-center py-6">
+                No approval history
+              </p>
             )}
           </div>
         </CardContent>

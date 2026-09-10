@@ -1,4 +1,7 @@
-import type { MutationBlueprintFromTemplate, APIResponse } from 'erpez-shared-lib'
+import type {
+  MutationBlueprintFromTemplate,
+  APIResponse,
+} from 'erpez-shared-lib'
 import type { ActivityTypeDefinition } from '../types/managementTypes'
 import api from '@/services/api'
 
@@ -21,7 +24,10 @@ export const updateActivityTypeRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.put<APIResponse<ActivityTypeDefinition>>(finalUrl, payload)
+    const response = await api.put<APIResponse<ActivityTypeDefinition>>(
+      finalUrl,
+      payload,
+    )
     return response.data
   },
 }

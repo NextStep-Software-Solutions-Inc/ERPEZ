@@ -4,14 +4,17 @@
  * Location: src/features/planning/market-scoping/handlers/
  */
 
-import type { MutationBlueprintFromTemplate, APIResponse } from "erpez-shared-lib";
-import api from "@/services/api";
-import type { MarketScopingForm } from "../types/marketScopingTypes";
+import type {
+  MutationBlueprintFromTemplate,
+  APIResponse,
+} from 'erpez-shared-lib'
+import api from '@/services/api'
+import type { MarketScopingForm } from '../types/marketScopingTypes'
 
-const endpoint = "/market-scopings/:id/return" as const;
+const endpoint = '/market-scopings/:id/return' as const
 
 export interface ReturnMarketScopingPayload {
-  remarks?: string;
+  remarks?: string
 }
 
 export const returnMarketScopingRequest: MutationBlueprintFromTemplate<
@@ -22,7 +25,10 @@ export const returnMarketScopingRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.post<APIResponse<MarketScopingForm>>(finalUrl, payload);
-    return response.data;
+    const response = await api.post<APIResponse<MarketScopingForm>>(
+      finalUrl,
+      payload,
+    )
+    return response.data
   },
-};
+}
