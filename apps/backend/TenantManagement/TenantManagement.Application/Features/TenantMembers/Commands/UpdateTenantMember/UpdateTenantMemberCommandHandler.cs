@@ -89,13 +89,25 @@ public class UpdateTenantMemberCommandHandler(
                 candidateRoleIds,
                 cancellationToken);
 
-            // 6. Mutate member roles and rotate concurrency stamp
+            // 6. Mutate member details & roles and rotate concurrency stamp
             var beforeState = new
             {
+                member.FirstName,
+                member.LastName,
                 member.Email,
                 Roles = member.RoleAssignments.Select(ra => ra.Role.Name).ToList(),
                 Status = member.Status.ToString()
             };
+
+            if (command.UpdateTenantMember.FirstName != null)
+            {
+                member.FirstName = command.UpdateTenantMember.FirstName.Trim();
+            }
+
+            if (command.UpdateTenantMember.LastName != null)
+            {
+                member.LastName = command.UpdateTenantMember.LastName.Trim();
+            }
 
             member.RoleAssignments.Clear();
             foreach (var roleId in candidateRoleIds)
@@ -108,6 +120,7 @@ public class UpdateTenantMemberCommandHandler(
             }
 
             member.ConcurrencyStamp = Guid.NewGuid();
+            member.UpdatedAt = DateTime.UtcNow;
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             // 7. Append audit log
@@ -119,10 +132,12 @@ public class UpdateTenantMemberCommandHandler(
                 actorEmail,
                 member.Id,
                 member.Email,
-                "MEMBER_ROLES_UPDATED",
+                "MEMBER_UPDATED",
                 beforeState,
                 new
                 {
+                    member.FirstName,
+                    member.LastName,
                     member.Email,
                     Roles = afterRoleNames,
                     Status = member.Status.ToString()
@@ -131,7 +146,7 @@ public class UpdateTenantMemberCommandHandler(
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return ApiResponse<Guid>.Success(member.Id, "Tenant member roles updated successfully.");
+            return ApiResponse<Guid>.Success(member.Id, "Tenant member updated successfully.");
         }, cancellationToken: cancellationToken);
     }
 }

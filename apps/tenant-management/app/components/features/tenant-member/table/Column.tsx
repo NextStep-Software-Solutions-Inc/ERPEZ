@@ -1,5 +1,5 @@
 import type { ColumnDef } from "erpez-shared-lib";
-import { ArrowUpDown, MoreHorizontal, Shield, UserCheck, UserX, Trash2, Ban } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Shield, UserCheck, UserX, Trash2, Ban, Eye, Edit2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Badge } from "~/components/ui/badge";
@@ -13,11 +13,14 @@ import {
 import { type TenantMember } from "./types";
 
 export interface MemberActionHandlers {
+    onViewDetails?: (member: TenantMember) => void;
+    onEditMember?: (member: TenantMember) => void;
     onEditRoles?: (member: TenantMember) => void;
     onToggleStatus?: (member: TenantMember) => void;
     onRevokeInvitation?: (member: TenantMember) => void;
     onDelete?: (member: TenantMember) => void;
     currentUserId?: string;
+    currentUserEmail?: string;
 }
 
 export function createColumns(handlers?: MemberActionHandlers): ColumnDef<TenantMember>[] {
@@ -55,6 +58,40 @@ export function createColumns(handlers?: MemberActionHandlers): ColumnDef<Tenant
                     <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
             ),
+            cell: ({ row }) => {
+                const member = row.original;
+                const initials = member.name
+                    ? member.name
+                        .split(" ")
+                        .map((p) => p[0])
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase()
+                    : "U";
+                return (
+                    <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-full bg-slate-800 text-white font-semibold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                            {initials}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-medium text-slate-900 leading-tight text-xs">{member.name}</span>
+                            {member.firstName && member.lastName && (
+                                <span className="text-[11px] text-muted-foreground">{member.firstName} {member.lastName}</span>
+                            )}
+                        </div>
+                    </div>
+                );
+            },
+            filterFn: (row, columnId, filterValue) => {
+                if (!filterValue) return true;
+                const search = String(filterValue).toLowerCase();
+                const name = (row.original.name || "").toLowerCase();
+                const email = (row.original.email || "").toLowerCase();
+                const first = (row.original.firstName || "").toLowerCase();
+                const last = (row.original.lastName || "").toLowerCase();
+                return name.includes(search) || email.includes(search) || first.includes(search) || last.includes(search);
+            },
         },
         {
             accessorKey: "email",
@@ -115,10 +152,21 @@ export function createColumns(handlers?: MemberActionHandlers): ColumnDef<Tenant
                 }
 
                 return (
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badgeClass}`}>
-                        {status}
-                    </span>
+                    <div className="flex flex-col items-start gap-0.5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badgeClass}`}>
+                            {status}
+                        </span>
+                        {status === "Pending" && row.original.invitationExpiresAtUtc && (
+                            <span className="text-[10px] text-muted-foreground">
+                                Exp: {new Date(row.original.invitationExpiresAtUtc).toLocaleDateString()}
+                            </span>
+                        )}
+                    </div>
                 );
+            },
+            filterFn: (row, columnId, filterValue) => {
+                if (!filterValue || filterValue === "All") return true;
+                return String(row.original.status).toLowerCase() === String(filterValue).toLowerCase();
             },
         },
         {
@@ -126,7 +174,10 @@ export function createColumns(handlers?: MemberActionHandlers): ColumnDef<Tenant
             header: "Actions",
             cell: ({ row }) => {
                 const member = row.original;
-                const isSelf = Boolean(handlers?.currentUserId && member.id === handlers.currentUserId);
+                const isSelf = Boolean(
+                    (handlers?.currentUserId && (member.id === handlers.currentUserId || member.userId === handlers.currentUserId || member.externalIdentityId === handlers.currentUserId)) ||
+                    (handlers?.currentUserEmail && member.email?.toLowerCase() === handlers.currentUserEmail.toLowerCase())
+                );
 
                 return (
                     <DropdownMenu>
@@ -136,12 +187,28 @@ export function createColumns(handlers?: MemberActionHandlers): ColumnDef<Tenant
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                                onClick={() => handlers?.onViewDetails?.(member)}
+                                className="cursor-pointer"
+                            >
+                                <Eye className="mr-2 h-4 w-4 text-slate-500" />
+                                View Details
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                                onClick={() => handlers?.onEditMember?.(member)}
+                                className="cursor-pointer"
+                            >
+                                <Edit2 className="mr-2 h-4 w-4 text-blue-600" />
+                                Edit Member
+                            </DropdownMenuItem>
+
                             <DropdownMenuItem
                                 onClick={() => handlers?.onEditRoles?.(member)}
                                 className="cursor-pointer"
                             >
-                                <Shield className="mr-2 h-4 w-4" />
+                                <Shield className="mr-2 h-4 w-4 text-slate-600" />
                                 Edit Roles
                             </DropdownMenuItem>
 

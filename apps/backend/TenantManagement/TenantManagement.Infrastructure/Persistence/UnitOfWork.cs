@@ -91,7 +91,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     public async Task LockTenantRowAsync(Guid tenantId, CancellationToken cancellationToken = default)
     {
-        await context.Database.ExecuteSqlRawAsync(@"SELECT id FROM ""Tenants"" WHERE id = {0} FOR UPDATE", [tenantId], cancellationToken);
+        await context.Database.ExecuteSqlRawAsync(@"SELECT ""Id"" FROM ""Tenants"" WHERE ""Id"" = {0} FOR UPDATE", [tenantId], cancellationToken);
     }
 
     public void Dispose() => context.Dispose();

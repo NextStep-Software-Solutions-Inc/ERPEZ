@@ -42,7 +42,7 @@ public class GetTenantPaymentMethodsQueryHandler(
         };
 
         var (methods, _) = await unitOfWork.TenantPaymentMethodRepository.GetAllAsync(
-            null,
+            null!,
             projection,
             pm => pm.TenantId == targetTenantId && !pm.IsDeleted,
             cancellationToken);

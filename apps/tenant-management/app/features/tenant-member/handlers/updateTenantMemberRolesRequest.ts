@@ -7,6 +7,8 @@ import {
 const endpoint = '/tenant-members/:id';
 
 export type UpdateTenantMemberRolesPayload = {
+  firstName?: string;
+  lastName?: string;
   roleIds: string[];
   concurrencyStamp: string;
 };
