@@ -157,6 +157,9 @@ export function CalendarHeaderV2() {
               <DropdownMenuRadioItem value="project" className="text-xs font-medium cursor-pointer">
                 By BAC Project / Resolution
               </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="mode" className="text-xs font-medium cursor-pointer">
+                By Procurement Mode (PB, DA, DC, RFQ)
+              </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="category" className="text-xs font-medium cursor-pointer">
                 By Procurement Category
               </DropdownMenuRadioItem>

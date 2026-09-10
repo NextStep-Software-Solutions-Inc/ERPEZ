@@ -4,9 +4,9 @@ import { useCalendarV2 } from '../contexts/calendar-context'
 import { useDndV2 } from '../contexts/dnd-context'
 import {
   WORKING_HOURS,
-  getPaletteForProject,
-  CATEGORY_COLOR_MAP,
-  STATUS_COLOR_MAP,
+  getEventPalette,
+  getProcurementModeAbbreviation,
+  MODE_COLOR_MAP,
 } from '../constants'
 import type { BiddingMasterCalendarEvent } from '../types'
 import { Badge } from '@/components/ui/badge'
@@ -28,22 +28,6 @@ export function DayViewV2() {
     const s = evt.startDate || evt.eventDate
     return s.split('T')[0] === dateKey
   })
-
-  const getEventPalette = (event: BiddingMasterCalendarEvent) => {
-    if (colorMode === 'category') {
-      return (
-        CATEGORY_COLOR_MAP[event.procurementCategory.toLowerCase()] ??
-        getPaletteForProject(event.bacResolutionId)
-      )
-    }
-    if (colorMode === 'status') {
-      return (
-        STATUS_COLOR_MAP[event.derivedProjectStatus] ??
-        getPaletteForProject(event.bacResolutionId)
-      )
-    }
-    return getPaletteForProject(event.bacResolutionId || event.primaryProjectName)
-  }
 
   const formatHourLabel = (hour: number) => {
     if (use24HourFormat) {
@@ -117,13 +101,16 @@ export function DayViewV2() {
               {/* Slot Area */}
               <div className="p-2 space-y-2">
                 {slotEvents.map((evt) => {
-                  const palette = getEventPalette(evt)
+                  const palette = getEventPalette(evt, colorMode)
+                  const modeAbbr = getProcurementModeAbbreviation(evt)
+                  const modeColor = MODE_COLOR_MAP[modeAbbr]
                   return (
                     <div
                       key={evt.id}
                       draggable
                       onDragStart={() => startDrag(evt)}
                       onClick={() => openEventModal(evt)}
+                      title={`[${modeAbbr}] ${evt.milestoneName} - ${evt.primaryProjectName}`}
                       className={cn(
                         'flex items-center justify-between p-3 rounded-xl border cursor-grab active:cursor-grabbing shadow-xs transition-all hover:scale-[1.005]',
                         palette.bg,
@@ -132,7 +119,15 @@ export function DayViewV2() {
                       )}
                     >
                       <div className="space-y-1 min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={cn(
+                              'px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shrink-0 border',
+                              modeColor.badge,
+                            )}
+                          >
+                            {modeAbbr}
+                          </span>
                           <Badge variant="outline" className={cn('text-[10px] font-bold px-1.5 py-0', palette.badge)}>
                             {evt.bacResolutionNumber || 'BAC'}
                           </Badge>
