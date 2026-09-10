@@ -107,6 +107,58 @@ export const columns: ColumnDef<PPMP>[] = [
     },
   },
   {
+    accessorKey: 'isFinal',
+    id: 'planType',
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-3 h-8"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      >
+        Plan Type
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const ppmp = row.original
+      const isSupplemental =
+        ppmp.ppmpType === 'Supplemental' || Boolean(ppmp.sourcePPMPId)
+      const isFinal = ppmp.isFinal || isSupplemental
+
+      if (isSupplemental) {
+        return (
+          <Badge
+            variant="outline"
+            className="text-xs font-medium px-2.5 py-0.5 border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
+          >
+            Supplemental {ppmp.supplementalNumber ? `#${ppmp.supplementalNumber}` : ''}
+          </Badge>
+        )
+      }
+
+      if (isFinal) {
+        return (
+          <Badge
+            variant="outline"
+            className="text-xs font-medium px-2.5 py-0.5 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+          >
+            Final PPMP
+          </Badge>
+        )
+      }
+
+      return (
+        <Badge
+          variant="outline"
+          className="text-xs font-medium px-2.5 py-0.5 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+        >
+          Indicative
+        </Badge>
+      )
+    },
+  },
+  {
     accessorKey: 'status',
     header: ({ column }) => {
       return (
@@ -125,47 +177,23 @@ export const columns: ColumnDef<PPMP>[] = [
       const ppmp = row.original
       const status = ppmp.status || 'Draft'
       const isApproved = status.toLowerCase() === 'approved'
-      const isSupplemental =
-        ppmp.ppmpType === 'Supplemental' || Boolean(ppmp.sourcePPMPId)
-      const isFinal = ppmp.isFinal || isSupplemental
 
       return (
-        <div className="flex flex-col gap-1 items-start">
-          <Badge
-            variant="outline"
-            className={cn(
-              'capitalize text-xs font-medium',
-              isApproved
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : status.toLowerCase() === 'submitted'
-                  ? 'border-blue-200 bg-blue-50 text-blue-700'
-                  : status.toLowerCase() === 'rejected'
-                    ? 'border-rose-200 bg-rose-50 text-rose-700'
-                    : 'border-slate-200 bg-slate-50 text-slate-700',
-            )}
-          >
-            {status}
-          </Badge>
-          {isFinal ? (
-            <Badge className="text-[10px] px-1.5 py-0 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border">
-              {isSupplemental && status.toLowerCase() === 'draft'
-                ? 'Final PPMP (Draft)'
-                : 'Final PPMP'}
-            </Badge>
-          ) : isApproved ? (
-            <Badge
-              variant="outline"
-              className="text-[10px] px-1.5 py-0 border-slate-200 bg-slate-50 text-slate-600"
-            >
-              Indicative
-            </Badge>
-          ) : null}
-          {isSupplemental && (
-            <Badge className="text-[10px] px-1.5 py-0 border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 border">
-              Supplemental {ppmp.supplementalNumber ? `#${ppmp.supplementalNumber}` : ''}
-            </Badge>
+        <Badge
+          variant="outline"
+          className={cn(
+            'capitalize text-xs font-medium',
+            isApproved
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : status.toLowerCase() === 'submitted'
+                ? 'border-blue-200 bg-blue-50 text-blue-700'
+                : status.toLowerCase() === 'rejected'
+                  ? 'border-rose-200 bg-rose-50 text-rose-700'
+                  : 'border-slate-200 bg-slate-50 text-slate-700',
           )}
-        </div>
+        >
+          {status}
+        </Badge>
       )
     },
   },
