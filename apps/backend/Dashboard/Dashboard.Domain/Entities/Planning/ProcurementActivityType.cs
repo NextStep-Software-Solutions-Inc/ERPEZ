@@ -20,6 +20,9 @@ public class ProcurementActivityType : BaseEntity
     public string Name { get; set; } = string.Empty;
     
     [Sieve(CanFilter = true, CanSort = true)]
+    public string? ActivityCode { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
     public string Description { get; set; } = string.Empty;
     
     [Sieve(CanFilter = true, CanSort = true)]
