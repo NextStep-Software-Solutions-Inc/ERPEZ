@@ -18,6 +18,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<TenantMemberRoleAssignment>? TenantMemberRoleAssignments { get; set; }
     public DbSet<LicenseKey>? LicenseKeys { get; set; }
     public DbSet<TenantAuditLog>? TenantAuditLogs { get; set; }
+    public DbSet<TenantInvoice>? TenantInvoices { get; set; }
+    public DbSet<TenantInvoiceItem>? TenantInvoiceItems { get; set; }
+    public DbSet<TenantPaymentMethod>? TenantPaymentMethods { get; set; }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
@@ -211,6 +214,53 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<TenantAuditLog>()
             .HasIndex(al => new { al.TenantId, al.CreatedAt });
+
+        // TenantInvoice
+        modelBuilder.Entity<TenantInvoice>()
+            .HasIndex(ti => new { ti.TenantId, ti.InvoiceNumber });
+
+        modelBuilder.Entity<TenantInvoice>()
+            .HasIndex(ti => new { ti.TenantId, ti.Status });
+
+        modelBuilder.Entity<TenantInvoice>()
+            .HasOne(ti => ti.Tenant)
+            .WithMany(t => t.TenantInvoices)
+            .HasForeignKey(ti => ti.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TenantInvoice>()
+            .HasOne(ti => ti.TenantSubscription)
+            .WithMany()
+            .HasForeignKey(ti => ti.TenantSubscriptionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<TenantInvoice>()
+            .HasMany(ti => ti.Items)
+            .WithOne(tii => tii.TenantInvoice)
+            .HasForeignKey(tii => tii.TenantInvoiceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TenantInvoice>()
+            .Property(ti => ti.BillingCycle)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TenantInvoice>()
+            .Property(ti => ti.Status)
+            .HasConversion<string>();
+
+        // TenantPaymentMethod
+        modelBuilder.Entity<TenantPaymentMethod>()
+            .HasIndex(pm => new { pm.TenantId, pm.IsDefault });
+
+        modelBuilder.Entity<TenantPaymentMethod>()
+            .HasOne(pm => pm.Tenant)
+            .WithMany(t => t.TenantPaymentMethods)
+            .HasForeignKey(pm => pm.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TenantPaymentMethod>()
+            .Property(pm => pm.Type)
+            .HasConversion<string>();
 
         base.OnModelCreating(modelBuilder);
     }

@@ -17,4 +17,6 @@ public class Tenant : BaseEntity
     public virtual List<TenantSubscription> TenantSubscriptions { get; set; } = [];
     public virtual List<TenantMember> TenantMembers { get; set; } = [];
     public virtual List<LicenseKey> LicenseKeys { get; set; } = [];
+    public virtual List<TenantInvoice> TenantInvoices { get; set; } = [];
+    public virtual List<TenantPaymentMethod> TenantPaymentMethods { get; set; } = [];
 }

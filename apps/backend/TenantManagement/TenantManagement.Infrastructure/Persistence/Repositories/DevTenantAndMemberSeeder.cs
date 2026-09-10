@@ -156,6 +156,14 @@ public static class DevTenantAndMemberSeeder
             {
                 existingSetting.MaxAllowedTenants = 10;
             }
+            if (string.IsNullOrWhiteSpace(existingSetting.BillingAddress))
+            {
+                existingSetting.BillingAddress = "100 Enterprise Boulevard, Suite 400";
+                existingSetting.BillingCity = "San Francisco";
+                existingSetting.BillingCountry = "United States";
+                existingSetting.BillingPostalCode = "94105";
+                existingSetting.TaxId = "US-987654321";
+            }
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
@@ -224,6 +232,199 @@ public static class DevTenantAndMemberSeeder
             };
 
             await dbContext.LicenseKeys!.AddAsync(licenseKey, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        // 2d. Ensure Dev Tenant Payment Methods exist
+        if (dbContext.TenantPaymentMethods != null && !await dbContext.TenantPaymentMethods.AnyAsync(pm => pm.TenantId == DevTenantId, cancellationToken))
+        {
+            var methods = new List<TenantPaymentMethod>
+            {
+                new()
+                {
+                    Id = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001"),
+                    TenantId = DevTenantId,
+                    Type = PaymentMethodType.CreditCard,
+                    Brand = "visa",
+                    Last4 = "4242",
+                    ExpiryMonth = 12,
+                    ExpiryYear = 2028,
+                    CardholderName = "Tenant Admin",
+                    IsDefault = true,
+                    CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                    CreatedBy = "system"
+                },
+                new()
+                {
+                    Id = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002"),
+                    TenantId = DevTenantId,
+                    Type = PaymentMethodType.CreditCard,
+                    Brand = "mastercard",
+                    Last4 = "8888",
+                    ExpiryMonth = 8,
+                    ExpiryYear = 2027,
+                    CardholderName = "Finance Department",
+                    IsDefault = false,
+                    CreatedAt = DateTime.UtcNow.AddMonths(-3),
+                    CreatedBy = "system"
+                }
+            };
+
+            await dbContext.TenantPaymentMethods.AddRangeAsync(methods, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        // 2e. Ensure Dev Tenant Invoices exist
+        if (dbContext.TenantInvoices != null && !await dbContext.TenantInvoices.AnyAsync(ti => ti.TenantId == DevTenantId, cancellationToken))
+        {
+            var inv1Id = Guid.Parse("cccccccc-0000-0000-0000-000000000001");
+            var inv2Id = Guid.Parse("cccccccc-0000-0000-0000-000000000002");
+            var inv3Id = Guid.Parse("cccccccc-0000-0000-0000-000000000003");
+            var inv4Id = Guid.Parse("cccccccc-0000-0000-0000-000000000004");
+
+            var invoices = new List<TenantInvoice>
+            {
+                new()
+                {
+                    Id = inv3Id,
+                    TenantId = DevTenantId,
+                    TenantSubscriptionId = existingSubscription?.Id,
+                    InvoiceNumber = "INV-2026-003",
+                    PlanName = "Enterprise Plan - March 2026",
+                    BillingCycle = BillingCycle.Monthly,
+                    InvoiceDate = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+                    DueDate = new DateTime(2026, 3, 25, 0, 0, 0, DateTimeKind.Utc),
+                    SubtotalAmount = 299.00m,
+                    TaxRate = 0.12m,
+                    TaxAmount = 35.88m,
+                    TotalAmount = 334.88m,
+                    Currency = "USD",
+                    Status = InvoiceStatus.Pending,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "system",
+                    Items =
+                    [
+                        new TenantInvoiceItem
+                        {
+                            Id = Guid.NewGuid(),
+                            TenantInvoiceId = inv3Id,
+                            Description = "Enterprise Plan Monthly Cloud Subscription (Full ERP Suite)",
+                            Quantity = 1,
+                            UnitPrice = 299.00m,
+                            TotalPrice = 299.00m,
+                            CreatedAt = DateTime.UtcNow,
+                            CreatedBy = "system"
+                        }
+                    ]
+                },
+                new()
+                {
+                    Id = inv2Id,
+                    TenantId = DevTenantId,
+                    TenantSubscriptionId = existingSubscription?.Id,
+                    InvoiceNumber = "INV-2026-002",
+                    PlanName = "Enterprise Plan - February 2026",
+                    BillingCycle = BillingCycle.Monthly,
+                    InvoiceDate = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+                    DueDate = new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc),
+                    PaidDate = new DateTime(2026, 2, 14, 0, 0, 0, DateTimeKind.Utc),
+                    SubtotalAmount = 299.00m,
+                    TaxRate = 0.12m,
+                    TaxAmount = 35.88m,
+                    TotalAmount = 334.88m,
+                    Currency = "USD",
+                    Status = InvoiceStatus.Paid,
+                    PaymentMethodSummary = "Visa ending in 4242",
+                    CreatedAt = DateTime.UtcNow.AddMonths(-1),
+                    CreatedBy = "system",
+                    Items =
+                    [
+                        new TenantInvoiceItem
+                        {
+                            Id = Guid.NewGuid(),
+                            TenantInvoiceId = inv2Id,
+                            Description = "Enterprise Plan Monthly Cloud Subscription (Full ERP Suite)",
+                            Quantity = 1,
+                            UnitPrice = 299.00m,
+                            TotalPrice = 299.00m,
+                            CreatedAt = DateTime.UtcNow.AddMonths(-1),
+                            CreatedBy = "system"
+                        }
+                    ]
+                },
+                new()
+                {
+                    Id = inv1Id,
+                    TenantId = DevTenantId,
+                    TenantSubscriptionId = existingSubscription?.Id,
+                    InvoiceNumber = "INV-2026-001",
+                    PlanName = "Enterprise Plan - January 2026",
+                    BillingCycle = BillingCycle.Monthly,
+                    InvoiceDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    DueDate = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc),
+                    PaidDate = new DateTime(2026, 1, 12, 0, 0, 0, DateTimeKind.Utc),
+                    SubtotalAmount = 299.00m,
+                    TaxRate = 0.12m,
+                    TaxAmount = 35.88m,
+                    TotalAmount = 334.88m,
+                    Currency = "USD",
+                    Status = InvoiceStatus.Paid,
+                    PaymentMethodSummary = "Visa ending in 4242",
+                    CreatedAt = DateTime.UtcNow.AddMonths(-2),
+                    CreatedBy = "system",
+                    Items =
+                    [
+                        new TenantInvoiceItem
+                        {
+                            Id = Guid.NewGuid(),
+                            TenantInvoiceId = inv1Id,
+                            Description = "Enterprise Plan Monthly Cloud Subscription (Full ERP Suite)",
+                            Quantity = 1,
+                            UnitPrice = 299.00m,
+                            TotalPrice = 299.00m,
+                            CreatedAt = DateTime.UtcNow.AddMonths(-2),
+                            CreatedBy = "system"
+                        }
+                    ]
+                },
+                new()
+                {
+                    Id = inv4Id,
+                    TenantId = DevTenantId,
+                    TenantSubscriptionId = existingSubscription?.Id,
+                    InvoiceNumber = "INV-2025-012",
+                    PlanName = "Professional Plan - December 2025",
+                    BillingCycle = BillingCycle.Monthly,
+                    InvoiceDate = new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc),
+                    DueDate = new DateTime(2025, 12, 15, 0, 0, 0, DateTimeKind.Utc),
+                    PaidDate = new DateTime(2025, 12, 10, 0, 0, 0, DateTimeKind.Utc),
+                    SubtotalAmount = 99.00m,
+                    TaxRate = 0.12m,
+                    TaxAmount = 11.88m,
+                    TotalAmount = 110.88m,
+                    Currency = "USD",
+                    Status = InvoiceStatus.Paid,
+                    PaymentMethodSummary = "Mastercard ending in 8888",
+                    CreatedAt = DateTime.UtcNow.AddMonths(-3),
+                    CreatedBy = "system",
+                    Items =
+                    [
+                        new TenantInvoiceItem
+                        {
+                            Id = Guid.NewGuid(),
+                            TenantInvoiceId = inv4Id,
+                            Description = "Professional Plan Monthly Subscription (Growth Tier)",
+                            Quantity = 1,
+                            UnitPrice = 99.00m,
+                            TotalPrice = 99.00m,
+                            CreatedAt = DateTime.UtcNow.AddMonths(-3),
+                            CreatedBy = "system"
+                        }
+                    ]
+                }
+            };
+
+            await dbContext.TenantInvoices.AddRangeAsync(invoices, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 

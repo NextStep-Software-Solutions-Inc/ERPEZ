@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTenant } from "~/providers/TenantProvider";
+import { apiBillingRepository } from "../repositories/apiBillingRepository";
 import { mockBillingRepository } from "../repositories/mockBillingRepository";
 import type { BillingRepository } from "../repositories/billingRepository";
 import type {
@@ -38,7 +39,7 @@ export interface UseBillingDataResult {
 }
 
 export function useBillingData(
-  repo: BillingRepository = mockBillingRepository
+  repo: BillingRepository = apiBillingRepository
 ): UseBillingDataResult {
   const { tenant, isLoading: isTenantLoading, error: tenantError } = useTenant();
   const tenantId = tenant?.id || "00000000-0000-0000-0000-000000000001";

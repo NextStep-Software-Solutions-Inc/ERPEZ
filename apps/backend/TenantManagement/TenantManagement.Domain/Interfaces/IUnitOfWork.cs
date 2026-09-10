@@ -13,6 +13,8 @@ public interface IUnitOfWork
     IPermissionRepository PermissionRepository { get; }
     ILicenseKeyRepository LicenseKeyRepository { get; }
     ITenantAuditRepository TenantAuditRepository { get; }
+    ITenantInvoiceRepository TenantInvoiceRepository { get; }
+    ITenantPaymentMethodRepository TenantPaymentMethodRepository { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted, CancellationToken cancellationToken = default);
     Task ExecuteInTransactionAsync(Func<Task> operation, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted, CancellationToken cancellationToken = default);

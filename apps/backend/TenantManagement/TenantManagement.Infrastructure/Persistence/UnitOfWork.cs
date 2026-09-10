@@ -17,6 +17,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IPermissionRepository PermissionRepository { get; }
     public ILicenseKeyRepository LicenseKeyRepository { get; }
     public ITenantAuditRepository TenantAuditRepository { get; }
+    public ITenantInvoiceRepository TenantInvoiceRepository { get; }
+    public ITenantPaymentMethodRepository TenantPaymentMethodRepository { get; }
 
     private ICurrentUserService CurrentUser { get; }
 
@@ -32,7 +34,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         IRoleRepository roleRepository,
         IPermissionRepository permissionRepository,
         ILicenseKeyRepository licenseKeyRepository,
-        ITenantAuditRepository tenantAuditRepository)
+        ITenantAuditRepository tenantAuditRepository,
+        ITenantInvoiceRepository tenantInvoiceRepository,
+        ITenantPaymentMethodRepository tenantPaymentMethodRepository)
     {
         this.context = context ?? throw new ArgumentNullException(nameof(context));
         CurrentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
@@ -45,6 +49,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         PermissionRepository = permissionRepository ?? throw new ArgumentNullException(nameof(permissionRepository));
         LicenseKeyRepository = licenseKeyRepository ?? throw new ArgumentNullException(nameof(licenseKeyRepository));
         TenantAuditRepository = tenantAuditRepository ?? throw new ArgumentNullException(nameof(tenantAuditRepository));
+        TenantInvoiceRepository = tenantInvoiceRepository ?? throw new ArgumentNullException(nameof(tenantInvoiceRepository));
+        TenantPaymentMethodRepository = tenantPaymentMethodRepository ?? throw new ArgumentNullException(nameof(tenantPaymentMethodRepository));
     }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

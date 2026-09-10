@@ -61,6 +61,8 @@ public static class DependencyInjection
         services.AddScoped<ITenantAuditService, TenantAuditService>();
         services.AddScoped<IRoleAssignmentValidator, RoleAssignmentValidator>();
         services.AddScoped<ILicenseService, LicenseService>();
+        services.AddScoped<ITenantInvoiceRepository, TenantInvoiceRepository>();
+        services.AddScoped<ITenantPaymentMethodRepository, TenantPaymentMethodRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire
