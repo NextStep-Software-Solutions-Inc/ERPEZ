@@ -1,4 +1,4 @@
-﻿import { Label } from '@/components/ui/label'
+import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useForm } from '@tanstack/react-form'
@@ -6,14 +6,30 @@ import { z } from 'zod'
 import FieldInfo from '@/components/FieldInfo'
 import { OPCRItem } from '../types'
 
-const updateKPITargetSchema = z.object({
-  assignedTargetQ1: z.number().min(0, 'Q1 target must be non-negative'),
-  assignedTargetQ2: z.number().min(0, 'Q2 target must be non-negative'),
-  assignedTargetQ3: z.number().min(0, 'Q3 target must be non-negative'),
-  assignedTargetQ4: z.number().min(0, 'Q4 target must be non-negative'),
-  assignedTargetAnnual: z.number().min(0, 'Annual target must be non-negative'),
-  isLocked: z.boolean().default(false),
-})
+const updateKPITargetSchema = z
+  .object({
+    assignedTargetQ1: z.number().min(0, 'Q1 target must be non-negative'),
+    assignedTargetQ2: z.number().min(0, 'Q2 target must be non-negative'),
+    assignedTargetQ3: z.number().min(0, 'Q3 target must be non-negative'),
+    assignedTargetQ4: z.number().min(0, 'Q4 target must be non-negative'),
+    assignedTargetAnnual: z.number().min(0, 'Annual target must be non-negative'),
+    isLocked: z.boolean().default(false),
+  })
+  .refine(
+    (data) => {
+      const sum =
+        data.assignedTargetQ1 +
+        data.assignedTargetQ2 +
+        data.assignedTargetQ3 +
+        data.assignedTargetQ4
+      return sum <= data.assignedTargetAnnual
+    },
+    {
+      message:
+        'The sum of quarterly targets (Q1 + Q2 + Q3 + Q4) cannot exceed the annual target.',
+      path: ['assignedTargetAnnual'],
+    },
+  )
 
 export type UpdateKPITargetFormValues = z.infer<typeof updateKPITargetSchema>
 
@@ -37,6 +53,14 @@ const useKPITargetFormInstance = (
       onChange: updateKPITargetSchema,
     },
     onSubmit: async ({ value }) => {
+      const sum =
+        (value.assignedTargetQ1 || 0) +
+        (value.assignedTargetQ2 || 0) +
+        (value.assignedTargetQ3 || 0) +
+        (value.assignedTargetQ4 || 0)
+      if (sum > (value.assignedTargetAnnual || 0)) {
+        return
+      }
       onTargetsUpdated(value)
     },
   })
@@ -68,6 +92,14 @@ export default function UpdateKPITargetForm({
   // Expose form to parent on creation
   setForm?.(form)
 
+  const values = form.state.values
+  const quarterlySum =
+    (values.assignedTargetQ1 || 0) +
+    (values.assignedTargetQ2 || 0) +
+    (values.assignedTargetQ3 || 0) +
+    (values.assignedTargetQ4 || 0)
+  const isExceeded = quarterlySum > (values.assignedTargetAnnual || 0)
+
   return (
     <form
       id="update-kpi-target-form"
@@ -89,6 +121,12 @@ export default function UpdateKPITargetForm({
           {opcrItem.kpiAssignment.fyActiveKPI?.code}
         </p>
       </div>
+
+      {isExceeded && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
+          Exceeded Annual Target: The sum of quarterly targets ({quarterlySum.toLocaleString()}) exceeds the annual target ({(values.assignedTargetAnnual || 0).toLocaleString()}).
+        </div>
+      )}
 
       {/* Quarterly Targets */}
       <div className="space-y-4">
