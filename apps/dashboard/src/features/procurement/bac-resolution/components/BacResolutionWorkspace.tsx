@@ -27,15 +27,22 @@ import type {
   BacProject,
   BacProjectDetails,
 } from '../types'
-import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
+import {
+  createMutationHookFromTemplate,
+  useQueryClient,
+} from 'erpez-shared-lib'
 import { useSubmitBacResolution } from '../handlers/hooks'
 import { deleteBacResolutionRequest } from '../handlers/deleteBacResolutionRequest'
 import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
 import { toast } from 'sonner'
 import { CreateBacResolutionPayload } from '../handlers'
 
-const useDeleteBacResolution = createMutationHookFromTemplate(deleteBacResolutionRequest)
-const useUpdateBacResolution = createMutationHookFromTemplate(updateBacResolutionRequest)
+const useDeleteBacResolution = createMutationHookFromTemplate(
+  deleteBacResolutionRequest,
+)
+const useUpdateBacResolution = createMutationHookFromTemplate(
+  updateBacResolutionRequest,
+)
 
 interface BacResolutionWorkspaceProps {
   role: BacResolutionRole
@@ -59,9 +66,9 @@ function formatInboxFilterLabel(status: BacResolutionInboxFilter) {
   return status === 'all'
     ? 'All'
     : status
-      .split('-')
-      .map((part) => part[0].toUpperCase() + part.slice(1))
-      .join(' ')
+        .split('-')
+        .map((part) => part[0].toUpperCase() + part.slice(1))
+        .join(' ')
 }
 
 export function BacResolutionWorkspace({
@@ -73,7 +80,7 @@ export function BacResolutionWorkspace({
   workspaceScope = 'all',
   bacListRoutePath = '/v2/bac-resolutions',
 }: BacResolutionWorkspaceProps) {
-  const navigate = useNavigate()
+  const navigate = useNavigate({ from: bacListRoutePath })
   const queryClient = useQueryClient()
   const { mutateAsync: deleteBacProject } = useDeleteBacResolution()
   const { mutateAsync: updateBacProject } = useUpdateBacResolution()
@@ -82,12 +89,20 @@ export function BacResolutionWorkspace({
   // Filter & Queue Search States
   const [searchValue, setSearchValue] = useState('')
   const [filter, setFilter] = useState<BacResolutionInboxFilter>(defaultFilter)
-  const [procurementModeFilter, setProcurementModeFilter] = useState<'all' | 'public-bidding' | 'alternative-methods'>('all')
-  const [sourceTypeFilter, setSourceTypeFilter] = useState<'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'>('all')
-  const [budgetTier, setBudgetTier] = useState<'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'>('all')
+  const [procurementModeFilter, setProcurementModeFilter] = useState<
+    'all' | 'public-bidding' | 'alternative-methods'
+  >('all')
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<
+    'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'
+  >('all')
+  const [budgetTier, setBudgetTier] = useState<
+    'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'
+  >('all')
   const [customMinBudget, setCustomMinBudget] = useState<number | null>(null)
   const [customMaxBudget, setCustomMaxBudget] = useState<number | null>(null)
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount-desc' | 'amount-asc'>('newest')
+  const [sortBy, setSortBy] = useState<
+    'newest' | 'oldest' | 'amount-desc' | 'amount-asc'
+  >('newest')
 
   const resetAllFilters = () => {
     setSearchValue('')
@@ -103,11 +118,17 @@ export function BacResolutionWorkspace({
   // Modals & Dialog States
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
-  const [editingResolution, setEditingResolution] = useState<BacProject | undefined>(undefined)
+  const [editingResolution, setEditingResolution] = useState<
+    BacProject | undefined
+  >(undefined)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [resolutionToDeleteId, setResolutionToDeleteId] = useState<string | null>(null)
+  const [resolutionToDeleteId, setResolutionToDeleteId] = useState<
+    string | null
+  >(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [detailsResolutionId, setDetailsResolutionId] = useState<string | null>(null)
+  const [detailsResolutionId, setDetailsResolutionId] = useState<string | null>(
+    null,
+  )
   const [viewConsolidatedPrOpen, setViewConsolidatedPrOpen] = useState(false)
 
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
@@ -147,7 +168,11 @@ export function BacResolutionWorkspace({
               })
               if (selectedId === idToDelete) {
                 void navigate({
-                  search: (prev: Record<string, unknown>) => ({ ...prev, id: undefined, selectedResolutionId: undefined }),
+                  search: (prev: Record<string, unknown>) => ({
+                    ...prev,
+                    id: undefined,
+                    selectedResolutionId: undefined,
+                  }),
                   replace: true,
                 })
               }
@@ -158,7 +183,9 @@ export function BacResolutionWorkspace({
           loading: 'Deleting BAC Project...',
           success: 'BAC Project deleted successfully!',
           error: (err) =>
-            err instanceof Error ? err.message : 'Failed to delete BAC Project.',
+            err instanceof Error
+              ? err.message
+              : 'Failed to delete BAC Project.',
         },
       )
     } catch {
@@ -169,13 +196,17 @@ export function BacResolutionWorkspace({
     }
   }
 
-  const handleUpdate = async (id: string, payload: CreateBacResolutionPayload) => {
+  const handleUpdate = async (
+    id: string,
+    payload: CreateBacResolutionPayload,
+  ) => {
     try {
       await toast.promise(
         updateBacProject(
           {
-            pathParams: { id }, queryParams: {},
-            payload
+            pathParams: { id },
+            queryParams: {},
+            payload,
           },
           {
             onSuccess: async () => {
@@ -191,14 +222,18 @@ export function BacResolutionWorkspace({
           loading: 'Updating BAC Project...',
           success: 'BAC Project updated successfully!',
           error: (err) =>
-            err instanceof Error ? err.message : 'Failed to update BAC Project.',
+            err instanceof Error
+              ? err.message
+              : 'Failed to update BAC Project.',
         },
       )
     } catch {
       // toast handles presentation
     }
   }
-  const handleSubmit = () => { setSubmitConfirmOpen(true) }
+  const handleSubmit = () => {
+    setSubmitConfirmOpen(true)
+  }
   const handleConfirmSubmit = async () => {
     if (!selectedId) return
     setSubmitConfirmOpen(false)
@@ -208,7 +243,7 @@ export function BacResolutionWorkspace({
           {
             pathParams: { id: selectedId },
             payload: { status: 'Submitted' },
-            queryParams: { id: selectedId }
+            queryParams: { id: selectedId },
           },
 
           {
@@ -225,14 +260,15 @@ export function BacResolutionWorkspace({
           loading: 'Submitting BAC Resolution for approval...',
           success: 'BAC Resolution submitted for approval successfully!',
           error: (err) =>
-            err instanceof Error ? err.message : 'Failed to submit BAC Resolution.',
+            err instanceof Error
+              ? err.message
+              : 'Failed to submit BAC Resolution.',
         },
       )
     } catch {
       // toast handles presentation
     }
   }
-
 
   return (
     <div className="w-full space-y-6 pb-12">
@@ -246,7 +282,8 @@ export function BacResolutionWorkspace({
                   variant="outline"
                   className="bg-primary/10 text-primary border-primary/20 text-xs px-2.5 py-0.5 font-semibold"
                 >
-                  <ScrollText className="h-3 w-3 mr-1.5" /> Bids and Awards Committee
+                  <ScrollText className="h-3 w-3 mr-1.5" /> Bids and Awards
+                  Committee
                 </Badge>
               </div>
               <CardTitle className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
@@ -262,7 +299,9 @@ export function BacResolutionWorkspace({
               {(role === 'procurement-staff' || role === 'all') && (
                 <Button
                   variant="outline"
-                  onClick={() => void navigate({ to: '/v2/bac-resolutions/clauses' })}
+                  onClick={() =>
+                    void navigate({ to: '/v2/bac-resolutions/clauses' })
+                  }
                   className="gap-1.5 text-xs h-9 bg-white/80 hover:bg-white shadow-xs border-default-300"
                 >
                   <BookOpen className="h-3.5 w-3.5 text-primary" />
@@ -299,7 +338,11 @@ export function BacResolutionWorkspace({
               selectedId={selectedId ?? null}
               onSelectId={(id) =>
                 void navigate({
-                  search: (prev: Record<string, unknown>) => ({ ...prev, id, selectedResolutionId: id }),
+                  search: (prev: Record<string, unknown>) => ({
+                    ...prev,
+                    id,
+                    selectedResolutionId: id,
+                  }),
                   replace: true,
                 })
               }
@@ -343,16 +386,14 @@ export function BacResolutionWorkspace({
               onEdit={
                 selectedId
                   ? (project?: BacProjectDetails) => {
-                    if (project) {
-                      setEditingResolution(project)
+                      if (project) {
+                        setEditingResolution(project)
+                      }
+                      setEditOpen(true)
                     }
-                    setEditOpen(true)
-                  }
                   : undefined
               }
-              onLinkPrs={
-                () => { }
-              }
+              onLinkPrs={() => {}}
               onSubmit={
                 (role === 'procurement-staff' || role === 'all') && selectedId
                   ? handleSubmit
@@ -361,9 +402,7 @@ export function BacResolutionWorkspace({
               onViewDocument={
                 selectedId ? () => setDocPreviewOpen(true) : undefined
               }
-              onDelete={
-                selectedId ? () => handleDelete(selectedId) : undefined
-              }
+              onDelete={selectedId ? () => handleDelete(selectedId) : undefined}
             />
           </div>
         </div>
@@ -413,7 +452,7 @@ export function BacResolutionWorkspace({
         <ViewConsolidatedPrDetailsDialog
           open={viewConsolidatedPrOpen}
           onOpenChange={setViewConsolidatedPrOpen}
-          consolidatedPrId={""}
+          consolidatedPrId={''}
         />
 
         <BacResolutionDocumentPreviewModal

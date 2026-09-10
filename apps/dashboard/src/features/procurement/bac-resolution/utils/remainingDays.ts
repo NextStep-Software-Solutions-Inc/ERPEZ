@@ -26,7 +26,7 @@ export type RemainingDaysResult = RemainingDaysInfo
  * - If targetDate is missing or invalid -> variant 'none', label '—'
  * - If daysRemaining > 7 -> variant 'success' (green), label 'Xd left'
  * - If daysRemaining > 0 && <= 7 -> variant 'warning' (amber), label 'Xd left'
- * - If daysRemaining === 0 -> variant 'warning' (amber), label 'Due today'
+ * - If daysRemaining === 0 -> variant 'warning' (amber), label 'Today'
  * - If daysRemaining < 0 -> variant 'destructive' (red), label 'Xd overdue'
  */
 export function computeRemainingDays(
@@ -132,7 +132,7 @@ export function computeRemainingDays(
       isOverdue: false,
       isToday: true,
       variant: 'warning',
-      label: 'Due today',
+      label: 'Today',
     }
   }
 
