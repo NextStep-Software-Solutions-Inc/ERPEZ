@@ -11,7 +11,13 @@ export const commitmentSearchSchema = z.object({
     .default('strategicTarget'),
   fiscalYearId: z.string().optional(),
   strategicTargetTabView: z
-    .enum(['kpiAssigned', 'KeyPerformanceIndicator', 'kpiAssignment'])
+    .enum([
+      'kpiAssigned',
+      'KeyPerformanceIndicator',
+      'kpiAssignment',
+      'shoppable-kpis',
+    ])
+    .default('kpiAssigned')
     .optional(),
   opcrId: z.string().optional(),
   opcrActivityId: z.string().optional(),
