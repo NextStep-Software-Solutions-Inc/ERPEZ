@@ -119,7 +119,7 @@ export default function ConsolidatedOPCRsListUI() {
   const pageNumber = searchParams.pageNumber || 1
   const pageSize = searchParams.pageSize || 25
 
-  const { data: consolidations, isLoading } = useConsolidatedOPCRs({
+  const { data: consolidations } = useConsolidatedOPCRs({
     pathParams: {},
     queryParams: {
       pageNumber,
@@ -528,7 +528,7 @@ export default function ConsolidatedOPCRsListUI() {
                         handleGenerateConsolidatedPdf(
                           consolidation.id,
                           consolidation.name,
-                          consolidation.fiscalYear,
+                          consolidation.fiscalyear ?? consolidation.fiscalYear,
                         )
                       }}
                     >

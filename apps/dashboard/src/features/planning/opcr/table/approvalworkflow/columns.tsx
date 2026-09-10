@@ -25,6 +25,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 
 export interface ApprovalWorkflowTableMeta {
+  readonly?: boolean
   onViewDetails?: (opcr: OPCR) => void | Promise<void>
   onApprove?: (opcr: OPCR) => void | Promise<void>
   onReturn?: (opcr: OPCR) => void | Promise<void>
@@ -91,7 +92,6 @@ const getStatusLabel = (
   }
   return labelMap[status?.toLowerCase() || ''] || status || 'UNKNOWN'
 }
-
 
 // ─── Column Definitions ──────────────────────────────────────────────
 export const columns: ColumnDef<OPCR>[] = [
@@ -232,9 +232,9 @@ export const columns: ColumnDef<OPCR>[] = [
             <DropdownMenuItem onClick={handleViewDetails} disabled={isUpdating}>
               View Details
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {status !== 'approved' ? (
+            {status?.toLowerCase() === 'submitted' && (
               <>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleApprove}
                   disabled={isUpdating}
@@ -252,15 +252,6 @@ export const columns: ColumnDef<OPCR>[] = [
                   Return
                 </DropdownMenuItem>
               </>
-            ) : (
-              <DropdownMenuItem
-                onClick={handleReturn}
-                disabled={isUpdating}
-                className="text-amber-700 hover:text-amber-800 font-medium cursor-pointer"
-              >
-                <AlertCircle className="mr-2 h-4 w-4 text-amber-600" />
-                Return
-              </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>

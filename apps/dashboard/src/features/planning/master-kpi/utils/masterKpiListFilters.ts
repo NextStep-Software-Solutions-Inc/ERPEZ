@@ -303,8 +303,8 @@ export function sortMasterKpisForCard(
     case 'dateAdded':
     default:
       sorted.sort((a, b) => {
-        const dateA = new Date(a.updatedAt || a.lastModifiedDate || a.createdAt || a.createdDate || 0).getTime()
-        const dateB = new Date(b.updatedAt || b.lastModifiedDate || b.createdAt || b.createdDate || 0).getTime()
+        const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime()
+        const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime()
         return dateB - dateA
       })
       break
@@ -319,8 +319,8 @@ export function sortMasterKpisForTable(
 ): MasterKPI[] {
   if (sorting.length === 0) {
     return [...kpis].sort((a, b) => {
-      const dateA = new Date(a.updatedAt || a.lastModifiedDate || a.createdAt || a.createdDate || 0).getTime()
-      const dateB = new Date(b.updatedAt || b.lastModifiedDate || b.createdAt || b.createdDate || 0).getTime()
+      const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime()
+      const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime()
       return dateB - dateA
     })
   }

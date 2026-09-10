@@ -14,6 +14,7 @@ export type OPCRConsolidate = {
   name?: string
   fiscalYearId: string
   fiscalyear: number
+  fiscalYear?: number
   opcrCount: number
   createdDate: string
 }

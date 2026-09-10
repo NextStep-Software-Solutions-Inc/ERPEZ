@@ -69,7 +69,10 @@ export function DataTable<TData extends OPCR, TValue>({
   const table = useReactTable({
     data,
     columns,
-    meta,
+    meta: {
+      readonly: false,
+      ...meta,
+    },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),

@@ -1,11 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  ArrowLeft,
-  ArrowRight,
-  Download,
-  Loader2,
-} from 'lucide-react'
+import { ArrowLeft, ArrowRight, Download, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -15,9 +10,13 @@ import {
   useUpdateCommitmentStatus,
   OPCRReadinessCard,
   OPCRWorkflowDialog,
+  type CommitmentStatus,
 } from '@/features/planning/opcr'
 import type { OPCRWorkflowAction } from '@/features/planning/opcr/components/OPCRWorkflowDialog'
-import { countKPIsByCategory, normalizeCategory } from '@/features/planning/opcr/utils/countKPIsByCategory'
+import {
+  countKPIsByCategory,
+  normalizeCategory,
+} from '@/features/planning/opcr/utils/countKPIsByCategory'
 import { getCategoryVisuals } from '../utils/functions'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { FunctionCategory } from '@/features/planning/master-kpi/types'
@@ -56,14 +55,11 @@ export default function OPCRDetailPage({
   })
 
   const navigation = useNavigate({ from: '/v2/commitments' })
-  const searchParams = useSearch({ from: '/v2/commitments/' }) as {
-    tab?: string
-    functionCategory?: string
-    [key: string]: unknown
-  }
+  const searchParams = useSearch({ from: '/v2/commitments/' })
   const { functionCategory } = searchParams
   const isWorkflowTab =
-    searchParams.tab === 'approvalWorkflow' || Boolean(isApprovalWorkflow)
+    (searchParams as { tab?: string }).tab === 'approvalWorkflow' ||
+    Boolean(isApprovalWorkflow)
   const {
     data: opcrResponse,
     isLoading,
@@ -104,7 +100,9 @@ export default function OPCRDetailPage({
       }
 
       const sanitizedName = opcrData?.name?.trim().replace(/\s+/g, '_')
-      const filename = sanitizedName ? `OPCR_${sanitizedName}.pdf` : `OPCR_${opcrId || 'document'}.pdf`
+      const filename = sanitizedName
+        ? `OPCR_${sanitizedName}.pdf`
+        : `OPCR_${opcrId || 'document'}.pdf`
       const url = URL.createObjectURL(blob)
 
       try {
@@ -121,13 +119,15 @@ export default function OPCRDetailPage({
       toast.success('OPCR PDF generated and downloaded successfully.')
     } catch (error) {
       console.error('Error generating PDF via API:', error)
-      toast.error('Failed to generate or download the OPCR PDF from backend API.')
+      toast.error(
+        'Failed to generate or download the OPCR PDF from backend API.',
+      )
     }
   }
 
   const handleConfirmWorkflow = async () => {
     try {
-      const statusMap: Record<OPCRWorkflowAction, string> = {
+      const statusMap: Record<OPCRWorkflowAction, CommitmentStatus> = {
         submit: 'Submitted',
         approve: 'Approved',
         return: 'Returned',
@@ -161,7 +161,9 @@ export default function OPCRDetailPage({
           const itemCat =
             item.functionCategory ||
             item.kpiAssignment?.fyActiveKPI?.functionCategory
-          return normalizeCategory(itemCat) === normalizeCategory(functionCategory)
+          return (
+            normalizeCategory(itemCat) === normalizeCategory(functionCategory)
+          )
         })
       : []
 
@@ -205,10 +207,6 @@ export default function OPCRDetailPage({
     return countKPIsByCategory(opcrData.opcrItems, category)
   }
 
-  const rawStatus = opcrData?.commitmentStatus || 'Draft'
-  const normalizedStatus =
-    rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase()
-
   return (
     <div className="space-y-8">
       {/* Back Button */}
@@ -240,7 +238,6 @@ export default function OPCRDetailPage({
         </div>
 
         <div className="flex items-center gap-3">
-
           <Button
             onClick={handleGeneratePdf}
             disabled={isGeneratingPdf}
@@ -265,9 +262,7 @@ export default function OPCRDetailPage({
       <OPCRReadinessCard
         opcr={opcrData}
         isLoading={isLoading}
-        onOpenSubmit={() =>
-          setWorkflowDialog({ open: true, action: 'submit' })
-        }
+        onOpenSubmit={() => setWorkflowDialog({ open: true, action: 'submit' })}
         onOpenApprove={
           isWorkflowTab
             ? () => setWorkflowDialog({ open: true, action: 'approve' })
@@ -280,7 +275,6 @@ export default function OPCRDetailPage({
         }
         isSubmitting={isUpdatingStatus}
       />
-
 
       {/* Function Type Cards List */}
       {!functionCategory && (
@@ -295,10 +289,10 @@ export default function OPCRDetailPage({
                 className={`group relative h-30 overflow-hidden bg-white border border-gray-200 rounded-lg p-8 text-left transition-all duration-300 hover:shadow-md hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 w-full border-l-4 ${functionType.leftBorderColor}`}
                 onClick={() => {
                   navigation({
-                    search: {
-                      ...searchParams,
+                    search: (prev) => ({
+                      ...prev,
                       functionCategory: functionType.id,
-                    },
+                    }),
                   })
                 }}
               >
@@ -372,9 +366,7 @@ export default function OPCRDetailPage({
         action={workflowDialog.action}
         opcrName={opcrData.name || 'OPCR'}
         onConfirm={handleConfirmWorkflow}
-        onCancel={() =>
-          setWorkflowDialog((prev) => ({ ...prev, open: false }))
-        }
+        onCancel={() => setWorkflowDialog((prev) => ({ ...prev, open: false }))}
         isLoading={isUpdatingStatus}
       />
     </div>

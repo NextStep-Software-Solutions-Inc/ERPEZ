@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
 import {
   createQueryHookFromTemplate,
@@ -11,9 +11,8 @@ import {
   DataTable,
   columns,
   type ApprovalWorkflowTableMeta,
-  type CommitmentStatus,
 } from '@/features/planning/opcr/table/approvalworkflow'
-import { OPCR } from '@/features/planning/opcr/types'
+import { OPCR, type CommitmentStatus } from '@/features/planning/opcr/types'
 import { toast } from 'sonner'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 
