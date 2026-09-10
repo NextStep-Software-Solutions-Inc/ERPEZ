@@ -71,7 +71,7 @@ type OPCR = {
   id: string
   name: string | null
   deliveryUnit: DeliveryUnit
-  fiscalYear: OPCRFiscalYear
+  fiscalYear: OPCRFiscalYear | number
   status: string | null
   totalBudget: number
   ratingStatus: string | null
@@ -110,7 +110,7 @@ type OPCRDetails = OPCR & {
   updatedAt?: string
   updatedBy?: string
   deliveryUnit?: DeliveryUnit // Legacy nested structure
-  fiscalYear: OPCRFiscalYear
+  fiscalYear: OPCRFiscalYear | number
   status?: string
   commitmentStatus: CommitmentStatus // 'Draft', 'Submitted', 'Approved', 'Rejected'
   reviewStatus?: ReviewStatus // 'Pending', 'Approved', 'Rejected'
