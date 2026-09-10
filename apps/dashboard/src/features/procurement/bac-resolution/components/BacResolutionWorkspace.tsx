@@ -266,7 +266,7 @@ export function BacResolutionWorkspace({
                   className="gap-1.5 text-xs h-9 bg-white/80 hover:bg-white shadow-xs border-default-300"
                 >
                   <BookOpen className="h-3.5 w-3.5 text-primary" />
-                  Manage Resolution Clauses
+                  Resolution Clause Library
                 </Button>
               )}
 
