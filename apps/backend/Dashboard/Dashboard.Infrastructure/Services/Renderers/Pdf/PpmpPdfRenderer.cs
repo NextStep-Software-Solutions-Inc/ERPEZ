@@ -32,26 +32,39 @@ internal sealed class PpmpPdfRenderer : BasePdfRenderer, IDocumentRenderer<PpmpD
                     h.Item().AlignCenter().Text("[Agency Letterhead with Logo]")
                         .Bold().FontSize(9).Italic();
 
+                    var titlePrefix = request.IsSupplemental
+                        ? "SUPPLEMENTAL PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP) NO. "
+                        : "PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP) NO. ";
+
+                    var cleanPpmpNumber = request.PpmpNumber;
+                    if (cleanPpmpNumber.StartsWith("SUPPLEMENTAL ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        cleanPpmpNumber = cleanPpmpNumber["SUPPLEMENTAL ".Length..].Trim();
+                    }
+
                     h.Item().PaddingTop(4).AlignCenter()
                         .Text(t =>
                     {
-                        t.Span("PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP) NO. ").Bold().FontSize(11);
-                        t.Span(request.PpmpNumber).Bold().FontSize(11).Underline();
+                        t.Span(titlePrefix).Bold().FontSize(11);
+                        t.Span(cleanPpmpNumber).Bold().FontSize(11).Underline();
                     });
 
                     // Indicative / Final checkboxes using Unicode box characters
                     const string checkmarkSvg = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"black\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>";
 
+                    var isIndicative = !request.IsFinal && !request.IsSupplemental;
+                    var isFinal = request.IsFinal || request.IsSupplemental;
+
                     h.Item().PaddingTop(3).AlignCenter().Row(r =>
                     {
                         r.AutoItem().Border(1).Width(10).Height(10).Padding(1.5f).Element(c =>
                         {
-                            if (!request.IsFinal) c.Svg(checkmarkSvg);
+                            if (isIndicative) c.Svg(checkmarkSvg);
                         });
                         r.AutoItem().PaddingLeft(3).Text("INDICATIVE").FontSize(9);
                         r.AutoItem().PaddingLeft(10).Border(1).Width(10).Height(10).Padding(1.5f).Element(c =>
                         {
-                            if (request.IsFinal) c.Svg(checkmarkSvg);
+                            if (isFinal) c.Svg(checkmarkSvg);
                         });
                         r.AutoItem().PaddingLeft(3).Text("FINAL").FontSize(9);
                     });

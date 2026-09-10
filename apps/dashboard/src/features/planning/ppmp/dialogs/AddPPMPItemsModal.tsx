@@ -711,7 +711,7 @@ export default function AddPPMPItemsModal({
                 ? (item as ProcurementItem).specifications || ''
                 : (item as NONCSEItem).description || ''
             ).slice(0, 4000),
-            unit: item.uomName || '',
+            unit: (item.uomName || 'unit').trim() || 'unit',
             unitPrice: config.unitPrice,
             plannedQuantity: config.plannedQuantity || 1,
             procurementModeId: config.procurementModeId,
@@ -828,16 +828,7 @@ export default function AddPPMPItemsModal({
         open={isOpen}
         onOpenChange={(next) => {
           if (!next) {
-            if (isAdding) return
-            if (isCommittedRef.current) {
-              forceClose()
-              return
-            }
-            if (selectedItems.size > 0) {
-              setConfirmCloseOpen(true)
-            } else {
-              forceClose()
-            }
+            handleClose()
           }
         }}
         title={

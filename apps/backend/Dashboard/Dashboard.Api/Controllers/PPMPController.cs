@@ -3,7 +3,9 @@ using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Authorization;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.ConsolidatePPMPs;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.CreatePPMP;
+using ERPEZ.Application.Features.Planning.PPMP.Commands.CreateSupplementalPPMP;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.DeletePPMP;
+using ERPEZ.Application.Features.Planning.PPMP.Commands.TogglePPMPFinalization;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.UpdatePPMPStatus;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.UpdatePPMP;
 using ERPEZ.Application.Features.Planning.PPMP.Dtos;
@@ -139,5 +141,29 @@ public class PPMPController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new GetPPMPApprovalHistoryQuery(request.PPMPId));
         return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    [HttpPost("{id}/supplemental")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpCreate)]
+    public async Task<IActionResult> CreateSupplementalPPMP(Guid id, [FromBody] CreateSupplementalPPMPRequest? dto)
+    {
+        var result = await mediator.Send(new CreateSupplementalPPMPCommand(id, dto));
+        return result.Succeeded
+            ? CreatedAtAction(nameof(GetPPMPById), new { id = result.Data }, result)
+            : BadRequest(result);
+    }
+
+    [HttpPost("{id}/toggle-final")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpSubmit)]
+    public async Task<IActionResult> ToggleFinal(Guid id, [FromBody] TogglePPMPFinalizationRequest request)
+    {
+        var result = await mediator.Send(new TogglePPMPFinalizationCommand(id, request.IsFinal));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

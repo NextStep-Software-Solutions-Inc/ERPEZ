@@ -6,6 +6,8 @@ import {
   FilePen,
   FolderOpen,
   Download,
+  CheckCircle2,
+  FilePlus2,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,24 +21,38 @@ import {
 import { PPMP } from '../../types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useSetAtom } from 'jotai'
+import { useQueryClient } from '@tanstack/react-query'
 import { createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { generatePPMPDocumentRequest } from '../../handlers/generatePPMPDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
+import { togglePpmpFinalizationRequest } from '../../handlers/togglePpmpFinalizationRequest'
 import { useToast } from '@/components/ui/use-toast'
 import { Link } from '@tanstack/react-router'
+import { cn } from '@/lib/utils'
 import {
   selectedPpmpForDeleteAtom,
   deletePpmpDialogOpenAtom,
   selectedPpmpForEditAtom,
   editPpmpDialogOpenAtom,
+  supplementalDialogOpenAtom,
+  selectedPpmpForSupplementalAtom,
 } from '../../atoms/ppmpStateAtoms'
 
+const useToggleFinal = createMutationHookFromTemplate(
+  togglePpmpFinalizationRequest,
+)
+
 function PpmpActions({ ppmp }: { ppmp: PPMP }) {
+  const queryClient = useQueryClient()
   const setSelectedForDelete = useSetAtom(selectedPpmpForDeleteAtom)
   const setDeleteOpen = useSetAtom(deletePpmpDialogOpenAtom)
 
   const setSelectedForEdit = useSetAtom(selectedPpmpForEditAtom)
   const setEditOpen = useSetAtom(editPpmpDialogOpenAtom)
+  const setSupplementalOpen = useSetAtom(supplementalDialogOpenAtom)
+  const setSelectedForSupplemental = useSetAtom(
+    selectedPpmpForSupplementalAtom,
+  )
 
   const handleEdit = () => {
     setSelectedForEdit(ppmp)
@@ -59,6 +75,45 @@ function PpmpActions({ ppmp }: { ppmp: PPMP }) {
 
   const { mutateAsync: generatePPMPDocument } = useGeneratePPMPDocument()
   const { mutateAsync: downloadDocument } = useDownloadDocument()
+  const { mutateAsync: toggleFinal, isPending: isTogglingFinal } =
+    useToggleFinal()
+
+  const handleToggleFinal = async () => {
+    if (!ppmp.id) return
+    try {
+      await toggleFinal({
+        pathParams: { id: ppmp.id },
+        payload: { isFinal: !ppmp.isFinal },
+      })
+      toast({
+        title: ppmp.isFinal ? 'Marked as Indicative' : 'Marked as Final PPMP',
+        description: ppmp.isFinal
+          ? `${ppmp.ppmpNumber || 'PPMP'} is now marked as an Indicative PPMP.`
+          : `${ppmp.ppmpNumber || 'PPMP'} is now marked as Final PPMP.`,
+      })
+      void queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0]
+          return typeof key === 'string' && key.startsWith('/ppmp')
+        },
+      })
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to update PPMP final status.'
+      toast({
+        title: 'Error',
+        description: msg,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleCreateSupplemental = () => {
+    setSelectedForSupplemental(ppmp)
+    setSupplementalOpen(true)
+  }
 
   const handleGenerate = async (format: 'Pdf' | 'Excel') => {
     if (!ppmp.id) return
@@ -94,15 +149,17 @@ function PpmpActions({ ppmp }: { ppmp: PPMP }) {
         title: 'Export started',
         description: 'Your document has been downloaded.',
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : 'Could not generate document'
       toast({
         title: 'Export failed',
-        description: err?.message ?? 'Could not generate document',
+        description: msg,
       })
-    } finally {
-      // Export complete
     }
   }
+
+  const isApproved = ppmp.status?.toLowerCase() === 'approved'
 
   return (
     <DropdownMenu>
@@ -130,6 +187,38 @@ function PpmpActions({ ppmp }: { ppmp: PPMP }) {
           <Download className="mr-2 h-4 w-4" />
           Export as PDF
         </DropdownMenuItem>
+
+        {isApproved && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleToggleFinal}
+              disabled={isTogglingFinal}
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-600" />
+              {ppmp.isFinal ? 'Unmark as Final' : 'Mark as Final'}
+            </DropdownMenuItem>
+            {ppmp.ppmpType !== 'Supplemental' && !ppmp.sourcePPMPId && !ppmp.consolidatedIntoId && (
+              <DropdownMenuItem
+                onClick={handleCreateSupplemental}
+                disabled={!ppmp.isFinal}
+                title={
+                  !ppmp.isFinal
+                    ? 'Must be marked as Final before creating Supplemental PPMP'
+                    : undefined
+                }
+              >
+                <FilePlus2 className="mr-2 h-4 w-4 text-indigo-600" />
+                <span>Create Supplemental PPMP</span>
+                {!ppmp.isFinal && (
+                  <span className="ml-auto text-[10px] text-muted-foreground pl-2">
+                    (Needs Final)
+                  </span>
+                )}
+              </DropdownMenuItem>
+            )}
+          </>
+        )}
 
         <DropdownMenuSeparator />
 
@@ -216,6 +305,53 @@ export const columns: ColumnDef<PPMP>[] = [
           Status
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const ppmp = row.original
+      const status = ppmp.status || 'Draft'
+      const isApproved = status.toLowerCase() === 'approved'
+      const isSupplemental =
+        ppmp.ppmpType === 'Supplemental' || Boolean(ppmp.sourcePPMPId)
+      const isFinal = ppmp.isFinal || isSupplemental
+
+      return (
+        <div className="flex flex-col gap-1 items-start">
+          <Badge
+            variant="outline"
+            className={cn(
+              'capitalize text-xs font-medium',
+              isApproved
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : status.toLowerCase() === 'submitted'
+                  ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : status.toLowerCase() === 'rejected'
+                    ? 'border-rose-200 bg-rose-50 text-rose-700'
+                    : 'border-slate-200 bg-slate-50 text-slate-700',
+            )}
+          >
+            {status}
+          </Badge>
+          {isFinal ? (
+            <Badge className="text-[10px] px-1.5 py-0 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border">
+              {isSupplemental && status.toLowerCase() === 'draft'
+                ? 'Final PPMP (Draft)'
+                : 'Final PPMP'}
+            </Badge>
+          ) : isApproved ? (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 border-slate-200 bg-slate-50 text-slate-600"
+            >
+              Indicative
+            </Badge>
+          ) : null}
+          {isSupplemental && (
+            <Badge className="text-[10px] px-1.5 py-0 border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 border">
+              Supplemental {ppmp.supplementalNumber ? `#${ppmp.supplementalNumber}` : ''}
+            </Badge>
+          )}
+        </div>
       )
     },
   },

@@ -49,10 +49,28 @@ public class CreateUserCommandHandler(IUnitOfWork unitOfWork)
                 throw new NotFoundException($"Office with ID '{request.OfficeId}' not found.");
         }
 
+        // Check ExternalIdentityId uniqueness if provided
+        if (!string.IsNullOrWhiteSpace(request.ExternalIdentityId))
+        {
+            var existingUser = await unitOfWork.UserRepository.GetByExternalIdentityIdAsync(
+                request.ExternalIdentityId,
+                cancellationToken
+            );
+
+            if (existingUser != null)
+                throw new ConflictException($"External Identity ID '{request.ExternalIdentityId}' already exists.");
+        }
+
         // Create entity
+        var userId = Guid.NewGuid();
+        var externalId = !string.IsNullOrWhiteSpace(request.ExternalIdentityId)
+            ? request.ExternalIdentityId
+            : userId.ToString();
+
         var user = new Domain.Entities.Planning.User
         {
-            Id = Guid.NewGuid(),
+            Id = userId,
+            ExternalIdentityId = externalId,
             EmployeeNumber = request.EmployeeNumber,
             Username = request.Username,
             Email = request.Email,
