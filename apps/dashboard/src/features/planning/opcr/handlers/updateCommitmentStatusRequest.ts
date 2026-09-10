@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   APIResponse,
   MutationBlueprintFromTemplate,
   QueryParams,
@@ -9,7 +9,16 @@ import api from '@/services/api'
 const endpoint = '/opcrs/:id/commitment-status'
 
 export type UpdateCommitmentStatusPayload = {
-  commitmentStatus: 'draft' | 'submitted' | 'approved' | 'rejected'
+  commitmentStatus:
+    | 'Draft'
+    | 'Submitted'
+    | 'Approved'
+    | 'Returned'
+    | 'draft'
+    | 'submitted'
+    | 'approved'
+    | 'returned'
+    | string
 }
 
 export const updateCommitmentStatusRequest: MutationBlueprintFromTemplate<

@@ -52,10 +52,8 @@ export const masterKpiHierarchyOptions = [
 
 export const masterKpiTargetDistributionOptions = [
   {
-    value: TargetDistributionBehavior.DIVISIBLE_SUMMATIVE,
-    label: getDistributionBehaviorLabel(
-      TargetDistributionBehavior.DIVISIBLE_SUMMATIVE,
-    ),
+    value: TargetDistributionBehavior.SUMMATION,
+    label: getDistributionBehaviorLabel(TargetDistributionBehavior.SUMMATION),
   },
   {
     value: TargetDistributionBehavior.UNIFORM_AVERAGE,
@@ -68,10 +66,6 @@ export const masterKpiTargetDistributionOptions = [
     label: getDistributionBehaviorLabel(
       TargetDistributionBehavior.MILESTONE_NON_DIVISIBLE,
     ),
-  },
-  {
-    value: TargetDistributionBehavior.SUMMATION,
-    label: getDistributionBehaviorLabel(TargetDistributionBehavior.SUMMATION),
   },
   {
     value: TargetDistributionBehavior.MAXIMUM,

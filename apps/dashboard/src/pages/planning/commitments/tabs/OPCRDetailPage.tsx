@@ -1,12 +1,22 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Download, Loader2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Download,
+  Loader2,
+} from 'lucide-react'
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   useOPCRById,
   useGenerateOPCRDocument,
   useDownloadOPCRDocument,
+  useUpdateCommitmentStatus,
+  OPCRReadinessCard,
+  OPCRWorkflowDialog,
 } from '@/features/planning/opcr'
+import type { OPCRWorkflowAction } from '@/features/planning/opcr/components/OPCRWorkflowDialog'
 import { countKPIsByCategory, normalizeCategory } from '@/features/planning/opcr/utils/countKPIsByCategory'
 import { getCategoryVisuals } from '../utils/functions'
 import { useNavigate, useSearch } from '@tanstack/react-router'
@@ -20,13 +30,16 @@ interface OPCRDetailPageProps {
   opcrId: string
   onBack: () => void
   hideButton?: boolean
+  isApprovalWorkflow?: boolean
 }
 
 export default function OPCRDetailPage({
   opcrId,
   onBack,
   hideButton,
+  isApprovalWorkflow,
 }: OPCRDetailPageProps) {
+  const queryClient = useQueryClient()
   const [expandedAccordionItems, setExpandedAccordionItems] = useState<
     string[]
   >([])
@@ -34,10 +47,28 @@ export default function OPCRDetailPage({
     useState(false)
   const [selectedKPIForActivity, setSelectedKPIForActivity] =
     useState<OPCRItem | null>(null)
+  const [workflowDialog, setWorkflowDialog] = useState<{
+    open: boolean
+    action: OPCRWorkflowAction
+  }>({
+    open: false,
+    action: 'submit',
+  })
+
   const navigation = useNavigate({ from: '/v2/commitments' })
-  const searchParams = useSearch({ from: '/v2/commitments/' })
+  const searchParams = useSearch({ from: '/v2/commitments/' }) as {
+    tab?: string
+    functionCategory?: string
+    [key: string]: unknown
+  }
   const { functionCategory } = searchParams
-  const { data: opcrResponse, isLoading } = useOPCRById({
+  const isWorkflowTab =
+    searchParams.tab === 'approvalWorkflow' || Boolean(isApprovalWorkflow)
+  const {
+    data: opcrResponse,
+    isLoading,
+    refetch: refetchOPCR,
+  } = useOPCRById({
     pathParams: { id: opcrId },
     queryParams: {},
   })
@@ -45,6 +76,8 @@ export default function OPCRDetailPage({
     useGenerateOPCRDocument()
   const { mutateAsync: downloadOPCRDocument, isPending: isDownloading } =
     useDownloadOPCRDocument()
+  const { mutateAsync: updateCommitmentStatus, isPending: isUpdatingStatus } =
+    useUpdateCommitmentStatus()
 
   const isGeneratingPdf = isGenerating || isDownloading
   const opcrData = opcrResponse?.data
@@ -92,7 +125,34 @@ export default function OPCRDetailPage({
     }
   }
 
+  const handleConfirmWorkflow = async () => {
+    try {
+      const statusMap: Record<OPCRWorkflowAction, string> = {
+        submit: 'Submitted',
+        approve: 'Approved',
+        return: 'Returned',
+      }
+      const newStatus = statusMap[workflowDialog.action]
+      await updateCommitmentStatus({
+        pathParams: { id: opcrId },
+        queryParams: {},
+        payload: { commitmentStatus: newStatus },
+      })
 
+      const successMessages: Record<OPCRWorkflowAction, string> = {
+        submit: 'OPCR submitted successfully for approval.',
+        approve: 'OPCR approved successfully.',
+        return: 'OPCR returned for revision.',
+      }
+      toast.success(successMessages[workflowDialog.action])
+      setWorkflowDialog((prev) => ({ ...prev, open: false }))
+      refetchOPCR()
+      queryClient.invalidateQueries({ queryKey: ['/opcrs'] })
+    } catch (error) {
+      console.error('Failed to update OPCR commitment status:', error)
+      toast.error(`Failed to ${workflowDialog.action} OPCR.`)
+    }
+  }
 
   // Filter KPIs by selected category
   const filteredKPIs =
@@ -145,6 +205,10 @@ export default function OPCRDetailPage({
     return countKPIsByCategory(opcrData.opcrItems, category)
   }
 
+  const rawStatus = opcrData?.commitmentStatus || 'Draft'
+  const normalizedStatus =
+    rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase()
+
   return (
     <div className="space-y-8">
       {/* Back Button */}
@@ -176,6 +240,7 @@ export default function OPCRDetailPage({
         </div>
 
         <div className="flex items-center gap-3">
+
           <Button
             onClick={handleGeneratePdf}
             disabled={isGeneratingPdf}
@@ -195,6 +260,26 @@ export default function OPCRDetailPage({
           </Button>
         </div>
       </div>
+
+      {/* Workflow & Submission Readiness Persistent Card */}
+      <OPCRReadinessCard
+        opcr={opcrData}
+        isLoading={isLoading}
+        onOpenSubmit={() =>
+          setWorkflowDialog({ open: true, action: 'submit' })
+        }
+        onOpenApprove={
+          isWorkflowTab
+            ? () => setWorkflowDialog({ open: true, action: 'approve' })
+            : undefined
+        }
+        onOpenReturn={
+          isWorkflowTab
+            ? () => setWorkflowDialog({ open: true, action: 'return' })
+            : undefined
+        }
+        isSubmitting={isUpdatingStatus}
+      />
 
 
       {/* Function Type Cards List */}
@@ -280,6 +365,18 @@ export default function OPCRDetailPage({
           </div>
         </>
       )}
+
+      {/* OPCR Workflow Confirmation Dialog */}
+      <OPCRWorkflowDialog
+        open={workflowDialog.open}
+        action={workflowDialog.action}
+        opcrName={opcrData.name || 'OPCR'}
+        onConfirm={handleConfirmWorkflow}
+        onCancel={() =>
+          setWorkflowDialog((prev) => ({ ...prev, open: false }))
+        }
+        isLoading={isUpdatingStatus}
+      />
     </div>
   )
 }

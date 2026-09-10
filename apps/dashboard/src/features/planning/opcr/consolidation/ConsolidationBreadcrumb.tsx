@@ -1,4 +1,4 @@
-﻿import {
+import {
   Breadcrumb,
   BreadcrumbList,
   BreadcrumbItem,
@@ -88,7 +88,7 @@ function SelectionStageBreadcrumb({
                 onClick={onClickOpcr}
                 className="cursor-pointer hover:text-primary"
               >
-                OPCR #{opcrId.substring(0, 8)}
+                OPCR Details
               </BreadcrumbLink>
             </BreadcrumbItem>
           </>
@@ -226,7 +226,7 @@ function ConsolidatedOPCRsBreadcrumb({
                 onClick={onClickConsolidation}
                 className="cursor-pointer hover:text-primary"
               >
-                Consolidation #{opcrConsolidationId.substring(0, 8)}
+                Consolidation Details
               </BreadcrumbLink>
             </BreadcrumbItem>
           </>
@@ -241,7 +241,7 @@ function ConsolidatedOPCRsBreadcrumb({
                 onClick={onClickOpcr}
                 className="cursor-pointer hover:text-primary"
               >
-                OPCR #{opcrId.substring(0, 8)}
+                OPCR Details
               </BreadcrumbLink>
             </BreadcrumbItem>
           </>
