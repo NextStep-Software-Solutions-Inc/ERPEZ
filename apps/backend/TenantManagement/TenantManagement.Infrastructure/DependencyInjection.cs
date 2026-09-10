@@ -55,7 +55,11 @@ public static class DependencyInjection
         services.AddScoped<ITenantSubscriptionRepository, TenantSubscriptionRepository>();
         services.AddScoped<ITenantMemberRepository, TenantMemberRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<ILicenseKeyRepository, LicenseKeyRepository>();
+        services.AddScoped<ITenantAuditRepository, TenantAuditRepository>();
+        services.AddScoped<ITenantAuditService, TenantAuditService>();
+        services.AddScoped<IRoleAssignmentValidator, RoleAssignmentValidator>();
         services.AddScoped<ILicenseService, LicenseService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

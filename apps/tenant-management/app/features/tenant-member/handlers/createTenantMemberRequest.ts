@@ -7,25 +7,28 @@ import {
 const endpoint = '/tenant-members';
 
 export type CreateTenantMemberPayload = {
-  tenantId: string;
-  userId: string;
   email: string;
   firstName: string;
   lastName: string;
-  externalIdentityId?: string;
   roleIds?: string[];
-  status?: number | string;
+};
+
+export type CreateTenantMemberResponse = {
+  id: string;
+  email: string;
+  invitationToken: string;
+  invitationExpiresAtUtc: string;
 };
 
 export const createTenantMemberRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
-  APIResponse<string>,
+  APIResponse<CreateTenantMemberResponse>,
   undefined,
   CreateTenantMemberPayload
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.post<APIResponse<string>>(finalUrl, payload);
+    const response = await api.post<APIResponse<CreateTenantMemberResponse>>(finalUrl, payload);
     return response.data;
   },
 };

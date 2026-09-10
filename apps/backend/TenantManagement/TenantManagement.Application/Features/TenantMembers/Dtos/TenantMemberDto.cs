@@ -12,5 +12,8 @@ public class TenantMemberDto
     public string FullName => $"{FirstName} {LastName}".Trim();
     public string? Role { get; set; }
     public List<string> Roles { get; set; } = [];
+    public List<Guid> RoleIds { get; set; } = [];
     public string? Status { get; set; }
+    public Guid ConcurrencyStamp { get; set; }
+    public DateTime? InvitationExpiresAtUtc { get; set; }
 }

@@ -231,11 +231,17 @@ public static class RoleSeeder
                     NormalizedName = normalizedName,
                     Description = def.Description,
                     IsSystemRole = true,
-                    TenantId = null
+                    TenantId = null,
+                    IsAssignableToTenant = true
                 };
 
                 await dbContext.Roles!.AddAsync(role, cancellationToken);
                 await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            else if (!role.IsAssignableToTenant)
+            {
+                role.IsAssignableToTenant = true;
+                dbContext.Roles!.Update(role);
             }
 
             // Assign permissions

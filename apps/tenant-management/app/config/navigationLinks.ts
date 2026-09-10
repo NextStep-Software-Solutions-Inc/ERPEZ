@@ -10,6 +10,7 @@ export const navigationLinks = [
       { title: "Subscription", url: "subscription", icon: "Settings" },
       { title: "License Management", url: "license-management", icon: "FolderKey" },
       { title: "Package Download", url: "package-download", icon: "Download" },
+      { title: "Tenant Members", url: "tenant-member", icon: "Users" },
     ],
   },
 ];

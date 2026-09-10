@@ -241,6 +241,9 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsAssignableToTenant")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -267,7 +270,10 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId", "NormalizedName")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"TenantId\" IS NOT NULL AND \"IsDeleted\" = false");
+
+                    b.HasIndex("TenantId", "IsAssignableToTenant", "IsDeleted");
 
                     b.ToTable("Roles", "public");
                 });
@@ -333,10 +339,77 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.ToTable("Tenants", "public");
                 });
 
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ActorEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ActorExternalIdentityId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("AfterStateJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BeforeStateJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("TargetEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("TargetMemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CreatedAt");
+
+                    b.ToTable("TenantAuditLogs", "public");
+                });
+
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMember", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -362,6 +435,12 @@ namespace ERP_EZ.Infrastructure.Migrations
 
                     b.Property<string>("FirstName")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("InvitationExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InvitationTokenHash")
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
@@ -394,10 +473,13 @@ namespace ERP_EZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("InvitationTokenHash")
+                        .IsUnique()
+                        .HasFilter("\"InvitationTokenHash\" IS NOT NULL");
 
-                    b.HasIndex("ExternalIdentityId", "TenantId")
-                        .IsUnique();
+                    b.HasIndex("TenantId", "ExternalIdentityId")
+                        .IsUnique()
+                        .HasFilter("\"ExternalIdentityId\" != '' AND \"IsDeleted\" = false");
 
                     b.ToTable("TenantMembers", "public");
                 });
@@ -600,6 +682,17 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Navigation("Permission");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantAuditLog", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMember", b =>

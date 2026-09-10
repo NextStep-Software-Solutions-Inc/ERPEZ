@@ -10,5 +10,8 @@ export type TenantMember = {
   name?: string;
   role?: string;
   roles?: string[];
+  roleIds?: string[];
   status?: string;
+  concurrencyStamp?: string;
+  invitationExpiresAtUtc?: string;
 };

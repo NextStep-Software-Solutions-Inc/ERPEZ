@@ -17,6 +17,42 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<RolePermission>? RolePermissions { get; set; }
     public DbSet<TenantMemberRoleAssignment>? TenantMemberRoleAssignments { get; set; }
     public DbSet<LicenseKey>? LicenseKeys { get; set; }
+    public DbSet<TenantAuditLog>? TenantAuditLogs { get; set; }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        EnforceAuditImmutability();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override int SaveChanges()
+    {
+        EnforceAuditImmutability();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        EnforceAuditImmutability();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        EnforceAuditImmutability();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void EnforceAuditImmutability()
+    {
+        var invalidEntries = ChangeTracker.Entries<TenantAuditLog>()
+            .Where(e => e.State == EntityState.Modified || e.State == EntityState.Deleted);
+
+        if (invalidEntries.Any())
+        {
+            throw new InvalidOperationException("TenantAuditLog records are append-only and cannot be modified or deleted.");
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,8 +96,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // TenantMember
         modelBuilder.Entity<TenantMember>()
-            .HasIndex(tm => new { tm.ExternalIdentityId, tm.TenantId })
-            .IsUnique();
+            .HasIndex(tm => new { tm.TenantId, tm.ExternalIdentityId })
+            .IsUnique()
+            .HasFilter("\"ExternalIdentityId\" != '' AND \"IsDeleted\" = false");
+
+        modelBuilder.Entity<TenantMember>()
+            .HasIndex(tm => tm.InvitationTokenHash)
+            .IsUnique()
+            .HasFilter("\"InvitationTokenHash\" IS NOT NULL");
+
+        modelBuilder.Entity<TenantMember>()
+            .Property(tm => tm.ConcurrencyStamp)
+            .IsConcurrencyToken();
 
         modelBuilder.Entity<TenantMember>()
             .HasOne(tm => tm.Tenant)
@@ -88,7 +134,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // Role
         modelBuilder.Entity<Role>()
             .HasIndex(r => new { r.TenantId, r.NormalizedName })
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"TenantId\" IS NOT NULL AND \"IsDeleted\" = false");
+
+        modelBuilder.Entity<Role>()
+            .HasIndex(r => new { r.TenantId, r.IsAssignableToTenant, r.IsDeleted });
 
         modelBuilder.Entity<Role>()
             .HasOne(r => r.Tenant)
@@ -151,6 +201,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<LicenseKey>()
             .Property(lk => lk.Status)
             .HasConversion<string>();
+
+        // TenantAuditLog
+        modelBuilder.Entity<TenantAuditLog>()
+            .HasOne(al => al.Tenant)
+            .WithMany()
+            .HasForeignKey(al => al.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TenantAuditLog>()
+            .HasIndex(al => new { al.TenantId, al.CreatedAt });
 
         base.OnModelCreating(modelBuilder);
     }
