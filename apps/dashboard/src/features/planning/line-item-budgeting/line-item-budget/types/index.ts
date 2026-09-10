@@ -59,6 +59,13 @@ export type LIB = {
   fundSource?: FundSource
   officeId?: string
   office?: Office
+  departmentCeiling?: number | string | null
+  ceiling?: number | string | null
+  officeCeiling?: { totalAmount?: number | string | null } | null
+  agencyMasterBudget?: { id?: string; totalAmount?: number | string | null } | null
+  agencyMasterBudgetId?: string | null
+  isMultiYear?: boolean
+  wfp?: { isMultiYear?: boolean } | null
 }
 
 export type LIBDetails = {
@@ -69,7 +76,8 @@ export type LIBDetails = {
   parentLIBId?: string
   name?: string
   libNumber?: string
-  scope?: 'Activity' | 'Project'
+  scope?: 'Activity' | 'Project' | 'ProjectLevel'
+  scopeLevel?: 'Activity' | 'Project'
   sourceType?: 'OPCR' | 'WFP'
   sourceId?: string
   status: LIBStatus
@@ -87,6 +95,13 @@ export type LIBDetails = {
   orphanDetails?: OrphanLineItemDetail[]
   updatedAt?: string
   createdAt?: string
+  departmentCeiling?: number | string | null
+  ceiling?: number | string | null
+  officeCeiling?: { totalAmount?: number | string | null } | null
+  agencyMasterBudget?: { id?: string; totalAmount?: number | string | null } | null
+  agencyMasterBudgetId?: string | null
+  isMultiYear?: boolean
+  wfp?: { isMultiYear?: boolean } | null
 }
 
 export type WFPObjectiveActivity = {
