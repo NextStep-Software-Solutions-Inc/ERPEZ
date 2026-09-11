@@ -82,8 +82,9 @@ public class GetMyTenantsQueryHandler(
                 {
                     Id = tm.Id,
                     TenantId = tm.TenantId,
-                    Role = tm.Role.ToString(),
+                    Role = tm.RoleAssignments.Select(ra => ra.Role.Name).FirstOrDefault(),
                     Roles = tm.RoleAssignments.Select(ra => ra.Role.Name).ToList(),
+                    RoleIds = tm.RoleAssignments.Select(ra => ra.RoleId).ToList(),
                     Status = tm.Status.ToString()
                 }).ToList(),
             Modules = t.Modules.Select(m => new TenantModuleDto
