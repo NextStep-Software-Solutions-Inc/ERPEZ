@@ -6,5 +6,7 @@ public enum Status
     Active,
     Inactive,
     Pending,
-    Suspended
+    Suspended,
+    Disabled,
+    Cancelled
 }

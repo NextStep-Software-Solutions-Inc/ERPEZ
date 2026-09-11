@@ -1,16 +1,29 @@
 export const navigationLinks = [
   {
-    title: "",
+    title: "WORKSPACE",
     url: "#",
     items: [
       { title: "Overview", url: "overview", icon: "LayoutDashboard" },
-      { title: "Module", url: "module", icon: "Puzzle" },
-      { title: "Billing", url: "billing", icon: "WalletMinimal" },
-      { title: "Invoice", url: "invoice", icon: "NotepadText" },
-      { title: "Subscription", url: "subscription", icon: "Settings" },
-      { title: "License Management", url: "license-management", icon: "FolderKey" },
+      { title: "Members", url: "tenant-member", icon: "Users" },
+      { title: "Delivery Units", url: "delivery-unit", icon: "Building2" },
+    ],
+  },
+  {
+    title: "ERP",
+    url: "#",
+    items: [
+      { title: "Modules", url: "module", icon: "Puzzle" },
       { title: "Package Download", url: "package-download", icon: "Download" },
-      { title: "Tenant Member", url: "tenant-member", icon: "Users" },
+    ],
+  },
+  {
+    title: "ADMINISTRATION",
+    url: "#",
+    items: [
+      { title: "Subscription", url: "subscription", icon: "Settings" },
+      { title: "Billing", url: "billing", icon: "WalletMinimal" },
+      { title: "Invoices", url: "invoice", icon: "NotepadText" },
+      { title: "License", url: "license-management", icon: "FolderKey" },
     ],
   },
 ];

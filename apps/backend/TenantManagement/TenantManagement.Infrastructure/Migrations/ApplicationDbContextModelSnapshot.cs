@@ -23,6 +23,101 @@ namespace ERP_EZ.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.LicenseKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AllowedDomain")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BoundEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsAirGapped")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("MaxTenants")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxUsers")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Signature")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TenantSubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantSubscriptionId");
+
+                    b.ToTable("LicenseKeys", "public");
+                });
+
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Module", b =>
                 {
                     b.Property<Guid>("Id")
@@ -146,6 +241,9 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsAssignableToTenant")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -172,7 +270,10 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId", "NormalizedName")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"TenantId\" IS NOT NULL AND \"IsDeleted\" = false");
+
+                    b.HasIndex("TenantId", "IsAssignableToTenant", "IsDeleted");
 
                     b.ToTable("Roles", "public");
                 });
@@ -217,7 +318,14 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsDisabled")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProvisioningState")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -235,7 +343,159 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.ToTable("Tenants", "public");
                 });
 
-            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMember", b =>
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ActorEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ActorExternalIdentityId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("AfterStateJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BeforeStateJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("TargetEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("TargetMemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CreatedAt");
+
+                    b.ToTable("TenantAuditLogs", "public");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantInvoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BillingCycle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("InvoiceDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("PaidDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PaymentMethodSummary")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlanName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("SubtotalAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("TaxRate")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TenantSubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantSubscriptionId");
+
+                    b.HasIndex("TenantId", "InvoiceNumber");
+
+                    b.HasIndex("TenantId", "Status");
+
+                    b.ToTable("TenantInvoices", "public");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantInvoiceItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -254,12 +514,85 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("ExternalIdentityId")
+                    b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantInvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantInvoiceId");
+
+                    b.ToTable("TenantInvoiceItems", "public");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExternalIdentityId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("InvitationExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InvitationTokenHash")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -284,10 +617,13 @@ namespace ERP_EZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("InvitationTokenHash")
+                        .IsUnique()
+                        .HasFilter("\"InvitationTokenHash\" IS NOT NULL");
 
-                    b.HasIndex("ExternalIdentityId", "TenantId")
-                        .IsUnique();
+                    b.HasIndex("TenantId", "ExternalIdentityId")
+                        .IsUnique()
+                        .HasFilter("\"ExternalIdentityId\" != '' AND \"IsDeleted\" = false");
 
                     b.ToTable("TenantMembers", "public");
                 });
@@ -307,18 +643,96 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.ToTable("TenantMemberRoleAssignments", "public");
                 });
 
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantPaymentMethod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Brand")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CardholderName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ExpiryMonth")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ExpiryYear")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Last4")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "IsDefault");
+
+                    b.ToTable("TenantPaymentMethods", "public");
+                });
+
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantSetting", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AllowedDomain")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("BaseURL")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("BillingAddress")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BillingCity")
+                        .HasColumnType("text");
+
                     b.Property<string>("BillingContactEmail")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BillingCountry")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BillingPostalCode")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
@@ -341,8 +755,14 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("MaxAllowedTenants")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("OnPremise")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("TaxId")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -439,6 +859,23 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.ToTable("TenantModule", "public");
                 });
 
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.LicenseKey", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
+                        .WithMany("LicenseKeys")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.TenantSubscription", "TenantSubscription")
+                        .WithMany()
+                        .HasForeignKey("TenantSubscriptionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("TenantSubscription");
+                });
+
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Role", b =>
                 {
                     b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
@@ -466,6 +903,46 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Navigation("Permission");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantAuditLog", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantInvoice", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
+                        .WithMany("TenantInvoices")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.TenantSubscription", "TenantSubscription")
+                        .WithMany()
+                        .HasForeignKey("TenantSubscriptionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("TenantSubscription");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantInvoiceItem", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.TenantInvoice", "TenantInvoice")
+                        .WithMany("Items")
+                        .HasForeignKey("TenantInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TenantInvoice");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMember", b =>
@@ -496,6 +973,17 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("TenantMember");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantPaymentMethod", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
+                        .WithMany("TenantPaymentMethods")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantSetting", b =>
@@ -549,12 +1037,23 @@ namespace ERP_EZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Tenant", b =>
                 {
+                    b.Navigation("LicenseKeys");
+
+                    b.Navigation("TenantInvoices");
+
                     b.Navigation("TenantMembers");
+
+                    b.Navigation("TenantPaymentMethods");
 
                     b.Navigation("TenantSetting")
                         .IsRequired();
 
                     b.Navigation("TenantSubscriptions");
+                });
+
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantInvoice", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMember", b =>

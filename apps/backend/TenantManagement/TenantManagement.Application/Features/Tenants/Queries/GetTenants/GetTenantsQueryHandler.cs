@@ -26,13 +26,16 @@ public sealed class GetTenantsQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
             Id = t.Id,
             Name = t.Name,
             Description = t.Description,
+            IsDisabled = t.IsDisabled,
             TenantSetting = new()
             {
                 Id = t.TenantSetting.Id,
                 OnPremise = t.TenantSetting.OnPremise,
                 BaseURL = t.TenantSetting.BaseURL,
                 DbConnectionString = t.TenantSetting.DbConnectionString,
-                BillingContactEmail = t.TenantSetting.BillingContactEmail
+                BillingContactEmail = t.TenantSetting.BillingContactEmail,
+                AllowedDomain = t.TenantSetting.AllowedDomain,
+                MaxAllowedTenants = t.TenantSetting.MaxAllowedTenants
             },
             TenantSubscriptions = t.TenantSubscriptions
                 .Where(ts => ts.TenantId == t.Id)

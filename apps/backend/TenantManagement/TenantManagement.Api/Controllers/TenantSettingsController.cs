@@ -19,7 +19,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     public class TenantSettingsController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantSetting>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HasPermission(Permissions.Admin.systemAdminManage)]
@@ -31,7 +31,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<TenantSetting>), StatusCodes.Status200OK)]
         [HasPermission(Permissions.Admin.systemAdminManage)]
         public async Task<IActionResult> GetTenantSettings([FromQuery] GetTenantSettingsQuery query)
@@ -42,7 +42,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantSetting>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HasPermission(Permissions.Admin.systemAdminManage)]
@@ -55,7 +55,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -73,7 +73,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HasPermission(Permissions.Admin.systemAdminManage)]

@@ -1,15 +1,27 @@
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
+using ERPEZ.Shared.Interfaces;
+using ERPEZ.TenantManagement.Application.Features.TenantMembers.Dtos;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 using Sieve.Models;
+using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Queries.GetTenantMembersQuery;
 
-public class GetTenantMembersQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetTenantMembersQuery, PaginatedApiResponse<TenantMember>>
+public class GetTenantMembersQueryHandler(IUnitOfWork unitOfWork, ITenantContextService tenantContext)
+    : IRequestHandler<GetTenantMembersQuery, PaginatedApiResponse<TenantMemberDto>>
 {
-    public async Task<PaginatedApiResponse<TenantMember>> Handle(GetTenantMembersQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<TenantMemberDto>> Handle(GetTenantMembersQuery query, CancellationToken cancellationToken)
     {
+        if (!tenantContext.TenantId.HasValue)
+        {
+            throw new UnauthorizedException("Tenant context is missing or unauthenticated.");
+        }
+
+        var tenantId = tenantContext.TenantId.Value;
+
         var sieveModel = new SieveModel
         {
             PageSize = query.PageSize,
@@ -17,12 +29,34 @@ public class GetTenantMembersQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (tenantMembers, totalCount) = await unitOfWork.TenantMemberRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
 
-        return new PaginatedApiResponse<TenantMember>(
-            [.. tenantMembers],
+        Expression<Func<TenantMember, TenantMemberDto>> projection = tm => new TenantMemberDto
+        {
+            Id = tm.Id,
+            TenantId = tm.TenantId,
+            UserId = tm.UserId,
+            ExternalIdentityId = tm.ExternalIdentityId,
+            Email = tm.Email,
+            FirstName = tm.FirstName,
+            LastName = tm.LastName,
+            Role = tm.RoleAssignments.Select(ra => ra.Role.Name).FirstOrDefault(),
+            Roles = tm.RoleAssignments.Select(ra => ra.Role.Name).ToList(),
+            RoleIds = tm.RoleAssignments.Select(ra => ra.RoleId).ToList(),
+            Status = tm.Status.ToString(),
+            ConcurrencyStamp = tm.ConcurrencyStamp,
+            InvitationExpiresAtUtc = tm.InvitationExpiresAtUtc
+        };
+
+        var result = await unitOfWork.TenantMemberRepository.GetAllAsync(
+            sieveModel,
+            projection,
+            tm => tm.TenantId == tenantId && !tm.IsDeleted,
+            cancellationToken);
+
+        return new PaginatedApiResponse<TenantMemberDto>(
+            [.. result.Entities],
             query.PageNumber,
             query.PageSize,
-            totalCount);
+            result.TotalCount);
     }
 }

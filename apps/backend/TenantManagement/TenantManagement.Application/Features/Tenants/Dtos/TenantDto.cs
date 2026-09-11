@@ -9,7 +9,10 @@ public class TenantDto
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public bool IsDisabled { get; set; }
     public TenantSettingDto? TenantSetting { get; set; }
+    public TenantSubscriptionDto? TenantSubscription => TenantSubscriptions?.FirstOrDefault();
     public List<TenantSubscriptionDto> TenantSubscriptions { get; set; } = [];
     public List<TenantMemberDto> TenantMembers { get; set; } = [];
+    public List<TenantModuleDto> Modules { get; set; } = [];
 }

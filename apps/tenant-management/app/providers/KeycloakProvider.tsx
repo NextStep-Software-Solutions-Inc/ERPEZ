@@ -57,6 +57,77 @@ interface KeycloakProviderProps {
   onInitialized?: (authenticated: boolean) => void;
 }
 
+const DEV_PERSONAS: Record<
+  string,
+  {
+    userId: string;
+    externalIdentityId: string;
+    displayName: string;
+    email: string;
+    roles: string[];
+    tenantId: string;
+    isSuperAdmin: boolean;
+  }
+> = {
+  // --- PLATFORM CONTROL PLANE PERSONAS ---
+  dev_superadmin: {
+    userId: 'dev_superadmin',
+    externalIdentityId: 'dev_superadmin',
+    displayName: 'Super Administrator',
+    email: 'superadmin@erpez.dev',
+    roles: ['platform_administrator'],
+    tenantId: '00000000-0000-0000-0000-000000000001',
+    isSuperAdmin: true,
+  },
+  dev_platform_auditor: {
+    userId: 'dev_platform_auditor',
+    externalIdentityId: 'dev_platform_auditor',
+    displayName: 'Jane Smith (Auditor)',
+    email: 'auditor@erpez.dev',
+    roles: ['platform_auditor'],
+    tenantId: '00000000-0000-0000-0000-000000000001',
+    isSuperAdmin: true, // Has access to view platform plane
+  },
+  dev_platform_support: {
+    userId: 'dev_platform_support',
+    externalIdentityId: 'dev_platform_support',
+    displayName: 'John Doe (Support)',
+    email: 'support@erpez.dev',
+    roles: ['platform_support'],
+    tenantId: '00000000-0000-0000-0000-000000000001',
+    isSuperAdmin: true, // Has access to view platform plane
+  },
+
+  // --- TENANT WORKSPACE PLANE PERSONAS ---
+  dev_admin: {
+    userId: 'dev_admin',
+    externalIdentityId: 'dev_admin',
+    displayName: 'Workspace Admin',
+    email: 'admin.north@erpez.dev',
+    roles: ['Tenant Administrator'],
+    tenantId: '00000000-0000-0000-0000-000000000010',
+    isSuperAdmin: false,
+  },
+  dev_planner: {
+    userId: 'dev_planner',
+    externalIdentityId: 'dev_planner',
+    displayName: 'Planning Officer',
+    email: 'planner.north@erpez.dev',
+    roles: ['Planning Officer'],
+    tenantId: '00000000-0000-0000-0000-000000000010',
+    isSuperAdmin: false,
+  },
+  dev_finance: {
+    userId: 'dev_finance',
+    externalIdentityId: 'dev_finance',
+    displayName: 'Finance Officer',
+    email: 'finance.north@erpez.dev',
+    roles: ['Finance Officer'],
+    tenantId: '00000000-0000-0000-0000-000000000010',
+    isSuperAdmin: false,
+  },
+};
+
 export function KeycloakProvider({ children, onInitialized }: KeycloakProviderProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
@@ -80,19 +151,70 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
   });
 
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string | null>('dev_admin');
-  const [email, setEmail] = useState<string | null>('admin@erpez.dev');
-  const [displayName, setDisplayName] = useState<string | null>('Tenant Administrator');
-  const [roles, setRoles] = useState<string[]>(['Tenant Administrator', 'super-admin']);
-  const [tenantId, setTenantId] = useState<string | null>('00000000-0000-0000-0000-000000000001');
-  const [isSuperAdmin, setIsSuperAdmin] = useState(true);
-  const [activeDevUser, setActiveDevUser] = useState<string>('dev_admin');
+  const [userName, setUserName] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('erpez_dev_user') || 'dev_admin';
+    }
+    return 'dev_admin';
+  });
+  const [email, setEmail] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const dev = localStorage.getItem('erpez_dev_user');
+      if (dev && DEV_PERSONAS[dev]) return DEV_PERSONAS[dev].email;
+      return localStorage.getItem('erpez_email') || 'admin@erpez.dev';
+    }
+    return 'admin@erpez.dev';
+  });
+  const [displayName, setDisplayName] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const dev = localStorage.getItem('erpez_dev_user');
+      if (dev && DEV_PERSONAS[dev]) return DEV_PERSONAS[dev].displayName;
+      return localStorage.getItem('erpez_display_name') || 'Tenant Admin (Dev)';
+    }
+    return 'Tenant Admin (Dev)';
+  });
+  const [roles, setRoles] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const dev = localStorage.getItem('erpez_dev_user');
+      if (dev && DEV_PERSONAS[dev]) return DEV_PERSONAS[dev].roles;
+      try {
+        const stored = localStorage.getItem('erpez_roles');
+        if (stored) return JSON.parse(stored);
+      } catch {
+        // Fallback
+      }
+    }
+    return ['Tenant Administrator'];
+  });
+  const [tenantId, setTenantId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('erpez_tenant_id') || '00000000-0000-0000-0000-000000000001';
+    }
+    return '00000000-0000-0000-0000-000000000001';
+  });
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('erpez_is_super_admin');
+      if (stored !== null) return stored === 'true';
+      const dev = localStorage.getItem('erpez_dev_user');
+      return dev === 'dev_superadmin';
+    }
+    return false;
+  });
+  const [activeDevUser, setActiveDevUser] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('erpez_dev_user') || 'dev_admin';
+    }
+    return 'dev_admin';
+  });
 
-  const backendUrl = import.meta.env.VITE_ERPEZ_BACKEND_URL || 'http://localhost:5245';
+  const backendUrl = import.meta.env.VITE_ERPEZ_BACKEND_URL || 'http://localhost:5246';
 
   const loginAsDevUser = useCallback(
     async (username: string) => {
       if (typeof window === 'undefined') return false;
+
+      const fallback = DEV_PERSONAS[username] || DEV_PERSONAS['dev_admin'];
 
       try {
         const response = await fetch(`${backendUrl}/auth/dev/login`, {
@@ -104,46 +226,80 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
           }),
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (response.ok) {
+          const json = await response.json();
+          const authData = json?.data;
+          if (authData?.token) {
+            const jwtToken = authData.token;
+            const userObj = authData.user;
+            const superAdminFlag = Boolean(userObj?.isSuperAdmin || username === 'dev_superadmin');
 
-        const json = await response.json();
-        const authData = json?.data;
-        if (authData?.token) {
-          const jwtToken = authData.token;
-          const userObj = authData.user;
-          const superAdminFlag = Boolean(userObj.isSuperAdmin || username === 'dev_superadmin' || username === 'dev_admin');
+            setToken(jwtToken);
+            setAuthToken(jwtToken);
+            setIsAuthenticated(true);
+            setUserName(userObj.userId);
+            setEmail(userObj.email);
+            setDisplayName(userObj.displayName);
+            setRoles(userObj.roles || fallback.roles);
+            setTenantId(userObj.tenantId || '00000000-0000-0000-0000-000000000001');
+            setIsSuperAdmin(superAdminFlag);
+            setActiveDevUser(userObj.userId);
 
-          setToken(jwtToken);
-          setAuthToken(jwtToken);
-          setIsAuthenticated(true);
-          setUserName(userObj.userId);
-          setEmail(userObj.email);
-          setDisplayName(userObj.displayName);
-          setRoles(userObj.roles || ['Tenant Administrator']);
-          setTenantId(userObj.tenantId || '00000000-0000-0000-0000-000000000001');
-          setIsSuperAdmin(superAdminFlag);
-          setActiveDevUser(userObj.userId);
+            try {
+              localStorage.setItem('erpez_dev_user', userObj.userId);
+              localStorage.setItem('erpez_auth_token', jwtToken);
+              localStorage.setItem('erpez_tenant_id', userObj.tenantId || '00000000-0000-0000-0000-000000000001');
+              localStorage.setItem('erpez_is_super_admin', String(superAdminFlag));
+              localStorage.setItem('erpez_display_name', userObj.displayName);
+              localStorage.setItem('erpez_email', userObj.email);
+              localStorage.setItem('erpez_roles', JSON.stringify(userObj.roles || fallback.roles));
+            } catch {
+              // Ignore storage errors
+            }
 
-          try {
-            localStorage.setItem('erpez_dev_user', userObj.userId);
-            localStorage.setItem('erpez_auth_token', jwtToken);
-            localStorage.setItem('erpez_tenant_id', userObj.tenantId || '00000000-0000-0000-0000-000000000001');
-          } catch {
-            // Ignore storage errors
+            if (keycloak) {
+              (keycloak as any).token = jwtToken;
+              (keycloak as any).authenticated = true;
+            }
+            return true;
           }
-
-          if (keycloak) {
-            (keycloak as any).token = jwtToken;
-            (keycloak as any).authenticated = true;
-          }
-          return true;
         }
       } catch (error) {
-        console.warn('Dev login error:', error);
+        console.warn('Dev login network call fallback:', error);
       }
-      return false;
+
+      // Offline / fallback dev persona handler
+      const superAdminFlag = Boolean(fallback.isSuperAdmin || username === 'dev_superadmin');
+      const fallbackToken = `dev_token_${fallback.userId}_${Date.now()}`;
+
+      setToken(fallbackToken);
+      setAuthToken(fallbackToken);
+      setIsAuthenticated(true);
+      setUserName(fallback.userId);
+      setEmail(fallback.email);
+      setDisplayName(fallback.displayName);
+      setRoles(fallback.roles);
+      setTenantId(fallback.tenantId);
+      setIsSuperAdmin(superAdminFlag);
+      setActiveDevUser(fallback.userId);
+
+      try {
+        localStorage.setItem('erpez_dev_user', fallback.userId);
+        localStorage.setItem('erpez_auth_token', fallbackToken);
+        localStorage.setItem('erpez_tenant_id', fallback.tenantId);
+        localStorage.setItem('erpez_is_super_admin', String(superAdminFlag));
+        localStorage.setItem('erpez_display_name', fallback.displayName);
+        localStorage.setItem('erpez_email', fallback.email);
+        localStorage.setItem('erpez_roles', JSON.stringify(fallback.roles));
+      } catch {
+        // Ignore storage errors
+      }
+
+      if (keycloak) {
+        (keycloak as any).token = fallbackToken;
+        (keycloak as any).authenticated = true;
+      }
+      return true;
     },
     [backendUrl]
   );
@@ -165,6 +321,15 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
       const stored = localStorage.getItem('erpez_auth_token');
       if (!stored || !stored.startsWith('ey')) {
         await loginAsDevUser(savedUser);
+      } else {
+        const isSuper = localStorage.getItem('erpez_is_super_admin') === 'true' || savedUser === 'dev_superadmin';
+        setIsSuperAdmin(isSuper);
+        setActiveDevUser(savedUser);
+        if (DEV_PERSONAS[savedUser]) {
+          setDisplayName(DEV_PERSONAS[savedUser].displayName);
+          setEmail(DEV_PERSONAS[savedUser].email);
+          setRoles(DEV_PERSONAS[savedUser].roles);
+        }
       }
       setIsInitialized(true);
       if (onInitialized) onInitialized(true);
@@ -188,6 +353,11 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
       try {
         localStorage.removeItem('erpez_auth_token');
         localStorage.removeItem('erpez_dev_user');
+        localStorage.removeItem('erpez_is_super_admin');
+        localStorage.removeItem('erpez_display_name');
+        localStorage.removeItem('erpez_email');
+        localStorage.removeItem('erpez_roles');
+        localStorage.removeItem('erpez_tenant_id');
       } catch {
         // Ignore
       }
@@ -195,6 +365,7 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
     setToken(null);
     setAuthToken(null);
     setIsAuthenticated(false);
+    setIsSuperAdmin(false);
     if (keycloak?.logout) {
       keycloak.logout();
     }

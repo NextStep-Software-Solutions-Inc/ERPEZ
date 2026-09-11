@@ -35,6 +35,15 @@ public static class DependencyInjection
         var services = builder.Services;
         var env      = builder.Environment;
 
+        // ── Tenant Routing & Context ────────────────────────────────────────────────
+        services.Configure<ERPEZ.Shared.Configuration.TenantRoutingOptions>(
+            builder.Configuration.GetSection(ERPEZ.Shared.Configuration.TenantRoutingOptions.sectionName));
+
+        services.AddScoped<ERPEZ.Shared.Services.TenantRequestContext>();
+        services.AddScoped<ERPEZ.Shared.Interfaces.ITenantContextService>(sp => sp.GetRequiredService<ERPEZ.Shared.Services.TenantRequestContext>());
+        services.AddScoped<ERPEZ.Shared.Interfaces.ITenantRequestContext>(sp => sp.GetRequiredService<ERPEZ.Shared.Services.TenantRequestContext>());
+        services.AddScoped<ERPEZ.Shared.Interfaces.ITenantConnectionProvider, ERPEZ.Shared.Services.TenantConnectionProvider>();
+
         // ── Current User ────────────────────────────────────────────────────────────
         // Fully qualified — avoids the alias collision that caused CS0246/CS0311
         services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -43,7 +52,10 @@ public static class DependencyInjection
 
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
-            options.UseNpgsql(connectionString, npgsqlOptions =>
+            var connectionProvider = sp.GetRequiredService<ERPEZ.Shared.Interfaces.ITenantConnectionProvider>();
+            var dynamicConnectionString = connectionProvider.GetConnectionString();
+
+            options.UseNpgsql(dynamicConnectionString, npgsqlOptions =>
                 npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "public"));
             options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
 
