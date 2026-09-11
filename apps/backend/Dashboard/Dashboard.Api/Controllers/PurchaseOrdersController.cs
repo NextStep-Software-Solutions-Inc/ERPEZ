@@ -1,17 +1,26 @@
-using Microsoft.AspNetCore.Authorization;
-using ERPEZ.Shared.Constants;
-using ERPEZ.Shared.Authorization;
+using System;
+using System.Threading.Tasks;
+using ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.ApprovePurchaseOrder;
 using ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.CreatePurchaseOrder;
-using ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.UpdatePurchaseOrder;
 using ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.DeletePurchaseOrder;
-using ERPEZ.Application.Features.Procurement.PurchaseOrders.Queries.GetPurchaseOrders;
+using ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.ReturnPurchaseOrder;
+using ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.SubmitPurchaseOrderForApproval;
+using ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.UpdatePurchaseOrder;
+using ERPEZ.Application.Features.Procurement.PurchaseOrders.DTOs;
 using ERPEZ.Application.Features.Procurement.PurchaseOrders.Queries.GetPurchaseOrderById;
 using ERPEZ.Application.Features.Procurement.PurchaseOrders.Queries.GetPurchaseOrderItems;
-using ERPEZ.Application.Features.Procurement.PurchaseOrders.DTOs;
+using ERPEZ.Application.Features.Procurement.PurchaseOrders.Queries.GetPurchaseOrders;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+
 namespace ERPEZ.Api.Controllers;
+
+public record ReturnPurchaseOrderRequest(string ReturnReason);
 
 /// <summary>
 /// Manages Purchase Order operations
@@ -97,6 +106,45 @@ public class PurchaseOrdersController(ISender mediator) : ControllerBase
     public async Task<IActionResult> DeletePurchaseOrder(Guid id)
     {
         var result = await mediator.Send(new DeletePurchaseOrderCommand(id));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Submit a Purchase Order for approval
+    /// </summary>
+    [HttpPost("{id}/submit")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.poManage)]
+    public async Task<IActionResult> SubmitPurchaseOrder(Guid id)
+    {
+        var result = await mediator.Send(new SubmitPurchaseOrderForApprovalCommand(id));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Approve a Purchase Order
+    /// </summary>
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.poManage)]
+    public async Task<IActionResult> ApprovePurchaseOrder(Guid id)
+    {
+        var result = await mediator.Send(new ApprovePurchaseOrderCommand(id));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Return a Purchase Order for revision
+    /// </summary>
+    [HttpPost("{id}/return")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.poManage)]
+    public async Task<IActionResult> ReturnPurchaseOrder(Guid id, [FromBody] ReturnPurchaseOrderRequest request)
+    {
+        var result = await mediator.Send(new ReturnPurchaseOrderCommand(id, request.ReturnReason));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }
