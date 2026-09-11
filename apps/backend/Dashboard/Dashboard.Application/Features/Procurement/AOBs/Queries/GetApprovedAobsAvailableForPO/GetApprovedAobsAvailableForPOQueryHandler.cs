@@ -7,7 +7,6 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Queries.GetApprovedAobsAvailableForPO;
 
@@ -17,23 +16,12 @@ public class GetApprovedAobsAvailableForPOQueryHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<List<AvailableAobDto>>> Handle(GetApprovedAobsAvailableForPOQuery request, CancellationToken cancellationToken)
     {
         // Active POs referencing AOBs
-        var linkedAobIds = await unitOfWork.PurchaseOrderRepository.Query()
-            .Where(po => po.SourceDocumentType == SourceDocumentTypeEnum.AOB && po.Status != StatusEnum.Returned)
-            .Select(po => po.SourceDocumentId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
+        var activePos = await unitOfWork.PurchaseOrderRepository.FindAllAsync(
+            po => po.SourceDocumentType == SourceDocumentTypeEnum.AOB && po.Status != StatusEnum.Returned,
+            cancellationToken);
+        var linkedAobIds = activePos.Select(po => po.SourceDocumentId).Distinct().ToList();
 
-        var aobs = await unitOfWork.AOBRepository.Query()
-            .Include(a => a.AOBAwardedItems)
-                .ThenInclude(ai => ai.WinningSupplier)
-            .Include(a => a.AOBAwardedItems)
-                .ThenInclude(ai => ai.RFQItem)
-                    .ThenInclude(ri => ri.CPRItem)
-                        .ThenInclude(ci => ci.PRItem)
-                            .ThenInclude(pri => pri.PPMPItem)
-            .Where(a => a.Status == StatusEnum.Approved && !linkedAobIds.Contains(a.Id))
-            .OrderByDescending(a => a.AOBDate)
-            .ToListAsync(cancellationToken);
+        var aobs = await unitOfWork.AOBRepository.GetApprovedAvailableForPOAsync(linkedAobIds, cancellationToken);
 
         var result = aobs.Select(a =>
         {
