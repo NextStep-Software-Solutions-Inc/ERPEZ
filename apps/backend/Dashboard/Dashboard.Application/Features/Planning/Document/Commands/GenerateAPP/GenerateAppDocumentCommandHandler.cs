@@ -133,9 +133,13 @@ public class GenerateAppDocumentCommandHandler(
 
     private static AppItemRowDto MapToRow(AppItemEntity item)
     {
-        var projectTitle = item.PPMPItem?.Name ?? string.Empty;
+        var projectTitle = !string.IsNullOrWhiteSpace(item.ItemNameOverride)
+            ? item.ItemNameOverride
+            : (item.PPMPItem?.Name ?? string.Empty);
         var endUser      = item.Office?.Name ?? item.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Office?.Name ?? string.Empty;
-        var description  = item.PPMPItem?.Description ?? string.Empty;
+        var description  = !string.IsNullOrWhiteSpace(item.GeneralDescription)
+            ? item.GeneralDescription
+            : (item.PPMPItem?.Description ?? string.Empty);
         var mode         = item.ProcurementMode?.Name ?? string.Empty;
         var coveredByEpa = item.IsEarlyProcurementActivity;
 

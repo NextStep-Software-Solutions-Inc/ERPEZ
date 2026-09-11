@@ -54,10 +54,16 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
             OfficeId = officeId,
             PAPCode = request.PAPCode,
             Remarks = request.Remarks,
+            ItemNameOverride = request.ItemNameOverride,
+            GeneralDescription = request.GeneralDescription,
             IsEarlyProcurementActivity = request.IsEarlyProcurementActivity,
+            EPARemarks = request.EPARemarks,
             IsOutsourced = request.IsOutsourced,
             BidEvaluationCriteria = request.BidEvaluationCriteria != null ? Enum.Parse<BidEvaluationCriteria>(request.BidEvaluationCriteria, true) : null,
             ProcurementStrategies = request.ProcurementStrategies?.Select(x => Enum.Parse<ProcurementStrategy>(x, true)).ToList(),
+            StartOfProcurementOverride = request.StartOfProcurementOverride,
+            EndOfProcurementOverride = request.EndOfProcurementOverride,
+            EstimatedBudgetOverride = request.EstimatedBudgetOverride,
             IsNew = isNewItem,
             IsRevised = false
         };

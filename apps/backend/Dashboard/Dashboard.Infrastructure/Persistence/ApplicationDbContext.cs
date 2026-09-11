@@ -2084,6 +2084,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMaxLength(1000);
 
         modelBuilder.Entity<APPItem>()
+            .Property(e => e.ItemNameOverride)
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<APPItem>()
+            .Property(e => e.GeneralDescription)
+            .HasMaxLength(2000);
+
+        modelBuilder.Entity<APPItem>()
             .Property(e => e.BidEvaluationCriteria)
             .HasConversion<string>()
             .HasMaxLength(50);

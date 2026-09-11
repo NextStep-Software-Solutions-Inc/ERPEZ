@@ -15,6 +15,8 @@ export interface APPItemFromAPI {
   id: string
   ppmpItemId?: string | null
   ppmpItemName?: string | null
+  itemNameOverride?: string | null
+  generalDescription?: string | null
   procurementModeId?: string | null
   procurementModeName?: string | null
   fundSourceId?: string | null

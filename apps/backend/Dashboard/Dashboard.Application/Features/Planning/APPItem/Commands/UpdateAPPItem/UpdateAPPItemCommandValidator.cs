@@ -39,6 +39,14 @@ public class UpdateAPPItemCommandValidator : AbstractValidator<UpdateAPPItemComm
             .MaximumLength(1000)
             .WithMessage("Remarks must not exceed 1000 characters.");
 
+        RuleFor(x => x.ItemNameOverride)
+            .MaximumLength(500)
+            .WithMessage("ItemNameOverride must not exceed 500 characters.");
+
+        RuleFor(x => x.GeneralDescription)
+            .MaximumLength(2000)
+            .WithMessage("GeneralDescription must not exceed 2000 characters.");
+
         RuleFor(x => x.BidEvaluationCriteria)
             .IsEnumName(typeof(BidEvaluationCriteria), caseSensitive: false)
             .When(x => x.BidEvaluationCriteria != null)

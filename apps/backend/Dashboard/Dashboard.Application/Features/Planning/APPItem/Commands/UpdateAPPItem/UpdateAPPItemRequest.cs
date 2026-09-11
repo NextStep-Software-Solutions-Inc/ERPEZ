@@ -11,6 +11,8 @@ public record UpdateAPPItemRequest
     public Guid OfficeId { get; init; }
     public string PAPCode { get; init; } = string.Empty;
     public string? Remarks { get; init; }
+    public string? ItemNameOverride { get; init; }
+    public string? GeneralDescription { get; init; }
     public bool IsEarlyProcurementActivity { get; init; }
     public string? EPARemarks { get; init; }
     public bool IsOutsourced { get; init; }

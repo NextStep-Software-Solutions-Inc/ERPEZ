@@ -9,6 +9,8 @@ public record APPItemResponse
     public Guid APPId { get; init; }
     public Guid PPMPItemId { get; init; }
     public string PPMPItemName { get; init; } = string.Empty;
+    public string? ItemNameOverride { get; init; }
+    public string? GeneralDescription { get; init; }
     public Guid ProcurementModeId { get; init; }
     public string ProcurementModeName { get; init; } = string.Empty;
     public Guid FundSourceId { get; init; }
@@ -18,6 +20,7 @@ public record APPItemResponse
     public string PAPCode { get; init; } = string.Empty;
     public string? Remarks { get; init; }
     public bool IsEarlyProcurementActivity { get; init; }
+    public string? EPARemarks { get; init; }
     public bool IsOutsourced { get; init; }
     public BidEvaluationCriteria? BidEvaluationCriteria { get; init; }
     public List<ProcurementStrategy>? ProcurementStrategies { get; init; }
