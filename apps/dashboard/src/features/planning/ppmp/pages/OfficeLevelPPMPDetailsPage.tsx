@@ -38,6 +38,7 @@ import {
   FilePlus2,
   PlusCircle,
   Sparkles,
+  Undo2,
 } from 'lucide-react'
 import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getUOMRequest } from '@/components/features/planning/procurement-library/unit-of-measurement/handlers/getUOMRequest'
@@ -83,12 +84,15 @@ import {
   EditPPMPItemAllocationsDialog,
   MasterPPMPViewerModal,
   CreateSupplementalPpmpDialog,
+  ReturnPPMPDialog,
 } from '../dialogs'
 import { resolveTypeOfExpenditure, type ParentObjectInfo } from '../forms/AddPPMPItemExpenditureForm'
 import { PPMPGuidelinesModal } from '../dialogs/PPMPGuidelinesModal'
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
 import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
 import { updatePPMPStatusRequest } from '../handlers/updatePPMPStatusRequest'
+import { approvePpmpRequest } from '../handlers/approvePpmpRequest'
+import { returnPpmpRequest } from '../handlers/returnPpmpRequest'
 import { togglePpmpFinalizationRequest } from '../handlers/togglePpmpFinalizationRequest'
 import { generatePPMPDocumentRequest } from '../handlers/generatePPMPDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
@@ -165,6 +169,8 @@ const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
 const useUpdatePPMPStatus = createMutationHookFromTemplate(
   updatePPMPStatusRequest,
 )
+const useApprovePPMP = createMutationHookFromTemplate(approvePpmpRequest)
+const useReturnPPMP = createMutationHookFromTemplate(returnPpmpRequest)
 const useGeneratePPMPDocument = createMutationHookFromTemplate(
   generatePPMPDocumentRequest,
 )
@@ -2657,6 +2663,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false)
   const [consolidateWorkspaceOpen, setConsolidateWorkspaceOpen] =
     useState(false)
   const [deptConsolidateOpen, setDeptConsolidateOpen] = useState(false)
@@ -2679,6 +2686,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const { mutateAsync: updatePPMPStatus, isPending: isUpdatingStatus } =
     useUpdatePPMPStatus()
+  const { mutateAsync: approvePPMP, isPending: isApproving } = useApprovePPMP()
+  const { mutateAsync: returnPPMP, isPending: isReturning } = useReturnPPMP()
   const { mutateAsync: generatePPMPDocument } = useGeneratePPMPDocument()
   const { mutateAsync: downloadDocument } = useDownloadDocument()
 
@@ -2870,7 +2879,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const isEditable = useMemo(() => {
     if (!ppmp || ppmp.consolidatedIntoId) return false
     const status = (ppmp.status ?? '').toLowerCase().trim()
-    return status === 'draft' || status === 'rejected'
+    return status === 'draft' || status === 'rejected' || status === 'returned'
   }, [ppmp])
 
   // Current PPMP budget context for progress bars
@@ -2984,12 +2993,10 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const handleApprovePPMP = async () => {
     try {
-      await updatePPMPStatus(
+      await approvePPMP(
         {
-          pathParams: {},
+          pathParams: { id: ppmpId },
           payload: {
-            id: ppmpId,
-            action: 'approved',
             actorName: actorDisplayName,
             role: 'Approver',
             notes: 'PPMP approved via details page',
@@ -3013,6 +3020,37 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       )
     } finally {
       setApproveConfirmOpen(false)
+    }
+  }
+
+  const handleReturnPPMP = async (remarks: string) => {
+    try {
+      await returnPPMP(
+        {
+          pathParams: { id: ppmpId },
+          payload: {
+            actorName: actorDisplayName,
+            role: 'Reviewer',
+            remarks: remarks.trim(),
+          },
+        },
+        {
+          onSuccess: () => {
+            toast.success('PPMP returned to office for revision.')
+            void queryClient.invalidateQueries({
+              predicate: (query) =>
+                typeof query.queryKey[0] === 'string' &&
+                (query.queryKey[0].startsWith('/ppmps') ||
+                  query.queryKey[0].startsWith('/ppmp')),
+            })
+            setReturnDialogOpen(false)
+          },
+        },
+      )
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to return PPMP.',
+      )
     }
   }
 
@@ -3290,9 +3328,11 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                     ppmp.status.toLowerCase() === 'pending_review' ||
                     ppmp.status.toLowerCase() === 'pending review'
                     ? 'border-blue-200 bg-blue-50 text-blue-700'
-                    : ppmp.status.toLowerCase() === 'rejected'
-                      ? 'border-rose-200 bg-rose-50 text-rose-700'
-                      : 'border-slate-200 bg-slate-50 text-slate-700',
+                    : ppmp.status.toLowerCase() === 'returned'
+                      ? 'border-amber-200 bg-amber-50 text-amber-700'
+                      : ppmp.status.toLowerCase() === 'rejected'
+                        ? 'border-rose-200 bg-rose-50 text-rose-700'
+                        : 'border-slate-200 bg-slate-50 text-slate-700',
               )}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -3368,7 +3408,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
           {!ppmp.consolidatedIntoId &&
             (ppmp.status?.toLowerCase() === 'draft' ||
-              ppmp.status?.toLowerCase() === 'rejected') && (
+              ppmp.status?.toLowerCase() === 'rejected' ||
+              ppmp.status?.toLowerCase() === 'returned') && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -3384,7 +3425,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                         )}
                       >
                         <Send className="h-4 w-4" />
-                        <span>Submit PPMP</span>
+                        <span>{ppmp.status?.toLowerCase() === 'returned' ? 'Resubmit PPMP' : 'Submit PPMP'}</span>
                       </Button>
                     </span>
                   </TooltipTrigger>
@@ -3412,19 +3453,33 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             (ppmp.status?.toLowerCase() === 'submitted' ||
               ppmp.status?.toLowerCase() === 'pending_review' ||
               ppmp.status?.toLowerCase() === 'pending review') && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setApproveConfirmOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
-              >
-                <TrendingUp className="h-4 w-4" />
-                <span>Approve PPMP</span>
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setReturnDialogOpen(true)}
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 active:scale-[0.98]"
+                >
+                  <Undo2 className="h-4 w-4" />
+                  <span>Return PPMP</span>
+                </Button>
+
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setApproveConfirmOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  <span>Approve PPMP</span>
+                </Button>
+              </>
             )}
 
-          {/* Mark as Final / Unmark as Final Toggle */}
-          {!ppmp.consolidatedIntoId && ppmp.status?.toLowerCase() === 'approved' && (
+          {/* Mark as Final / Unmark as Final Toggle (Original PPMPs only; Supplementals are inherently final) */}
+          {!ppmp.consolidatedIntoId &&
+            ppmp.status?.toLowerCase() === 'approved' &&
+            !isSupplemental && (
             <Button
               variant={ppmp.isFinal ? 'outline' : 'default'}
               size="sm"
@@ -3668,11 +3723,16 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                           badge: 'bg-blue-50 text-blue-700 border-blue-200',
                           dot: 'bg-blue-500',
                         }
-                        : statusLower === 'rejected'
+                        : statusLower === 'returned'
                           ? {
-                            badge: 'bg-rose-50 text-rose-700 border-rose-200',
-                            dot: 'bg-rose-500',
+                            badge: 'bg-amber-50 text-amber-700 border-amber-200',
+                            dot: 'bg-amber-500',
                           }
+                          : statusLower === 'rejected'
+                            ? {
+                              badge: 'bg-rose-50 text-rose-700 border-rose-200',
+                              dot: 'bg-rose-500',
+                            }
                           : {
                             badge:
                               'bg-slate-50 text-slate-600 border-slate-200',
@@ -3943,13 +4003,31 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       <ConfirmAlertDialog
         open={submitConfirmOpen}
         onOpenChange={setSubmitConfirmOpen}
-        title="Submit PPMP?"
-        description="Are you sure you want to submit this PPMP for review? This will transition its status to Submitted."
+        title={ppmp.status?.toLowerCase() === 'returned' ? 'Resubmit PPMP?' : 'Submit PPMP?'}
+        description={
+          ppmp.status?.toLowerCase() === 'returned'
+            ? 'Are you sure you want to resubmit this PPMP for review? This will transition its status back to Submitted.'
+            : 'Are you sure you want to submit this PPMP for review? This will transition its status to Submitted.'
+        }
         onConfirm={handleSubmitPPMP}
         onCancel={() => setSubmitConfirmOpen(false)}
-        confirmLabel={isUpdatingStatus ? 'Submitting…' : 'Submit'}
+        confirmLabel={
+          isUpdatingStatus
+            ? 'Submitting…'
+            : ppmp.status?.toLowerCase() === 'returned'
+              ? 'Resubmit'
+              : 'Submit'
+        }
         cancelLabel="Cancel"
         loading={isUpdatingStatus}
+      />
+
+      <ReturnPPMPDialog
+        open={returnDialogOpen}
+        onOpenChange={setReturnDialogOpen}
+        ppmp={ppmp}
+        isSubmitting={isReturning}
+        onConfirm={handleReturnPPMP}
       />
 
       <ConfirmAlertDialog
@@ -3959,9 +4037,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         description="Are you sure you want to approve this PPMP? This action will record an approval history event."
         onConfirm={handleApprovePPMP}
         onCancel={() => setApproveConfirmOpen(false)}
-        confirmLabel={isUpdatingStatus ? 'Approving…' : 'Approve'}
+        confirmLabel={isApproving ? 'Approving…' : 'Approve'}
         cancelLabel="Cancel"
-        loading={isUpdatingStatus}
+        loading={isApproving}
       />
 
       <ConfirmAlertDialog
