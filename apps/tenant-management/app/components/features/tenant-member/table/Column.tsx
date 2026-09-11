@@ -107,22 +107,26 @@ export function createColumns(handlers?: MemberActionHandlers): ColumnDef<Tenant
         },
         {
             accessorKey: "roles",
-            header: "Roles",
+            header: "Workspace Roles",
             cell: ({ row }) => {
                 const roles = row.original.roles && row.original.roles.length > 0
                     ? row.original.roles
                     : row.original.role ? [row.original.role] : ["End User"];
                 return (
                     <div className="flex flex-wrap gap-1">
-                        {roles.map((r, idx) => (
-                            <Badge
-                                key={idx}
-                                variant={r === "Tenant Administrator" ? "default" : "secondary"}
-                                className="text-xs"
-                            >
-                                {r}
-                            </Badge>
-                        ))}
+                        {roles.map((r, idx) => {
+                            const isWorkspaceAdmin = r === "Tenant Administrator" || r === "Workspace Administrator";
+                            const displayRole = r === "Tenant Administrator" ? "Workspace Administrator" : r;
+                            return (
+                                <Badge
+                                    key={idx}
+                                    variant={isWorkspaceAdmin ? "default" : "secondary"}
+                                    className={`text-xs ${isWorkspaceAdmin ? "bg-slate-900 text-white hover:bg-slate-800" : ""}`}
+                                >
+                                    {displayRole}
+                                </Badge>
+                            );
+                        })}
                     </div>
                 );
             },

@@ -536,4 +536,77 @@ public class TenantSecurityBoundaryTests
         var body = await ReadResponseBodyAsync(context);
         body.Should().Contain("Operational database connection could not be established for this tenant.");
     }
+
+    [Fact]
+    public async Task UserWithMultipleWorkspaces_CanSwitchBetweenAuthorizedTenants_AndFailsClosedOnUnauthorizedTenant()
+    {
+        // Invariant: An authenticated user belonging to multiple workspaces (Tenant A & B)
+        // can switch between them, while any attempt to access unauthorized Tenant C (via manipulated header/localStorage)
+        // fails closed with 403, and Tenant C connection credentials are NEVER resolved or contacted.
+        var tenantAId = Guid.NewGuid();
+        var tenantBId = Guid.NewGuid();
+        var tenantCId = Guid.NewGuid();
+        var user = CreateUser("user-multi");
+
+        // Mock authorized memberships for A and B
+        var accessContextA = new TenantAccessContext(tenantAId, "Tenant Alpha", TenantProvisioningState.Ready, "app.erpez.com", "Active");
+        var accessContextB = new TenantAccessContext(tenantBId, "Tenant Beta", TenantProvisioningState.Ready, "app.erpez.com", "Active");
+
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(user, tenantAId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenantAccessResult.Success(accessContextA));
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(user, tenantBId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenantAccessResult.Success(accessContextB));
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(user, tenantCId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenantAccessResult.Fail(
+                "Caller is not an active authorized member of this workspace.",
+                "WORKSPACE_MEMBERSHIP_REQUIRED",
+                StatusCodes.Status403Forbidden));
+
+        connectionResolverMock.Setup(r => r.ResolveConnectionInfoAsync(tenantAId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TenantDatabaseConnectionInfo(tenantAId, "Host=pg;Database=tenant_a_db;Username=postgres;Password=secret"));
+        connectionResolverMock.Setup(r => r.ResolveConnectionInfoAsync(tenantBId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TenantDatabaseConnectionInfo(tenantBId, "Host=pg;Database=tenant_b_db;Username=postgres;Password=secret"));
+
+        var resolutionMiddleware = new TenantResolutionMiddleware(c => Task.CompletedTask);
+        var validationMiddleware = new TenantAccessValidationMiddleware(c => Task.CompletedTask);
+
+        // --- Step 1: Access Workspace A ---
+        var contextA = CreateHttpContext(user);
+        contextA.Request.Headers["X-Tenant-Id"] = tenantAId.ToString();
+        await resolutionMiddleware.InvokeAsync(contextA);
+        var reqCtxA = new TenantRequestContext();
+        await validationMiddleware.InvokeAsync(contextA, accessServiceMock.Object, connectionResolverMock.Object, reqCtxA);
+
+        contextA.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
+        reqCtxA.IsResolved.Should().BeTrue();
+        reqCtxA.TenantId.Should().Be(tenantAId);
+        connectionResolverMock.Verify(r => r.ResolveConnectionInfoAsync(tenantAId, It.IsAny<CancellationToken>()), Times.Once);
+
+        // --- Step 2: Switch to Workspace B ---
+        var contextB = CreateHttpContext(user);
+        contextB.Request.Headers["X-Tenant-Id"] = tenantBId.ToString();
+        await resolutionMiddleware.InvokeAsync(contextB);
+        var reqCtxB = new TenantRequestContext();
+        await validationMiddleware.InvokeAsync(contextB, accessServiceMock.Object, connectionResolverMock.Object, reqCtxB);
+
+        contextB.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
+        reqCtxB.IsResolved.Should().BeTrue();
+        reqCtxB.TenantId.Should().Be(tenantBId);
+        connectionResolverMock.Verify(r => r.ResolveConnectionInfoAsync(tenantBId, It.IsAny<CancellationToken>()), Times.Once);
+
+        // --- Step 3: Attempt Unauthorized Workspace C (Stale / Tampered localStorage / header) ---
+        var contextC = CreateHttpContext(user);
+        contextC.Request.Headers["X-Tenant-Id"] = tenantCId.ToString();
+        await resolutionMiddleware.InvokeAsync(contextC);
+        var reqCtxC = new TenantRequestContext();
+        await validationMiddleware.InvokeAsync(contextC, accessServiceMock.Object, connectionResolverMock.Object, reqCtxC);
+
+        // Golden Security Assertions:
+        // 1. Response must fail closed with 403 Forbidden
+        contextC.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        reqCtxC.IsResolved.Should().BeFalse();
+
+        // 2. CRITICAL: ConnectionResolver must NEVER be invoked for Tenant C (Zero credentials resolved / Zero DB contact)
+        connectionResolverMock.Verify(r => r.ResolveConnectionInfoAsync(tenantCId, It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

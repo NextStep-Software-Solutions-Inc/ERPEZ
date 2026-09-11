@@ -114,7 +114,7 @@ export default function DeliveryUnitPage() {
 
 
                     <div className="flex items-center gap-3">
-                        <Input placeholder="Search tenants ..." value={query} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} className="min-w-[260px]" />
+                        <Input placeholder="Search delivery units, responsibility centers, or offices..." value={query} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} className="min-w-[320px]" />
                         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                             <DialogTrigger asChild>
                                 <Button variant="default">+ Add Delivery Unit</Button>

@@ -10,7 +10,7 @@ import { toggleTenantStatusRequest } from "~/features/tenant/handlers/toggleTena
 import { LicenseManagementModal } from "~/features/license/components/LicenseManagementModal";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
-import { KeyRound, ShieldCheck, ShieldAlert, Copy, Check, Server, Lock } from "lucide-react";
+import { KeyRound, ShieldCheck, ShieldAlert, Copy, Check, Server, Lock, Database } from "lucide-react";
 import { toast } from "sonner";
 
 const { useQueryClient } = erpSharedLib;
@@ -205,6 +205,57 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                         <div className="text-center py-6 bg-white rounded-lg border border-dashed text-slate-500 text-xs">
                             This tenant does not have an active cryptographic license key assigned yet.
                             Click "Assign License" above to generate a sovereign key.
+                        </div>
+                    )}
+                </div>
+
+                {/* Database Architecture & Multi-Tenant Routing Section */}
+                <div className="p-5 border rounded-xl bg-white shadow-xs space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Database className="h-5 w-5 text-indigo-600" />
+                            <h3 className="font-bold text-slate-900 text-base">Database Routing & Multi-Tenant Isolation</h3>
+                        </div>
+                        {tenant.tenantSetting?.dbConnectionString ? (
+                            <Badge className="bg-indigo-100 text-indigo-700 font-semibold border-indigo-200">
+                                Dedicated Database Silo (Enterprise)
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className="text-slate-600 border-slate-300">
+                                Shared Cloud Database Pool
+                            </Badge>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-600">
+                        <div className="bg-slate-50 p-3 rounded-lg border">
+                            <span className="text-slate-400 block mb-0.5">Database Strategy</span>
+                            <strong className="text-slate-900 text-sm">
+                                {tenant.tenantSetting?.dbConnectionString
+                                    ? "Dedicated PostgreSQL Instance"
+                                    : "Multi-Tenant Shared Pool (Row Filtered)"}
+                            </strong>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-lg border">
+                            <span className="text-slate-400 block mb-0.5">Multi-Subsidiary Quota</span>
+                            <strong className="text-slate-900 text-sm font-mono">
+                                Up to {tenant.maxAllowedTenants || tenant.tenantSetting?.maxAllowedTenants || 10} Subsidiaries Allowed
+                            </strong>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-lg border">
+                            <span className="text-slate-400 block mb-0.5">Tenant Operational Base URL</span>
+                            <strong className="text-slate-900 text-sm font-mono truncate block">
+                                {tenant.tenantSetting?.baseURL || "http://localhost:5245"}
+                            </strong>
+                        </div>
+                    </div>
+
+                    {tenant.tenantSetting?.dbConnectionString && (
+                        <div className="bg-slate-900 text-slate-100 rounded-lg p-3 font-mono text-xs overflow-x-auto">
+                            <span className="text-slate-400 block text-[10px] uppercase tracking-wider mb-1">
+                                Resolved Operational Connection String
+                            </span>
+                            <code>{tenant.tenantSetting.dbConnectionString}</code>
                         </div>
                     )}
                 </div>

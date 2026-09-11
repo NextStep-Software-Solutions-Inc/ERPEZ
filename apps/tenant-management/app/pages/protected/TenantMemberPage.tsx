@@ -264,8 +264,8 @@ function TenantMemberPage() {
 
     return (
         <PageContainer
-            title="Tenant Members"
-            description="Manage tenant members, assign RBAC roles, and govern organizational access permissions."
+            title="Members"
+            description={`Manage members of ${tenant?.name || 'this workspace'}, assign workspace roles, and govern access permissions.`}
             actions={
                 <Button
                     onClick={handleOpenInvite}

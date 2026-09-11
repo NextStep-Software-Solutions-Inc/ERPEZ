@@ -27,21 +27,21 @@ public class GetMyTenantsQueryHandler(
             Sorts = query.Sorts
         };
 
-        var userId = currentUserService.UserId;
-        var extId = currentUserService.ExternalIdentityId;
+        var externalSubject = currentUserService.ExternalIdentityId;
+        var lookupSubject = !string.IsNullOrWhiteSpace(externalSubject) ? externalSubject : currentUserService.UserId;
         Expression<Func<Tenant, bool>> customFilter;
 
-        if (string.IsNullOrWhiteSpace(userId) && string.IsNullOrWhiteSpace(extId))
+        if (string.IsNullOrWhiteSpace(lookupSubject))
         {
             var defaultId = Guid.Parse("00000000-0000-0000-0000-000000000001");
             customFilter = t => t.Id == defaultId;
         }
         else
         {
-            customFilter = t => t.TenantMembers.Any(tm =>
-                (!string.IsNullOrEmpty(userId) && tm.UserId == userId) ||
-                (!string.IsNullOrEmpty(extId) && tm.ExternalIdentityId == extId) ||
-                (!string.IsNullOrEmpty(extId) && tm.UserId == extId));
+            customFilter = t => !t.IsDisabled && t.TenantMembers.Any(tm =>
+                (tm.ExternalIdentityId == lookupSubject || tm.UserId == lookupSubject) &&
+                tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Active &&
+                !tm.IsDeleted);
         }
 
         Expression<Func<Tenant, TenantDto>> projection = t => new()
@@ -74,6 +74,18 @@ public class GetMyTenantsQueryHandler(
                     AutoRenew = ts.AutoRenew
                 })
                 .ToList(),
+            TenantMembers = t.TenantMembers
+                .Where(tm => (tm.ExternalIdentityId == lookupSubject || tm.UserId == lookupSubject) &&
+                             tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Active &&
+                             !tm.IsDeleted)
+                .Select(tm => new TenantMemberDto
+                {
+                    Id = tm.Id,
+                    TenantId = tm.TenantId,
+                    Role = tm.Role.ToString(),
+                    Roles = tm.RoleAssignments.Select(ra => ra.Role.Name).ToList(),
+                    Status = tm.Status.ToString()
+                }).ToList(),
             Modules = t.Modules.Select(m => new TenantModuleDto
             {
                 Id = m.Id,

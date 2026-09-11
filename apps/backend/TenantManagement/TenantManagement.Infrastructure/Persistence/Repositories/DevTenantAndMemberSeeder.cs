@@ -2,6 +2,7 @@ using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -496,6 +497,231 @@ public static class DevTenantAndMemberSeeder
             var assignedRoleIds = member.RoleAssignments.Select(ra => ra.RoleId).ToHashSet();
 
             foreach (var roleName in persona.RoleNames)
+            {
+                var normalized = roleName.Trim().ToUpperInvariant();
+                if (rolesByName.TryGetValue(normalized, out var roleEntity))
+                {
+                    if (!assignedRoleIds.Contains(roleEntity.Id))
+                    {
+                        member.RoleAssignments.Add(new TenantMemberRoleAssignment
+                        {
+                            TenantMemberId = member.Id,
+                            RoleId = roleEntity.Id
+                        });
+                    }
+                }
+            }
+        }
+
+        // 6. Seed Enterprise Subsidiaries (Multi-Database & Multi-Tenant Live Test Data)
+        var northConnStr = ResolveSubsidiaryConnectionString(dbContext, "erpez_north_db", "DEV_SUBSIDIARY_NORTH_CONNECTION");
+        var southConnStr = ResolveSubsidiaryConnectionString(dbContext, "erpez_south_db", "DEV_SUBSIDIARY_SOUTH_CONNECTION");
+
+        await SeedSubsidiaryAsync(
+            dbContext,
+            Guid.Parse("00000000-0000-0000-0000-000000000010"),
+            Guid.Parse("00000000-0000-0000-0000-000000000020"),
+            "North Region Subsidiary Inc.",
+            "Enterprise Manufacturing & Regional Branch",
+            "admin.north@erpez.dev",
+            "north.erpez.dev",
+            northConnStr,
+            onPremise: false,
+            rolesByName,
+            [
+                new("north_admin", "admin.north@erpez.dev", "North Admin (Dev)", ["Tenant Administrator"]),
+                new("north_finance", "finance.north@erpez.dev", "North Finance Officer (Dev)", ["Finance Officer"]),
+                new("north_planner", "planner.north@erpez.dev", "North Planning Officer (Dev)", ["Planning Officer"])
+            ],
+            cancellationToken
+        );
+
+        await SeedSubsidiaryAsync(
+            dbContext,
+            Guid.Parse("00000000-0000-0000-0000-000000000030"),
+            Guid.Parse("00000000-0000-0000-0000-000000000040"),
+            "South Distribution Corp.",
+            "Enterprise Supply Chain & Logistics Hub",
+            "admin.south@erpez.dev",
+            "south.erpez.dev",
+            southConnStr,
+            onPremise: true,
+            rolesByName,
+            [
+                new("south_admin", "admin.south@erpez.dev", "South Admin (Dev)", ["Tenant Administrator"]),
+                new("south_procurement", "procurement.south@erpez.dev", "South Procurement Officer (Dev)", ["Procurement Officer"])
+            ],
+            cancellationToken
+        );
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static string ResolveSubsidiaryConnectionString(ApplicationDbContext dbContext, string databaseName, string envVarName)
+    {
+        var customEnv = Environment.GetEnvironmentVariable(envVarName);
+        if (!string.IsNullOrWhiteSpace(customEnv))
+        {
+            return customEnv;
+        }
+
+        try
+        {
+            var baseConn = dbContext.Database.GetConnectionString();
+            if (!string.IsNullOrWhiteSpace(baseConn))
+            {
+                var builder = new NpgsqlConnectionStringBuilder(baseConn)
+                {
+                    Database = databaseName
+                };
+                return builder.ConnectionString;
+            }
+        }
+        catch
+        {
+            // Fallback safely if provider does not support NpgsqlConnectionStringBuilder
+        }
+
+        return string.Empty;
+    }
+
+    private record SubsidiaryUserSeed(
+        string UserId,
+        string Email,
+        string DisplayName,
+        string[] RoleNames
+    );
+
+    private static async Task SeedSubsidiaryAsync(
+        ApplicationDbContext dbContext,
+        Guid tenantId,
+        Guid settingId,
+        string name,
+        string description,
+        string adminEmail,
+        string domain,
+        string dbConnectionString,
+        bool onPremise,
+        Dictionary<string, Role> rolesByName,
+        List<SubsidiaryUserSeed> users,
+        CancellationToken cancellationToken)
+    {
+        var tenant = await dbContext.Tenants!
+            .Include(t => t.Modules)
+            .FirstOrDefaultAsync(t => t.Id == tenantId, cancellationToken);
+
+        if (tenant == null)
+        {
+            tenant = new Tenant
+            {
+                Id = tenantId,
+                Name = name,
+                Description = description,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = "system"
+            };
+            await dbContext.Tenants!.AddAsync(tenant, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        var setting = await dbContext.TenantSettings!
+            .FirstOrDefaultAsync(ts => ts.TenantId == tenantId, cancellationToken);
+
+        if (setting == null)
+        {
+            setting = new TenantSetting
+            {
+                Id = settingId,
+                TenantId = tenantId,
+                OnPremise = onPremise,
+                BaseURL = "http://localhost:5245",
+                DbConnectionString = dbConnectionString,
+                BillingContactEmail = adminEmail,
+                AllowedDomain = domain,
+                MaxAllowedTenants = 10,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = "system"
+            };
+            await dbContext.TenantSettings!.AddAsync(setting, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        else
+        {
+            setting.DbConnectionString = dbConnectionString;
+            setting.AllowedDomain = domain;
+            setting.MaxAllowedTenants = 10;
+            setting.BillingContactEmail = adminEmail;
+            setting.OnPremise = onPremise;
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        // Subscription
+        var sub = await dbContext.TenantSubscriptions!
+            .FirstOrDefaultAsync(ts => ts.TenantId == tenantId, cancellationToken);
+
+        if (sub == null)
+        {
+            sub = new TenantSubscription
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Amount = 299.00m,
+                Plan = Plan.Enterprise,
+                StartDate = DateTime.UtcNow.AddMonths(-1),
+                EndDate = DateTime.UtcNow.AddYears(2),
+                Status = Status.Active,
+                BillingCycle = BillingCycle.Monthly,
+                AutoRenew = true,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = "system"
+            };
+            await dbContext.TenantSubscriptions!.AddAsync(sub, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        // Modules
+        if (dbContext.Modules != null && tenant.Modules.Count == 0)
+        {
+            var modules = await dbContext.Modules.ToListAsync(cancellationToken);
+            foreach (var mod in modules)
+            {
+                tenant.Modules.Add(mod);
+            }
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        // Members & RBAC
+        foreach (var u in users)
+        {
+            var member = await dbContext.TenantMembers!
+                .Include(tm => tm.RoleAssignments)
+                .FirstOrDefaultAsync(tm => tm.TenantId == tenantId && (tm.UserId == u.UserId || tm.Email == u.Email), cancellationToken);
+
+            var parts = u.DisplayName.Split(' ', 2);
+            var firstName = parts[0];
+            var lastName = parts.Length > 1 ? parts[1] : string.Empty;
+
+            if (member == null)
+            {
+                member = new TenantMember
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    UserId = u.UserId,
+                    ExternalIdentityId = u.UserId,
+                    Email = u.Email,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Status = Status.Active,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "system"
+                };
+                await dbContext.TenantMembers!.AddAsync(member, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            var assignedRoleIds = member.RoleAssignments.Select(ra => ra.RoleId).ToHashSet();
+            foreach (var roleName in u.RoleNames)
             {
                 var normalized = roleName.Trim().ToUpperInvariant();
                 if (rolesByName.TryGetValue(normalized, out var roleEntity))
