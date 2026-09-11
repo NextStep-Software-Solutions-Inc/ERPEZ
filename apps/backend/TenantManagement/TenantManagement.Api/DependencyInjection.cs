@@ -46,7 +46,7 @@ public static class DependencyInjection
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
-                Description = "Please enter a valid JWT token into the field (e.g., 'Bearer {your token}')",
+                Description = "Please enter your JWT token (do not include the 'Bearer ' prefix, Swagger adds it automatically)",
                 Name = "Authorization",
                 Type = SecuritySchemeType.Http,
                 BearerFormat = "JWT",
