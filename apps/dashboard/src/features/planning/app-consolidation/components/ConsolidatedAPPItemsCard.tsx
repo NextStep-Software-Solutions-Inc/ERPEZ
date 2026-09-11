@@ -137,7 +137,7 @@ export function ConsolidatedAPPItemsCard({
             )}
           </div>
           {row.original.papCode && (
-            <span className="text-[10px] text-gray-400 font-mono">PAP Code: {row.original.papCode}</span>
+            <span className="text-[10px] text-gray-500 font-medium">PAP Code: {row.original.papCode}</span>
           )}
         </div>
       ),

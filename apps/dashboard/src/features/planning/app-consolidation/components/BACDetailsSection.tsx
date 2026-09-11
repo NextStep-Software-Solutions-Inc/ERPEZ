@@ -210,7 +210,7 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="flex-1 min-w-[280px] space-y-1.5">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs font-bold font-mono text-purple-800 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                            <span className="text-xs font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
                               {String(idx + 1).padStart(2, '0')}
                             </span>
                             <h3 className="text-base font-semibold text-slate-900 leading-tight">

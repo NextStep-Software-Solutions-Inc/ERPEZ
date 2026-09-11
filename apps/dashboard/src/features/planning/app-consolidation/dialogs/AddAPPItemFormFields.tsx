@@ -260,7 +260,7 @@ export function AddAPPItemFormFields({
                 <Info className="w-3.5 h-3.5 text-blue-600" />
                 Inherited PPMP Allocation Info
               </span>
-              <span className="font-mono font-bold bg-blue-600 text-white px-2 py-0.5 rounded text-xs shadow-2xs">
+              <span className="font-bold bg-blue-600 text-white px-2 py-0.5 rounded text-xs shadow-2xs">
                 {ppmpNumberStr}
               </span>
             </div>
