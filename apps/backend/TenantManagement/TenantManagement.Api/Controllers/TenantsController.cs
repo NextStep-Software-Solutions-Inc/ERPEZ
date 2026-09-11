@@ -27,7 +27,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         IUserAuthorizationService authorizationService) : ControllerBase
     {
         [HttpPost]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         [HasPermission(Permissions.Admin.tenantsManage)]
@@ -42,7 +42,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<TenantDto>), StatusCodes.Status200OK)]
         [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> GetTenants([FromQuery] GetTenantsQuery query)
@@ -165,7 +165,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpPatch("{id}/status")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -177,7 +177,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HasPermission(Permissions.Admin.tenantsManage)]

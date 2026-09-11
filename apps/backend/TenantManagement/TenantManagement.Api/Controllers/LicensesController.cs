@@ -7,12 +7,14 @@ using ERPEZ.TenantManagement.Application.Features.Licenses.Queries.GetLicenseKey
 using ERPEZ.TenantManagement.Application.Features.Licenses.Queries.GetTenantLicense;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Queries.ValidateLicense;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.TenantManagement.Api.Controllers;
 
 [ApiController]
 [Route("licenses")]
+[Authorize]
 public class LicensesController(ISender mediator) : ControllerBase
 {
     [HttpPost("generate")]

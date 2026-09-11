@@ -19,7 +19,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     public class ModulesController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         [HasPermission(Permissions.Admin.systemAdminManage)]
@@ -54,7 +54,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
@@ -72,7 +72,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HasPermission(Permissions.Admin.systemAdminManage)]

@@ -10,12 +10,14 @@ using ERPEZ.TenantManagement.Application.Features.Billing.Queries.GetTenantInvoi
 using ERPEZ.TenantManagement.Application.Features.Billing.Queries.GetTenantInvoices;
 using ERPEZ.TenantManagement.Application.Features.Billing.Queries.GetTenantPaymentMethods;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.TenantManagement.Api.Controllers;
 
 [ApiController]
 [Route("billing")]
+[Authorize]
 public class BillingController(ISender mediator) : ControllerBase
 {
     // ==========================================
