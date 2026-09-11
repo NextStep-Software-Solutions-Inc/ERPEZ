@@ -123,8 +123,8 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
       )
 
       toast({
-        title: 'Download Started',
-        description: `Downloading ${selectedBid.documents.length} documents for ${selectedBid.supplierName}.`,
+        title: 'ZIP Download Complete',
+        description: `Successfully downloaded ZIP archive containing ${selectedBid.documents.length} documents for ${selectedBid.supplierName}.`,
       })
     } catch (error) {
       console.error('Bulk download failed:', error)
@@ -163,8 +163,8 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
       )
 
       toast({
-        title: 'Download Started',
-        description: `Downloading ${allDocuments.length} total documents from all applicants.`,
+        title: 'ZIP Download Complete',
+        description: `Successfully downloaded ZIP archive containing ${allDocuments.length} documents from all applicants.`,
       })
     } catch (error) {
       console.error('Bulk download failed:', error)
@@ -253,7 +253,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
             ) : (
               <>
                 <Download className="h-4 w-4" />
-                Bulk Download All
+                Bulk Download All (ZIP)
               </>
             )}
           </Button>

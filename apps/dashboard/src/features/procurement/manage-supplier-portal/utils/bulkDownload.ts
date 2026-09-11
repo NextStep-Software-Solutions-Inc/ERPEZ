@@ -1,9 +1,11 @@
+import JSZip from 'jszip'
 import api from '@/services/api'
 
 /**
  * Bulk Download Utility
  * 
- * Handles downloading multiple documents securely using authenticated API client
+ * Handles packaging and downloading multiple documents into a single ZIP archive
+ * securely using authenticated API client.
  */
 
 interface DocumentToDownload {
@@ -12,24 +14,53 @@ interface DocumentToDownload {
   type?: string
 }
 
+function getUniqueFileName(name: string, existingNames: Set<string>): string {
+  let sanitized = name.replace(/[<>:"/\\|?*]/g, '_').trim()
+  if (!sanitized) {
+    sanitized = 'document'
+  }
+
+  if (!existingNames.has(sanitized.toLowerCase())) {
+    existingNames.add(sanitized.toLowerCase())
+    return sanitized
+  }
+
+  const dotIndex = sanitized.lastIndexOf('.')
+  const baseName = dotIndex !== -1 ? sanitized.substring(0, dotIndex) : sanitized
+  const extension = dotIndex !== -1 ? sanitized.substring(dotIndex) : ''
+
+  let counter = 1
+  let candidate = `${baseName} (${counter})${extension}`
+  while (existingNames.has(candidate.toLowerCase())) {
+    counter++
+    candidate = `${baseName} (${counter})${extension}`
+  }
+
+  existingNames.add(candidate.toLowerCase())
+  return candidate
+}
+
 /**
- * Download multiple documents sequentially
+ * Download multiple documents packaged in a single ZIP file
  * @param documents Array of documents to download
- * @param projectName Optional project name
+ * @param archiveName Name of the generated zip file (without or with .zip extension)
  * @param onProgress Optional callback for progress updates
  */
 export async function bulkDownloadDocuments(
   documents: DocumentToDownload[],
-  projectName: string,
+  archiveName: string,
   onProgress?: (current: number, total: number) => void
 ): Promise<void> {
   if (documents.length === 0) {
     throw new Error('No documents to download')
   }
 
-  let downloadedCount = 0
+  const zip = new JSZip()
+  const existingNames = new Set<string>()
+  let addedCount = 0
 
-  for (const doc of documents) {
+  for (let i = 0; i < documents.length; i++) {
+    const doc = documents[i]
     try {
       // Resolve endpoint (extract UUID or use path)
       const uuidRegex =
@@ -61,32 +92,38 @@ export async function bulkDownloadDocuments(
         fileName = `${fileName}.${doc.type.toLowerCase()}`
       }
 
-      // Create download link
-      const link = document.createElement('a')
-      const blobUrl = URL.createObjectURL(blob)
-      link.href = blobUrl
-      link.download = fileName
-      document.body.appendChild(link)
-
-      // Trigger download with small delay to avoid blocking
-      setTimeout(() => {
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(blobUrl)
-      }, downloadedCount * 200)
-
-      downloadedCount++
-
-      if (onProgress) {
-        onProgress(downloadedCount, documents.length)
-      }
+      const uniqueName = getUniqueFileName(fileName, existingNames)
+      zip.file(uniqueName, blob)
+      addedCount++
     } catch (error) {
       console.warn(`Error downloading ${doc.name}:`, error)
+    } finally {
+      if (onProgress) {
+        onProgress(i + 1, documents.length)
+      }
     }
   }
 
-  if (downloadedCount === 0) {
+  if (addedCount === 0) {
     throw new Error('Failed to download any documents')
   }
+
+  // Generate zip file and trigger single browser download
+  const zipBlob = await zip.generateAsync({ type: 'blob' })
+  const sanitizedArchiveName = (archiveName || 'Supplier_Documents')
+    .replace(/[<>:"/\\|?*]/g, '_')
+    .trim()
+  const zipFileName = sanitizedArchiveName.toLowerCase().endsWith('.zip')
+    ? sanitizedArchiveName
+    : `${sanitizedArchiveName}.zip`
+
+  const link = document.createElement('a')
+  const blobUrl = URL.createObjectURL(zipBlob)
+  link.href = blobUrl
+  link.download = zipFileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
 }
 
