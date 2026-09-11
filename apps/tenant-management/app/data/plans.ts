@@ -9,6 +9,8 @@ export interface PlanItem {
   popular?: boolean;
   annualPrice?: string;
   annualPriceSave?: string;
+  monthlyAmountCents?: number;
+  annualAmountCents?: number;
   deployment?: "saas" | "on-premise";
   badge?: string;
 }
@@ -20,6 +22,8 @@ export const saasPlans: PlanItem[] = [
     period: "per month",
     description: "Perfect for small businesses getting started with ERPez SaaS",
     deployment: "saas",
+    monthlyAmountCents: 9900,
+    annualAmountCents: 98000,
     features: [
       "Up to 10 users",
       "ERPez Cloud Datacenter hosted",
@@ -38,6 +42,8 @@ export const saasPlans: PlanItem[] = [
     period: "per month",
     description: "Ideal for growing multi-department businesses",
     deployment: "saas",
+    monthlyAmountCents: 29900,
+    annualAmountCents: 299900,
     features: [
       "Up to 50 users",
       "Multi-tenant cloud architecture",
@@ -57,6 +63,8 @@ export const saasPlans: PlanItem[] = [
     period: "per month",
     description: "High-capacity cloud infrastructure for global organizations",
     deployment: "saas",
+    monthlyAmountCents: 49900,
+    annualAmountCents: 499000,
     features: [
       "Unlimited users & multiple subsidiaries",
       "Full ERP suite + AI analytics",

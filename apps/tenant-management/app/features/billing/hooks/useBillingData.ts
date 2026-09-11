@@ -39,6 +39,8 @@ export interface UseBillingDataResult {
   ) => Promise<{ success: boolean; error?: string }>;
   updateBillingContact: (contact: BillingContact) => Promise<BillingContact>;
   updateSubscription: (updates: {
+    planName?: string;
+    amountCents?: number;
     billingCycle?: BillingCycle;
     autoRenew?: boolean;
     status?: SubscriptionStatus;
@@ -88,6 +90,8 @@ export function useBillingData(
   }, [fetchRepoData]);
 
   const [subscriptionOverride, setSubscriptionOverride] = useState<{
+    planName?: string;
+    amountCents?: number;
     billingCycle?: BillingCycle;
     autoRenew?: boolean;
     status?: SubscriptionStatus;
@@ -103,6 +107,8 @@ export function useBillingData(
 
   const updateSubscription = useCallback(
     async (updates: {
+      planName?: string;
+      amountCents?: number;
       billingCycle?: BillingCycle;
       autoRenew?: boolean;
       status?: SubscriptionStatus;
@@ -124,23 +130,35 @@ export function useBillingData(
 
   // Derived subscription from authoritative backend data with client overrides
   const baseSub = adaptTenantSubscription(tenant);
+  const targetPlanName = subscriptionOverride.planName || baseSub?.planName || "Enterprise";
+  const targetCycle = subscriptionOverride.billingCycle || baseSub?.billingCycle || "monthly";
+
+  // Base monthly cost in cents
+  let defaultMonthlyCents = baseSub?.amountCents || 29900;
+  if (baseSub?.billingCycle === "yearly" && defaultMonthlyCents > 10000) {
+    defaultMonthlyCents = Math.round(defaultMonthlyCents / 10);
+  }
+  if (subscriptionOverride.planName) {
+    const lower = subscriptionOverride.planName.toLowerCase();
+    if (lower.includes("starter")) defaultMonthlyCents = 9900;
+    else if (lower.includes("professional")) defaultMonthlyCents = 29900;
+    else if (lower.includes("enterprise")) defaultMonthlyCents = 29900;
+  }
+  const monthlyCostCents = subscriptionOverride.amountCents ?? defaultMonthlyCents;
+  const computedAmountCents =
+    targetCycle === "yearly" ? monthlyCostCents * 10 : monthlyCostCents;
+
   const subscription: SubscriptionAdapter | null = baseSub
     ? {
         ...baseSub,
-        billingCycle: subscriptionOverride.billingCycle || baseSub.billingCycle,
+        planName: targetPlanName,
+        billingCycle: targetCycle,
         autoRenew:
           subscriptionOverride.autoRenew !== undefined
             ? subscriptionOverride.autoRenew
             : baseSub.autoRenew,
         status: subscriptionOverride.status || baseSub.status,
-        amountCents:
-          (subscriptionOverride.billingCycle || baseSub.billingCycle) === "yearly"
-            ? (baseSub.billingCycle === "yearly"
-                ? baseSub.amountCents
-                : Math.round(baseSub.amountCents * 10))
-            : (baseSub.billingCycle === "yearly"
-                ? Math.round(baseSub.amountCents / 10)
-                : baseSub.amountCents),
+        amountCents: computedAmountCents,
       }
     : null;
 
