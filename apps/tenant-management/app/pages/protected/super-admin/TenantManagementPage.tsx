@@ -57,8 +57,8 @@ export default function TenantManagementPage() {
 
     return (
         <PageContainer
-            title="Tenant Management"
-            description="Manage, monitor, and enforce license limits for all tenant organizations"
+            title="Workspaces"
+            description="Manage customer workspaces, enterprise database routing silos, and multi-subsidiary quota limits."
             actions={
                 <div className="flex flex-wrap items-center gap-4">
                     <div className="hidden sm:flex gap-6 text-right">

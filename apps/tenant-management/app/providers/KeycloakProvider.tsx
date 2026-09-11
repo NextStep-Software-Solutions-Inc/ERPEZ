@@ -69,31 +69,61 @@ const DEV_PERSONAS: Record<
     isSuperAdmin: boolean;
   }
 > = {
-  dev_admin: {
-    userId: 'dev_admin',
-    externalIdentityId: 'dev_admin',
-    displayName: 'Tenant Admin (Dev)',
-    email: 'admin@erpez.dev',
-    roles: ['Tenant Administrator'],
-    tenantId: '00000000-0000-0000-0000-000000000001',
-    isSuperAdmin: false,
-  },
+  // --- PLATFORM CONTROL PLANE PERSONAS ---
   dev_superadmin: {
     userId: 'dev_superadmin',
     externalIdentityId: 'dev_superadmin',
-    displayName: 'Super Administrator (Dev)',
+    displayName: 'Super Administrator',
     email: 'superadmin@erpez.dev',
-    roles: ['SuperAdmin', 'Tenant Administrator'],
+    roles: ['platform_administrator'],
     tenantId: '00000000-0000-0000-0000-000000000001',
     isSuperAdmin: true,
+  },
+  dev_platform_auditor: {
+    userId: 'dev_platform_auditor',
+    externalIdentityId: 'dev_platform_auditor',
+    displayName: 'Jane Smith (Auditor)',
+    email: 'auditor@erpez.dev',
+    roles: ['platform_auditor'],
+    tenantId: '00000000-0000-0000-0000-000000000001',
+    isSuperAdmin: true, // Has access to view platform plane
+  },
+  dev_platform_support: {
+    userId: 'dev_platform_support',
+    externalIdentityId: 'dev_platform_support',
+    displayName: 'John Doe (Support)',
+    email: 'support@erpez.dev',
+    roles: ['platform_support'],
+    tenantId: '00000000-0000-0000-0000-000000000001',
+    isSuperAdmin: true, // Has access to view platform plane
+  },
+
+  // --- TENANT WORKSPACE PLANE PERSONAS ---
+  dev_admin: {
+    userId: 'dev_admin',
+    externalIdentityId: 'dev_admin',
+    displayName: 'Workspace Admin',
+    email: 'admin.north@erpez.dev',
+    roles: ['Tenant Administrator'],
+    tenantId: '00000000-0000-0000-0000-000000000010',
+    isSuperAdmin: false,
   },
   dev_planner: {
     userId: 'dev_planner',
     externalIdentityId: 'dev_planner',
-    displayName: 'Planning Officer (Dev)',
-    email: 'planner@erpez.dev',
+    displayName: 'Planning Officer',
+    email: 'planner.north@erpez.dev',
     roles: ['Planning Officer'],
-    tenantId: '00000000-0000-0000-0000-000000000001',
+    tenantId: '00000000-0000-0000-0000-000000000010',
+    isSuperAdmin: false,
+  },
+  dev_finance: {
+    userId: 'dev_finance',
+    externalIdentityId: 'dev_finance',
+    displayName: 'Finance Officer',
+    email: 'finance.north@erpez.dev',
+    roles: ['Finance Officer'],
+    tenantId: '00000000-0000-0000-0000-000000000010',
     isSuperAdmin: false,
   },
 };

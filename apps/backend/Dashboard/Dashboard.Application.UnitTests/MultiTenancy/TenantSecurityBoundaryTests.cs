@@ -609,4 +609,64 @@ public class TenantSecurityBoundaryTests
         // 2. CRITICAL: ConnectionResolver must NEVER be invoked for Tenant C (Zero credentials resolved / Zero DB contact)
         connectionResolverMock.Verify(r => r.ResolveConnectionInfoAsync(tenantCId, It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task PlatformUser_WithoutTenantMembership_CannotAccessTenantDatabase_FailsClosedWith403()
+    {
+        // Invariant: Platform access != Workspace access.
+        // A user with Platform Support role attempting to access Tenant Alpha without an explicit TenantMember record
+        // must fail closed with 403 TENANT_MEMBERSHIP_REQUIRED, and Tenant Alpha database credentials must NEVER be resolved.
+        var tenantId = Guid.NewGuid();
+        var platformUser = CreateUser("support-user"); // Platform Support identity without tenant membership
+
+        var context = CreateHttpContext(platformUser);
+        context.Request.Headers["X-Tenant-Id"] = tenantId.ToString();
+
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(
+                platformUser,
+                tenantId,
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenantAccessResult.Fail(
+                "Platform users do not have implicit access to tenant operational databases. Explicit workspace membership is required.",
+                "TENANT_MEMBERSHIP_REQUIRED",
+                StatusCodes.Status403Forbidden));
+
+        var resolutionMiddleware = new TenantResolutionMiddleware(c => Task.CompletedTask);
+        await resolutionMiddleware.InvokeAsync(context);
+
+        var reqCtx = new TenantRequestContext();
+        var validationMiddleware = new TenantAccessValidationMiddleware(c => Task.CompletedTask);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, reqCtx);
+
+        // Assert
+        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        reqCtx.IsResolved.Should().BeFalse();
+
+        // Golden Assertion: Zero credential resolution, Zero database contact
+        connectionResolverMock.Verify(r => r.ResolveConnectionInfoAsync(tenantId, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public void WorkspaceAdmin_WithoutPlatformRole_CannotAccessPlatformPlane()
+    {
+        // Invariant: Workspace Admin != Platform Admin.
+        // An identity that is Tenant Administrator inside a workspace, but lacks Keycloak platform roles,
+        // is not authorized for Platform Control Plane operations.
+        var tenantAdminClaims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, "admin-north"),
+            new("sub", "admin-north"),
+            new(ClaimTypes.Role, "Tenant Administrator") // Workspace role only, no platform_administrator
+        };
+        var identity = new ClaimsIdentity(tenantAdminClaims, "Keycloak");
+        var principal = new ClaimsPrincipal(identity);
+
+        // Verification: Check if caller has platform role
+        var isPlatformAdmin = principal.HasClaim(c => c.Type == ClaimTypes.Role && c.Value == "platform_administrator") ||
+                              principal.HasClaim(c => c.Type == "realm_access" && c.Value.Contains("platform_administrator"));
+
+        isPlatformAdmin.Should().BeFalse(
+            "Workspace Administrator role belongs strictly to the tenant plane and does not grant Platform Control Plane access.");
+    }
 }

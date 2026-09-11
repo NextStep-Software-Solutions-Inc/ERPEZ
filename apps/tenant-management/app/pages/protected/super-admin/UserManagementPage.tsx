@@ -17,7 +17,16 @@ import {
     DialogTitle,
     DialogTrigger,
     DialogFooter,
+    DialogDescription,
 } from "~/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import {
     Select,
     SelectContent,
@@ -36,9 +45,22 @@ import {
     Lock,
     ShieldAlert,
     AlertCircle,
-    SlidersHorizontal
+    SlidersHorizontal,
+    MoreHorizontal,
+    ExternalLink,
+    UserCheck,
+    UserX,
+    FolderLock,
+    ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
+
+interface WorkspaceAccessItem {
+    workspaceName: string;
+    workspaceId: string;
+    role: string;
+    status: "Active" | "Pending" | "Disabled";
+}
 
 interface PlatformUser {
     id: string;
@@ -47,7 +69,7 @@ interface PlatformUser {
     firstName: string;
     lastName: string;
     platformRole: "Platform Administrator" | "Platform Auditor" | "Platform Support";
-    workspaceMembershipsCount: number;
+    workspaceMemberships: WorkspaceAccessItem[];
     keycloakSynced: boolean;
     isActive: boolean;
     createdDate: string;
@@ -61,7 +83,20 @@ const INITIAL_PLATFORM_USERS: PlatformUser[] = [
         firstName: "Super",
         lastName: "Administrator",
         platformRole: "Platform Administrator",
-        workspaceMembershipsCount: 2,
+        workspaceMemberships: [
+            {
+                workspaceName: "ERPEZ Enterprise Corp",
+                workspaceId: "00000000-0000-0000-0000-000000000001",
+                role: "Workspace Administrator",
+                status: "Active",
+            },
+            {
+                workspaceName: "North Region Subsidiary Inc.",
+                workspaceId: "00000000-0000-0000-0000-000000000010",
+                role: "Workspace Administrator",
+                status: "Active",
+            },
+        ],
         keycloakSynced: true,
         isActive: true,
         createdDate: "2026-01-10",
@@ -73,7 +108,7 @@ const INITIAL_PLATFORM_USERS: PlatformUser[] = [
         firstName: "Jane",
         lastName: "Smith",
         platformRole: "Platform Auditor",
-        workspaceMembershipsCount: 0,
+        workspaceMemberships: [],
         keycloakSynced: true,
         isActive: true,
         createdDate: "2026-02-14",
@@ -85,7 +120,14 @@ const INITIAL_PLATFORM_USERS: PlatformUser[] = [
         firstName: "John",
         lastName: "Doe",
         platformRole: "Platform Support",
-        workspaceMembershipsCount: 1,
+        workspaceMemberships: [
+            {
+                workspaceName: "South Distribution Corp.",
+                workspaceId: "00000000-0000-0000-0000-000000000030",
+                role: "Support / Diagnostics",
+                status: "Active",
+            },
+        ],
         keycloakSynced: true,
         isActive: true,
         createdDate: "2026-03-01",
@@ -98,7 +140,14 @@ export default function UserManagementPage() {
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
 
-    // Form state
+    // Edit Role Modal state
+    const [editingUser, setEditingUser] = useState<PlatformUser | null>(null);
+    const [newPlatformRole, setNewPlatformRole] = useState<PlatformUser["platformRole"]>("Platform Support");
+
+    // Workspace Access Modal state
+    const [viewingAccessUser, setViewingAccessUser] = useState<PlatformUser | null>(null);
+
+    // Add User Form state
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [firstName, setFirstName] = useState("");
@@ -135,14 +184,14 @@ export default function UserManagementPage() {
             firstName,
             lastName,
             platformRole,
-            workspaceMembershipsCount: 0,
+            workspaceMemberships: [],
             keycloakSynced: true,
             isActive: true,
             createdDate: new Date().toISOString().split("T")[0],
         };
 
         setUsers([newUser, ...users]);
-        toast.success(`Platform User ${username} successfully provisioned in Keycloak realm.`);
+        toast.success(`Platform User ${username} successfully provisioned with role ${platformRole}.`);
         setIsAddOpen(false);
 
         // Reset form
@@ -151,6 +200,20 @@ export default function UserManagementPage() {
         setFirstName("");
         setLastName("");
         setPlatformRole("Platform Administrator");
+    };
+
+    const handleOpenEditRole = (user: PlatformUser) => {
+        setEditingUser(user);
+        setNewPlatformRole(user.platformRole);
+    };
+
+    const handleSaveRole = () => {
+        if (!editingUser) return;
+        setUsers((prev) =>
+            prev.map((u) => (u.id === editingUser.id ? { ...u, platformRole: newPlatformRole } : u))
+        );
+        toast.success(`Platform role for ${editingUser.username} updated to ${newPlatformRole}.`);
+        setEditingUser(null);
     };
 
     const toggleUserStatus = (id: string) => {
@@ -226,6 +289,9 @@ export default function UserManagementPage() {
                             <form onSubmit={handleCreateUser}>
                                 <DialogHeader>
                                     <DialogTitle>Provision Platform User into Keycloak</DialogTitle>
+                                    <DialogDescription className="text-xs text-muted-foreground">
+                                        Assign platform control-plane capabilities to an authenticated identity.
+                                    </DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
                                     <div className="grid grid-cols-2 gap-4">
@@ -274,7 +340,7 @@ export default function UserManagementPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Platform Role</Label>
+                                        <Label>Platform Role (Mutually Exclusive)</Label>
                                         <Select value={platformRole} onValueChange={(val: any) => setPlatformRole(val)}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select platform role" />
@@ -284,7 +350,7 @@ export default function UserManagementPage() {
                                                     Platform Administrator (Full Control Plane Access)
                                                 </SelectItem>
                                                 <SelectItem value="Platform Auditor">
-                                                    Platform Auditor (Compliance & Audit Visibility)
+                                                    Platform Auditor (Read-Only Compliance & Audit)
                                                 </SelectItem>
                                                 <SelectItem value="Platform Support">
                                                     Platform Support (Tenant Diagnostics & Operational Support)
@@ -374,7 +440,7 @@ export default function UserManagementPage() {
                     <div>
                         <CardTitle className="text-base font-bold text-slate-900">Platform Users ({filteredUsers.length})</CardTitle>
                         <CardDescription className="text-xs text-slate-500">
-                            Centralized platform administrator and operator directory
+                            Centralized platform administrator, auditor, and support directory
                         </CardDescription>
                     </div>
                     <div className="relative w-full sm:w-64">
@@ -429,15 +495,22 @@ export default function UserManagementPage() {
                                             {getRoleBadge(user.platformRole)}
                                         </td>
                                         <td className="py-3.5 px-4">
-                                            <span className="text-xs text-slate-600 font-medium">
-                                                {user.workspaceMembershipsCount > 0 ? (
-                                                    <Badge variant="outline" className="text-[11px] font-normal text-slate-700 bg-slate-50">
-                                                        {user.workspaceMembershipsCount} {user.workspaceMembershipsCount === 1 ? 'Workspace' : 'Workspaces'}
-                                                    </Badge>
-                                                ) : (
-                                                    <span className="text-slate-400 text-xs italic">No workspace memberships</span>
-                                                )}
-                                            </span>
+                                            {user.workspaceMemberships.length > 0 ? (
+                                                <button
+                                                    onClick={() => setViewingAccessUser(user)}
+                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+                                                    title="Click to view workspace memberships"
+                                                >
+                                                    <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                                                    {user.workspaceMemberships.length}{" "}
+                                                    {user.workspaceMemberships.length === 1 ? "Workspace" : "Workspaces"}
+                                                    <ExternalLink className="w-3 h-3 text-blue-400 ml-0.5" />
+                                                </button>
+                                            ) : (
+                                                <span className="text-slate-400 text-xs italic">
+                                                    No workspace memberships
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="py-3.5 px-4">
                                             {user.keycloakSynced ? (
@@ -461,14 +534,60 @@ export default function UserManagementPage() {
                                             </span>
                                         </td>
                                         <td className="py-3.5 px-4 text-right">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => toggleUserStatus(user.id)}
-                                                className="text-xs h-7 px-2"
-                                            >
-                                                {user.isActive ? "Suspend" : "Enable"}
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                        <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-52">
+                                                    <DropdownMenuLabel className="text-xs text-slate-500">
+                                                        Platform Actions
+                                                    </DropdownMenuLabel>
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleOpenEditRole(user)}
+                                                        className="cursor-pointer text-xs flex items-center gap-2"
+                                                    >
+                                                        <FolderLock className="w-3.5 h-3.5 text-blue-600" />
+                                                        Edit Platform Role
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() => setViewingAccessUser(user)}
+                                                        className="cursor-pointer text-xs flex items-center gap-2"
+                                                    >
+                                                        <Building2 className="w-3.5 h-3.5 text-slate-600" />
+                                                        View Workspace Access
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() => {
+                                                            toast.success(`Keycloak sync verified for @${user.username}`);
+                                                        }}
+                                                        className="cursor-pointer text-xs flex items-center gap-2"
+                                                    >
+                                                        <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
+                                                        Sync from Keycloak
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        onClick={() => toggleUserStatus(user.id)}
+                                                        className={`cursor-pointer text-xs flex items-center gap-2 ${
+                                                            user.isActive ? "text-rose-600" : "text-emerald-600"
+                                                        }`}
+                                                    >
+                                                        {user.isActive ? (
+                                                            <>
+                                                                <UserX className="w-3.5 h-3.5" />
+                                                                Suspend User
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <UserCheck className="w-3.5 h-3.5" />
+                                                                Activate User
+                                                            </>
+                                                        )}
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </td>
                                     </tr>
                                 ))
@@ -477,6 +596,157 @@ export default function UserManagementPage() {
                     </table>
                 </CardContent>
             </Card>
+
+            {/* Edit Platform Role Modal */}
+            <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit Platform Access</DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500">
+                            Configure control-plane role for{" "}
+                            <strong>
+                                {editingUser?.firstName} {editingUser?.lastName}
+                            </strong>{" "}
+                            (@{editingUser?.username})
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-3">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-slate-700">Platform Role</Label>
+                            <Select
+                                value={newPlatformRole}
+                                onValueChange={(val: any) => setNewPlatformRole(val)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select platform role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Platform Administrator">
+                                        Platform Administrator (Full Control Plane Access)
+                                    </SelectItem>
+                                    <SelectItem value="Platform Auditor">
+                                        Platform Auditor (Read-Only Compliance & Audit)
+                                    </SelectItem>
+                                    <SelectItem value="Platform Support">
+                                        Platform Support (Tenant Diagnostics & Troubleshooting)
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {newPlatformRole === "Platform Administrator" && (
+                            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 flex items-start gap-2.5">
+                                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <strong className="font-semibold block">Privileged Control Plane Operation</strong>
+                                    <p className="mt-0.5 text-amber-800">
+                                        Assigning Platform Administrator grants full authority to create/disable workspaces, provision databases, and manage other platform administrators.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-600">
+                            <span className="font-semibold block text-slate-700">Platform Authorization Policy</span>
+                            <p className="mt-0.5">
+                                Platform roles are mutually exclusive and governed via Keycloak master realm claims. Workspace memberships remain unchanged.
+                            </p>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditingUser(null)}>
+                            Cancel
+                        </Button>
+                        <Button className="btn-blue" onClick={handleSaveRole}>
+                            Save Platform Role
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Workspace Access Inspection Modal */}
+            <Dialog open={!!viewingAccessUser} onOpenChange={(open) => !open && setViewingAccessUser(null)}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Building2 className="w-5 h-5 text-blue-600" />
+                            Workspace Memberships
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500">
+                            Workspace memberships for{" "}
+                            <strong>
+                                {viewingAccessUser?.firstName} {viewingAccessUser?.lastName}
+                            </strong>{" "}
+                            ({viewingAccessUser?.email})
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-2">
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200">
+                            <div className="text-xs">
+                                <span className="text-slate-500 block">Platform Control Plane Role</span>
+                                <div className="mt-1">
+                                    {viewingAccessUser && getRoleBadge(viewingAccessUser.platformRole)}
+                                </div>
+                            </div>
+                            <div className="text-right text-xs">
+                                <span className="text-slate-500 block">Workspace Count</span>
+                                <span className="font-bold text-slate-900 text-sm">
+                                    {viewingAccessUser?.workspaceMemberships.length || 0}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Informational Callout */}
+                        <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-xs text-blue-900 flex items-start gap-2">
+                            <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                            <p className="leading-relaxed">
+                                <strong>Platform access &ne; workspace membership:</strong> Workspace membership does not grant platform access, and platform roles do not automatically grant workspace ERP access.
+                            </p>
+                        </div>
+
+                        {/* Memberships Table */}
+                        <div className="space-y-2">
+                            <span className="text-xs font-semibold text-slate-700 block">
+                                Authorized Customer Workspaces
+                            </span>
+                            {!viewingAccessUser?.workspaceMemberships ||
+                            viewingAccessUser.workspaceMemberships.length === 0 ? (
+                                <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                    No workspace memberships. This identity holds only platform control plane permissions.
+                                </div>
+                            ) : (
+                                <div className="rounded-lg border border-slate-200 divide-y divide-slate-100 overflow-hidden text-xs">
+                                    {viewingAccessUser.workspaceMemberships.map((ws, i) => (
+                                        <div key={i} className="p-3 flex items-center justify-between bg-white hover:bg-slate-50">
+                                            <div>
+                                                <span className="font-semibold text-slate-900 block">{ws.workspaceName}</span>
+                                                <span className="text-[11px] text-slate-500 font-mono">ID: {ws.workspaceId.slice(0, 8)}...</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="outline" className="bg-slate-50 text-slate-700 text-[11px]">
+                                                    {ws.role}
+                                                </Badge>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                    {ws.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setViewingAccessUser(null)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
