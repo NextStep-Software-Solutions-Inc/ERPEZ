@@ -1,20 +1,23 @@
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.Shared.Models;
 
 namespace ERPEZ.Shared.Services;
 
 /// <summary>
 /// Scoped service for holding the active tenant context for the current request.
+/// Implements ITenantRequestContext and ITenantContextService.
 /// </summary>
-public sealed class TenantContextService : ITenantContextService
+public class TenantContextService : ITenantRequestContext
 {
-    private Guid? tenantId;
+    public TenantAccessContext? AccessContext { get; private set; }
+    public TenantDatabaseConnectionInfo? ConnectionInfo { get; private set; }
 
-    public Guid? TenantId => tenantId;
+    public Guid? TenantId => AccessContext?.TenantId;
+    public bool IsResolved => AccessContext != null && ConnectionInfo != null;
 
-    public bool IsResolved => tenantId.HasValue;
-
-    public void SetTenantId(Guid tenantId)
+    public void Initialize(TenantAccessContext accessContext, TenantDatabaseConnectionInfo connectionInfo)
     {
-        this.tenantId = tenantId;
+        AccessContext = accessContext;
+        ConnectionInfo = connectionInfo;
     }
 }

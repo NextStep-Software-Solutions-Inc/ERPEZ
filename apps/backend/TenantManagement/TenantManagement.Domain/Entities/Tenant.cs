@@ -12,6 +12,8 @@ public class Tenant : BaseEntity
     public string? Description { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsDisabled { get; set; } = false;
+    [Sieve(CanFilter = true, CanSort = true)]
+    public ERPEZ.Shared.Enums.TenantProvisioningState ProvisioningState { get; set; } = ERPEZ.Shared.Enums.TenantProvisioningState.Ready;
     public virtual List<Module> Modules { get; set; } = [];
     public virtual TenantSetting TenantSetting { get; set; } = null!;
     public virtual List<TenantSubscription> TenantSubscriptions { get; set; } = [];

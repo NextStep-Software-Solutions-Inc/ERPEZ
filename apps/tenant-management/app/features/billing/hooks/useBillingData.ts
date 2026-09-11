@@ -5,11 +5,13 @@ import { mockBillingRepository } from "../repositories/mockBillingRepository";
 import type { BillingRepository } from "../repositories/billingRepository";
 import type {
   BillingContact,
+  BillingCycle,
   CreatePaymentMethodInput,
   Invoice,
   NextInvoiceProjection,
   PaymentMethod,
   SubscriptionAdapter,
+  SubscriptionStatus,
 } from "../types";
 import { adaptTenantSubscription, calculateNextInvoice } from "../utils/billing";
 
@@ -36,6 +38,11 @@ export interface UseBillingDataResult {
     paymentMethodId: string
   ) => Promise<{ success: boolean; error?: string }>;
   updateBillingContact: (contact: BillingContact) => Promise<BillingContact>;
+  updateSubscription: (updates: {
+    billingCycle?: BillingCycle;
+    autoRenew?: boolean;
+    status?: SubscriptionStatus;
+  }) => Promise<void>;
 }
 
 export function useBillingData(
@@ -80,8 +87,63 @@ export function useBillingData(
     fetchRepoData();
   }, [fetchRepoData]);
 
-  // Derived subscription from authoritative backend data
-  const subscription = adaptTenantSubscription(tenant);
+  const [subscriptionOverride, setSubscriptionOverride] = useState<{
+    billingCycle?: BillingCycle;
+    autoRenew?: boolean;
+    status?: SubscriptionStatus;
+  }>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const saved = localStorage.getItem(`erpez_sub_override_${tenantId}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const updateSubscription = useCallback(
+    async (updates: {
+      billingCycle?: BillingCycle;
+      autoRenew?: boolean;
+      status?: SubscriptionStatus;
+    }) => {
+      setSubscriptionOverride((prev) => {
+        const next = { ...prev, ...updates };
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(`erpez_sub_override_${tenantId}`, JSON.stringify(next));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        return next;
+      });
+    },
+    [tenantId]
+  );
+
+  // Derived subscription from authoritative backend data with client overrides
+  const baseSub = adaptTenantSubscription(tenant);
+  const subscription: SubscriptionAdapter | null = baseSub
+    ? {
+        ...baseSub,
+        billingCycle: subscriptionOverride.billingCycle || baseSub.billingCycle,
+        autoRenew:
+          subscriptionOverride.autoRenew !== undefined
+            ? subscriptionOverride.autoRenew
+            : baseSub.autoRenew,
+        status: subscriptionOverride.status || baseSub.status,
+        amountCents:
+          (subscriptionOverride.billingCycle || baseSub.billingCycle) === "yearly"
+            ? (baseSub.billingCycle === "yearly"
+                ? baseSub.amountCents
+                : Math.round(baseSub.amountCents * 10))
+            : (baseSub.billingCycle === "yearly"
+                ? Math.round(baseSub.amountCents / 10)
+                : baseSub.amountCents),
+      }
+    : null;
+
   const nextInvoice = calculateNextInvoice(subscription);
   const defaultPaymentMethod =
     paymentMethods.find((pm) => pm.isDefault) || paymentMethods[0] || null;
@@ -163,5 +225,6 @@ export function useBillingData(
     deletePaymentMethod,
     processPayment,
     updateBillingContact,
+    updateSubscription,
   };
 }

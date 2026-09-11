@@ -31,7 +31,12 @@ public static class DependencyInjection
 
         // Register current user and tenant context services
         services.AddScoped<ICurrentUserService, CurrentUserService>();
-        services.AddScoped<ITenantContextService, TenantContextService>();
+        services.AddScoped<TenantRequestContext>();
+        services.AddScoped<ITenantContextService>(sp => sp.GetRequiredService<TenantRequestContext>());
+        services.AddScoped<ITenantRequestContext>(sp => sp.GetRequiredService<TenantRequestContext>());
+        services.AddScoped<ITenantConnectionProvider, TenantConnectionProvider>();
+        services.AddScoped<ITenantAccessService, TenantAccessService>();
+        services.AddScoped<ITenantConnectionResolver, TenantConnectionResolver>();
         services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
         services.AddScoped<AuditingInterceptor>();
 

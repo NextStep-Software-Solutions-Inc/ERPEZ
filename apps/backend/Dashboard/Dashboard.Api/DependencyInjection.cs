@@ -52,8 +52,18 @@ public static class DependencyInjection
             }
         });
 
+        services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+                                      Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto |
+                                      Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost;
+        });
+
         services.AddMemoryCache();
-        services.AddScoped<ITenantContextService, TenantContextService>();
+        services.AddScoped<TenantRequestContext>();
+        services.AddScoped<ITenantContextService>(sp => sp.GetRequiredService<TenantRequestContext>());
+        services.AddScoped<ITenantRequestContext>(sp => sp.GetRequiredService<TenantRequestContext>());
+        services.AddScoped<ITenantConnectionProvider, TenantConnectionProvider>();
         services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
         services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
