@@ -60,6 +60,7 @@ type NoticeOfAwardDetailsShellProps = {
   onSubmit?: () => void | Promise<void>
   onReturn?: () => void
   onApprove?: () => void
+  onOpenLogConforme?: () => void
   onLogMilestone?: (
     milestone: NoticeOfAwardMilestone,
     file: File,
@@ -81,6 +82,7 @@ export function NoticeOfAwardDetailsShell({
   onSubmit,
   onReturn,
   onApprove,
+  onOpenLogConforme,
   onLogMilestone,
   onLogJustification,
   onTriggerCascade,
@@ -380,6 +382,7 @@ export function NoticeOfAwardDetailsShell({
             noticeOfAward={noticeOfAward}
             canLogMilestones={role === 'procurement-staff' && canLogContractExecution}
             isLoading={isLoading}
+            onOpenLogConforme={onOpenLogConforme}
             onLogMilestone={onLogMilestone}
             onLogJustification={onLogJustification}
             onTriggerCascade={onTriggerCascade}
@@ -473,6 +476,7 @@ function ContractExecutionSlaCard({
   noticeOfAward,
   canLogMilestones,
   isLoading,
+  onOpenLogConforme,
   onLogMilestone,
   onLogJustification,
   onTriggerCascade,
@@ -481,6 +485,7 @@ function ContractExecutionSlaCard({
   noticeOfAward: NoticeOfAward
   canLogMilestones: boolean
   isLoading: boolean
+  onOpenLogConforme?: () => void
   onLogMilestone?: (
     milestone: NoticeOfAwardMilestone,
     file: File,
@@ -502,7 +507,9 @@ function ContractExecutionSlaCard({
             <CardTitle className="text-base">Contract Execution SLA</CardTitle>
             <CardDescription>
               {slaState.isIssued
-                ? `Issued ${formatNoaSlaDate(slaState.issuedDate)} - Due ${formatNoaSlaDate(slaState.deadlineDate)}`
+                ? (slaState.receivedDate
+                    ? '10-day statutory countdown active from NOA receipt'
+                    : `Issued ${formatNoaSlaDate(slaState.issuedDate)} — Awaiting Conforme / Receipt`)
                 : 'Starts after HoPE approval / issuance.'}
             </CardDescription>
           </div>
@@ -510,6 +517,27 @@ function ContractExecutionSlaCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-0">
+        {slaState.isIssued && (
+          <div className="grid grid-cols-3 gap-2 py-2 px-3 bg-default-50 rounded-lg border border-default-150 text-xs">
+            <div>
+              <span className="text-default-400 block text-[10px] uppercase font-bold tracking-wider">Issued</span>
+              <span className="font-semibold text-default-700">{formatNoaSlaDate(slaState.issuedDate)}</span>
+            </div>
+            <div>
+              <span className="text-default-400 block text-[10px] uppercase font-bold tracking-wider">Actual Receipt</span>
+              <span className="font-semibold text-default-700">
+                {slaState.receivedDate ? formatNoaSlaDate(slaState.receivedDate) : 'Awaiting Conforme'}
+              </span>
+            </div>
+            <div>
+              <span className="text-default-400 block text-[10px] uppercase font-bold tracking-wider">Execution Due</span>
+              <span className="font-semibold text-default-700">
+                {slaState.deadlineDate ? formatNoaSlaDate(slaState.deadlineDate) : '10d from receipt'}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2">
           <Progress
             value={slaState.progressPercent}
@@ -605,10 +633,12 @@ function ContractExecutionSlaCard({
                     <div className="mt-1 space-y-1 text-xs text-default-500">
                       {isLogged && milestoneDate ? (
                         <div className="font-semibold text-emerald-700">
-                          Logged on {formatNoaSlaDate(milestoneDate)}
+                          {milestone.key === 'conforme_received_date' ? 'Received' : 'Logged'} on {formatNoaSlaDate(milestoneDate)}
                         </div>
                       ) : (
-                        <div className="text-default-400 font-medium">Pending upload</div>
+                        <div className="text-default-400 font-medium">
+                          {milestone.key === 'conforme_received_date' ? 'Awaiting Conforme / Receipt' : 'Pending upload'}
+                        </div>
                       )}
                       
                       {milestoneFileName ? (
@@ -627,7 +657,7 @@ function ContractExecutionSlaCard({
                   </div>
                   
                   <div>
-                    {!isLogged ? (
+                    {!isLogged && milestone.key !== 'conforme_received_date' ? (
                       <Input
                         id={inputId}
                         type="file"
@@ -659,19 +689,33 @@ function ContractExecutionSlaCard({
                         Logged
                       </Button>
                     ) : canUploadMilestone ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        color="primary"
-                        size="sm"
-                        className="gap-1.5 h-8 font-bold hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer shadow-sm animate-in fade-in"
-                        asChild
-                      >
-                        <label htmlFor={inputId} className="cursor-pointer">
+                      milestone.key === 'conforme_received_date' ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          color="primary"
+                          size="sm"
+                          className="gap-1.5 h-8 font-bold hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer shadow-sm animate-in fade-in"
+                          onClick={() => onOpenLogConforme?.()}
+                        >
                           <Upload className="h-3.5 w-3.5" />
-                          Log {toMilestoneActionLabel(milestone.label)}
-                        </label>
-                      </Button>
+                          Log Conforme Received
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          color="primary"
+                          size="sm"
+                          className="gap-1.5 h-8 font-bold hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer shadow-sm animate-in fade-in"
+                          asChild
+                        >
+                          <label htmlFor={inputId} className="cursor-pointer">
+                            <Upload className="h-3.5 w-3.5" />
+                            Log {toMilestoneActionLabel(milestone.label)}
+                          </label>
+                        </Button>
+                      )
                     ) : (
                       <Button
                         type="button"

@@ -4,7 +4,10 @@
  */
 
 // Market Scoping Management Tables
-export { createMarketScopingTableColumns, MarketScopingColumns } from './MarketScopingTableColumns'
+export {
+  createMarketScopingTableColumns,
+  MarketScopingColumns,
+} from './MarketScopingTableColumns'
 export { MarketScopingTableActions } from './MarketScopingTableActions'
 export { MarketScopingTableToolbar } from './MarketScopingTableToolbar'
 

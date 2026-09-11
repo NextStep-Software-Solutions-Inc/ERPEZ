@@ -59,8 +59,8 @@ export function EvaluateBidsDialog({
   const evaluateBidsMutation = useEvaluateProjectBids()
 
   const [selectedCriterion, setSelectedCriterion] = useState<string>(awardCriterion || '')
-  const [techWeight, setTechWeight] = useState<string>(String(technicalWeight ?? 70))
-  const [finWeight, setFinWeight] = useState<string>(String(financialWeight ?? 30))
+  const [techWeight, setTechWeight] = useState<string>(technicalWeight != null ? String(technicalWeight) : '')
+  const [finWeight, setFinWeight] = useState<string>(financialWeight != null ? String(financialWeight) : '')
   const [bidderInputs, setBidderInputs] = useState<Array<BidderInputState>>([])
   const [remarks, setRemarks] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -68,8 +68,8 @@ export function EvaluateBidsDialog({
   useEffect(() => {
     if (open) {
       setSelectedCriterion(awardCriterion || '')
-      setTechWeight(String(technicalWeight ?? 70))
-      setFinWeight(String(financialWeight ?? 30))
+      setTechWeight(technicalWeight != null ? String(technicalWeight) : '')
+      setFinWeight(financialWeight != null ? String(financialWeight) : '')
       if (admittedSubmissions.length > 0) {
         const initialStates: Array<BidderInputState> = admittedSubmissions
           .filter((s) => s.openingRecord && s.openingRecord.envelope1Result === 'Passed' && s.openingRecord.envelope2Opened)
@@ -78,7 +78,7 @@ export function EvaluateBidsDialog({
             supplierName: s.supplierName,
             asReadBidAmount: s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount,
             evaluatedBidPrice: String(s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount),
-            technicalScore: '90',
+            technicalScore: '',
             isResponsive: true,
             nonResponsiveReason: '',
           }))
@@ -142,6 +142,10 @@ export function EvaluateBidsDialog({
     let tw: number | null = null
     let fw: number | null = null
     if (selectedCriterion === 'MEARB') {
+      if (!techWeight.trim() || !finWeight.trim()) {
+        setValidationError('For MEARB, Technical weight and Financial weight must be specified.')
+        return
+      }
       tw = parseFloat(techWeight)
       fw = parseFloat(finWeight)
       if (isNaN(tw) || isNaN(fw) || Math.abs((tw + fw) - 100) > 0.01) {
@@ -161,10 +165,21 @@ export function EvaluateBidsDialog({
 
       let techScore: number | null = null
       if (selectedCriterion === 'MEARB') {
-        techScore = parseFloat(b.technicalScore)
-        if (isNaN(techScore) || techScore < 0 || techScore > 100) {
-          setValidationError(`Technical score for ${b.supplierName} must be between 0 and 100.`)
-          return
+        if (b.isResponsive) {
+          if (!b.technicalScore || !b.technicalScore.trim()) {
+            setValidationError(`Technical score is required for ${b.supplierName} under MEARB evaluation.`)
+            return
+          }
+          techScore = parseFloat(b.technicalScore)
+          if (isNaN(techScore) || techScore < 0 || techScore > 100) {
+            setValidationError(`Technical score for ${b.supplierName} must be between 0 and 100.`)
+            return
+          }
+        } else if (b.technicalScore && b.technicalScore.trim()) {
+          const parsed = parseFloat(b.technicalScore)
+          if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+            techScore = parsed
+          }
         }
       }
 
@@ -235,15 +250,23 @@ export function EvaluateBidsDialog({
                     Required under RA 12009 (NGPA) / RA 9184 before bid ranking.
                   </p>
                 </div>
-                <select
-                  value={selectedCriterion}
-                  onChange={(e) => setSelectedCriterion(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-white px-2.5 py-1 text-xs font-semibold text-default-900 focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
-                >
-                  <option value="">-- Select Criterion --</option>
-                  <option value="LCRB">Lowest Calculated Responsive Bid (LCRB)</option>
-                  <option value="MEARB">Most Economically Advantageous Responsive Bid (MEARB)</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedCriterion}
+                    onChange={(e) => setSelectedCriterion(e.target.value)}
+                    disabled={Boolean(awardCriterion)}
+                    className="h-8 rounded-md border border-input bg-white px-2.5 py-1 text-xs font-semibold text-default-900 focus:outline-none focus:ring-1 focus:ring-primary shadow-sm disabled:bg-default-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">-- Select Criterion --</option>
+                    <option value="LCRB">Lowest Calculated Responsive Bid (LCRB)</option>
+                    <option value="MEARB">Most Economically Advantageous Responsive Bid (MEARB)</option>
+                  </select>
+                  {awardCriterion && (
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      (Locked)
+                    </span>
+                  )}
+                </div>
               </div>
 
               {selectedCriterion === 'MEARB' && (
@@ -256,6 +279,7 @@ export function EvaluateBidsDialog({
                       type="number"
                       min="1"
                       max="99"
+                      placeholder="e.g. 60"
                       value={techWeight}
                       onChange={(e) => setTechWeight(e.target.value)}
                       className="h-8 text-xs font-mono mt-1 bg-white"
@@ -269,13 +293,16 @@ export function EvaluateBidsDialog({
                       type="number"
                       min="1"
                       max="99"
+                      placeholder="e.g. 40"
                       value={finWeight}
                       onChange={(e) => setFinWeight(e.target.value)}
                       className="h-8 text-xs font-mono mt-1 bg-white"
                     />
                   </div>
                   <p className="text-[10px] text-muted-foreground col-span-2">
-                    Weights must sum to exactly 100% (currently: {(parseFloat(techWeight) || 0) + (parseFloat(finWeight) || 0)}%).
+                    {techWeight && finWeight
+                      ? `Weights must sum to exactly 100% (currently: ${(parseFloat(techWeight) || 0) + (parseFloat(finWeight) || 0)}%).`
+                      : 'Technical and Financial weights are required and must sum to exactly 100%.'}
                   </p>
                 </div>
               )}
@@ -369,9 +396,9 @@ export function EvaluateBidsDialog({
                           max="100"
                           value={bidder.technicalScore}
                           onChange={(e) => handleTechScoreChange(idx, e.target.value)}
-                          placeholder="90.0"
+                          placeholder="Score (0–100)"
                           className="text-xs font-mono font-bold"
-                          required
+                          required={bidder.isResponsive}
                         />
                         <p className="text-[10px] text-muted-foreground">
                           TWG rating score based on technical criteria.

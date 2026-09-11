@@ -29,8 +29,16 @@ public class GeneratePpmpDocumentCommandHandler(
             .GetPPMPWithDetailsAsync(request.PpmpId, cancellationToken)
             ?? throw new NotFoundException("PPMP not found.");
 
+        // Fetch source PPMP if this is a Supplemental PPMP and not already loaded
+        PpmpEntity? sourcePpmp = ppmp.SourcePPMP;
+        if (sourcePpmp == null && ppmp.PPMPType == PPMPTypeEnum.Supplemental && ppmp.SourcePPMPId.HasValue)
+        {
+            sourcePpmp = await unitOfWork.PPMPRepository
+                .GetPPMPWithDetailsAsync(ppmp.SourcePPMPId.Value, cancellationToken);
+        }
+
         // ── 2. Map ──────────────────────────────────────────────────────
-        var dataDto = MapToDataDto(ppmp);
+        var dataDto = MapToDataDto(ppmp, sourcePpmp);
 
         // ── 3. Render ───────────────────────────────────────────────────
         var bytes = await rendererService.RenderAsync(
@@ -43,14 +51,15 @@ public class GeneratePpmpDocumentCommandHandler(
 
         var record = new GeneratedDocument
         {
-            DocumentType  = DocumentType.Ppmp,
-            Format        = request.Format,
-            OfficeId      = ppmp.OfficeId,     // ← was AgencyId; matches GeneratedDocument entity
-            StoragePath   = path,
-            FileName      = fileName,
-            FileSizeBytes = bytes.Length,
-            FiscalYear    = ppmp.FiscalYear?.Year.ToString() ?? string.Empty,
-            GeneratedBy   = request.GeneratedBy
+            DocumentType     = DocumentType.Ppmp,
+            SourceDocumentId = ppmp.Id,
+            Format           = request.Format,
+            OfficeId         = ppmp.OfficeId,     // ← was AgencyId; matches GeneratedDocument entity
+            StoragePath      = path,
+            FileName         = fileName,
+            FileSizeBytes    = bytes.Length,
+            FiscalYear       = ppmp.FiscalYear?.Year.ToString() ?? string.Empty,
+            GeneratedBy      = request.GeneratedBy
         };
 
         await unitOfWork.GeneratedDocumentRepository.AddAsync(record, cancellationToken);
@@ -61,7 +70,7 @@ public class GeneratePpmpDocumentCommandHandler(
 
     // ── Mapping ──────────────────────────────────────────────────────────────
 
-    private static PpmpDataDto MapToDataDto(PpmpEntity ppmp)
+    private static PpmpDataDto MapToDataDto(PpmpEntity ppmp, PpmpEntity? sourcePpmp = null)
     {
         var activityItems = ppmp.PPMPActivities
             .Where(a => !a.IsDeleted)
@@ -74,24 +83,42 @@ public class GeneratePpmpDocumentCommandHandler(
 
         var allItems = activityItems.Concat(projectItems).DistinctBy(i => i.Id).ToList();
 
-        var rows        = allItems.Select(item => MapToRow(item, ppmp)).ToList();
+        List<PpmpItemEntity> sourceItems = [];
+        if (sourcePpmp != null)
+        {
+            var srcActivityItems = sourcePpmp.PPMPActivities
+                .Where(a => !a.IsDeleted)
+                .SelectMany(a => a.PPMPExpenditureItems.Where(e => !e.IsDeleted))
+                .SelectMany(e => e.PPMPItems.Where(i => !i.IsDeleted));
+
+            var srcProjectItems = sourcePpmp.PPMPExpenditureItems
+                .Where(e => !e.IsDeleted && e.PPMPActivityId == null)
+                .SelectMany(e => e.PPMPItems.Where(i => !i.IsDeleted));
+
+            sourceItems = srcActivityItems.Concat(srcProjectItems).DistinctBy(i => i.Id).ToList();
+        }
+
+        var rows        = allItems.Select(item => MapToRow(item, ppmp, sourceItems)).ToList();
         var totalBudget = rows.Sum(r => r.EstimatedBudget);
         var signatories = BuildSignatories(ppmp);
 
         return new PpmpDataDto
         {
-            OfficeId    = ppmp.OfficeId,
-            PpmpNumber  = ppmp.PPMPNumber,
-            FiscalYear  = ppmp.FiscalYear?.Year.ToString() ?? string.Empty,
-            EndUserUnit = ppmp.Office?.Name ?? string.Empty,
-            IsFinal     = ppmp.IsFinal,
-            TotalBudget = totalBudget,
-            Rows        = rows,
-            Signatories = signatories
+            OfficeId           = ppmp.OfficeId,
+            PpmpNumber         = ppmp.PPMPNumber,
+            FiscalYear         = ppmp.FiscalYear?.Year.ToString() ?? string.Empty,
+            EndUserUnit        = ppmp.Office?.Name ?? string.Empty,
+            IsFinal            = ppmp.IsFinal,
+            IsSupplemental     = ppmp.PPMPType == ERPEZ.Domain.Enums.PPMPTypeEnum.Supplemental,
+            SourcePpmpNumber   = ppmp.SourcePPMP?.PPMPNumber,
+            SupplementalNumber = ppmp.SupplementalNumber,
+            TotalBudget        = totalBudget,
+            Rows               = rows,
+            Signatories        = signatories
         };
     }
 
-    private static PpmpRowDto MapToRow(PpmpItemEntity item, PpmpEntity ppmp)
+    private static PpmpRowDto MapToRow(PpmpItemEntity item, PpmpEntity ppmp, List<PpmpItemEntity>? sourceItems = null)
     {
         var allocations   = item.PPMPItemAllocations.Where(a => !a.IsDeleted).ToList();
         var allocQuantity = allocations.Sum(a => a.Quantity);
@@ -192,6 +219,41 @@ public class GeneratePpmpDocumentCommandHandler(
         // Col 11 — Attached Supporting Documents (Blank when no explicit document is attached; no synthetic values)
         var supportingDocs = string.Empty;
 
+        // Tag supplemental changes in Remarks if applicable
+        var remarks = item.Remarks ?? string.Empty;
+        if (ppmp.PPMPType == PPMPTypeEnum.Supplemental && sourceItems != null && sourceItems.Count > 0)
+        {
+            var matched = sourceItems.FirstOrDefault(s =>
+                (item.CSEItemId.HasValue && s.CSEItemId == item.CSEItemId) ||
+                (item.NonCSEItemId.HasValue && s.NonCSEItemId == item.NonCSEItemId) ||
+                (!string.IsNullOrWhiteSpace(item.Name) && !string.IsNullOrWhiteSpace(s.Name) &&
+                 string.Equals(item.Name.Trim(), s.Name.Trim(), StringComparison.OrdinalIgnoreCase)));
+
+            if (matched == null)
+            {
+                // New items in supplemental PPMP retain their original remarks without [NEW ITEM] prefix
+            }
+            else
+            {
+                var isModified = matched.PlannedQuantity != item.PlannedQuantity ||
+                                 matched.UnitPrice != item.UnitPrice ||
+                                 matched.ProcurementModeId != item.ProcurementModeId ||
+                                 matched.ProjectType != item.ProjectType ||
+                                 matched.ProcurementStartDate != item.ProcurementStartDate ||
+                                 matched.ProcurementEndDate != item.ProcurementEndDate ||
+                                 matched.ExpectedDeliveryStart != item.ExpectedDeliveryStart ||
+                                 matched.ExpectedDeliveryEnd != item.ExpectedDeliveryEnd ||
+                                 !string.Equals(matched.Remarks?.Trim(), item.Remarks?.Trim(), StringComparison.Ordinal);
+
+                if (isModified)
+                {
+                    remarks = string.IsNullOrWhiteSpace(remarks)
+                        ? "[MODIFIED]"
+                        : $"[MODIFIED] {remarks}";
+                }
+            }
+        }
+
         return new PpmpRowDto
         {
             GeneralDescription          = description,
@@ -205,7 +267,7 @@ public class GeneratePpmpDocumentCommandHandler(
             SourceOfFunds               = sourceOfFunds,
             EstimatedBudget             = totalAmount,
             AttachedSupportingDocuments = supportingDocs,
-            Remarks                     = item.Remarks ?? string.Empty
+            Remarks                     = remarks
         };
     }
 

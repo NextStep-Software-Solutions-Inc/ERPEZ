@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -32,6 +33,29 @@ public class SelectPPMPsCommandHandler(IUnitOfWork unitOfWork)
         {
             var invalidNumbers = string.Join(", ", invalidFyPpmps.Select(p => p.PPMPNumber));
             throw new ValidationException($"PPMP does not belong to the APP Fiscal Year. Invalid PPMPs: {invalidNumbers}");
+        }
+
+        // Enforce Status == Approved: Only approved PPMPs can be consolidated into an APP
+        var unapprovedPpmps = existingPpmps.Where(p => p.Status != StatusEnum.Approved).ToList();
+        if (unapprovedPpmps.Any())
+        {
+            var unapprovedDetails = string.Join(", ", unapprovedPpmps.Select(p => $"'{p.PPMPNumber}' (Status: {p.Status})"));
+            throw new ValidationException($"Only approved PPMPs can be consolidated into an APP. Unapproved PPMPs: {unapprovedDetails}");
+        }
+
+        // Enforce APPType ↔ PPMPType pairing:
+        // Indicative and Final APPs establish the initial procurement baseline and cannot accept Supplemental PPMPs.
+        // Supplemental PPMPs must only be consolidated into an Updated APP.
+        var isUpdatedApp = string.Equals(app.APPType, "Updated", StringComparison.OrdinalIgnoreCase);
+        if (!isUpdatedApp)
+        {
+            var supplementalPpmps = existingPpmps.Where(p => p.PPMPType == PPMPTypeEnum.Supplemental).ToList();
+            if (supplementalPpmps.Any())
+            {
+                var invalidNumbers = string.Join(", ", supplementalPpmps.Select(p => $"'{p.PPMPNumber}'"));
+                throw new ValidationException(
+                    $"Supplemental PPMPs cannot be consolidated into a '{app.APPType}' APP. They must be consolidated into an Updated APP. Invalid PPMPs: {invalidNumbers}");
+            }
         }
 
         // Determine root ancestor of target APP to identify its lineage family

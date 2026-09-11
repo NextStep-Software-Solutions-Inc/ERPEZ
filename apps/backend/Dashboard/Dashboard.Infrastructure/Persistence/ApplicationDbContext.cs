@@ -1825,6 +1825,22 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired(false);
 
         modelBuilder.Entity<PPMP>()
+            .HasOne(p => p.SourcePPMP)
+            .WithMany(p => p.SupplementalPPMPs)
+            .HasForeignKey(p => p.SourcePPMPId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PPMP>()
+            .HasIndex(p => p.SourcePPMPId);
+
+        modelBuilder.Entity<PPMP>()
+            .Property(p => p.PPMPType)
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .HasDefaultValue(PPMPTypeEnum.Original);
+
+        modelBuilder.Entity<PPMP>()
             .HasIndex(p => p.PPMPNumber)
             .IsUnique();
 

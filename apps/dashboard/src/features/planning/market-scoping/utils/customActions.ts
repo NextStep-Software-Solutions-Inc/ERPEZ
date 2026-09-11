@@ -64,10 +64,12 @@ export const MARKET_SCOPING_ACTIONS: Record<ActionType, CustomAction> = {
  * @returns Array of visible actions for this form
  */
 export function getAvailableActions(form: MarketScopingForm): ActionType[] {
-  return (Object.keys(MARKET_SCOPING_ACTIONS) as ActionType[]).filter((actionId) => {
-    const action = MARKET_SCOPING_ACTIONS[actionId]
-    return action.isVisible(form)
-  })
+  return (Object.keys(MARKET_SCOPING_ACTIONS) as ActionType[]).filter(
+    (actionId) => {
+      const action = MARKET_SCOPING_ACTIONS[actionId]
+      return action.isVisible(form)
+    },
+  )
 }
 
 /**
@@ -76,7 +78,10 @@ export function getAvailableActions(form: MarketScopingForm): ActionType[] {
  * @param actionId - The action to check
  * @returns True if action is available and visible
  */
-export function isActionAvailable(form: MarketScopingForm, actionId: ActionType): boolean {
+export function isActionAvailable(
+  form: MarketScopingForm,
+  actionId: ActionType,
+): boolean {
   const action = MARKET_SCOPING_ACTIONS[actionId]
   return action.isVisible(form) && !(action.isDisabled?.(form) ?? false)
 }

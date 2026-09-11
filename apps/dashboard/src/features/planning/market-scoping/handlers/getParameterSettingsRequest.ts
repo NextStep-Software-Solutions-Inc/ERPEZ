@@ -24,11 +24,13 @@ export interface GetParameterSettingsParams extends QueryParams {
 /**
  * Fetch market scoping parameter settings from API
  */
-export async function fetchParameterSettings(): Promise<ParameterSettingApiResponse[]> {
+export async function fetchParameterSettings(): Promise<
+  ParameterSettingApiResponse[]
+> {
   try {
-    const response = await api.get<PaginationResponse<ParameterSettingApiResponse>>(
-      '/market-scoping-parameter-settings?PageNumber=1&PageSize=100'
-    )
+    const response = await api.get<
+      PaginationResponse<ParameterSettingApiResponse>
+    >('/market-scoping-parameter-settings?PageNumber=1&PageSize=100')
     if (response.data && Array.isArray(response.data.data)) {
       return response.data.data.filter((item) => item.isActive)
     }
@@ -51,7 +53,9 @@ export const getParameterSettingsRequest: QueryBlueprintFromTemplate<
   endpoint,
   key: ({ url }) => [url] as const,
   fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<PaginationResponse<ParameterSettingApiResponse>>(finalUrl, { signal })
+    const response = await api.get<
+      PaginationResponse<ParameterSettingApiResponse>
+    >(finalUrl, { signal })
     return response.data
   },
 }

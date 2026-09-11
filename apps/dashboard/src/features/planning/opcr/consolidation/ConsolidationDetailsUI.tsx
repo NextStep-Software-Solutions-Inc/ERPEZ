@@ -1,10 +1,15 @@
-﻿import { Card } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/react'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Download, Loader2 } from 'lucide-react'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getOPCRConsolidationRequest } from '../handlers/getOPCRConsolidationRequest'
+import {
+  useGenerateConsolidatedOPCRDocument,
+  useDownloadOPCRDocument,
+} from '../hooks/useOPCR'
+import { toast } from 'sonner'
 import { format } from 'date-fns'
 import {
   Table,
@@ -42,6 +47,61 @@ export default function ConsolidationDetailsUI({
   })
 
   const consolidation = consolidationResponse?.data
+
+  const { mutateAsync: generateConsolidatedDoc, isPending: isGenerating } =
+    useGenerateConsolidatedOPCRDocument()
+  const { mutateAsync: downloadDoc, isPending: isDownloading } =
+    useDownloadOPCRDocument()
+
+  const isGeneratingPdf = isGenerating || isDownloading
+
+  const handleGeneratePdf = async () => {
+    if (!consolidation) return
+    try {
+      const apiRes = await generateConsolidatedDoc({
+        pathParams: { consolidationId: opcrConsolidationId },
+        queryParams: { format: 'Pdf' },
+      })
+      const documentId = typeof apiRes === 'string' ? apiRes : apiRes?.data
+
+      if (!documentId) {
+        throw new Error('No document ID returned from backend generator.')
+      }
+
+      const downloadRes = await downloadDoc({
+        pathParams: { documentId },
+      })
+
+      const blob = downloadRes?.blob
+      if (!blob) {
+        throw new Error('Failed to retrieve document binary from backend.')
+      }
+
+      const sanitizedName = (
+        consolidation.name || `Consolidated_OPCR_FY_${consolidation.fiscalYear}`
+      )
+        .trim()
+        .replace(/\s+/g, '_')
+      const filename = `${sanitizedName}.pdf`
+      const url = URL.createObjectURL(blob)
+
+      try {
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = filename
+        document.body.appendChild(anchor)
+        anchor.click()
+        document.body.removeChild(anchor)
+      } finally {
+        URL.revokeObjectURL(url)
+      }
+
+      toast.success('Consolidated OPCR PDF generated and downloaded successfully.')
+    } catch (error) {
+      console.error('Error generating consolidated OPCR PDF:', error)
+      toast.error('Failed to generate or download Consolidated OPCR PDF.')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -106,14 +166,28 @@ export default function ConsolidationDetailsUI({
       </div>
 
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900">
-          {consolidation.name || `Consolidation ${consolidation.id}`}
-        </h2>
-        <p className="text-sm text-slate-600 mt-1">
-          FY {consolidation.fiscalYear} •{' '}
-          {format(new Date(consolidation.createdDate), 'MMM d, yyyy')}
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            {consolidation.name || `Consolidation ${consolidation.id}`}
+          </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            FY {consolidation.fiscalYear} •{' '}
+            {format(new Date(consolidation.createdDate), 'MMM d, yyyy')}
+          </p>
+        </div>
+        <Button
+          onClick={handleGeneratePdf}
+          disabled={isGeneratingPdf}
+          className="gap-2"
+        >
+          {isGeneratingPdf ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          Generate PDF
+        </Button>
       </div>
 
       {/* Summary Stats */}
@@ -172,9 +246,6 @@ export default function ConsolidationDetailsUI({
                         <div>
                           <p className="font-medium text-slate-900">
                             {opcr.name}
-                          </p>
-                          <p className="text-xs text-slate-600 mt-1">
-                            {opcr.id}
                           </p>
                         </div>
                       </TableCell>

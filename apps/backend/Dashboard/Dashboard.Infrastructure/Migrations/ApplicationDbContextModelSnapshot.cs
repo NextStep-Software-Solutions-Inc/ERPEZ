@@ -4575,7 +4575,17 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PPMPType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Original");
+
                     b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SourcePPMPId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Status")
@@ -4584,6 +4594,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("SupplementalNumber")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("TotalEstimatedBudget")
                         .HasPrecision(18, 2)
@@ -4612,6 +4625,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("ParentId");
+
+                    b.HasIndex("SourcePPMPId");
 
                     b.HasIndex("OfficeId", "FiscalYearId", "IsFinal");
 
@@ -12384,6 +12399,11 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "SourcePPMP")
+                        .WithMany("SupplementalPPMPs")
+                        .HasForeignKey("SourcePPMPId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("ConsolidatedInto");
 
                     b.Navigation("FiscalYear");
@@ -12395,6 +12415,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("Office");
 
                     b.Navigation("ParentPPMP");
+
+                    b.Navigation("SourcePPMP");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPActivity", b =>
@@ -14311,6 +14333,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("PPMPActivities");
 
                     b.Navigation("PPMPExpenditureItems");
+
+                    b.Navigation("SupplementalPPMPs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPActivity", b =>
@@ -14578,6 +14602,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("Milestones");
                 });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PRItem", b =>
                 {
                     b.Navigation("ConsolidatedPRItems");

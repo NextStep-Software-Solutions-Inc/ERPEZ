@@ -7,14 +7,26 @@
 import { useState, useEffect } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { toast } from 'sonner'
-import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  createMutationHookFromTemplate,
+  useQueryClient,
+} from 'erpez-shared-lib'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { AlertCircle } from 'lucide-react'
-import { selectedParameterForEditAtom, parametersAtom } from '../atoms/managementStateAtoms'
+import {
+  selectedParameterForEditAtom,
+  parametersAtom,
+} from '../atoms/managementStateAtoms'
 import {
   createParameterRequest,
   updateParameterRequest,
@@ -25,7 +37,9 @@ interface ManageParameterDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-const useCreateParameter = createMutationHookFromTemplate(createParameterRequest)
+const useCreateParameter = createMutationHookFromTemplate(
+  createParameterRequest,
+)
 
 export function ManageParameterDialog({
   open,
@@ -37,7 +51,9 @@ export function ManageParameterDialog({
   const queryClient = useQueryClient()
   const createParameter = useCreateParameter()
   const updateParameter = createMutationHookFromTemplate(
-    parameter ? updateParameterRequest(parameter.id) : updateParameterRequest('')
+    parameter
+      ? updateParameterRequest(parameter.id)
+      : updateParameterRequest(''),
   )()
 
   const [formData, setFormData] = useState({
@@ -76,7 +92,8 @@ export function ManageParameterDialog({
     if (!formData.name.trim()) newErrors.name = 'Parameter name is required'
     if (!formData.guidedQuestion.trim())
       newErrors.guidedQuestion = 'Guided question is required'
-    if (formData.sortOrder < 0) newErrors.sortOrder = 'Sort order must be non-negative'
+    if (formData.sortOrder < 0)
+      newErrors.sortOrder = 'Sort order must be non-negative'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -103,7 +120,9 @@ export function ManageParameterDialog({
               void queryClient.invalidateQueries({
                 predicate: (query) =>
                   typeof query.queryKey[0] === 'string' &&
-                  query.queryKey[0].startsWith('/market-scoping-parameter-settings'),
+                  query.queryKey[0].startsWith(
+                    '/market-scoping-parameter-settings',
+                  ),
               })
             },
           },
@@ -117,11 +136,12 @@ export function ManageParameterDialog({
                 ? {
                     ...item,
                     ...updatedParameter,
-                    displayName: ((updatedParameter as unknown) as Record<string, unknown>).name as string ?? updatedParameter.displayName,
-                    type: ((updatedParameter as unknown) as Record<string, unknown>).name as string ?? updatedParameter.type,
+                    displayName:
+                      updatedParameter.name || updatedParameter.displayName,
+                    type: updatedParameter.name || updatedParameter.type,
                   }
-                : item
-            )
+                : item,
+            ),
           )
         }
       } else {
@@ -141,7 +161,9 @@ export function ManageParameterDialog({
               void queryClient.invalidateQueries({
                 predicate: (query) =>
                   typeof query.queryKey[0] === 'string' &&
-                  query.queryKey[0].startsWith('/market-scoping-parameter-settings'),
+                  query.queryKey[0].startsWith(
+                    '/market-scoping-parameter-settings',
+                  ),
               })
             },
           },
@@ -153,8 +175,9 @@ export function ManageParameterDialog({
             ...prev,
             {
               ...createdParameter,
-              displayName: ((createdParameter as unknown) as Record<string, unknown>).name as string ?? createdParameter.displayName,
-              type: ((createdParameter as unknown) as Record<string, unknown>).name as string ?? createdParameter.type,
+              displayName:
+                createdParameter.name || createdParameter.displayName,
+              type: createdParameter.name || createdParameter.type,
             },
           ])
         }
@@ -188,7 +211,9 @@ export function ManageParameterDialog({
           {parameter && (
             <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
               <Label className="text-sm text-gray-600">Parameter Type</Label>
-              <p className="font-mono text-sm font-medium mt-1">{parameter.type}</p>
+              <p className="font-mono text-sm font-medium mt-1">
+                {parameter.type}
+              </p>
             </div>
           )}
 
@@ -198,7 +223,9 @@ export function ManageParameterDialog({
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               placeholder="e.g., Delivery Lead Time"
               className={errors.name ? 'border-red-500' : ''}
             />
@@ -213,7 +240,9 @@ export function ManageParameterDialog({
             <Textarea
               id="guidedQuestion"
               value={formData.guidedQuestion}
-              onChange={(e) => setFormData({ ...formData, guidedQuestion: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, guidedQuestion: e.target.value })
+              }
               placeholder="e.g., Was delivery lead time considered in planning?"
               rows={2}
               className={errors.guidedQuestion ? 'border-red-500' : ''}
@@ -229,7 +258,9 @@ export function ManageParameterDialog({
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Optional additional details about this parameter..."
               rows={3}
             />
@@ -244,7 +275,10 @@ export function ManageParameterDialog({
               min="0"
               value={formData.sortOrder}
               onChange={(e) =>
-                setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })
+                setFormData({
+                  ...formData,
+                  sortOrder: parseInt(e.target.value) || 0,
+                })
               }
               className={errors.sortOrder ? 'border-red-500' : ''}
             />
@@ -259,7 +293,9 @@ export function ManageParameterDialog({
               type="checkbox"
               id="isActive"
               checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, isActive: e.target.checked })
+              }
               className="rounded"
             />
             <Label htmlFor="isActive" className="cursor-pointer m-0">
@@ -271,26 +307,28 @@ export function ManageParameterDialog({
           <div className="flex gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-blue-800">
-              Deactivated parameters will not appear in new market scoping evaluation forms
+              Deactivated parameters will not appear in new market scoping
+              evaluation forms
             </p>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex justify-end gap-3 mt-6">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleSubmit} 
+          <Button
+            onClick={handleSubmit}
             className="gap-2"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Saving...' : parameter ? 'Update' : 'Create'} Parameter
+            {isSubmitting ? 'Saving...' : parameter ? 'Update' : 'Create'}{' '}
+            Parameter
           </Button>
         </div>
       </DialogContent>

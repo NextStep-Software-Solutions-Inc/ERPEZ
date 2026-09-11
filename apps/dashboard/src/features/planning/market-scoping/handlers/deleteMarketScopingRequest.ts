@@ -3,10 +3,13 @@
  * Mutation handler - only allowed for Draft status records
  */
 
-import type { MutationBlueprintFromTemplate, APIResponse } from "erpez-shared-lib";
-import api from "@/services/api";
+import type {
+  MutationBlueprintFromTemplate,
+  APIResponse,
+} from 'erpez-shared-lib'
+import api from '@/services/api'
 
-const endpoint = "/market-scopings/:id" as const;
+const endpoint = '/market-scopings/:id' as const
 
 export const deleteMarketScopingRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
@@ -16,7 +19,7 @@ export const deleteMarketScopingRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint,
   fetcher: async ({ finalUrl }) => {
-    const response = await api.delete<APIResponse<null>>(finalUrl);
-    return response.data;
+    const response = await api.delete<APIResponse<null>>(finalUrl)
+    return response.data
   },
-};
+}

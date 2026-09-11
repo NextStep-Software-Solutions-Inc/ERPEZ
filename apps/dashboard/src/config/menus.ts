@@ -1003,12 +1003,6 @@ export const menusConfig = {
         icon: ChartBar,
         child: [
           {
-            title: 'MFO Reference',
-            href: '/v2/mfo-reference',
-            icon: Book,
-            permission: PERMISSIONS.Planning.Kpi.View,
-          },
-          {
             title: 'KPI Library',
             href: '/v2/kpi-library',
             icon: ClipBoard2,
@@ -1083,15 +1077,6 @@ export const menusConfig = {
         permission: [
           PERMISSIONS.Planning.Opcr.View,
           PERMISSIONS.Planning.Opcr.Evaluate,
-        ],
-      },
-      {
-        title: 'Reports',
-        icon: Files,
-        href: '/v2/reports',
-        permission: [
-          PERMISSIONS.Planning.Dashboard.ViewGlobal,
-          PERMISSIONS.Planning.Dashboard.ViewOffice,
         ],
       },
       {
@@ -1430,12 +1415,6 @@ export const menusConfig = {
         icon: ChartBar,
         child: [
           {
-            title: 'MFO Reference',
-            href: '/v2/mfo-reference',
-            icon: Book,
-            permission: PERMISSIONS.Planning.Kpi.View,
-          },
-          {
             title: 'KPI Library',
             href: '/v2/kpi-library',
             icon: ClipBoard2,
@@ -1510,15 +1489,6 @@ export const menusConfig = {
         permission: [
           PERMISSIONS.Planning.Opcr.View,
           PERMISSIONS.Planning.Opcr.Evaluate,
-        ],
-      },
-      {
-        title: 'Reports',
-        icon: Files,
-        href: '/v2/reports',
-        permission: [
-          PERMISSIONS.Planning.Dashboard.ViewGlobal,
-          PERMISSIONS.Planning.Dashboard.ViewOffice,
         ],
       },
       {
