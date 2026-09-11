@@ -195,6 +195,8 @@ export interface BACLineItem {
   code?: string // Item code for reference (e.g., "ITEM-001", from delta extraction)
   description: string // Item name/title (e.g., "Office Chairs", "Laptops")
   itemDescription?: string // Detailed technical specifications/description
+  itemNameOverride?: string
+  generalDescription?: string
   unit: string
   quantity: number
   unitCost: number

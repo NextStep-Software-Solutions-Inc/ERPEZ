@@ -134,8 +134,11 @@ export function EditBACItemDialog({
               ...lineItem,
               id: apiData.id || lineItem.id,
               code: apiData.papCode || apiData.ppmpItemName || lineItem.code,
-              description: apiData.ppmpItemName || apiData.PPMPItem?.name || lineItem.description || 'Procurement Item',
+              description: apiData.itemNameOverride || apiData.ppmpItemName || apiData.PPMPItem?.name || lineItem.description || 'Procurement Item',
+              name: apiData.PPMPItem?.name || apiData.ppmpItemName || lineItem.name || lineItem.description,
               itemDescription: apiData.PPMPItem?.description || apiData.description,
+              itemNameOverride: apiData.itemNameOverride || lineItem.itemNameOverride || '',
+              generalDescription: apiData.generalDescription || lineItem.generalDescription || '',
               unit: apiData.PPMPItem?.unit || apiData.unit || lineItem.unit,
               quantity: apiData.quantity || lineItem.quantity,
               unitCost: apiData.PPMPItem?.unitPrice || apiData.unitCost || lineItem.unitCost,
@@ -214,7 +217,12 @@ export function EditBACItemDialog({
       // Create updated app line items array
       const updatedApp = { ...currentApp }
       const updatedLineItems = [...(updatedApp.bac?.lineItems || []).map(item => ({ ...item }))]
-      updatedLineItems[itemIndex] = formData
+      const savedItem: BACLineItem = {
+        ...formData,
+        description: formData.itemNameOverride || formData.description,
+        itemDescription: formData.generalDescription || formData.itemDescription,
+      }
+      updatedLineItems[itemIndex] = savedItem
 
       // Construct PUT payload (only for the single edited item)
       const payload = [formData].map((item) => {
@@ -320,6 +328,8 @@ export function EditBACItemDialog({
           bacItemCode: item.id,
           modeOfProcurementId: mopId || null,
           remarks: item.remarks || '',
+          itemNameOverride: item.itemNameOverride?.trim() || null,
+          generalDescription: item.generalDescription?.trim() || null,
           epaEligible: item.eligibleForEPA ?? false,
           epaRemarks: item.epaRemarks || '',
           startOfProcurementOverride: toISODateTime(item.startOfProcurementOverride),

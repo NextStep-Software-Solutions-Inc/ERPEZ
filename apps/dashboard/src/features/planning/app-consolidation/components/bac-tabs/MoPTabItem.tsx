@@ -112,8 +112,8 @@ export function MoPTabItem({ item, onUpdate, readOnly }: MoPTabItemProps) {
         </CardHeader>
         <CardContent className="py-2 px-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div>
-            <span className="text-slate-500 block">Item Name:</span>
-            <span className="font-medium text-slate-900 line-clamp-1">{item.description || '—'}</span>
+            <span className="text-slate-500 block">Source Item Name:</span>
+            <span className="font-medium text-slate-900 line-clamp-1">{item.name || item.description || '—'}</span>
           </div>
           <div>
             <span className="text-slate-500 block">Quantity & Unit:</span>
@@ -125,8 +125,14 @@ export function MoPTabItem({ item, onUpdate, readOnly }: MoPTabItemProps) {
           </div>
           <div>
             <span className="text-slate-500 block">Original PPMP Budget:</span>
-            <span className="font-medium text-slate-900">{formatCurrency(item.totalAmount)}</span>
+            <span className="font-medium text-slate-900">{formatCurrency(item.originalPPMPBudget || item.totalAmount)}</span>
           </div>
+          {item.itemDescription && (
+            <div className="col-span-2 md:col-span-4 border-t border-slate-200/60 pt-1.5">
+              <span className="text-slate-500 block">Source PPMP Description:</span>
+              <span className="font-medium text-slate-700 line-clamp-2">{item.itemDescription}</span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -134,14 +140,109 @@ export function MoPTabItem({ item, onUpdate, readOnly }: MoPTabItemProps) {
       <Card>
         <CardHeader className="py-3 px-4">
           <CardTitle className="text-sm font-semibold text-slate-800">
-            APP Procurement & Budget Configuration
+            APP Procurement & Details Configuration
           </CardTitle>
           <p className="text-xs text-slate-500">
-            Configure APP-specific procurement mode, ABC override, and start/end dates.
+            Configure APP-specific project title, general description, procurement method, ABC override, and start/end dates.
           </p>
         </CardHeader>
         <CardContent className="p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Project Title / Item Name (Column 1) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700">
+                Project Title / Item Name (Column 1 on APP):
+              </label>
+              {Boolean(item.itemNameOverride) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (readOnly) return
+                    onUpdate?.({ ...item, itemNameOverride: '' })
+                  }}
+                  className="text-[10px] text-red-600 hover:text-red-800 hover:underline font-semibold cursor-pointer"
+                >
+                  Clear Override
+                </button>
+              )}
+            </div>
+            <Input
+              type="text"
+              placeholder={`Default: ${item.description || 'Project Title'}`}
+              value={item.itemNameOverride !== undefined && item.itemNameOverride !== null && item.itemNameOverride !== '' ? item.itemNameOverride : (item.description || '')}
+              onChange={(e) => {
+                if (readOnly) return
+                onUpdate?.({ ...item, itemNameOverride: e.target.value })
+              }}
+              disabled={readOnly}
+              className={`w-full text-xs font-medium ${item.itemNameOverride ? 'border-amber-400 bg-amber-50/20 text-amber-900' : 'border-slate-200 text-slate-700'}`}
+            />
+            <p className="text-[10px]">
+              {item.itemNameOverride ? (
+                <span className="text-amber-700 font-semibold">
+                  ★ APP Override: {item.itemNameOverride}
+                </span>
+              ) : (
+                <span className="text-slate-500">
+                  Inherited from PPMP: {item.description || '—'}
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* General Description (Column 3) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700">
+                General Description of the Project (Column 3 on APP):
+              </label>
+              {Boolean(item.generalDescription) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (readOnly) return
+                    onUpdate?.({ ...item, generalDescription: '' })
+                  }}
+                  className="text-[10px] text-red-600 hover:text-red-800 hover:underline font-semibold cursor-pointer"
+                >
+                  Clear Override
+                </button>
+              )}
+            </div>
+            {(() => {
+              const descVal = item.generalDescription !== undefined && item.generalDescription !== null && item.generalDescription !== '' ? item.generalDescription : (item.itemDescription || '')
+              const dynamicRows = Math.min(10, Math.max(4, Math.ceil((descVal.length || 0) / 65)))
+
+              return (
+                <>
+                  <textarea
+                    rows={dynamicRows}
+                    placeholder={`Default: ${item.itemDescription || item.description || 'General Description'}`}
+                    value={descVal}
+                    onChange={(e) => {
+                      if (readOnly) return
+                      onUpdate?.({ ...item, generalDescription: e.target.value })
+                    }}
+                    disabled={readOnly}
+                    className={`flex w-full rounded-md border px-3 py-2.5 text-xs font-medium min-h-[110px] resize-y leading-relaxed shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${item.generalDescription ? 'border-amber-400 bg-amber-50/20 text-amber-900' : 'border-slate-200 text-slate-700'}`}
+                  />
+                  <p className="text-[10px]">
+                    {item.generalDescription ? (
+                      <span className="text-amber-700 font-semibold">
+                        ★ APP Override active (this custom description will be used in the APP and generated document)
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 line-clamp-1">
+                        Inherited from PPMP: {item.itemDescription || item.description || '—'}
+                      </span>
+                    )}
+                  </p>
+                </>
+              )
+            })()}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
             {/* Mode of Procurement */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-700">Procurement Method:</label>
