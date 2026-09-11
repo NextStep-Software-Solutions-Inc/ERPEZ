@@ -14,9 +14,6 @@ using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Constants;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers;
 

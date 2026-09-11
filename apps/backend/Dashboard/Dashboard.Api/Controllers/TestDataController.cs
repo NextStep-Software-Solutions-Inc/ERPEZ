@@ -32,6 +32,16 @@ public class TestDataController(ApplicationDbContext context, IUnitOfWork unitOf
     }
 
     /// <summary>
+    /// Seeds Purchase Order test data, source documents (AOB, NOA, DA), and workflow state POs.
+    /// </summary>
+    [HttpPost("seed-purchase-orders")]
+    public async Task<IActionResult> SeedPurchaseOrdersData()
+    {
+        await ProcurementTestDataSeeder.SeedPurchaseOrdersAndSourceDocumentsAsync(context, unitOfWork);
+        return Ok(ApiResponse<string>.Success("Purchase Orders and source documents test data seeded successfully."));
+    }
+
+    /// <summary>
     /// Returns summary counts of seeded prerequisite entities in the database.
     /// </summary>
     [HttpGet("summary")]
@@ -53,7 +63,13 @@ public class TestDataController(ApplicationDbContext context, IUnitOfWork unitOf
             ConsolidatedPRs = await context.ConsolidatedPRs!.CountAsync(),
             RFQs = await context.RFQs!.CountAsync(),
             AOBs = await context.AOBs!.CountAsync(),
+            AOBAwardedItems = await context.AOBAwardedItems!.CountAsync(),
             ProcurementProjects = await context.ProcurementProjects!.CountAsync(),
+            BACResolutions = await context.BACResolutions!.CountAsync(),
+            NoticeOfAwards = await context.NoticeOfAwards!.CountAsync(),
+            DirectAcquisitions = await context.DirectAcquisitions!.CountAsync(),
+            PurchaseOrders = await context.PurchaseOrders!.CountAsync(),
+            PurchaseOrderItems = await context.PurchaseOrderItems!.CountAsync(),
             MasterDocumentTypes = await context.MasterDocumentTypes!.CountAsync(),
             PublicSupplierApplications = await context.PublicSupplierApplications!.CountAsync()
         };
