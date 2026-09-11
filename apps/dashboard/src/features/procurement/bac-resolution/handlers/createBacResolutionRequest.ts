@@ -12,6 +12,8 @@ export type WhereasClauses = {
 
 export type CreateBacResolutionPayload = {
   sourceType?: 'APPItem' | 'ConsolidatedPR' | string
+  appId?: string
+  appIds?: string[]
   appItemId?: string
   appItemIds?: string[]
   consolidatedPRId?: string

@@ -29,12 +29,31 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 ? request.APPItemIds.Distinct().ToList()
                 : (request.APPItemId.HasValue ? new List<Guid> { request.APPItemId.Value } : new List<Guid>());
 
+            var appIds = request.APPIds != null && request.APPIds.Count > 0
+                ? request.APPIds.Distinct().ToList()
+                : (request.APPId.HasValue ? new List<Guid> { request.APPId.Value } : new List<Guid>());
+
             if (itemIds.Count == 0)
             {
                 return ApiResponse<Guid>.Fail("At least one APP Item is required when SourceType is APPItem.");
             }
 
-            Guid? commonAppId = null;
+            if (appIds.Count == 0)
+            {
+                return ApiResponse<Guid>.Fail("At least one APP is required when SourceType is APPItem.");
+            }
+
+            var apps = new List<APP>();
+            foreach (var appId in appIds)
+            {
+                var app = await unitOfWork.APPRepository.GetByIdAsync(appId, cancellationToken);
+                if (app == null)
+                {
+                    return ApiResponse<Guid>.Fail($"APP with ID '{appId}' was not found.");
+                }
+                apps.Add(app);
+            }
+
             foreach (var id in itemIds)
             {
                 var appItem = await unitOfWork.APPItemRepository.GetWithDetailsAsync(id, cancellationToken);
@@ -43,13 +62,9 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                     return ApiResponse<Guid>.Fail($"APP Item with ID '{id}' was not found.");
                 }
 
-                if (!commonAppId.HasValue)
+                if (!appIds.Contains(appItem.APPId))
                 {
-                    commonAppId = appItem.APPId;
-                }
-                else if (appItem.APPId != commonAppId.Value)
-                {
-                    return ApiResponse<Guid>.Fail("All selected APP items must belong to the same APP.");
+                    return ApiResponse<Guid>.Fail($"APP Item '{appItem.Id}' does not belong to any of the selected APPs.");
                 }
 
                 appItems.Add(appItem);
@@ -81,8 +96,15 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             }
             else
             {
-                var appNum = appItems[0].APP?.APPNumber ?? "APP";
-                projectTitle = $"{appNum} - {appItems.Count} Items";
+                if (apps.Count == 1)
+                {
+                    var appNum = apps[0].APPNumber ?? "APP";
+                    projectTitle = $"{appNum} - {appItems.Count} Items";
+                }
+                else
+                {
+                    projectTitle = $"Consolidated APP Project ({appItems.Count} Items)";
+                }
             }
 
             decimal inheritedAbc = appItems.Sum(i => i.EffectiveABC);
@@ -116,6 +138,33 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             if (existingProject != null)
             {
                 return ApiResponse<Guid>.Fail("An active Procurement Project already exists for this Consolidated PR.");
+            }
+
+            // Lineage duplicate protection: check if underlying APP items are already packaged in an active Route 1 Procurement Project
+            var cprWithDetails = await unitOfWork.ConsolidatedPRRepository.GetCPRWithDetailsAsync(request.ConsolidatedPRId.Value, cancellationToken);
+            if (cprWithDetails != null)
+            {
+                var appItemIds = cprWithDetails.ConsolidatedPRItems
+                    .Where(ci => !ci.IsDeleted)
+                    .SelectMany(ci => ci.PRItem.PPMPItem?.APPItems ?? Enumerable.Empty<APPItem>())
+                    .Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                    .Select(ai => ai.Id)
+                    .Distinct()
+                    .ToList();
+
+                if (appItemIds.Count > 0)
+                {
+                    var existingLineageProjects = await unitOfWork.ProcurementProjectRepository
+                        .GetByAPPItemIdsWithResolutionsAsync(appItemIds, cancellationToken);
+
+                    var existingLineageProject = existingLineageProjects.FirstOrDefault();
+                    if (existingLineageProject != null)
+                    {
+                        var resolutionNum = existingLineageProject.BACResolutions.FirstOrDefault(r => !r.IsDeleted)?.ResolutionNumber;
+                        var resolutionInfo = !string.IsNullOrEmpty(resolutionNum) ? $" (Resolution No. '{resolutionNum}')" : "";
+                        return ApiResponse<Guid>.Fail($"Cannot create BAC Resolution: An active Procurement Project already exists for the items in this Consolidated PR under '{existingLineageProject.Title}'{resolutionInfo}.");
+                    }
+                }
             }
 
             // Authoritative Hydration from DB

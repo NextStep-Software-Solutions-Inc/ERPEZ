@@ -1,4 +1,4 @@
-import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
+import type { APIResponse, MutationBlueprintFromTemplate } from 'erpez-shared-lib'
 import type { ApproveBacResolutionPayload, BacResolution } from '../types'
 import api from '@/services/api'
 
@@ -10,10 +10,37 @@ export const approveBacResolutionRequest: MutationBlueprintFromTemplate<
   { id: string },
   ApproveBacResolutionPayload
 > = {
-
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.patch<BacResolution>(finalUrl, payload)
+    let attachmentFileId = payload?.attachmentFileId
+
+    // 1. Upload signed document file first if provided to obtain attachmentFileId
+    if (!attachmentFileId && payload?.signedDocument) {
+      const formData = new FormData()
+      formData.append('file', payload.signedDocument)
+
+      const uploadResponse = await api.post<APIResponse<string>>(
+        '/files/upload',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      )
+
+      attachmentFileId = uploadResponse.data?.data
+      if (!attachmentFileId) {
+        throw new Error('Failed to upload signed document.')
+      }
+    }
+
+    // 2. Call the approve endpoint with attachmentFileId
+    const response = await api.post<BacResolution>(finalUrl, {
+      ...payload,
+      attachmentFileId,
+    })
     return response.data
   },
 }
+

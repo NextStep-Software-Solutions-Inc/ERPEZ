@@ -1,5 +1,6 @@
-﻿export * from './pages'
+export * from './pages'
 export * from './types'
 export * from './components'
+export { BiddingMasterCalendarIntervalBar } from './components'
 export * from './hooks'
 export * from './utils'

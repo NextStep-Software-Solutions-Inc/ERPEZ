@@ -85,6 +85,8 @@ export type EligibleAppItem = {
   fundSourceId: string | null
   fundSourceName: string
   effectiveABC: number
+  appId?: string
+  appNumber?: string
 }
 
 export type EligibleAppForProcurement = {
@@ -179,6 +181,18 @@ export type BacProject = {
   approvedAt?: string
 }
 
+export type BacProjectApprovalEvent = {
+  id: string
+  procurementProjectId: string
+  action: string
+  actorId?: string | null
+  actorName?: string | null
+  role?: string | null
+  remarks?: string | null
+  attachmentFileId?: string | null
+  timestamp: string
+}
+
 export type BacProjectDetails = BacProject & {
   appItemLinks?: AppItemLinkItem[]
   bacResolutions?: BacResolution[]
@@ -188,6 +202,7 @@ export type BacProjectDetails = BacProject & {
   techRepresentativeId?: string
   techRepresentative?: { id: string, firstName: string, lastName: string, email: string }
   approvalAttachmentFileId?: string
+  approvalEvents?: BacProjectApprovalEvent[]
 }
 
 export type BacResolution = {
@@ -195,12 +210,16 @@ export type BacResolution = {
   procurementProjectId: string
   resolutionType?: string
   resolutionNumber?: string
+  bacResolutionNumber?: string
+  description?: string
   dateResolved: string
   resolvedLocation?: string
   status: string
   whereasClauses: BacResolutionWhereasClause[]
   clauseLinks?: BacResolutionClauseLink[]
   biddingActivitySchedules: {}[]
+  linkedConsolidatedPrs?: ConsolidatedPrLink[]
+  workspaceOrigin?: BacResolutionWorkspaceScope
   endUserRepresentativeId?: string
   endUserRepresentative: { id: string, firstName: string, lastName: string, email: string } | null
   techRepresentativeId?: string
@@ -228,8 +247,9 @@ export type ReturnBacResolutionPayload = {
 }
 
 export type ApproveBacResolutionPayload = {
-  attachmentFileId: string
-
+  attachmentFileId?: string
+  signedDocument?: File
+  bacResolutionId?: string
 }
 
 

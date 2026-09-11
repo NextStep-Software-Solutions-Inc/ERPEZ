@@ -17,4 +17,7 @@ public record CalendarSummaryResponse
     public int OverloadedDays { get; init; }
     public int DueSoon { get; init; }
     public int Overdue { get; init; }
+    public int VenueConflicts { get; init; }
+    public int QuorumConflicts { get; init; }
+    public List<ConflictDetail> ConflictDetails { get; init; } = [];
 }

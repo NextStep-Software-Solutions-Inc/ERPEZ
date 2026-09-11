@@ -81,6 +81,8 @@ export type ConsolidatedPR = {
   status: 'DRAFT' | 'APPROVED/FOR BAC UTILIZATION' | 'SUBMITTED' | string
   selectedPRItems: SelectedPRItem[]
   itemMOPs: Record<string, { mop?: string; allowPartial?: boolean }>
+  endUser?: string
+  totalAmount?: number
 }
 
 export type SelectedPRItem = {

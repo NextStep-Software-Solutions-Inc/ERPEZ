@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/use-toast'
 import type { ProcurementActivity, ProcurementActivityFormData } from '../../types'
 import type { MetaActions } from '@/types/global'
 import { useUpdateProcurementActivityType } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementActivityTypes'
+import { useState } from 'react'
 
 interface EditProcurementActivityDialogProps {
   activity: ProcurementActivity
@@ -21,14 +22,24 @@ export function EditProcurementActivityDialog({
   onEditSuccess,
 }: EditProcurementActivityDialogProps) {
   const { toast } = useToast()
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const { mutate: updateActivityType, isPending } = useUpdateProcurementActivityType()
 
+  const handleOpenChange = (isOpen: boolean) => {
+    onOpenChange(isOpen)
+    if (!isOpen) {
+      setFieldErrors({})
+    }
+  }
+
   const handleSubmit = async (data: ProcurementActivityFormData) => {
+    setFieldErrors({})
     updateActivityType(
       {
         pathParams: { id: activity.id },
         payload: {
           name: data.activityName,
+          activityCode: data.activityCode,
           description: data.description || null,
           minDays: data.minDays,
           maxDays: data.maxDays,
@@ -36,16 +47,24 @@ export function EditProcurementActivityDialog({
       },
       {
         onSuccess: () => {
+          setFieldErrors({})
           onEditSuccess(data, activity.id)
           onOpenChange(false)
         },
-        onError: (error) => {
+        onError: (error: any) => {
           console.error('Error updating procurement activity:', error)
-          toast({
-            title: 'Error',
-            description: 'Error updating procurement activity. Please try again.',
-            color: 'destructive',
-          })
+          const errorMsg = error?.response?.data?.message || error?.message || ''
+          if (error?.response?.status === 409 || errorMsg.toLowerCase().includes('code')) {
+            setFieldErrors({
+              activityCode: errorMsg || 'Activity code already exists.',
+            })
+          } else {
+            toast({
+              title: 'Error',
+              description: errorMsg || 'Error updating procurement activity. Please try again.',
+              color: 'destructive',
+            })
+          }
         },
       }
     )
@@ -53,6 +72,7 @@ export function EditProcurementActivityDialog({
 
   const initialData: ProcurementActivityFormData = {
     activityName: activity.activityName,
+    activityCode: activity.activityCode || '',
     description: activity.description || '',
     minDays: activity.minDays,
     maxDays: activity.maxDays,
@@ -61,7 +81,7 @@ export function EditProcurementActivityDialog({
   return (
     <ResponsiveDialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       title="Edit Procurement Activity"
       description="Update procurement activity details"
       footer={null}
@@ -69,9 +89,10 @@ export function EditProcurementActivityDialog({
     >
       <ProcurementActivityForm
         onSubmit={handleSubmit}
-        onCancel={() => onOpenChange(false)}
+        onCancel={() => handleOpenChange(false)}
         initialData={initialData}
         isLoading={isPending}
+        externalErrors={fieldErrors}
       />
     </ResponsiveDialog>
   )

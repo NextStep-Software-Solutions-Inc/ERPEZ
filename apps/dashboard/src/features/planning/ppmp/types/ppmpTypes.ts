@@ -413,6 +413,10 @@ export type PPMP = {
   isFinal?: boolean
   finalizedAt?: string
   finalizedBy?: string
+  ppmpType?: 'Original' | 'Supplemental' | string
+  sourcePPMPId?: string | null
+  sourcePPMPNumber?: string | null
+  supplementalNumber?: number | null
   /** MSF linked through PPMP.libId (project-scope). Populated by the backend; null if no MSF is associated. */
   LinkedMarketScoping?: MSFSummary | null
 }

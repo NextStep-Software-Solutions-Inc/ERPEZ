@@ -27,13 +27,12 @@ import type {
   BacProject,
   BacProjectDetails,
 } from '../types'
-import { ClauseTemplateManagerDialog } from './ClauseTemplateManagerDialog'
 import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
 import { useSubmitBacResolution } from '../handlers/hooks'
 import { deleteBacResolutionRequest } from '../handlers/deleteBacResolutionRequest'
 import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
-import { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import { toast } from 'sonner'
+import { CreateBacResolutionPayload } from '../handlers'
 
 const useDeleteBacResolution = createMutationHookFromTemplate(deleteBacResolutionRequest)
 const useUpdateBacResolution = createMutationHookFromTemplate(updateBacResolutionRequest)
@@ -74,9 +73,7 @@ export function BacResolutionWorkspace({
   workspaceScope = 'all',
   bacListRoutePath = '/v2/bac-resolutions',
 }: BacResolutionWorkspaceProps) {
-  const navigate = useNavigate({
-    from: '/v2/bac-resolutions/'
-  })
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { mutateAsync: deleteBacProject } = useDeleteBacResolution()
   const { mutateAsync: updateBacProject } = useUpdateBacResolution()
@@ -85,6 +82,7 @@ export function BacResolutionWorkspace({
   // Filter & Queue Search States
   const [searchValue, setSearchValue] = useState('')
   const [filter, setFilter] = useState<BacResolutionInboxFilter>(defaultFilter)
+  const [procurementModeFilter, setProcurementModeFilter] = useState<'all' | 'public-bidding' | 'alternative-methods'>('all')
   const [sourceTypeFilter, setSourceTypeFilter] = useState<'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'>('all')
   const [budgetTier, setBudgetTier] = useState<'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'>('all')
   const [customMinBudget, setCustomMinBudget] = useState<number | null>(null)
@@ -94,6 +92,7 @@ export function BacResolutionWorkspace({
   const resetAllFilters = () => {
     setSearchValue('')
     setFilter('all')
+    setProcurementModeFilter('all')
     setSourceTypeFilter('all')
     setBudgetTier('all')
     setCustomMinBudget(null)
@@ -114,7 +113,6 @@ export function BacResolutionWorkspace({
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [docPreviewOpen, setDocPreviewOpen] = useState(false)
   const [createPrModalOpen, setCreatePrModalOpen] = useState(false)
-  const [clauseManagerOpen, setClauseManagerOpen] = useState(false)
 
   // Inbox cards definition
   const inboxCards = useMemo(() => {
@@ -149,7 +147,7 @@ export function BacResolutionWorkspace({
               })
               if (selectedId === idToDelete) {
                 void navigate({
-                  search: (prev: Record<string, unknown>) => ({ ...prev, id: undefined }),
+                  search: (prev: Record<string, unknown>) => ({ ...prev, id: undefined, selectedResolutionId: undefined }),
                   replace: true,
                 })
               }
@@ -268,7 +266,7 @@ export function BacResolutionWorkspace({
                   className="gap-1.5 text-xs h-9 bg-white/80 hover:bg-white shadow-xs border-default-300"
                 >
                   <BookOpen className="h-3.5 w-3.5 text-primary" />
-                  Manage WHEREAS Clauses
+                  Manage Resolution Clauses
                 </Button>
               )}
 
@@ -301,7 +299,7 @@ export function BacResolutionWorkspace({
               selectedId={selectedId ?? null}
               onSelectId={(id) =>
                 void navigate({
-                  search: (prev: Record<string, unknown>) => ({ ...prev, id }),
+                  search: (prev: Record<string, unknown>) => ({ ...prev, id, selectedResolutionId: id }),
                   replace: true,
                 })
               }
@@ -309,6 +307,8 @@ export function BacResolutionWorkspace({
               setSearchValue={setSearchValue}
               filter={filter}
               setFilter={setFilter}
+              procurementModeFilter={procurementModeFilter}
+              setProcurementModeFilter={setProcurementModeFilter}
               sourceTypeFilter={sourceTypeFilter}
               setSourceTypeFilter={setSourceTypeFilter}
               budgetTier={budgetTier}
@@ -426,11 +426,6 @@ export function BacResolutionWorkspace({
           open={createPrModalOpen}
           onOpenChange={setCreatePrModalOpen}
           resolution={null}
-        />
-
-        <ClauseTemplateManagerDialog
-          open={clauseManagerOpen}
-          onOpenChange={setClauseManagerOpen}
         />
       </PageContainerDashtail>
     </div>

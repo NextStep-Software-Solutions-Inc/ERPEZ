@@ -1,26 +1,24 @@
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { format, parseISO } from 'date-fns'
 import { AlertTriangle, CheckCircle2, Pencil, RotateCcw } from 'lucide-react'
-import { EditMilestoneDialog } from '../dialogs/EditMilestoneDialog'
-import {
-  MOCK_HOLIDAYS_2026,
-  MOCK_INTERVAL_CONFIGS,
-} from '../data/mockBiddingScheduleData'
 import {
   formatScheduleTime,
-  getAllowedWindow,
   getEffectiveMilestoneDate,
-  getMilestoneExecutionLabel,
-  getMilestoneExecutionTone,
   resolveMilestoneExecutionStatus,
 } from '../utils/milestonePresentation'
 import type {
   BiddingMilestone,
   BiddingSchedule,
-  SetMilestoneCompletionPayload,
 } from '../types'
-import { Badge } from '@/components/ui/badge'
+import { MilestoneExecutionStatusBadge } from './MilestoneExecutionStatusBadge'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  computeRemainingDays,
+  getRemainingDaysBadgeClass,
+} from '@/features/procurement/bac-resolution'
+import { useProcurementActivityTypes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementActivityTypes'
+import type { ProcurementActivityType } from '@/lib/fiscal-year-and-policies/types/procurementActivityTypes'
 import {
   HoverCard,
   HoverCardContent,
@@ -44,24 +42,17 @@ import { cn } from '@/lib/utils'
 
 interface BiddingScheduleMilestoneTableProps {
   schedule: BiddingSchedule
-  /** Passed to the edit handler. Defaults to 'current-user' in mock context. */
-  currentUser?: string
   highlightMilestoneKey?: string
-  /**
-   * When provided, edit clicks are delegated upward instead of opening the
-   * table's own internal dialog. The parent is responsible for rendering
-   * EditMilestoneDialog. When omitted the table manages its own edit state.
-   */
   onEditMilestone?: (milestone: BiddingMilestone) => void
-  onSetMilestoneCompletion?: (
-    payload: SetMilestoneCompletionPayload,
-  ) => Promise<void> | void
+  onToggleMilestoneCompletion?: (
+    milestone: BiddingMilestone,
+    completed: boolean,
+  ) => void
 }
 
 /**
  * Returns true when an edited (overrideDate-bearing) milestone's overrideDate
  * is strictly earlier than its own cascaded computedDate — a downstream conflict.
- * Uses ISO string comparison which is safe for YYYY-MM-DD values.
  */
 function hasConflict(milestone: BiddingMilestone): boolean {
   if (!milestone.overrideDate) return false
@@ -84,23 +75,95 @@ function formatTimestamp(isoTs: string): string {
   }
 }
 
+const DEFAULT_MAX_DAYS_BY_KEY: Record<string, number | null> = {
+  'ib-posting': null,
+  'bid-documents-issuance': 1,
+  'pre-bid-conference': 12,
+  'clarification-deadline': 5,
+  'bid-submission-opening': 30,
+  'bid-evaluation': 15,
+  'post-qualification': 30,
+  'bac-resolution-award': 7,
+  'approval-resolution': 7,
+  'notice-of-award': 3,
+  'contract-signing': 10,
+  'notice-to-proceed': 7,
+}
+
+const DEFAULT_MAX_DAYS_BY_NAME: Array<{ pattern: RegExp; maxDays: number | null }> = [
+  { pattern: /advertisement|posting of ib/i, maxDays: null },
+  { pattern: /issuance|availability of bid doc/i, maxDays: 1 },
+  { pattern: /pre-bid/i, maxDays: 12 },
+  { pattern: /clarification/i, maxDays: 5 },
+  { pattern: /submission.*opening/i, maxDays: 30 },
+  { pattern: /bid evaluation/i, maxDays: 15 },
+  { pattern: /post-qualification/i, maxDays: 30 },
+  { pattern: /resolution of award/i, maxDays: 7 },
+  { pattern: /approval of bac resolution/i, maxDays: 7 },
+  { pattern: /notice of award/i, maxDays: 3 },
+  { pattern: /contract signing/i, maxDays: 10 },
+  { pattern: /notice to proceed/i, maxDays: 7 },
+]
+
+function resolveFallbackMaxDays(milestone: BiddingMilestone): number | null | undefined {
+  if (milestone.milestoneKey in DEFAULT_MAX_DAYS_BY_KEY) {
+    return DEFAULT_MAX_DAYS_BY_KEY[milestone.milestoneKey]
+  }
+  const byName = DEFAULT_MAX_DAYS_BY_NAME.find((d) => d.pattern.test(milestone.name))
+  if (byName) {
+    return byName.maxDays
+  }
+  return null
+}
+
 export function BiddingScheduleMilestoneTable({
   schedule,
-  currentUser = 'current-user',
   highlightMilestoneKey,
   onEditMilestone,
-  onSetMilestoneCompletion,
+  onToggleMilestoneCompletion,
 }: BiddingScheduleMilestoneTableProps) {
-  // Internal edit state is only used in standalone mode (no onEditMilestone callback).
-  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(
-    null,
-  )
-
   const { milestones } = schedule
   const isDraft = schedule.status === 'draft'
   const isConfirmed = schedule.status === 'confirmed'
   const showActions = schedule.status !== 'locked'
-  const intervalConfig = MOCK_INTERVAL_CONFIGS[schedule.procurementCategory]
+
+  const { data: activityTypesData } = useProcurementActivityTypes({
+    pathParams: {},
+    queryParams: {},
+  })
+
+  const activityTypeMap = useMemo(() => {
+    type ActivityTypeWithKey = ProcurementActivityType & { milestoneKey?: string | null }
+    const map = new Map<string, ProcurementActivityType>()
+    const items = (activityTypesData?.data || []) as ActivityTypeWithKey[]
+    for (const item of items) {
+      if (item.id) map.set(item.id, item)
+      if (item.milestoneKey) {
+        map.set(item.milestoneKey.toLowerCase(), item)
+      }
+      if (item.name) {
+        map.set(item.name.toLowerCase().trim(), item)
+      }
+    }
+    return map
+  }, [activityTypesData])
+
+  const findActivityType = (milestone: BiddingMilestone): ProcurementActivityType | undefined => {
+    if (!milestone) return undefined
+    if (milestone.milestoneKey && activityTypeMap.has(milestone.milestoneKey.toLowerCase())) {
+      return activityTypeMap.get(milestone.milestoneKey.toLowerCase())
+    }
+    if (milestone.name && activityTypeMap.has(milestone.name.toLowerCase().trim())) {
+      return activityTypeMap.get(milestone.name.toLowerCase().trim())
+    }
+    const nameLower = (milestone.name || '').toLowerCase()
+    for (const [key, val] of activityTypeMap.entries()) {
+      if (nameLower.includes(key) || key.includes(nameLower)) {
+        return val
+      }
+    }
+    return undefined
+  }
 
   if (milestones.length === 0) {
     return (
@@ -109,19 +172,6 @@ export function BiddingScheduleMilestoneTable({
         populate the timeline.
       </div>
     )
-  }
-
-  const editingMilestone =
-    editingMilestoneId != null
-      ? (milestones.find((m) => m.id === editingMilestoneId) ?? null)
-      : null
-
-  const handleEditClick = (milestone: BiddingMilestone) => {
-    if (onEditMilestone) {
-      onEditMilestone(milestone)
-    } else {
-      setEditingMilestoneId(milestone.id)
-    }
   }
 
   return (
@@ -133,30 +183,36 @@ export function BiddingScheduleMilestoneTable({
               <TableHead className="w-12 text-center">#</TableHead>
               <TableHead>Milestone</TableHead>
               <TableHead>Schedule Date</TableHead>
+              <TableHead>Remaining Days</TableHead>
               <TableHead>Status</TableHead>
-              {showActions && <TableHead className="w-44">Actions</TableHead>}
+              {showActions && <TableHead className="w-44 text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {milestones.map((milestone, index) => {
               const conflict = hasConflict(milestone)
               const executionStatus = resolveMilestoneExecutionStatus(milestone)
-              const previousEffectiveDate =
-                index === 0
-                  ? schedule.ibPostingDate
-                  : getEffectiveMilestoneDate(milestones[index - 1])
-              const intervalEntry = intervalConfig.milestones[index]
-              const allowedWindow =
-                index === 0 || !intervalEntry
-                  ? null
-                  : getAllowedWindow({
-                      previousEffectiveDate,
-                      minDaysFromPrevious: intervalEntry.minDaysFromPrevious,
-                      maxDaysFromPrevious: intervalEntry.maxDaysFromPrevious,
-                      holidays: MOCK_HOLIDAYS_2026,
-                    })
               const effectiveDate = getEffectiveMilestoneDate(milestone)
               const hasOverride = Boolean(milestone.overrideDate)
+
+              const previousMilestone = index > 0 ? milestones[index - 1] : null
+              const startDate = previousMilestone
+                ? getEffectiveMilestoneDate(previousMilestone)
+                : (schedule.ibPostingDate || effectiveDate)
+              const endDate = effectiveDate
+
+              const actType = findActivityType(milestone)
+              const maxDays =
+                actType?.maxDays !== undefined && actType?.maxDays !== null
+                  ? actType.maxDays
+                  : resolveFallbackMaxDays(milestone)
+
+              const isCompleted =
+                executionStatus === 'completed' || Boolean(milestone.completedAt)
+              const remainingInfo = computeRemainingDays(effectiveDate, {
+                isCompleted,
+                maxDays,
+              })
 
               return (
                 <TableRow
@@ -188,8 +244,7 @@ export function BiddingScheduleMilestoneTable({
                           <TooltipContent color="warning" side="right">
                             Override date ({milestone.overrideDate}) is earlier
                             than the cascaded computed date (
-                            {milestone.computedDate}). Consider updating this
-                            milestone.
+                            {milestone.computedDate}).
                           </TooltipContent>
                         </Tooltip>
                       )}
@@ -198,25 +253,19 @@ export function BiddingScheduleMilestoneTable({
 
                   {/* Computed date */}
                   <TableCell className="text-default-600">
-                    {hasOverride ? (
-                      <div className="flex items-start gap-1.5">
-                        <div className="space-y-0.5">
-                          <div className="font-medium text-default-800">
-                            {formatDisplayDate(effectiveDate)}
-                            {milestone.time && (
-                              <span className="text-muted-foreground">
-                                {' '}
-                                • {formatScheduleTime(milestone.time)}
-                              </span>
-                            )}
-                          </div>
-                          {allowedWindow ? (
-                            <div className="text-xs text-muted-foreground">
-                              Window: {format(allowedWindow.start, 'MMM d')} –{' '}
-                              {format(allowedWindow.end, 'MMM d, yyyy')}
-                            </div>
-                          ) : null}
+                    <div className="flex items-start gap-1.5">
+                      <div className="space-y-0.5">
+                        <div className="font-medium text-default-800">
+                          {formatDisplayDate(effectiveDate)}
+                          {milestone.time && (
+                            <span className="text-muted-foreground">
+                              {' '}
+                              • {formatScheduleTime(milestone.time)}
+                            </span>
+                          )}
                         </div>
+                      </div>
+                      {hasOverride && (
                         <HoverCard openDelay={150}>
                           <HoverCardTrigger asChild>
                             <button
@@ -285,61 +334,45 @@ export function BiddingScheduleMilestoneTable({
                             </div>
                           </HoverCardContent>
                         </HoverCard>
-                      </div>
-                    ) : index === 0 ? (
-                      <div className="space-y-0.5">
-                        <div className="font-medium text-default-800">
-                          {formatDisplayDate(effectiveDate)}
-                          {milestone.time && (
-                            <span className="text-muted-foreground">
-                              {' '}
-                              • {formatScheduleTime(milestone.time)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-0.5">
-                        <div className="font-medium text-default-800">
-                          {formatDisplayDate(effectiveDate)}
-                          {milestone.time && (
-                            <span className="text-muted-foreground">
-                              {' '}
-                              • {formatScheduleTime(milestone.time)}
-                            </span>
-                          )}
-                        </div>
-                        {allowedWindow ? (
-                          <div className="text-xs text-muted-foreground">
-                            Window: {format(allowedWindow.start, 'MMM d')} –{' '}
-                            {format(allowedWindow.end, 'MMM d, yyyy')}
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  </TableCell>
+
+                  {/* Remaining Days */}
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'text-xs font-semibold px-2 py-0.5 border',
+                          getRemainingDaysBadgeClass(remainingInfo.variant),
+                        )}
+                      >
+                        {remainingInfo.label}
+                      </Badge>
+                      {remainingInfo.maxDays !== null && (
+                        <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                          (max {remainingInfo.maxDays}d)
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
 
                   {/* Status badge */}
                   <TableCell>
-                    <Badge
-                      variant="outline"
-                      color={getMilestoneExecutionTone(executionStatus)}
-                      className="whitespace-nowrap"
-                    >
-                      {getMilestoneExecutionLabel(executionStatus)}
-                    </Badge>
+                    <MilestoneExecutionStatusBadge status={executionStatus} />
                   </TableCell>
 
                   {/* Actions */}
                   {showActions && (
                     <TableCell>
                       <div className="flex flex-wrap justify-end gap-2">
-                        {isDraft && milestone.order !== 0 ? (
+                        {isDraft && onEditMilestone ? (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="gap-2"
-                            onClick={() => handleEditClick(milestone)}
+                            onClick={() => onEditMilestone(milestone)}
                             aria-label={`Edit ${milestone.name}`}
                           >
                             <Pencil className="h-4 w-4" />
@@ -347,18 +380,16 @@ export function BiddingScheduleMilestoneTable({
                           </Button>
                         ) : null}
 
-                        {isConfirmed && onSetMilestoneCompletion ? (
+                        {isConfirmed && onToggleMilestoneCompletion ? (
                           <Button
                             variant="outline"
                             size="sm"
                             className="gap-2"
                             onClick={() =>
-                              void onSetMilestoneCompletion({
-                                scheduleId: schedule.id,
-                                milestoneId: milestone.id,
-                                completed: milestone.completedAt == null,
-                                updatedBy: currentUser,
-                              })
+                              onToggleMilestoneCompletion(
+                                milestone,
+                                milestone.completedAt == null,
+                              )
                             }
                           >
                             {milestone.completedAt ? (
@@ -383,20 +414,6 @@ export function BiddingScheduleMilestoneTable({
           </TableBody>
         </Table>
       </div>
-
-      {/* Standalone mode: render own dialog when no onEditMilestone callback is provided */}
-      {!onEditMilestone && editingMilestone && (
-        <EditMilestoneDialog
-          open={editingMilestoneId !== null}
-          onOpenChange={(open) => {
-            if (!open) setEditingMilestoneId(null)
-          }}
-          schedule={schedule}
-          milestone={editingMilestone}
-          currentUser={currentUser}
-          onSuccess={() => setEditingMilestoneId(null)}
-        />
-      )}
     </TooltipProvider>
   )
 }

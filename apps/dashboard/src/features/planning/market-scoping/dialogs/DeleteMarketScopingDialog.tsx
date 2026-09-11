@@ -8,7 +8,10 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { toast } from 'sonner'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import { deleteMarketScopingDialogOpenAtom, selectedMarketScopingForDeleteAtom } from '../atoms/marketScopingStateAtom'
+import {
+  deleteMarketScopingDialogOpenAtom,
+  selectedMarketScopingForDeleteAtom,
+} from '../atoms/marketScopingStateAtom'
 import { useDeleteMarketScoping } from '../hooks/useDeleteMarketScoping'
 
 interface DeleteMarketScopingDialogProps {
@@ -16,11 +19,15 @@ interface DeleteMarketScopingDialogProps {
   onSuccess?: () => void
 }
 
-export function DeleteMarketScopingDialog({ projectName, onSuccess }: DeleteMarketScopingDialogProps) {
+export function DeleteMarketScopingDialog({
+  projectName,
+  onSuccess,
+}: DeleteMarketScopingDialogProps) {
   const [open, setOpen] = useAtom(deleteMarketScopingDialogOpenAtom)
   const targetId = useAtomValue(selectedMarketScopingForDeleteAtom)
   const clearTarget = useSetAtom(selectedMarketScopingForDeleteAtom)
-  const { mutate: deleteMarketScoping, isPending: isLoading } = useDeleteMarketScoping()
+  const { mutate: deleteMarketScoping, isPending: isLoading } =
+    useDeleteMarketScoping()
 
   const handleConfirm = async () => {
     if (!targetId) return
@@ -41,10 +48,12 @@ export function DeleteMarketScopingDialog({ projectName, onSuccess }: DeleteMark
         onError: (err) => {
           console.error('Delete error:', err)
           toast.error(
-            err instanceof Error ? err.message : 'Failed to delete market scoping form.',
+            err instanceof Error
+              ? err.message
+              : 'Failed to delete market scoping form.',
           )
         },
-      }
+      },
     )
   }
 

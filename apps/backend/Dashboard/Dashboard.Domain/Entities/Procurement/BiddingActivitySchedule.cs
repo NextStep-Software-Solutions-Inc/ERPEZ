@@ -35,6 +35,29 @@ public class BiddingActivitySchedule : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Remarks { get; set; }
 
+    // ── Bidding Schedule Group & Milestone Fields ───────────────────────────
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateOnly? IbPostingDate { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ProcurementCategory { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ScheduleStatus { get; set; }
+
+    public DateTime? ConfirmedAt { get; set; }
+    public string? ConfirmedBy { get; set; }
+    public DateTime? LockedAt { get; set; }
+    public string? LockedBy { get; set; }
+
+    public int MilestoneOrder { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? MilestoneKey { get; set; }
+
+    public DateTime? CompletedAt { get; set; }
+    public string? CompletedBy { get; set; }
+
     // ── TC-01 audit trail fields ────────────────────────────────────────────
     /// <summary>Original computed date before any manual override. Null if never adjusted.</summary>
     public DateTime? OriginalStartDate { get; set; }
@@ -52,4 +75,5 @@ public class BiddingActivitySchedule : BaseEntity
     // Navigation properties
     public virtual ProcurementProject ProcurementProject { get; set; } = null!;
     public virtual ProcurementActivityType ProcurementActivityType { get; set; } = null!;
+    public virtual BACResolution? BACResolution { get; set; }
 }

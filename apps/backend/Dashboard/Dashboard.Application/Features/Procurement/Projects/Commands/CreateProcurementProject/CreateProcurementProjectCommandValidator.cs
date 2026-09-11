@@ -13,9 +13,13 @@ public class CreateProcurementProjectCommandValidator : AbstractValidator<Create
 
         When(x => x.SourceType == ProcurementProjectSourceType.APPItem, () =>
         {
-            RuleFor(x => x.APPItemId)
-                .Must((cmd, appItemId) => appItemId.HasValue || (cmd.APPItemIds != null && cmd.APPItemIds.Count > 0))
+            RuleFor(x => x.APPItemIds)
+                .Must((cmd, appItemIds) => (appItemIds != null && appItemIds.Count > 0) || cmd.APPItemId.HasValue)
                 .WithMessage("At least one APP item must be specified when SourceType is APPItem.");
+
+            RuleFor(x => x.APPIds)
+                .Must((cmd, appIds) => (appIds != null && appIds.Count > 0) || cmd.APPId.HasValue)
+                .WithMessage("At least one APP must be specified when SourceType is APPItem.");
 
             RuleFor(x => x.ConsolidatedPRId)
                 .Null()

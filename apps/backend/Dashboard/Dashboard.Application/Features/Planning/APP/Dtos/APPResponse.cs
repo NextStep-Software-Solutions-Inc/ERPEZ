@@ -26,6 +26,11 @@ public record APPResponse
     public DateTime? UpdatedAt { get; init; }
     public string? UpdatedBy { get; init; }
 
+    public Guid? DerivedFinalAppId { get; init; }
+    public string? DerivedFinalAppNumber { get; init; }
+    public string? DerivedFinalAppName { get; init; }
+    public string? DerivedFinalAppStatus { get; init; }
+
     [JsonPropertyName("FiscalYear")]
     public APPFiscalYearResponse? FiscalYear { get; init; }
 

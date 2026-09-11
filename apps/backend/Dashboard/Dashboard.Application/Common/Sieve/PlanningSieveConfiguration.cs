@@ -35,5 +35,25 @@ public class PlanningSieveConfiguration : ISieveConfiguration
             .CanSort()
             .CanFilter()
             .HasName("fiscalYearId");
+
+        mapper.Property<OPCR>(p => p.Name)
+            .CanSort()
+            .CanFilter()
+            .HasName("name");
+
+        mapper.Property<OPCR>(p => p.FiscalYearId)
+            .CanSort()
+            .CanFilter()
+            .HasName("fiscalYearId");
+
+        mapper.Property<OPCR>(p => p.CommitmentStatus)
+            .CanSort()
+            .CanFilter()
+            .HasName("commitmentStatus");
+
+        mapper.Property<OPCR>(p => p.OfficeId)
+            .CanSort()
+            .CanFilter()
+            .HasName("officeId");
     }
 }

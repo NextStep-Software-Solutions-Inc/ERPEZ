@@ -12,6 +12,14 @@ public class CreateProcurementActivityTypeCommandValidator : AbstractValidator<C
             .MaximumLength(250)
             .WithMessage("Name cannot exceed 250 characters.");
 
+        RuleFor(x => x.ActivityCode)
+            .NotEmpty()
+            .WithMessage("Activity code is required.")
+            .MaximumLength(10)
+            .WithMessage("Activity code cannot exceed 10 characters.")
+            .Matches(@"^[A-Z0-9]+$")
+            .WithMessage("Activity code must contain only uppercase letters and digits.");
+
         RuleFor(x => x.Description)
             .NotEmpty()
             .WithMessage("Description is required.")

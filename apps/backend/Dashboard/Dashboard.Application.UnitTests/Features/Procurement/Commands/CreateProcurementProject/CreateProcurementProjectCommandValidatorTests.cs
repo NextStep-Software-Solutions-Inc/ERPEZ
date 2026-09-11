@@ -16,7 +16,26 @@ public class CreateProcurementProjectCommandValidatorTests
         var command = new CreateProcurementProjectCommand
         {
             SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = Guid.NewGuid(),
             APPItemId = Guid.NewGuid(),
+            ConsolidatedPRId = null,
+            ResolutionNumber = "BAC-RES-2026-001",
+            Title = "Test Title",
+            ABC = 100000
+        };
+
+        var result = validator.TestValidate(command);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Validate_AppItemSource_MultiApp_Valid_PassesValidation()
+    {
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() },
+            APPItemIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() },
             ConsolidatedPRId = null,
             ResolutionNumber = "BAC-RES-2026-001",
             Title = "Test Title",
@@ -33,6 +52,7 @@ public class CreateProcurementProjectCommandValidatorTests
         var command = new CreateProcurementProjectCommand
         {
             SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = Guid.NewGuid(),
             APPItemId = null,
             ConsolidatedPRId = null,
             ResolutionNumber = "BAC-RES-2026-001",
@@ -41,7 +61,26 @@ public class CreateProcurementProjectCommandValidatorTests
         };
 
         var result = validator.TestValidate(command);
-        result.ShouldHaveValidationErrorFor(x => x.APPItemId);
+        result.ShouldHaveValidationErrorFor(x => x.APPItemIds);
+    }
+
+    [Fact]
+    public void Validate_AppItemSource_MissingAppId_FailsValidation()
+    {
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = null,
+            APPIds = null,
+            APPItemId = Guid.NewGuid(),
+            ConsolidatedPRId = null,
+            ResolutionNumber = "BAC-RES-2026-001",
+            Title = "Test Title",
+            ABC = 100000
+        };
+
+        var result = validator.TestValidate(command);
+        result.ShouldHaveValidationErrorFor(x => x.APPIds);
     }
 
     [Fact]
@@ -117,6 +156,7 @@ public class CreateProcurementProjectCommandValidatorTests
         var command = new CreateProcurementProjectCommand
         {
             SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = Guid.NewGuid(),
             APPItemId = Guid.NewGuid(),
             ResolutionNumber = "BAC-RES-2026-001",
             Title = "Test Title",
@@ -139,6 +179,7 @@ public class CreateProcurementProjectCommandValidatorTests
         var command = new CreateProcurementProjectCommand
         {
             SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = Guid.NewGuid(),
             APPItemId = Guid.NewGuid(),
             ResolutionNumber = "BAC-RES-2026-001",
             Title = "Test Title",
@@ -161,6 +202,7 @@ public class CreateProcurementProjectCommandValidatorTests
         var command = new CreateProcurementProjectCommand
         {
             SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = Guid.NewGuid(),
             APPItemId = Guid.NewGuid(),
             ResolutionNumber = "BAC-RES-2026-001",
             Title = "Test Title",
@@ -183,6 +225,7 @@ public class CreateProcurementProjectCommandValidatorTests
         var command = new CreateProcurementProjectCommand
         {
             SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = Guid.NewGuid(),
             APPItemId = Guid.NewGuid(),
             ResolutionNumber = "BAC-RES-2026-001",
             Title = "Test Title",

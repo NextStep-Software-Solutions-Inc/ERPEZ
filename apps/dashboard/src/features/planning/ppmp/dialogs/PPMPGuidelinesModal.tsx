@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PPMPGuidelinesModal
  * Full-screen modal displaying complete NGPA PPMP guidelines reference
  */
@@ -9,10 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { X, FileText, Scale } from 'lucide-react'
+import { FileText, Scale } from 'lucide-react'
 import {
   NGPA_PPMP_GUIDELINES,
   getAllColumnGuidelines,
@@ -144,18 +143,6 @@ export function PPMPGuidelinesModal({
             ))}
           </div>
         </ScrollArea>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-muted/30 flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="gap-2"
-          >
-            <X className="h-4 w-4" />
-            Close
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   )

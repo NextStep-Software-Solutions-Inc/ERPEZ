@@ -39,6 +39,18 @@ interface ResolutionClausePickerModalProps {
   isPending?: boolean
 }
 
+export function normalizeClauseType(type?: string | null): ResolutionClauseType {
+  if (!type) return 'Whereas'
+  const cleaned = type.toLowerCase().replace(/[^a-z]/g, '')
+  if (cleaned.includes('now') || cleaned.includes('therefore')) {
+    return 'NowTherefore'
+  }
+  if (cleaned.includes('resolved') || cleaned.includes('resolve')) {
+    return 'Resolved'
+  }
+  return 'Whereas'
+}
+
 export function ResolutionClausePickerModal({
   open,
   onOpenChange,
@@ -64,15 +76,22 @@ export function ResolutionClausePickerModal({
     [draftItems],
   )
 
+  const targetType = normalizeClauseType(clauseType)
+
+  // Filter templates strictly by clauseType
+  const typeFilteredTemplates = useMemo(() => {
+    return templates.filter((t) => normalizeClauseType(t.clauseType) === targetType)
+  }, [templates, targetType])
+
   const filteredTemplates = useMemo(() => {
-    if (!searchTerm.trim()) return templates
+    if (!searchTerm.trim()) return typeFilteredTemplates
     const term = searchTerm.toLowerCase()
-    return templates.filter(
+    return typeFilteredTemplates.filter(
       (t) =>
         t.name.toLowerCase().includes(term) ||
         t.body.toLowerCase().includes(term),
     )
-  }, [templates, searchTerm])
+  }, [typeFilteredTemplates, searchTerm])
 
   const toggleTemplate = (templateId: string) => {
     if (selectedIds.includes(templateId)) {
@@ -90,7 +109,7 @@ export function ResolutionClausePickerModal({
   }
 
   const handleSelectAll = () => {
-    const allItems = templates.map((t, idx) => ({
+    const allItems = typeFilteredTemplates.map((t, idx) => ({
       resolutionClauseId: t.id,
       order: idx,
     }))
@@ -175,7 +194,7 @@ export function ResolutionClausePickerModal({
                   variant="ghost"
                   size="sm"
                   onClick={handleSelectAll}
-                  disabled={templates.length === 0}
+                  disabled={typeFilteredTemplates.length === 0}
                   className="h-8 text-xs gap-1 text-default-700 hover:text-primary"
                 >
                   <CheckCheck className="h-3.5 w-3.5" />

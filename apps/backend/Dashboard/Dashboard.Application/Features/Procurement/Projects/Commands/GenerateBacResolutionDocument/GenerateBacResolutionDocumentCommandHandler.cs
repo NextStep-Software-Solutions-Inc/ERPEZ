@@ -35,6 +35,27 @@ public class BacMemberDto
     public int Order { get; set; }
 }
 
+public class BacResolutionItemDetailDto
+{
+    public string ItemCode { get; set; } = string.Empty;
+    public string ItemName { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Unit { get; set; } = string.Empty;
+    public int Quantity { get; set; } = 1;
+    public decimal UnitCost { get; set; }
+    public decimal TotalAmount { get; set; }
+    public string OfficeName { get; set; } = string.Empty;
+}
+
+public class BacResolutionGroupDto
+{
+    public string GroupTitle { get; set; } = string.Empty;
+    public string ReferenceNumber { get; set; } = string.Empty;
+    public string Subtitle { get; set; } = string.Empty;
+    public decimal Subtotal { get; set; }
+    public List<BacResolutionItemDetailDto> Items { get; set; } = new();
+}
+
 public class BacResolutionDataDto
 {
     public string ResolutionNumber { get; set; } = string.Empty;
@@ -58,6 +79,7 @@ public class BacResolutionDataDto
     public List<BacMemberDto> BacMembers { get; set; } = new();
     public string HeadOfAgencyName { get; set; } = string.Empty;
     public string HeadOfAgencyTitle { get; set; } = string.Empty;
+    public List<BacResolutionGroupDto> ItemGroups { get; set; } = new();
 }
 
 public class GenerateBacResolutionDocumentCommandHandler(
@@ -100,11 +122,47 @@ public class GenerateBacResolutionDocumentCommandHandler(
             }
         }
 
-        // 2. Fetch associated ProcurementProject
+        // 2. Fetch associated ProcurementProject with full relationships
         var project = await unitOfWork.ProcurementProjectRepository.Query()
             .Include(p => p.EndUserRepresentative)
             .Include(p => p.TechRepresentative)
             .Include(p => p.ProcurementMode)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.APP)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.PPMPItem)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.Office)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.ProcurementMode)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.FundSource)
+            .Include(p => p.APPItemLinks)
+                .ThenInclude(l => l.APPItem)
+                    .ThenInclude(ai => ai.APP)
+            .Include(p => p.APPItemLinks)
+                .ThenInclude(l => l.APPItem)
+                    .ThenInclude(ai => ai.PPMPItem)
+            .Include(p => p.APPItemLinks)
+                .ThenInclude(l => l.APPItem)
+                    .ThenInclude(ai => ai.Office)
+            .Include(p => p.APPItemLinks)
+                .ThenInclude(l => l.APPItem)
+                    .ThenInclude(ai => ai.ProcurementMode)
+            .Include(p => p.APPItemLinks)
+                .ThenInclude(l => l.APPItem)
+                    .ThenInclude(ai => ai.FundSource)
+            .Include(p => p.ConsolidatedPR)
+                .ThenInclude(c => c!.ConsolidatedPRItems)
+                    .ThenInclude(ci => ci.PurchaseRequest)
+                        .ThenInclude(pr => pr.Office)
+            .Include(p => p.ConsolidatedPR)
+                .ThenInclude(c => c!.ConsolidatedPRItems)
+                    .ThenInclude(ci => ci.PRItem)
+                        .ThenInclude(pi => pi.PPMPItem)
+            .Include(p => p.ConsolidatedPR)
+                .ThenInclude(c => c!.ConsolidatedPRItems)
+                    .ThenInclude(ci => ci.ProcurementMode)
             .Include(p => p.BACResolutions)
                 .ThenInclude(r => r.ClauseLinks)
                     .ThenInclude(l => l.ResolutionClause)
@@ -116,45 +174,144 @@ public class GenerateBacResolutionDocumentCommandHandler(
 
         var fullResolution = project.BACResolutions.FirstOrDefault(r => r.Id == bacResolution.Id) ?? bacResolution;
 
-        // 3. Hydrate source metadata
+        // 3. Hydrate source metadata and nested item groups
         string prNumber = "N/A";
         string officeName = "General Office";
         Guid officeId = Guid.Empty;
         string modeOfProcurement = project.ProcurementMode?.Name ?? "Public Bidding";
         string sourceOfFund = "General Appropriations Act (GAA)";
+        var itemGroups = new List<BacResolutionGroupDto>();
 
-        if (project.SourceType == ProcurementProjectSourceType.APPItem && project.APPItemId.HasValue)
+        if (project.SourceType == ProcurementProjectSourceType.APPItem)
         {
-            var appItem = await unitOfWork.APPItemRepository.GetWithDetailsAsync(project.APPItemId.Value, cancellationToken);
-            if (appItem != null)
+            var appItems = new List<APPItem>();
+            if (project.APPItemLinks != null && project.APPItemLinks.Any())
             {
-                var appNum = (appItem.APP != null && !string.IsNullOrWhiteSpace(appItem.APP.APPNumber))
-                    ? appItem.APP.APPNumber
-                    : "APP";
-                var itemNum = !string.IsNullOrWhiteSpace(appItem.PAPCode)
-                    ? appItem.PAPCode
-                    : appItem.Id.ToString()[..8];
-                prNumber = $"{appNum} / {itemNum}";
+                appItems.AddRange(project.APPItemLinks.OrderBy(l => l.Order).Select(l => l.APPItem).Where(ai => ai != null));
+            }
+            else if (project.APPItem != null)
+            {
+                appItems.Add(project.APPItem);
+            }
+            else if (project.APPItemId.HasValue)
+            {
+                var fetchedAppItem = await unitOfWork.APPItemRepository.GetWithDetailsAsync(project.APPItemId.Value, cancellationToken);
+                if (fetchedAppItem != null) appItems.Add(fetchedAppItem);
+            }
 
-                if (appItem.Office != null)
+            if (appItems.Any())
+            {
+                var first = appItems.First();
+                if (first.Office != null)
                 {
-                    officeName = appItem.Office.Name;
-                    officeId = appItem.Office.Id;
+                    officeName = first.Office.Name;
+                    officeId = first.Office.Id;
                 }
-                else if (appItem.OfficeId != Guid.Empty)
+                if (first.ProcurementMode != null) modeOfProcurement = first.ProcurementMode.Name;
+                if (first.FundSource != null) sourceOfFund = first.FundSource.Name;
+
+                var appNums = appItems
+                    .Select(ai => ai.APP != null && !string.IsNullOrWhiteSpace(ai.APP.APPNumber) ? ai.APP.APPNumber : "APP")
+                    .Distinct()
+                    .ToList();
+                prNumber = string.Join(", ", appNums);
+
+                // Group by APP
+                var groupedByApp = appItems.GroupBy(ai => ai.APP != null ? ai.APP.Id : Guid.Empty);
+                foreach (var grp in groupedByApp)
                 {
-                    officeId = appItem.OfficeId;
+                    var repItem = grp.First();
+                    var appNum = repItem.APP != null && !string.IsNullOrWhiteSpace(repItem.APP.APPNumber) ? repItem.APP.APPNumber : "APP";
+                    var appTitle = repItem.APP != null && !string.IsNullOrWhiteSpace(repItem.APP.Name) ? repItem.APP.Name : "Annual Procurement Plan";
+
+                    var groupDto = new BacResolutionGroupDto
+                    {
+                        GroupTitle = $"APP No. {appNum} — {appTitle}",
+                        ReferenceNumber = appNum,
+                        Subtitle = appTitle,
+                        Subtotal = grp.Sum(ai => ai.EffectiveABC),
+                        Items = grp.Select(ai => new BacResolutionItemDetailDto
+                        {
+                            ItemCode = !string.IsNullOrWhiteSpace(ai.PAPCode) ? ai.PAPCode : (ai.PPMPItem != null && !string.IsNullOrWhiteSpace(ai.PPMPItem.PAPCode) ? ai.PPMPItem.PAPCode : ai.Id.ToString()[..8]),
+                            ItemName = ai.PPMPItem != null && !string.IsNullOrWhiteSpace(ai.PPMPItem.Name) ? ai.PPMPItem.Name : (ai.Remarks ?? "APP Item"),
+                            Description = ai.PPMPItem != null && !string.IsNullOrWhiteSpace(ai.PPMPItem.Description) ? ai.PPMPItem.Description : (ai.Remarks ?? string.Empty),
+                            Unit = ai.PPMPItem != null && !string.IsNullOrWhiteSpace(ai.PPMPItem.Unit) ? ai.PPMPItem.Unit : "lot",
+                            Quantity = 1,
+                            UnitCost = ai.EffectiveABC,
+                            TotalAmount = ai.EffectiveABC,
+                            OfficeName = ai.Office != null ? ai.Office.Name : officeName
+                        }).ToList()
+                    };
+                    itemGroups.Add(groupDto);
                 }
-                if (appItem.ProcurementMode != null) modeOfProcurement = appItem.ProcurementMode.Name;
-                if (appItem.FundSource != null) sourceOfFund = appItem.FundSource.Name;
             }
         }
-        else if (project.SourceType == ProcurementProjectSourceType.ConsolidatedPR && project.ConsolidatedPRId.HasValue)
+        else if (project.SourceType == ProcurementProjectSourceType.ConsolidatedPR)
         {
-            var cpr = await unitOfWork.ConsolidatedPRRepository.GetByIdAsync(project.ConsolidatedPRId.Value, cancellationToken);
+            ConsolidatedPR? cpr = project.ConsolidatedPR;
+            if (cpr == null && project.ConsolidatedPRId.HasValue)
+            {
+                cpr = await unitOfWork.ConsolidatedPRRepository.Query()
+                    .Include(c => c.ConsolidatedPRItems)
+                        .ThenInclude(ci => ci.PurchaseRequest)
+                            .ThenInclude(pr => pr.Office)
+                    .Include(c => c.ConsolidatedPRItems)
+                        .ThenInclude(ci => ci.PRItem)
+                            .ThenInclude(pi => pi.PPMPItem)
+                    .Include(c => c.ConsolidatedPRItems)
+                        .ThenInclude(ci => ci.ProcurementMode)
+                    .FirstOrDefaultAsync(c => c.Id == project.ConsolidatedPRId.Value, cancellationToken);
+            }
+
             if (cpr != null)
             {
                 prNumber = cpr.CPRNumber;
+
+                if (cpr.ConsolidatedPRItems != null && cpr.ConsolidatedPRItems.Any())
+                {
+                    var firstItem = cpr.ConsolidatedPRItems.FirstOrDefault();
+                    if (firstItem?.ProcurementMode != null)
+                    {
+                        modeOfProcurement = firstItem.ProcurementMode.Name;
+                    }
+                    if (firstItem?.PurchaseRequest?.Office != null)
+                    {
+                        officeName = firstItem.PurchaseRequest.Office.Name;
+                        officeId = firstItem.PurchaseRequest.Office.Id;
+                    }
+
+                    // Group by PurchaseRequest
+                    var groupedByPr = cpr.ConsolidatedPRItems
+                        .GroupBy(ci => ci.PurchaseRequestId);
+
+                    foreach (var grp in groupedByPr)
+                    {
+                        var pr = grp.First().PurchaseRequest;
+                        var prNum = pr != null && !string.IsNullOrWhiteSpace(pr.PRNumber) ? pr.PRNumber : "PR";
+                        var prOffice = pr?.Office?.Name ?? officeName;
+                        var prPurpose = pr?.Purpose ?? pr?.Description ?? string.Empty;
+
+                        var groupDto = new BacResolutionGroupDto
+                        {
+                            GroupTitle = $"Purchase Request No. {prNum} — {prOffice}",
+                            ReferenceNumber = prNum,
+                            Subtitle = prPurpose,
+                            Subtotal = grp.Sum(ci => ci.PRItem != null ? ci.PRItem.Amount : 0),
+                            Items = grp.Where(ci => ci.PRItem != null).Select(ci => new BacResolutionItemDetailDto
+                            {
+                                ItemCode = !string.IsNullOrWhiteSpace(ci.PRItem.StockNo) ? ci.PRItem.StockNo : (ci.PRItem.PPMPItem != null && !string.IsNullOrWhiteSpace(ci.PRItem.PPMPItem.PAPCode) ? ci.PRItem.PPMPItem.PAPCode : ci.PRItemId.ToString()[..8]),
+                                ItemName = !string.IsNullOrWhiteSpace(ci.PRItem.Name) ? ci.PRItem.Name : "PR Item",
+                                Description = ci.PRItem.Description ?? string.Empty,
+                                Unit = ci.PRItem.PPMPItem != null && !string.IsNullOrWhiteSpace(ci.PRItem.PPMPItem.Unit) ? ci.PRItem.PPMPItem.Unit : "unit",
+                                Quantity = ci.PRItem.RequestedQuantity > 0 ? ci.PRItem.RequestedQuantity : 1,
+                                UnitCost = ci.PRItem.UnitCost > 0 ? ci.PRItem.UnitCost : (ci.PRItem.RequestedQuantity > 0 ? ci.PRItem.Amount / ci.PRItem.RequestedQuantity : ci.PRItem.Amount),
+                                TotalAmount = ci.PRItem.Amount,
+                                OfficeName = prOffice
+                            }).ToList()
+                        };
+                        itemGroups.Add(groupDto);
+                    }
+                }
             }
         }
 
@@ -310,7 +467,8 @@ public class GenerateBacResolutionDocumentCommandHandler(
             TechRepPosition = "Provisional Member, Tech Rep",
             BacMembers = bacMembers,
             HeadOfAgencyName = headOfAgencyName,
-            HeadOfAgencyTitle = headOfAgencyTitle
+            HeadOfAgencyTitle = headOfAgencyTitle,
+            ItemGroups = itemGroups
         };
 
         // 4. Render document via IDocumentRendererService

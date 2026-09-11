@@ -58,23 +58,52 @@ public class SubmitPublicApplicationCommandHandler(
                 "Missing required documents. Please upload all required checklist items.");
 
         // ── 3b. DUPLICATE SUBMISSION GUARD ───────────────────────────────────────
+        var trimmedTin = request.TinNumber.Trim();
         var isDuplicate = await unitOfWork.PublicSupplierApplicationRepository
-            .ExistsAsync(request.ProjectId, request.TinNumber, cancellationToken);
+            .ExistsAsync(request.ProjectId, trimmedTin, cancellationToken);
 
         if (isDuplicate)
             throw new FluentValidation.ValidationException(
                 "An application with this TIN number has already been submitted for this project.");
 
+        // ── 3c. FIND OR CREATE SUPPLIER MASTER RECORD ─────────────────────────────
+        var supplier = await unitOfWork.SupplierRepository.FindAsync(
+            s => s.TINNumber == trimmedTin && !s.IsDeleted, cancellationToken);
+
+        if (supplier == null)
+        {
+            var defaultCategory = await unitOfWork.SupplierCategoryRepository.FindAsync(
+                c => !c.IsDeleted, cancellationToken);
+
+            supplier = new ERPEZ.Domain.Entities.Planning.Supplier
+            {
+                Id = Guid.NewGuid(),
+                Name = request.CompanyName.Trim(),
+                TINNumber = trimmedTin,
+                BusinessPermitNo = $"BP-PORTAL-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
+                SupplierCategoryId = defaultCategory?.Id ?? Guid.Empty,
+                ContactPerson = request.ContactPerson.Trim(),
+                ContactNumber = request.ContactNumber.Trim(),
+                Email = request.EmailAddress.Trim(),
+                Address = request.BusinessAddress.Trim(),
+                Status = "Pending",
+                IsBlocked = false,
+                CreatedBy = "PublicPortal"
+            };
+            await unitOfWork.SupplierRepository.AddAsync(supplier, cancellationToken);
+        }
+
         // ── 4. BUILD APPLICATION HEADER ───────────────────────────────────────────
         var application = new PublicSupplierApplication
         {
+            Id                   = Guid.NewGuid(),
             ProcurementProjectId = request.ProjectId,
-            CompanyName          = request.CompanyName,
-            ContactPerson        = request.ContactPerson,
-            EmailAddress         = request.EmailAddress,
-            ContactNumber        = request.ContactNumber,
-            TinNumber            = request.TinNumber,
-            BusinessAddress      = request.BusinessAddress,
+            CompanyName          = request.CompanyName.Trim(),
+            ContactPerson        = request.ContactPerson.Trim(),
+            EmailAddress         = request.EmailAddress.Trim(),
+            ContactNumber        = request.ContactNumber.Trim(),
+            TinNumber            = trimmedTin,
+            BusinessAddress      = request.BusinessAddress.Trim(),
             Status               = "Submitted",
             SubmittedAt          = DateTime.UtcNow
         };
@@ -95,14 +124,51 @@ public class SubmitPublicApplicationCommandHandler(
 
             application.UploadedDocuments.Add(new ApplicationUploadedDocument
             {
+                Id               = Guid.NewGuid(),
+                ApplicationId    = application.Id,
                 ChecklistItemId  = doc.ChecklistItemId,
                 BlobStorageUrl   = promoted.Url,
                 OriginalFileName = promoted.OriginalFileName,
-                UploadedAt       = DateTime.UtcNow
+                UploadedAt       = DateTime.UtcNow,
+                CreatedBy        = "PublicPortal"
             });
         }
 
-        // ── 6. PERSIST ────────────────────────────────────────────────────────────
+        // ── 6. CONDITIONAL BIDDING SUBMISSION (Competitive / Public Bidding Only) ──
+        var modeName = project.ProcurementMode?.Name?.ToLowerInvariant() ?? string.Empty;
+        var isCompetitiveBidding = (modeName.Contains("competitive") || modeName.Contains("public bidding") || modeName.Contains("bidding"))
+            && !modeName.Contains("small value")
+            && !modeName.Contains("svp");
+
+        if (isCompetitiveBidding)
+        {
+            var existingSubmission = await unitOfWork.BiddingSubmissionRepository.FindAsync(
+                bs => bs.ProcurementProjectId == request.ProjectId && bs.SupplierId == supplier.Id && !bs.IsDeleted,
+                cancellationToken);
+
+            if (existingSubmission != null)
+            {
+                throw new FluentValidation.ValidationException(
+                    "A bidding submission has already been registered for this supplier under this project.");
+            }
+
+            var biddingSubmission = new BiddingSubmission
+            {
+                Id                          = Guid.NewGuid(),
+                ProcurementProjectId        = request.ProjectId,
+                SupplierId                  = supplier.Id,
+                PublicSupplierApplicationId = application.Id,
+                OriginalProposedAmount      = 0m,
+                BidSecurityType             = "Bid Securing Declaration",
+                SubmissionType              = "Electronic",
+                SubmittedAt                 = application.SubmittedAt,
+                CreatedBy                   = "PublicPortal"
+            };
+
+            await unitOfWork.BiddingSubmissionRepository.AddAsync(biddingSubmission, cancellationToken);
+        }
+
+        // ── 7. PERSIST ALL IN ONE TRANSACTION ────────────────────────────────────
         await unitOfWork.PublicSupplierApplicationRepository.AddAsync(application, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

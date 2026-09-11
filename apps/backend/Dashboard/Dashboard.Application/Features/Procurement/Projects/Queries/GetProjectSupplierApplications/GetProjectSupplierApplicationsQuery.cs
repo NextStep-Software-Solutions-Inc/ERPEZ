@@ -33,11 +33,13 @@ public record ProjectSupplierApplicationDto
 public record ApplicationDocumentDto
 {
     public Guid Id { get; init; }
+    public Guid ChecklistItemId { get; init; }
     public string Name { get; init; } = string.Empty;
     public string Type { get; init; } = string.Empty;
     public long Size { get; init; }
     public DateTime UploadedAt { get; init; }
     public string? Url { get; init; }
+    public int EnvelopeType { get; init; } = 1;
 }
 
 public record SupplierBidItemDto
@@ -97,11 +99,15 @@ public class GetProjectSupplierApplicationsQueryHandler(IUnitOfWork unitOfWork)
             Documents = a.UploadedDocuments.Select(d => new ApplicationDocumentDto
             {
                 Id = d.Id,
-                Name = d.ChecklistItem?.MasterDocumentType?.Name ?? d.OriginalFileName,
+                ChecklistItemId = d.ChecklistItemId,
+                Name = d.ChecklistItem?.MasterDocumentType?.Name ?? d.ChecklistItem?.CustomDocumentName ?? d.OriginalFileName,
                 Type = System.IO.Path.GetExtension(d.OriginalFileName).TrimStart('.').ToUpperInvariant(),
                 Size = 0,
                 UploadedAt = d.UploadedAt,
-                Url = d.BlobStorageUrl
+                Url = d.BlobStorageUrl,
+                EnvelopeType = d.ChecklistItem != null && d.ChecklistItem.EnvelopeType != 0
+                    ? d.ChecklistItem.EnvelopeType
+                    : (d.ChecklistItem?.MasterDocumentType?.EnvelopeType ?? 1)
             }).ToList()
         }).ToList();
 

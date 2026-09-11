@@ -243,7 +243,12 @@ public static class ProcurementTestDataSeeder
         await context.SaveChangesAsync();
 
         // 7. Supplier Categories & Approved Suppliers (Supplier Registry)
-        var ictSupplierCat = await context.SupplierCategories!.FirstOrDefaultAsync(sc => sc.Name.Contains("Information") || sc.Name.Contains("ICT"));
+        var ictSupplierCat = await context.SupplierCategories!
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(sc => 
+                sc.Name == "Information & Communications Technology (ICT)" || 
+                sc.Name.Contains("Information") || 
+                sc.Name.Contains("ICT"));
         if (ictSupplierCat == null)
         {
             ictSupplierCat = new SupplierCategory
@@ -254,8 +259,17 @@ public static class ProcurementTestDataSeeder
             };
             await context.SupplierCategories!.AddAsync(ictSupplierCat);
         }
+        else if (ictSupplierCat.IsDeleted)
+        {
+            ictSupplierCat.IsDeleted = false;
+            context.SupplierCategories!.Update(ictSupplierCat);
+        }
 
-        var officeSuppliesCat = await context.SupplierCategories!.FirstOrDefaultAsync(sc => sc.Name.Contains("Office Supplies"));
+        var officeSuppliesCat = await context.SupplierCategories!
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(sc => 
+                sc.Name == "Office Supplies & Devices" || 
+                sc.Name.Contains("Office Supplies"));
         if (officeSuppliesCat == null)
         {
             officeSuppliesCat = new SupplierCategory
@@ -266,8 +280,18 @@ public static class ProcurementTestDataSeeder
             };
             await context.SupplierCategories!.AddAsync(officeSuppliesCat);
         }
+        else if (officeSuppliesCat.IsDeleted)
+        {
+            officeSuppliesCat.IsDeleted = false;
+            context.SupplierCategories!.Update(officeSuppliesCat);
+        }
 
-        var generalServicesCat = await context.SupplierCategories!.FirstOrDefaultAsync(sc => sc.Name.Contains("General Services"));
+        var generalServicesCat = await context.SupplierCategories!
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(sc => 
+                sc.Name == "General Merchandise & Catering" || 
+                sc.Name.Contains("General Merchandise") || 
+                sc.Name.Contains("General Services"));
         if (generalServicesCat == null)
         {
             generalServicesCat = new SupplierCategory
@@ -277,6 +301,11 @@ public static class ProcurementTestDataSeeder
                 Description = "General supplies, catering, event management, and miscellaneous services"
             };
             await context.SupplierCategories!.AddAsync(generalServicesCat);
+        }
+        else if (generalServicesCat.IsDeleted)
+        {
+            generalServicesCat.IsDeleted = false;
+            context.SupplierCategories!.Update(generalServicesCat);
         }
         await context.SaveChangesAsync();
 
@@ -756,9 +785,20 @@ public static class ProcurementTestDataSeeder
         bool isBlocked,
         string? statusNote = null)
     {
-        var existing = await context.Suppliers!.Include(s => s.SupplierRequirements).FirstOrDefaultAsync(s => s.Name == name);
+        var existing = await context.Suppliers!
+            .IgnoreQueryFilters()
+            .Include(s => s.SupplierRequirements)
+            .FirstOrDefaultAsync(s => s.Name == name || s.TINNumber == tin || s.BusinessPermitNo == permit);
         if (existing != null)
+        {
+            if (existing.IsDeleted)
+            {
+                existing.IsDeleted = false;
+                context.Suppliers!.Update(existing);
+                await context.SaveChangesAsync();
+            }
             return;
+        }
 
         var supplier = new Supplier
         {
@@ -840,7 +880,9 @@ public static class ProcurementTestDataSeeder
         var masterDocTypeDict = new Dictionary<string, MasterDocumentType>();
         foreach (var (name, desc, envType, tempUrl) in docTypes)
         {
-            var existing = await context.MasterDocumentTypes!.FirstOrDefaultAsync(d => d.Name == name);
+            var existing = await context.MasterDocumentTypes!
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(d => d.Name.ToLower() == name.ToLower());
             if (existing == null)
             {
                 existing = new MasterDocumentType
@@ -855,6 +897,14 @@ public static class ProcurementTestDataSeeder
                 };
                 await context.MasterDocumentTypes!.AddAsync(existing);
             }
+            else if (existing.IsDeleted)
+            {
+                existing.IsDeleted = false;
+                existing.Description = desc;
+                existing.EnvelopeType = envType;
+                if (!string.IsNullOrEmpty(tempUrl)) existing.TemplateFileUrl = tempUrl;
+                context.MasterDocumentTypes!.Update(existing);
+            }
             masterDocTypeDict[name] = existing;
         }
         await context.SaveChangesAsync();
@@ -865,7 +915,7 @@ public static class ProcurementTestDataSeeder
         var actOpening = await context.ProcurementActivityTypes!.FirstOrDefaultAsync(a => a.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids);
 
         // Fetch Goods Category & Modes
-        var goodsCat = await context.ProcurementCategories!.FirstOrDefaultAsync(c => c.Name == "Goods")
+        var goodsCat = await context.ProcurementCategories!.FirstOrDefaultAsync(c => c.Name == "Goods" || c.Name.Contains("Goods"))
             ?? new ProcurementCategory { Id = Guid.NewGuid(), Name = "Goods", Description = "Goods & Equipment" };
         var publicBiddingMode = await context.ProcurementModes!.FirstOrDefaultAsync(m => m.Name.Contains("Competitive Bidding") || m.Name.Contains("Public Bidding"))
             ?? await context.ProcurementModes!.FirstOrDefaultAsync();

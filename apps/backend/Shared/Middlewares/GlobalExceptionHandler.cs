@@ -29,19 +29,26 @@ public class GlobalExceptionHandler : IExceptionHandler
                     g => g.Select(e => e.ErrorMessage).ToArray()
                 );
 
-            var validationProblem = new ValidationProblemDetails(errors)
-            {
-                Status = (int)HttpStatusCode.BadRequest,
-                Title = "Validation failed",
-                Detail = "One or more validation errors occurred. Check the data property for details."
-            };
+            var firstError = fluentValidationException.Errors.FirstOrDefault()?.ErrorMessage;
 
-            // Pass the detailed ValidationProblemDetails object as the data payload
+            var fallbackMessage = !string.IsNullOrWhiteSpace(fluentValidationException.Message) && !fluentValidationException.Message.StartsWith("Validation failed:", StringComparison.OrdinalIgnoreCase)
+                ? fluentValidationException.Message
+                : "One or more validation errors occurred.";
+
+            var message = !string.IsNullOrWhiteSpace(firstError)
+                ? firstError
+                : fallbackMessage;
+
+            if (errors.Count == 0 && !string.IsNullOrWhiteSpace(message))
+            {
+                errors["General"] = [message];
+            }
+
             var failResponse = new ApiResponse<object>
             {
                 Succeeded = false,
-                Message = validationProblem.Detail,
-                Errors = validationProblem.Errors
+                Message = message,
+                Errors = errors
             };
 
             await httpContext.Response.WriteAsJsonAsync(failResponse, cancellationToken);
@@ -74,16 +81,11 @@ public class GlobalExceptionHandler : IExceptionHandler
             return true;
         }
 
-        if (exception is ValidationException vex && vex.Errors is not null)
+        if (exception is ValidationException vex)
         {
-            var validationProblem = new ValidationProblemDetails(vex.Errors)
-            {
-                Status = statusCode,
-                Title = "Validation failed",
-                Detail = vex.Message
-            };
+            var errors = vex.Errors ?? new Dictionary<string, string[]> { { "General", [vex.Message] } };
 
-            await httpContext.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(validationProblem.Detail ?? vex.Message), cancellationToken);
+            await httpContext.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(errors, vex.Message), cancellationToken);
             return true;
         }
 

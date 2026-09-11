@@ -7,4 +7,5 @@ export * from './data/mockBacResolutionData'
 export * from './handlers'
 export * from './utils/downloadBacResolutionBlob'
 export * from './utils/bacResolutionWorkflow'
+export * from './utils/remainingDays'
 

@@ -10,4 +10,5 @@ public record UpdateMasterDocumentTypeCommand : IRequest<ApiResponse<Unit>>
     public string?         Description  { get; init; }
     public int             EnvelopeType { get; init; }
     public Guid?           FileId       { get; init; }
+    public bool            RemoveFile   { get; init; }
 }

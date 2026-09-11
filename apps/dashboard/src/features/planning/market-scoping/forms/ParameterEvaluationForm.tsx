@@ -6,38 +6,71 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { AlertCircle, Upload, X, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import {
+  AlertCircle,
+  Upload,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+} from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { useAtom } from 'jotai'
-import { draftMarketScopingAtom, currentFormStepAtom } from '../atoms/marketScopingStateAtom'
+import {
+  draftMarketScopingAtom,
+  currentFormStepAtom,
+} from '../atoms/marketScopingStateAtom'
 import { FILE_UPLOAD_CONFIG } from '../utils/constants'
-import { fetchParameterSettings, type ParameterSettingApiResponse } from '../handlers/getParameterSettingsRequest'
-import type { ParameterEvaluation, FileAttachment, MarketScopingForm } from '../types/marketScopingTypes'
+import {
+  fetchParameterSettings,
+  type ParameterSettingApiResponse,
+} from '../handlers/getParameterSettingsRequest'
+import type {
+  ParameterEvaluation,
+  FileAttachment,
+} from '../types/marketScopingTypes'
 import type { RawParameterEvaluation } from '../types/marketScopingApiTypes'
 
 type DraftParamItem = ParameterEvaluation | RawParameterEvaluation
 
+function isConsideredValue(val: string): val is 'Yes' | 'No' | 'NotApplicable' {
+  return val === 'Yes' || val === 'No' || val === 'NotApplicable'
+}
+
 interface ParameterEvaluationFormProps {
   onNext: (parameters: ParameterEvaluation[]) => void
   onPrevious: () => void
+  onSaveDraft?: (parameters: ParameterEvaluation[]) => void
 }
 
-export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluationFormProps) {
+export function ParameterEvaluationForm({
+  onNext,
+  onPrevious,
+  onSaveDraft,
+}: ParameterEvaluationFormProps) {
   const [draft] = useAtom(draftMarketScopingAtom)
   const [, setCurrentStep] = useAtom(currentFormStepAtom)
   const { toast } = useToast()
-  
+
   // State for API data and loading
   const [, setParameterSettings] = useState<ParameterSettingApiResponse[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  
+
   // State for form parameters
-  const [parameters, setParameters] = useState<ParameterEvaluation[]>(draft?.parameters || [])
+  const [parameters, setParameters] = useState<ParameterEvaluation[]>(
+    draft?.parameters || [],
+  )
   const [expandedParam, setExpandedParam] = useState<string | null>(null)
 
   // Fetch parameter settings on mount & hydrate from draft
@@ -47,32 +80,90 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
       try {
         const settings = await fetchParameterSettings()
         setParameterSettings(settings)
-        
+
         const draftParams: DraftParamItem[] =
-          draft?.parameters ||
-          (draft as Partial<MarketScopingForm> & { parameterEvaluations?: RawParameterEvaluation[] })?.parameterEvaluations ||
-          []
+          draft?.parameters || draft?.parameterEvaluations || []
         const draftedMap = new Map<string, DraftParamItem>()
 
         draftParams.forEach((param: DraftParamItem) => {
-          if ('parameterSettingsId' in param && param.parameterSettingsId) draftedMap.set(param.parameterSettingsId, param)
-          if ('parameterId' in param && param.parameterId) draftedMap.set(param.parameterId, param)
-          if ('id' in param && param.id) draftedMap.set(param.id as string, param)
-          if ('parameterName' in param && param.parameterName) draftedMap.set(param.parameterName.toLowerCase().trim(), param)
-          if ('displayName' in param && param.displayName) draftedMap.set(param.displayName.toLowerCase().trim(), param)
+          if ('parameterSettingsId' in param && param.parameterSettingsId)
+            draftedMap.set(param.parameterSettingsId, param)
+          if ('parameterId' in param && param.parameterId)
+            draftedMap.set(param.parameterId, param)
+          if ('id' in param && typeof param.id === 'string' && param.id)
+            draftedMap.set(param.id, param)
+          if ('parameterName' in param && param.parameterName)
+            draftedMap.set(param.parameterName.toLowerCase().trim(), param)
+          if ('displayName' in param && param.displayName)
+            draftedMap.set(param.displayName.toLowerCase().trim(), param)
         })
 
-        const mergedParameters: ParameterEvaluation[] = settings.map((setting) => {
-          const match =
-            draftedMap.get(setting.id) ||
-            draftedMap.get(setting.name?.toLowerCase()?.trim() || '')
+        const mergedParameters: ParameterEvaluation[] = settings.map(
+          (setting) => {
+            const match =
+              draftedMap.get(setting.id) ||
+              draftedMap.get(setting.name?.toLowerCase()?.trim() || '')
 
-          if (match) {
-            let consideredVal = match.considered
-            if (consideredVal === undefined && 'isConsidered' in match && match.isConsidered !== undefined) {
-              consideredVal = match.isConsidered === true ? 'Yes' : match.isConsidered === false ? 'No' : 'NotApplicable'
+            if (match) {
+              let consideredVal = match.considered
+              if (
+                consideredVal === undefined &&
+                'isConsidered' in match &&
+                match.isConsidered !== undefined
+              ) {
+                consideredVal =
+                  match.isConsidered === true
+                    ? 'Yes'
+                    : match.isConsidered === false
+                      ? 'No'
+                      : 'NotApplicable'
+              }
+              const recommendations =
+                match.recommendations ||
+                ('remarks' in match ? match.remarks : '') ||
+                ''
+
+              const attachments: FileAttachment[] = (
+                match.attachments || []
+              ).map((att, attIdx) => {
+                const url =
+                  att.fileUrl ||
+                  ('url' in att && att.url) ||
+                  ('fileId' in att && att.fileId) ||
+                  ''
+                return {
+                  id:
+                    att.id ||
+                    ('fileId' in att && att.fileId) ||
+                    url ||
+                    `att-${setting.id}-${attIdx}`,
+                  fileName:
+                    att.fileName ||
+                    ('name' in att && att.name) ||
+                    `Attachment ${attIdx + 1}`,
+                  fileUrl: url,
+                  fileSize:
+                    att.fileSize ?? ('size' in att ? att.size : undefined),
+                  fileType:
+                    att.fileType ?? ('type' in att ? att.type : undefined),
+                  uploadedDate: att.uploadedDate
+                    ? new Date(att.uploadedDate)
+                    : undefined,
+                  rawFile: 'rawFile' in att ? att.rawFile : undefined,
+                }
+              })
+
+              return {
+                parameterId: setting.id,
+                parameterSettingsId: setting.id,
+                parameterName: setting.name,
+                displayName: setting.name,
+                guidedQuestion: setting.guidedQuestion,
+                considered: consideredVal,
+                recommendations,
+                attachments,
+              }
             }
-            const recommendations = match.recommendations || ('remarks' in match ? match.remarks : '') || ''
 
             return {
               parameterId: setting.id,
@@ -80,23 +171,12 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
               parameterName: setting.name,
               displayName: setting.name,
               guidedQuestion: setting.guidedQuestion,
-              considered: consideredVal,
-              recommendations,
-              attachments: match.attachments || [],
+              considered: undefined,
+              recommendations: '',
+              attachments: [],
             }
-          }
-
-          return {
-            parameterId: setting.id,
-            parameterSettingsId: setting.id,
-            parameterName: setting.name,
-            displayName: setting.name,
-            guidedQuestion: setting.guidedQuestion,
-            considered: undefined,
-            recommendations: '',
-            attachments: [],
-          }
-        })
+          },
+        )
 
         setParameters(mergedParameters)
       } catch (error) {
@@ -110,7 +190,7 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
         setIsLoading(false)
       }
     }
-    
+
     loadParameterSettings()
   }, [draft])
 
@@ -120,12 +200,12 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
 
   const updateParameter = (
     parameterId: string,
-    updates: Partial<ParameterEvaluation>
+    updates: Partial<ParameterEvaluation>,
   ) => {
     setParameters((prev) =>
       prev.map((param) =>
-        param.parameterId === parameterId ? { ...param, ...updates } : param
-      )
+        param.parameterId === parameterId ? { ...param, ...updates } : param,
+      ),
     )
   }
 
@@ -149,7 +229,7 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
           }
         }
         return param
-      })
+      }),
     )
   }
 
@@ -159,30 +239,36 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
         param.parameterId === parameterId
           ? {
               ...param,
-              attachments: param.attachments.filter((att) => att.id !== attachmentId),
+              attachments: param.attachments.filter(
+                (att) => att.id !== attachmentId,
+              ),
             }
-          : param
-      )
+          : param,
+      ),
     )
   }
 
-  const renameAttachment = (parameterId: string, attachmentId: string, newName: string) => {
+  const renameAttachment = (
+    parameterId: string,
+    attachmentId: string,
+    newName: string,
+  ) => {
     setParameters((prev) =>
       prev.map((param) =>
         param.parameterId === parameterId
           ? {
               ...param,
               attachments: param.attachments.map((att) =>
-                att.id === attachmentId ? { ...att, fileName: newName } : att
+                att.id === attachmentId ? { ...att, fileName: newName } : att,
               ),
             }
-          : param
-      )
+          : param,
+      ),
     )
   }
 
   const incompleteParameters = parameters.filter(
-    (p) => !p.considered || !p.recommendations.trim()
+    (p) => !p.considered || !p.recommendations.trim(),
   )
 
   if (isLoading) {
@@ -191,7 +277,9 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
         <CardContent className="pt-6">
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-gray-600">Loading parameter settings...</span>
+            <span className="ml-2 text-gray-600">
+              Loading parameter settings...
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -219,7 +307,7 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
                   setExpandedParam(
                     expandedParam === parameter.parameterId
                       ? null
-                      : parameter.parameterId
+                      : parameter.parameterId,
                   )
                 }
                 onUpdateParameter={updateParameter}
@@ -236,12 +324,20 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
                 <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-blue-900">
                   <p className="font-medium">
-                    {parameters.length - incompleteParameters.length} of {parameters.length}{' '}
-                    parameters completed
+                    {parameters.length - incompleteParameters.length} of{' '}
+                    {parameters.length} parameters completed
                   </p>
-                  {incompleteParameters.length > 0 && (
-                    <p className="text-xs text-blue-700 mt-1">
-                      Please complete all parameter evaluations before proceeding.
+                  {incompleteParameters.length > 0 ? (
+                    <p className="text-xs text-amber-800 mt-1">
+                      Draft mode: {incompleteParameters.length} parameter
+                      {incompleteParameters.length > 1 ? 's' : ''} not yet
+                      completed. You can save your draft or proceed to review,
+                      but all parameters must be completed before final
+                      submission.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-green-700 mt-1">
+                      All parameters completed.
                     </p>
                   )}
                 </div>
@@ -249,16 +345,24 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between pt-4 border-t">
+            <div className="flex justify-between items-center pt-4 border-t">
               <Button variant="outline" onClick={onPrevious}>
                 Previous
               </Button>
-              <Button
-                onClick={() => onNext(parameters)}
-                disabled={incompleteParameters.length > 0}
-              >
-                Next: Review & Submit
-              </Button>
+              <div className="flex items-center gap-3">
+                {onSaveDraft && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onSaveDraft(parameters)}
+                  >
+                    Save as Draft
+                  </Button>
+                )}
+                <Button onClick={() => onNext(parameters)}>
+                  Next: Review & Submit
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -286,7 +390,11 @@ function ParameterCard({
   onUpdateParameter: (id: string, updates: Partial<ParameterEvaluation>) => void
   onAddAttachment: (id: string, files: File[]) => void
   onRemoveAttachment: (id: string, attachmentId: string) => void
-  onRenameAttachment: (id: string, attachmentId: string, newName: string) => void
+  onRenameAttachment: (
+    id: string,
+    attachmentId: string,
+    newName: string,
+  ) => void
   index: number
 }) {
   const isAnswered = !!parameter.considered
@@ -295,7 +403,9 @@ function ParameterCard({
   return (
     <div
       className={`border rounded-xl overflow-hidden transition-all duration-200 ${
-        isExpanded ? 'border-primary ring-1 ring-primary/20 shadow-md' : 'border-gray-200 bg-white'
+        isExpanded
+          ? 'border-primary ring-1 ring-primary/20 shadow-md'
+          : 'border-gray-200 bg-white'
       }`}
     >
       <div
@@ -307,7 +417,9 @@ function ParameterCard({
             P{index}
           </span>
           <div>
-            <h4 className="font-semibold text-sm text-slate-900">{parameter.displayName}</h4>
+            <h4 className="font-semibold text-sm text-slate-900">
+              {parameter.displayName}
+            </h4>
             <p className="text-xs text-slate-500">{parameter.guidedQuestion}</p>
           </div>
         </div>
@@ -325,7 +437,11 @@ function ParameterCard({
               Pending
             </span>
           )}
-          {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4 text-slate-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          )}
         </div>
       </div>
 
@@ -333,31 +449,53 @@ function ParameterCard({
         <div className="p-4 border-t border-slate-200/80 bg-slate-50/50 space-y-4">
           {/* Considered Radio Group */}
           <div>
-            <Label className="text-sm font-medium">Is this parameter applicable/considered? *</Label>
+            <Label className="text-sm font-medium">
+              Is this parameter applicable/considered? *
+            </Label>
             <RadioGroup
               value={parameter.considered}
-              onValueChange={(val) =>
-                onUpdateParameter(parameter.parameterId, {
-                  considered: val as 'Yes' | 'No' | 'NotApplicable',
-                })
-              }
+              onValueChange={(val) => {
+                if (isConsideredValue(val)) {
+                  onUpdateParameter(parameter.parameterId, {
+                    considered: val,
+                  })
+                }
+              }}
               className="flex gap-4 mt-2"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Yes" id={`considered-yes-${parameter.parameterId}`} />
-                <Label htmlFor={`considered-yes-${parameter.parameterId}`} className="font-normal cursor-pointer">
+                <RadioGroupItem
+                  value="Yes"
+                  id={`considered-yes-${parameter.parameterId}`}
+                />
+                <Label
+                  htmlFor={`considered-yes-${parameter.parameterId}`}
+                  className="font-normal cursor-pointer"
+                >
                   Yes
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="No" id={`considered-no-${parameter.parameterId}`} />
-                <Label htmlFor={`considered-no-${parameter.parameterId}`} className="font-normal cursor-pointer">
+                <RadioGroupItem
+                  value="No"
+                  id={`considered-no-${parameter.parameterId}`}
+                />
+                <Label
+                  htmlFor={`considered-no-${parameter.parameterId}`}
+                  className="font-normal cursor-pointer"
+                >
                   No
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="NotApplicable" id={`considered-na-${parameter.parameterId}`} />
-                <Label htmlFor={`considered-na-${parameter.parameterId}`} className="font-normal cursor-pointer">
+                <RadioGroupItem
+                  value="NotApplicable"
+                  id={`considered-na-${parameter.parameterId}`}
+                />
+                <Label
+                  htmlFor={`considered-na-${parameter.parameterId}`}
+                  className="font-normal cursor-pointer"
+                >
                   Not Applicable
                 </Label>
               </div>
@@ -366,14 +504,19 @@ function ParameterCard({
 
           {/* Recommendations Text Area */}
           <div>
-            <Label htmlFor={`recommendations-${parameter.parameterId}`} className="text-sm font-medium">
+            <Label
+              htmlFor={`recommendations-${parameter.parameterId}`}
+              className="text-sm font-medium"
+            >
               Recommendations & Findings *
             </Label>
             <Textarea
               id={`recommendations-${parameter.parameterId}`}
               value={parameter.recommendations}
               onChange={(e) =>
-                onUpdateParameter(parameter.parameterId, { recommendations: e.target.value })
+                onUpdateParameter(parameter.parameterId, {
+                  recommendations: e.target.value,
+                })
               }
               placeholder="Provide detailed findings and recommendations for this parameter..."
               className="mt-2 min-h-24"
@@ -385,13 +528,19 @@ function ParameterCard({
 
           {/* Attachments */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">Supporting Documents (Optional)</Label>
+            <Label className="text-sm font-medium mb-2 block">
+              Supporting Documents (Optional)
+            </Label>
             <FileUploadDropzone
               parameterId={parameter.parameterId}
               files={parameter.attachments}
               onFilesChange={onAddAttachment}
-              onRemoveFile={(fileId) => onRemoveAttachment(parameter.parameterId, fileId)}
-              onRenameFile={(fileId, newName) => onRenameAttachment(parameter.parameterId, fileId, newName)}
+              onRemoveFile={(fileId) =>
+                onRemoveAttachment(parameter.parameterId, fileId)
+              }
+              onRenameFile={(fileId, newName) =>
+                onRenameAttachment(parameter.parameterId, fileId, newName)
+              }
             />
           </div>
         </div>
@@ -423,7 +572,7 @@ function FileUploadDropzone({
     setIsDragging(false)
     const droppedFiles = Array.from(e.dataTransfer.files)
     const validFiles = droppedFiles.filter((file) =>
-      (FILE_UPLOAD_CONFIG.ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)
+      FILE_UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(file.type),
     )
     if (validFiles.length > 0) {
       onFilesChange(parameterId, validFiles)
@@ -450,7 +599,9 @@ function FileUploadDropzone({
       onDrop={handleDrop}
     >
       <Upload className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-      <p className="text-xs text-gray-700 mb-2">Drop files or click to browse</p>
+      <p className="text-xs text-gray-700 mb-2">
+        Drop files or click to browse
+      </p>
       <input
         type="file"
         multiple
@@ -459,14 +610,20 @@ function FileUploadDropzone({
         className="hidden"
         id={`file-input-param-${parameterId}`}
       />
-      <Label htmlFor={`file-input-param-${parameterId}`} className="cursor-pointer text-primary text-xs">
+      <Label
+        htmlFor={`file-input-param-${parameterId}`}
+        className="cursor-pointer text-primary text-xs"
+      >
         Browse
       </Label>
 
       {files.length > 0 && (
         <div className="mt-3 space-y-2 text-left">
           {files.map((file) => (
-            <div key={file.id} className="flex items-center justify-between bg-white p-2 border border-slate-200 rounded text-xs gap-2 shadow-xs">
+            <div
+              key={file.id}
+              className="flex items-center justify-between bg-white p-2 border border-slate-200 rounded text-xs gap-2 shadow-xs"
+            >
               <input
                 type="text"
                 value={file.fileName}

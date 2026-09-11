@@ -170,7 +170,16 @@ export function SelectPPMPDialog() {
     const isAlreadyInCurrentApp = currentApp?.ppmpIds?.includes(ppmp.id) ||
       currentApp?.appPpmps?.some((ap: any) => ap.ppmpId === ppmp.id)
 
-    const isLinkedToOtherApp = Boolean(ppmp.consolidatedIntoId && ppmp.consolidatedIntoId !== currentApp?.id)
+    const currentAppRootId = currentApp?.sourceAppId || currentApp?.id
+
+    // Check if linked to an unrelated APP lineage
+    const isLinkedToUnrelatedApp = Boolean(
+      ppmp.consolidatedAppId &&
+      ppmp.consolidatedAppId !== currentApp?.id &&
+      ppmp.consolidatedAppRootId &&
+      currentAppRootId &&
+      ppmp.consolidatedAppRootId.toLowerCase() !== currentAppRootId.toLowerCase()
+    )
 
     const fyId = currentApp?.fiscalYearId
     const fyYear = currentApp?.fiscalYear
@@ -181,7 +190,7 @@ export function SelectPPMPDialog() {
       (fyYear && pYearStr && String(pYearStr) !== String(fyYear))
     )
 
-    const isEligible = !isAlreadyInCurrentApp && !isLinkedToOtherApp && !isFiscalYearMismatch
+    const isEligible = !isAlreadyInCurrentApp && !isLinkedToUnrelatedApp && !isFiscalYearMismatch
 
     let badgeText = 'Available'
     let badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-300'
@@ -191,10 +200,10 @@ export function SelectPPMPDialog() {
       badgeText = 'Already Added'
       badgeStyle = 'bg-amber-100 text-amber-800 border-amber-300'
       reasonText = 'Already part of the current APP'
-    } else if (isLinkedToOtherApp) {
-      badgeText = 'Already Linked'
+    } else if (isLinkedToUnrelatedApp) {
+      badgeText = 'Already Consolidated'
       badgeStyle = 'bg-purple-100 text-purple-800 border-purple-300'
-      reasonText = 'Already linked to another APP'
+      reasonText = `Already consolidated in ${ppmp.consolidatedAppNumber || 'another APP'}`
     } else if (isFiscalYearMismatch) {
       badgeText = 'Fiscal Year Mismatch'
       badgeStyle = 'bg-red-100 text-red-800 border-red-300'
@@ -203,7 +212,7 @@ export function SelectPPMPDialog() {
 
     return {
       isAlreadyInCurrentApp,
-      isLinkedToOtherApp,
+      isLinkedToUnrelatedApp,
       isFiscalYearMismatch,
       isEligible,
       badgeText,

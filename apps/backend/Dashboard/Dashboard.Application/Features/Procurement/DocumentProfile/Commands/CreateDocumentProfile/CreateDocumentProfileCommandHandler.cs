@@ -12,8 +12,18 @@ public class CreateDocumentProfileCommandHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<Guid>> Handle(
         CreateDocumentProfileCommand request, CancellationToken cancellationToken)
     {
+        var duplicateName = await unitOfWork.DocumentProfileRepository
+            .FindAsync(p => p.Name == request.Name, cancellationToken);
+        if (duplicateName != null)
+            throw new ConflictException($"A checklist profile named '{request.Name}' already exists.");
+
+        var distinctItems = request.Items
+            .GroupBy(i => i.MasterDocumentTypeId)
+            .Select(g => g.First())
+            .ToList();
+
         // Validate every referenced document type exists
-        foreach (var item in request.Items)
+        foreach (var item in distinctItems)
         {
             _ = await unitOfWork.MasterDocumentTypeRepository
                     .GetByIdAsync(item.MasterDocumentTypeId, cancellationToken)
@@ -29,7 +39,7 @@ public class CreateDocumentProfileCommandHandler(IUnitOfWork unitOfWork)
             Description         = request.Description,
             ProcurementCategory = request.ProcurementCategory,
             CreatedAt           = DateTime.UtcNow,
-            DocumentProfileItems = request.Items.Select(i => new DocumentProfileItem
+            DocumentProfileItems = distinctItems.Select(i => new DocumentProfileItem
             {
                 Id                   = Guid.NewGuid(),
                 DocumentProfileId    = profileId,

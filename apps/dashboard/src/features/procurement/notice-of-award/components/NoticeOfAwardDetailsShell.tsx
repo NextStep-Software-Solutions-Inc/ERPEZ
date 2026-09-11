@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,6 +15,8 @@ import {
   Calendar,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   FileCheck2,
   FileDown,
   FileSignature,
@@ -57,6 +60,7 @@ type NoticeOfAwardDetailsShellProps = {
   onSubmit?: () => void | Promise<void>
   onReturn?: () => void
   onApprove?: () => void
+  onOpenLogConforme?: () => void
   onLogMilestone?: (
     milestone: NoticeOfAwardMilestone,
     file: File,
@@ -78,6 +82,7 @@ export function NoticeOfAwardDetailsShell({
   onSubmit,
   onReturn,
   onApprove,
+  onOpenLogConforme,
   onLogMilestone,
   onLogJustification,
   onTriggerCascade,
@@ -274,7 +279,7 @@ export function NoticeOfAwardDetailsShell({
                   <TableRow>
                     <TableHead className="font-bold text-default-900 py-3">Category</TableHead>
                     <TableHead className="font-bold text-default-900 py-3">Item Name</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Description</TableHead>
+                    <TableHead className="font-bold text-default-900 py-3 min-w-[280px] max-w-md">Description</TableHead>
                     <TableHead className="font-bold text-default-900 py-3">Qty</TableHead>
                     <TableHead className="font-bold text-default-900 py-3">Unit</TableHead>
                     <TableHead className="font-bold text-default-900 py-3">Unit Price</TableHead>
@@ -285,18 +290,20 @@ export function NoticeOfAwardDetailsShell({
                   {noticeOfAward.lineItems.length ? (
                     noticeOfAward.lineItems.map((lineItem) => (
                       <TableRow key={lineItem.id} className="transition-colors duration-150 hover:bg-default-50/50">
-                        <TableCell className="font-medium text-default-800">{lineItem.category}</TableCell>
-                        <TableCell className="font-semibold text-default-950">{lineItem.itemName}</TableCell>
-                        <TableCell className="text-default-600">{lineItem.description}</TableCell>
-                        <TableCell className="font-semibold text-default-900">{lineItem.quantity}</TableCell>
-                        <TableCell className="text-default-500">{lineItem.unit}</TableCell>
-                        <TableCell className="font-mono text-default-700">
+                        <TableCell className="font-medium text-default-800 align-top">{lineItem.category}</TableCell>
+                        <TableCell className="font-semibold text-default-950 align-top">{lineItem.itemName}</TableCell>
+                        <TableCell className="text-default-600 min-w-[280px] max-w-md align-top">
+                          <ExpandableItemDescription description={lineItem.description} />
+                        </TableCell>
+                        <TableCell className="font-semibold text-default-900 align-top">{lineItem.quantity}</TableCell>
+                        <TableCell className="text-default-500 align-top">{lineItem.unit}</TableCell>
+                        <TableCell className="text-default-700 align-top">
                           {lineItem.unitPrice.toLocaleString('en-PH', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
                         </TableCell>
-                        <TableCell className="font-mono font-bold text-default-900 text-right">
+                        <TableCell className="font-bold text-default-900 text-right align-top">
                           {lineItem.amount.toLocaleString('en-PH', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
@@ -310,7 +317,7 @@ export function NoticeOfAwardDetailsShell({
                         colSpan={7}
                         className="py-10 text-center text-sm text-default-500"
                       >
-                        No Consolidated PR line items are available yet.
+                        No awarded line items are available yet.
                       </TableCell>
                     </TableRow>
                   )}
@@ -375,6 +382,7 @@ export function NoticeOfAwardDetailsShell({
             noticeOfAward={noticeOfAward}
             canLogMilestones={role === 'procurement-staff' && canLogContractExecution}
             isLoading={isLoading}
+            onOpenLogConforme={onOpenLogConforme}
             onLogMilestone={onLogMilestone}
             onLogJustification={onLogJustification}
             onTriggerCascade={onTriggerCascade}
@@ -468,6 +476,7 @@ function ContractExecutionSlaCard({
   noticeOfAward,
   canLogMilestones,
   isLoading,
+  onOpenLogConforme,
   onLogMilestone,
   onLogJustification,
   onTriggerCascade,
@@ -476,6 +485,7 @@ function ContractExecutionSlaCard({
   noticeOfAward: NoticeOfAward
   canLogMilestones: boolean
   isLoading: boolean
+  onOpenLogConforme?: () => void
   onLogMilestone?: (
     milestone: NoticeOfAwardMilestone,
     file: File,
@@ -497,7 +507,9 @@ function ContractExecutionSlaCard({
             <CardTitle className="text-base">Contract Execution SLA</CardTitle>
             <CardDescription>
               {slaState.isIssued
-                ? `Issued ${formatNoaSlaDate(slaState.issuedDate)} - Due ${formatNoaSlaDate(slaState.deadlineDate)}`
+                ? (slaState.receivedDate
+                    ? '10-day statutory countdown active from NOA receipt'
+                    : `Issued ${formatNoaSlaDate(slaState.issuedDate)} — Awaiting Conforme / Receipt`)
                 : 'Starts after HoPE approval / issuance.'}
             </CardDescription>
           </div>
@@ -505,6 +517,27 @@ function ContractExecutionSlaCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-0">
+        {slaState.isIssued && (
+          <div className="grid grid-cols-3 gap-2 py-2 px-3 bg-default-50 rounded-lg border border-default-150 text-xs">
+            <div>
+              <span className="text-default-400 block text-[10px] uppercase font-bold tracking-wider">Issued</span>
+              <span className="font-semibold text-default-700">{formatNoaSlaDate(slaState.issuedDate)}</span>
+            </div>
+            <div>
+              <span className="text-default-400 block text-[10px] uppercase font-bold tracking-wider">Actual Receipt</span>
+              <span className="font-semibold text-default-700">
+                {slaState.receivedDate ? formatNoaSlaDate(slaState.receivedDate) : 'Awaiting Conforme'}
+              </span>
+            </div>
+            <div>
+              <span className="text-default-400 block text-[10px] uppercase font-bold tracking-wider">Execution Due</span>
+              <span className="font-semibold text-default-700">
+                {slaState.deadlineDate ? formatNoaSlaDate(slaState.deadlineDate) : '10d from receipt'}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2">
           <Progress
             value={slaState.progressPercent}
@@ -600,10 +633,12 @@ function ContractExecutionSlaCard({
                     <div className="mt-1 space-y-1 text-xs text-default-500">
                       {isLogged && milestoneDate ? (
                         <div className="font-semibold text-emerald-700">
-                          Logged on {formatNoaSlaDate(milestoneDate)}
+                          {milestone.key === 'conforme_received_date' ? 'Received' : 'Logged'} on {formatNoaSlaDate(milestoneDate)}
                         </div>
                       ) : (
-                        <div className="text-default-400 font-medium">Pending upload</div>
+                        <div className="text-default-400 font-medium">
+                          {milestone.key === 'conforme_received_date' ? 'Awaiting Conforme / Receipt' : 'Pending upload'}
+                        </div>
                       )}
                       
                       {milestoneFileName ? (
@@ -622,7 +657,7 @@ function ContractExecutionSlaCard({
                   </div>
                   
                   <div>
-                    {!isLogged ? (
+                    {!isLogged && milestone.key !== 'conforme_received_date' ? (
                       <Input
                         id={inputId}
                         type="file"
@@ -654,19 +689,33 @@ function ContractExecutionSlaCard({
                         Logged
                       </Button>
                     ) : canUploadMilestone ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        color="primary"
-                        size="sm"
-                        className="gap-1.5 h-8 font-bold hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer shadow-sm animate-in fade-in"
-                        asChild
-                      >
-                        <label htmlFor={inputId} className="cursor-pointer">
+                      milestone.key === 'conforme_received_date' ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          color="primary"
+                          size="sm"
+                          className="gap-1.5 h-8 font-bold hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer shadow-sm animate-in fade-in"
+                          onClick={() => onOpenLogConforme?.()}
+                        >
                           <Upload className="h-3.5 w-3.5" />
-                          Log {toMilestoneActionLabel(milestone.label)}
-                        </label>
-                      </Button>
+                          Log Conforme Received
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          color="primary"
+                          size="sm"
+                          className="gap-1.5 h-8 font-bold hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer shadow-sm animate-in fade-in"
+                          asChild
+                        >
+                          <label htmlFor={inputId} className="cursor-pointer">
+                            <Upload className="h-3.5 w-3.5" />
+                            Log {toMilestoneActionLabel(milestone.label)}
+                          </label>
+                        </Button>
+                      )
                     ) : (
                       <Button
                         type="button"
@@ -830,6 +879,86 @@ function InfoBlock({
           {value}
         </div>
       </div>
+    </div>
+  )
+}
+
+function parseDescriptionSections(description: string) {
+  const specKey = 'Specifications:'
+  const justKey = 'Justification:'
+
+  const specIdx = description.indexOf(specKey)
+  const justIdx = description.indexOf(justKey)
+
+  if (specIdx !== -1 && justIdx !== -1 && specIdx < justIdx) {
+    const specs = description.slice(specIdx + specKey.length, justIdx).trim()
+    const justification = description.slice(justIdx + justKey.length).trim()
+    return { specs, justification }
+  }
+
+  return null
+}
+
+function ExpandableItemDescription({ description }: { description?: string | null }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  if (!description || !description.trim()) {
+    return <span className="text-default-400 text-xs italic">-</span>
+  }
+
+  const trimmed = description.trim()
+  const isLong = trimmed.length > 90
+  const parsed = isExpanded ? parseDescriptionSections(trimmed) : null
+
+  if (!isLong) {
+    return (
+      <p className="text-xs text-default-600 leading-relaxed break-words">
+        {trimmed}
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {isExpanded ? (
+        parsed ? (
+          <div className="space-y-2 text-xs leading-relaxed">
+            <div className="rounded-lg bg-default-50/80 p-2.5 border border-default-200/60 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-default-600 mb-1">
+                Specifications
+              </div>
+              <p className="text-default-800 break-words">{parsed.specs}</p>
+            </div>
+            <div className="rounded-lg bg-default-50/80 p-2.5 border border-default-200/60 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-default-600 mb-1">
+                Justification
+              </div>
+              <p className="text-default-800 break-words">{parsed.justification}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-default-700 whitespace-pre-line leading-relaxed break-words">
+            {trimmed}
+          </p>
+        )
+      ) : (
+        <p className="text-xs text-default-600 line-clamp-2 leading-relaxed break-words">
+          {trimmed}
+        </p>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setIsExpanded((prev) => !prev)}
+        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary-600 hover:underline transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded cursor-pointer"
+      >
+        <span>{isExpanded ? 'Show less' : 'Show more'}</span>
+        {isExpanded ? (
+          <ChevronUp className="h-3 w-3" />
+        ) : (
+          <ChevronDown className="h-3 w-3" />
+        )}
+      </button>
     </div>
   )
 }

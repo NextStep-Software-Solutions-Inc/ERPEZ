@@ -1,5 +1,5 @@
-﻿import { jsPDF } from 'jspdf'
-import { findNoticeOfAward } from '../data/mockNoticeOfAwardData'
+import { jsPDF } from 'jspdf'
+import { getNoticeOfAwardRequest } from './getNoticeOfAwardRequest'
 import type { PrintNoticeOfAwardResult } from '../types'
 
 function drawWrappedText(
@@ -36,9 +36,7 @@ export const printNoticeOfAwardRequest = {
   }: {
     noaId: string
   }): Promise<PrintNoticeOfAwardResult> => {
-    await new Promise((resolve) => window.setTimeout(resolve, 120))
-
-    const noticeOfAward = findNoticeOfAward(noaId)
+    const noticeOfAward = await getNoticeOfAwardRequest.fetcher({ noaId })
 
     if (!noticeOfAward) {
       throw new Error('Notice of Award not found.')

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
 import { BiddingSchedulePage } from '@/features/procurement/bidding-schedule/pages'
 import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'

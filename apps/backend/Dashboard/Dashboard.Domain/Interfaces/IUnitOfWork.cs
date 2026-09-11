@@ -121,9 +121,11 @@ public interface IUnitOfWork
     IGeneratedDocumentRepository GeneratedDocumentRepository { get; }
     IOPCRConsolidationRepository OPCRConsolidationRepository { get; }
     IProcurementProjectRepository ProcurementProjectRepository { get; }
+    IRepository<ERPEZ.Domain.Entities.Procurement.ProcurementProjectApprovalEvent> ProcurementProjectApprovalEventRepository { get; }
     IBACResolutionRepository BACResolutionRepository { get; }
     IRepository<ERPEZ.Domain.Entities.Procurement.BACMember> BACMemberRepository { get; }
     IBiddingActivityScheduleRepository BiddingActivityScheduleRepository { get; }
+    IRepository<ERPEZ.Domain.Entities.Procurement.PublicHoliday> PublicHolidayRepository { get; }
     IMasterDocumentTypeRepository    MasterDocumentTypeRepository    { get; }
     IDocumentProfileRepository       DocumentProfileRepository       { get; }
     IDocumentProfileItemRepository   DocumentProfileItemRepository   { get; }
@@ -154,5 +156,11 @@ public interface IUnitOfWork
     IRFQRepository RFQRepository { get; }
     IPurchaseOrderRepository PurchaseOrderRepository { get; }
     IPurchaseOrderItemRepository PurchaseOrderItemRepository { get; }
+    INoticeOfAwardRepository NoticeOfAwardRepository { get; }
+    INoticeOfAwardMilestoneRepository NoticeOfAwardMilestoneRepository { get; }
+    INoticeOfAwardActivityRepository NoticeOfAwardActivityRepository { get; }
+    IBiddingSubmissionRepository BiddingSubmissionRepository { get; }
+    IBiddingEvaluationRepository BiddingEvaluationRepository { get; }
+    IBiddingAwardRecommendationRepository BiddingAwardRecommendationRepository { get; }
 }
 

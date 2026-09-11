@@ -41,6 +41,8 @@ export interface SupplierBid {
     name: string
     url: string
     type: 'PDF' | 'Image' | 'Other' | string
+    envelopeType?: number
+    checklistItemId?: string
   }[]
   items?: {
     id: string

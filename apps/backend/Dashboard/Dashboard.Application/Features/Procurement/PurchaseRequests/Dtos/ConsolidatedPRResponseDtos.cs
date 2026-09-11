@@ -11,6 +11,19 @@ public record ConsolidatedPRSummaryResponse(
     string? ModeOfProcurement = null
 );
 
+public record ConsolidatedPRBacResolutionResponse(
+    Guid Id,
+    Guid ProcurementProjectId,
+    string ProjectTitle,
+    string ResolutionNumber,
+    string ResolutionType,
+    DateTime DateResolved,
+    string Status,
+    string? ResolvedLocation,
+    decimal ABC,
+    string SourceType
+);
+
 public record ConsolidatedPRDetailResponse(
     Guid Id,
     string CPRNumber,
@@ -21,7 +34,8 @@ public record ConsolidatedPRDetailResponse(
     decimal TotalAmount,
     string? Remarks,
     List<ConsolidatedPRLinkedPrResponse> Prs,
-    string? ModeOfProcurement = null
+    string? ModeOfProcurement = null,
+    List<ConsolidatedPRBacResolutionResponse>? BacResolutions = null
 );
 
 public record ConsolidatedPRLinkedPrResponse(

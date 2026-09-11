@@ -21,10 +21,20 @@ public record PPMPResponse
     public string? Description { get; init; }
     public int Version { get; init; }
     public decimal TotalEstimatedBudget { get; init; }
+    public bool IsFinal { get; init; }
+    public string PPMPType { get; init; } = string.Empty;
+    public Guid? SourcePPMPId { get; init; }
+    public string? SourcePPMPNumber { get; init; }
+    public int? SupplementalNumber { get; init; }
     public string Status { get; init; } = string.Empty;
     public DateTime? SubmittedDate { get; init; }
     public DateTime? ApprovedDate { get; init; }
     public Guid? ConsolidatedIntoId { get; init; }
+    public Guid? ConsolidatedAppId { get; init; }
+    public string? ConsolidatedAppNumber { get; init; }
+    public string? ConsolidatedAppName { get; init; }
+    public string? ConsolidatedAppType { get; init; }
+    public Guid? ConsolidatedAppRootId { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
     public DateTime? UpdatedAt { get; init; }

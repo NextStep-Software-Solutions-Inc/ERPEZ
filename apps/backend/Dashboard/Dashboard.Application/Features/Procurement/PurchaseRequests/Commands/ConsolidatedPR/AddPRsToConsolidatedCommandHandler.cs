@@ -42,13 +42,20 @@ public class AddPRsToConsolidatedCommandHandler(IUnitOfWork unitOfWork)
 
                 if (alreadyAdded) continue;
 
+                var resolvedModeId = prItem.PPMPItem?.APPItems?
+                    .Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                    .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
+                    .ThenByDescending(ai => ai.CreatedAt)
+                    .FirstOrDefault()?.ProcurementModeId
+                    ?? (prItem.PPMPItem?.ProcurementModeId != Guid.Empty ? prItem.PPMPItem?.ProcurementModeId : null);
+
                 cpr.ConsolidatedPRItems.Add(new ConsolidatedPRItem
                 {
                     ConsolidatedPRId  = cpr.Id,
                     PurchaseRequestId = prId,
                     PRItemId          = prItem.Id,
                     AllowPartial      = false,
-                    ProcurementModeId = prItem.PPMPItem?.ProcurementModeId
+                    ProcurementModeId = resolvedModeId
                 });
 
                 addedAmount += prItem.Amount;

@@ -56,7 +56,7 @@ public class GetPublicProjectsQueryHandler(IUnitOfWork unitOfWork)
             DatePosted = p.BiddingActivitySchedules
                 .Where(s => s.ProcurementActivityType.SystemRole == ProcurementActivitySystemRole.AdvertisementPosting)
                 .Select(s => (DateTime?)s.StartDate)
-                .FirstOrDefault()
+                .FirstOrDefault() ?? p.UpdatedAt ?? p.CreatedAt
         };
 
         var (projects, totalCount) = await unitOfWork.ProcurementProjectRepository.GetAllAsync(

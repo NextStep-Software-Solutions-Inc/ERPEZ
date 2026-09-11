@@ -27,6 +27,20 @@ public class UpdateProcurementActivityTypeCommandHandler(IUnitOfWork unitOfWork)
             entity.Name = request.Name;
         }
 
+        // Check for duplicate activity code if activity code is being updated
+        if (!string.IsNullOrEmpty(request.ActivityCode) && request.ActivityCode != entity.ActivityCode)
+        {
+            var existingCode = await unitOfWork.ProcurementActivityTypeRepository.FindAsync(
+                x => x.ActivityCode == request.ActivityCode && x.Id != request.Id && !x.IsDeleted,
+                cancellationToken
+            );
+
+            if (existingCode != null)
+                throw new ConflictException($"Procurement activity type with code '{request.ActivityCode}' already exists.");
+
+            entity.ActivityCode = request.ActivityCode;
+        }
+
         if (!string.IsNullOrEmpty(request.Description))
             entity.Description = request.Description;
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, createContext, useContext } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import AddPPMPActivityDialog from '@/features/planning/ppmp/dialogs/AddPPMPActivityDialog'
 import {
@@ -33,6 +33,11 @@ import {
   Eye,
   Circle,
   Link2,
+  CheckCircle2,
+  Clock,
+  FilePlus2,
+  PlusCircle,
+  Sparkles,
 } from 'lucide-react'
 import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getUOMRequest } from '@/components/features/planning/procurement-library/unit-of-measurement/handlers/getUOMRequest'
@@ -77,12 +82,14 @@ import {
   AddPPMPItemsModal,
   EditPPMPItemAllocationsDialog,
   MasterPPMPViewerModal,
+  CreateSupplementalPpmpDialog,
 } from '../dialogs'
-import { resolveTypeOfExpenditure } from '../forms/AddPPMPItemExpenditureForm'
+import { resolveTypeOfExpenditure, type ParentObjectInfo } from '../forms/AddPPMPItemExpenditureForm'
 import { PPMPGuidelinesModal } from '../dialogs/PPMPGuidelinesModal'
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
 import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
 import { updatePPMPStatusRequest } from '../handlers/updatePPMPStatusRequest'
+import { togglePpmpFinalizationRequest } from '../handlers/togglePpmpFinalizationRequest'
 import { generatePPMPDocumentRequest } from '../handlers/generatePPMPDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
 import { getLIBRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/getLIBRequest'
@@ -166,6 +173,9 @@ const useDownloadDocument = createMutationHookFromTemplate(
 )
 const useUnlinkMarketScoping = createMutationHookFromTemplate(
   unlinkMarketScopingRequest,
+)
+const useToggleFinal = createMutationHookFromTemplate(
+  togglePpmpFinalizationRequest,
 )
 // ============================
 // Utility Formatting
@@ -897,7 +907,217 @@ function ReferencedItemModal({
   )
 }
 
+export type ItemDiffStatus = 'new' | 'modified' | 'original' | 'none'
+
+export interface ItemFieldDiff {
+  fieldName: string
+  originalValue: string
+  currentValue: string
+}
+
+export interface ItemDiffResult {
+  status: ItemDiffStatus
+  matchedSourceItem?: PPMPItem
+  fieldDiffs: ItemFieldDiff[]
+  summaryMessage: string
+}
+
+export interface SourcePpmpDiffContextType {
+  isSupplemental: boolean
+  sourcePpmpNumber?: string | null
+  sourceItems: PPMPItem[]
+}
+
+export const SourcePpmpDiffContext = createContext<SourcePpmpDiffContextType>({
+  isSupplemental: false,
+  sourceItems: [],
+})
+
+export function getItemDiff(
+  item: PPMPItem,
+  isSupplemental: boolean,
+  sourceItems: PPMPItem[],
+): ItemDiffResult {
+  if (!isSupplemental) {
+    return {
+      status: 'none',
+      fieldDiffs: [],
+      summaryMessage: '',
+    }
+  }
+
+  // If sourceItems hasn't loaded yet or is empty, we cannot determine diff accurately yet
+  if (!sourceItems || sourceItems.length === 0) {
+    return {
+      status: 'none',
+      fieldDiffs: [],
+      summaryMessage: '',
+    }
+  }
+
+  // Find matched source item:
+  // Priority 1: CSE Item ID
+  // Priority 2: Non-CSE Item ID
+  // Priority 3: Case-insensitive normalized Name
+  const matched = sourceItems.find((s) => {
+    if (item.cseItemId && s.cseItemId) {
+      return item.cseItemId.toLowerCase() === s.cseItemId.toLowerCase()
+    }
+    if (item.nonCSEItemId && s.nonCSEItemId) {
+      return item.nonCSEItemId.toLowerCase() === s.nonCSEItemId.toLowerCase()
+    }
+    if (item.name && s.name) {
+      return item.name.trim().toLowerCase() === s.name.trim().toLowerCase()
+    }
+    return false
+  })
+
+  if (!matched) {
+    return {
+      status: 'new',
+      fieldDiffs: [],
+      summaryMessage: 'New item added in this Supplemental PPMP',
+    }
+  }
+
+  // Compare fields for modifications
+  const diffs: ItemFieldDiff[] = []
+
+  // 1. Planned Quantity
+  const srcQty = matched.plannedQuantity ?? 0
+  const currQty = item.plannedQuantity ?? 0
+  if (srcQty !== currQty) {
+    diffs.push({
+      fieldName: 'Planned Quantity',
+      originalValue: `${srcQty}`,
+      currentValue: `${currQty}`,
+    })
+  }
+
+  // 2. Unit Price
+  const srcPrice = matched.unitPrice ?? 0
+  const currPrice = item.unitPrice ?? 0
+  if (Math.abs(srcPrice - currPrice) > 0.001) {
+    diffs.push({
+      fieldName: 'Unit Price',
+      originalValue: formatCurrency(srcPrice),
+      currentValue: formatCurrency(currPrice),
+    })
+  }
+
+  // 3. Procurement Mode
+  if (
+    matched.procurementModeId &&
+    item.procurementModeId &&
+    matched.procurementModeId.toLowerCase() !== item.procurementModeId.toLowerCase()
+  ) {
+    diffs.push({
+      fieldName: 'Mode of Procurement',
+      originalValue: matched.procurementModeName || 'Original Mode',
+      currentValue: item.procurementModeName || 'Updated Mode',
+    })
+  }
+
+  // 4. Project Type
+  if (
+    matched.projectType &&
+    item.projectType &&
+    matched.projectType !== item.projectType
+  ) {
+    diffs.push({
+      fieldName: 'Project Type',
+      originalValue: matched.projectType,
+      currentValue: item.projectType,
+    })
+  }
+
+  // 5. Procurement Schedule
+  const srcStart = matched.procurementStartDate ? matched.procurementStartDate.slice(0, 7) : ''
+  const currStart = item.procurementStartDate ? item.procurementStartDate.slice(0, 7) : ''
+  const srcEnd = matched.procurementEndDate ? matched.procurementEndDate.slice(0, 7) : ''
+  const currEnd = item.procurementEndDate ? item.procurementEndDate.slice(0, 7) : ''
+  if (srcStart !== currStart || srcEnd !== currEnd) {
+    const origSched = srcStart || srcEnd ? `${srcStart || '—'} to ${srcEnd || '—'}` : 'Not set'
+    const currSched = currStart || currEnd ? `${currStart || '—'} to ${currEnd || '—'}` : 'Not set'
+    diffs.push({
+      fieldName: 'Procurement Schedule',
+      originalValue: origSched,
+      currentValue: currSched,
+    })
+  }
+
+  // 6. Expected Delivery Window
+  const srcDelStart = matched.expectedDeliveryStart ? matched.expectedDeliveryStart.slice(0, 7) : ''
+  const currDelStart = item.expectedDeliveryStart ? item.expectedDeliveryStart.slice(0, 7) : ''
+  const srcDelEnd = matched.expectedDeliveryEnd ? matched.expectedDeliveryEnd.slice(0, 7) : ''
+  const currDelEnd = item.expectedDeliveryEnd ? item.expectedDeliveryEnd.slice(0, 7) : ''
+  if (srcDelStart !== currDelStart || srcDelEnd !== currDelEnd) {
+    const origDel = srcDelStart || srcDelEnd ? `${srcDelStart || '—'} to ${srcDelEnd || '—'}` : 'Not set'
+    const currDel = currDelStart || currDelEnd ? `${currDelStart || '—'} to ${currDelEnd || '—'}` : 'Not set'
+    diffs.push({
+      fieldName: 'Expected Delivery',
+      originalValue: origDel,
+      currentValue: currDel,
+    })
+  }
+
+  // 7. Remarks
+  const srcRemarks = (matched.remarks || '').trim()
+  const currRemarks = (item.remarks || '').trim()
+  if (srcRemarks !== currRemarks) {
+    diffs.push({
+      fieldName: 'Remarks',
+      originalValue: srcRemarks || '(Empty)',
+      currentValue: currRemarks || '(Empty)',
+    })
+  }
+
+  // 8. Specifications / Description
+  const srcDesc = (matched.description || '').trim()
+  const currDesc = (item.description || '').trim()
+  if (srcDesc !== currDesc) {
+    diffs.push({
+      fieldName: 'Specifications',
+      originalValue: srcDesc || '(None)',
+      currentValue: currDesc || '(None)',
+    })
+  }
+
+  // 9. Monthly Allocations
+  const srcAllocQty = (matched.PPMPItemAllocations || []).reduce((sum, a) => sum + (a.quantity || 0), 0)
+  const currAllocQty = (item.PPMPItemAllocations || []).reduce((sum, a) => sum + (a.quantity || 0), 0)
+  if (srcAllocQty !== currAllocQty) {
+    diffs.push({
+      fieldName: 'Monthly Allocations',
+      originalValue: `${srcAllocQty} allocated`,
+      currentValue: `${currAllocQty} allocated`,
+    })
+  }
+
+  if (diffs.length > 0) {
+    return {
+      status: 'modified',
+      matchedSourceItem: matched,
+      fieldDiffs: diffs,
+      summaryMessage: `${diffs.length} field${diffs.length > 1 ? 's' : ''} modified from original plan`,
+    }
+  }
+
+  return {
+    status: 'original',
+    matchedSourceItem: matched,
+    fieldDiffs: [],
+    summaryMessage: 'Cloned from original PPMP (Unchanged)',
+  }
+}
+
 function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
+  const { isSupplemental, sourceItems } = useContext(SourcePpmpDiffContext)
+  const diff = useMemo(
+    () => getItemDiff(item, isSupplemental, sourceItems),
+    [item, isSupplemental, sourceItems],
+  )
+
   const months = [
     'January',
     'February',
@@ -976,6 +1196,49 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
 
   return (
     <div className="space-y-5 p-5 bg-default-50/60 rounded-2xl border border-default-200 shadow-inner">
+      {/* Supplemental Modification Banner */}
+      {diff.status === 'new' && (
+        <div className="flex items-start gap-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs shadow-sm">
+          <PlusCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <div className="font-semibold text-emerald-900 dark:text-emerald-200">New Item Added in Supplemental PPMP</div>
+            <p className="text-emerald-700 dark:text-emerald-400 leading-relaxed font-normal">
+              This procurement item was newly introduced in this Supplemental PPMP and was not part of the original approved plan.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {diff.status === 'modified' && (
+        <div className="flex flex-col gap-2.5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs shadow-sm">
+          <div className="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-200">
+            <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Modified Item in Supplemental PPMP ({diff.fieldDiffs.length} field{diff.fieldDiffs.length > 1 ? 's' : ''} modified from original plan)</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-0.5">
+            {diff.fieldDiffs.map((fd, idx) => (
+              <div key={idx} className="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-lg border border-amber-500/20 shadow-xs">
+                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide block">
+                  {fd.fieldName}
+                </span>
+                <div className="mt-1 flex items-center gap-1.5 text-xs">
+                  <span className="line-through text-default-400 font-normal">{fd.originalValue}</span>
+                  <span className="text-default-400 font-normal">→</span>
+                  <span className="font-semibold text-default-900 dark:text-default-100">{fd.currentValue}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {diff.status === 'original' && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/60 dark:bg-slate-900/40 border border-default-200/80 text-default-500 text-xs font-normal">
+          <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+          <span>Cloned from original PPMP — all quantities, unit prices, procurement timeline, and monthly allocations are unchanged.</span>
+        </div>
+      )}
+
       {/* 3-Column Grid */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {/* Column 1: Overview & Specs */}
@@ -1336,6 +1599,12 @@ function ItemRow({
   const validationStatus = useItemValidationStatus(item)
   const rowClasses = getRowCompletionClasses(validationStatus)
 
+  const { isSupplemental, sourceItems } = useContext(SourcePpmpDiffContext)
+  const diff = useMemo(
+    () => getItemDiff(item, isSupplemental, sourceItems),
+    [item, isSupplemental, sourceItems],
+  )
+
   const isNonCse = Boolean(
     item.nonCSEItemId ||
     (item as Record<string, unknown>).nonCseItemId ||
@@ -1385,6 +1654,56 @@ function ItemRow({
             >
               {displayName}
             </span>
+            {diff.status === 'new' && (
+              <Badge
+                variant="soft"
+                className="text-[10px] tracking-wide px-2 py-0.5 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 uppercase font-semibold shrink-0 flex items-center gap-1 shadow-sm"
+              >
+                <PlusCircle className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                New Item
+              </Badge>
+            )}
+            {diff.status === 'modified' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="soft"
+                      className="text-[10px] tracking-wide px-2 py-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 uppercase font-semibold shrink-0 flex items-center gap-1 cursor-help shadow-sm"
+                    >
+                      <Sparkles className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                      Modified ({diff.fieldDiffs.length})
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-xs space-y-1.5 p-3 bg-slate-900 text-slate-100 dark:bg-slate-100 dark:text-slate-900 shadow-lg border border-slate-700">
+                    <p className="font-semibold flex items-center gap-1.5 border-b border-slate-700 dark:border-slate-300 pb-1">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-400 dark:text-amber-600" />
+                      Modified in Supplemental PPMP:
+                    </p>
+                    <div className="space-y-1 text-[11px]">
+                      {diff.fieldDiffs.map((fd, idx) => (
+                        <div key={idx} className="flex flex-col">
+                          <span className="font-medium text-amber-300 dark:text-amber-700">{fd.fieldName}:</span>
+                          <span className="text-slate-300 dark:text-slate-600 pl-2">
+                            <span className="line-through opacity-75">{fd.originalValue}</span>
+                            {' → '}
+                            <span className="font-semibold text-white dark:text-black">{fd.currentValue}</span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {diff.status === 'original' && (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-2 py-0.5 bg-slate-50 text-slate-500 border-slate-200 uppercase font-normal shrink-0"
+              >
+                Original
+              </Badge>
+            )}
             {isNonCse ? (
               <Badge
                 className="text-[10px] tracking-wide px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 uppercase font-medium shrink-0 flex items-center gap-1"
@@ -1613,7 +1932,7 @@ export function ExpenditureItemGroup({
       group.objectId,
       itemName,
       itemCode,
-      objectInfo?.parent as any,
+      objectInfo?.parent as ParentObjectInfo | undefined,
     )
 
     return {
@@ -1981,10 +2300,6 @@ function RightPane({
   }
 
   const hasItems = expenditureItems.length > 0
-  const serverFetchedCost = expenditureItems.reduce(
-    (sum, g) => sum + g.totalCost,
-    0,
-  )
 
   return (
     <div className="h-full flex flex-col bg-white border border-default-200 rounded-xl shadow-sm overflow-hidden">
@@ -2307,6 +2622,17 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const ppmp: PPMPDetails | null = ppmpResp?.data ?? null
   const isDeptMode = ppmp ? !ppmp.isMaster : false
+  const isSupplemental = Boolean(ppmp?.ppmpType === 'Supplemental' || ppmp?.sourcePPMPId)
+
+  const { data: sourcePpmpResp } = usePPMP({
+    pathParams: { id: ppmp?.sourcePPMPId ?? '' },
+    queryParams: {},
+    enabled: Boolean(isSupplemental && ppmp?.sourcePPMPId),
+  })
+
+  const sourceItems: PPMPItem[] = useMemo(() => {
+    return sourcePpmpResp?.data?.PPMPItems ?? []
+  }, [sourcePpmpResp?.data?.PPMPItems])
 
   const { data: libResp } = useLIB({
     pathParams: { id: ppmp?.libId || '' },
@@ -2338,8 +2664,12 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const [consolidatedViewerOpen, setConsolidatedViewerOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [guidelinesModalOpen, setGuidelinesModalOpen] = useState(false)
+  const [supplementalDialogOpen, setSupplementalDialogOpen] = useState(false)
+  const [toggleFinalConfirmOpen, setToggleFinalConfirmOpen] = useState(false)
   // Expose current PPMP to other components so they can read metadata defaults
   const setPpmpForEdit = useSetAtom(selectedPpmpForEditAtom)
+
+  const { mutateAsync: toggleFinal, isPending: isTogglingFinal } = useToggleFinal()
 
   const { userName, firstName, lastName } = useKeycloak()
   const actorDisplayName =
@@ -2367,17 +2697,21 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const handleUnlinkMsf = (msfId: string) => {
     unlinkMsf(
-      { pathParams: { id: msfId }, queryParams: {} },
+      { pathParams: { id: msfId } },
       {
         onSuccess: () => {
           toast.success('Market Scoping Form unlinked successfully.')
-          queryClient.invalidateQueries({ queryKey: ['/ppmps'] })
-          queryClient.invalidateQueries({ queryKey: ['/market-scopings'] })
+          void queryClient.invalidateQueries({ queryKey: ['/ppmps'] })
+          void queryClient.invalidateQueries({ queryKey: ['/market-scopings'] })
         },
-        onError: (err: any) => {
-          toast.error(err?.message || 'Failed to unlink Market Scoping Form.')
+        onError: (err: unknown) => {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : 'Failed to unlink Market Scoping Form.'
+          toast.error(msg)
         },
-      }
+      },
     )
   }
 
@@ -2682,6 +3016,40 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     }
   }
 
+  const handleToggleFinal = async () => {
+    if (!ppmpId) return
+    const nextFinalState = !ppmp?.isFinal
+    try {
+      await toggleFinal(
+        {
+          pathParams: { id: ppmpId },
+          payload: { isFinal: nextFinalState },
+        },
+        {
+          onSuccess: () => {
+            toast.success(
+              nextFinalState
+                ? 'PPMP marked as final successfully.'
+                : 'PPMP unmarked as final successfully.',
+            )
+            void queryClient.invalidateQueries({
+              predicate: (query) =>
+                typeof query.queryKey[0] === 'string' &&
+                (query.queryKey[0].startsWith('/ppmps') ||
+                  query.queryKey[0].startsWith('/ppmp')),
+            })
+          },
+        },
+      )
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update PPMP final status.',
+      )
+    } finally {
+      setToggleFinalConfirmOpen(false)
+    }
+  }
+
   const handleExportPPMP = async (format: 'Pdf' | 'Excel') => {
     if (!ppmpId) return
     try {
@@ -2855,11 +3223,50 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     }
   }
 
+  const cleanPpmpNumber = ppmp.ppmpNumber
+    ? ppmp.ppmpNumber.replace(/^SUPPLEMENTAL[-\s_]*/i, '')
+    : 'PPMP Details'
+
+  const pageHeaderTitle = isSupplemental
+    ? `Supplemental PPMP: ${cleanPpmpNumber}`
+    : (ppmp.ppmpNumber || 'PPMP Details')
+
   return (
-    <PageContainerDashtail
-      title={ppmp.ppmpNumber || 'PPMP Details'}
+    <SourcePpmpDiffContext.Provider
+      value={{
+        isSupplemental,
+        sourcePpmpNumber: ppmp.sourcePPMPNumber ?? sourcePpmpResp?.data?.ppmpNumber ?? null,
+        sourceItems,
+      }}
+    >
+      <PageContainerDashtail
+        title={pageHeaderTitle}
       badge={
         <div className="flex items-center gap-2">
+          {/* PPMP Type Badge */}
+          {ppmp.ppmpType === 'Supplemental' || ppmp.sourcePPMPId ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-purple-200 bg-purple-50 text-purple-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+              Supplemental {ppmp.supplementalNumber ? `#${ppmp.supplementalNumber}` : ''}
+            </span>
+          ) : null}
+          {/* Finality Badge */}
+          {ppmp.ppmpType === 'Supplemental' || ppmp.sourcePPMPId ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-emerald-200 bg-emerald-50 text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {ppmp.status?.toLowerCase() === 'draft' ? 'Final PPMP (Draft)' : 'Final PPMP'}
+            </span>
+          ) : ppmp.isFinal ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-emerald-200 bg-emerald-50 text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Final PPMP
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-slate-200 bg-slate-50 text-slate-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+              Indicative PPMP
+            </span>
+          )}
           {/* Mode badge */}
           {isDeptMode ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-amber-200 bg-amber-50 text-amber-700">
@@ -3014,6 +3421,69 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                 <TrendingUp className="h-4 w-4" />
                 <span>Approve PPMP</span>
               </Button>
+            )}
+
+          {/* Mark as Final / Unmark as Final Toggle */}
+          {!ppmp.consolidatedIntoId && ppmp.status?.toLowerCase() === 'approved' && (
+            <Button
+              variant={ppmp.isFinal ? 'outline' : 'default'}
+              size="sm"
+              disabled={isTogglingFinal}
+              onClick={() => setToggleFinalConfirmOpen(true)}
+              className={cn(
+                'flex items-center gap-1.5 h-9 rounded-lg font-semibold transition-all duration-300 shadow-sm',
+                ppmp.isFinal
+                  ? 'border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400'
+                  : 'bg-slate-900 hover:bg-slate-800 text-white'
+              )}
+            >
+              {ppmp.isFinal ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <span>Marked as Final</span>
+                </>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4" />
+                  <span>Mark as Final</span>
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* Create Supplemental PPMP Button (Only on Approved Original PPMPs, enabled once Finalized) */}
+          {!ppmp.consolidatedIntoId &&
+            ppmp.status?.toLowerCase() === 'approved' &&
+            ppmp.ppmpType !== 'Supplemental' &&
+            !ppmp.sourcePPMPId && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!ppmp.isFinal}
+                        onClick={() => setSupplementalDialogOpen(true)}
+                        className={cn(
+                          'flex items-center gap-1.5 font-semibold h-9 rounded-lg transition-all',
+                          ppmp.isFinal
+                            ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-sm'
+                            : 'opacity-50 cursor-not-allowed border-slate-200 text-slate-400 hover:bg-transparent',
+                        )}
+                      >
+                        <FilePlus2 className="h-4 w-4" />
+                        <span>Create Supplemental PPMP</span>
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!ppmp.isFinal && (
+                    <TooltipContent side="bottom" className="text-xs max-w-xs bg-slate-900 text-white p-2">
+                      Mark this PPMP as Final before creating a Supplemental PPMP.
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             )}
 
           {/* Master mode: Consolidate button (import dept PPMPs into this master) */}
@@ -3494,6 +3964,34 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         loading={isUpdatingStatus}
       />
 
+      <ConfirmAlertDialog
+        open={toggleFinalConfirmOpen}
+        onOpenChange={setToggleFinalConfirmOpen}
+        title={ppmp.isFinal ? 'Unmark PPMP as Final?' : 'Mark PPMP as Final?'}
+        description={
+          ppmp.isFinal
+            ? 'This will revert the PPMP to Indicative status. Note that if it has already been consumed by an approved Final APP, it cannot be reverted.'
+            : 'Marking this PPMP as Final designates it as the official approved procurement plan for the fiscal year, eligible for inclusion in the Final APP.'
+        }
+        onConfirm={handleToggleFinal}
+        onCancel={() => setToggleFinalConfirmOpen(false)}
+        confirmLabel={
+          isTogglingFinal
+            ? 'Saving…'
+            : ppmp.isFinal
+              ? 'Unmark as Final'
+              : 'Confirm - Mark Final'
+        }
+        cancelLabel="Cancel"
+        loading={isTogglingFinal}
+      />
+
+      <CreateSupplementalPpmpDialog
+        open={supplementalDialogOpen}
+        onOpenChange={setSupplementalDialogOpen}
+        sourcePpmp={ppmp}
+      />
+
       <PPMPGuidelinesModal
         open={guidelinesModalOpen}
         onOpenChange={setGuidelinesModalOpen}
@@ -3551,6 +4049,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         }}
       />
     </PageContainerDashtail>
+    </SourcePpmpDiffContext.Provider>
   )
 }
 

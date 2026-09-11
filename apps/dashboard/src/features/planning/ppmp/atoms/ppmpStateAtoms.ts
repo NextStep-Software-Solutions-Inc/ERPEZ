@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PPMP Jotai Atoms for State Management
  * Handles dialog states, form persistence, table/filter state, and UI interactivity
  */
@@ -21,6 +21,8 @@ export const rejectionDialogOpenAtom = atom(false)
 export const amendmentDialogOpenAtom = atom(false)
 export const mopOverrideDialogOpenAtom = atom(false)
 export const addActivityBlockDialogOpenAtom = atom(false)
+export const supplementalDialogOpenAtom = atom(false)
+export const selectedPpmpForSupplementalAtom = atom<PPMP | null>(null)
 
 /** Controls visibility of the Link Scoping Form modal */
 export const linkScopingFormModalOpenAtom = atom(false)

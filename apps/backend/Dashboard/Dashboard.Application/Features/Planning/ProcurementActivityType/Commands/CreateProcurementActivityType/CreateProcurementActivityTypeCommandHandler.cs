@@ -19,10 +19,19 @@ public class CreateProcurementActivityTypeCommandHandler(IUnitOfWork unitOfWork)
         if (existing != null)
             throw new ConflictException($"Procurement activity type with name '{request.Name}' already exists.");
 
+        var existingCode = await unitOfWork.ProcurementActivityTypeRepository.FindAsync(
+            x => x.ActivityCode == request.ActivityCode && !x.IsDeleted,
+            cancellationToken
+        );
+
+        if (existingCode != null)
+            throw new ConflictException($"Procurement activity type with code '{request.ActivityCode}' already exists.");
+
         var entity = new Domain.Entities.Planning.ProcurementActivityType
         {
             Id = Guid.NewGuid(),
             Name = request.Name,
+            ActivityCode = request.ActivityCode,
             Description = request.Description,
             MinDays = request.MinDays,
             MaxDays = request.MaxDays,

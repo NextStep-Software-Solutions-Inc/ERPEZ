@@ -1,6 +1,7 @@
 using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
@@ -51,6 +52,15 @@ public class PPMP : ApprovableEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ConsolidatedIntoId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public PPMPTypeEnum PPMPType { get; set; } = PPMPTypeEnum.Original;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? SourcePPMPId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public int? SupplementalNumber { get; set; }
     
     // Navigation properties
     public virtual Office Office { get; set; } = null!;
@@ -59,10 +69,13 @@ public class PPMP : ApprovableEntity
     public virtual LineItemBudget LineItemBudget { get; set; } = null!;
     public virtual PPMP? ParentPPMP { get; set; }
     public virtual PPMP? ConsolidatedInto { get; set; }
+    public virtual PPMP? SourcePPMP { get; set; }
     public virtual List<PPMP> ChildPPMPs { get; set; } = [];
+    public virtual List<PPMP> SupplementalPPMPs { get; set; } = [];
     public virtual List<PPMPActivity> PPMPActivities { get; set; } = [];
     public virtual List<ApprovalEvent> ApprovalEvents { get; set; } = [];
     public virtual List<PPMPExpenditureItem> PPMPExpenditureItems { get; set; } = [];
+    public virtual List<APPPPMP> APPPPMPs { get; set; } = [];
     // Inherited from ApprovableEntity:  
     // public StatusEnum Status { get; set; }
     // public DateTime? SubmittedDate { get; set; }

@@ -8,6 +8,8 @@ namespace ERPEZ.Application.Features.Procurement.Projects.Commands.CreateProcure
 public record CreateProcurementProjectCommand : IRequest<ApiResponse<Guid>>
 {
     public ProcurementProjectSourceType SourceType { get; init; } = ProcurementProjectSourceType.ConsolidatedPR;
+    public Guid? APPId { get; init; }
+    public List<Guid>? APPIds { get; init; }
     public Guid? APPItemId { get; init; }
     public List<Guid>? APPItemIds { get; init; }
     public Guid? ConsolidatedPRId { get; init; }

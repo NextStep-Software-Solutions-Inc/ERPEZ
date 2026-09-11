@@ -161,6 +161,7 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
     public Guid? TechRepresentativeId { get; init; }
     public ProjectUserResponse? TechRepresentative { get; init; }
     public Guid? ApprovalAttachmentFileId { get; init; }
+    public List<ProcurementProjectApprovalEventResponse> ApprovalEvents { get; init; } = new();
 
     public static Expression<Func<ProcurementProject, ProcurementProjectDetailResponse>> DetailProjection => c => new ProcurementProjectDetailResponse
     {
@@ -183,6 +184,22 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
             AppNumber = l.APPItem != null && l.APPItem.APP != null ? l.APPItem.APP.APPNumber : string.Empty,
             AppName = l.APPItem != null && l.APPItem.APP != null ? l.APPItem.APP.Name : string.Empty,
         }).ToList() : new List<APPItemLinkResponse>(),
+        ApprovalEvents = c.ApprovalEvents != null
+            ? c.ApprovalEvents
+                .OrderByDescending(e => e.Timestamp)
+                .Select(e => new ProcurementProjectApprovalEventResponse
+                {
+                    Id = e.Id,
+                    ProcurementProjectId = e.ProcurementProjectId,
+                    Action = e.Action,
+                    ActorId = e.ActorId,
+                    ActorName = e.ActorName,
+                    Role = e.Role,
+                    Remarks = e.Remarks,
+                    AttachmentFileId = e.AttachmentFileId,
+                    Timestamp = e.Timestamp
+                }).ToList()
+            : new List<ProcurementProjectApprovalEventResponse>(),
         APPItem = c.APPItem != null ? new APPItemResponse
         {
             Id = c.APPItem.Id,
@@ -309,6 +326,7 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
             DateResolved = r.DateResolved,
             ResolvedLocation = r.ResolvedLocation,
             Status = r.Status,
+            BiddingAwardRecommendationId = r.BiddingAwardRecommendationId,
             WhereasClauses = r.WhereasClauseItems != null
                 ? r.WhereasClauseItems
                     .OrderBy(item => item.Order)
@@ -405,3 +423,17 @@ public record ProjectUserResponse
     public string LastName { get; init; } = string.Empty;
     public string Email { get; init; } = string.Empty;
 }
+
+public record ProcurementProjectApprovalEventResponse
+{
+    public Guid Id { get; init; }
+    public Guid ProcurementProjectId { get; init; }
+    public string Action { get; init; } = string.Empty;
+    public Guid? ActorId { get; init; }
+    public string? ActorName { get; init; }
+    public string? Role { get; init; }
+    public string? Remarks { get; init; }
+    public Guid? AttachmentFileId { get; init; }
+    public DateTime Timestamp { get; init; }
+}
+

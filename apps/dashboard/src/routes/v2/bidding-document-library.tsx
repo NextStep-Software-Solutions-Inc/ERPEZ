@@ -5,7 +5,9 @@ import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
 import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
-  tab: z.enum(['SystemAdmin', 'BACSecretariat']).catch('SystemAdmin'),
+  tab: z
+    .enum(['SystemAdmin', 'BACSecretariat', 'PublicPortal'])
+    .catch('SystemAdmin'),
 })
 
 export const Route = createFileRoute('/v2/bidding-document-library')({

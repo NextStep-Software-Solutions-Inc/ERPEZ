@@ -1,9 +1,9 @@
-import type { ColumnDef } from '@tanstack/react-table'
 import { Edit, Eye, Trash2 } from 'lucide-react'
+import type { ColumnDef } from '@tanstack/react-table'
+import type { MasterDoc } from '../../types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import type { MasterDoc } from '../../types'
 
 interface Handlers {
   onViewTemplate: (doc: MasterDoc) => void
@@ -11,15 +11,24 @@ interface Handlers {
   onDelete: (doc: MasterDoc) => void
 }
 
-// Add this helper above the getColumns function
-const getTemplateFileName = (url: string): string => {
+// Resolves a human-readable display label for a template file URL.
+// If the stored URL is a /files/download/{uuid} path (i.e. the original
+// filename was never separately persisted), shows "Uploaded Template" so
+// a raw GUID is never surfaced to the user.
+const UUID_REGEX =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+
+const getTemplateDisplayName = (url: string): string => {
+  if (!url) return ''
   try {
     const decoded = decodeURIComponent(url)
     const lastSegment = decoded.split('/').pop() ?? url
+    // Raw UUID — filename was not persisted separately
+    if (UUID_REGEX.test(lastSegment)) return 'Uploaded Template'
+    // Blob name format: {uuid}_{originalName}
     const underscoreIndex = lastSegment.indexOf('_')
-    return underscoreIndex !== -1
-      ? lastSegment.slice(underscoreIndex + 1)
-      : lastSegment
+    if (underscoreIndex !== -1) return lastSegment.slice(underscoreIndex + 1)
+    return lastSegment
   } catch {
     return url
   }
@@ -29,7 +38,7 @@ export const getColumns = ({
   onViewTemplate,
   onEdit,
   onDelete,
-}: Handlers): ColumnDef<MasterDoc>[] => [
+}: Handlers): Array<ColumnDef<MasterDoc>> => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -53,11 +62,13 @@ export const getColumns = ({
     accessorKey: 'name',
     header: 'Document Specification',
     cell: ({ row }) => (
-      <div className="min-w-0">
-        <div className="font-semibold text-sm">{row.original.name}</div>
-        <div className="text-2xs text-muted-foreground line-clamp-1">
-          {row.original.description}
-        </div>
+      <div className="min-w-0 py-0.5">
+        <div className="font-semibold text-sm text-foreground">{row.original.name}</div>
+        {row.original.description ? (
+          <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+            {row.original.description}
+          </div>
+        ) : null}
       </div>
     ),
   },
@@ -70,11 +81,10 @@ export const getColumns = ({
       return (
         <Badge
           variant="outline"
-          color={envelope === 1 ? 'info' : 'warning'}
           className={
             envelope === 1
-              ? 'bg-info/10 text-info border-info/20'
-              : 'bg-warning/10 text-warning border-warning/20'
+              ? 'bg-info/10 text-info border-info/30 font-medium py-0.5 px-2 text-xs'
+              : 'bg-warning/10 text-warning border-warning/30 font-medium py-0.5 px-2 text-xs'
           }
         >
           {envelope === 1 ? 'Envelope 1: Technical' : 'Envelope 2: Financial'}
@@ -87,22 +97,22 @@ export const getColumns = ({
     header: 'Blank Template File',
     cell: ({ row }) => {
       const doc = row.original
-      const displayName = getTemplateFileName(doc.templateFile)
+      const displayName = getTemplateDisplayName(doc.templateFile)
 
       return doc.templateFile ? (
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           title={doc.templateFile}
-          className="h-8 max-w-full justify-start gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 font-mono text-2xs text-primary hover:bg-primary/10"
+          className="h-7 max-w-full justify-start gap-1.5 rounded-md border-primary/30 bg-primary/5 px-2.5 text-xs text-primary hover:bg-primary/10 hover:border-primary/50 transition-colors"
           onClick={() => onViewTemplate(doc)}
         >
           <Eye className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{displayName}</span>
+          <span className="truncate max-w-[220px]">{displayName}</span>
         </Button>
       ) : (
-        <span className="text-xs text-muted-foreground italic">
+        <span className="text-xs text-muted-foreground/70 italic">
           None Attached
         </span>
       )
@@ -110,17 +120,18 @@ export const getColumns = ({
   },
   {
     id: 'actions',
-    header: 'Actions',
+    header: () => <div className="text-right pr-2">Actions</div>,
     enableSorting: false,
     cell: ({ row }) => {
       const doc = row.original
 
       return (
-        <div className="flex justify-end gap-1">
+        <div className="flex justify-end items-center gap-1 pr-1">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-info"
+            className="h-8 w-8 text-muted-foreground hover:text-info hover:bg-info/10 transition-colors"
+            title={`Edit ${doc.name}`}
             onClick={() => onEdit(doc)}
           >
             <Edit className="h-4 w-4" />
@@ -128,7 +139,8 @@ export const getColumns = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-destructive"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            title={`Delete ${doc.name}`}
             onClick={() => onDelete(doc)}
           >
             <Trash2 className="h-4 w-4" />

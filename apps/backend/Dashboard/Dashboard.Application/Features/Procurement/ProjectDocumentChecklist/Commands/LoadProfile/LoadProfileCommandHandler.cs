@@ -22,7 +22,7 @@ public class LoadProfileCommandHandler(IUnitOfWork unitOfWork)
                           .GetByIdWithItemsAsync(request.DocumentProfileId, cancellationToken)
                       ?? throw new NotFoundException("Document profile not found.");
 
-        // Wipe any existing draft checklist items before re-scaffolding
+        // Wipe any existing draft checklist items before re-scaffolding (replace contract)
         var existing = await unitOfWork.ProjectDocumentChecklistRepository
             .GetByProjectIdAsync(request.ProcurementProjectId, cancellationToken);
 
@@ -37,7 +37,7 @@ public class LoadProfileCommandHandler(IUnitOfWork unitOfWork)
                 Id                   = Guid.NewGuid(),
                 ProcurementProjectId = request.ProcurementProjectId,
                 MasterDocumentTypeId = i.MasterDocumentTypeId,
-                EnvelopeType         = i.MasterDocumentType.EnvelopeType,
+                EnvelopeType         = i.MasterDocumentType != null ? i.MasterDocumentType.EnvelopeType : 1,
                 IsRequired           = true,
                 OrderIndex           = i.OrderIndex,
                 CreatedAt            = DateTime.UtcNow

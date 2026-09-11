@@ -163,6 +163,10 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
     isFinal: apiApp.isFinal,
     submittedDate: apiApp.submittedDate,
     approvedDate: apiApp.approvedDate,
+    derivedFinalAppId: apiApp.derivedFinalAppId,
+    derivedFinalAppNumber: apiApp.derivedFinalAppNumber,
+    derivedFinalAppName: apiApp.derivedFinalAppName,
+    derivedFinalAppStatus: apiApp.derivedFinalAppStatus,
     APPItems: apiApp.APPItems,
   } as AppMaster
 }

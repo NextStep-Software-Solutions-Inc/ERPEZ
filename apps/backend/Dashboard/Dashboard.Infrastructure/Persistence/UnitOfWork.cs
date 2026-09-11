@@ -131,9 +131,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IGeneratedDocumentRepository generatedDocumentRepository;
     private readonly IOPCRConsolidationRepository opcrConsolidationRepository;
     private readonly IProcurementProjectRepository procurementProjectRepository;
+    private readonly IRepository<ERPEZ.Domain.Entities.Procurement.ProcurementProjectApprovalEvent> procurementProjectApprovalEventRepository;
     private readonly IBACResolutionRepository bacResolutionRepository;
     private readonly IRepository<ERPEZ.Domain.Entities.Procurement.BACMember> bacMemberRepository;
     private readonly IBiddingActivityScheduleRepository biddingActivityScheduleRepository;
+    private readonly IRepository<ERPEZ.Domain.Entities.Procurement.PublicHoliday> publicHolidayRepository;
     private readonly ISupplierBidRepository supplierBidRepository;
     private readonly ISupplierBidItemRepository supplierBidItemRepository;
     private readonly IAOBRepository aobRepository;
@@ -162,6 +164,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IPublicSupplierApplicationRepository publicSupplierApplicationRepository;
     private readonly IPurchaseOrderRepository purchaseOrderRepository;
     private readonly IPurchaseOrderItemRepository purchaseOrderItemRepository;
+    private readonly INoticeOfAwardRepository noticeOfAwardRepository;
+    private readonly INoticeOfAwardMilestoneRepository noticeOfAwardMilestoneRepository;
+    private readonly INoticeOfAwardActivityRepository noticeOfAwardActivityRepository;
+    private readonly IBiddingSubmissionRepository biddingSubmissionRepository;
+    private readonly IBiddingEvaluationRepository biddingEvaluationRepository;
+    private readonly IBiddingAwardRecommendationRepository biddingAwardRecommendationRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -287,9 +295,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         generatedDocumentRepository = new GeneratedDocumentRepository(context, sieveProcessor);
         opcrConsolidationRepository = new OPCRConsolidationRepository(context, sieveProcessor);
         procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
+        procurementProjectApprovalEventRepository = new Repository<ERPEZ.Domain.Entities.Procurement.ProcurementProjectApprovalEvent>(context, sieveProcessor);
         bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
         bacMemberRepository = new Repository<ERPEZ.Domain.Entities.Procurement.BACMember>(context, sieveProcessor);
         biddingActivityScheduleRepository = new BiddingActivityScheduleRepository(context, sieveProcessor);
+        publicHolidayRepository = new Repository<ERPEZ.Domain.Entities.Procurement.PublicHoliday>(context, sieveProcessor);
         supplierBidRepository = new SupplierBidRepository(context, sieveProcessor);
         supplierBidItemRepository = new SupplierBidItemRepository(context, sieveProcessor);
         aobRepository = new AOBRepository(context, sieveProcessor);
@@ -317,6 +327,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         publicSupplierApplicationRepository = new PublicSupplierApplicationRepository (context, sieveProcessor);
         purchaseOrderRepository = new PurchaseOrderRepository(context, sieveProcessor);
         purchaseOrderItemRepository = new PurchaseOrderItemRepository(context, sieveProcessor);
+        noticeOfAwardRepository = new NoticeOfAwardRepository(context, sieveProcessor);
+        noticeOfAwardMilestoneRepository = new NoticeOfAwardMilestoneRepository(context, sieveProcessor);
+        noticeOfAwardActivityRepository = new NoticeOfAwardActivityRepository(context, sieveProcessor);
+        biddingSubmissionRepository = new BiddingSubmissionRepository(context, sieveProcessor);
+        biddingEvaluationRepository = new BiddingEvaluationRepository(context, sieveProcessor);
+        biddingAwardRecommendationRepository = new BiddingAwardRecommendationRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -437,9 +453,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IGeneratedDocumentRepository GeneratedDocumentRepository => generatedDocumentRepository;
     public IOPCRConsolidationRepository OPCRConsolidationRepository => opcrConsolidationRepository;
     public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
+    public IRepository<ERPEZ.Domain.Entities.Procurement.ProcurementProjectApprovalEvent> ProcurementProjectApprovalEventRepository => procurementProjectApprovalEventRepository;
     public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
     public IRepository<ERPEZ.Domain.Entities.Procurement.BACMember> BACMemberRepository => bacMemberRepository;
     public IBiddingActivityScheduleRepository BiddingActivityScheduleRepository => biddingActivityScheduleRepository;
+    public IRepository<ERPEZ.Domain.Entities.Procurement.PublicHoliday> PublicHolidayRepository => publicHolidayRepository;
     public ISupplierBidRepository SupplierBidRepository => supplierBidRepository;
     public ISupplierBidItemRepository SupplierBidItemRepository => supplierBidItemRepository;
     public IAOBRepository AOBRepository => aobRepository;
@@ -467,6 +485,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => publicSupplierApplicationRepository;
     public IPurchaseOrderRepository PurchaseOrderRepository => purchaseOrderRepository;
     public IPurchaseOrderItemRepository PurchaseOrderItemRepository => purchaseOrderItemRepository;
+    public INoticeOfAwardRepository NoticeOfAwardRepository => noticeOfAwardRepository;
+    public INoticeOfAwardMilestoneRepository NoticeOfAwardMilestoneRepository => noticeOfAwardMilestoneRepository;
+    public INoticeOfAwardActivityRepository NoticeOfAwardActivityRepository => noticeOfAwardActivityRepository;
+    public IBiddingSubmissionRepository BiddingSubmissionRepository => biddingSubmissionRepository;
+    public IBiddingEvaluationRepository BiddingEvaluationRepository => biddingEvaluationRepository;
+    public IBiddingAwardRecommendationRepository BiddingAwardRecommendationRepository => biddingAwardRecommendationRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

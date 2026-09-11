@@ -1,10 +1,12 @@
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,7 +14,8 @@ namespace ERPEZ.Application.Features.Procurement.Projects.Commands.ApproveProcur
 
 public class ApproveProcurementProjectCommandHandler(
     IUnitOfWork unitOfWork,
-    IFileStorageService fileStorageService)
+    IFileStorageService fileStorageService,
+    ICurrentUserService currentUserService)
     : IRequestHandler<ApproveProcurementProjectCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(ApproveProcurementProjectCommand request, CancellationToken cancellationToken)
@@ -40,7 +43,34 @@ public class ApproveProcurementProjectCommandHandler(
         project.Status = nameof(StatusEnum.Approved);
         project.ApprovalAttachmentFileId = request.Request.AttachmentFileId;
 
+        // Record Audit Trail Approval Event
+        Guid? actorId = Guid.TryParse(currentUserService.UserId, out var parsedActorId) ? parsedActorId : null;
+        var actorName = currentUserService.Name ?? currentUserService.Username ?? "BAC Approver";
+        var role = currentUserService.Roles?.FirstOrDefault() ?? "Approver";
+
+        var approvalEvent = new ProcurementProjectApprovalEvent
+        {
+            ProcurementProjectId = project.Id,
+            Action = nameof(StatusEnum.Approved),
+            ActorId = actorId,
+            ActorName = actorName,
+            Role = role,
+            AttachmentFileId = request.Request.AttachmentFileId,
+            Timestamp = DateTime.UtcNow
+        };
+
         unitOfWork.ProcurementProjectRepository.Update(project);
+
+        var resolutions = await unitOfWork.BACResolutionRepository.ToListAsync(
+            unitOfWork.BACResolutionRepository.Query(r => r.ProcurementProjectId == project.Id),
+            cancellationToken);
+        foreach (var res in resolutions)
+        {
+            res.Status = nameof(StatusEnum.Approved);
+            unitOfWork.BACResolutionRepository.Update(res);
+        }
+
+        await unitOfWork.ProcurementProjectApprovalEventRepository.AddAsync(approvalEvent, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "Procurement project approved successfully.");

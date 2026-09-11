@@ -1,9 +1,8 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { format, parseISO } from 'date-fns'
-import { ExternalLink } from 'lucide-react'
-import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/data/mockBiddingScheduleData'
-import { useBiddingScheduleStore } from '../../bidding-schedule/store/biddingScheduleStore'
+import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/types'
+import { useBiddingSchedule } from '../../bidding-schedule/handlers/hooks'
 import {
   areAllGatesPassed,
   canGenerateBiddingDocument,
@@ -75,11 +74,10 @@ export function BiddingDocumentWorkspacePage({
     (state) => state.generatePreview,
   )
   const markPosted = useBiddingDocumentsStore((state) => state.markPosted)
-  const linkedSchedule = useBiddingScheduleStore((state) =>
-    state.schedules.find(
-      (schedule) => schedule.bacResolutionId === bacResolutionId,
-    ),
-  )
+  const { data: scheduleResponse } = useBiddingSchedule({
+    pathParams: { resolutionId: bacResolutionId }
+  })
+  const linkedSchedule = scheduleResponse?.data
   const [currentPage, setCurrentPage] = useState(0)
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({})
 

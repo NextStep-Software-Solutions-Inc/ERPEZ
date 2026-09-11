@@ -79,11 +79,15 @@ public class EvaluateSupplierApplicationCommandHandler(IUnitOfWork unitOfWork)
                 Documents = application.UploadedDocuments.Select(d => new ApplicationDocumentDto
                 {
                     Id = d.Id,
-                    Name = d.ChecklistItem?.MasterDocumentType?.Name ?? d.OriginalFileName,
+                    ChecklistItemId = d.ChecklistItemId,
+                    Name = d.ChecklistItem?.MasterDocumentType?.Name ?? d.ChecklistItem?.CustomDocumentName ?? d.OriginalFileName,
                     Type = System.IO.Path.GetExtension(d.OriginalFileName).TrimStart('.').ToUpperInvariant(),
                     Size = 0,
                     UploadedAt = d.UploadedAt,
-                    Url = d.BlobStorageUrl
+                    Url = d.BlobStorageUrl,
+                    EnvelopeType = d.ChecklistItem != null && d.ChecklistItem.EnvelopeType != 0
+                        ? d.ChecklistItem.EnvelopeType
+                        : (d.ChecklistItem?.MasterDocumentType?.EnvelopeType ?? 1)
                 }).ToList()
             };
 

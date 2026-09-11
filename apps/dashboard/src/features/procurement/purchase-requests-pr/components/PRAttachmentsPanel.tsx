@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { FileText, Loader2, Paperclip, Upload } from 'lucide-react'
+import { Loader2, Paperclip, Upload } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import FileUpload from '@/components/features/planning/file-upload/FileUpload'
 import { createFileRequest } from '@/components/features/planning/file-upload/handlers/createFileRequest'
@@ -15,6 +15,7 @@ import { purchaseRequestRequiresTor } from '../utils/torAttachment'
 interface PRAttachmentsPanelProps {
   pr: PurchaseRequest
   torValidationMessage?: string | null
+  onViewSignedDocument?: () => void
 }
 
 const useUploadTorFile = createMutationHookFromTemplate(createFileRequest)
@@ -31,9 +32,8 @@ export function PRAttachmentsPanel({
 
   const torRequired = purchaseRequestRequiresTor(pr)
   const hasTorAttachment = Boolean(pr.torAttachment?.url)
-  const hasSignedDocument = Boolean(pr.signedPdfUrl)
 
-  if (!torRequired && !hasTorAttachment && !hasSignedDocument) {
+  if (!torRequired && !hasTorAttachment) {
     return null
   }
 
@@ -177,36 +177,6 @@ export function PRAttachmentsPanel({
                   {torValidationMessage}
                 </p>
               )}
-            </div>
-          </div>
-        )}
-
-        {hasSignedDocument && (
-          <div className="rounded-xl border border-purple-200 bg-linear-to-br from-purple-50 to-purple-100/70 p-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-purple-950">
-                  Signed PR Document
-                </p>
-                <p className="text-xs text-purple-800">
-                  Download or view the signed copy from the approval stage.
-                </p>
-              </div>
-
-              <Button
-                asChild
-                variant="outline"
-                className="gap-2 border-purple-300 bg-white/80 text-purple-900 hover:bg-purple-50"
-              >
-                <a
-                  href={pr.signedPdfUrl}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  <FileText className="h-4 w-4" />
-                  View Signed Document
-                </a>
-              </Button>
             </div>
           </div>
         )}

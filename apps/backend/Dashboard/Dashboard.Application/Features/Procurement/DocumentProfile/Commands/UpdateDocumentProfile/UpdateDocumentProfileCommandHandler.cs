@@ -16,25 +16,91 @@ public class UpdateDocumentProfileCommandHandler(IUnitOfWork unitOfWork)
                           .GetByIdWithItemsAsync(request.Id, cancellationToken)
                       ?? throw new NotFoundException("Document profile not found.");
 
-        foreach (var item in request.Items)
+        // Prevent duplicate names across other profiles
+        var nameConflict = await unitOfWork.DocumentProfileRepository
+            .FindAsync(p => p.Name == request.Name && p.Id != request.Id, cancellationToken);
+        if (nameConflict != null)
+            throw new ConflictException($"A checklist profile named '{request.Name}' already exists.");
+
+        // Deduplicate requested items by MasterDocumentTypeId
+        var distinctItems = request.Items
+            .GroupBy(i => i.MasterDocumentTypeId)
+            .Select(g => g.First())
+            .ToList();
+
+        foreach (var item in distinctItems)
             _ = await unitOfWork.MasterDocumentTypeRepository
                     .GetByIdAsync(item.MasterDocumentTypeId, cancellationToken)
                 ?? throw new NotFoundException(
                     $"Master document type '{item.MasterDocumentTypeId}' not found.");
 
-        // Replace all items (delete-then-insert pattern, consistent with KPIMeasurement approach)
-        unitOfWork.DocumentProfileItemRepository.RemoveRange(profile.DocumentProfileItems);
+        // Synchronize items in-place to avoid unique constraint violations
+        var requestedDocIds = distinctItems.Select(i => i.MasterDocumentTypeId).ToHashSet();
 
-        var newItems = request.Items.Select(i => new DocumentProfileItem
+        var existingGroups = profile.DocumentProfileItems
+            .GroupBy(i => i.MasterDocumentTypeId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var itemsToRemove = new List<DocumentProfileItem>();
+        var itemsToKeepOrUpdate = new Dictionary<Guid, DocumentProfileItem>();
+
+        foreach (var (docTypeId, groupItems) in existingGroups)
         {
-            Id                   = Guid.NewGuid(),
-            DocumentProfileId    = profile.Id,
-            MasterDocumentTypeId = i.MasterDocumentTypeId,
-            OrderIndex           = i.OrderIndex,
-            CreatedAt            = DateTime.UtcNow
-        }).ToList();
+            if (requestedDocIds.Contains(docTypeId))
+            {
+                // Keep the first record, mark any historical duplicates for hard deletion
+                itemsToKeepOrUpdate[docTypeId] = groupItems[0];
+                for (int i = 1; i < groupItems.Count; i++)
+                {
+                    groupItems[i].AllowHardDelete = true;
+                    itemsToRemove.Add(groupItems[i]);
+                }
+            }
+            else
+            {
+                // All items for unselected doc type should be hard deleted
+                foreach (var item in groupItems)
+                {
+                    item.AllowHardDelete = true;
+                    itemsToRemove.Add(item);
+                }
+            }
+        }
 
-        await unitOfWork.DocumentProfileItemRepository.AddRangeAsync(newItems, cancellationToken);
+        if (itemsToRemove.Count > 0)
+        {
+            unitOfWork.DocumentProfileItemRepository.RemoveRange(itemsToRemove);
+        }
+
+        var newItems = new List<DocumentProfileItem>();
+
+        foreach (var item in distinctItems)
+        {
+            if (itemsToKeepOrUpdate.TryGetValue(item.MasterDocumentTypeId, out var existingItem))
+            {
+                existingItem.OrderIndex = item.OrderIndex;
+                existingItem.IsDeleted  = false;
+                existingItem.DeletedAt  = null;
+                existingItem.DeletedBy  = null;
+                existingItem.UpdatedAt  = DateTime.UtcNow;
+            }
+            else
+            {
+                newItems.Add(new DocumentProfileItem
+                {
+                    Id                   = Guid.NewGuid(),
+                    DocumentProfileId    = profile.Id,
+                    MasterDocumentTypeId = item.MasterDocumentTypeId,
+                    OrderIndex           = item.OrderIndex,
+                    CreatedAt            = DateTime.UtcNow
+                });
+            }
+        }
+
+        if (newItems.Count > 0)
+        {
+            await unitOfWork.DocumentProfileItemRepository.AddRangeAsync(newItems, cancellationToken);
+        }
 
         profile.Name                = request.Name;
         profile.Description         = request.Description;

@@ -66,6 +66,7 @@ public class ProcurementProject : BaseEntity
     [Sieve(CanFilter = true)]
     public virtual BiddingDocument? BiddingDocument { get; set; }
     public virtual List<ProjectDocumentChecklist> ProjectDocumentChecklists { get; set; } = [];
+    public virtual List<ProcurementProjectApprovalEvent> ApprovalEvents { get; set; } = [];
     public virtual ERPEZ.Domain.Entities.Planning.User? EndUserRepresentative { get; set; }
     public virtual ERPEZ.Domain.Entities.Planning.User? TechRepresentative { get; set; }
 }

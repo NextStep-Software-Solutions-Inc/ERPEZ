@@ -307,12 +307,9 @@ export function AddConsolidatedPRModal({ open, onOpenChange, onAdd }: AddConsoli
                 filteredPRs.map((pr) => {
                     const isExpanded = expandedPRs.has(pr.id)
                     const prItems = pr.selectedPRItems || []
-                    const mockRes = getMockBacResolutionDatabase().find((res: any) =>
-                      res.linkedConsolidatedPrs.some((link: any) => link.id === pr.id || link.prNumber === pr.prNumber)
-                    )
-                    const hasBacRes = pr.hasBACResolution ?? !!mockRes
-                    const bacResStatus = pr.bacResolutionStatus || (mockRes ? 'approved' : undefined)
-                    const bacResNum = pr.bacResolutionNumber || mockRes?.bacResolutionNumber
+                    const hasBacRes = Boolean(pr.hasBACResolution)
+                    const bacResStatus = pr.bacResolutionStatus
+                    const bacResNum = pr.bacResolutionNumber
                     const isApproved = hasBacRes && (bacResStatus?.toLowerCase() === 'approved')
                     const isInProgress = hasBacRes && !isApproved
 

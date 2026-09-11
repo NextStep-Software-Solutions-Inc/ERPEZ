@@ -327,6 +327,10 @@ export interface AppMaster {
   isFinal?: string | boolean
   submittedDate?: string | null
   approvedDate?: string | null
+  derivedFinalAppId?: string | null
+  derivedFinalAppNumber?: string | null
+  derivedFinalAppName?: string | null
+  derivedFinalAppStatus?: string | null
   APPItems?: APPItemFromAPI[]
 }
 

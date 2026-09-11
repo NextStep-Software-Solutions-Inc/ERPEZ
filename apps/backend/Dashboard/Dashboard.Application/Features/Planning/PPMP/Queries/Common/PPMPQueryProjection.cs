@@ -42,6 +42,16 @@ internal static class PPMPQueryProjection
         var items = GetPPMPItems(ppmp);
         var allocations = items.SelectMany(item => item.PPMPItemAllocations.Where(alloc => !alloc.IsDeleted)).ToList();
 
+        var activeAppLink = ppmp.APPPPMPs?
+            .Where(ap => !ap.IsDeleted && ap.APP != null && !ap.APP.IsDeleted)
+            .OrderByDescending(ap => ap.APP != null && ap.APP.APPType == "Final" ? 3 : ap.APP != null && ap.APP.APPType == "Updated" ? 2 : 1)
+            .ThenByDescending(ap => ap.CreatedAt)
+            .FirstOrDefault();
+
+        var rootAppId = activeAppLink?.APP?.SourceAPP?.SourceAPPId
+                     ?? activeAppLink?.APP?.SourceAPPId
+                     ?? activeAppLink?.APPId;
+
         return new PPMPDetailedResponse
         {
             Id = ppmp.Id,
@@ -59,10 +69,20 @@ internal static class PPMPQueryProjection
             Description = ppmp.Description,
             Version = ppmp.Version,
             TotalEstimatedBudget = items.Sum(GetItemEffectiveCost),
+            IsFinal = ppmp.IsFinal,
+            PPMPType = ppmp.PPMPType.ToString(),
+            SourcePPMPId = ppmp.SourcePPMPId,
+            SourcePPMPNumber = ppmp.SourcePPMP?.PPMPNumber,
+            SupplementalNumber = ppmp.SupplementalNumber,
             Status = ppmp.Status.ToString(),
             SubmittedDate = ppmp.SubmittedDate,
             ApprovedDate = ppmp.ApprovedDate,
             ConsolidatedIntoId = ppmp.ConsolidatedIntoId,
+            ConsolidatedAppId = activeAppLink?.APPId,
+            ConsolidatedAppNumber = activeAppLink?.APP?.APPNumber,
+            ConsolidatedAppName = activeAppLink?.APP?.Name,
+            ConsolidatedAppType = activeAppLink?.APP?.APPType,
+            ConsolidatedAppRootId = rootAppId,
             CreatedAt = ppmp.CreatedAt,
             CreatedBy = ppmp.CreatedBy,
             UpdatedAt = ppmp.UpdatedAt,
@@ -178,6 +198,16 @@ internal static class PPMPQueryProjection
         var items = includeCollections ? GetPPMPItems(ppmp) : [];
         var allocations = includeCollections ? items.SelectMany(item => item.PPMPItemAllocations.Where(alloc => !alloc.IsDeleted)).ToList() : [];
 
+        var activeAppLink = ppmp.APPPPMPs?
+            .Where(ap => !ap.IsDeleted && ap.APP != null && !ap.APP.IsDeleted)
+            .OrderByDescending(ap => ap.APP != null && ap.APP.APPType == "Final" ? 3 : ap.APP != null && ap.APP.APPType == "Updated" ? 2 : 1)
+            .ThenByDescending(ap => ap.CreatedAt)
+            .FirstOrDefault();
+
+        var rootAppId = activeAppLink?.APP?.SourceAPP?.SourceAPPId
+                     ?? activeAppLink?.APP?.SourceAPPId
+                     ?? activeAppLink?.APPId;
+
         return new PPMPResponse
         {
             Id = ppmp.Id,
@@ -195,10 +225,20 @@ internal static class PPMPQueryProjection
             Description = ppmp.Description,
             Version = ppmp.Version,
             TotalEstimatedBudget = includeCollections ? items.Sum(GetItemEffectiveCost) : ppmp.TotalEstimatedBudget,
+            IsFinal = ppmp.IsFinal,
+            PPMPType = ppmp.PPMPType.ToString(),
+            SourcePPMPId = ppmp.SourcePPMPId,
+            SourcePPMPNumber = ppmp.SourcePPMP?.PPMPNumber,
+            SupplementalNumber = ppmp.SupplementalNumber,
             Status = ppmp.Status.ToString(),
             SubmittedDate = ppmp.SubmittedDate,
             ApprovedDate = ppmp.ApprovedDate,
             ConsolidatedIntoId = ppmp.ConsolidatedIntoId,
+            ConsolidatedAppId = activeAppLink?.APPId,
+            ConsolidatedAppNumber = activeAppLink?.APP?.APPNumber,
+            ConsolidatedAppName = activeAppLink?.APP?.Name,
+            ConsolidatedAppType = activeAppLink?.APP?.APPType,
+            ConsolidatedAppRootId = rootAppId,
             CreatedAt = ppmp.CreatedAt,
             CreatedBy = ppmp.CreatedBy,
             UpdatedAt = ppmp.UpdatedAt,

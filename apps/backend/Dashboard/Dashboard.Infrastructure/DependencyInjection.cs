@@ -59,11 +59,8 @@ public static class DependencyInjection
                 npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "public"));
             options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
 
-            if (env != null && env.IsDevelopment())
-            {
-                options.ConfigureWarnings(w =>
-                    w.Ignore(RelationalEventId.PendingModelChangesWarning));
-            }
+            options.ConfigureWarnings(w =>
+                w.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
 
         services.AddHttpContextAccessor();
@@ -127,6 +124,9 @@ public static class DependencyInjection
         services.AddScoped<IOPCRItemMOVRepository, OPCRItemMOVRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IRFQRepository, RFQRepository>();
+        services.AddScoped<INoticeOfAwardRepository, NoticeOfAwardRepository>();
+        services.AddScoped<INoticeOfAwardMilestoneRepository, NoticeOfAwardMilestoneRepository>();
+        services.AddScoped<INoticeOfAwardActivityRepository, NoticeOfAwardActivityRepository>();
 
         // ── Other Services ──────────────────────────────────────────────────────────
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
@@ -204,11 +204,11 @@ public static class DependencyInjection
                     "CREATE SCHEMA IF NOT EXISTS procurement;");
                 await dbContext.Database.MigrateAsync();
 
-                // ── Seeders (dev only) ──────────────────────────────────────────────
                 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                 await ERPEZ.Infrastructure.Persistence.Seeders.ProcurementActivityTypeSeeder.SeedAsync(unitOfWork);
+                await ERPEZ.Infrastructure.Persistence.Seeders.PublicHolidaySeeder.SeedAsync(unitOfWork);
                 await ERPEZ.Infrastructure.Persistence.Seeders.ItemCategorySeeder.SeedAsync(dbContext);
-                await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedAsync(dbContext);
+                await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedAsync(dbContext); 
                 await ERPEZ.Infrastructure.Persistence.Seeders.OrganizationStructureSeeder.SeedAsync(dbContext);
             }
             catch (InvalidOperationException ex)
@@ -217,7 +217,7 @@ public static class DependencyInjection
                     "Database migration failed; pending model changes detected. " +
                     "Add a migration before updating the database.");
             }
-            catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07" || ex.SqlState == "42710")
+            catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07" || ex.SqlState == "42710" || ex.SqlState == "42701")
             {
                 logger.LogWarning(ex,
                     "Database object already exists on remote database ({SqlState}). Skipping migration step.", ex.SqlState);

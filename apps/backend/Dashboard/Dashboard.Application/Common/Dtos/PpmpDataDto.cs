@@ -8,6 +8,9 @@ public class PpmpDataDto
     public string             FiscalYear  { get; set; } = string.Empty;
     public string             EndUserUnit { get; set; } = string.Empty;
     public bool               IsFinal     { get; set; }
+    public bool               IsSupplemental { get; set; }
+    public string?            SourcePpmpNumber { get; set; }
+    public int?               SupplementalNumber { get; set; }
     public decimal            TotalBudget { get; set; }
     public List<PpmpRowDto>   Rows        { get; set; } = [];
     public List<SignatoryDto> Signatories { get; set; } = [];
