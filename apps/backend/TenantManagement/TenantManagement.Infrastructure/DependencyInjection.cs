@@ -1,6 +1,7 @@
 using ERPEZ.Shared.Interfaces;
 using ERPEZ.Shared.Interceptors;
 using ERPEZ.Shared.Services;
+using ERPEZ.TenantManagement.Application.Common.Interfaces;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
@@ -30,7 +31,12 @@ public static class DependencyInjection
 
         // Register current user and tenant context services
         services.AddScoped<ICurrentUserService, CurrentUserService>();
-        services.AddScoped<ITenantContextService, TenantContextService>();
+        services.AddScoped<TenantRequestContext>();
+        services.AddScoped<ITenantContextService>(sp => sp.GetRequiredService<TenantRequestContext>());
+        services.AddScoped<ITenantRequestContext>(sp => sp.GetRequiredService<TenantRequestContext>());
+        services.AddScoped<ITenantConnectionProvider, TenantConnectionProvider>();
+        services.AddScoped<ITenantAccessService, TenantAccessService>();
+        services.AddScoped<ITenantConnectionResolver, TenantConnectionResolver>();
         services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
         services.AddScoped<AuditingInterceptor>();
 
@@ -54,6 +60,14 @@ public static class DependencyInjection
         services.AddScoped<ITenantSubscriptionRepository, TenantSubscriptionRepository>();
         services.AddScoped<ITenantMemberRepository, TenantMemberRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
+        services.AddScoped<ILicenseKeyRepository, LicenseKeyRepository>();
+        services.AddScoped<ITenantAuditRepository, TenantAuditRepository>();
+        services.AddScoped<ITenantAuditService, TenantAuditService>();
+        services.AddScoped<IRoleAssignmentValidator, RoleAssignmentValidator>();
+        services.AddScoped<ILicenseService, LicenseService>();
+        services.AddScoped<ITenantInvoiceRepository, TenantInvoiceRepository>();
+        services.AddScoped<ITenantPaymentMethodRepository, TenantPaymentMethodRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire

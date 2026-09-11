@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { createQueryHookFromTemplate } from "erpez-shared-lib";
+import { getDeliveryUnitsRequest } from "~/features/delivery-unit/handlers/getDeliveryUnitsRequest";
 import {
     Card
 } from "~/components/ui/card";
@@ -25,6 +27,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Badge } from "~/components/ui/badge";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { PageContainer } from "~/components/PageContainer";
+import { Loader2 } from "lucide-react";
 
 type DeliveryUnit = {
     id: string;
@@ -43,12 +46,33 @@ const SAMPLE_DATA: DeliveryUnit[] = [
     { id: "5", name: "Regional IV Company", address: "123 Industrial Park Ave", country: "United States", contact: "+63 912 2344 112", responsibilityCenter: "RC-RegionIV-001" },
 ];
 
+const useDeliveryUnits = createQueryHookFromTemplate(getDeliveryUnitsRequest);
+
 export default function DeliveryUnitPage() {
     const navigate = useNavigate();
     const [query, setQuery] = useState("");
     const [data, setData] = useState<DeliveryUnit[]>(SAMPLE_DATA);
     const [selected, setSelected] = useState<Record<string, boolean>>({});
     const [isAddOpen, setIsAddOpen] = useState(false);
+
+    const { data: duResponse, isLoading } = useDeliveryUnits({
+        pathParams: {},
+        queryParams: { pageSize: 50, pageNumber: 1 }
+    });
+
+    useEffect(() => {
+        if (duResponse?.data && duResponse.data.length > 0) {
+            const mapped = duResponse.data.map((du, idx) => ({
+                id: du.id,
+                name: du.name || (du as any).officeName || `Delivery Unit ${idx + 1}`,
+                address: du.address || "Main Campus / Regional Office",
+                country: du.country || "Philippines",
+                contact: du.contact || "+63 912 000 0000",
+                responsibilityCenter: du.responsibilityCenter || du.code || `RC-${(du as any).officeName ? 'OFFICE' : 'DU'}-${idx + 1}`
+            }));
+            setData(mapped);
+        }
+    }, [duResponse]);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -90,7 +114,7 @@ export default function DeliveryUnitPage() {
 
 
                     <div className="flex items-center gap-3">
-                        <Input placeholder="Search tenants ..." value={query} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} className="min-w-[260px]" />
+                        <Input placeholder="Search delivery units, responsibility centers, or offices..." value={query} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} className="min-w-[320px]" />
                         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                             <DialogTrigger asChild>
                                 <Button variant="default">+ Add Delivery Unit</Button>

@@ -16,7 +16,7 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("dashboard")]
 [ApiController]
-//[Authorize]
+[Authorize]
 public class DashboardController(ISender mediator) : ControllerBase
 {
     /// <summary>

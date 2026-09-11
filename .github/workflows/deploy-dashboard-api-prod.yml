@@ -1,0 +1,153 @@
+name: Deploy Dashboard API to VPS (Prod)
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+    paths:
+      - 'apps/backend/Dashboard/**'
+      - 'apps/backend/Shared/**'
+      - .github/workflows/deploy-dashboard-api-prod.yml
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual production deployment'
+        required: false
+        default: 'Manual production release'
+        type: string
+
+env:
+  CONTAINER_NAME: dashboard-api
+  IMAGE_TAG: prod
+  ENVIRONMENT: Production
+
+jobs:
+  test:
+    name: Run Tests and Validation Checks
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore apps/backend/ERPEZ.sln
+
+    - name: Build solution (treat warnings as errors)
+      run: dotnet build apps/backend/ERPEZ.sln --no-restore --configuration Release /p:TreatWarningsAsErrors=true
+
+    - name: Check Validation Coverage
+      run: |
+        echo "Checking FluentValidation coverage..."
+        bash scripts/check-validators.sh
+      shell: bash
+      continue-on-error: false
+
+    - name: Check DTO Contract Compliance
+      run: |
+        echo "Checking API contract compliance (DTOs vs Domain Entities)..."
+        bash scripts/check-dto-contracts.sh
+      shell: bash
+      continue-on-error: false
+
+    - name: Run Tests
+      run: dotnet test apps/backend/ERPEZ.sln --no-build --configuration Release --verbosity normal --nologo
+      continue-on-error: false
+
+  build-image:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: |
+        docker build -t ${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }} -f apps/backend/Dashboard/Dockerfile apps/backend
+        if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          docker tag ${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }} ${{ env.CONTAINER_NAME }}:${{ github.ref_name }}
+        fi
+
+    - name: Save Docker image
+      run: docker save ${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }} | gzip > ${{ env.CONTAINER_NAME }}.tar.gz
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dashboard-api-prod-assets
+        path: |
+          ${{ env.CONTAINER_NAME }}.tar.gz
+          apps/backend/Dashboard/docker-compose.yml
+        retention-days: 7
+
+  deploy:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+    needs: build-image
+    environment: Production
+
+    steps:
+    - name: Download Build Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dashboard-api-prod-assets
+        path: .
+
+    - name: Transfer files to VPS via SCP
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.PROD_SSH_HOST || secrets.SSH_HOST }}
+        username: ${{ secrets.PROD_SSH_USERNAME || secrets.SSH_USERNAME }}
+        key: ${{ secrets.PROD_SSH_KEY || secrets.SSH_KEY }}
+        passphrase: ${{ secrets.PROD_SSH_PASSPHRASE || secrets.SSH_PASSPHRASE }}
+        source: "${{ env.CONTAINER_NAME }}.tar.gz,apps/backend/Dashboard/docker-compose.yml"
+        target: "/tmp"
+
+    - name: Deploy on Production VPS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.PROD_SSH_HOST || secrets.SSH_HOST }}
+        username: ${{ secrets.PROD_SSH_USERNAME || secrets.SSH_USERNAME }}
+        key: ${{ secrets.PROD_SSH_KEY || secrets.SSH_KEY }}
+        passphrase: ${{ secrets.PROD_SSH_PASSPHRASE || secrets.SSH_PASSPHRASE }}
+        script: |
+          # Move the transferred docker-compose.yml to the production stack folder
+          mkdir -p /opt/docker-stack/dashboard-api-prod
+          mv /tmp/apps/backend/Dashboard/docker-compose.yml /opt/docker-stack/dashboard-api-prod/docker-compose.yml
+          rm -rf /tmp/apps
+
+          # Load the new image
+          docker load -i /tmp/${{ env.CONTAINER_NAME }}.tar.gz
+          rm -f /tmp/${{ env.CONTAINER_NAME }}.tar.gz
+
+          # Deploy via docker compose
+          export DB_CONNECTION_STRING="${{ secrets.ERPEZ_DB_CONNECTION_STRING_PROD || secrets.ERPEZ_DB_CONNECTION_STRING }}"
+          export BLOB_CONNECTION_STRING="${{ secrets.AZURE_BLOB_STORAGE_CONNECTION_STRING_PROD || secrets.AZURE_BLOB_STORAGE_CONNECTION_STRING }}"
+          cd /opt/docker-stack/dashboard-api-prod
+          docker compose down
+          docker compose up -d
+
+          # Wait for container to stabilize and check health
+          echo "Waiting 15 seconds for container to initialize..."
+          sleep 15
+          STATUS=$(docker inspect -f '{{.State.Status}}' ${{ env.CONTAINER_NAME }})
+          if [ "$STATUS" != "running" ]; then
+            echo "::error::Container failed to start! Current status: $STATUS"
+            echo "Printing container logs:"
+            docker logs ${{ env.CONTAINER_NAME }}
+            exit 1
+          fi
+          echo "Production container is running successfully!"

@@ -18,6 +18,15 @@ public class TenantMember : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string ExternalIdentityId { get; set; } = string.Empty;
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string Email { get; set; } = string.Empty;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string LastName { get; set; } = string.Empty;
+
     /// <summary>
     /// Legacy role enum - maintained for backwards compatibility during migration.
     /// Functional RBAC queries use RoleAssignments.
@@ -28,6 +37,21 @@ public class TenantMember : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Status Status { get; set; }
+
+    /// <summary>
+    /// Optimistic concurrency token. Rotated on every successful mutation.
+    /// </summary>
+    public Guid ConcurrencyStamp { get; set; } = Guid.NewGuid();
+
+    /// <summary>
+    /// SHA-256 hash of single-use invitation token. Never exposed in API DTOs.
+    /// </summary>
+    public string? InvitationTokenHash { get; set; }
+
+    /// <summary>
+    /// UTC expiration time of the pending invitation.
+    /// </summary>
+    public DateTime? InvitationExpiresAtUtc { get; set; }
 
     public virtual Tenant Tenant { get; set; } = null!;
     public virtual List<TenantMemberRoleAssignment> RoleAssignments { get; set; } = [];

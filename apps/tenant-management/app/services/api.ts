@@ -11,7 +11,7 @@ import { extractErrorMessage, extractSuccessMessage } from "./utils/messages";
 const BLACKLISTED_CODES = ["ERR_CANCELED"];
 const WHITELISTED_METHODS = ["post", "put", "patch", "delete"];
 
-export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL);
+export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL || "http://localhost:5246");
 
 let authToken: string | null = null;
 
@@ -55,7 +55,7 @@ api.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    if (!BLACKLISTED_CODES.includes(error.code || "")) {
+    if (!BLACKLISTED_CODES.includes(error.code || "") && error.response?.status !== 404) {
       const { description, title } = extractErrorMessage(error);
       toast.error(title, {
         description,
