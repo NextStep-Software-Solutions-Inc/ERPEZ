@@ -785,18 +785,42 @@ public static class ProcurementTestDataSeeder
         bool isBlocked,
         string? statusNote = null)
     {
-        var existing = await context.Suppliers!
-            .IgnoreQueryFilters()
+        // 1. If an active supplier already exists with matching Name, TIN, or Permit, do nothing
+        var activeExisting = await context.Suppliers!
             .Include(s => s.SupplierRequirements)
             .FirstOrDefaultAsync(s => s.Name == name || s.TINNumber == tin || s.BusinessPermitNo == permit);
-        if (existing != null)
+
+        if (activeExisting != null)
         {
-            if (existing.IsDeleted)
+            return;
+        }
+
+        // 2. Check if a soft-deleted supplier exists that can be safely restored
+        var softDeleted = await context.Suppliers!
+            .IgnoreQueryFilters()
+            .Include(s => s.SupplierRequirements)
+            .FirstOrDefaultAsync(s => s.IsDeleted && (s.Name == name || s.TINNumber == tin || s.BusinessPermitNo == permit));
+
+        if (softDeleted != null)
+        {
+            var conflict = await context.Suppliers!
+                .AnyAsync(s => s.TINNumber == softDeleted.TINNumber || s.BusinessPermitNo == softDeleted.BusinessPermitNo);
+
+            if (!conflict)
             {
-                existing.IsDeleted = false;
-                context.Suppliers!.Update(existing);
+                softDeleted.IsDeleted = false;
+                context.Suppliers!.Update(softDeleted);
                 await context.SaveChangesAsync();
+                return;
             }
+        }
+
+        // 3. Prevent inserting a duplicate if an active supplier already has this TIN or Permit
+        var hasUniqueConflict = await context.Suppliers!
+            .AnyAsync(s => s.TINNumber == tin || s.BusinessPermitNo == permit);
+
+        if (hasUniqueConflict)
+        {
             return;
         }
 
