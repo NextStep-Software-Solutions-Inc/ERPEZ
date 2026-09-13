@@ -1,4 +1,4 @@
-﻿import {
+import {
   Card,
   CardContent,
   CardDescription,
@@ -26,12 +26,17 @@ type PurchaseOrderDetailsShellProps = {
 export function PurchaseOrderDetailsShell({
   purchaseOrder,
 }: PurchaseOrderDetailsShellProps) {
+  const src = (purchaseOrder.source || purchaseOrder.procurementMode || '').toString().toLowerCase()
   const sourceLabel =
-    purchaseOrder.source === 'svp'
+    src.includes('svp')
       ? 'SVP'
-      : purchaseOrder.source === 'public-bidding'
+      : src.includes('public')
         ? 'Public Bidding'
         : 'Direct Acquisition'
+
+  const lineItems = purchaseOrder.lineItems ?? purchaseOrder.items ?? []
+  const supportingDoc = purchaseOrder.supportingDocumentUrl ?? (purchaseOrder as any).bidSupportingDocument
+  const statusLower = (purchaseOrder.status || '').toLowerCase().replace(/[-_]/g, '')
 
   return (
     <div className="space-y-6 pb-10">
@@ -226,12 +231,12 @@ export function PurchaseOrderDetailsShell({
           <div>
             <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-50">Line Items</CardTitle>
             <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
-              {purchaseOrder.lineItems.length} item{purchaseOrder.lineItems.length !== 1 ? 's' : ''} in this purchase order
+              {lineItems.length} item{lineItems.length !== 1 ? 's' : ''} in this purchase order
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="pt-4">
-          {purchaseOrder.lineItems.length === 0 ? (
+          {lineItems.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-muted-foreground">No line items yet. Link a source document to populate items.</p>
             </div>
@@ -248,7 +253,7 @@ export function PurchaseOrderDetailsShell({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {purchaseOrder.lineItems.map((lineItem) => (
+                  {lineItems.map((lineItem) => (
                     <TableRow key={lineItem.id}>
                       <TableCell className="font-medium">{lineItem.description}</TableCell>
                       <TableCell>{lineItem.quantity}</TableCell>
@@ -267,7 +272,7 @@ export function PurchaseOrderDetailsShell({
           )}
 
           {/* Total row */}
-          {purchaseOrder.lineItems.length > 0 && (
+          {lineItems.length > 0 && (
             <div className="flex justify-end mt-4">
               <div className="text-right">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total</p>
@@ -282,13 +287,15 @@ export function PurchaseOrderDetailsShell({
 
       {/* Supporting Documents */}
       <PurchaseOrderSupportingDocumentCard
-        supportingDocument={purchaseOrder.bidSupportingDocument}
+        supportingDocument={supportingDoc}
+        fileName={purchaseOrder.poNumber ? `${purchaseOrder.poNumber}-BID-supporting.pdf` : undefined}
       />
 
       {/* Signed PO preview (approved only) */}
-      {purchaseOrder.status === 'approved' ? (
+      {statusLower === 'approved' ? (
         <PurchaseOrderDocumentPreviewCard
-          file={purchaseOrder.signedDocument ?? null}
+          file={purchaseOrder.signedDocument ?? (purchaseOrder as any).signedDocumentUrl ?? null}
+          fileName={purchaseOrder.signedDocumentFileName ?? (purchaseOrder.poNumber ? `${purchaseOrder.poNumber}-signed.pdf` : undefined)}
           title="Signed Purchase Order"
           description="Preview and download the physically signed PO document submitted for approval."
           emptyDescription="The signed PO document has not been attached yet."
@@ -298,7 +305,7 @@ export function PurchaseOrderDetailsShell({
       ) : null}
 
       {/* Return reason (if returned) */}
-      {purchaseOrder.status === 'returned' && purchaseOrder.returnReason && (
+      {statusLower === 'returned' && purchaseOrder.returnReason && (
         <Card className="border-0 shadow-lg overflow-hidden border-l-4 border-l-red-400">
           <CardHeader className="pb-2 bg-gradient-to-r from-red-50/60 to-red-100/30 dark:from-red-950/20 dark:to-red-900/10 border-b border-red-200 dark:border-red-800/40">
             <CardTitle className="text-base font-bold text-red-700 dark:text-red-300">Return Remarks</CardTitle>
