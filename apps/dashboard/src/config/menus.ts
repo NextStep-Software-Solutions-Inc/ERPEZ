@@ -1305,6 +1305,12 @@ export const menusConfig = {
         icon: ClipBoard,
         child: [
           {
+            title: 'Purchase Orders (All)',
+            href: '/v2/purchase-orders',
+            icon: ClipBoard2,
+            permission: PERMISSIONS.Procurement.Po.Manage,
+          },
+          {
             title: 'PO : SVP',
             href: '/v2/po-svp',
             icon: ClipBoard2,
@@ -1738,6 +1744,12 @@ export const menusConfig = {
         title: 'Contracts & Ordering',
         icon: ClipBoard,
         child: [
+          {
+            title: 'Purchase Orders (All)',
+            href: '/v2/purchase-orders',
+            icon: ClipBoard2,
+            permission: PERMISSIONS.Procurement.Po.Manage,
+          },
           {
             title: 'PO : SVP',
             href: '/v2/po-svp',
