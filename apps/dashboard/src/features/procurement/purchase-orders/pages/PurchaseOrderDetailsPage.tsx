@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -8,54 +8,111 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   ChevronLeft,
   Printer,
-  Link2,
   Send,
   RotateCcw,
   CheckCircle,
   MoreVertical,
+  Loader2,
+  FileText,
+  Layers,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { PurchaseOrderDetailsShell } from '../components/PurchaseOrderDetailsShell'
 import {
   ApprovePurchaseOrderDialog,
+  EditPurchaseOrderDialog,
   ReturnPurchaseOrderDialog,
-  SelectAobDialog,
-  SelectNoaDialog,
 } from '../dialogs'
-import { usePurchaseOrderStore } from '../data/purchaseOrderStore'
+import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import {
+  useGetPurchaseOrderById,
+  useGetPurchaseOrderItems,
+  useUpdatePurchaseOrder,
+  useDeletePurchaseOrder,
+  useSubmitPurchaseOrderForApproval,
+  useApprovePurchaseOrder,
+  useReturnPurchaseOrder,
+  uploadPoDocument,
+} from '../handlers'
+import { useGetAOBById } from '@/features/procurement/aob/handlers/getAOBByIdRequest'
+import { getBidMatrixRequest } from '@/features/procurement/aob/handlers/getBidMatrixRequest'
+import { AOBDetailsPage } from '@/features/procurement/aob/components'
 import { downloadPurchaseOrderBlob } from '../utils/downloadPurchaseOrderBlob'
+import { toast } from 'sonner'
+
+const useBidMatrix = createQueryHookFromTemplate(getBidMatrixRequest)
 
 type PurchaseOrderDetailsPageProps = {
   purchaseOrderId: string
+}
+
+function normalizeStatus(status?: string): string {
+  if (!status) return 'draft'
+  const s = status.toLowerCase().replace(/[-_]/g, '')
+  if (s === 'forapproval') return 'for-approval'
+  return s
 }
 
 export function PurchaseOrderDetailsPage({
   purchaseOrderId,
 }: PurchaseOrderDetailsPageProps) {
   const navigate = useNavigate()
-  const purchaseOrder = usePurchaseOrderStore((state) =>
-    state.getPurchaseOrderById(purchaseOrderId),
-  )
-  const backRoute =
-    purchaseOrder?.source === 'public-bidding'
-      ? '/v2/po-public-bidding'
-      : purchaseOrder?.source === 'direct-acquisition'
-      ? '/v2/po-direct-acquisition'
-      : '/v2/po-svp'
 
-  const printPurchaseOrder = usePurchaseOrderStore((state) => state.printPurchaseOrder)
-  const submitForApproval = usePurchaseOrderStore((state) => state.submitForApproval)
-  const linkAob = usePurchaseOrderStore((state) => state.linkAob)
-  const linkNoa = usePurchaseOrderStore((state) => state.linkNoa)
-  const returnPurchaseOrder = usePurchaseOrderStore((state) => state.returnPurchaseOrder)
-  const approvePurchaseOrder = usePurchaseOrderStore((state) => state.approvePurchaseOrder)
+  const { data: purchaseOrder, isLoading } = useGetPurchaseOrderById(purchaseOrderId)
+  const { data: lineItems = [] } = useGetPurchaseOrderItems(purchaseOrderId)
 
+  const submitMutation = useSubmitPurchaseOrderForApproval()
+  const deleteMutation = useDeletePurchaseOrder()
+  const approveMutation = useApprovePurchaseOrder()
+  const returnMutation = useReturnPurchaseOrder()
+
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isReturnOpen, setIsReturnOpen] = useState(false)
   const [isApproveOpen, setIsApproveOpen] = useState(false)
-  const [isAobPickerOpen, setIsAobPickerOpen] = useState(false)
-  const [isNoaPickerOpen, setIsNoaPickerOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<'aob' | 'po'>('aob')
+
+  const poMode = (purchaseOrder?.source || purchaseOrder?.procurementMode || '').toString().toLowerCase()
+  const backRoute =
+    poMode.includes('public')
+      ? '/v2/po-public-bidding'
+      : poMode.includes('direct')
+        ? '/v2/po-direct-acquisition'
+        : '/v2/po-svp'
+
+  const sourceDocType = (purchaseOrder?.sourceDocumentType || '').toUpperCase()
+  const sourceDocId = purchaseOrder?.sourceDocumentId
+  const isAob = sourceDocType === 'AOB' && !!sourceDocId
+
+  // Fetch live AOB details if source document is AOB
+  const {
+    data: aob,
+    isLoading: isAobLoading,
+  } = useGetAOBById(
+    { pathParams: { id: sourceDocId || '' } }
+  )
+
+  // Fetch live Bid Matrix for AOB
+  const {
+    data: bidMatrix,
+  } = useBidMatrix(
+    { pathParams: { aobId: sourceDocId || '' } }
+  )
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span>Loading purchase order details...</span>
+      </div>
+    )
+  }
 
   if (!purchaseOrder) {
     return (
@@ -77,12 +134,65 @@ export function PurchaseOrderDetailsPage({
     )
   }
 
-  const canSubmit = purchaseOrder.status === 'draft' || purchaseOrder.status === 'returned'
-  const canForApproval = purchaseOrder.status === 'for-approval'
+  // Combine items
+  const fullPo = {
+    ...purchaseOrder,
+    lineItems: lineItems.length > 0 ? lineItems : (purchaseOrder.lineItems ?? purchaseOrder.items ?? []),
+  }
+
+  const normalizedStatus = normalizeStatus(purchaseOrder.status)
+  const canSubmit = normalizedStatus === 'draft' || normalizedStatus === 'returned'
+  const canForApproval = normalizedStatus === 'for-approval'
+
+  const handleSubmitForApproval = async () => {
+    try {
+      await submitMutation.mutateAsync(purchaseOrder.id)
+      toast.success('Purchase Order submitted for approval!')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to submit Purchase Order.')
+    }
+  }
+
+  const handleApprove = async (signedDocument: File) => {
+    try {
+      if (signedDocument) {
+        await uploadPoDocument(signedDocument)
+      }
+      await approveMutation.mutateAsync(purchaseOrder.id)
+      toast.success('Purchase Order approved!')
+      setIsApproveOpen(false)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to approve Purchase Order.')
+    }
+  }
+
+  const handleReturn = async (reason: string) => {
+    try {
+      await returnMutation.mutateAsync({
+        id: purchaseOrder.id,
+        request: { returnReason: reason },
+      })
+      toast.success('Purchase Order returned!')
+      setIsReturnOpen(false)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to return Purchase Order.')
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync(purchaseOrder.id)
+      toast.success('Purchase Order deleted successfully!')
+      setIsDeleteOpen(false)
+      navigate({ to: backRoute as any })
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete Purchase Order.')
+    }
+  }
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Back Button & Actions row — matches PR Details page */}
+      {/* Back Button & Actions row */}
       <div className="flex items-center justify-between gap-4">
         <Button
           variant="ghost"
@@ -102,8 +212,8 @@ export function PurchaseOrderDetailsPage({
             size="sm"
             className="gap-2 h-8"
             onClick={() => {
-              const result = printPurchaseOrder(purchaseOrder.id)
-              if (result) downloadPurchaseOrderBlob(result)
+              const blob = new Blob([JSON.stringify(fullPo, null, 2)], { type: 'application/json' })
+              downloadPurchaseOrderBlob({ blob, filename: `${purchaseOrder.poNumber || 'PO'}.json` })
             }}
           >
             <Printer className="h-4 w-4" />
@@ -117,36 +227,43 @@ export function PurchaseOrderDetailsPage({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {purchaseOrder.source === 'svp' && purchaseOrder.status !== 'approved' && (
-                <DropdownMenuItem onSelect={() => setIsAobPickerOpen(true)}>
-                  <Link2 className="h-4 w-4 mr-2" />
-                  Add AOB
-                </DropdownMenuItem>
-              )}
-              {purchaseOrder.source === 'public-bidding' && purchaseOrder.status !== 'approved' && (
-                <DropdownMenuItem onSelect={() => setIsNoaPickerOpen(true)}>
-                  <Link2 className="h-4 w-4 mr-2" />
-                  Select NOA
-                </DropdownMenuItem>
-              )}
               {canSubmit && (
-                <DropdownMenuItem
-                  onSelect={() => {
-                    submitForApproval({ purchaseOrderId: purchaseOrder.id })
-                    navigate({ to: '/v2/po/$purchaseOrderId', params: { purchaseOrderId: purchaseOrder.id } })
-                  }}
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Submit for Approval
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem onSelect={() => setIsEditOpen(true)}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit PO
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={handleSubmitForApproval}
+                    disabled={submitMutation.isPending}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Submit for Approval
+                  </DropdownMenuItem>
+                  {normalizedStatus === 'draft' && (
+                    <DropdownMenuItem
+                      onSelect={() => setIsDeleteOpen(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete PO
+                    </DropdownMenuItem>
+                  )}
+                </>
               )}
               {canForApproval && (
                 <>
-                  <DropdownMenuItem onSelect={() => setIsReturnOpen(true)}>
+                  <DropdownMenuItem
+                    onSelect={() => setIsReturnOpen(true)}
+                    disabled={returnMutation.isPending}
+                  >
                     <RotateCcw className="h-4 w-4 mr-2" />
                     Return
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setIsApproveOpen(true)}>
+                  <DropdownMenuItem
+                    onSelect={() => setIsApproveOpen(true)}
+                    disabled={approveMutation.isPending}
+                  >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Approve
                   </DropdownMenuItem>
@@ -157,45 +274,84 @@ export function PurchaseOrderDetailsPage({
         </div>
       </div>
 
-      <PurchaseOrderDetailsShell purchaseOrder={purchaseOrder} />
+      {isAob ? (
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => setActiveTab(val as 'aob' | 'po')}
+          className="w-full space-y-4"
+        >
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <TabsList className="bg-slate-100 dark:bg-slate-800 p-1">
+              <TabsTrigger value="aob" className="gap-2 font-medium">
+                <Layers className="h-4 w-4 text-primary" />
+                Source AOB: {purchaseOrder.sourceDocumentNumber || 'AOB Details'}
+              </TabsTrigger>
+              <TabsTrigger value="po" className="gap-2 font-medium">
+                <FileText className="h-4 w-4 text-primary" />
+                Purchase Order: {purchaseOrder.poNumber}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="aob" className="mt-0">
+            {isAobLoading ? (
+              <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span>Loading AOB details ({purchaseOrder.sourceDocumentNumber})...</span>
+              </div>
+            ) : aob ? (
+              <AOBDetailsPage
+                aob={aob}
+                bidMatrix={bidMatrix}
+                onBack={() => navigate({ to: backRoute })}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                  Unable to load linked AOB ({purchaseOrder.sourceDocumentNumber || sourceDocId}).
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="po" className="mt-0 space-y-6">
+            <PurchaseOrderDetailsShell purchaseOrder={fullPo} />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <PurchaseOrderDetailsShell purchaseOrder={fullPo} />
+      )}
+
+      <EditPurchaseOrderDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        purchaseOrder={purchaseOrder}
+      />
+
+      <ConfirmAlertDialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        title="Delete Purchase Order"
+        description={`Are you sure you want to delete purchase order "${purchaseOrder.poNumber || ''}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        loading={deleteMutation.isPending}
+        onConfirm={handleDelete}
+      />
 
       <ReturnPurchaseOrderDialog
         open={isReturnOpen}
         onOpenChange={setIsReturnOpen}
-        onSubmit={(reason) => {
-          returnPurchaseOrder({ purchaseOrderId: purchaseOrder.id, reason })
-          setIsReturnOpen(false)
-        }}
+        onSubmit={handleReturn}
+        isSubmitting={returnMutation.isPending}
       />
 
       <ApprovePurchaseOrderDialog
         open={isApproveOpen}
         onOpenChange={setIsApproveOpen}
-        onSubmit={(signedDocument) => {
-          approvePurchaseOrder({ purchaseOrderId: purchaseOrder.id, signedDocument })
-          setIsApproveOpen(false)
-        }}
-      />
-
-      <SelectAobDialog
-        open={isAobPickerOpen}
-        onOpenChange={setIsAobPickerOpen}
-        selectedAobId={purchaseOrder.sourceDocumentId}
-        onSelect={(aobId) => {
-          linkAob({ purchaseOrderId: purchaseOrder.id, aobId })
-          setIsAobPickerOpen(false)
-        }}
-      />
-
-      <SelectNoaDialog
-        open={isNoaPickerOpen}
-        onOpenChange={setIsNoaPickerOpen}
-        selectedNoaId={purchaseOrder.sourceDocumentId}
-        onSelect={(noaId) => {
-          linkNoa({ purchaseOrderId: purchaseOrder.id, noaId })
-          setIsNoaPickerOpen(false)
-        }}
+        onSubmit={handleApprove}
+        isSubmitting={approveMutation.isPending}
       />
     </div>
   )
 }
+
