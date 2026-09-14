@@ -1,7 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
+using ERPEZ.Shared.Configuration;
 using ERPEZ.Shared.Interfaces;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.Shared.Services;
 
@@ -9,33 +12,13 @@ namespace ERPEZ.Shared.Services;
 /// AES-256-GCM authenticated encryption service with key versioning support.
 /// Slices secrets into Base64(Nonce[12] + CipherText + Tag[16]).
 /// </summary>
-public class AesGcmSecretEncryptionService(IConfiguration configuration) : ISecretEncryptionService
+public class AesGcmSecretEncryptionService(
+    IConfiguration configuration,
+    IHostEnvironment hostEnvironment,
+    ILogger<AesGcmSecretEncryptionService> logger) : ISecretEncryptionService
 {
-    private static readonly byte[] fallbackDevKey = SHA256.HashData(Encoding.UTF8.GetBytes("ERPEZ_DEFAULT_SECRET_KEY_DEV_ONLY_DO_NOT_USE_IN_PROD"));
-
-    private byte[] GetKey(int keyVersion)
-    {
-        var rawKey = configuration[$"ENCRYPTION_MASTER_KEY_V{keyVersion}"]
-            ?? configuration[$"Encryption:Keys:V{keyVersion}"]
-            ?? configuration["ENCRYPTION_MASTER_KEY"];
-
-        if (string.IsNullOrWhiteSpace(rawKey))
-        {
-            return fallbackDevKey;
-        }
-
-        try
-        {
-            var keyBytes = Convert.FromBase64String(rawKey);
-            if (keyBytes.Length == 32) return keyBytes;
-        }
-        catch
-        {
-            // Not base64 formatted
-        }
-
-        return SHA256.HashData(Encoding.UTF8.GetBytes(rawKey));
-    }
+    private byte[] GetKey(int keyVersion) =>
+        EncryptionConfigurationValidator.GetEncryptionKey(configuration, hostEnvironment, keyVersion, logger);
 
     public string Encrypt(string plainText, int keyVersion = 1)
     {

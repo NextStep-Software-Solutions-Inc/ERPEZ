@@ -19,6 +19,7 @@ using ERPEZ.Infrastructure.Services.DocumentGeneration;
 using ERPEZ.Infrastructure.Services.Renderers.Pdf;
 using ERPEZ.Infrastructure.Services.Renderers.Excel;
 using ERPEZ.Infrastructure.Services.DocumentGeneration.Storage;
+using ERPEZ.Shared.Configuration;
 using SharedCurrentUserService     = ERPEZ.Shared.Interfaces.ICurrentUserService;
 using SharedCurrentUserServiceImpl = ERPEZ.Shared.Services.CurrentUserService;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
@@ -34,6 +35,15 @@ public static class DependencyInjection
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         var services = builder.Services;
         var env      = builder.Environment;
+
+        // Authoritative encryption configuration validation during host startup
+        using (var loggerFactory = LoggerFactory.Create(b => b.AddConfiguration(builder.Configuration.GetSection("Logging"))))
+        {
+            var startupLogger = loggerFactory.CreateLogger(nameof(EncryptionConfigurationValidator));
+            EncryptionConfigurationValidator.Validate(builder.Configuration, builder.Environment, startupLogger);
+        }
+
+        services.AddSingleton<ERPEZ.Shared.Interfaces.ISecretEncryptionService, ERPEZ.Shared.Services.AesGcmSecretEncryptionService>();
 
         // ── Tenant Routing & Context ────────────────────────────────────────────────
         services.Configure<ERPEZ.Shared.Configuration.TenantRoutingOptions>(

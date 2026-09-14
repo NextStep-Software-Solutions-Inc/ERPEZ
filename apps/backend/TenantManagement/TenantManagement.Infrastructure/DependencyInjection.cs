@@ -1,3 +1,4 @@
+using ERPEZ.Shared.Configuration;
 using ERPEZ.Shared.Interfaces;
 using ERPEZ.Shared.Interceptors;
 using ERPEZ.Shared.Services;
@@ -25,6 +26,13 @@ public static class DependencyInjection
         var services = builder.Services;
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         var env = builder.Environment;
+
+        // Authoritative encryption configuration validation during host startup
+        using (var loggerFactory = LoggerFactory.Create(b => b.AddConfiguration(builder.Configuration.GetSection("Logging"))))
+        {
+            var startupLogger = loggerFactory.CreateLogger(nameof(EncryptionConfigurationValidator));
+            EncryptionConfigurationValidator.Validate(builder.Configuration, builder.Environment, startupLogger);
+        }
 
         services.AddHttpContextAccessor();
         services.AddMemoryCache();

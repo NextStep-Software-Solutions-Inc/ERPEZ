@@ -8,6 +8,7 @@ using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
 using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -22,6 +23,7 @@ public class AuthController(
     IUnitOfWork unitOfWork,
     IConfiguration configuration,
     IHttpClientFactory httpClientFactory,
+    ILogger<AuthController> logger,
     IBackgroundJobClient? backgroundJobClient = null) : ControllerBase
 {
     public const string devSigningKey = "ERPEZ_Development_Symmetric_Signing_Key_2026_Secure_Secret_12345!";
@@ -548,7 +550,7 @@ public class AuthController(
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Keycloak Register Notice] {ex.Message}");
+            logger.LogWarning(ex, "Keycloak user creation failed for user {Username} ({Email}): {ErrorMessage}", request.Username, request.Email, ex.Message);
         }
 
         return null;
@@ -683,7 +685,7 @@ public class AuthController(
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Keycloak Direct Login Notice] {ex.Message}");
+            logger.LogWarning(ex, "Keycloak direct login failed for user {UsernameOrEmail}: {ErrorMessage}", usernameOrEmail, ex.Message);
             return null;
         }
     }
