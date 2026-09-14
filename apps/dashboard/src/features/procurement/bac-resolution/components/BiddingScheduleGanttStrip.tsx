@@ -6,31 +6,16 @@ import { CalendarRange, Loader2, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { useProcurementActivityTypes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementActivityTypes'
-import { computeRemainingDays, getRemainingDaysBadgeClass } from '../utils/remainingDays'
+import {
+  computeRemainingDays,
+  formatRemainingDaysBadgeLabel,
+  getRemainingDaysBadgeClass,
+} from '../utils/remainingDays'
 import type { ProcurementActivityType } from '@/lib/fiscal-year-and-policies/types/procurementActivityTypes'
 import type { CalendarEvent } from '../../bidding-schedule/types'
 import { getBacCalendarEventsRequest } from '../handlers/getBacCalendarEventsRequest'
 
 const useBacCalendarEvents = createQueryHookFromTemplate(getBacCalendarEventsRequest)
-
-function formatRemainingDayLabel(remainingInfo: {
-  label: string
-  daysRemaining: number | null
-  isToday?: boolean
-}): string {
-  if (
-    remainingInfo.isToday ||
-    remainingInfo.daysRemaining === 0 ||
-    remainingInfo.label === 'Due today' ||
-    remainingInfo.label === '0 day' ||
-    remainingInfo.label === '0 days' ||
-    remainingInfo.label === '0d' ||
-    remainingInfo.label === '0d left'
-  ) {
-    return 'Today'
-  }
-  return remainingInfo.label
-}
 
 interface BiddingScheduleGanttStripProps {
   bacResolutionId?: string | null
@@ -213,10 +198,20 @@ export function BiddingScheduleGanttStrip({
               {/* Gantt Track Rows */}
               <div className="space-y-2.5 pt-1">
                 {timelineData.items.map((item, idx) => {
+                  const displayLabel = formatRemainingDaysBadgeLabel(item.remainingInfo)
+                  const isTodayOrDue =
+                    item.remainingInfo.isToday ||
+                    item.remainingInfo.daysRemaining === 0 ||
+                    displayLabel === 'Today'
+
+                  const badgeVariant = isTodayOrDue
+                    ? 'warning'
+                    : item.remainingInfo.variant
+
                   const barColor =
-                    item.remainingInfo.variant === 'destructive'
+                    badgeVariant === 'destructive'
                       ? 'bg-red-500 hover:bg-red-600 text-white'
-                      : item.remainingInfo.variant === 'warning'
+                      : badgeVariant === 'warning'
                         ? 'bg-amber-500 hover:bg-amber-600 text-white'
                         : 'bg-emerald-600 hover:bg-emerald-700 text-white'
 
@@ -235,10 +230,10 @@ export function BiddingScheduleGanttStrip({
                           <span
                             className={cn(
                               'text-[10px] px-1.5 py-0.2 rounded-full font-semibold border',
-                              getRemainingDaysBadgeClass(item.remainingInfo.variant),
+                              getRemainingDaysBadgeClass(badgeVariant),
                             )}
                           >
-                            {formatRemainingDayLabel(item.remainingInfo)}
+                            {displayLabel}
                           </span>
                         </div>
                       </div>
@@ -258,9 +253,7 @@ export function BiddingScheduleGanttStrip({
                               )}
                             >
                               <span className="text-[9px] font-bold px-1 truncate select-none">
-                                {item.remainingInfo.isToday ||
-                                item.remainingInfo.daysRemaining === 0 ||
-                                item.durationDays === 0
+                                {isTodayOrDue || item.durationDays === 0
                                   ? 'Today'
                                   : `${item.durationDays}d`}
                               </span>
@@ -325,10 +318,10 @@ export function BiddingScheduleGanttStrip({
                                 <span
                                   className={cn(
                                     'text-[10px] font-bold px-2 py-0.5 rounded-full border',
-                                    getRemainingDaysBadgeClass(item.remainingInfo.variant),
+                                    getRemainingDaysBadgeClass(badgeVariant),
                                   )}
                                 >
-                                  {formatRemainingDayLabel(item.remainingInfo)}
+                                  {displayLabel}
                                 </span>
                               </div>
                             </div>
