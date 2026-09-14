@@ -163,6 +163,14 @@ public class GetEligibleAppsForProcurementQueryHandler(IUnitOfWork unitOfWork)
                     APPNumber = app.APPNumber,
                     Name = app.Name,
                     FiscalYearName = app.FiscalYear != null ? $"FY {app.FiscalYear.Year}" : string.Empty,
+                    FiscalYear = app.FiscalYear == null ? null : new APPFiscalYearResponse
+                    {
+                        Id = app.FiscalYear.Id,
+                        Year = app.FiscalYear.Year,
+                        Status = app.FiscalYear.Status,
+                        StartDate = app.FiscalYear.StartDate,
+                        EndDate = app.FiscalYear.EndDate
+                    },
                     EligibleItems = eligibleItems
                 });
             }
