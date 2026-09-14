@@ -382,6 +382,20 @@ public class AuthController(
             tenant.Modules.Add(module);
         }
 
+        // 3b. Create initial default Starter subscription
+        var subscription = new TenantSubscription
+        {
+            TenantId = tenant.Id,
+            Plan = Plan.Starter,
+            Status = Status.Active,
+            Amount = 0m,
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddYears(1),
+            BillingCycle = BillingCycle.Monthly,
+            AutoRenew = true
+        };
+        tenant.TenantSubscriptions.Add(subscription);
+
         await unitOfWork.TenantRepository.AddAsync(tenant, cancellationToken);
 
         // 4. Create TenantMember with Tenant Administrator role
@@ -594,11 +608,66 @@ public class AuthController(
                 (m.ExternalIdentityId == sub || m.Email.ToLower() == email.ToLower() || m.UserId.ToLower() == username.ToLower()) &&
                 !m.IsDeleted, cancellationToken);
 
-            var tenantId = member?.TenantId ?? DevTenantAndMemberSeeder.DevTenantId;
+            var tenantId = member?.TenantId;
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, sub),
+                new("sub", sub),
+                new("preferred_username", username),
+                new("name", name),
+                new(ClaimTypes.Name, name),
+                new(ClaimTypes.Email, email),
+                new("email", email),
+                new("is_super_admin", isSuperAdmin.ToString().ToLowerInvariant())
+            };
+
+            if (tenantId != null)
+            {
+                claims.Add(new Claim("tenant_id", tenantId.Value.ToString()));
+                claims.Add(new Claim("tenantId", tenantId.Value.ToString()));
+            }
+
+            if (realmRoles.Count > 0)
+            {
+                foreach (var role in realmRoles)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, role));
+                    claims.Add(new Claim("role", role));
+                }
+            }
+            else
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Tenant Administrator"));
+                claims.Add(new Claim("role", "Tenant Administrator"));
+            }
+
+            if (isSuperAdmin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "SuperAdmin"));
+                claims.Add(new Claim("role", "SuperAdmin"));
+            }
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(devSigningKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddDays(7),
+                Issuer = devIssuer,
+                Audience = devAudience,
+                SigningCredentials = credentials
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
 
             return new
             {
-                Token = accessToken,
+                Token = tokenString,
+                KeycloakAccessToken = accessToken,
                 RefreshToken = refreshToken,
                 User = new
                 {

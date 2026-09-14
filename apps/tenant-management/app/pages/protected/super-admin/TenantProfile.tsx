@@ -102,11 +102,11 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                             <div className="flex items-center gap-3">
                                 <h1 className="text-2xl font-semibold">{tenant.name}</h1>
                                 <Badge className={isDisabled ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"}>
-                                    {isDisabled ? "Access Disabled" : "Active & Allowed"}
+                                    Platform: {isDisabled ? "Access Disabled" : "Active & Allowed"}
                                 </Badge>
                             </div>
                             <div className="flex gap-2 mt-2">
-                                <span className="px-2 py-1 rounded bg-gray-100 text-sm">{displayPlan}</span>
+                                <span className="px-2.5 py-1 rounded bg-gray-100 text-sm font-medium">Plan: {displayPlan}</span>
                                 {(() => {
                                     const statusColor =
                                         displayStatus === "Active"
@@ -115,7 +115,7 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                                                 ? "bg-yellow-100 text-yellow-700"
                                                 : "bg-red-100 text-red-700";
                                     return (
-                                        <span className={`px-2 py-1 rounded text-sm ${statusColor}`}>{displayStatus}</span>
+                                        <span className={`px-2.5 py-1 rounded text-sm font-medium ${statusColor}`}>Subscription: {displayStatus}</span>
                                     );
                                 })()}
                                 {tenant.tenantSetting?.onPremise && (

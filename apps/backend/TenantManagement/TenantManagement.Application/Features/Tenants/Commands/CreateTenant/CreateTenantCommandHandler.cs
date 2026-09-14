@@ -47,6 +47,19 @@ public sealed class CreateTenantCommandHandler(
         var module = await unitOfWork.ModuleRepository.FindAsync(m => m.Key == "ams", cancellationToken: cancellationToken);
         if (module != null) tenant.Modules.Add(module);
 
+        var subscription = new TenantSubscription
+        {
+            TenantId = tenant.Id,
+            Plan = Plan.Starter,
+            Status = Status.Active,
+            Amount = 0m,
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddYears(1),
+            BillingCycle = BillingCycle.Monthly,
+            AutoRenew = true
+        };
+        tenant.TenantSubscriptions.Add(subscription);
+
         await unitOfWork.TenantRepository.AddAsync(tenant, cancellationToken);
 
         var fullName = currentUserService.FullName ?? "";

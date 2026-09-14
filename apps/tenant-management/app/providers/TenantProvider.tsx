@@ -168,10 +168,24 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     return <TenantProviderContent>{children}</TenantProviderContent>;
 }
 
+const defaultFallbackContext: WorkspaceContextType = {
+    workspace: null,
+    workspaces: [],
+    selectWorkspace: () => {},
+    userWorkspaceRoles: [],
+    isStaleSelection: false,
+    tenant: null,
+    tenants: [],
+    selectTenant: () => {},
+    isLoading: false,
+    error: null,
+    refetchWorkspaces: async () => {},
+};
+
 export function useTenant() {
     const context = useContext(TenantContext);
     if (context === undefined) {
-        throw new Error('useTenant must be used within a TenantProvider');
+        return defaultFallbackContext;
     }
     return context;
 }

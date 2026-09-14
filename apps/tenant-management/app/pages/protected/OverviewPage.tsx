@@ -11,33 +11,40 @@ import { useBillingData } from "~/features/billing/hooks/useBillingData"
 import { createQueryHookFromTemplate } from "erpez-shared-lib"
 import { getTenantLicenseRequest } from "~/features/license/handlers/getTenantLicenseRequest"
 
+import { planLabel } from "~/lib/tenant"
+
 const useTenantLicense = createQueryHookFromTemplate(getTenantLicenseRequest);
 
 export default function OverviewPage() {
     const navigate = useNavigate();
     const { tenant } = useTenant();
     const { data: billingData } = useBillingData();
+    const tenantId = tenant?.id;
+
     const { data: licenseResponse } = useTenantLicense({
-        pathParams: { id: tenant?.id || "00000000-0000-0000-0000-000000000001" },
+        pathParams: { id: tenantId || "" },
         queryParams: { domain: typeof window !== "undefined" ? window.location.hostname : "" },
     });
 
     const license = licenseResponse?.data;
     const subscription = billingData?.subscription;
 
-    const planName = subscription?.planName || tenant?.tenantSubscription?.plan || "Enterprise";
-    const licenseDays = license?.remainingDays ?? 730;
+    const rawPlan = subscription?.planName || tenant?.tenantSubscription?.plan;
+    const planName = planLabel(rawPlan);
+    const hasLicense = Boolean(license && license.remainingDays != null);
+    const licenseDays = hasLicense ? license!.remainingDays : null;
     const status = {
         label: tenant?.isDisabled ? "Inactive" : "Active",
         color: tenant?.isDisabled ? "red" : "green",
     };
     const lastUpdated = "Today";
-    const licenseHint = license
-        ? `Valid until ${new Date(license.expiresAt).toLocaleDateString()}`
-        : "Enterprise license active";
+    const licenseHint = hasLicense
+        ? `Valid until ${new Date(license!.expiresAt).toLocaleDateString()}`
+        : "Standard cloud subscription active";
 
     const cards = buildCards({
         licenseDays,
+        licenseDisplay: hasLicense ? `${licenseDays} days` : "Cloud SaaS",
         planName,
         statusLabel: status.label,
         statusColor: status.color,

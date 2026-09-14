@@ -17,25 +17,32 @@ export type CardItem = {
  */
 export function buildCards({
   licenseDays,
+  licenseDisplay,
   planName,
   statusLabel,
   statusColor,
   lastUpdated,
   licenseHint,
 }: {
-  licenseDays: number;
+  licenseDays?: number | null;
+  licenseDisplay?: string;
   planName: string;
   statusLabel: string;
   statusColor?: string;
   lastUpdated: string;
   licenseHint?: string;
 }): CardItem[] {
+  const displayLicense = licenseDisplay ?? (licenseDays != null ? `${licenseDays} days` : "Cloud SaaS");
+  const defaultHint = licenseDays != null
+    ? (licenseDays > 30 ? "License active" : "License expiring soon")
+    : "Active cloud subscription";
+
   return [
     {
       id: "license",
-      title: "License Expiry",
-      value: { type: "text", value: `${licenseDays} days` },
-      hint: licenseHint ?? (licenseDays > 30 ? "Enterprise license active" : "License expiring soon"),
+      title: licenseDays != null ? "License Expiry" : "License Tier",
+      value: { type: "text", value: displayLicense },
+      hint: licenseHint ?? defaultHint,
       iconKey: "calendar",
     },
     {
