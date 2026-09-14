@@ -1,4 +1,4 @@
-import { ArrowLeft, KeyRound, Shield, Building, Sparkles } from "lucide-react";
+import { ArrowLeft, KeyRound, Shield, Building, Sparkles, UserCheck } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useKeycloak } from "~/providers/KeycloakProvider";
 import { Button } from "~/components/ui/button";
@@ -117,6 +117,27 @@ export default function SignInPage() {
                     </div>
                     <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-full">
                       Global Bypass
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleDevLogin("dev_planner")}
+                    className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all ${
+                      activeDevUser === "dev_planner"
+                        ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200"
+                        : "border-gray-200 dark:border-gray-800 hover:bg-white dark:hover:bg-slate-800/80"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-950 text-blue-600">
+                        <UserCheck className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold">Planning Officer</div>
+                        <div className="text-[11px] text-muted-foreground">planner@erpez.dev</div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full">
+                      Member
                     </span>
                   </button>
                 </div>

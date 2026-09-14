@@ -76,6 +76,7 @@ export interface BackendNoticeOfAwardDetailDto {
   approvedByName?: string | null
   approvedAt?: string | null
   issuedAt?: string | null
+  receivedAt?: string | null
   signedDocumentFileId?: string | null
   signedDocumentFileName?: string | null
   philgepsPostedAt?: string | null
@@ -172,9 +173,9 @@ export function mapStatusToFrontend(status: number | string): NoticeOfAwardStatu
 }
 
 export function mapTypeToFrontend(type: number | string): NoticeOfAwardType {
-  if (type === 0 || type === 'GoodsAndServices' || type === 'goods-services') return 'goods-services'
+  if (type === 0 || type === 'GoodsAndServices' || type === 'goods-services' || type === 'Goods' || type === 'GeneralSupportServices') return 'goods-services'
   if (type === 1 || type === 'Infrastructure' || type === 'infrastructure') return 'infrastructure'
-  if (type === 2 || type === 'Consulting' || type === 'consulting') return 'consulting'
+  if (type === 2 || type === 'Consulting' || type === 'consulting' || type === 'ConsultingServices') return 'consulting'
   return 'goods-services'
 }
 
@@ -304,6 +305,7 @@ export function mapDetailDtoToNoticeOfAward(dto: BackendNoticeOfAwardDetailDto):
     approvedBy: dto.approvedByName,
     approvedAt: dto.approvedAt,
     issuedAt: dto.issuedAt,
+    receivedAt: dto.receivedAt,
     contractExecutionDeadline: dto.contractExecutionDeadline,
     conformeReceivedDate: dto.conformeReceivedDate,
     conformeFileName: dto.conformeFileName,

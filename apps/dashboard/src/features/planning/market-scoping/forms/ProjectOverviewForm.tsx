@@ -4,20 +4,43 @@
  * Location: src/features/planning/market-scoping/forms/
  */
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { toast } from 'sonner'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { Calendar as CalendarIcon, Loader2, X } from 'lucide-react'
 import type { ProjectOverviewFormData } from '../utils/validationRules'
-import { projectOverviewSchema, validateBudgetPeriod, validateDeliveryDate } from '../utils/validationRules'
+import {
+  projectOverviewSchema,
+  validateBudgetPeriod,
+  validateDeliveryDate,
+} from '../utils/validationRules'
 import { useAtom } from 'jotai'
-import { draftMarketScopingAtom, currentFormStepAtom } from '../atoms/marketScopingStateAtom'
+import {
+  draftMarketScopingAtom,
+  currentFormStepAtom,
+} from '../atoms/marketScopingStateAtom'
 import { cn } from '@/lib/utils'
 import { fetchUsers, type User } from '@/services/api/users'
 import api from '@/services/api'
@@ -32,7 +55,11 @@ interface ScopingActivityOption {
 }
 
 interface ProjectOverviewFormProps {
-  libActivities?: readonly { readonly id: string; readonly name: string; readonly budget: number }[]
+  libActivities?: readonly {
+    readonly id: string
+    readonly name: string
+    readonly budget: number
+  }[]
   userProfile?: {
     readonly name: string
     readonly designation: string
@@ -40,6 +67,67 @@ interface ProjectOverviewFormProps {
     readonly agencyName: string
   }
   onNext: (data: ProjectOverviewFormData) => void
+  onSaveDraft?: (data: Partial<ProjectOverviewFormData>) => void
+}
+
+interface RawLib {
+  id: string
+  name?: string
+  title?: string
+  libNumber?: string
+  version?: number | string
+  status?: string
+  scope?: string
+  totalAmount?: number
+  fiscalYear?: string | number | { year?: string | number }
+  fiscalYearEntity?: { year?: string | number }
+  office?: { name?: string }
+  officeName?: string
+}
+
+interface RawLibActivity {
+  id: string
+  activityName?: string
+  name?: string
+  title?: string
+  amount?: number
+  budget?: number
+  lineItemBudgetId?: string
+  lineItemBudget?: {
+    id: string
+  }
+}
+
+interface LibDetailActivityDetail {
+  budget?: number
+  unitQuantity?: number
+  unitCost?: number
+}
+
+interface LibDetailActivity {
+  id: string
+  name?: string
+  budget?: number
+  wfpObjectiveActivity?: { activityName?: string }
+  opcrActivity?: { name?: string }
+  details?: LibDetailActivityDetail[]
+}
+
+interface LibDetail {
+  id?: string
+  name?: string
+  title?: string
+  scope?: string
+  totalAmount?: number
+  activities?: LibDetailActivity[]
+  orphanDetails?: LibDetailActivityDetail[]
+}
+
+interface ExistingMarketScopingItem {
+  id: string
+  targetLineItemBudgetId?: string
+  targetLineItemBudgetActivityId?: string
+  projectName?: string
 }
 
 function formatIsoToMmYyyy(dateStr?: string): string {
@@ -59,19 +147,57 @@ function formatIsoToMmYyyy(dateStr?: string): string {
 export function ProjectOverviewForm({
   libActivities = [],
   onNext,
+  onSaveDraft,
 }: ProjectOverviewFormProps) {
   const [draft] = useAtom(draftMarketScopingAtom)
   const [, setCurrentStep] = useAtom(currentFormStepAtom)
   const [periodFromOpen, setPeriodFromOpen] = useState(false)
   const [periodToOpen, setPeriodToOpen] = useState(false)
-  const [expectedDeliveryDateOpen, setExpectedDeliveryDateOpen] = useState(false)
-  
+  const [expectedDeliveryDateOpen, setExpectedDeliveryDateOpen] =
+    useState(false)
+
+  const initialTargetLibId =
+    draft?.targetLineItemBudgetId ||
+    draft?.targetLineItemBudget?.id ||
+    draft?.targetLineItemBudgetActivity?.lineItemBudgetId ||
+    ''
+  const initialTargetActivityId =
+    draft?.linkedLibActivityId ||
+    draft?.targetLineItemBudgetActivityId ||
+    draft?.targetLineItemBudgetActivity?.id ||
+    ''
+
+  const [selectedActivityId, setSelectedActivityId] = useState<string>(
+    initialTargetActivityId,
+  )
+
   // User selection state
   const [allUsers, setAllUsers] = useState<User[]>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
-  const [personnelSearchTerm, setPersonnelSearchTerm] = useState('')
   const [showPersonnelDropdown, setShowPersonnelDropdown] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+
+  // Initialize selectedUser and search term from draft if present so edit view is never empty
+  const [selectedUser, setSelectedUser] = useState<User | null>(() => {
+    if (draft?.userId && (draft?.representativeName || draft?.departmentUnit)) {
+      return {
+        id: draft.userId,
+        username: draft.userId,
+        fullName: draft.representativeName || 'Representative',
+        firstName: draft.representativeName?.split(' ')[0] || '',
+        lastName: draft.representativeName?.split(' ').slice(1).join(' ') || '',
+        email: '',
+        employeeNumber: '',
+        officeName: draft.departmentUnit || '',
+        employmentStatus: draft.representativeDesignation || '',
+        isActive: true,
+      }
+    }
+    return null
+  })
+
+  const [personnelSearchTerm, setPersonnelSearchTerm] = useState(
+    draft?.representativeName || '',
+  )
 
   // Filter users based on search term
   const filteredUsers = useMemo(() => {
@@ -89,30 +215,61 @@ export function ProjectOverviewForm({
   }, [allUsers, personnelSearchTerm])
 
   const [scopingMode, setScopingMode] = useState<'lib' | 'standalone'>(
-    draft?.linkedLibActivityId ? 'lib' : 'standalone'
+    initialTargetActivityId || initialTargetLibId ? 'lib' : 'standalone',
   )
-  const [targetFiscalYear, setTargetFiscalYear] = useState<string>('2024')
-  const [selectedLibId, setSelectedLibId] = useState<string>('')
+  const initialYear =
+    draft?.periodFrom?.split('/')[1] || new Date().getFullYear().toString()
+  const [targetFiscalYear, setTargetFiscalYear] = useState<string>(initialYear)
+  const [selectedLibId, setSelectedLibId] = useState<string>(initialTargetLibId)
 
   // Real Fiscal Years state - supports all fiscal years from API with full range fallback
   const [fiscalYears, setFiscalYears] = useState<string[]>([
-    '2030', '2029', '2028', '2027', '2026', '2025', '2024', '2023', '2022', '2021', '2020'
+    '2030',
+    '2029',
+    '2028',
+    '2027',
+    '2026',
+    '2025',
+    '2024',
+    '2023',
+    '2022',
+    '2021',
+    '2020',
   ])
 
   useEffect(() => {
     const fetchFiscalYears = async () => {
       try {
         const res = await api.get('/fiscal-years')
-        const items = res.data?.data?.items || res.data?.data || res.data?.items || res.data || []
+        const items =
+          res.data?.data?.items ||
+          res.data?.data ||
+          res.data?.items ||
+          res.data ||
+          []
         if (Array.isArray(items) && items.length > 0) {
           const apiYears = items
-            .map((item: { year?: number | string; name?: string; fiscalYear?: string; yearNumber?: number | string }) => 
-              String(item.year || item.yearNumber || item.name || item.fiscalYear || '')
+            .map(
+              (item: {
+                year?: number | string
+                name?: string
+                fiscalYear?: string
+                yearNumber?: number | string
+              }) =>
+                String(
+                  item.year ||
+                    item.yearNumber ||
+                    item.name ||
+                    item.fiscalYear ||
+                    '',
+                ),
             )
             .filter((y: string) => /^\d{4}$/.test(y))
 
           if (apiYears.length > 0) {
-            const uniqueYears = Array.from(new Set(apiYears)).sort((a, b) => b.localeCompare(a))
+            const uniqueYears = Array.from(new Set(apiYears)).sort((a, b) =>
+              b.localeCompare(a),
+            )
             setFiscalYears(uniqueYears)
           }
         }
@@ -140,25 +297,18 @@ export function ProjectOverviewForm({
   useEffect(() => {
     const fetchRealLibs = async () => {
       try {
-        const res = await api.get('/libs', { params: { pageSize: 1000 } })
-        const items = res.data?.data?.items || res.data?.data || res.data?.items || res.data || []
-        if (Array.isArray(items)) {
-          interface RawLib {
-            id: string
-            name?: string
-            title?: string
-            libNumber?: string
-            version?: number | string
-            status?: string
-            scope?: string
-            totalAmount?: number
-            fiscalYear?: string | number | { year?: string | number }
-            fiscalYearEntity?: { year?: string | number }
-            office?: { name?: string }
-            officeName?: string
-          }
-
-          const rawItems = items as RawLib[]
+        const res = await api.get<{
+          data?: { items?: RawLib[] } | RawLib[]
+          items?: RawLib[]
+        }>('/libs', { params: { pageSize: 1000 } })
+        const rawItems: RawLib[] = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data?.data?.items)
+            ? res.data.data.items
+            : Array.isArray(res.data?.items)
+              ? res.data.items
+              : []
+        if (rawItems.length > 0) {
           const seenIds = new Set<string>()
           const mappedLibs: RealLibItem[] = []
 
@@ -170,23 +320,29 @@ export function ProjectOverviewForm({
             seenIds.add(item.id)
 
             const fy = String(
-              (typeof item.fiscalYear === 'object' ? item.fiscalYear?.year : item.fiscalYear) ||
-              item.fiscalYearEntity?.year ||
-              '2026'
+              (typeof item.fiscalYear === 'object'
+                ? item.fiscalYear?.year
+                : item.fiscalYear) ||
+                item.fiscalYearEntity?.year ||
+                '2026',
             )
             const baseName = item.name || item.title || 'Line Item Budget'
-            
+
             // Determine version text (e.g. v1.0, v2.0)
             nameCounters[baseName] = (nameCounters[baseName] || 0) + 1
-            const versionNum = item.version !== undefined && item.version !== null 
-              ? item.version 
-              : nameCounters[baseName]
+            const versionNum =
+              item.version !== undefined && item.version !== null
+                ? item.version
+                : nameCounters[baseName]
             const versionStr = ` (v${versionNum}.0)`
 
             const libNumTag = item.libNumber ? ` [${item.libNumber}]` : ''
-            const scopeTag = item.scope === 'Project' || item.scope === 'ProjectLevel' ? ' (Project Scope)' : ''
-            const fullTitle = baseName.startsWith('FY') 
-              ? `${baseName}${versionStr}${libNumTag}${scopeTag}` 
+            const scopeTag =
+              item.scope === 'Project' || item.scope === 'ProjectLevel'
+                ? ' (Project Scope)'
+                : ''
+            const fullTitle = baseName.startsWith('FY')
+              ? `${baseName}${versionStr}${libNumTag}${scopeTag}`
               : `FY ${fy} ${baseName}${versionStr}${libNumTag}${scopeTag}`
 
             mappedLibs.push({
@@ -196,7 +352,11 @@ export function ProjectOverviewForm({
               libNumber: item.libNumber,
               fiscalYear: fy,
               officeName: item.office?.name || item.officeName || '',
-              scope: item.scope || (item.name?.toLowerCase().includes('project') ? 'Project' : 'Activity'),
+              scope:
+                item.scope ||
+                (item.name?.toLowerCase().includes('project')
+                  ? 'Project'
+                  : 'Activity'),
               totalAmount: item.totalAmount || 0,
             })
           }
@@ -212,50 +372,81 @@ export function ProjectOverviewForm({
 
   // Available LIBs filtered by selected Target Fiscal Year and Selected User's Office Context
   const filteredLibs = useMemo(() => {
-    if (!selectedUser) return []
-    return realLibs.filter((lib) => {
+    let base = realLibs.filter((lib) => {
+      if (selectedLibId && lib.id === selectedLibId) return true
       const matchesFy = lib.fiscalYear === targetFiscalYear
       // Match office if office information is available
-      const matchesOffice = !selectedUser.officeName || !lib.officeName ||
-        lib.officeName.toLowerCase().includes(selectedUser.officeName.toLowerCase()) ||
-        selectedUser.officeName.toLowerCase().includes(lib.officeName.toLowerCase())
+      const matchesOffice =
+        !selectedUser?.officeName ||
+        !lib.officeName ||
+        lib.officeName
+          .toLowerCase()
+          .includes(selectedUser.officeName.toLowerCase()) ||
+        selectedUser.officeName
+          .toLowerCase()
+          .includes(lib.officeName.toLowerCase())
       return matchesFy && matchesOffice
     })
-  }, [realLibs, targetFiscalYear, selectedUser])
+
+    // If selectedLibId is present from draft but not in realLibs yet, add a placeholder entry so the dropdown renders it
+    if (selectedLibId && !base.some((l) => l.id === selectedLibId)) {
+      const budgetNumber =
+        draft?.targetLineItemBudgetNumber ||
+        draft?.targetLineItemBudget?.libNumber
+      base = [
+        {
+          id: selectedLibId,
+          name: budgetNumber || 'Line Item Budget',
+          title: budgetNumber
+            ? `Line Item Budget [${budgetNumber}]`
+            : 'Line Item Budget',
+          fiscalYear: targetFiscalYear,
+          officeName: selectedUser?.officeName || '',
+        },
+        ...base,
+      ]
+    }
+
+    return base
+  }, [realLibs, targetFiscalYear, selectedUser, selectedLibId, draft])
 
   // Real LIB activities state fetched from backend GET /lib-activities API
-  const [realLibActivities, setRealLibActivities] = useState<{ id: string; name: string; budget: number; lineItemBudgetId: string }[]>([])
-  const [selectedLibActivities, setSelectedLibActivities] = useState<ScopingActivityOption[]>([])
-  const [selectedLibDetail, setSelectedLibDetail] = useState<any>(null)
+  const [realLibActivities, setRealLibActivities] = useState<
+    { id: string; name: string; budget: number; lineItemBudgetId: string }[]
+  >([])
+  const [selectedLibActivities, setSelectedLibActivities] = useState<
+    ScopingActivityOption[]
+  >([])
+  const [, setSelectedLibDetail] = useState<LibDetail | null>(null)
   const [isLoadingLibActivities, setIsLoadingLibActivities] = useState(false)
 
   useEffect(() => {
     const fetchRealLibActivities = async () => {
       try {
-        const res = await api.get('/lib-activities', { params: { pageSize: 1000 } })
-        const items = res.data?.data?.items || res.data?.data || res.data?.items || []
-        
-        interface RawLibActivity {
-          id: string
-          activityName?: string
-          name?: string
-          title?: string
-          amount?: number
-          budget?: number
-          lineItemBudgetId?: string
-          lineItemBudget?: {
-            id: string
-          }
-        }
+        const res = await api.get<{
+          data?: { items?: RawLibActivity[] } | RawLibActivity[]
+          items?: RawLibActivity[]
+        }>('/lib-activities', {
+          params: { pageSize: 1000 },
+        })
+        const items: RawLibActivity[] = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data?.data?.items)
+            ? res.data.data.items
+            : Array.isArray(res.data?.items)
+              ? res.data.items
+              : []
 
-        if (Array.isArray(items) && items.length > 0) {
+        if (items.length > 0) {
           setRealLibActivities(
-            (items as RawLibActivity[]).map((item) => ({
+            items.map((item) => ({
               id: item.id,
-              name: item.activityName || item.name || item.title || 'LIB Activity',
+              name:
+                item.activityName || item.name || item.title || 'LIB Activity',
               budget: item.amount || item.budget || 0,
-              lineItemBudgetId: item.lineItemBudgetId || item.lineItemBudget?.id || '',
-            }))
+              lineItemBudgetId:
+                item.lineItemBudgetId || item.lineItemBudget?.id || '',
+            })),
           )
         }
       } catch (err) {
@@ -267,26 +458,42 @@ export function ProjectOverviewForm({
 
   // Existing market scopings to guard against duplicate MSFs for same activity/LIB
   const [existingMarketScopings, setExistingMarketScopings] = useState<
-    { id: string; targetLineItemBudgetId?: string; targetLineItemBudgetActivityId?: string; projectName?: string }[]
+    ExistingMarketScopingItem[]
   >([])
 
   useEffect(() => {
     const fetchExistingMarketScopings = async () => {
       try {
-        const res = await api.get('/market-scopings', { params: { pageSize: 1000 } })
-        const items = res.data?.data?.items || res.data?.data || res.data?.items || res.data || []
-        if (Array.isArray(items)) {
+        const res = await api.get<{
+          data?:
+            | { items?: ExistingMarketScopingItem[] }
+            | ExistingMarketScopingItem[]
+          items?: ExistingMarketScopingItem[]
+        }>('/market-scopings', {
+          params: { pageSize: 1000 },
+        })
+        const items: ExistingMarketScopingItem[] = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data?.data?.items)
+            ? res.data.data.items
+            : Array.isArray(res.data?.items)
+              ? res.data.items
+              : []
+        if (items.length > 0) {
           setExistingMarketScopings(
-            items.map((ms: any) => ({
+            items.map((ms) => ({
               id: ms.id,
               targetLineItemBudgetId: ms.targetLineItemBudgetId,
               targetLineItemBudgetActivityId: ms.targetLineItemBudgetActivityId,
               projectName: ms.projectName,
-            }))
+            })),
           )
         }
       } catch (err) {
-        console.warn('Failed to load existing market scopings for duplicate guard:', err)
+        console.warn(
+          'Failed to load existing market scopings for duplicate guard:',
+          err,
+        )
       }
     }
     fetchExistingMarketScopings()
@@ -295,6 +502,7 @@ export function ProjectOverviewForm({
   const scopedActivityMap = useMemo(() => {
     const map = new Map<string, { msfId: string; projectName?: string }>()
     existingMarketScopings.forEach((ms) => {
+      if (draft?.id && ms.id === draft.id) return
       if (ms.targetLineItemBudgetActivityId) {
         map.set(ms.targetLineItemBudgetActivityId, {
           msfId: ms.id,
@@ -303,11 +511,12 @@ export function ProjectOverviewForm({
       }
     })
     return map
-  }, [existingMarketScopings])
+  }, [existingMarketScopings, draft?.id])
 
   const scopedLibMap = useMemo(() => {
     const map = new Map<string, { msfId: string; projectName?: string }>()
     existingMarketScopings.forEach((ms) => {
+      if (draft?.id && ms.id === draft.id) return
       if (ms.targetLineItemBudgetId) {
         map.set(ms.targetLineItemBudgetId, {
           msfId: ms.id,
@@ -316,7 +525,7 @@ export function ProjectOverviewForm({
       }
     })
     return map
-  }, [existingMarketScopings])
+  }, [existingMarketScopings, draft?.id])
 
   // Combine directly loaded activities for selected LIB, cached real activities, and passed props
   const availableActivities = useMemo<ScopingActivityOption[]>(() => {
@@ -324,47 +533,91 @@ export function ProjectOverviewForm({
     if (selectedLibActivities.length > 0) {
       list = selectedLibActivities
     } else if (realLibActivities.length > 0) {
-      const filtered = realLibActivities.filter(act => act.lineItemBudgetId === selectedLibId)
-      if (filtered.length > 0) list = filtered as ScopingActivityOption[]
+      const filtered = realLibActivities.filter(
+        (act) => act.lineItemBudgetId === selectedLibId,
+      )
+      if (filtered.length > 0) {
+        list = filtered.map((act) => ({
+          id: act.id,
+          name: act.name,
+          budget: act.budget,
+          lineItemBudgetId: act.lineItemBudgetId,
+        }))
+      }
     } else if (libActivities && libActivities.length > 0) {
-      list = libActivities as ScopingActivityOption[]
+      list = libActivities.map((act) => ({
+        id: act.id,
+        name: act.name,
+        budget: act.budget,
+      }))
+    }
+
+    // Ensure the draft's activity is in the list even if activities are still loading
+    const currentActivityId =
+      draft?.linkedLibActivityId || draft?.targetLineItemBudgetActivityId
+    if (currentActivityId && !list.some((a) => a.id === currentActivityId)) {
+      list = [
+        ...list,
+        {
+          id: currentActivityId,
+          name:
+            draft?.targetLineItemBudgetActivityName ||
+            draft?.projectName ||
+            'Linked LIB Activity',
+          budget: draft?.estimatedBudget || 0,
+          lineItemBudgetId: selectedLibId,
+        },
+      ]
     }
 
     return list.map((act) => {
       const scopedInfo = scopedActivityMap.get(act.id)
       return {
         ...act,
-        isScoped: Boolean(scopedInfo),
+        isScoped: Boolean(
+          scopedInfo && (!draft?.id || scopedInfo.msfId !== draft.id),
+        ),
         scopedMsfCode: scopedInfo?.projectName,
       }
     })
-  }, [selectedLibActivities, realLibActivities, selectedLibId, libActivities, scopedActivityMap])
+  }, [
+    selectedLibActivities,
+    realLibActivities,
+    selectedLibId,
+    libActivities,
+    scopedActivityMap,
+    draft,
+  ])
 
   const selectedLib = useMemo(() => {
     return realLibs.find((lib) => lib.id === selectedLibId)
   }, [realLibs, selectedLibId])
 
   const isProjectScopeLib =
-    selectedLib?.scope === 'Project' ||
-    selectedLib?.scope === 'ProjectLevel' ||
-    selectedLibDetail?.scope === 'Project' ||
-    selectedLibDetail?.scope === 'ProjectLevel'
+    selectedLib?.scope === 'Project' || selectedLib?.scope === 'ProjectLevel'
 
   const form = useForm({
     defaultValues: {
-      userId: (draft?.userId || '') as string,
-      projectName: (draft?.projectName || '') as string,
-      estimatedBudget: (draft?.estimatedBudget || 0) as number,
+      userId: draft?.userId || '',
+      projectName: draft?.projectName || '',
+      estimatedBudget: draft?.estimatedBudget || 0,
       periodFrom: formatIsoToMmYyyy(draft?.periodFrom),
       periodTo: formatIsoToMmYyyy(draft?.periodTo),
       expectedDeliveryDate: formatIsoToMmYyyy(draft?.expectedDeliveryDate),
-      targetLineItemBudgetId: (draft?.targetLineItemBudgetId || undefined) as string | undefined,
-      linkedLibActivityId: (draft?.linkedLibActivityId || undefined) as string | undefined,
+      targetLineItemBudgetId: draft?.targetLineItemBudgetId || undefined,
+      linkedLibActivityId:
+        draft?.linkedLibActivityId ||
+        draft?.targetLineItemBudgetActivityId ||
+        undefined,
+      targetLineItemBudgetActivityId:
+        draft?.targetLineItemBudgetActivityId ||
+        draft?.linkedLibActivityId ||
+        undefined,
     },
     onSubmit: async (values) => {
       // Validate using Zod schema
       const validationResult = projectOverviewSchema.safeParse(values.value)
-      
+
       const fieldLabels: Record<string, string> = {
         userId: 'Representative',
         projectName: 'Project Name',
@@ -376,7 +629,8 @@ export function ProjectOverviewForm({
 
       if (!validationResult.success) {
         const firstIssue = validationResult.error.issues[0]
-        const fieldName = fieldLabels[firstIssue.path[0] as string] ?? 'A required field'
+        const pathKey = String(firstIssue.path[0] || '')
+        const fieldName = fieldLabels[pathKey] ?? 'A required field'
         toast.warning('Please check your input', {
           description: `${fieldName}: ${firstIssue.message}. Fill in all required fields before proceeding.`,
         })
@@ -384,34 +638,62 @@ export function ProjectOverviewForm({
       }
 
       // Additional validation: budget period consistency
-      if (!validateBudgetPeriod(values.value.periodFrom, values.value.periodTo)) {
+      if (
+        !validateBudgetPeriod(values.value.periodFrom, values.value.periodTo)
+      ) {
         toast.warning('Invalid date range', {
-          description: 'The End Date must be the same as or later than the Start Date. Please adjust the period.',
+          description:
+            'The End Date must be the same as or later than the Start Date. Please adjust the period.',
         })
         return
       }
 
       // Additional validation: delivery date within period
-      if (!validateDeliveryDate(values.value.periodFrom, values.value.expectedDeliveryDate)) {
+      if (
+        !validateDeliveryDate(
+          values.value.periodFrom,
+          values.value.expectedDeliveryDate,
+        )
+      ) {
         toast.warning('Invalid delivery date', {
-          description: 'The Expected Delivery Date must fall on or after the Start Date. Please select a valid date.',
+          description:
+            'The Expected Delivery Date must fall on or after the Start Date. Please select a valid date.',
         })
         return
       }
 
-      const completeData = {
+      const completeData: ProjectOverviewFormData = {
         ...values.value,
         representativeName: selectedUser?.fullName || '',
         representativeDesignation: selectedUser?.employmentStatus || '',
         departmentUnit: selectedUser?.officeName || '',
         agencyName: selectedUser?.officeName || '',
-      } as ProjectOverviewFormData
+        targetLineItemBudgetId:
+          scopingMode === 'lib' && isProjectScopeLib
+            ? selectedLibId
+            : undefined,
+        linkedLibActivityId:
+          scopingMode === 'lib' && !isProjectScopeLib
+            ? values.value.linkedLibActivityId ||
+              draft?.linkedLibActivityId ||
+              draft?.targetLineItemBudgetActivityId
+            : undefined,
+        targetLineItemBudgetActivityId:
+          scopingMode === 'lib' && !isProjectScopeLib
+            ? values.value.linkedLibActivityId ||
+              draft?.linkedLibActivityId ||
+              draft?.targetLineItemBudgetActivityId
+            : undefined,
+      }
 
       onNext(completeData)
     },
   })
 
-  const handleSelectLib = async (libId: string) => {
+  const handleSelectLib = async (
+    libId: string,
+    preserveActivityId?: string,
+  ) => {
     setSelectedLibId(libId)
     setSelectedLibActivities([])
     setSelectedLibDetail(null)
@@ -424,17 +706,32 @@ export function ProjectOverviewForm({
     }
 
     try {
-      const res = await api.get(`/libs/${libId}`)
-      const detail = res.data?.data || res.data
+      const res = await api.get<{ data?: LibDetail } & LibDetail>(
+        `/libs/${libId}`,
+      )
+      const detail: LibDetail | null = res.data?.data || res.data || null
       setSelectedLibDetail(detail)
 
-      const rawActivities = detail?.activities || []
-      const mappedActivities: ScopingActivityOption[] = rawActivities.map((act: any) => ({
-        id: act.id,
-        name: act.wfpObjectiveActivity?.activityName || act.opcrActivity?.name || act.name || 'LIB Activity',
-        budget: (act.details || []).reduce((sum: number, d: any) => sum + (d.budget ?? ((d.unitQuantity ?? 0) * (d.unitCost ?? 0))), 0) || act.budget || 0,
-        lineItemBudgetId: libId,
-      }))
+      const rawActivities: LibDetailActivity[] = detail?.activities || []
+      const mappedActivities: ScopingActivityOption[] = rawActivities.map(
+        (act) => ({
+          id: act.id,
+          name:
+            act.wfpObjectiveActivity?.activityName ||
+            act.opcrActivity?.name ||
+            act.name ||
+            'LIB Activity',
+          budget:
+            (act.details || []).reduce(
+              (sum: number, d) =>
+                sum + (d.budget ?? (d.unitQuantity ?? 0) * (d.unitCost ?? 0)),
+              0,
+            ) ||
+            act.budget ||
+            0,
+          lineItemBudgetId: libId,
+        }),
+      )
       setSelectedLibActivities(mappedActivities)
 
       const isProject =
@@ -446,46 +743,91 @@ export function ProjectOverviewForm({
       if (isProject) {
         if (scopedLibMap.has(libId)) {
           toast.warning('Line Item Budget Already Scoped', {
-            description: 'A Market Scoping Form has already been created for this Project-Level Line Item Budget.',
+            description:
+              'A Market Scoping Form has already been created for this Project-Level Line Item Budget.',
           })
           setSelectedLibId('')
           return
         }
 
         const orphanTotal = (detail?.orphanDetails || []).reduce(
-          (sum: number, d: { budget?: number; unitQuantity?: number; unitCost?: number }) =>
-            sum + (d.budget ?? ((d.unitQuantity ?? 0) * (d.unitCost ?? 0))),
-          0
+          (
+            sum: number,
+            d: { budget?: number; unitQuantity?: number; unitCost?: number },
+          ) => sum + (d.budget ?? (d.unitQuantity ?? 0) * (d.unitCost ?? 0)),
+          0,
         )
-        const budget = orphanTotal > 0 ? orphanTotal : (detail?.totalAmount ?? matched.totalAmount ?? 0)
+        const budget =
+          orphanTotal > 0
+            ? orphanTotal
+            : (detail?.totalAmount ?? matched.totalAmount ?? 0)
         const projectName = detail?.name || matched.name || matched.title
 
         form.setFieldValue('targetLineItemBudgetId', libId)
         form.setFieldValue('linkedLibActivityId', undefined)
-        form.setFieldValue('projectName', projectName)
-        if (budget > 0) {
+        if (!form.getFieldValue('projectName')) {
+          form.setFieldValue('projectName', projectName)
+        }
+        if (!form.getFieldValue('estimatedBudget') && budget > 0) {
           form.setFieldValue('estimatedBudget', budget)
         }
 
-        toast.success('Project-Level LIB Linked', {
-          description: `Auto-filled Project Name ("${projectName}") and Estimated Budget (₱${budget.toLocaleString()}). You can customize these fields if needed.`,
-        })
+        if (!preserveActivityId) {
+          toast.success('Project-Level LIB Linked', {
+            description: `Auto-filled Project Name ("${projectName}") and Estimated Budget (₱${budget.toLocaleString()}). You can customize these fields if needed.`,
+          })
+        }
       } else {
         form.setFieldValue('targetLineItemBudgetId', undefined)
-        form.setFieldValue('linkedLibActivityId', undefined)
+        const targetActId =
+          preserveActivityId ||
+          selectedActivityId ||
+          form.getFieldValue('linkedLibActivityId') ||
+          draft?.linkedLibActivityId ||
+          draft?.targetLineItemBudgetActivityId
+
+        if (targetActId && mappedActivities.some((a) => a.id === targetActId)) {
+          setSelectedActivityId(targetActId)
+          form.setFieldValue('linkedLibActivityId', targetActId)
+          form.setFieldValue('targetLineItemBudgetActivityId', targetActId)
+        } else if (!preserveActivityId) {
+          setSelectedActivityId('')
+          form.setFieldValue('linkedLibActivityId', undefined)
+          form.setFieldValue('targetLineItemBudgetActivityId', undefined)
+        }
       }
     } catch (err) {
       console.warn('Failed to fetch detailed LIB:', err)
       if (matched.scope === 'Project' || matched.scope === 'ProjectLevel') {
         form.setFieldValue('targetLineItemBudgetId', libId)
         form.setFieldValue('linkedLibActivityId', undefined)
-        form.setFieldValue('projectName', matched.name)
-        if (matched.totalAmount && matched.totalAmount > 0) {
+        if (!form.getFieldValue('projectName')) {
+          form.setFieldValue('projectName', matched.name)
+        }
+        if (
+          !form.getFieldValue('estimatedBudget') &&
+          matched.totalAmount &&
+          matched.totalAmount > 0
+        ) {
           form.setFieldValue('estimatedBudget', matched.totalAmount)
         }
       } else {
         form.setFieldValue('targetLineItemBudgetId', undefined)
-        form.setFieldValue('linkedLibActivityId', undefined)
+        const targetActId =
+          preserveActivityId ||
+          selectedActivityId ||
+          form.getFieldValue('linkedLibActivityId') ||
+          draft?.linkedLibActivityId ||
+          draft?.targetLineItemBudgetActivityId
+        if (targetActId) {
+          setSelectedActivityId(targetActId)
+          form.setFieldValue('linkedLibActivityId', targetActId)
+          form.setFieldValue('targetLineItemBudgetActivityId', targetActId)
+        } else {
+          setSelectedActivityId('')
+          form.setFieldValue('linkedLibActivityId', undefined)
+          form.setFieldValue('targetLineItemBudgetActivityId', undefined)
+        }
       }
     } finally {
       setIsLoadingLibActivities(false)
@@ -496,13 +838,20 @@ export function ProjectOverviewForm({
     setCurrentStep(1)
   }, [setCurrentStep])
 
-  // Fetch users on mount
+  // Fetch users on mount and reconcile with draft representative
   useEffect(() => {
     const loadUsers = async () => {
       setIsLoadingUsers(true)
       try {
         const users = await fetchUsers()
         setAllUsers(users)
+        if (draft?.userId) {
+          const matchedUser = users.find((u) => u.id === draft.userId)
+          if (matchedUser) {
+            setSelectedUser(matchedUser)
+            setPersonnelSearchTerm(matchedUser.fullName)
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch users:', error)
         toast.error('Error', {
@@ -513,7 +862,74 @@ export function ProjectOverviewForm({
       }
     }
     loadUsers()
-  }, [toast])
+  }, [toast, draft?.userId])
+
+  // Auto-resolve LIB and Activity from draft target IDs or matching project name
+  useEffect(() => {
+    if (realLibActivities.length === 0) return
+
+    const targetActId =
+      selectedActivityId ||
+      draft?.linkedLibActivityId ||
+      draft?.targetLineItemBudgetActivityId ||
+      draft?.targetLineItemBudgetActivity?.id
+
+    if (targetActId) {
+      const found = realLibActivities.find((a) => a.id === targetActId)
+      if (found?.lineItemBudgetId) {
+        if (!selectedLibId) setSelectedLibId(found.lineItemBudgetId)
+        setScopingMode('lib')
+        setSelectedActivityId(found.id)
+        form.setFieldValue('linkedLibActivityId', found.id)
+        form.setFieldValue('targetLineItemBudgetActivityId', found.id)
+      }
+    } else if (draft?.projectName) {
+      const foundByName = realLibActivities.find(
+        (a) =>
+          a.name.trim().toLowerCase() ===
+          draft.projectName?.trim().toLowerCase(),
+      )
+      if (foundByName) {
+        setScopingMode('lib')
+        if (!selectedLibId) setSelectedLibId(foundByName.lineItemBudgetId)
+        setSelectedActivityId(foundByName.id)
+        form.setFieldValue('linkedLibActivityId', foundByName.id)
+        form.setFieldValue('targetLineItemBudgetActivityId', foundByName.id)
+      }
+    }
+  }, [selectedLibId, draft, realLibActivities, selectedActivityId])
+
+  // Hydrate LIB activities when realLibs loads and selectedLibId is present
+  const hasHydratedLibRef = useRef(false)
+  useEffect(() => {
+    if (selectedLibId && realLibs.length > 0 && !hasHydratedLibRef.current) {
+      hasHydratedLibRef.current = true
+      const targetActId =
+        selectedActivityId ||
+        draft?.linkedLibActivityId ||
+        draft?.targetLineItemBudgetActivityId ||
+        draft?.targetLineItemBudgetActivity?.id ||
+        realLibActivities.find(
+          (a) =>
+            a.name.trim().toLowerCase() ===
+            (draft?.projectName || '').trim().toLowerCase(),
+        )?.id
+      handleSelectLib(selectedLibId, targetActId)
+
+      // Sync fiscal year if needed
+      const matched = realLibs.find((l) => l.id === selectedLibId)
+      if (matched?.fiscalYear && matched.fiscalYear !== targetFiscalYear) {
+        setTargetFiscalYear(matched.fiscalYear)
+      }
+    }
+  }, [
+    selectedLibId,
+    realLibs,
+    draft,
+    targetFiscalYear,
+    selectedActivityId,
+    realLibActivities,
+  ])
 
   return (
     <div className="space-y-6">
@@ -521,7 +937,8 @@ export function ProjectOverviewForm({
         <CardHeader>
           <CardTitle>Project Overview</CardTitle>
           <CardDescription>
-            Provide basic information about your project and market scoping period
+            Provide basic information about your project and market scoping
+            period
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -534,11 +951,16 @@ export function ProjectOverviewForm({
           >
             {/* Personnel Selection Section */}
             <div className="border-t pt-6">
-              <h3 className="text-sm font-semibold mb-4">Representative Information</h3>
-              
+              <h3 className="text-sm font-semibold mb-4">
+                Representative Information
+              </h3>
+
               {/* User Search Field */}
               <div className="mb-4 relative">
-                <Label htmlFor="personnelSearch" className="text-sm font-medium">
+                <Label
+                  htmlFor="personnelSearch"
+                  className="text-sm font-medium"
+                >
                   Search Representative *
                 </Label>
                 <div className="relative mt-1.5">
@@ -572,7 +994,7 @@ export function ProjectOverviewForm({
                     </button>
                   )}
                 </div>
-                
+
                 {/* User Dropdown */}
                 {showPersonnelDropdown && filteredUsers.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
@@ -590,11 +1012,15 @@ export function ProjectOverviewForm({
                         }}
                         className={cn(
                           'w-full text-left px-4 py-3 hover:bg-blue-50 border-b last:border-b-0 transition-colors',
-                          selectedUser?.id === user.id && 'bg-blue-100'
+                          selectedUser?.id === user.id && 'bg-blue-100',
                         )}
                       >
-                        <div className="font-medium text-sm">{user.fullName}</div>
-                        <div className="text-xs text-gray-500">{user.email}</div>
+                        <div className="font-medium text-sm">
+                          {user.fullName}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {user.email}
+                        </div>
                         <div className="text-xs text-gray-500">
                           {user.employeeNumber} • {user.officeName}
                         </div>
@@ -602,41 +1028,68 @@ export function ProjectOverviewForm({
                     ))}
                   </div>
                 )}
-                
+
                 {/* No Results Message */}
-                {showPersonnelDropdown && personnelSearchTerm && filteredUsers.length === 0 && !isLoadingUsers && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500">
-                    No users found matching "{personnelSearchTerm}"
-                  </div>
-                )}
+                {showPersonnelDropdown &&
+                  personnelSearchTerm &&
+                  filteredUsers.length === 0 &&
+                  !isLoadingUsers && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500">
+                      No users found matching "{personnelSearchTerm}"
+                    </div>
+                  )}
               </div>
 
               {/* Display Selected User Details */}
               {selectedUser && (
                 <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div>
-                    <Label className="text-xs font-medium text-gray-600">Full Name</Label>
-                    <p className="text-sm font-medium mt-1">{selectedUser.fullName}</p>
+                    <Label className="text-xs font-medium text-gray-600">
+                      Full Name
+                    </Label>
+                    <p className="text-sm font-medium mt-1">
+                      {selectedUser.fullName}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-xs font-medium text-gray-600">Employee Number</Label>
-                    <p className="text-sm font-medium mt-1">{selectedUser.employeeNumber}</p>
+                    <Label className="text-xs font-medium text-gray-600">
+                      Employee Number
+                    </Label>
+                    <p className="text-sm font-medium mt-1">
+                      {selectedUser.employeeNumber}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-xs font-medium text-gray-600">Email</Label>
-                    <p className="text-sm font-medium mt-1">{selectedUser.email}</p>
+                    <Label className="text-xs font-medium text-gray-600">
+                      Email
+                    </Label>
+                    <p className="text-sm font-medium mt-1">
+                      {selectedUser.email}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-xs font-medium text-gray-600">Office</Label>
-                    <p className="text-sm font-medium mt-1">{selectedUser.officeName || 'N/A'}</p>
+                    <Label className="text-xs font-medium text-gray-600">
+                      Office
+                    </Label>
+                    <p className="text-sm font-medium mt-1">
+                      {selectedUser.officeName || 'N/A'}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-xs font-medium text-gray-600">Phone</Label>
-                    <p className="text-sm font-medium mt-1">{selectedUser.phoneNumber || 'N/A'}</p>
+                    <Label className="text-xs font-medium text-gray-600">
+                      Phone
+                    </Label>
+                    <p className="text-sm font-medium mt-1">
+                      {selectedUser.phoneNumber || 'N/A'}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-xs font-medium text-gray-600">Employment Status</Label>
-                    <p className="text-sm font-medium mt-1">{selectedUser.employmentStatus || 'N/A'}</p>
+                    <Label className="text-xs font-medium text-gray-600">
+                      Employment Status
+                    </Label>
+                    <p className="text-sm font-medium mt-1">
+                      {selectedUser.employmentStatus || 'N/A'}
+                    </p>
                   </div>
                 </div>
               )}
@@ -650,20 +1103,12 @@ export function ProjectOverviewForm({
               </p>
 
               <form.Field name="userId">
-                {(field) => (
-                  <input
-                    type="hidden"
-                    value={field.state.value}
-                  />
-                )}
+                {(field) => <input type="hidden" value={field.state.value} />}
               </form.Field>
 
               <form.Field name="targetLineItemBudgetId">
                 {(field) => (
-                  <input
-                    type="hidden"
-                    value={field.state.value || ''}
-                  />
+                  <input type="hidden" value={field.state.value || ''} />
                 )}
               </form.Field>
 
@@ -675,22 +1120,61 @@ export function ProjectOverviewForm({
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setScopingMode('lib')}
+                    onClick={() => {
+                      setScopingMode('lib')
+                      if (!selectedLibId) {
+                        const targetLib =
+                          initialTargetLibId ||
+                          draft?.targetLineItemBudgetId ||
+                          draft?.targetLineItemBudgetActivity
+                            ?.lineItemBudgetId ||
+                          realLibActivities.find(
+                            (a) =>
+                              a.name.trim().toLowerCase() ===
+                              (draft?.projectName || '').trim().toLowerCase(),
+                          )?.lineItemBudgetId
+                        if (targetLib) {
+                          setSelectedLibId(targetLib)
+                          const targetAct =
+                            selectedActivityId ||
+                            initialTargetActivityId ||
+                            realLibActivities.find(
+                              (a) =>
+                                a.name.trim().toLowerCase() ===
+                                (draft?.projectName || '').trim().toLowerCase(),
+                            )?.id
+                          if (targetAct) {
+                            setSelectedActivityId(targetAct)
+                          }
+                          handleSelectLib(targetLib, targetAct)
+                        }
+                      }
+                    }}
                     className={cn(
                       'p-3.5 rounded-xl border text-left transition-all',
                       scopingMode === 'lib'
                         ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                        : 'border-slate-200 hover:border-slate-300 bg-white',
                     )}
                   >
                     <div className="font-semibold text-sm text-slate-900 flex items-center gap-2">
-                      <span className={cn('w-4 h-4 rounded-full border flex items-center justify-center', scopingMode === 'lib' ? 'border-primary bg-primary text-white' : 'border-slate-300')}>
-                        {scopingMode === 'lib' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      <span
+                        className={cn(
+                          'w-4 h-4 rounded-full border flex items-center justify-center',
+                          scopingMode === 'lib'
+                            ? 'border-primary bg-primary text-white'
+                            : 'border-slate-300',
+                        )}
+                      >
+                        {scopingMode === 'lib' && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                        )}
                       </span>
                       Link to Line Item Budget
                     </div>
                     <p className="text-xs text-slate-500 mt-1 pl-6">
-                      Connect to a Project-level or Activity-level Line Item Budget to auto-fill project name & budget.
+                      Connect to a Project-level or Activity-level Line Item
+                      Budget to auto-fill project name & budget.
                     </p>
                   </button>
 
@@ -698,24 +1182,39 @@ export function ProjectOverviewForm({
                     type="button"
                     onClick={() => {
                       setScopingMode('standalone')
+                      setSelectedActivityId('')
                       form.setFieldValue('targetLineItemBudgetId', undefined)
                       form.setFieldValue('linkedLibActivityId', undefined)
+                      form.setFieldValue(
+                        'targetLineItemBudgetActivityId',
+                        undefined,
+                      )
                     }}
                     className={cn(
                       'p-3.5 rounded-xl border text-left transition-all',
                       scopingMode === 'standalone'
                         ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                        : 'border-slate-200 hover:border-slate-300 bg-white',
                     )}
                   >
                     <div className="font-semibold text-sm text-slate-900 flex items-center gap-2">
-                      <span className={cn('w-4 h-4 rounded-full border flex items-center justify-center', scopingMode === 'standalone' ? 'border-primary bg-primary text-white' : 'border-slate-300')}>
-                        {scopingMode === 'standalone' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      <span
+                        className={cn(
+                          'w-4 h-4 rounded-full border flex items-center justify-center',
+                          scopingMode === 'standalone'
+                            ? 'border-primary bg-primary text-white'
+                            : 'border-slate-300',
+                        )}
+                      >
+                        {scopingMode === 'standalone' && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                        )}
                       </span>
                       Standalone / Pre-LIB Scoping
                     </div>
                     <p className="text-xs text-slate-500 mt-1 pl-6">
-                      For budget proposal preparation or ad-hoc scoping before an LIB is approved.
+                      For budget proposal preparation or ad-hoc scoping before
+                      an LIB is approved.
                     </p>
                   </button>
                 </div>
@@ -727,7 +1226,9 @@ export function ProjectOverviewForm({
                   {/* Top Bar: Office & FY Filter info */}
                   <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
                     <div>
-                      <span className="text-xs font-semibold text-slate-700 block">Office / Department Context:</span>
+                      <span className="text-xs font-semibold text-slate-700 block">
+                        Office / Department Context:
+                      </span>
                       {selectedUser ? (
                         <span className="text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-flex items-center gap-1.5 mt-0.5">
                           {selectedUser.officeName || 'No office assigned'}
@@ -739,16 +1240,28 @@ export function ProjectOverviewForm({
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="fySelect" className="text-xs font-semibold text-slate-700 block mb-1">
+                      <Label
+                        htmlFor="fySelect"
+                        className="text-xs font-semibold text-slate-700 block mb-1"
+                      >
                         Target Fiscal Year
                       </Label>
-                      <Select value={targetFiscalYear} onValueChange={(fy) => {
-                        setTargetFiscalYear(fy)
-                        setSelectedLibId('')
-                        form.setFieldValue('targetLineItemBudgetId', undefined)
-                        form.setFieldValue('linkedLibActivityId', undefined)
-                      }}>
-                        <SelectTrigger id="fySelect" className="h-8 text-xs bg-white w-32 font-medium">
+                      <Select
+                        value={targetFiscalYear}
+                        onValueChange={(fy) => {
+                          setTargetFiscalYear(fy)
+                          setSelectedLibId('')
+                          form.setFieldValue(
+                            'targetLineItemBudgetId',
+                            undefined,
+                          )
+                          form.setFieldValue('linkedLibActivityId', undefined)
+                        }}
+                      >
+                        <SelectTrigger
+                          id="fySelect"
+                          className="h-8 text-xs bg-white w-32 font-medium"
+                        >
                           <SelectValue placeholder="FY Year" />
                         </SelectTrigger>
                         <SelectContent>
@@ -764,7 +1277,10 @@ export function ProjectOverviewForm({
 
                   {/* Dropdown 1: Select Approved Line Item Budget (LIB) */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="libSelect" className="text-xs font-semibold text-slate-900">
+                    <Label
+                      htmlFor="libSelect"
+                      className="text-xs font-semibold text-slate-900"
+                    >
                       1. Select Approved Line Item Budget (LIB) *
                     </Label>
                     <Select
@@ -772,27 +1288,45 @@ export function ProjectOverviewForm({
                       disabled={!selectedUser}
                       onValueChange={handleSelectLib}
                     >
-                      <SelectTrigger id="libSelect" className="bg-white text-sm">
-                        <SelectValue placeholder={selectedUser ? `Select an approved LIB for ${selectedUser.officeName || 'office'} (${targetFiscalYear})...` : 'Select a representative first'} />
+                      <SelectTrigger
+                        id="libSelect"
+                        className="bg-white text-sm"
+                      >
+                        <SelectValue
+                          placeholder={
+                            selectedUser
+                              ? `Select an approved LIB for ${selectedUser.officeName || 'office'} (${targetFiscalYear})...`
+                              : 'Select a representative first'
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {!selectedUser ? (
                           <div className="p-3 text-xs text-slate-500 text-center">
-                            Please select a representative user first to view available LIBs
+                            Please select a representative user first to view
+                            available LIBs
                           </div>
                         ) : filteredLibs.length === 0 ? (
                           <div className="p-3 text-xs text-slate-500 text-center">
-                            No approved LIBs found for {selectedUser.officeName || 'office'} in FY {targetFiscalYear}
+                            No approved LIBs found for{' '}
+                            {selectedUser.officeName || 'office'} in FY{' '}
+                            {targetFiscalYear}
                           </div>
                         ) : (
                           filteredLibs.map((lib) => {
-                            const isLibScoped = (lib.scope === 'Project' || lib.scope === 'ProjectLevel') && scopedLibMap.has(lib.id)
+                            const isLibScoped =
+                              (lib.scope === 'Project' ||
+                                lib.scope === 'ProjectLevel') &&
+                              scopedLibMap.has(lib.id)
                             return (
                               <SelectItem
                                 key={lib.id}
                                 value={lib.id}
                                 disabled={isLibScoped}
-                                className={cn(isLibScoped && 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400')}
+                                className={cn(
+                                  isLibScoped &&
+                                    'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400',
+                                )}
                               >
                                 <div className="flex items-center justify-between w-full gap-2">
                                   <span>{lib.title}</span>
@@ -819,23 +1353,32 @@ export function ProjectOverviewForm({
                             ✓ Project Scope Linked
                           </span>
                           <span className="text-xs text-emerald-900 font-medium">
-                            Project-level Line Item Budget (no activity selection required)
+                            Project-level Line Item Budget (no activity
+                            selection required)
                           </span>
                         </div>
                         <span className="text-xs font-bold text-emerald-700">
-                          Budget: ₱{(form.getFieldValue('estimatedBudget') || 0).toLocaleString()}
+                          Budget: ₱
+                          {(
+                            form.getFieldValue('estimatedBudget') || 0
+                          ).toLocaleString()}
                         </span>
                       </div>
                     </div>
                   ) : (
                     <form.Field name="linkedLibActivityId">
                       {(field) => {
-                        const selectedLibActivity = availableActivities.find((a) => a.id === field.state.value)
+                        const selectedLibActivity = availableActivities.find(
+                          (a) => a.id === field.state.value,
+                        )
 
                         return (
                           <div className="space-y-1.5 pt-2 border-t border-slate-200/80">
                             <div className="flex items-center justify-between">
-                              <Label htmlFor={field.name} className="text-xs font-semibold text-slate-900">
+                              <Label
+                                htmlFor={field.name}
+                                className="text-xs font-semibold text-slate-900"
+                              >
                                 2. Select Target LIB Activity (API) *
                               </Label>
                               {selectedLibActivity && (
@@ -845,35 +1388,62 @@ export function ProjectOverviewForm({
                               )}
                             </div>
                             <Select
-                              disabled={!selectedLibId && filteredLibs.length > 0}
-                              value={field.state.value || ''}
+                              disabled={
+                                !selectedLibId && filteredLibs.length > 0
+                              }
+                              value={
+                                field.state.value || selectedActivityId || ''
+                              }
                               onValueChange={(val) => {
-                                const matched = availableActivities.find((a) => a.id === val)
+                                const matched = availableActivities.find(
+                                  (a) => a.id === val,
+                                )
                                 if (matched?.isScoped) {
                                   toast.warning('Activity Already Scoped', {
-                                    description: 'A Market Scoping Form has already been created for this LIB Activity.',
+                                    description:
+                                      'A Market Scoping Form has already been created for this LIB Activity.',
                                   })
                                   return
                                 }
+                                setSelectedActivityId(val)
                                 field.handleChange(val)
-                                form.setFieldValue('targetLineItemBudgetId', undefined)
+                                form.setFieldValue('linkedLibActivityId', val)
+                                form.setFieldValue(
+                                  'targetLineItemBudgetActivityId',
+                                  val,
+                                )
+                                form.setFieldValue(
+                                  'targetLineItemBudgetId',
+                                  undefined,
+                                )
                                 if (matched) {
-                                  form.setFieldValue('projectName', matched.name)
-                                  form.setFieldValue('estimatedBudget', matched.budget)
+                                  form.setFieldValue(
+                                    'projectName',
+                                    matched.name,
+                                  )
+                                  form.setFieldValue(
+                                    'estimatedBudget',
+                                    matched.budget,
+                                  )
                                   toast.success('LIB Activity Linked', {
                                     description: `Auto-filled Project Name ("${matched.name}") and Approved Budget (₱${matched.budget.toLocaleString()}). You can adjust these if needed.`,
                                   })
                                 }
                               }}
                             >
-                              <SelectTrigger id={field.name} className="bg-white text-sm">
-                                <SelectValue placeholder={
-                                  isLoadingLibActivities
-                                    ? "Loading activities..."
-                                    : selectedLibId
-                                      ? "Select an activity under this LIB..."
-                                      : "Please select an LIB first"
-                                } />
+                              <SelectTrigger
+                                id={field.name}
+                                className="bg-white text-sm"
+                              >
+                                <SelectValue
+                                  placeholder={
+                                    isLoadingLibActivities
+                                      ? 'Loading activities...'
+                                      : selectedLibId
+                                        ? 'Select an activity under this LIB...'
+                                        : 'Please select an LIB first'
+                                  }
+                                />
                               </SelectTrigger>
                               <SelectContent>
                                 {availableActivities.map((activity) => {
@@ -885,14 +1455,21 @@ export function ProjectOverviewForm({
                                       value={activity.id}
                                       disabled={isScoped}
                                       className={cn(
-                                        isScoped && "opacity-50 cursor-not-allowed bg-slate-50 text-slate-400"
+                                        isScoped &&
+                                          'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400',
                                       )}
                                     >
                                       <div className="flex items-center justify-between w-full gap-2">
-                                        <span>{activity.name} — ₱{activity.budget.toLocaleString()}</span>
+                                        <span>
+                                          {activity.name} — ₱
+                                          {activity.budget.toLocaleString()}
+                                        </span>
                                         {isScoped && (
                                           <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                            🔒 {msfCode ? `Already Scoped (${msfCode})` : 'Already Scoped'}
+                                            🔒{' '}
+                                            {msfCode
+                                              ? `Already Scoped (${msfCode})`
+                                              : 'Already Scoped'}
                                           </span>
                                         )}
                                       </div>
@@ -904,7 +1481,9 @@ export function ProjectOverviewForm({
                             {selectedLibActivity && (
                               <div className="mt-2 pt-2 flex items-center justify-between text-xs text-slate-600 bg-white p-2 rounded border border-emerald-200">
                                 <span>Allocated API Budget Ceiling:</span>
-                                <span className="font-bold text-emerald-700">₱{selectedLibActivity.budget.toLocaleString()}</span>
+                                <span className="font-bold text-emerald-700">
+                                  ₱{selectedLibActivity.budget.toLocaleString()}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -944,7 +1523,8 @@ export function ProjectOverviewForm({
                       type="number"
                       value={field.state.value === 0 ? '' : field.state.value}
                       onChange={(e) => {
-                        const val = e.target.value === '' ? 0 : parseFloat(e.target.value)
+                        const val =
+                          e.target.value === '' ? 0 : parseFloat(e.target.value)
                         field.handleChange(isNaN(val) ? 0 : val)
                       }}
                       onBlur={field.handleBlur}
@@ -959,16 +1539,22 @@ export function ProjectOverviewForm({
                 <form.Field name="periodFrom">
                   {(field) => (
                     <div>
-                      <Label htmlFor={field.name} className="text-sm font-medium">
+                      <Label
+                        htmlFor={field.name}
+                        className="text-sm font-medium"
+                      >
                         Period From (mm/yyyy) *
                       </Label>
-                      <Popover open={periodFromOpen} onOpenChange={setPeriodFromOpen}>
+                      <Popover
+                        open={periodFromOpen}
+                        onOpenChange={setPeriodFromOpen}
+                      >
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             className={cn(
                               'w-full justify-start text-left font-normal mt-1.5',
-                              !field.state.value && 'text-muted-foreground'
+                              !field.state.value && 'text-muted-foreground',
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -978,11 +1564,19 @@ export function ProjectOverviewForm({
                         <PopoverContent className="w-auto p-0" align="start">
                           <div className="p-3 space-y-2">
                             <div className="space-y-2">
-                              <Label className="text-xs font-medium">Month</Label>
+                              <Label className="text-xs font-medium">
+                                Month
+                              </Label>
                               <Select
-                                value={field.state.value ? field.state.value.split('/')[0] : ''}
+                                value={
+                                  field.state.value
+                                    ? field.state.value.split('/')[0]
+                                    : ''
+                                }
                                 onValueChange={(month) => {
-                                  const year = field.state.value?.split('/')[1] || new Date().getFullYear().toString()
+                                  const year =
+                                    field.state.value?.split('/')[1] ||
+                                    new Date().getFullYear().toString()
                                   field.handleChange(`${month}/${year}`)
                                 }}
                               >
@@ -991,19 +1585,32 @@ export function ProjectOverviewForm({
                                 </SelectTrigger>
                                 <SelectContent>
                                   {Array.from({ length: 12 }, (_, i) => (
-                                    <SelectItem key={i} value={String(i + 1).padStart(2, '0')}>
-                                      {new Date(2024, i, 1).toLocaleString('default', { month: 'long' })}
+                                    <SelectItem
+                                      key={i}
+                                      value={String(i + 1).padStart(2, '0')}
+                                    >
+                                      {new Date(2024, i, 1).toLocaleString(
+                                        'default',
+                                        { month: 'long' },
+                                      )}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-xs font-medium">Year</Label>
+                              <Label className="text-xs font-medium">
+                                Year
+                              </Label>
                               <Select
-                                value={field.state.value ? field.state.value.split('/')[1] : ''}
+                                value={
+                                  field.state.value
+                                    ? field.state.value.split('/')[1]
+                                    : ''
+                                }
                                 onValueChange={(year) => {
-                                  const month = field.state.value?.split('/')[0] || '01'
+                                  const month =
+                                    field.state.value?.split('/')[0] || '01'
                                   field.handleChange(`${month}/${year}`)
                                 }}
                               >
@@ -1012,9 +1619,13 @@ export function ProjectOverviewForm({
                                 </SelectTrigger>
                                 <SelectContent>
                                   {Array.from({ length: 10 }, (_, i) => {
-                                    const year = new Date().getFullYear() - 2 + i
+                                    const year =
+                                      new Date().getFullYear() - 2 + i
                                     return (
-                                      <SelectItem key={year} value={year.toString()}>
+                                      <SelectItem
+                                        key={year}
+                                        value={year.toString()}
+                                      >
                                         {year}
                                       </SelectItem>
                                     )
@@ -1044,16 +1655,22 @@ export function ProjectOverviewForm({
                 <form.Field name="periodTo">
                   {(field) => (
                     <div>
-                      <Label htmlFor={field.name} className="text-sm font-medium">
+                      <Label
+                        htmlFor={field.name}
+                        className="text-sm font-medium"
+                      >
                         Period To (mm/yyyy) *
                       </Label>
-                      <Popover open={periodToOpen} onOpenChange={setPeriodToOpen}>
+                      <Popover
+                        open={periodToOpen}
+                        onOpenChange={setPeriodToOpen}
+                      >
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             className={cn(
                               'w-full justify-start text-left font-normal mt-1.5',
-                              !field.state.value && 'text-muted-foreground'
+                              !field.state.value && 'text-muted-foreground',
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1063,11 +1680,19 @@ export function ProjectOverviewForm({
                         <PopoverContent className="w-auto p-0" align="start">
                           <div className="p-3 space-y-2">
                             <div className="space-y-2">
-                              <Label className="text-xs font-medium">Month</Label>
+                              <Label className="text-xs font-medium">
+                                Month
+                              </Label>
                               <Select
-                                value={field.state.value ? field.state.value.split('/')[0] : ''}
+                                value={
+                                  field.state.value
+                                    ? field.state.value.split('/')[0]
+                                    : ''
+                                }
                                 onValueChange={(month) => {
-                                  const year = field.state.value?.split('/')[1] || new Date().getFullYear().toString()
+                                  const year =
+                                    field.state.value?.split('/')[1] ||
+                                    new Date().getFullYear().toString()
                                   field.handleChange(`${month}/${year}`)
                                 }}
                               >
@@ -1076,19 +1701,32 @@ export function ProjectOverviewForm({
                                 </SelectTrigger>
                                 <SelectContent>
                                   {Array.from({ length: 12 }, (_, i) => (
-                                    <SelectItem key={i} value={String(i + 1).padStart(2, '0')}>
-                                      {new Date(2024, i, 1).toLocaleString('default', { month: 'long' })}
+                                    <SelectItem
+                                      key={i}
+                                      value={String(i + 1).padStart(2, '0')}
+                                    >
+                                      {new Date(2024, i, 1).toLocaleString(
+                                        'default',
+                                        { month: 'long' },
+                                      )}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-xs font-medium">Year</Label>
+                              <Label className="text-xs font-medium">
+                                Year
+                              </Label>
                               <Select
-                                value={field.state.value ? field.state.value.split('/')[1] : ''}
+                                value={
+                                  field.state.value
+                                    ? field.state.value.split('/')[1]
+                                    : ''
+                                }
                                 onValueChange={(year) => {
-                                  const month = field.state.value?.split('/')[0] || '01'
+                                  const month =
+                                    field.state.value?.split('/')[0] || '01'
                                   field.handleChange(`${month}/${year}`)
                                 }}
                               >
@@ -1097,9 +1735,13 @@ export function ProjectOverviewForm({
                                 </SelectTrigger>
                                 <SelectContent>
                                   {Array.from({ length: 10 }, (_, i) => {
-                                    const year = new Date().getFullYear() - 2 + i
+                                    const year =
+                                      new Date().getFullYear() - 2 + i
                                     return (
-                                      <SelectItem key={year} value={year.toString()}>
+                                      <SelectItem
+                                        key={year}
+                                        value={year.toString()}
+                                      >
                                         {year}
                                       </SelectItem>
                                     )
@@ -1128,13 +1770,16 @@ export function ProjectOverviewForm({
                     <Label htmlFor={field.name} className="text-sm font-medium">
                       Expected Date of Delivery (mm/yyyy) *
                     </Label>
-                    <Popover open={expectedDeliveryDateOpen} onOpenChange={setExpectedDeliveryDateOpen}>
+                    <Popover
+                      open={expectedDeliveryDateOpen}
+                      onOpenChange={setExpectedDeliveryDateOpen}
+                    >
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           className={cn(
                             'w-full justify-start text-left font-normal mt-1.5',
-                            !field.state.value && 'text-muted-foreground'
+                            !field.state.value && 'text-muted-foreground',
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1146,9 +1791,15 @@ export function ProjectOverviewForm({
                           <div className="space-y-2">
                             <Label className="text-xs font-medium">Month</Label>
                             <Select
-                              value={field.state.value ? field.state.value.split('/')[0] : ''}
+                              value={
+                                field.state.value
+                                  ? field.state.value.split('/')[0]
+                                  : ''
+                              }
                               onValueChange={(month) => {
-                                const year = field.state.value?.split('/')[1] || new Date().getFullYear().toString()
+                                const year =
+                                  field.state.value?.split('/')[1] ||
+                                  new Date().getFullYear().toString()
                                 field.handleChange(`${month}/${year}`)
                               }}
                             >
@@ -1157,8 +1808,14 @@ export function ProjectOverviewForm({
                               </SelectTrigger>
                               <SelectContent>
                                 {Array.from({ length: 12 }, (_, i) => (
-                                  <SelectItem key={i} value={String(i + 1).padStart(2, '0')}>
-                                    {new Date(2024, i, 1).toLocaleString('default', { month: 'long' })}
+                                  <SelectItem
+                                    key={i}
+                                    value={String(i + 1).padStart(2, '0')}
+                                  >
+                                    {new Date(2024, i, 1).toLocaleString(
+                                      'default',
+                                      { month: 'long' },
+                                    )}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1167,9 +1824,14 @@ export function ProjectOverviewForm({
                           <div className="space-y-2">
                             <Label className="text-xs font-medium">Year</Label>
                             <Select
-                              value={field.state.value ? field.state.value.split('/')[1] : ''}
+                              value={
+                                field.state.value
+                                  ? field.state.value.split('/')[1]
+                                  : ''
+                              }
                               onValueChange={(year) => {
-                                const month = field.state.value?.split('/')[0] || '01'
+                                const month =
+                                  field.state.value?.split('/')[0] || '01'
                                 field.handleChange(`${month}/${year}`)
                               }}
                             >
@@ -1180,7 +1842,10 @@ export function ProjectOverviewForm({
                                 {Array.from({ length: 10 }, (_, i) => {
                                   const year = new Date().getFullYear() - 2 + i
                                   return (
-                                    <SelectItem key={year} value={year.toString()}>
+                                    <SelectItem
+                                      key={year}
+                                      value={year.toString()}
+                                    >
                                       {year}
                                     </SelectItem>
                                   )
@@ -1203,9 +1868,43 @@ export function ProjectOverviewForm({
               </form.Field>
             </div>
 
-            <Button type="submit" className="w-full">
-              Next: Activities Conducted
-            </Button>
+            <div className="flex justify-end items-center gap-3 pt-4 border-t">
+              {onSaveDraft && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    onSaveDraft({
+                      ...form.state.values,
+                      representativeName: selectedUser?.fullName || '',
+                      representativeDesignation:
+                        selectedUser?.employmentStatus || '',
+                      departmentUnit: selectedUser?.officeName || '',
+                      agencyName: selectedUser?.officeName || '',
+                      targetLineItemBudgetId:
+                        scopingMode === 'lib' && isProjectScopeLib
+                          ? selectedLibId
+                          : undefined,
+                      linkedLibActivityId:
+                        scopingMode === 'lib' && !isProjectScopeLib
+                          ? form.state.values.linkedLibActivityId ||
+                            draft?.linkedLibActivityId ||
+                            draft?.targetLineItemBudgetActivityId
+                          : undefined,
+                      targetLineItemBudgetActivityId:
+                        scopingMode === 'lib' && !isProjectScopeLib
+                          ? form.state.values.linkedLibActivityId ||
+                            draft?.linkedLibActivityId ||
+                            draft?.targetLineItemBudgetActivityId
+                          : undefined,
+                    })
+                  }
+                >
+                  Save as Draft
+                </Button>
+              )}
+              <Button type="submit">Next: Activities Conducted</Button>
+            </div>
           </form>
         </CardContent>
       </Card>

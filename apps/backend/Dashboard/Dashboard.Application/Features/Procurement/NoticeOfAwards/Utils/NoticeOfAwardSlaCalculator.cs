@@ -123,7 +123,7 @@ public static class NoticeOfAwardSlaCalculator
                 ReceivedDate = receivedDate.Value.ToString("yyyy-MM-dd"),
                 DeadlineDate = deadlineDate.ToString("yyyy-MM-dd"),
                 DaysRemaining = Math.Max(0, deadlineDate.DayNumber - today.DayNumber),
-                ElapsedDays = Math.Max(0, today.DayNumber - issuedDate.DayNumber),
+                ElapsedDays = Math.Max(0, today.DayNumber - receivedDate.Value.DayNumber),
                 ProgressPercent = 100,
                 CompletedMilestones = 3,
                 TotalMilestones = 3,
@@ -134,7 +134,7 @@ public static class NoticeOfAwardSlaCalculator
         }
 
         var daysRemaining = deadlineDate.DayNumber - today.DayNumber;
-        var elapsedDays = Math.Max(0, today.DayNumber - issuedDate.DayNumber);
+        var elapsedDays = Math.Max(0, today.DayNumber - receivedDate.Value.DayNumber);
         var isOverdue = today > deadlineDate;
 
         return new NoticeOfAwardSlaStateDto

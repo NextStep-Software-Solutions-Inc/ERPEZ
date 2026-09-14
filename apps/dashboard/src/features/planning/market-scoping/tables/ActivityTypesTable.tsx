@@ -79,7 +79,9 @@ export default function ActivityTypesTable({
               <TableCell className="text-gray-600 text-sm max-w-xs truncate">
                 {activity.description}
               </TableCell>
-              <TableCell className="text-center text-sm">{activity.sortOrder}</TableCell>
+              <TableCell className="text-center text-sm">
+                {activity.sortOrder}
+              </TableCell>
               <TableCell className="text-center">
                 <Badge
                   color={activity.isActive ? 'default' : 'secondary'}

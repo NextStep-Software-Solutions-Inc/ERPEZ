@@ -5,7 +5,14 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { FolderKanban, Calendar, Building2, User2, DollarSign, Clock } from 'lucide-react'
+import {
+  FolderKanban,
+  Calendar,
+  Building2,
+  User2,
+  DollarSign,
+  Clock,
+} from 'lucide-react'
 import { formatCurrency, formatHumanDate } from '../utils/transformers'
 import type { MarketScopingForm } from '../types/marketScopingTypes'
 
@@ -30,7 +37,10 @@ export function ProjectOverviewSection({ form }: ProjectOverviewSectionProps) {
               <FolderKanban className="w-3.5 h-3.5 text-indigo-500" />
               <span>Project Name</span>
             </div>
-            <p className="text-sm font-semibold text-slate-900 truncate" title={form.projectName}>
+            <p
+              className="text-sm font-semibold text-slate-900 truncate"
+              title={form.projectName}
+            >
               {form.projectName}
             </p>
           </div>
@@ -55,7 +65,8 @@ export function ProjectOverviewSection({ form }: ProjectOverviewSectionProps) {
               <span>Scoping Period</span>
             </div>
             <p className="text-sm font-medium text-slate-800">
-              {formatHumanDate(form.periodFrom)} – {formatHumanDate(form.periodTo)}
+              {formatHumanDate(form.periodFrom)} –{' '}
+              {formatHumanDate(form.periodTo)}
             </p>
           </div>
 
@@ -76,7 +87,9 @@ export function ProjectOverviewSection({ form }: ProjectOverviewSectionProps) {
               <Building2 className="w-3.5 h-3.5 text-purple-500" />
               <span>Agency</span>
             </div>
-            <p className="text-sm font-medium text-slate-800">{form.agencyName || 'USTP System'}</p>
+            <p className="text-sm font-medium text-slate-800">
+              {form.agencyName || 'N/A'}
+            </p>
           </div>
 
           {/* Department / Unit */}
@@ -85,7 +98,9 @@ export function ProjectOverviewSection({ form }: ProjectOverviewSectionProps) {
               <User2 className="w-3.5 h-3.5 text-sky-500" />
               <span>Department / Unit</span>
             </div>
-            <p className="text-sm font-medium text-slate-800">{form.departmentUnit || 'N/A'}</p>
+            <p className="text-sm font-medium text-slate-800">
+              {form.departmentUnit || 'N/A'}
+            </p>
           </div>
         </div>
       </CardContent>

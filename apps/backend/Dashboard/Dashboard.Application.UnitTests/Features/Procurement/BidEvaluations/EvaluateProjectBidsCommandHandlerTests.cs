@@ -700,4 +700,376 @@ public class EvaluateProjectBidsCommandHandlerTests
         await act.Should().ThrowAsync<FluentValidation.ValidationException>()
             .WithMessage("Cannot re-evaluate bids: Post-qualification has already been concluded for one or more candidates.");
     }
+
+    [Fact]
+    public async Task Handle_WhenMEARB_ResponsiveBidderMissingTechnicalScore_ThrowsValidationException()
+    {
+        using var context = NoticeOfAwardTestHelpers.CreateInMemoryDbContext();
+        var uow = NoticeOfAwardTestHelpers.CreateUnitOfWork(context);
+
+        var project = new ProcurementProject
+        {
+            Id = Guid.NewGuid(),
+            Title = "MEARB Missing Tech Score Project",
+            ABC = 50_000m,
+            Status = "Posted",
+            CreatedBy = "Admin"
+        };
+        await context.ProcurementProjects!.AddAsync(project);
+
+        var supplier = new Supplier { Id = Guid.NewGuid(), Name = "Supplier Alpha", CreatedBy = "Admin" };
+        await context.Suppliers!.AddAsync(supplier);
+
+        var sub = new BiddingSubmission
+        {
+            Id = Guid.NewGuid(),
+            ProcurementProjectId = project.Id,
+            SupplierId = supplier.Id,
+            OriginalProposedAmount = 14_000m,
+            CreatedBy = "Admin"
+        };
+        await context.BiddingSubmissions!.AddAsync(sub);
+
+        var open = new BidOpeningRecord
+        {
+            Id = Guid.NewGuid(),
+            BiddingSubmissionId = sub.Id,
+            Envelope1Result = "Passed",
+            Envelope2Opened = true,
+            AsReadBidAmount = 14_000m,
+            CreatedBy = "Admin"
+        };
+        await context.BidOpeningRecords!.AddAsync(open);
+        await context.SaveChangesAsync();
+
+        var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
+        var command = new EvaluateProjectBidsCommand
+        {
+            ProjectId = project.Id,
+            Request = new EvaluateProjectBidsRequest
+            {
+                AwardCriterion = "MEARB",
+                TechnicalWeight = 60m,
+                FinancialWeight = 40m,
+                Bidders =
+                [
+                    new BidderEvaluationInput
+                    {
+                        BidOpeningRecordId = open.Id,
+                        EvaluatedBidPrice = 14_000m,
+                        TechnicalScore = null, // Missing!
+                        IsResponsive = true
+                    }
+                ]
+            }
+        };
+
+        var act = () => handler.Handle(command, CancellationToken.None);
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>()
+            .WithMessage("*Technical score is required for all responsive bidders under MEARB evaluation*");
+    }
+
+    [Theory]
+    [InlineData(-5)]
+    [InlineData(105)]
+    public async Task Handle_WhenMEARB_TechnicalScoreOutOfRange_ThrowsValidationException(decimal invalidScore)
+    {
+        using var context = NoticeOfAwardTestHelpers.CreateInMemoryDbContext();
+        var uow = NoticeOfAwardTestHelpers.CreateUnitOfWork(context);
+
+        var project = new ProcurementProject
+        {
+            Id = Guid.NewGuid(),
+            Title = "MEARB Invalid Tech Score Project",
+            ABC = 50_000m,
+            Status = "Posted",
+            CreatedBy = "Admin"
+        };
+        await context.ProcurementProjects!.AddAsync(project);
+
+        var supplier = new Supplier { Id = Guid.NewGuid(), Name = "Supplier Beta", CreatedBy = "Admin" };
+        await context.Suppliers!.AddAsync(supplier);
+
+        var sub = new BiddingSubmission
+        {
+            Id = Guid.NewGuid(),
+            ProcurementProjectId = project.Id,
+            SupplierId = supplier.Id,
+            OriginalProposedAmount = 14_000m,
+            CreatedBy = "Admin"
+        };
+        await context.BiddingSubmissions!.AddAsync(sub);
+
+        var open = new BidOpeningRecord
+        {
+            Id = Guid.NewGuid(),
+            BiddingSubmissionId = sub.Id,
+            Envelope1Result = "Passed",
+            Envelope2Opened = true,
+            AsReadBidAmount = 14_000m,
+            CreatedBy = "Admin"
+        };
+        await context.BidOpeningRecords!.AddAsync(open);
+        await context.SaveChangesAsync();
+
+        var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
+        var command = new EvaluateProjectBidsCommand
+        {
+            ProjectId = project.Id,
+            Request = new EvaluateProjectBidsRequest
+            {
+                AwardCriterion = "MEARB",
+                TechnicalWeight = 60m,
+                FinancialWeight = 40m,
+                Bidders =
+                [
+                    new BidderEvaluationInput
+                    {
+                        BidOpeningRecordId = open.Id,
+                        EvaluatedBidPrice = 14_000m,
+                        TechnicalScore = invalidScore,
+                        IsResponsive = true
+                    }
+                ]
+            }
+        };
+
+        var act = () => handler.Handle(command, CancellationToken.None);
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>()
+            .WithMessage("*must be between 0 and 100*");
+    }
+
+    [Fact]
+    public async Task Handle_WhenMEARB_RealisticNon7030_HigherPriceTechnicallyStrongerBidderWins()
+    {
+        // Controlled test scenario:
+        // ABC = ₱10,000,000
+        // Weighting: 60% Technical / 40% Financial
+        // Supplier LowCost: ₱8,000,000 bid, 78.00 technical score -> NormFin = 100.00, TotalScore = 86.80
+        // Supplier HighQuality: ₱9,000,000 bid, 96.00 technical score -> NormFin = 88.89, TotalScore = 93.16
+        // HighQuality wins Rank 1 despite being ₱1,000,000 higher in price.
+        using var context = NoticeOfAwardTestHelpers.CreateInMemoryDbContext();
+        var uow = NoticeOfAwardTestHelpers.CreateUnitOfWork(context);
+
+        var project = new ProcurementProject
+        {
+            Id = Guid.NewGuid(),
+            Title = "MEARB Enterprise Software Solution",
+            ABC = 10_000_000m,
+            Status = "Posted",
+            CreatedBy = "Admin"
+        };
+        await context.ProcurementProjects!.AddAsync(project);
+
+        var supLowCost = new Supplier { Id = Guid.NewGuid(), Name = "LowCost Vendor Inc.", CreatedBy = "Admin" };
+        var supHighQuality = new Supplier { Id = Guid.NewGuid(), Name = "HighQuality Solutions Corp.", CreatedBy = "Admin" };
+        await context.Suppliers!.AddRangeAsync(supLowCost, supHighQuality);
+
+        var subLowCost = new BiddingSubmission
+        {
+            Id = Guid.NewGuid(),
+            ProcurementProjectId = project.Id,
+            SupplierId = supLowCost.Id,
+            OriginalProposedAmount = 8_000_000m,
+            CreatedBy = "Admin"
+        };
+        var subHighQuality = new BiddingSubmission
+        {
+            Id = Guid.NewGuid(),
+            ProcurementProjectId = project.Id,
+            SupplierId = supHighQuality.Id,
+            OriginalProposedAmount = 9_000_000m,
+            CreatedBy = "Admin"
+        };
+        await context.BiddingSubmissions!.AddRangeAsync(subLowCost, subHighQuality);
+
+        var openLowCost = new BidOpeningRecord
+        {
+            Id = Guid.NewGuid(),
+            BiddingSubmissionId = subLowCost.Id,
+            Envelope1Result = "Passed",
+            Envelope2Opened = true,
+            AsReadBidAmount = 8_000_000m,
+            CreatedBy = "Admin"
+        };
+        var openHighQuality = new BidOpeningRecord
+        {
+            Id = Guid.NewGuid(),
+            BiddingSubmissionId = subHighQuality.Id,
+            Envelope1Result = "Passed",
+            Envelope2Opened = true,
+            AsReadBidAmount = 9_000_000m,
+            CreatedBy = "Admin"
+        };
+        await context.BidOpeningRecords!.AddRangeAsync(openLowCost, openHighQuality);
+        await context.SaveChangesAsync();
+
+        var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
+        var command = new EvaluateProjectBidsCommand
+        {
+            ProjectId = project.Id,
+            Request = new EvaluateProjectBidsRequest
+            {
+                AwardCriterion = "MEARB",
+                TechnicalWeight = 60m,
+                FinancialWeight = 40m,
+                Bidders =
+                [
+                    new BidderEvaluationInput
+                    {
+                        BidOpeningRecordId = openLowCost.Id,
+                        EvaluatedBidPrice = 8_000_000m,
+                        TechnicalScore = 78.00m,
+                        IsResponsive = true
+                    },
+                    new BidderEvaluationInput
+                    {
+                        BidOpeningRecordId = openHighQuality.Id,
+                        EvaluatedBidPrice = 9_000_000m,
+                        TechnicalScore = 96.00m,
+                        IsResponsive = true
+                    }
+                ]
+            }
+        };
+
+        var result = await handler.Handle(command, CancellationToken.None);
+        result.Succeeded.Should().BeTrue();
+
+        var queryHandler = new GetProjectBidEvaluationQueryHandler(uow);
+        var evalResult = await queryHandler.Handle(new GetProjectBidEvaluationQuery(project.Id), CancellationToken.None);
+
+        evalResult.Succeeded.Should().BeTrue();
+        evalResult.Data!.AwardCriterion.Should().Be("MEARB");
+        evalResult.Data!.TechnicalWeight.Should().Be(60m);
+        evalResult.Data!.FinancialWeight.Should().Be(40m);
+        evalResult.Data!.EvaluatedBids.Should().HaveCount(2);
+
+        // Rank 1: HighQuality Solutions Corp. (₱9M, Tech: 96, NormFin: 88.89, Total: 93.16)
+        var rank1 = evalResult.Data.EvaluatedBids[0];
+        rank1.SupplierId.Should().Be(supHighQuality.Id);
+        rank1.Rank.Should().Be(1);
+        rank1.EvaluatedBidPrice.Should().Be(9_000_000m);
+        rank1.TechnicalScore.Should().Be(96.00m);
+        rank1.NormalizedFinancialScore.Should().Be(88.89m);
+        rank1.TotalScore.Should().Be(93.16m);
+        rank1.PostQualification.Should().NotBeNull();
+
+        // Rank 2: LowCost Vendor Inc. (₱8M, Tech: 78, NormFin: 100.00, Total: 86.80)
+        var rank2 = evalResult.Data.EvaluatedBids[1];
+        rank2.SupplierId.Should().Be(supLowCost.Id);
+        rank2.Rank.Should().Be(2);
+        rank2.EvaluatedBidPrice.Should().Be(8_000_000m);
+        rank2.TechnicalScore.Should().Be(78.00m);
+        rank2.NormalizedFinancialScore.Should().Be(100.00m);
+        rank2.TotalScore.Should().Be(86.80m);
+    }
+
+    [Fact]
+    public async Task Handle_WhenCompletedEvaluationExists_AttemptToChangeCriterionOrWeights_ThrowsValidationException()
+    {
+        using var context = NoticeOfAwardTestHelpers.CreateInMemoryDbContext();
+        var uow = NoticeOfAwardTestHelpers.CreateUnitOfWork(context);
+
+        var project = new ProcurementProject
+        {
+            Id = Guid.NewGuid(),
+            Title = "Completed Evaluation Project",
+            ABC = 10_000_000m,
+            Status = "Posted",
+            CreatedBy = "Admin"
+        };
+        await context.ProcurementProjects!.AddAsync(project);
+
+        var supplier = new Supplier { Id = Guid.NewGuid(), Name = "Supplier Delta", CreatedBy = "Admin" };
+        await context.Suppliers!.AddAsync(supplier);
+
+        var sub = new BiddingSubmission
+        {
+            Id = Guid.NewGuid(),
+            ProcurementProjectId = project.Id,
+            SupplierId = supplier.Id,
+            OriginalProposedAmount = 8_000_000m,
+            CreatedBy = "Admin"
+        };
+        await context.BiddingSubmissions!.AddAsync(sub);
+
+        var open = new BidOpeningRecord
+        {
+            Id = Guid.NewGuid(),
+            BiddingSubmissionId = sub.Id,
+            Envelope1Result = "Passed",
+            Envelope2Opened = true,
+            AsReadBidAmount = 8_000_000m,
+            CreatedBy = "Admin"
+        };
+        await context.BidOpeningRecords!.AddAsync(open);
+
+        // Pre-create a completed evaluation under MEARB 60/40
+        var evaluation = new BiddingEvaluation
+        {
+            Id = Guid.NewGuid(),
+            ProcurementProjectId = project.Id,
+            AwardCriterion = "MEARB",
+            TechnicalWeight = 60m,
+            FinancialWeight = 40m,
+            Status = "Completed",
+            CreatedBy = "Admin"
+        };
+        await context.BiddingEvaluations!.AddAsync(evaluation);
+        await context.SaveChangesAsync();
+
+        var handler = new EvaluateProjectBidsCommandHandler(uow, currentUserService);
+
+        // Attempt 1: Changing criterion from MEARB to LCRB
+        var switchCriterionCommand = new EvaluateProjectBidsCommand
+        {
+            ProjectId = project.Id,
+            Request = new EvaluateProjectBidsRequest
+            {
+                AwardCriterion = "LCRB",
+                Bidders =
+                [
+                    new BidderEvaluationInput
+                    {
+                        BidOpeningRecordId = open.Id,
+                        EvaluatedBidPrice = 8_000_000m,
+                        IsResponsive = true
+                    }
+                ]
+            }
+        };
+
+        var actSwitch = () => handler.Handle(switchCriterionCommand, CancellationToken.None);
+        await actSwitch.Should().ThrowAsync<FluentValidation.ValidationException>()
+            .WithMessage("Cannot change evaluation criterion from 'MEARB' to 'LCRB' for a completed bid evaluation.");
+
+        // Attempt 2: Changing MEARB weights from 60/40 to 50/50
+        var alterWeightsCommand = new EvaluateProjectBidsCommand
+        {
+            ProjectId = project.Id,
+            Request = new EvaluateProjectBidsRequest
+            {
+                AwardCriterion = "MEARB",
+                TechnicalWeight = 50m,
+                FinancialWeight = 50m,
+                Bidders =
+                [
+                    new BidderEvaluationInput
+                    {
+                        BidOpeningRecordId = open.Id,
+                        EvaluatedBidPrice = 8_000_000m,
+                        TechnicalScore = 85m,
+                        IsResponsive = true
+                    }
+                ]
+            }
+        };
+
+        var actAlter = () => handler.Handle(alterWeightsCommand, CancellationToken.None);
+        await actAlter.Should().ThrowAsync<FluentValidation.ValidationException>()
+            .WithMessage("Cannot change MEARB weights after evaluation has been completed. Existing methodology is locked at 60% Technical / 40% Financial.");
+    }
 }

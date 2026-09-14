@@ -21,6 +21,7 @@ import { formatCurrencyPHP } from '@/utils/formatters'
 
 interface LIBReadinessCardProps {
   lib: LIBDetails | LIB | undefined
+  departmentCeiling?: number | null
   isLoading?: boolean
   onOpenSubmit?: () => void
   onOpenApprove?: () => void
@@ -30,6 +31,7 @@ interface LIBReadinessCardProps {
 
 export const LIBReadinessCard: React.FC<LIBReadinessCardProps> = ({
   lib,
+  departmentCeiling,
   isLoading = false,
   onOpenSubmit,
   onOpenApprove,
@@ -61,7 +63,7 @@ export const LIBReadinessCard: React.FC<LIBReadinessCardProps> = ({
   }
 
   const status = lib.status || 'Draft'
-  const readiness = evaluateLIBReadiness(lib)
+  const readiness = evaluateLIBReadiness(lib, departmentCeiling)
 
   // 2. Submitted State (Pending Approval)
   if (status === 'Submitted') {

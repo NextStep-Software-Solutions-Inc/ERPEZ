@@ -82,8 +82,8 @@ export function BidEvaluationTab({
   const evaluatedBids = evaluation?.evaluatedBids ?? []
   const hasEvaluation = evaluatedBids.length > 0
   const activeCriterion = evaluation?.awardCriterion ?? awardCriterion
-  const activeTechWeight = evaluation?.technicalWeight ?? technicalWeight ?? 70
-  const activeFinWeight = evaluation?.financialWeight ?? financialWeight ?? 30
+  const activeTechWeight = evaluation?.technicalWeight ?? technicalWeight ?? null
+  const activeFinWeight = evaluation?.financialWeight ?? financialWeight ?? null
 
   if (isEvalLoading) {
     return (
@@ -137,7 +137,9 @@ export function BidEvaluationTab({
                   className="font-bold border-purple-200 bg-purple-50 text-purple-700 text-xs shadow-sm"
                 >
                   {activeCriterion === 'MEARB'
-                    ? `MEARB (${activeTechWeight}% Tech / ${activeFinWeight}% Fin)`
+                    ? activeTechWeight != null && activeFinWeight != null
+                      ? `MEARB (${activeTechWeight}% Tech / ${activeFinWeight}% Fin)`
+                      : 'MEARB (Weights Not Configured)'
                     : activeCriterion === 'LCRB'
                     ? 'LCRB (Lowest Price)'
                     : activeCriterion}

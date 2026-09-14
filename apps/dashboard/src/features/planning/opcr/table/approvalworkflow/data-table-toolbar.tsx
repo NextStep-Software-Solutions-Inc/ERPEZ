@@ -1,4 +1,4 @@
-﻿import { Table } from '@tanstack/react-table'
+import { Table } from '@tanstack/react-table'
 import { X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -12,29 +12,38 @@ import {
 
 import { OPCR } from '../../types'
 import DebouncedInput from '@/components/DebouncedInput'
+import { useFiscalYearQueries } from '@/features/planning/fiscal-year-and-policies/fiscal-year-management/hooks/useFiscalYearQueries'
 
 interface DataTableToolbarProps<TData extends OPCR> {
   table: Table<TData>
   onSearch?: (searchValue: string) => void
-  onStatusFilter?: (status: string | null) => void
+  fiscalYearId?: string
+  onFiscalYearChange?: (fyId: string | null) => void
+  onResetFilters?: () => void
   isLoading?: boolean
 }
 
 export function DataTableToolbar<TData extends OPCR>({
   table,
   onSearch,
-  onStatusFilter,
+  fiscalYearId,
+  onFiscalYearChange,
+  onResetFilters,
   isLoading = false,
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0
+  const { fiscalYears } = useFiscalYearQueries()
   const searchValue =
     (table.getColumn('name')?.getFilterValue() as string) ?? ''
+  const isFiltered =
+    table.getState().columnFilters.length > 0 ||
+    Boolean(fiscalYearId) ||
+    Boolean(searchValue)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-1 items-center gap-2">
-          <div className="flex-1 max-w-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap flex-1 items-center gap-2">
+          <div className="flex-1 min-w-[200px] max-w-sm">
             <DebouncedInput
               placeholder="Search OPCR name..."
               value={searchValue}
@@ -46,32 +55,24 @@ export function DataTableToolbar<TData extends OPCR>({
             />
           </div>
 
+          {/* Fiscal Year Filter */}
           <Select
-            value={
-              (table
-                .getColumn('commitmentStatus')
-                ?.getFilterValue() as string) ?? ''
-            }
+            value={fiscalYearId || 'all'}
             onValueChange={(value) => {
-              if (value === 'all') {
-                table.getColumn('commitmentStatus')?.setFilterValue(undefined)
-                onStatusFilter?.(null)
-              } else {
-                table.getColumn('commitmentStatus')?.setFilterValue(value)
-                onStatusFilter?.(value)
-              }
+              onFiscalYearChange?.(value === 'all' ? null : value)
             }}
             disabled={isLoading}
           >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Status" />
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Fiscal Year" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="submitted">Submitted</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="returned">Returned</SelectItem>
+              <SelectItem value="all">All Fiscal Years</SelectItem>
+              {fiscalYears.map((fy) => (
+                <SelectItem key={fy.id} value={fy.id}>
+                  FY {fy.year}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -82,7 +83,8 @@ export function DataTableToolbar<TData extends OPCR>({
             onClick={() => {
               table.resetColumnFilters()
               onSearch?.('')
-              onStatusFilter?.(null)
+              onFiscalYearChange?.(null)
+              onResetFilters?.()
             }}
             className="h-8 px-2 lg:px-3"
             disabled={isLoading}

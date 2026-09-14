@@ -60,6 +60,21 @@ public class UpdateUserCommandHandler(IUnitOfWork unitOfWork)
             user.Email = request.UpdateUser.Email;
         }
 
+        // Check ExternalIdentityId uniqueness if changed
+        if (!string.IsNullOrWhiteSpace(request.UpdateUser.ExternalIdentityId) &&
+            request.UpdateUser.ExternalIdentityId != user.ExternalIdentityId)
+        {
+            var existingUser = await unitOfWork.UserRepository.GetByExternalIdentityIdAsync(
+                request.UpdateUser.ExternalIdentityId,
+                cancellationToken
+            );
+
+            if (existingUser != null && existingUser.Id != user.Id)
+                throw new ConflictException($"External Identity ID '{request.UpdateUser.ExternalIdentityId}' already exists.");
+
+            user.ExternalIdentityId = request.UpdateUser.ExternalIdentityId;
+        }
+
         // Validate Office if provided
         if (request.UpdateUser.OfficeId.HasValue)
         {

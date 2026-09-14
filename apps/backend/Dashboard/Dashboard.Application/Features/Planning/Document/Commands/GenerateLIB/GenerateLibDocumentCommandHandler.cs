@@ -50,7 +50,7 @@ public class GenerateLibDocumentCommandHandler(
         // ── 2. Map ───────────────────────────────────────────────────────────
         var dataDto = MapToLibDataDto(lib, wfp);
 
-        if (string.Equals(lib.Scope, nameof(LIBScopeEnum.Project), StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(NormalizeScope(lib.Scope), nameof(LIBScopeEnum.Project), StringComparison.OrdinalIgnoreCase))
         {
             dataDto = dataDto with { ProjectScope = BuildProjectScope(lib, wfp) };
         }
@@ -171,7 +171,7 @@ public class GenerateLibDocumentCommandHandler(
             OfficeName            = BuildAgencyName(lib),
             FiscalYear            = fiscalYearString,
             FundSource            = lib.FundSource?.Name ?? string.Empty,
-            Scope                 = lib.Scope,
+            Scope                 = NormalizeScope(lib.Scope),
             SourceType            = lib.SourceType,
             TotalBudget           = totalBudget,
             EffectiveDate         = lib.ApprovedDate,
@@ -533,6 +533,13 @@ public class GenerateLibDocumentCommandHandler(
 
         return chain.Count switch
         {
+            0 => new ObjectHierarchy(
+                    AllotmentClass:  "MOOE",
+                    AccountGroup:    !string.IsNullOrWhiteSpace(detail.Description) ? detail.Description : "Unclassified Expenditure",
+                    SubAccountGroup: null,
+                    ObjectName:      !string.IsNullOrWhiteSpace(detail.Description) ? detail.Description : "Unclassified Expenditure",
+                    UACSCode:        uacsCode),
+
             1 => new ObjectHierarchy(
                     AllotmentClass:  chain[0].Name,
                     AccountGroup:    chain[0].Name,
@@ -620,10 +627,20 @@ public class GenerateLibDocumentCommandHandler(
     // Scope validation
     // ─────────────────────────────────────────────────────────────────────
 
+    private static string NormalizeScope(string scope)
+    {
+        if (string.Equals(scope, "ActivityLevel", StringComparison.OrdinalIgnoreCase))
+            return nameof(LIBScopeEnum.Activity);
+        if (string.Equals(scope, "ProjectLevel", StringComparison.OrdinalIgnoreCase))
+            return nameof(LIBScopeEnum.Project);
+        return scope;
+    }
+
     private static void ValidateLibScope(string scope)
     {
+        var normalized = NormalizeScope(scope);
         var validScopes = Enum.GetNames(typeof(LIBScopeEnum));
-        if (!validScopes.Contains(scope, StringComparer.OrdinalIgnoreCase))
+        if (!validScopes.Contains(normalized, StringComparer.OrdinalIgnoreCase))
             throw new InvalidOperationException(
                 $"Unknown LIB scope '{scope}'. Valid scopes: {string.Join(", ", validScopes)}");
     }
@@ -680,12 +697,26 @@ public class GenerateLibDocumentCommandHandler(
         // (WFP timeline may represent only a target window; budget execution can extend beyond it.)
         var datedDetails = allDetails.Where(d => d.StartDate is not null).ToList();
 
-        if (datedDetails.Count == 0)
-            throw new InvalidOperationException(
-                $"Line Item Budget '{lib.LIBNumber}' is Project scope but no budget details have a StartDate. Cannot build quarter columns.");
+        DateOnly minDate;
+        DateOnly maxDate;
 
-        var minDate = datedDetails.Min(d => ToPhilippineDate(d.StartDate!.Value));
-        var maxDate = datedDetails.Max(d => ToPhilippineDate(d.EndDate ?? d.StartDate!.Value));
+        if (datedDetails.Count > 0)
+        {
+            minDate = datedDetails.Min(d => ToPhilippineDate(d.StartDate!.Value));
+            maxDate = datedDetails.Max(d => ToPhilippineDate(d.EndDate ?? d.StartDate!.Value));
+        }
+        else if (wfp is not null)
+        {
+            minDate = wfp.ProjectStartDate;
+            maxDate = wfp.ProjectEndDate;
+        }
+        else
+        {
+            var fyStr = ResolveFiscalYear(lib, wfp, allDetails);
+            var fy = int.TryParse(fyStr.Split('-')[0], out var year) ? year : DateTime.UtcNow.Year;
+            minDate = new DateOnly(fy, 1, 1);
+            maxDate = new DateOnly(fy, 12, 31);
+        }
 
         var columns = new List<LibProjectQuarterColumnDto>();
         var cursor  = new DateOnly(minDate.Year, ((minDate.Month - 1) / 3) * 3 + 1, 1);

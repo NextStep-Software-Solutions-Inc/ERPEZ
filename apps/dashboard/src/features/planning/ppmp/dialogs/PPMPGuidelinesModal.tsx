@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PPMPGuidelinesModal
  * Full-screen modal displaying complete NGPA PPMP guidelines reference
  */
@@ -9,10 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { X, FileText, Scale } from 'lucide-react'
+import { FileText, Scale } from 'lucide-react'
 import {
   NGPA_PPMP_GUIDELINES,
   getAllColumnGuidelines,
@@ -31,7 +30,11 @@ export function PPMPGuidelinesModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] p-0"
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader className="px-6 py-4 border-b border-border bg-linear-to-r from-blue-50 to-indigo-50">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -52,7 +55,7 @@ export function PPMPGuidelinesModal({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="h-[calc(90vh-200px)]">
+        <ScrollArea className="h-[calc(90vh-130px)]">
           <div className="p-6 space-y-6">
             {guidelines.map((guideline) => (
               <div
@@ -144,18 +147,6 @@ export function PPMPGuidelinesModal({
             ))}
           </div>
         </ScrollArea>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-muted/30 flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="gap-2"
-          >
-            <X className="h-4 w-4" />
-            Close
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   )

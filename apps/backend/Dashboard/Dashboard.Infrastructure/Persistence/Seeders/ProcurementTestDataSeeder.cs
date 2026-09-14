@@ -792,7 +792,6 @@ public static class ProcurementTestDataSeeder
         var activeExisting = await context.Suppliers!
             .Include(s => s.SupplierRequirements)
             .FirstOrDefaultAsync(s => s.Name == name || s.TINNumber == tin || s.BusinessPermitNo == permit);
-
         if (activeExisting != null)
         {
             return;

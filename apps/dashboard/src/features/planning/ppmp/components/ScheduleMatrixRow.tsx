@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ScheduleMatrixRow
  * A single table row for a PPMP line item showing the Jan–Dec inline editing matrix.
  * Inline cell editing: click → type → blur saves. Real-time budget recomputation.
@@ -14,6 +14,7 @@ import {
   Link2,
   CheckCircle2,
   AlertCircle,
+  Loader2,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -50,7 +51,6 @@ import type {
   PPMPLineItem,
   Month,
   PreProcurementConferenceValue,
-  ProjectType,
   UpdateLineItemMetadataPayload,
 } from '../types'
 import { ALL_MONTHS, MONTH_LABELS } from '../types'
@@ -79,6 +79,7 @@ import { TruncatedRemarkPopover } from './TruncatedRemarkPopover'
 interface ScheduleMatrixRowProps {
   item: PPMPLineItem
   ppmpId: string
+  activityName?: string
   onScheduleChange: (itemId: string, month: Month, value: number) => void
   onDelete: (itemId: string) => void
   isDeleting?: boolean
@@ -135,6 +136,7 @@ function buildMetadataDraft(item: PPMPLineItem): MetadataDraft {
 export function ScheduleMatrixRow({
   item,
   ppmpId,
+  activityName,
   onScheduleChange,
   onDelete,
   isDeleting = false,
@@ -392,8 +394,16 @@ export function ScheduleMatrixRow({
       {/* Item Name */}
       <td className="px-3 py-2 min-w-[200px] align-middle">
         <div className="space-y-1">
-          <div className="text-sm font-medium text-foreground leading-tight">
-            {item.itemName}
+          <div className="flex items-center gap-1.5">
+            <div className="text-sm font-medium text-foreground leading-tight">
+              {item.itemName}
+            </div>
+            {isSavingMetadata && (
+              <span className="inline-flex items-center text-[10px] text-muted-foreground gap-1">
+                <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                Saving...
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{item.unitOfMeasure}</span>
@@ -404,6 +414,16 @@ export function ScheduleMatrixRow({
             )}
           </div>
         </div>
+      </td>
+
+      {/* Activity Indicator Name */}
+      <td className="px-2 py-2 align-middle min-w-[160px]">
+        <span
+          className="text-xs font-medium text-muted-foreground truncate max-w-[180px] block"
+          title={activityName || item.activityIndicatorName || item.activityName || '—'}
+        >
+          {activityName || item.activityIndicatorName || item.activityName || '—'}
+        </span>
       </td>
 
       <td className="px-2 py-2 align-middle min-w-[152px]">
@@ -841,7 +861,7 @@ export function ScheduleMatrixRow({
                       ⚠️ PPMP total exceeds MSF cost estimate by{' '}
                       {formatCurrency(
                         item.estimatedBudget -
-                          (item.marketScopingCostEstimate ?? 0),
+                        (item.marketScopingCostEstimate ?? 0),
                       )}
                       . Reduce quantity or link a different MSF.
                     </div>

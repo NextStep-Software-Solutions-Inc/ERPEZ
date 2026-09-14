@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Domain.Enums;
+namespace ERPEZ.Domain.Enums;
 
 public enum NoticeOfAwardType
 {

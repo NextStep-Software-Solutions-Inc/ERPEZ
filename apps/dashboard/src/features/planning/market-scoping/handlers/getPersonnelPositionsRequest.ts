@@ -31,7 +31,10 @@ export const getPersonnelPositionsRequest: QueryBlueprintFromTemplate<
   endpoint,
   key: ({ url }) => [url] as const,
   fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<PaginationResponse<PersonnelPosition>>(finalUrl, { signal })
+    const response = await api.get<PaginationResponse<PersonnelPosition>>(
+      finalUrl,
+      { signal },
+    )
     return response.data
   },
 }

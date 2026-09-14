@@ -7,6 +7,9 @@ export type ProcurementItem = {
   itemLife?: number
   productCode?: string
   imageURL?: string
+  imageUrl?: string
+  availableStock?: number
+  stockOnHand?: number
   isActive: boolean
   objectCodeId: string
   objectCodeName?: string

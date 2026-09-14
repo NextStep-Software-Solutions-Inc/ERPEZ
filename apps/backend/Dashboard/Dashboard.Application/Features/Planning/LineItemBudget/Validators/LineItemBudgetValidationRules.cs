@@ -110,6 +110,21 @@ public static class LineItemBudgetValidationRules
     }
 
     /// <summary>
+    /// Validates that total LIB amount does not exceed the department ceiling.
+    /// </summary>
+    public static bool ValidateDepartmentCeiling(
+        decimal totalLIBAmount,
+        decimal? departmentCeiling)
+    {
+        if (!departmentCeiling.HasValue || departmentCeiling.Value <= 0)
+        {
+            return true;
+        }
+
+        return totalLIBAmount <= departmentCeiling.Value;
+    }
+
+    /// <summary>
     /// Validates that detail timeline falls within the source's timeline.
     /// </summary>
     public static bool ValidateTimelineWithinSource(

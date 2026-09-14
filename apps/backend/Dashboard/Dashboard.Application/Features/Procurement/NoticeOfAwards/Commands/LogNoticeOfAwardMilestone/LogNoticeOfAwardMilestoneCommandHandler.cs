@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Utils;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
@@ -27,6 +29,26 @@ public class LogNoticeOfAwardMilestoneCommandHandler(IUnitOfWork unitOfWork)
 
         var req = command.Request;
 
+        var todayPht = NoticeOfAwardSlaCalculator.ToPhilippineDate(DateTime.UtcNow);
+        var dateLogged = req.DateLogged != default ? req.DateLogged : todayPht;
+
+        if (req.MilestoneType == NoticeOfAwardMilestoneType.ConformeReceived)
+        {
+            if (dateLogged > todayPht)
+            {
+                return ApiResponse<Unit>.Fail("NOA Receipt / Conforme date cannot be in the future.");
+            }
+
+            if (noa.IssuedAt.HasValue)
+            {
+                var issuedDatePht = NoticeOfAwardSlaCalculator.ToPhilippineDate(noa.IssuedAt.Value);
+                if (dateLogged < issuedDatePht)
+                {
+                    return ApiResponse<Unit>.Fail($"NOA Receipt date ({dateLogged:yyyy-MM-dd}) cannot be earlier than the NOA issuance date ({issuedDatePht:yyyy-MM-dd}).");
+                }
+            }
+        }
+
         var allMilestones = await unitOfWork.NoticeOfAwardMilestoneRepository.ToListAsync(
             unitOfWork.NoticeOfAwardMilestoneRepository.Query(m => m.NoticeOfAwardId == command.Id && !m.IsDeleted),
             cancellationToken
@@ -40,14 +62,32 @@ public class LogNoticeOfAwardMilestoneCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("NOA Conforme / Receipt must be recorded before posting Performance Security.");
         }
 
-        if (req.MilestoneType == NoticeOfAwardMilestoneType.ContractExecuted && !hasSecurity)
+        var requiresPerformanceSecurity = true;
+        if (noa.ProcurementProjectId != Guid.Empty)
+        {
+            var project = await unitOfWork.ProcurementProjectRepository.FindAsync(p => p.Id == noa.ProcurementProjectId, cancellationToken);
+            if (project?.ProcurementModeId.HasValue == true)
+            {
+                var mode = await unitOfWork.ProcurementModeRepository.FindAsync(m => m.Id == project.ProcurementModeId.Value, cancellationToken);
+                if (mode != null)
+                {
+                    var modeName = mode.Name.Trim();
+                    // RA 12009 / NGPA Section 94: Shopping and Small Value Procurement are exempt from Performance Security
+                    if (modeName.Contains("Shopping", StringComparison.OrdinalIgnoreCase) ||
+                        modeName.Contains("Small Value", StringComparison.OrdinalIgnoreCase))
+                    {
+                        requiresPerformanceSecurity = false;
+                    }
+                }
+            }
+        }
+
+        if (req.MilestoneType == NoticeOfAwardMilestoneType.ContractExecuted && requiresPerformanceSecurity && !hasSecurity)
         {
             return ApiResponse<Unit>.Fail("Performance Security must be posted before Contract Execution.");
         }
 
         var existingMilestone = allMilestones.FirstOrDefault(m => m.MilestoneType == req.MilestoneType);
-
-        var dateLogged = req.DateLogged != default ? req.DateLogged : DateOnly.FromDateTime(DateTime.UtcNow);
 
         if (existingMilestone != null)
         {

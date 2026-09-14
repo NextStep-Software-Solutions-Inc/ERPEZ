@@ -319,6 +319,9 @@ export interface PPMPLineItem {
   remarks?: string | null
   /** Optional supporting documents attached to the line item. */
   attachments?: PPMPAttachment[] | null
+  /** Activity or indicator name for display */
+  activityIndicatorName?: string | null
+  activityName?: string | null
 }
 
 // ─── IoE Block ────────────────────────────────────────────────────────────────
@@ -413,6 +416,10 @@ export type PPMP = {
   isFinal?: boolean
   finalizedAt?: string
   finalizedBy?: string
+  ppmpType?: 'Original' | 'Supplemental' | string
+  sourcePPMPId?: string | null
+  sourcePPMPNumber?: string | null
+  supplementalNumber?: number | null
   /** MSF linked through PPMP.libId (project-scope). Populated by the backend; null if no MSF is associated. */
   LinkedMarketScoping?: MSFSummary | null
 }
@@ -480,6 +487,8 @@ export type PPMPItem = {
   procurementModeName?: string
   originDepartmentId?: string | null
   originDepartmentName?: string | null
+  activityIndicatorName?: string | null
+  nonCseItemId?: string
 }
 
 export type PPMPItemDetails = PPMPItem & {}
@@ -541,6 +550,7 @@ export type PPMPActivity = {
   PPMPExpenditureItems?: PPMPExpenditureItem[]
   /** MSF linked through PPMPActivity.libActivityId (activity-scope). Populated by the backend; null if not associated. */
   LinkedMarketScoping?: MSFSummary | null
+  linkedMarketScoping?: MSFSummary | null
 }
 
 /// ─── PPMP Expenditure Items ─────────────────────────────────────────────────────────

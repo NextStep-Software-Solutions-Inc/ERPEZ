@@ -12,7 +12,9 @@ import { submitOPCRRatingRequest } from '../handlers/submitOPCRRatingRequest'
 import { returnOPCRRatingRequest } from '../handlers/returnOPCRRatingRequest'
 import { getOPCRRequest } from '../handlers/getOPCRRequest'
 import { generateOPCRDocumentRequest } from '../handlers/generateOPCRDocumentRequest'
+import { generateConsolidatedOPCRDocumentRequest } from '../handlers/generateConsolidatedOPCRDocumentRequest'
 import { downloadOPCRDocumentRequest } from '../handlers/downloadOPCRDocumentRequest'
+import { updateCommitmentStatusRequest } from '../handlers/updateCommitmentStatusRequest'
 
 /**
  * Hook for fetching a list of OPCRs
@@ -104,6 +106,20 @@ export const useDownloadOPCRDocument = createMutationHookFromTemplate(
   downloadOPCRDocumentRequest,
 )
 
+/**
+ * Hook for generating a Consolidated OPCR PDF document (POST /api/planning/documents/opcr/consolidations/:consolidationId/generate)
+ *
+ * Usage:
+ * const { mutateAsync, isPending } = useGenerateConsolidatedOPCRDocument()
+ * const res = await mutateAsync({ pathParams: { consolidationId: 'cons-id' }, queryParams: { format: 'Pdf' } })
+ */
+export const useGenerateConsolidatedOPCRDocument = createMutationHookFromTemplate(
+  generateConsolidatedOPCRDocumentRequest,
+)
 
-
-
+/**
+ * Hook for updating OPCR commitment status (PATCH /opcrs/:id/commitment-status)
+ */
+export const useUpdateCommitmentStatus = createMutationHookFromTemplate(
+  updateCommitmentStatusRequest,
+)

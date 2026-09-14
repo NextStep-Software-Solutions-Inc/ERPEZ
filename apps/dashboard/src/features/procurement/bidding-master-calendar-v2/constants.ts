@@ -1,3 +1,9 @@
+import type { ColorTaxonomyMode, BiddingMasterCalendarEvent, ProcurementModeAbbr } from './types'
+import { getProcurementModeAbbreviation } from '../bidding-master-calendar/utils/modeUtils'
+
+export { getProcurementModeAbbreviation }
+export type { ProcurementModeAbbr }
+
 export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export const WORKING_HOURS = [
@@ -163,4 +169,65 @@ export const RA9184_DEFAULT_MAX_DAYS: Record<string, number | null> = {
   'notice-of-award': 3,
   'contract-signing': 10,
   'notice-to-proceed': 7,
+}
+
+export const MODE_COLOR_MAP: Record<ProcurementModeAbbr, ProjectColorPalette> = {
+  PB: {
+    bg: 'bg-blue-50/90 dark:bg-blue-950/40',
+    border: 'border-blue-300 dark:border-blue-800',
+    text: 'text-blue-900 dark:text-blue-200',
+    badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    solid: 'bg-blue-600',
+  },
+  DA: {
+    bg: 'bg-emerald-50/90 dark:bg-emerald-950/40',
+    border: 'border-emerald-300 dark:border-emerald-800',
+    text: 'text-emerald-900 dark:text-emerald-200',
+    badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+    solid: 'bg-emerald-600',
+  },
+  DC: {
+    bg: 'bg-purple-50/90 dark:bg-purple-950/40',
+    border: 'border-purple-300 dark:border-purple-800',
+    text: 'text-purple-900 dark:text-purple-200',
+    badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    solid: 'bg-purple-600',
+  },
+  RFQ: {
+    bg: 'bg-amber-50/90 dark:bg-amber-950/40',
+    border: 'border-amber-300 dark:border-amber-800',
+    text: 'text-amber-900 dark:text-amber-200',
+    badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+    solid: 'bg-amber-600',
+  },
+}
+
+export const PROCUREMENT_MODE_LABELS: Record<ProcurementModeAbbr, string> = {
+  PB: 'Public Bidding (PB)',
+  DA: 'Direct Acquisition (DA)',
+  DC: 'Direct Contracting (DC)',
+  RFQ: 'Request for Quotation / SVP (RFQ)',
+}
+
+export function getEventPalette(
+  event: BiddingMasterCalendarEvent,
+  colorMode: ColorTaxonomyMode = 'project',
+): ProjectColorPalette {
+  if (colorMode === 'mode') {
+    const mode = getProcurementModeAbbreviation(event)
+    return MODE_COLOR_MAP[mode] ?? getPaletteForProject(event.bacResolutionId || event.primaryProjectName)
+  }
+  if (colorMode === 'category') {
+    return (
+      CATEGORY_COLOR_MAP[event.procurementCategory?.toLowerCase()] ??
+      getPaletteForProject(event.bacResolutionId || event.primaryProjectName)
+    )
+  }
+  if (colorMode === 'status') {
+    return (
+      STATUS_COLOR_MAP[event.derivedProjectStatus] ??
+      getPaletteForProject(event.bacResolutionId || event.primaryProjectName)
+    )
+  }
+  return getPaletteForProject(event.bacResolutionId || event.primaryProjectName)
 }

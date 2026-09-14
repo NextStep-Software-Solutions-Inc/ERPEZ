@@ -169,6 +169,11 @@ public class NoticeOfAwardEndToEndLifecycleTests
         approvedNoa.ReceivedAt.Should().BeNull("Statutory receipt has not yet been logged");
         approvedNoa.ContractExecutionDeadline.Should().BeNull("Statutory 10-day deadline starts upon receipt");
 
+        // Backdate IssuedAt to June 1, 2026 to test subsequent receipt on June 3, 2026
+        approvedNoa.IssuedAt = new DateTime(2026, 6, 1, 8, 0, 0, DateTimeKind.Utc);
+        unitOfWork.NoticeOfAwardRepository.Update(approvedNoa);
+        await unitOfWork.SaveChangesAsync();
+
         // Verify SLA state prior to Conforme receipt
         var preConformeSla = NoticeOfAwardSlaCalculator.CalculateSla(approvedNoa);
         preConformeSla.IsIssued.Should().BeTrue();

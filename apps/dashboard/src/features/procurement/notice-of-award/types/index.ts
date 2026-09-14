@@ -98,6 +98,7 @@ export type NoticeOfAward = {
   approvedBy?: string | null
   approvedAt?: string | null
   issuedAt?: string | null
+  receivedAt?: string | null
   contractExecutionDeadline?: string | null
   conformeReceivedDate?: string | null
   performanceSecurityPostedDate?: string | null

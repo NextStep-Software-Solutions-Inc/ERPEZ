@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
 import {
   createQueryHookFromTemplate,
@@ -10,9 +11,8 @@ import {
   DataTable,
   columns,
   type ApprovalWorkflowTableMeta,
-  type CommitmentStatus,
 } from '@/features/planning/opcr/table/approvalworkflow'
-import { OPCR } from '@/features/planning/opcr/types'
+import { OPCR, type CommitmentStatus } from '@/features/planning/opcr/types'
 import { toast } from 'sonner'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 
@@ -31,8 +31,19 @@ export default function ApprovalWorkflowTab() {
 
   const pageNumber = searchParams.pageNumber || 1
   const pageSize = searchParams.pageSize || 25
+  const fiscalYearId = searchParams.fiscalYearId || ''
+  const searchQuery = searchParams.searchQuery || ''
 
-  // Fetch OPCRs from API with optional server-side filtering
+  // Build backend filters for server-side Sieve filtering
+  // Display all OPCRs under approval workflow / approved (everything except Draft)
+  const backendFilters = useMemo(() => {
+    const arr: string[] = ['commitmentStatus!=Draft']
+    if (fiscalYearId) arr.push(`fiscalYearId==${fiscalYearId}`)
+    if (searchQuery) arr.push(`name@=*${searchQuery}*`)
+    return arr.join(',')
+  }, [fiscalYearId, searchQuery])
+
+  // Fetch OPCRs from API with server-side filtering
   const {
     data: opcrs,
     isLoading,
@@ -42,6 +53,7 @@ export default function ApprovalWorkflowTab() {
     queryParams: {
       pageNumber,
       pageSize,
+      filters: backendFilters,
     },
   })
 
@@ -63,6 +75,7 @@ export default function ApprovalWorkflowTab() {
     return (
       <OPCRDetailPage
         opcrId={opcrId}
+        isApprovalWorkflow={true}
         onBack={() => {
           window.history.back()
         }}
@@ -89,7 +102,7 @@ export default function ApprovalWorkflowTab() {
           commitmentStatus: 'Approved' as CommitmentStatus,
         },
       })
-      toast.success('OPCR approved successfully')
+      toast.success(`OPCR "${opcr.name}" approved successfully`)
       refetchOPCRs()
     } catch (error) {
       toast.error('Failed to approve OPCR')
@@ -103,10 +116,10 @@ export default function ApprovalWorkflowTab() {
         pathParams: { id: opcr.id },
         queryParams: {},
         payload: {
-          commitmentStatus: 'Rejected' as CommitmentStatus,
+          commitmentStatus: 'Returned' as CommitmentStatus,
         },
       })
-      toast.success('OPCR returned successfully')
+      toast.success(`OPCR "${opcr.name}" returned for revision`)
       refetchOPCRs()
     } catch (error) {
       toast.error('Failed to return OPCR')
@@ -114,45 +127,41 @@ export default function ApprovalWorkflowTab() {
     }
   }
 
-  const handleGenerate = async (opcr: OPCR) => {
-    try {
-      await updateCommitmentStatus({
-        pathParams: { id: opcr.id },
-        queryParams: {},
-        payload: {
-          commitmentStatus: 'Submitted' as CommitmentStatus,
-        },
-      })
-      toast.success('OPCR generated and submitted successfully')
-      refetchOPCRs()
-    } catch (error) {
-      toast.error('Failed to generate OPCR')
-      console.error('Generate error:', error)
-    }
+  const handleSearchChange = (value: string) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        searchQuery: value || undefined,
+        pageNumber: 1,
+      }),
+    })
   }
-  const handleDraft = async (opcr: OPCR) => {
-    try {
-      await updateCommitmentStatus({
-        pathParams: { id: opcr.id },
-        queryParams: {},
-        payload: {
-          commitmentStatus: 'Draft' as CommitmentStatus,
-        },
-      })
-      toast.success('OPCR saved as draft successfully')
-      refetchOPCRs()
-    } catch (error) {
-      toast.error('Failed to save OPCR as draft')
-      console.error('Draft error:', error)
-    }
+
+  const handleFiscalYearChange = (fyId: string | null) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        fiscalYearId: fyId || undefined,
+        pageNumber: 1,
+      }),
+    })
+  }
+
+  const handleResetFilters = () => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        searchQuery: undefined,
+        fiscalYearId: undefined,
+        pageNumber: 1,
+      }),
+    })
   }
 
   const tableMetaOptions: ApprovalWorkflowTableMeta = {
     onViewDetails: handleViewDetails,
     onApprove: handleApprove,
     onReturn: handleReturn,
-    onGenerate: handleGenerate,
-    onDraft: handleDraft,
     isUpdating,
   }
 
@@ -171,6 +180,10 @@ export default function ApprovalWorkflowTab() {
         isLoading={isLoading || isUpdating}
         showToolbar={true}
         meta={tableMetaOptions}
+        fiscalYearId={fiscalYearId}
+        onFiscalYearChange={handleFiscalYearChange}
+        onSearch={handleSearchChange}
+        onResetFilters={handleResetFilters}
         pageNumber={pageNumber}
         pageSize={pageSize}
         totalPageNumber={opcrs?.totalPageNumber ?? 1}

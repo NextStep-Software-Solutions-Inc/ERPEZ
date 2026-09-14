@@ -15,7 +15,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import type { MarketScopingForm } from '../types/marketScopingTypes'
-import { getAvailableActions, MARKET_SCOPING_ACTIONS } from '../utils/customActions'
+import {
+  getAvailableActions,
+  MARKET_SCOPING_ACTIONS,
+} from '../utils/customActions'
 
 interface MarketScopingTableActionsProps {
   form: MarketScopingForm
@@ -75,7 +78,7 @@ export function MarketScopingTableActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          
+
           {availableActions.map((actionId, index) => {
             const action = MARKET_SCOPING_ACTIONS[actionId]
             const IconComponent = ICON_MAP[action.icon as keyof typeof ICON_MAP]
@@ -88,7 +91,9 @@ export function MarketScopingTableActions({
                   onClick={actionHandlers[actionId] as () => void}
                   disabled={isDisabled}
                   className={`cursor-pointer ${
-                    action.isDestructive ? 'text-destructive focus:text-destructive' : ''
+                    action.isDestructive
+                      ? 'text-destructive focus:text-destructive'
+                      : ''
                   }`}
                 >
                   {IconComponent && <IconComponent className="mr-2 h-4 w-4" />}

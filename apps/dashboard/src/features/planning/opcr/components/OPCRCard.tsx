@@ -47,6 +47,12 @@ export default function OPCRCard({ opcr, onView }: OPCRCardProps) {
     opcr.kpiAssignmentCount ?? opcr.dukpiTargetAssignments?.length ?? 0
   const activityCount = opcr.activityCount ?? opcr.opcrActivities?.length ?? 0
 
+  const fyYear =
+    typeof opcr.fiscalYear === 'number'
+      ? opcr.fiscalYear
+      : opcr.fiscalYear?.year ?? ''
+  const fyLabel = fyYear ? `FY ${fyYear}` : 'FY'
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
@@ -60,7 +66,7 @@ export default function OPCRCard({ opcr, onView }: OPCRCardProps) {
       onClick={() => onView(opcr)}
       onKeyDown={handleKeyDown}
       type="button"
-      aria-label={`View OPCR ${opcr.name || `FY ${opcr.fiscalYear.year}`}`}
+      aria-label={`View OPCR ${opcr.name || fyLabel}`}
     >
       {/* Background gradient on hover */}
       <div className="absolute inset-0 bg-linear-to-br from-primary-500/5 to-primary-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -80,7 +86,7 @@ export default function OPCRCard({ opcr, onView }: OPCRCardProps) {
                       tabIndex={0}
                       className="text-xl font-bold text-gray-900 group-hover:text-primary-900 transition-colors line-clamp-2 leading-tight"
                     >
-                      {opcr.name || `OPCR ${opcr.fiscalYear.year}`}
+                      {opcr.name || (fyYear ? `OPCR ${fyYear}` : 'OPCR')}
                     </h3>
                   </TooltipTrigger>
                   <TooltipContent
@@ -88,12 +94,12 @@ export default function OPCRCard({ opcr, onView }: OPCRCardProps) {
                     align="center"
                     className="max-w-[20rem] text-sm"
                   >
-                    {opcr.name || `OPCR ${opcr.fiscalYear.year}`}
+                    {opcr.name || (fyYear ? `OPCR ${fyYear}` : 'OPCR')}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
               <p className="text-sm text-gray-500 group-hover:text-primary-700 transition-colors">
-                FY {opcr.fiscalYear.year}
+                {fyLabel}
               </p>
             </div>
           </div>
@@ -129,8 +135,7 @@ export default function OPCRCard({ opcr, onView }: OPCRCardProps) {
 
         <div className="space-y-2">
           <p className="text-sm text-gray-600 group-hover:text-primary-800 transition-colors leading-relaxed line-clamp-2">
-            Manage OPCR records and performance commitments for{' '}
-            {opcr.fiscalYear.year}
+            Manage OPCR records and performance commitments for {fyYear || 'selected year'}
           </p>
 
           {/* Metrics */}

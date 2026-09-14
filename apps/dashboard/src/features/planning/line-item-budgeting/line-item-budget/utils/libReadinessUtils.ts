@@ -34,7 +34,7 @@ export function isMultiYearWfpLIB(
   }
 
   // 3. Check custom multi-year property if passed
-  if ((lib as any).isMultiYear || (lib as any).wfp?.isMultiYear) {
+  if (lib.isMultiYear || lib.wfp?.isMultiYear) {
     return true
   }
 
@@ -48,6 +48,7 @@ export function isMultiYearWfpLIB(
  */
 export function evaluateLIBReadiness(
   lib: LIBDetails | LIB | undefined | null,
+  departmentCeiling?: number | null,
 ): LIBReadinessResult {
   const errors: string[] = []
   const warnings: string[] = []
@@ -66,7 +67,7 @@ export function evaluateLIBReadiness(
   }
 
   // 1. Scope & Multi-Year determination
-  const scope = (lib.scope || (lib as any).scopeLevel || '').toLowerCase()
+  const scope = (lib.scope || lib.scopeLevel || '').toLowerCase()
   const isProjectScope = scope === 'project' || scope === 'projectlevel'
   const isMultiYearWfp = isMultiYearWfpLIB(lib)
 
@@ -89,7 +90,7 @@ export function evaluateLIBReadiness(
   const hasFundSource =
     Boolean((lib as LIBDetails).fundSourceId) ||
     Boolean(lib.fundSource?.id || lib.fundSource?.name) ||
-    Boolean((lib as any).agencyMasterBudgetId)
+    Boolean(lib.agencyMasterBudgetId)
 
   if (!hasFundSource) {
     errors.push('Fund Source or Agency Master Budget is required.')
@@ -147,7 +148,7 @@ export function evaluateLIBReadiness(
           details.forEach((d) => {
             const b = Number(d.budget) || 0
             totalCalculatedBudget += b
-            if (!d.objectId && !(d as any).object?.id) {
+            if (!d.objectId && !d.object?.id) {
               errors.push(
                 `A line item in activity "${activity.name}" is missing a valid expenditure object.`,
               )
@@ -202,6 +203,28 @@ export function evaluateLIBReadiness(
     passedChecks.push(
       `Total budget allocated: ₱${effectiveTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`,
     )
+  }
+
+  // 4. Department Ceiling Check
+  const ceiling =
+    departmentCeiling ??
+    lib.departmentCeiling ??
+    lib.ceiling ??
+    lib.officeCeiling?.totalAmount ??
+    lib.agencyMasterBudget?.totalAmount ??
+    null
+
+  if (ceiling != null && Number(ceiling) > 0) {
+    const numCeiling = Number(ceiling)
+    if (effectiveTotalAmount > numCeiling) {
+      errors.push(
+        `Total budget (₱${effectiveTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) exceeds the department ceiling (₱${numCeiling.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).`,
+      )
+    } else {
+      passedChecks.push(
+        `Budget is within department ceiling (₱${numCeiling.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).`,
+      )
+    }
   }
 
   return {

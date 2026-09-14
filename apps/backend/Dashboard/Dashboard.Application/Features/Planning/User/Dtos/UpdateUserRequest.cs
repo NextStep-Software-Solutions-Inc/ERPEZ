@@ -2,6 +2,7 @@ namespace ERPEZ.Application.Features.Planning.User.Dtos;
 
 public record UpdateUserRequest
 {
+    public string? ExternalIdentityId { get; init; }
     public string? EmployeeNumber { get; init; }
     public string? Username { get; init; }
     public string? Email { get; init; }

@@ -6,20 +6,23 @@
  * Only the association is cleared.
  */
 
-import type { MutationBlueprintFromTemplate, APIResponse } from "erpez-shared-lib";
-import api from "@/services/api";
+import type {
+  MutationBlueprintFromTemplate,
+  APIResponse,
+} from 'erpez-shared-lib'
+import api from '@/services/api'
 
-const endpoint = "/market-scopings/:id/unlink" as const;
+const endpoint = '/market-scopings/:id/unlink' as const
 
 export const unlinkMarketScopingRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
   APIResponse<undefined>,
-  { id: string },
+  undefined,
   undefined
 > = {
   endpoint,
   fetcher: async ({ finalUrl }) => {
-    const response = await api.patch<APIResponse<undefined>>(finalUrl);
-    return response.data;
+    const response = await api.patch<APIResponse<undefined>>(finalUrl)
+    return response.data
   },
-};
+}

@@ -19,4 +19,24 @@ export const faqs = [
     answer:
       "For employees, ERP reduces repetitive tasks and improves access to information. For management, it provides accurate insights, better planning, and more control over resources.",
   },
+  {
+    question: "What is the difference between ERPez Cloud SaaS and On-Premise deployments?",
+    answer:
+      "ERPez Cloud SaaS is fully managed in our secure ERPez Datacenter with automated multi-tenancy, elasticity, and immediate updates. On-Premise is an air-gapped deployment bundle designed for customer-owned servers with an isolated standalone database, zero cloud tethering, and strict local governance.",
+  },
+  {
+    question: "How does offline licensing work in an air-gapped On-Premise environment?",
+    answer:
+      "Each On-Premise subscription issues a unique cryptographic license key structured as [PREFIX]-[PLAN]-[EXPIRY]-[TOKEN]-[CHECKSUM]. It is cryptographically bound to the administrator's authorized email address and allowed domain, enabling authentic validation without requiring an external internet connection.",
+  },
+  {
+    question: "Can we manage tenants locally on an On-Premise installation?",
+    answer:
+      "Yes. On-Premise deployments allow administrators to register and manage local tenants/subsidiaries directly within the self-hosted environment, governed by the maximum tenant quota and domain constraints defined in their license key.",
+  },
+  {
+    question: "How do domain constraints and tenant status controls protect our system?",
+    answer:
+      "Super administrators can instantly enable or disable tenants to suspend unauthorized access. Furthermore, if a request domain does not match the license's AllowedDomain constraint, the system immediately disables authentication to prevent spoofing or unauthorized deployment clones.",
+  },
 ];
