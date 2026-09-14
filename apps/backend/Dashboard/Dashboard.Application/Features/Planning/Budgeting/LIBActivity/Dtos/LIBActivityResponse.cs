@@ -7,6 +7,7 @@ public record LIBActivityResponse
     public Guid? WFPObjectiveActivityId { get; init; }
     public Guid? OPCRActivityId { get; init; }
     public string Name { get; init; } = string.Empty;
+    public string PAPCode { get; init; } = string.Empty;
     public decimal Budget { get; init; }
     public LIBActivityLineItemBudgetResponse? LineItemBudget { get; init; }
     public LIBActivityWFPResponse? WFPObjectiveActivity { get; init; }
@@ -60,6 +61,7 @@ public record CreateLIBActivityRequest
     public Guid? WFPObjectiveActivityId { get; init; }
     public Guid? OPCRActivityId { get; init; }
     public string? Name { get; init; }
+    public string? PAPCode { get; init; }
 }
 
 public record UpdateLIBActivityRequest
@@ -68,4 +70,5 @@ public record UpdateLIBActivityRequest
     public Guid? WFPObjectiveActivityId { get; init; }
     public Guid? OPCRActivityId { get; init; }
     public string? Name { get; init; }
+    public string? PAPCode { get; init; }
 }

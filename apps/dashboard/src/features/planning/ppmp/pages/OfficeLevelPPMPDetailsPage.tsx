@@ -1868,7 +1868,7 @@ export interface ExpenditureItemGroupProps {
   group: PPMPExpenditureItem
   expandedItemIds: Set<string>
   onToggleItem: (id: string) => void
-  onAddItem?: (groupId: string) => void
+  onAddItem?: (groupId: string, papCode?: string) => void
   onEditItem?: (item: PPMPItem) => void
   onDeleteItem?: (item: PPMPItem) => void
   onEditGroup?: (group: PPMPExpenditureItem) => void
@@ -2234,7 +2234,7 @@ function MonthlyScheduleMatrix({
 interface RightPaneProps {
   activity: PPMPActivityForDisplay | null
 
-  onAddItem?: (groupId: string) => void
+  onAddItem?: (groupId: string, papCode?: string) => void
   onEditItem?: (item: PPMPItem) => void
   onDeleteItem?: (item: PPMPItem) => void
   onAddGroup?: () => void
@@ -2485,7 +2485,11 @@ function RightPane({
                   group={group}
                   expandedItemIds={expandedItemIds}
                   onToggleItem={toggleItem}
-                  onAddItem={onAddItem}
+                  onAddItem={
+                    onAddItem
+                      ? (id, pap) => onAddItem(id, pap || activity?.papCode)
+                      : undefined
+                  }
                   onEditItem={onEditItem}
                   onDeleteItem={onDeleteItem}
                   onEditGroup={onEditGroup}
@@ -2754,6 +2758,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const [itemDialogOpen, setItemDialogOpen] = useState(false)
   const [itemsPickerOpen, setItemsPickerOpen] = useState(false)
   const [itemDialogGroupId, setItemDialogGroupId] = useState('')
+  const [dialogPapCode, setDialogPapCode] = useState('')
   const [itemDialogEditItem, setItemDialogEditItem] = useState<PPMPItem | null>(
     null,
   )
@@ -2868,6 +2873,24 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       .filter((item) => item.objectId && item.id !== groupDialogEditGroup?.id)
       .map((item) => item.objectId!)
   }, [currentActivityExpItemsResp?.data, groupDialogEditGroup])
+
+  const defaultPapCode = useMemo(() => {
+    if (dialogPapCode) return dialogPapCode
+    if (itemDialogGroupId) {
+      const parentAct = activities.find(
+        (a) =>
+          a.id === itemDialogGroupId ||
+          a.ppmpExpenditureItems?.some((g: any) => g.id === itemDialogGroupId) ||
+          (a as any).PPMPExpenditureItems?.some((g: any) => g.id === itemDialogGroupId),
+      )
+      if (parentAct?.papCode) return parentAct.papCode
+    }
+    if (selectedActivity?.papCode) return selectedActivity.papCode
+    if (lib?.lineItemBudgetActivities?.[0]?.papCode) {
+      return lib.lineItemBudgetActivities[0].papCode
+    }
+    return ''
+  }, [dialogPapCode, activities, itemDialogGroupId, selectedActivity, lib])
 
   const existingLibActivityIds = useMemo(() => {
     if (!ppmp) return []
@@ -3167,15 +3190,17 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     }
   }
 
-  const handleAddItem = (groupId: string) => {
+  const handleAddItem = (groupId: string, papCode?: string) => {
     setItemDialogGroupId(groupId)
     setItemDialogEditItem(null)
+    setDialogPapCode(papCode || '')
     setItemsPickerOpen(true)
   }
 
   const handleEditItem = (item: PPMPItem) => {
     setItemDialogGroupId(item.ppmpExpenditureItemId)
     setItemDialogEditItem(item)
+    setDialogPapCode(item.papCode || '')
     setItemDialogOpen(true)
   }
 
@@ -3943,6 +3968,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         onOpenChange={setItemDialogOpen}
         ppmpExpenditureItemId={itemDialogGroupId}
         itemToEdit={itemDialogEditItem}
+        defaultPapCode={defaultPapCode}
       />
 
       <AddPPMPItemsModal
@@ -3953,6 +3979,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         officeName={ppmp?.officeName}
         fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
         ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
+        defaultPapCode={defaultPapCode}
       />
 
       <EditPPMPItemAllocationsDialog

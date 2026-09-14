@@ -3,7 +3,12 @@ import { Check, ChevronDown, Search, X, Layers, Filter } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { parseUACSFundSource } from '@/utils/uacsFundSource'
+import {
+  parseUACSFundSource,
+  getUACSAuthorizationName,
+  getUACSBadge,
+  ParsedUACSFundSource,
+} from '@/utils/uacsFundSource'
 
 export interface FundSourceOptionItem {
   id: string
@@ -29,6 +34,85 @@ interface FundSourceComboboxProps {
   valueKey?: 'id' | 'code'
 }
 
+interface ParsedOptionItem {
+  raw: FundSourceOptionItem
+  id: string
+  code: string
+  name: string
+  parsed: ParsedUACSFundSource
+}
+
+/**
+ * Calculates a relevance score for a fund source item given a search query and tokens.
+ * Higher score places the item closer to the top of the dropdown.
+ */
+function calculateRelevanceScore(
+  item: ParsedOptionItem,
+  query: string,
+  tokens: string[]
+): number {
+  if (!query) return 0
+
+  const lowerQuery = query.toLowerCase()
+  const lowerCode = item.code.toLowerCase()
+  const lowerDigits = item.code.replace(/\D/g, '')
+  const lowerName = item.name.toLowerCase()
+  const lowerAuth = (item.parsed.authorizationName || '').toLowerCase()
+  const lowerBadge = (item.parsed.badge.shortLabel || '').toLowerCase()
+  const lowerCluster = (item.parsed.clusterName || '').toLowerCase()
+  const lowerFinancing = (item.parsed.financingName || '').toLowerCase()
+
+  let score = 0
+
+  // 1. Exact full code match (e.g. searching "011" or "01101101")
+  if (lowerCode === lowerQuery || lowerDigits === lowerQuery) {
+    score += 1000
+  }
+  // Code starts with query (e.g. searching "011" matches "01101")
+  else if (lowerCode.startsWith(lowerQuery) || lowerDigits.startsWith(lowerQuery)) {
+    score += 650
+  }
+  // Code contains query
+  else if (lowerCode.includes(lowerQuery) || lowerDigits.includes(lowerQuery)) {
+    score += 450
+  }
+
+  // 2. Exact name match (e.g. searching "General Fund" matches "General Fund")
+  if (lowerName === lowerQuery) {
+    score += 900
+  }
+  // Name starts with query
+  else if (lowerName.startsWith(lowerQuery)) {
+    score += 700
+  }
+  // Full query contained in name
+  else if (lowerName.includes(lowerQuery)) {
+    score += 500
+  }
+
+  // 3. Authorization match (e.g. searching "New General", "Continuing", "Supplemental")
+  if (lowerAuth === lowerQuery || lowerBadge === lowerQuery) {
+    score += 450
+  } else if (lowerAuth.startsWith(lowerQuery)) {
+    score += 350
+  } else if (lowerAuth.includes(lowerQuery)) {
+    score += 250
+  }
+
+  // 4. Token matches in primary fields (name, code, auth)
+  for (const token of tokens) {
+    if (lowerName.includes(token)) score += 80
+    if (lowerCode.includes(token) || lowerDigits.includes(token)) score += 70
+    if (lowerAuth.includes(token)) score += 50
+  }
+
+  // 5. Cluster and financing matches (LOW weight so background cluster metadata does NOT bury actual fund name/code matches)
+  if (lowerCluster.includes(lowerQuery)) score += 30
+  if (lowerFinancing.includes(lowerQuery)) score += 25
+
+  return score
+}
+
 export function FundSourceCombobox({
   options = [],
   value,
@@ -49,7 +133,7 @@ export function FundSourceCombobox({
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Parse all options with UACS metadata
-  const parsedOptions = useMemo(() => {
+  const parsedOptions = useMemo<ParsedOptionItem[]>(() => {
     return options.map((opt) => {
       const parsed = parseUACSFundSource(opt.code || '', opt.name || '')
       return {
@@ -83,26 +167,60 @@ export function FundSourceCombobox({
     return Array.from(codes).sort()
   }, [parsedOptions])
 
-  // Filter options based on search query and authorization filter
+  // Multi-token search match across options (independent of authorization filter)
+  const searchMatchedOptions = useMemo(() => {
+    const query = searchValue.trim().toLowerCase()
+    if (!query) return parsedOptions
+
+    const tokens = query.split(/\s+/).filter(Boolean)
+    return parsedOptions.filter((item) =>
+      tokens.every((token) => item.parsed.searchString.includes(token))
+    )
+  }, [parsedOptions, searchValue])
+
+  // Compute dynamic counts per authorization category based on search results
+  const authCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: searchMatchedOptions.length }
+    searchMatchedOptions.forEach((opt) => {
+      const code = opt.parsed.authorizationCode
+      if (code) {
+        counts[code] = (counts[code] || 0) + 1
+      }
+    })
+    return counts
+  }, [searchMatchedOptions])
+
+  // Filter options based on search query, authorization filter, and sort by relevance
   const filteredOptions = useMemo(() => {
     const query = searchValue.trim().toLowerCase()
+    const tokens = query.split(/\s+/).filter(Boolean)
 
-    return parsedOptions.filter((item) => {
-      // Authorization filter match
-      if (
-        selectedAuthFilter !== 'all' &&
-        item.parsed.authorizationCode !== selectedAuthFilter
-      ) {
-        return false
+    let list = searchMatchedOptions
+    if (selectedAuthFilter !== 'all') {
+      list = list.filter(
+        (item) => item.parsed.authorizationCode === selectedAuthFilter
+      )
+    }
+
+    if (!query) return list
+
+    // Score and sort by relevance
+    return [...list].sort((a, b) => {
+      const scoreA = calculateRelevanceScore(a, query, tokens)
+      const scoreB = calculateRelevanceScore(b, query, tokens)
+
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA
       }
 
-      // If no search query, keep
-      if (!query) return true
+      // Secondary sort: shorter code first (e.g. 011 before 01101 before 01101101)
+      if (a.code.length !== b.code.length) {
+        return a.code.length - b.code.length
+      }
 
-      // Match against precomputed rich search string
-      return item.parsed.searchString.includes(query)
+      return a.code.localeCompare(b.code)
     })
-  }, [parsedOptions, searchValue, selectedAuthFilter])
+  }, [searchMatchedOptions, selectedAuthFilter, searchValue])
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -112,6 +230,7 @@ export function FundSourceCombobox({
         !containerRef.current.contains(event.target as Node)
       ) {
         setOpen(false)
+        setSelectedAuthFilter('all')
       }
     }
 
@@ -119,12 +238,13 @@ export function FundSourceCombobox({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleSelect = (item: (typeof parsedOptions)[0]) => {
+  const handleSelect = (item: ParsedOptionItem) => {
     const selectedVal = valueKey === 'id' ? item.id : item.code
     const isDeselect = value === selectedVal
     onValueChange(isDeselect ? '' : selectedVal, isDeselect ? null : item.raw)
     setOpen(false)
     setSearchValue('')
+    setSelectedAuthFilter('all')
   }
 
   const handleClear = (e: React.MouseEvent) => {
@@ -150,6 +270,7 @@ export function FundSourceCombobox({
           const nextState = !open
           setOpen(nextState)
           if (nextState) {
+            setSelectedAuthFilter('all')
             setTimeout(() => inputRef.current?.focus(), 50)
           }
         }}
@@ -232,21 +353,32 @@ export function FundSourceCombobox({
                 ref={inputRef}
                 placeholder={searchPlaceholder}
                 value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setSearchValue(val)
+                  if (val.trim() && selectedAuthFilter !== 'all') {
+                    setSelectedAuthFilter('all')
+                  }
+                }}
                 className="pl-9 pr-8 h-9 text-xs bg-white border-gray-200 focus-visible:ring-blue-500"
               />
               {searchValue && (
                 <button
                   type="button"
-                  onClick={() => setSearchValue('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    setSearchValue('')
+                    setSelectedAuthFilter('all')
+                    inputRef.current?.focus()
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
+                  title="Clear search"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Quick Authorization Filter Chips (if multiple authorization types exist) */}
+            {/* Quick Authorization Filter Chips */}
             {availableAuthCodes.length > 1 && (
               <div className="flex items-center gap-1 overflow-x-auto pb-0.5 pt-0.5 text-[11px] no-scrollbar">
                 <span className="text-gray-400 text-[10px] font-semibold uppercase shrink-0 flex items-center gap-0.5 mr-1">
@@ -256,33 +388,32 @@ export function FundSourceCombobox({
                   type="button"
                   onClick={() => setSelectedAuthFilter('all')}
                   className={cn(
-                    'px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors border',
+                    'px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors border text-[11px]',
                     selectedAuthFilter === 'all'
-                      ? 'bg-blue-600 text-white border-blue-600'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
                   )}
                 >
-                  All ({parsedOptions.length})
+                  All ({authCounts['all'] || 0})
                 </button>
                 {availableAuthCodes.map((code) => {
-                  const badge = parseUACSFundSource(`011${code}000`).badge
-                  const count = parsedOptions.filter(
-                    (p) => p.parsed.authorizationCode === code
-                  ).length
+                  const badge = getUACSBadge(code)
+                  const count = authCounts[code] || 0
+                  const isSelected = selectedAuthFilter === code
 
                   return (
                     <button
                       key={code}
                       type="button"
                       onClick={() =>
-                        setSelectedAuthFilter(
-                          selectedAuthFilter === code ? 'all' : code
-                        )
+                        setSelectedAuthFilter(isSelected ? 'all' : code)
                       }
                       className={cn(
-                        'px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors border',
-                        selectedAuthFilter === code
-                          ? 'bg-blue-600 text-white border-blue-600'
+                        'px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors border text-[11px]',
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : count === 0
+                          ? 'bg-gray-50 text-gray-400 border-gray-100 opacity-60'
                           : cn(badge.bg, badge.text, badge.border, 'hover:brightness-95')
                       )}
                     >
@@ -294,6 +425,25 @@ export function FundSourceCombobox({
             )}
           </div>
 
+          {/* Active Category Filter Banner */}
+          {selectedAuthFilter !== 'all' && (
+            <div className="flex items-center justify-between px-3 py-1.5 bg-blue-50/90 border-b border-blue-100 text-[11px] text-blue-800">
+              <span className="flex items-center gap-1.5 truncate">
+                <Filter className="h-3 w-3 shrink-0 text-blue-600" />
+                <span>
+                  Filtered by: <strong>{getUACSAuthorizationName(selectedAuthFilter)}</strong> ({filteredOptions.length} of {searchMatchedOptions.length})
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedAuthFilter('all')}
+                className="shrink-0 font-medium text-blue-700 hover:text-blue-950 underline ml-2 cursor-pointer"
+              >
+                Show all
+              </button>
+            </div>
+          )}
+
           {/* Options List */}
           <div className="max-h-72 overflow-y-auto divide-y divide-gray-50 p-1">
             {filteredOptions.length === 0 ? (
@@ -303,7 +453,19 @@ export function FundSourceCombobox({
                 {searchValue && (
                   <p className="text-[11px] text-gray-400 mt-1">
                     No fund sources match "{searchValue}"
+                    {selectedAuthFilter !== 'all'
+                      ? ` under ${getUACSAuthorizationName(selectedAuthFilter)}`
+                      : ''}
                   </p>
+                )}
+                {selectedAuthFilter !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAuthFilter('all')}
+                    className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-800 underline inline-block cursor-pointer"
+                  >
+                    Search in all categories ({searchMatchedOptions.length} results)
+                  </button>
                 )}
               </div>
             ) : (

@@ -1,5 +1,6 @@
 import React from 'react'
 import {
+  AlertCircle,
   CheckCircle,
   Clock,
   Loader2,
@@ -14,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { OPCR, OPCRDetails } from '../types/type.opcr'
+import { evaluateOPCRReadiness } from '../utils/opcrReadinessUtils'
 import { formatCurrencyPHP } from '@/utils/formatters'
 
 interface OPCRReadinessCardProps {
@@ -60,15 +62,7 @@ export const OPCRReadinessCard: React.FC<OPCRReadinessCardProps> = ({
   const normalizedStatus =
     rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase()
 
-  const kpiCount =
-    (opcr as OPCRDetails).kpiAssignmentCount ??
-    (opcr as OPCRDetails).opcrItems?.length ??
-    0
-  const activityCount =
-    (opcr as OPCRDetails).activityCount ??
-    (opcr as OPCRDetails).opcrActivities?.length ??
-    0
-  const totalBudget = opcr.totalBudget ?? 0
+  const readiness = evaluateOPCRReadiness(opcr)
 
   // 1. Submitted State (Pending Review/Approval)
   if (normalizedStatus === 'Submitted') {
@@ -96,12 +90,12 @@ export const OPCRReadinessCard: React.FC<OPCRReadinessCardProps> = ({
           <div className="space-y-1 text-xs text-slate-600">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-slate-800">Total Allotted Budget:</span>
-              <span>{formatCurrencyPHP(totalBudget)}</span>
+              <span>{formatCurrencyPHP(readiness.totalBudget)}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-slate-800">Commitment Scope:</span>
               <span>
-                {kpiCount} KPIs • {activityCount} Activities
+                {readiness.kpiCount} KPIs • {readiness.activityCount} Activities
               </span>
             </div>
           </div>
@@ -161,7 +155,7 @@ export const OPCRReadinessCard: React.FC<OPCRReadinessCardProps> = ({
           <div className="text-right flex-shrink-0">
             <span className="text-xs text-emerald-700 font-semibold block">Total Approved Budget</span>
             <span className="text-sm font-bold text-emerald-950">
-              {formatCurrencyPHP(totalBudget)}
+              {formatCurrencyPHP(readiness.totalBudget)}
             </span>
           </div>
         </CardContent>
@@ -191,17 +185,79 @@ export const OPCRReadinessCard: React.FC<OPCRReadinessCardProps> = ({
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1 text-xs text-slate-600">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-800">Total Budget:</span>
-              <span>{formatCurrencyPHP(totalBudget)}</span>
+        <CardContent className="pt-4 space-y-4">
+          {!readiness.isReady ? (
+            <div className="space-y-2">
+              <h5 className="text-xs font-semibold text-rose-900 uppercase tracking-wider">
+                Outstanding Issues ({readiness.errors.length})
+              </h5>
+              <ul className="space-y-1.5 pl-1">
+                {readiness.errors.map((err, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-xs text-rose-800 font-medium">
+                    <span className="text-rose-500 font-bold">•</span>
+                    <span>{err}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-800">Commitment Scope:</span>
-              <span>
-                {kpiCount} KPIs • {activityCount} Activities
-              </span>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-emerald-800 font-medium">
+                <Check className="w-4 h-4 text-emerald-600" />
+                All requirements have been met. You can now resubmit this OPCR.
+              </div>
+              {onOpenSubmit && (
+                <Button
+                  size="sm"
+                  disabled={isSubmitting}
+                  onClick={onOpenSubmit}
+                  className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  {isSubmitting ? 'Resubmitting...' : 'Resubmit for Approval'}
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // 4. Draft State: Ready for Submission
+  if (readiness.isReady) {
+    return (
+      <Card className="border-emerald-200 bg-gradient-to-r from-emerald-50/60 to-white shadow-xs mb-8">
+        <CardHeader className="pb-3 border-b border-emerald-100/80">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle className="w-5 h-5 text-emerald-600" />
+              <div>
+                <CardTitle className="text-base font-bold text-emerald-950">
+                  Ready for Submission
+                </CardTitle>
+                <p className="text-xs text-emerald-800 mt-0.5">
+                  Review your assigned KPIs, targets, and activities. When finalized, submit this OPCR to forward it to the Planning Office for review and approval.
+                </p>
+              </div>
+            </div>
+            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 font-semibold px-3 py-1 text-xs">
+              Ready
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-emerald-900">
+              {readiness.passedChecks.map((check, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{check}</span>
+                </div>
+              ))}
+            </div>
+            <div className="text-xs text-slate-500 pt-1">
+              Total Budget: {formatCurrencyPHP(readiness.totalBudget)}
             </div>
           </div>
           {onOpenSubmit && (
@@ -211,8 +267,8 @@ export const OPCRReadinessCard: React.FC<OPCRReadinessCardProps> = ({
               onClick={onOpenSubmit}
               className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex-shrink-0"
             >
-              <RotateCcw className="w-4 h-4" />
-              {isSubmitting ? 'Resubmitting...' : 'Resubmit for Approval'}
+              <Send className="w-4 h-4" />
+              {isSubmitting ? 'Submitting...' : 'Submit for Approval'}
             </Button>
           )}
         </CardContent>
@@ -220,52 +276,82 @@ export const OPCRReadinessCard: React.FC<OPCRReadinessCardProps> = ({
     )
   }
 
-  // 4. Draft State (Default)
+  // 5. Draft State: Incomplete (Not Ready)
   return (
-    <Card className="border-emerald-200 bg-gradient-to-r from-emerald-50/60 to-white shadow-xs mb-8">
-      <CardHeader className="pb-3 border-b border-emerald-100/80">
+    <Card className="border-amber-200/80 bg-gradient-to-r from-amber-50/50 to-white shadow-xs mb-8">
+      <CardHeader className="pb-3 border-b border-amber-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <CheckCircle className="w-5 h-5 text-emerald-600" />
+            <AlertCircle className="w-5 h-5 text-amber-600" />
             <div>
-              <CardTitle className="text-base font-bold text-emerald-950">
-                Ready for Submission
+              <CardTitle className="text-base font-bold text-amber-950">
+                Not Ready for Submission
               </CardTitle>
-              <p className="text-xs text-emerald-800 mt-0.5">
-                Review your assigned KPIs, targets, and activities. When finalized, submit this OPCR to forward it to the Planning Office for review and approval.
+              <p className="text-xs text-amber-800 mt-0.5">
+                Complete the items below before submitting this OPCR for approval.
               </p>
             </div>
           </div>
-          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 font-semibold px-3 py-1 text-xs">
-            Draft
+          <Badge
+            variant="outline"
+            className="border-amber-300 text-amber-800 bg-amber-50 font-semibold px-3 py-1 text-xs"
+          >
+            Draft • Incomplete
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="space-y-1 text-xs text-slate-600">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-800">Total Allotted Budget:</span>
-            <span>{formatCurrencyPHP(totalBudget)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-800">Commitment Scope:</span>
-            <span>
-              {kpiCount} KPIs • {activityCount} Activities
-            </span>
-          </div>
+      <CardContent className="pt-4 space-y-4">
+        {/* Missing Requirements List */}
+        <div className="space-y-2">
+          <h5 className="text-xs font-semibold text-amber-900 uppercase tracking-wider">
+            Required Actions ({readiness.errors.length})
+          </h5>
+          <ul className="space-y-1.5 pl-1">
+            {readiness.errors.map((err, idx) => (
+              <li
+                key={idx}
+                className="flex items-start gap-2 text-xs text-amber-900 font-medium"
+              >
+                <span className="text-amber-500 font-bold">•</span>
+                <span>{err}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-        {onOpenSubmit && (
+
+        {/* Passed Requirements List */}
+        {readiness.passedChecks.length > 0 && (
+          <div className="pt-2 border-t border-amber-100/80">
+            <h5 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              Completed Checks ({readiness.passedChecks.length})
+            </h5>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+              {readiness.passedChecks.map((check, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{check}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-2 border-t border-amber-100/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="text-xs text-slate-500">
+            Commitment Scope: {readiness.kpiCount} KPIs • {readiness.activityCount} Activities
+          </div>
           <Button
             size="sm"
-            disabled={isSubmitting}
-            onClick={onOpenSubmit}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex-shrink-0"
+            disabled={true}
+            className="gap-2 bg-slate-200 text-slate-400 cursor-not-allowed shadow-none flex-shrink-0"
+            title="Complete required actions above to enable submission"
           >
             <Send className="w-4 h-4" />
-            {isSubmitting ? 'Submitting...' : 'Submit for Approval'}
+            Submit for Approval
           </Button>
-        )}
+        </div>
       </CardContent>
     </Card>
   )
 }
+

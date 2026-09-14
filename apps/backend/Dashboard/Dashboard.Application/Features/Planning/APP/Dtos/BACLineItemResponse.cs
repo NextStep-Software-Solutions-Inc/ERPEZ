@@ -36,6 +36,7 @@ public record BACProcurementDetailResponse
 public record BACLineItemResponse
 {
     public Guid Id { get; init; }
+    public string PAPCode { get; init; } = string.Empty;
     public string ItemName { get; init; } = string.Empty;
     public string Unit { get; init; } = string.Empty;
     public int Quantity { get; init; }

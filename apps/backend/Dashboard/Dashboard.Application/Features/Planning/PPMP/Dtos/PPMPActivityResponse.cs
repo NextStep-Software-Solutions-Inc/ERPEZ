@@ -7,6 +7,7 @@ public record PPMPActivityResponse
     public Guid LIBActivityId { get; init; }
     public string ActivityName { get; init; } = string.Empty;
     public string ActivityCode { get; init; } = string.Empty;
+    public string PAPCode { get; init; } = string.Empty;
     public int TotalItems { get; init; }
     public int TotalItemAllocations { get; init; }
     public int TotalAllocationQuantity { get; init; }

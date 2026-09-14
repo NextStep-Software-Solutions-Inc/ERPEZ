@@ -129,7 +129,9 @@ internal static class PPMPQueryProjection
             CSEItemId = item.CSEItemId,
             NonCSEItemId = item.NonCSEItemId,
             ProcurementModeId = item.ProcurementModeId,
-            PAPCode = item.PAPCode,
+            PAPCode = !string.IsNullOrWhiteSpace(item.PAPCode) 
+                ? item.PAPCode 
+                : item.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.PAPCode,
             Name = item.Name,
             Description = item.Description,
             Unit = item.Unit,
@@ -282,7 +284,8 @@ internal static class PPMPQueryProjection
             PPMPId = activity.PPMPId,
             LIBActivityId = activity.LIBActivityId,
             ActivityName = activity.LIBActivity?.Name ?? string.Empty,
-            ActivityCode = string.Empty,
+            ActivityCode = activity.LIBActivity?.PAPCode ?? string.Empty,
+            PAPCode = activity.LIBActivity?.PAPCode ?? string.Empty,
             TotalItems = items.Count,
             TotalItemAllocations = allocations.Count,
             TotalAllocationQuantity = items.Sum(i => {
@@ -346,7 +349,9 @@ internal static class PPMPQueryProjection
             CSEItemId = item.CSEItemId,
             NonCSEItemId = item.NonCSEItemId,
             ProcurementModeId = item.ProcurementModeId,
-            PAPCode = item.PAPCode,
+            PAPCode = !string.IsNullOrWhiteSpace(item.PAPCode) 
+                ? item.PAPCode 
+                : item.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.PAPCode,
             Name = item.Name,
             Description = item.Description,
             Unit = item.Unit,

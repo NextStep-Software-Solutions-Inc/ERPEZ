@@ -20,6 +20,7 @@ interface AddPPMPItemDialogProps {
   onOpenChange: (open: boolean) => void
   ppmpExpenditureItemId: string
   itemToEdit?: PPMPItem | null
+  defaultPapCode?: string
   onSuccess?: () => void
 }
 
@@ -28,6 +29,7 @@ export default function AddPPMPItemDialog({
   onOpenChange,
   ppmpExpenditureItemId,
   itemToEdit,
+  defaultPapCode,
   onSuccess,
 }: AddPPMPItemDialogProps) {
   const queryClient = useQueryClient()
@@ -122,7 +124,7 @@ export default function AddPPMPItemDialog({
     unitPrice: itemToEdit?.unitPrice ?? 0,
     plannedQuantity: itemToEdit?.plannedQuantity ?? 1,
     procurementModeId: itemToEdit?.procurementModeId ?? '',
-    papCode: itemToEdit?.papCode ?? '',
+    papCode: itemToEdit?.papCode ?? defaultPapCode ?? '',
     projectType: (itemToEdit?.projectType as any) ?? 'Goods',
     preProcurementConference: itemToEdit?.preProcurementConference ?? false,
     procurementStartDate: itemToEdit?.procurementStartDate ? itemToEdit.procurementStartDate.split('T')[0] : '',
@@ -165,6 +167,7 @@ export default function AddPPMPItemDialog({
         <AddPPMPItemForm
           formId="add-ppmp-item-form"
           initialValues={initialValues}
+          defaultPapCode={defaultPapCode}
           onSubmit={handleSubmit}
           isLoading={isLoading}
         />

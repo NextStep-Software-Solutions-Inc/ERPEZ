@@ -1,4 +1,4 @@
-﻿import { OPCRActivity } from '@/features/planning/opcr'
+import { OPCRActivity } from '@/features/planning/opcr'
 import {
   WFPObjectiveActivity,
   WFPObjectiveActivityExpenditure,
@@ -9,6 +9,7 @@ import { LineItemBudgetDetails } from '../../line-item-budget-details/types/type
 export type Activity = {
   id: string
   name: string
+  papCode?: string
   wfpObjectiveActivityId?: string
   opcrActivityId?: string
   wfpObjectiveActivity?: WFPObjectiveActivity
@@ -26,6 +27,7 @@ export type LIBActivity = {
   wfpObjectiveActivityId?: string
   opcrActivityId?: string
   name?: string
+  papCode?: string
   lineItemBudget: {
     id: string
     libNumber: string

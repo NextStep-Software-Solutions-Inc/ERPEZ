@@ -131,6 +131,7 @@ interface AddPPMPItemsModalProps {
   fiscalYear?: number | string
   ppmpTitle?: string
   expenditureItemTitle?: string
+  defaultPapCode?: string
   onSuccess?: () => void
 }
 
@@ -217,6 +218,7 @@ export default function AddPPMPItemsModal({
   fiscalYear,
   ppmpTitle,
   expenditureItemTitle,
+  defaultPapCode,
   onSuccess,
 }: AddPPMPItemsModalProps) {
   const queryClient = useQueryClient()
@@ -560,7 +562,7 @@ export default function AddPPMPItemsModal({
               plannedQuantity: undefined,
               procurementModeId: '',
               projectType: 'Goods',
-              papCode: '',
+              papCode: defaultPapCode || '',
               preProcurementConference: false,
               procurementStartDate: '',
               procurementEndDate: '',
@@ -588,7 +590,7 @@ export default function AddPPMPItemsModal({
         return next
       })
     },
-    [],
+    [defaultPapCode],
   )
 
   const updateConfig = (itemId: string, patch: Partial<ItemReviewConfig>) => {
@@ -1903,7 +1905,7 @@ export default function AddPPMPItemsModal({
                           : ((item as NONCSEItem).currentPrice ?? 0),
                       procurementModeId: '',
                       projectType: 'Goods',
-                      papCode: '',
+                      papCode: defaultPapCode || '',
                       preProcurementConference: false,
                       procurementStartDate: '',
                       procurementEndDate: '',
@@ -2490,15 +2492,20 @@ export default function AddPPMPItemsModal({
                               {/* Row 3: PAP Code & Conference */}
                               <div className="grid gap-3.5 sm:grid-cols-3 sm:items-end">
                                 <div className="space-y-1.5 sm:col-span-2">
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex items-center gap-1.5">
                                     <label className="text-xs font-semibold text-foreground">
                                       PAP Code
                                     </label>
+                                    {defaultPapCode && config.papCode === defaultPapCode && (
+                                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                        Inherited
+                                      </span>
+                                    )}
                                     <FieldDescriptionTooltip fieldKey="papCode" className="h-3.5 w-3.5" />
                                   </div>
                                   <Input
                                     value={config.papCode || ''}
-                                    placeholder="e.g. 5020301000"
+                                    placeholder={defaultPapCode ? `Inherited: ${defaultPapCode}` : "e.g. 5020301000"}
                                     onChange={(e) =>
                                       updateConfig(item.id, {
                                         papCode: e.target.value,
@@ -2506,6 +2513,11 @@ export default function AddPPMPItemsModal({
                                     }
                                     className="text-xs h-9 border-default-200"
                                   />
+                                  {defaultPapCode && (
+                                    <p className="text-[10px] text-muted-foreground">
+                                      Auto-inherited from parent activity. You can edit this field to override.
+                                    </p>
+                                  )}
                                 </div>
 
                                 <div className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/70 bg-muted/15 hover:bg-muted/30 cursor-pointer transition-colors">

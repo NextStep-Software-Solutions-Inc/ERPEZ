@@ -2482,6 +2482,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("OPCRActivityId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("PAPCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 

@@ -107,6 +107,21 @@ public class UpdateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
         assignment.IsLocked = request.IsLocked;
 
         unitOfWork.KPIAssignmentRepository.Update(assignment);
+
+        // Synchronize corresponding OPCR items with the updated quarterly targets
+        var opcrItems = await unitOfWork.OPCRItemRepository.ToListAsync(
+            unitOfWork.OPCRItemRepository.Query(i => i.KPIAssignmentId == assignment.Id && !i.IsDeleted),
+            cancellationToken);
+
+        foreach (var item in opcrItems)
+        {
+            item.Q1Target = request.AssignedTargetQ1 ?? 0;
+            item.Q2Target = request.AssignedTargetQ2 ?? 0;
+            item.Q3Target = request.AssignedTargetQ3 ?? 0;
+            item.Q4Target = request.AssignedTargetQ4 ?? 0;
+            unitOfWork.OPCRItemRepository.Update(item);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "KPI Assignment updated successfully.");

@@ -56,6 +56,11 @@ public class UpdateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
             ?? request.Name
             ?? throw new ERPEZ.Shared.Exceptions.ValidationException("Name is required for independent activities.");
 
+        if (!string.IsNullOrWhiteSpace(request.PAPCode))
+        {
+            entity.PAPCode = request.PAPCode;
+        }
+
         unitOfWork.LineItemBudgetActivityRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

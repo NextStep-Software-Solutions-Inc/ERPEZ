@@ -19,7 +19,11 @@ export const submitWfpDialogAtom = atom<{
 
 const useUpdateWfpStatus = createMutationHookFromTemplate(updateWFPStatusRequest)
 
-export default function SubmitWfpDialog() {
+interface SubmitWfpDialogProps {
+  onSuccess?: () => void
+}
+
+export default function SubmitWfpDialog({ onSuccess }: SubmitWfpDialogProps = {}) {
   const [dialogState, setDialogState] = useAtom(submitWfpDialogAtom)
   const { mutateAsync, isPending } = useUpdateWfpStatus()
   const queryClient = useQueryClient()
@@ -41,8 +45,10 @@ export default function SubmitWfpDialog() {
 
       toast.success('WFP submitted successfully!')
       setDialogState({ isOpen: false, wfpId: null })
-    } catch (error) {
-      toast.error('Failed to submit WFP.')
+      onSuccess?.()
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || 'Failed to submit WFP.'
+      toast.error(message)
     }
   }
 

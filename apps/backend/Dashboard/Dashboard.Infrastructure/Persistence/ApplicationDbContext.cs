@@ -1700,6 +1700,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMaxLength(500);
 
         modelBuilder.Entity<LineItemBudgetActivity>()
+            .Property(e => e.PAPCode)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<LineItemBudgetActivity>()
             .HasIndex(e => e.LineItemBudgetId);
 
         modelBuilder.Entity<LineItemBudgetActivity>()

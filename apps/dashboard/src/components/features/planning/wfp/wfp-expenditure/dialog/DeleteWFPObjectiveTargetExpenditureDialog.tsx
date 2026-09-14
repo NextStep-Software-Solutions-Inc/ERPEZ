@@ -26,7 +26,11 @@ export default function DeleteWFPObjectiveTargetExpenditureDialog() {
 
       void queryClient.invalidateQueries({
         predicate: (query) => query.queryKey.some(key => 
-          typeof key === 'string' && key.includes('/wfp-objective-activities')
+          typeof key === 'string' && (
+            key.includes('/wfp-objective-activities') ||
+            key.includes('/wfp-objective-activity-expenditures') ||
+            key.includes('/wfps')
+          )
         ),
       })
 

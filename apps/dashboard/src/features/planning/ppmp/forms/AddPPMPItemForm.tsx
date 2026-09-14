@@ -75,6 +75,7 @@ export type PPMPItemFormValues = z.infer<typeof ppmpItemSchema>
 interface AddPPMPItemFormProps {
   formId?: string
   initialValues?: Partial<PPMPItemFormValues>
+  defaultPapCode?: string
   onSubmit: (values: PPMPItemFormValues) => void
   isLoading?: boolean
 }
@@ -82,6 +83,7 @@ interface AddPPMPItemFormProps {
 export function AddPPMPItemForm({
   formId = 'add-ppmp-item-form',
   initialValues,
+  defaultPapCode,
   onSubmit,
   isLoading = false,
 }: AddPPMPItemFormProps) {
@@ -405,8 +407,13 @@ export function AddPPMPItemForm({
           name="papCode"
           children={(field) => (
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <Label htmlFor={field.name}>PAP Code</Label>
+                {defaultPapCode && field.state.value === defaultPapCode && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Inherited
+                  </span>
+                )}
                 <FieldDescriptionTooltip
                   fieldKey="papCode"
                   className="h-4 w-4"
@@ -414,12 +421,17 @@ export function AddPPMPItemForm({
               </div>
               <Input
                 id={field.name}
-                placeholder="e.g. 5-02-03-010"
+                placeholder={defaultPapCode ? `Inherited: ${defaultPapCode}` : "e.g. 5-02-03-010"}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 disabled={isLoading}
                 className="border-default-250 focus-visible:ring-primary/20 text-xs"
               />
+              {defaultPapCode && (
+                <p className="text-[10px] text-muted-foreground">
+                  Auto-inherited from parent activity. You can edit this field to override.
+                </p>
+              )}
               <FieldInfo field={field} />
             </div>
           )}
