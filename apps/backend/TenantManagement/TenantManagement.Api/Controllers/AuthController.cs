@@ -138,6 +138,165 @@ public class AuthController(
         return Ok(ApiResponse<object>.Success(responseData));
     }
 
+    public record LoginRequest(string? UsernameOrEmail, string? Password, bool RememberMe = false);
+
+    /// <summary>
+    /// Authenticates a user in-app via Keycloak Direct Access Grant (ROPC) or dev persona fallback.
+    /// Returns bearer token and user/tenant profile.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest? request, CancellationToken cancellationToken)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.UsernameOrEmail) || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return BadRequest(ApiResponse<object>.Fail("Username or email and password are required."));
+        }
+
+        var usernameOrEmail = request.UsernameOrEmail.Trim();
+        var password = request.Password;
+
+        // 1. Try Keycloak Direct Access Grant (ROPC flow)
+        var keycloakAuthResult = await TryKeycloakDirectLoginAsync(usernameOrEmail, password, cancellationToken);
+        if (keycloakAuthResult != null)
+        {
+            return Ok(ApiResponse<object>.Success(keycloakAuthResult, "Authentication successful."));
+        }
+
+        // 2. Dev Persona & Local Fallback (for offline testing or seeded dev personas)
+        var devPersona = DevTenantAndMemberSeeder.DevPersonas.FirstOrDefault(p =>
+            p.UserId.Equals(usernameOrEmail, StringComparison.OrdinalIgnoreCase) ||
+            p.Email.Equals(usernameOrEmail, StringComparison.OrdinalIgnoreCase) ||
+            p.DisplayName.Equals(usernameOrEmail, StringComparison.OrdinalIgnoreCase));
+
+        // In development or when testing, dev personas accept any password or common dev password
+        if (devPersona != null)
+        {
+            var isSuperAdmin = devPersona.UserId == "dev_superadmin";
+            var tenantId = DevTenantAndMemberSeeder.DevTenantId;
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, devPersona.ExternalIdentityId),
+                new("sub", devPersona.ExternalIdentityId),
+                new("tenant_id", tenantId.ToString()),
+                new("tenantId", tenantId.ToString()),
+                new("preferred_username", devPersona.UserId),
+                new("name", devPersona.DisplayName),
+                new(ClaimTypes.Name, devPersona.DisplayName),
+                new(ClaimTypes.Email, devPersona.Email),
+                new("email", devPersona.Email),
+                new("is_super_admin", isSuperAdmin.ToString().ToLowerInvariant())
+            };
+
+            foreach (var role in devPersona.RoleNames)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+                claims.Add(new Claim("role", role));
+            }
+
+            if (isSuperAdmin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "SuperAdmin"));
+                claims.Add(new Claim("role", "SuperAdmin"));
+            }
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(devSigningKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddDays(request.RememberMe ? 30 : 7),
+                Issuer = devIssuer,
+                Audience = devAudience,
+                SigningCredentials = credentials
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
+
+            var responseData = new
+            {
+                Token = tokenString,
+                RefreshToken = (string?)null,
+                User = new
+                {
+                    devPersona.UserId,
+                    devPersona.ExternalIdentityId,
+                    devPersona.DisplayName,
+                    devPersona.Email,
+                    Roles = isSuperAdmin ? [.. devPersona.RoleNames, "SuperAdmin"] : devPersona.RoleNames,
+                    TenantId = tenantId,
+                    IsSuperAdmin = isSuperAdmin
+                }
+            };
+
+            return Ok(ApiResponse<object>.Success(responseData, "Authentication successful."));
+        }
+
+        // 3. Control DB registered member fallback
+        var member = await unitOfWork.TenantMemberRepository.FindAsync(m =>
+            m.Email.ToLower() == usernameOrEmail.ToLower() ||
+            m.UserId.ToLower() == usernameOrEmail.ToLower(), cancellationToken);
+
+        if (member != null)
+        {
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, member.ExternalIdentityId),
+                new("sub", member.ExternalIdentityId),
+                new("tenant_id", member.TenantId.ToString()),
+                new("tenantId", member.TenantId.ToString()),
+                new("preferred_username", member.UserId),
+                new("name", $"{member.FirstName} {member.LastName}".Trim()),
+                new(ClaimTypes.Name, $"{member.FirstName} {member.LastName}".Trim()),
+                new(ClaimTypes.Email, member.Email),
+                new("email", member.Email),
+                new("is_super_admin", "false"),
+                new(ClaimTypes.Role, "Tenant Administrator"),
+                new("role", "Tenant Administrator")
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(devSigningKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddDays(request.RememberMe ? 30 : 7),
+                Issuer = devIssuer,
+                Audience = devAudience,
+                SigningCredentials = credentials
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
+
+            var responseData = new
+            {
+                Token = tokenString,
+                RefreshToken = (string?)null,
+                User = new
+                {
+                    UserId = member.UserId,
+                    ExternalIdentityId = member.ExternalIdentityId,
+                    DisplayName = $"{member.FirstName} {member.LastName}".Trim(),
+                    Email = member.Email,
+                    Roles = new[] { "Tenant Administrator" },
+                    TenantId = member.TenantId,
+                    IsSuperAdmin = false
+                }
+            };
+
+            return Ok(ApiResponse<object>.Success(responseData, "Authentication successful."));
+        }
+
+        return Unauthorized(ApiResponse<object>.Fail("Invalid username or password."));
+    }
+
     public record RegisterRequest(
         string? Username,
         string? Email,
@@ -379,5 +538,84 @@ public class AuthController(
         }
 
         return null;
+    }
+
+    private async Task<object?> TryKeycloakDirectLoginAsync(string usernameOrEmail, string password, CancellationToken cancellationToken)
+    {
+        var keycloakUrl = configuration["Keycloak:BaseUrl"]
+            ?? configuration["Keycloak:Authority"]?.Replace("/realms/erpez", "")
+            ?? "https://keycloak.dev.nextstep-software.com";
+        var clientId = configuration["Keycloak:Audience"] ?? "web-client";
+        var realm = "erpez";
+
+        try
+        {
+            var client = httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var tokenUrl = $"{keycloakUrl.TrimEnd('/')}/realms/{realm}/protocol/openid-connect/token";
+            var tokenContent = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["client_id"] = clientId,
+                ["grant_type"] = "password",
+                ["username"] = usernameOrEmail,
+                ["password"] = password
+            });
+
+            var res = await client.PostAsync(tokenUrl, tokenContent, cancellationToken);
+            if (!res.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var doc = await System.Text.Json.JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+            var root = doc.RootElement;
+
+            var accessToken = root.TryGetProperty("access_token", out var atProp) ? atProp.GetString() : null;
+            var refreshToken = root.TryGetProperty("refresh_token", out var rtProp) ? rtProp.GetString() : null;
+
+            if (string.IsNullOrWhiteSpace(accessToken)) return null;
+
+            // Parse JWT payload from accessToken
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(accessToken);
+
+            var sub = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value ?? string.Empty;
+            var email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? usernameOrEmail;
+            var username = jwt.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value ?? usernameOrEmail;
+            var name = jwt.Claims.FirstOrDefault(c => c.Type == "name")?.Value ?? username;
+
+            var realmRoles = jwt.Claims.Where(c => c.Type == "realm_access" || c.Type == "role" || c.Type == ClaimTypes.Role)
+                .Select(c => c.Value).ToList();
+            var isSuperAdmin = realmRoles.Any(r => r.Contains("SuperAdmin") || r.Contains("platform_administrator"));
+
+            // Look up tenant membership for this user
+            var member = await unitOfWork.TenantMemberRepository.FindAsync(m =>
+                (m.ExternalIdentityId == sub || m.Email.ToLower() == email.ToLower() || m.UserId.ToLower() == username.ToLower()) &&
+                !m.IsDeleted, cancellationToken);
+
+            var tenantId = member?.TenantId ?? DevTenantAndMemberSeeder.DevTenantId;
+
+            return new
+            {
+                Token = accessToken,
+                RefreshToken = refreshToken,
+                User = new
+                {
+                    UserId = username,
+                    ExternalIdentityId = sub,
+                    DisplayName = name,
+                    Email = email,
+                    Roles = realmRoles.Count > 0 ? realmRoles.ToArray() : new[] { "Tenant Administrator" },
+                    TenantId = tenantId,
+                    IsSuperAdmin = isSuperAdmin
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Keycloak Direct Login Notice] {ex.Message}");
+            return null;
+        }
     }
 }

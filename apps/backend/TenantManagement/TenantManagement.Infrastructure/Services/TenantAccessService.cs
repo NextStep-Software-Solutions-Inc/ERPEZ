@@ -25,6 +25,16 @@ public class TenantAccessService(
         string requestHost,
         CancellationToken cancellationToken = default)
     {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return TenantAccessResult.Fail(
+                "Request was cancelled by client.",
+                "REQUEST_CANCELLED",
+                499);
+        }
+
+        try
+        {
         // 1. Authentication Prerequisite
         if (user?.Identity?.IsAuthenticated != true)
         {
@@ -162,5 +172,13 @@ public class TenantAccessService(
         );
 
         return TenantAccessResult.Success(accessContext);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return TenantAccessResult.Fail(
+                "Request was cancelled by client.",
+                "REQUEST_CANCELLED",
+                499);
+        }
     }
 }

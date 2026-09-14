@@ -63,39 +63,56 @@ public class TenantAccessValidationMiddleware(RequestDelegate next)
             return;
         }
 
-        // Candidate tenant provided: execute authoritative access evaluation
-        var accessResult = await accessService.EvaluateAccessAsync(
-            context.User,
-            candidateTenantId.Value,
-            context.Request.Host.Host,
-            context.RequestAborted);
-
-        if (!accessResult.IsAllowed)
+        try
         {
-            context.Response.StatusCode = accessResult.HttpStatusCode;
-            context.Response.ContentType = "application/json";
-            var err = ApiResponse<object>.Fail(accessResult.FailureReason ?? "Access denied.");
-            await context.Response.WriteAsync(JsonSerializer.Serialize(err));
-            return;
+            // Candidate tenant provided: execute authoritative access evaluation
+            var accessResult = await accessService.EvaluateAccessAsync(
+                context.User,
+                candidateTenantId.Value,
+                context.Request.Host.Host,
+                context.RequestAborted);
+
+            if (!accessResult.IsAllowed)
+            {
+                if (context.RequestAborted.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                context.Response.StatusCode = accessResult.HttpStatusCode;
+                context.Response.ContentType = "application/json";
+                var err = ApiResponse<object>.Fail(accessResult.FailureReason ?? "Access denied.");
+                await context.Response.WriteAsync(JsonSerializer.Serialize(err));
+                return;
+            }
+
+            // CRITICAL INVARIANT: Connection information is resolved strictly AFTER authorization succeeds
+            var connectionInfo = await connectionResolver.ResolveConnectionInfoAsync(
+                candidateTenantId.Value,
+                context.RequestAborted);
+
+            if (connectionInfo == null || string.IsNullOrWhiteSpace(connectionInfo.ConnectionString))
+            {
+                if (context.RequestAborted.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                context.Response.ContentType = "application/json";
+                var err = ApiResponse<object>.Fail("Operational database connection could not be established for this tenant.");
+                await context.Response.WriteAsync(JsonSerializer.Serialize(err));
+                return;
+            }
+
+            // Initialize scoped request context with verified governance and infrastructure state
+            requestContext.Initialize(accessResult.Context!, connectionInfo);
+
+            await next(context);
         }
-
-        // CRITICAL INVARIANT: Connection information is resolved strictly AFTER authorization succeeds
-        var connectionInfo = await connectionResolver.ResolveConnectionInfoAsync(
-            candidateTenantId.Value,
-            context.RequestAborted);
-
-        if (connectionInfo == null || string.IsNullOrWhiteSpace(connectionInfo.ConnectionString))
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
-            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            context.Response.ContentType = "application/json";
-            var err = ApiResponse<object>.Fail("Operational database connection could not be established for this tenant.");
-            await context.Response.WriteAsync(JsonSerializer.Serialize(err));
-            return;
+            // Client closed connection or aborted the HTTP request before completion. Exit gracefully.
         }
-
-        // Initialize scoped request context with verified governance and infrastructure state
-        requestContext.Initialize(accessResult.Context!, connectionInfo);
-
-        await next(context);
     }
 }

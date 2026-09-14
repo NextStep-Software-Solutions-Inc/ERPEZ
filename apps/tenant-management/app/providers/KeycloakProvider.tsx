@@ -46,6 +46,11 @@ export interface KeycloakContextType {
   login: () => void;
   logout: () => void;
   register: () => void;
+  loginInApp: (payload: {
+    usernameOrEmail: string;
+    password: string;
+    rememberMe?: boolean;
+  }) => Promise<{ success: boolean; error?: string }>;
   registerInApp: (payload: {
     username: string;
     email: string;
@@ -495,6 +500,79 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
     window.location.href = regUrl;
   };
 
+  const loginInApp = async (payload: {
+    usernameOrEmail: string;
+    password: string;
+    rememberMe?: boolean;
+  }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch(`${backendUrl}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok || !json.succeeded) {
+        return {
+          success: false,
+          error: json.message || json.errors?.[0] || 'Invalid username or password.',
+        };
+      }
+
+      const authData = json.data;
+      if (authData?.token) {
+        const jwtToken = authData.token;
+        const userObj = authData.user;
+        const assignedTenantId = authData.tenant?.id || userObj?.tenantId || '00000000-0000-0000-0000-000000000001';
+        const superAdminFlag = Boolean(userObj?.isSuperAdmin);
+
+        setToken(jwtToken);
+        setRefreshToken(authData.refreshToken || null);
+        setAuthToken(jwtToken);
+        setIsAuthenticated(true);
+        setUserName(userObj.userId);
+        setEmail(userObj.email);
+        setDisplayName(userObj.displayName || userObj.userId);
+        setRoles(userObj.roles || ['Tenant Administrator']);
+        setTenantId(assignedTenantId);
+        setIsSuperAdmin(superAdminFlag);
+
+        try {
+          localStorage.setItem('erpez_auth_provider', 'in_app');
+          localStorage.setItem('erpez_auth_token', jwtToken);
+          if (authData.refreshToken) {
+            localStorage.setItem('erpez_refresh_token', authData.refreshToken);
+          }
+          localStorage.setItem('erpez_tenant_id', assignedTenantId);
+          localStorage.setItem('erpez_is_super_admin', String(superAdminFlag));
+          localStorage.setItem('erpez_display_name', userObj.displayName || userObj.userId);
+          localStorage.setItem('erpez_email', userObj.email);
+          localStorage.setItem('erpez_roles', JSON.stringify(userObj.roles || ['Tenant Administrator']));
+          if (payload.rememberMe) {
+            localStorage.setItem('erpez_remembered_username', payload.usernameOrEmail);
+          } else {
+            localStorage.removeItem('erpez_remembered_username');
+          }
+        } catch {
+          // Ignore
+        }
+
+        if (keycloak) {
+          (keycloak as any).token = jwtToken;
+          (keycloak as any).authenticated = true;
+        }
+
+        return { success: true };
+      }
+
+      return { success: false, error: 'Token missing in authentication response.' };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Network error during login.' };
+    }
+  };
+
   const registerInApp = async (payload: {
     username: string;
     email: string;
@@ -601,6 +679,7 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
         login,
         logout,
         register,
+        loginInApp,
         registerInApp,
         updateToken,
         switchDevUser,
