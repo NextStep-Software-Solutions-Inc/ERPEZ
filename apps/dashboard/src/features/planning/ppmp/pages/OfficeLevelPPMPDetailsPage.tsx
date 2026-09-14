@@ -2020,7 +2020,7 @@ export function ExpenditureItemGroup({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => onAddItem(group.id)}
+              onClick={() => onAddItem(group.id, (group as any).papCode)}
               className="h-8 text-xs font-medium flex items-center gap-1.5 border-primary/20 hover:bg-primary/5 text-primary rounded-lg"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -2884,13 +2884,28 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           (a as any).PPMPExpenditureItems?.some((g: any) => g.id === itemDialogGroupId),
       )
       if (parentAct?.papCode) return parentAct.papCode
+
+      const expItem = currentActivityExpItemsResp?.data?.find(
+        (e) => e.id === itemDialogGroupId,
+      )
+      if (expItem?.ppmpActivityId) {
+        const act = activities.find((a) => a.id === expItem.ppmpActivityId)
+        if (act?.papCode) return act.papCode
+      }
     }
     if (selectedActivity?.papCode) return selectedActivity.papCode
     if (lib?.lineItemBudgetActivities?.[0]?.papCode) {
       return lib.lineItemBudgetActivities[0].papCode
     }
     return ''
-  }, [dialogPapCode, activities, itemDialogGroupId, selectedActivity, lib])
+  }, [
+    dialogPapCode,
+    activities,
+    itemDialogGroupId,
+    selectedActivity,
+    lib,
+    currentActivityExpItemsResp?.data,
+  ])
 
   const existingLibActivityIds = useMemo(() => {
     if (!ppmp) return []

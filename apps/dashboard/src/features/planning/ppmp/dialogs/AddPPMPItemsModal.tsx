@@ -720,7 +720,7 @@ export default function AddPPMPItemsModal({
             cseItemId: undefined,
             nonCseItemId: type === 'non-cse' ? item.id : undefined,
             projectType: config.projectType,
-            papCode: config.papCode || undefined,
+            papCode: defaultPapCode || config.papCode || undefined,
             preProcurementConference: config.preProcurementConference,
             procurementStartDate: config.procurementStartDate || undefined,
             procurementEndDate: config.procurementEndDate || undefined,
@@ -2496,28 +2496,27 @@ export default function AddPPMPItemsModal({
                                     <label className="text-xs font-semibold text-foreground">
                                       PAP Code
                                     </label>
-                                    {defaultPapCode && config.papCode === defaultPapCode && (
-                                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                        Inherited
-                                      </span>
-                                    )}
                                     <FieldDescriptionTooltip fieldKey="papCode" className="h-3.5 w-3.5" />
                                   </div>
-                                  <Input
-                                    value={config.papCode || ''}
-                                    placeholder={defaultPapCode ? `Inherited: ${defaultPapCode}` : "e.g. 5020301000"}
-                                    onChange={(e) =>
-                                      updateConfig(item.id, {
-                                        papCode: e.target.value,
-                                      })
-                                    }
-                                    className="text-xs h-9 border-default-200"
-                                  />
-                                  {defaultPapCode && (
-                                    <p className="text-[10px] text-muted-foreground">
-                                      Auto-inherited from parent activity. You can edit this field to override.
-                                    </p>
-                                  )}
+                                  <div className="h-9 px-3 py-2 rounded-md border border-border/60 bg-muted/40 flex items-center justify-between text-xs">
+                                    {defaultPapCode || config.papCode ? (
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-mono font-medium text-foreground">
+                                          {defaultPapCode || config.papCode}
+                                        </span>
+                                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800">
+                                          Inherited
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground italic text-xs">
+                                        No PAP Code assigned
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    Auto-inherited from parent Program / Activity / Project (PAP).
+                                  </p>
                                 </div>
 
                                 <div className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/70 bg-muted/15 hover:bg-muted/30 cursor-pointer transition-colors">
