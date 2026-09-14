@@ -110,10 +110,10 @@ export interface ItemReviewConfig {
   plannedQuantity?: number
   procurementModeId: string
   projectType:
-    | 'Goods'
-    | 'Infrastructure'
-    | 'ConsultingServices'
-    | 'GeneralSupportServices'
+  | 'Goods'
+  | 'Infrastructure'
+  | 'ConsultingServices'
+  | 'GeneralSupportServices'
   papCode: string
   preProcurementConference: boolean
   procurementStartDate: string
@@ -375,6 +375,7 @@ export default function AddPPMPItemsModal({
 
   // Query existing PPMP items in this expenditure block to prevent duplicates
   const { data: existingPPMPItemsResponse } = usePPMPItems({
+    pathParams: {},
     queryParams: {
       filters: ppmpExpenditureItemId ? `ppmpExpenditureItemId==${ppmpExpenditureItemId}` : undefined,
       pageSize: 1000,
@@ -927,9 +928,9 @@ export default function AddPPMPItemsModal({
             ? (e) => e.preventDefault()
             : selectedItems.size > 0 && !isCommittedRef.current
               ? (e) => {
-                  e.preventDefault()
-                  setConfirmCloseOpen(true)
-                }
+                e.preventDefault()
+                setConfirmCloseOpen(true)
+              }
               : undefined
         }
         footer={
@@ -948,9 +949,9 @@ export default function AddPPMPItemsModal({
                       ? 'Items ready to be configured.'
                       : 'Select one or more items to continue.'
                     : `Total Planned Cost: ${new Intl.NumberFormat('en-PH', {
-                        style: 'currency',
-                        currency: 'PHP',
-                      }).format(totalStep2EstimatedCost)}`}
+                      style: 'currency',
+                      currency: 'PHP',
+                    }).format(totalStep2EstimatedCost)}`}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -1366,13 +1367,13 @@ export default function AddPPMPItemsModal({
                                                         category,
                                                       )
                                                         ? tabFilters.categories.filter(
-                                                            (c) =>
-                                                              c !== category,
-                                                          )
+                                                          (c) =>
+                                                            c !== category,
+                                                        )
                                                         : [
-                                                            ...tabFilters.categories,
-                                                            category,
-                                                          ],
+                                                          ...tabFilters.categories,
+                                                          category,
+                                                        ],
                                                   },
                                                   true,
                                                 )
@@ -1417,12 +1418,12 @@ export default function AddPPMPItemsModal({
                                               {
                                                 unitOfMeasures: isSelected
                                                   ? tabFilters.unitOfMeasures.filter(
-                                                      (u) => u !== unit,
-                                                    )
+                                                    (u) => u !== unit,
+                                                  )
                                                   : [
-                                                      ...tabFilters.unitOfMeasures,
-                                                      unit,
-                                                    ],
+                                                    ...tabFilters.unitOfMeasures,
+                                                    unit,
+                                                  ],
                                               },
                                               true,
                                             )
@@ -1488,9 +1489,9 @@ export default function AddPPMPItemsModal({
                           </div>
                         ) : totalMatchingCount === 0 ? (
                           activeTab === 'cse' &&
-                          isReadyToFetchCse &&
-                          !search.trim() &&
-                          currentFilters.categories.length === 0 ? (
+                            isReadyToFetchCse &&
+                            !search.trim() &&
+                            currentFilters.categories.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
                               <div className="rounded-full bg-amber-500/10 p-3 mb-3 text-amber-600 dark:text-amber-400">
                                 <AlertCircle className="h-6 w-6" />
@@ -1590,7 +1591,7 @@ export default function AddPPMPItemsModal({
                                   tab === 'cse'
                                     ? (item as ProcurementItem).objectCodeName
                                     : (item as NONCSEItem)
-                                        .procurementCategoryName
+                                      .procurementCategoryName
 
                                 return (
                                   <div
@@ -1751,25 +1752,25 @@ export default function AddPPMPItemsModal({
 
                                         {((tab === 'cse' &&
                                           (item as ProcurementItem).unitPrice !==
-                                            undefined) ||
+                                          undefined) ||
                                           (tab === 'non-cse' &&
                                             (item as NONCSEItem).currentPrice !==
-                                              undefined)) && (
-                                          <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
-                                            <span className="text-[10px] text-slate-400 font-normal">
-                                              Catalog Price
-                                            </span>
-                                            <span className="text-primary font-extrabold text-[12px]">
-                                              ₱
-                                              {(tab === 'cse'
-                                                ? (item as ProcurementItem)
+                                            undefined)) && (
+                                            <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
+                                              <span className="text-[10px] text-slate-400 font-normal">
+                                                Catalog Price
+                                              </span>
+                                              <span className="text-primary font-extrabold text-[12px]">
+                                                ₱
+                                                {(tab === 'cse'
+                                                  ? (item as ProcurementItem)
                                                     .unitPrice ?? 0
-                                                : (item as NONCSEItem)
+                                                  : (item as NONCSEItem)
                                                     .currentPrice ?? 0
-                                              ).toFixed(2)}
-                                            </span>
-                                          </div>
-                                        )}
+                                                ).toFixed(2)}
+                                              </span>
+                                            </div>
+                                          )}
 
                                         <div className="flex items-center justify-between border-t border-slate-100/80 pt-2 mt-1">
                                           <button
@@ -1995,19 +1996,19 @@ export default function AddPPMPItemsModal({
                     const isPriceLocked =
                       type === 'cse'
                         ? (item as ProcurementItem).hasPrice &&
-                          typeof (item as ProcurementItem).unitPrice ===
-                            'number' &&
-                          ((item as ProcurementItem).unitPrice ?? 0) > 0
+                        typeof (item as ProcurementItem).unitPrice ===
+                        'number' &&
+                        ((item as ProcurementItem).unitPrice ?? 0) > 0
                         : typeof (item as NONCSEItem).currentPrice ===
-                            'number' &&
-                          ((item as NONCSEItem).currentPrice ?? 0) > 0
+                        'number' &&
+                        ((item as NONCSEItem).currentPrice ?? 0) > 0
 
                     const config = configs[item.id] || {
                       unitPrice:
                         type === 'cse'
                           ? (item as ProcurementItem).hasPrice &&
                             typeof (item as ProcurementItem).unitPrice ===
-                              'number' &&
+                            'number' &&
                             ((item as ProcurementItem).unitPrice ?? 0) > 0
                             ? ((item as ProcurementItem).unitPrice ?? 0)
                             : 0
@@ -2042,9 +2043,9 @@ export default function AddPPMPItemsModal({
                     const plannedQty = config.plannedQuantity || 0
                     const allocatedQty = config.enableAllocations
                       ? Object.values(config.monthlyQuantities).reduce(
-                          (a, b) => a + b,
-                          0,
-                        )
+                        (a, b) => a + b,
+                        0,
+                      )
                       : 0
                     const remainingQty = Math.max(0, plannedQty - allocatedQty)
                     const calculatedTotal = plannedQty * (config.unitPrice || 0)
@@ -2059,7 +2060,7 @@ export default function AddPPMPItemsModal({
                     const hasMopError = !config.procurementModeId
                     const hasAllocError =
                       config.enableAllocations && allocatedQty > plannedQty
-                    
+
                     const hasProcStartError = !config.procurementStartDate
                     const hasProcEndError =
                       !config.procurementEndDate ||
@@ -2228,7 +2229,7 @@ export default function AddPPMPItemsModal({
                             >
                               View Details
                             </Button>
-                            
+
                             <div className="text-right pl-2 border-l border-border/60">
                               <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
                                 Estimated Cost
@@ -2337,28 +2338,28 @@ export default function AddPPMPItemsModal({
                                     placeholder="e.g. 100"
                                     value={config.plannedQuantity ?? ''}
                                     onChange={(e) =>
-                                       updateConfig(item.id, {
-                                         plannedQuantity:
-                                           e.target.value === ''
-                                             ? undefined
-                                             : Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                                       })
-                                     }
-                                     className={cn(
-                                       'text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
-                                       hasQtyError && 'border-red-500 bg-red-50/20',
-                                     )}
-                                   />
-                                   {hasQtyError && !hasExceededStock && (
-                                     <p className="text-[10px] text-red-500 font-medium mt-0.5">Planned quantity is required (≥ 1)</p>
-                                   )}
-                                   {hasStockLimit && (
-                                     <p className={cn('text-[10px] font-medium mt-0.5', hasExceededStock ? 'text-red-500 font-semibold' : 'text-muted-foreground')}>
-                                       Available Stock: {availableStock} {item.uomName || 'units'}
-                                       {hasExceededStock && ' (Cannot exceed available stock)'}
-                                     </p>
-                                   )}
-                                 </div>
+                                      updateConfig(item.id, {
+                                        plannedQuantity:
+                                          e.target.value === ''
+                                            ? undefined
+                                            : Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                                      })
+                                    }
+                                    className={cn(
+                                      'text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
+                                      hasQtyError && 'border-red-500 bg-red-50/20',
+                                    )}
+                                  />
+                                  {hasQtyError && !hasExceededStock && (
+                                    <p className="text-[10px] text-red-500 font-medium mt-0.5">Planned quantity is required (≥ 1)</p>
+                                  )}
+                                  {hasStockLimit && (
+                                    <p className={cn('text-[10px] font-medium mt-0.5', hasExceededStock ? 'text-red-500 font-semibold' : 'text-muted-foreground')}>
+                                      Available Stock: {availableStock} {item.uomName || 'units'}
+                                      {hasExceededStock && ' (Cannot exceed available stock)'}
+                                    </p>
+                                  )}
+                                </div>
 
                                 {/* Unit Price */}
                                 <div className="space-y-1.5">
@@ -2387,16 +2388,16 @@ export default function AddPPMPItemsModal({
                                           unitPrice: Math.max(
                                             0,
                                             Number.parseFloat(e.target.value) ||
-                                              0,
+                                            0,
                                           ),
                                         })
                                       }
                                       className={cn(
                                         'pl-6 text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
                                         isPriceLocked &&
-                                          'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
+                                        'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
                                         hasPriceError &&
-                                          'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20',
+                                        'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20',
                                       )}
                                     />
                                   </div>
@@ -2427,7 +2428,7 @@ export default function AddPPMPItemsModal({
                                       className={cn(
                                         'w-full border-default-200 text-xs h-9 focus:ring-primary/25',
                                         hasMopError &&
-                                          'border-red-500 bg-red-50/20',
+                                        'border-red-500 bg-red-50/20',
                                       )}
                                     >
                                       <SelectValue placeholder="Select Mode *" />
@@ -2751,7 +2752,7 @@ export default function AddPPMPItemsModal({
                                               const qty = Math.max(
                                                 0,
                                                 Number.parseInt(e.target.value) ||
-                                                  0,
+                                                0,
                                               )
                                               const monthlyQuantities = {
                                                 ...config.monthlyQuantities,
@@ -2866,7 +2867,7 @@ export default function AddPPMPItemsModal({
                     <span className="font-semibold text-foreground mt-0.5 block truncate">
                       {detailsItemType === 'cse'
                         ? (detailData as ProcurementItem).objectCodeName ||
-                          'N/A'
+                        'N/A'
                         : 'N/A'}
                     </span>
                   </div>
@@ -2880,7 +2881,7 @@ export default function AddPPMPItemsModal({
                   <p className="text-foreground leading-relaxed mt-1 text-xs bg-muted/20 p-3 rounded-lg border border-border/40 whitespace-pre-wrap">
                     {detailsItemType === 'cse'
                       ? (detailData as ProcurementItem).specifications ||
-                        'No specifications provided.'
+                      'No specifications provided.'
                       : 'No description provided.'}
                   </p>
                 </div>
@@ -2898,7 +2899,7 @@ export default function AddPPMPItemsModal({
                     )}
                   {detailsItemType === 'cse' &&
                     typeof (detailData as ProcurementItem).itemLife ===
-                      'number' && (
+                    'number' && (
                       <div className="flex justify-between py-1 border-b border-border/20">
                         <span className="text-muted-foreground">
                           Item Life:
@@ -2910,7 +2911,7 @@ export default function AddPPMPItemsModal({
                     )}
                   {detailsItemType === 'cse' &&
                     typeof (detailData as ProcurementItem).unitPrice ===
-                      'number' && (
+                    'number' && (
                       <div className="flex justify-between py-1 border-b border-border/20">
                         <span className="text-muted-foreground">
                           Catalog Unit Price:
@@ -2927,7 +2928,7 @@ export default function AddPPMPItemsModal({
                     )}
                   {detailsItemType === 'non-cse' &&
                     typeof (detailData as NONCSEItem).currentPrice ===
-                      'number' && (
+                    'number' && (
                       <div className="flex justify-between py-1 border-b border-border/20">
                         <span className="text-muted-foreground">
                           Catalog Price:
