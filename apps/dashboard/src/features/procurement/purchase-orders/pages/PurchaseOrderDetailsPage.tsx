@@ -8,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   ChevronLeft,
   Printer,
@@ -17,8 +16,6 @@ import {
   CheckCircle,
   MoreVertical,
   Loader2,
-  FileText,
-  Layers,
   Pencil,
   Trash2,
 } from 'lucide-react'
@@ -42,7 +39,6 @@ import {
 } from '../handlers'
 import { useGetAOBById } from '@/features/procurement/aob/handlers/getAOBByIdRequest'
 import { getBidMatrixRequest } from '@/features/procurement/aob/handlers/getBidMatrixRequest'
-import { AOBDetailsPage } from '@/features/procurement/aob/components'
 import { downloadPurchaseOrderBlob } from '../utils/downloadPurchaseOrderBlob'
 import { toast } from 'sonner'
 
@@ -76,7 +72,7 @@ export function PurchaseOrderDetailsPage({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isReturnOpen, setIsReturnOpen] = useState(false)
   const [isApproveOpen, setIsApproveOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'aob' | 'po'>('aob')
+  const [activeTab, setActiveTab] = useState<string>('po-details')
 
   const poMode = (purchaseOrder?.source || purchaseOrder?.procurementMode || '').toString().toLowerCase()
   const backRoute =
@@ -274,53 +270,17 @@ export function PurchaseOrderDetailsPage({
         </div>
       </div>
 
-      {isAob ? (
-        <Tabs
-          value={activeTab}
-          onValueChange={(val) => setActiveTab(val as 'aob' | 'po')}
-          className="w-full space-y-4"
-        >
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <TabsList className="bg-slate-100 dark:bg-slate-800 p-1">
-              <TabsTrigger value="aob" className="gap-2 font-medium">
-                <Layers className="h-4 w-4 text-primary" />
-                Source AOB: {purchaseOrder.sourceDocumentNumber || 'AOB Details'}
-              </TabsTrigger>
-              <TabsTrigger value="po" className="gap-2 font-medium">
-                <FileText className="h-4 w-4 text-primary" />
-                Purchase Order: {purchaseOrder.poNumber}
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="aob" className="mt-0">
-            {isAobLoading ? (
-              <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span>Loading AOB details ({purchaseOrder.sourceDocumentNumber})...</span>
-              </div>
-            ) : aob ? (
-              <AOBDetailsPage
-                aob={aob}
-                bidMatrix={bidMatrix}
-                onBack={() => navigate({ to: backRoute })}
-              />
-            ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  Unable to load linked AOB ({purchaseOrder.sourceDocumentNumber || sourceDocId}).
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="po" className="mt-0 space-y-6">
-            <PurchaseOrderDetailsShell purchaseOrder={fullPo} />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <PurchaseOrderDetailsShell purchaseOrder={fullPo} />
-      )}
+      <PurchaseOrderDetailsShell
+        purchaseOrder={fullPo}
+        isAob={isAob}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        aobData={{
+          aob,
+          bidMatrix,
+          isLoading: isAobLoading,
+        }}
+      />
 
       <EditPurchaseOrderDialog
         open={isEditOpen}
