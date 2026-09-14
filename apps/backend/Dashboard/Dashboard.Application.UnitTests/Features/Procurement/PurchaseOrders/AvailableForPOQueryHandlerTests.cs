@@ -82,9 +82,10 @@ public class AvailableForPOQueryHandlerTests
         var result = await handler.Handle(new GetApprovedAobsAvailableForPOQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
-        result.Data.Should().HaveCount(1);
-        result.Data[0].AOBNumber.Should().Be("AOB-AVAIL-001");
-        result.Data[0].WinningSupplierName.Should().Be("Supplier A");
+        result.Data.Should().NotBeNull();
+        result.Data!.Should().HaveCount(1);
+        result.Data![0].AOBNumber.Should().Be("AOB-AVAIL-001");
+        result.Data![0].WinningSupplierName.Should().Be("Supplier A");
     }
 
     [Fact]
@@ -147,9 +148,10 @@ public class AvailableForPOQueryHandlerTests
         var result = await handler.Handle(new GetApprovedNoasAvailableForPOQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
-        result.Data.Should().HaveCount(1);
-        result.Data[0].NOANumber.Should().Be("NOA-AVAIL-001");
-        result.Data[0].SupplierName.Should().Be("Supplier B");
+        result.Data.Should().NotBeNull();
+        result.Data!.Should().HaveCount(1);
+        result.Data![0].NOANumber.Should().Be("NOA-AVAIL-001");
+        result.Data![0].SupplierName.Should().Be("Supplier B");
     }
 
     [Fact]
@@ -214,8 +216,9 @@ public class AvailableForPOQueryHandlerTests
         var result = await handler.Handle(new GetApprovedDaResolutionsAvailableForPOQuery(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
-        result.Data.Should().HaveCount(1);
-        result.Data[0].DANumber.Should().Be("DA-AVAIL-001");
-        result.Data[0].CPRNumber.Should().Be("CPR-TEST-001");
+        result.Data.Should().NotBeNull();
+        result.Data!.Should().HaveCount(1);
+        result.Data![0].DANumber.Should().Be("DA-AVAIL-001");
+        result.Data![0].CPRNumber.Should().Be("CPR-TEST-001");
     }
 }
