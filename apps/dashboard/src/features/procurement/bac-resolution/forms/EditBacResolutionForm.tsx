@@ -450,6 +450,9 @@ export const EditBacResolutionForm = forwardRef<
               <Table>
                 <TableHeader className="bg-default-50">
                   <TableRow>
+                    <TableHead className="w-[110px] text-xs font-bold">
+                      PAP Code
+                    </TableHead>
                     <TableHead className="w-[100px] text-xs font-bold">
                       Item #
                     </TableHead>
@@ -457,6 +460,7 @@ export const EditBacResolutionForm = forwardRef<
                       Description / Line Item
                     </TableHead>
                     <TableHead className="text-xs font-bold">Office</TableHead>
+                    <TableHead className="text-xs font-bold">Mode</TableHead>
                     <TableHead className="text-right text-xs font-bold">
                       Approved Budget (ABC)
                     </TableHead>
@@ -468,6 +472,18 @@ export const EditBacResolutionForm = forwardRef<
                       key={item.id || item.appItemId}
                       className="text-xs"
                     >
+                      <TableCell className="font-mono text-xs">
+                        {item.papCode ? (
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-[10px] bg-default-50"
+                          >
+                            {item.papCode}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="font-semibold text-primary">
                         {item.itemNumber ||
                           `Item ${(idx + 1).toString().padStart(2, '0')}`}
@@ -480,6 +496,9 @@ export const EditBacResolutionForm = forwardRef<
                       <TableCell className="text-default-700">
                         {item.officeName || '—'}
                       </TableCell>
+                      <TableCell className="text-default-700">
+                        {item.procurementModeName || '—'}
+                      </TableCell>
                       <TableCell className="text-right font-semibold text-emerald-700">
                         ₱
                         {item.effectiveABC.toLocaleString('en-US', {
@@ -490,7 +509,7 @@ export const EditBacResolutionForm = forwardRef<
                   ))}
                   <TableRow className="bg-default-50/80 font-bold border-t-2 border-default-300">
                     <TableCell
-                      colSpan={3}
+                      colSpan={5}
                       className="text-right text-xs uppercase tracking-wider text-default-800"
                     >
                       Total Approved Budget for Contract (ABC):

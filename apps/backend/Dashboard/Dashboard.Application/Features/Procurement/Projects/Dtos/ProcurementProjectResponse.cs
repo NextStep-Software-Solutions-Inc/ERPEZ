@@ -32,6 +32,10 @@ public record ProcurementProjectResponse
     public string? ResolutionNumber { get; init; }
     public DateTime? DateResolved { get; init; }
     public string? ResolvedLocation { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public string CreatedBy { get; init; } = string.Empty;
+    public DateTime? UpdatedAt { get; init; }
+    public string? UpdatedBy { get; init; }
 
     public static Expression<Func<ProcurementProject, ProcurementProjectResponse>> Projection => c => new ProcurementProjectResponse
     {
@@ -147,7 +151,11 @@ public record ProcurementProjectResponse
         ResolutionType = c.BACResolutions.Select(r => r.ResolutionType).FirstOrDefault(),
         ResolutionNumber = c.BACResolutions.Select(r => r.ResolutionNumber).FirstOrDefault(),
         DateResolved = c.BACResolutions.Select(r => (DateTime?)r.DateResolved).FirstOrDefault(),
-        ResolvedLocation = c.BACResolutions.Select(r => r.ResolvedLocation).FirstOrDefault()
+        ResolvedLocation = c.BACResolutions.Select(r => r.ResolvedLocation).FirstOrDefault(),
+        CreatedAt = c.CreatedAt,
+        CreatedBy = c.CreatedBy,
+        UpdatedAt = c.UpdatedAt,
+        UpdatedBy = c.UpdatedBy
     };
 }
 
@@ -183,6 +191,8 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
             Order = l.Order,
             AppNumber = l.APPItem != null && l.APPItem.APP != null ? l.APPItem.APP.APPNumber : string.Empty,
             AppName = l.APPItem != null && l.APPItem.APP != null ? l.APPItem.APP.Name : string.Empty,
+            PAPCode = l.APPItem != null ? (!string.IsNullOrWhiteSpace(l.APPItem.PAPCode) ? l.APPItem.PAPCode : (l.APPItem.PPMPItem != null ? l.APPItem.PPMPItem.PAPCode : string.Empty)) : string.Empty,
+            ProcurementModeName = l.APPItem != null && l.APPItem.ProcurementMode != null ? l.APPItem.ProcurementMode.Name : string.Empty,
         }).ToList() : new List<APPItemLinkResponse>(),
         ApprovalEvents = c.ApprovalEvents != null
             ? c.ApprovalEvents
@@ -391,7 +401,11 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
             Venue = s.Venue,
             Status = s.Status,
             Remarks = s.Remarks
-        }).ToList()
+        }).ToList(),
+        CreatedAt = c.CreatedAt,
+        CreatedBy = c.CreatedBy,
+        UpdatedAt = c.UpdatedAt,
+        UpdatedBy = c.UpdatedBy
     };
 }
 

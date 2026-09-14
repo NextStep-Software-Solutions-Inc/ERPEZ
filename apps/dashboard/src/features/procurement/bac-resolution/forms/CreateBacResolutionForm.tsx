@@ -35,6 +35,8 @@ import {
   CheckCheck,
   RotateCcw,
   AlertTriangle,
+  ListFilter,
+  List,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -382,13 +384,18 @@ export const CreateBacResolutionForm = forwardRef<
 
     const inheritedAbc = useMemo(() => {
       if (selectedSourceType === 'AppItem') {
-        return selectedAppItems.reduce(
-          (sum, item) => sum + item.effectiveABC,
+        const sum = selectedAppItems.reduce(
+          (acc, item) => acc + item.effectiveABC,
           0,
         )
+        return Math.round((sum + Number.EPSILON) * 100) / 100
       }
       if (selectedSourceType === 'ConsolidatedPr' && selectedConsolidatedPr) {
-        return selectedConsolidatedPr.totalAmount
+        return (
+          Math.round(
+            (selectedConsolidatedPr.totalAmount + Number.EPSILON) * 100,
+          ) / 100
+        )
       }
       return 0
     }, [selectedSourceType, selectedAppItems, selectedConsolidatedPr])
@@ -523,7 +530,10 @@ export const CreateBacResolutionForm = forwardRef<
             appItemIds: currentAppItems.map((i) => i.id),
             consolidatedPRId: currentConsolidatedPr?.id,
             title: value.title,
-            abc: currentInheritedAbc > 0 ? currentInheritedAbc : value.abc,
+            abc:
+              currentInheritedAbc > 0
+                ? Math.round((currentInheritedAbc + Number.EPSILON) * 100) / 100
+                : Math.round(((value.abc || 0) + Number.EPSILON) * 100) / 100,
             resolutionType: value.resolutionType,
             resolutionNumber: value.resolutionNumber,
             dateResolved: value.dateResolved,
@@ -867,6 +877,9 @@ export const CreateBacResolutionForm = forwardRef<
                           <TableHead className="w-[120px] text-xs font-bold">
                             APP #
                           </TableHead>
+                          <TableHead className="w-[110px] text-xs font-bold">
+                            PAP Code
+                          </TableHead>
                           <TableHead className="w-[90px] text-xs font-bold">
                             Item #
                           </TableHead>
@@ -902,6 +915,18 @@ export const CreateBacResolutionForm = forwardRef<
                                   {parentAppNumber}
                                 </Badge>
                               </TableCell>
+                              <TableCell className="font-mono text-xs">
+                                {item.papCode ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="font-mono text-[10px] bg-default-50"
+                                  >
+                                    {item.papCode}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
                               <TableCell className="font-semibold text-primary">
                                 {item.itemNumber ||
                                   `Item ${(idx + 1).toString().padStart(2, '0')}`}
@@ -934,7 +959,7 @@ export const CreateBacResolutionForm = forwardRef<
                         {/* Total ABC Summary Footer Row */}
                         <TableRow className="bg-default-50/80 font-bold border-t-2 border-default-300">
                           <TableCell
-                            colSpan={5}
+                            colSpan={6}
                             className="text-right text-xs uppercase tracking-wider text-default-800"
                           >
                             Total Approved Budget for Contract (ABC):
@@ -1458,6 +1483,9 @@ export function SourceRecordPickerStep({
   const [searchTerm, setSearchTerm] = useState('')
   const [itemSearchTerm, setItemSearchTerm] = useState('')
   const [officeFilter, setOfficeFilter] = useState('ALL')
+  const [modeFilter, setModeFilter] = useState('ALL')
+  const [viewMode, setViewMode] = useState<'grouped' | 'flat'>('grouped')
+  const [collapsedPaps, setCollapsedPaps] = useState<Record<string, boolean>>({})
 
   const { data: appsData, isLoading: isAppsLoading } =
     useEligibleAppsForProcurement({})
@@ -1493,6 +1521,20 @@ export function SourceRecordPickerStep({
     )
   }, [selectedApps])
 
+  const availableOffices = useMemo(() => {
+    return Array.from(
+      new Set(aggregatedItems.map((i) => i.officeName).filter(Boolean)),
+    ).sort()
+  }, [aggregatedItems])
+
+  const availableModes = useMemo(() => {
+    return Array.from(
+      new Set(
+        aggregatedItems.map((i) => i.procurementModeName).filter(Boolean),
+      ),
+    ).sort()
+  }, [aggregatedItems])
+
   const filteredItems = useMemo(() => {
     return aggregatedItems.filter((item) => {
       const matchesSearch =
@@ -1503,19 +1545,97 @@ export function SourceRecordPickerStep({
         item.procurementModeName
           .toLowerCase()
           .includes(itemSearchTerm.toLowerCase()) ||
+        (item.papCode &&
+          item.papCode.toLowerCase().includes(itemSearchTerm.toLowerCase())) ||
+        (item.ppmpItemName &&
+          item.ppmpItemName
+            .toLowerCase()
+            .includes(itemSearchTerm.toLowerCase())) ||
         (item.appNumber &&
           item.appNumber.toLowerCase().includes(itemSearchTerm.toLowerCase()))
       const matchesOffice =
         officeFilter === 'ALL' || item.officeName === officeFilter
-      return matchesSearch && matchesOffice
+      const matchesMode =
+        modeFilter === 'ALL' || item.procurementModeName === modeFilter
+      return matchesSearch && matchesOffice && matchesMode
     })
-  }, [aggregatedItems, itemSearchTerm, officeFilter])
+  }, [aggregatedItems, itemSearchTerm, officeFilter, modeFilter])
 
-  const availableOffices = useMemo(() => {
-    return Array.from(
-      new Set(aggregatedItems.map((i) => i.officeName).filter(Boolean)),
-    )
-  }, [aggregatedItems])
+  interface MopSubGroup {
+    modeName: string
+    items: EligibleAppItem[]
+    totalABC: number
+  }
+
+  interface PapGroup {
+    key: string
+    papCode: string
+    officeName: string
+    totalABC: number
+    items: EligibleAppItem[]
+    mopGroups: MopSubGroup[]
+  }
+
+  const papCodeGroups = useMemo<PapGroup[]>(() => {
+    const map = new Map<
+      string,
+      {
+        papCode: string
+        officeName: string
+        items: EligibleAppItem[]
+        mopMap: Map<string, EligibleAppItem[]>
+      }
+    >()
+
+    for (const item of filteredItems) {
+      const pap = item.papCode?.trim() || 'Unassigned PAP'
+      const office = item.officeName?.trim() || 'General Office'
+      const mode = item.procurementModeName?.trim() || 'Standard Mode'
+      const key = `${pap}___${office}`
+
+      let grp = map.get(key)
+      if (!grp) {
+        grp = {
+          papCode: pap,
+          officeName: office,
+          items: [],
+          mopMap: new Map(),
+        }
+        map.set(key, grp)
+      }
+      grp.items.push(item)
+
+      let mopItems = grp.mopMap.get(mode)
+      if (!mopItems) {
+        mopItems = []
+        grp.mopMap.set(mode, mopItems)
+      }
+      mopItems.push(item)
+    }
+
+    const result: PapGroup[] = []
+    map.forEach((value, key) => {
+      const mopGroups: MopSubGroup[] = []
+      value.mopMap.forEach((mopItems, modeName) => {
+        mopGroups.push({
+          modeName,
+          items: mopItems,
+          totalABC: mopItems.reduce((s, i) => s + i.effectiveABC, 0),
+        })
+      })
+
+      result.push({
+        key,
+        papCode: value.papCode,
+        officeName: value.officeName,
+        totalABC: value.items.reduce((s, i) => s + i.effectiveABC, 0),
+        items: value.items,
+        mopGroups,
+      })
+    })
+
+    return result
+  }, [filteredItems])
 
   const handleToggleAppItem = (item: EligibleAppItem) => {
     onSetSelectedAppItems((prev) => {
@@ -1526,6 +1646,43 @@ export function SourceRecordPickerStep({
         return [...prev, item]
       }
     })
+  }
+
+  const handleTogglePapGroup = (groupItems: EligibleAppItem[]) => {
+    onSetSelectedAppItems((prev) => {
+      const selectedIds = new Set(prev.map((i) => i.id))
+      const allGroupSelected = groupItems.every((i) => selectedIds.has(i.id))
+
+      if (allGroupSelected) {
+        const groupItemIds = new Set(groupItems.map((i) => i.id))
+        return prev.filter((i) => !groupItemIds.has(i.id))
+      } else {
+        const toAdd = groupItems.filter((i) => !selectedIds.has(i.id))
+        return [...prev, ...toAdd]
+      }
+    })
+  }
+
+  const handleToggleMopSubGroup = (mopItems: EligibleAppItem[]) => {
+    onSetSelectedAppItems((prev) => {
+      const selectedIds = new Set(prev.map((i) => i.id))
+      const allMopSelected = mopItems.every((i) => selectedIds.has(i.id))
+
+      if (allMopSelected) {
+        const mopItemIds = new Set(mopItems.map((i) => i.id))
+        return prev.filter((i) => !mopItemIds.has(i.id))
+      } else {
+        const toAdd = mopItems.filter((i) => !selectedIds.has(i.id))
+        return [...prev, ...toAdd]
+      }
+    })
+  }
+
+  const togglePapCollapse = (key: string) => {
+    setCollapsedPaps((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }))
   }
 
   const handleSelectAllVisible = () => {
@@ -1824,7 +1981,7 @@ export function SourceRecordPickerStep({
               </div>
             ) : (
               <>
-                {/* Header with Search & Multi-select controls */}
+                {/* Header with Search, View Mode & Multi-select controls */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-default-100 pb-3">
                   <div>
                     <div className="flex items-center gap-2">
@@ -1840,11 +1997,43 @@ export function SourceRecordPickerStep({
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[400px]">
                       From {selectedApps.length} selected APP
-                      {selectedApps.length !== 1 ? 's' : ''}
+                      {selectedApps.length !== 1 ? 's' : ''} •{' '}
+                      {papCodeGroups.length} PAP Code
+                      {papCodeGroups.length !== 1 ? 's' : ''}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center bg-default-100 p-0.5 rounded-lg border border-default-200">
+                      <button
+                        type="button"
+                        onClick={() => setViewMode('grouped')}
+                        className={cn(
+                          'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all',
+                          viewMode === 'grouped'
+                            ? 'bg-white text-primary shadow-xs'
+                            : 'text-muted-foreground hover:text-default-900',
+                        )}
+                      >
+                        <Layers className="h-3.5 w-3.5" />
+                        Group by PAP
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode('flat')}
+                        className={cn(
+                          'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all',
+                          viewMode === 'flat'
+                            ? 'bg-white text-primary shadow-xs'
+                            : 'text-muted-foreground hover:text-default-900',
+                        )}
+                      >
+                        <List className="h-3.5 w-3.5" />
+                        All Items
+                      </button>
+                    </div>
+
                     <Button
                       type="button"
                       variant="outline"
@@ -1852,7 +2041,7 @@ export function SourceRecordPickerStep({
                       onClick={handleSelectAllVisible}
                       className="h-7 text-xs gap-1"
                     >
-                      <CheckCheck className="h-3 w-3" /> Select All Visible
+                      <CheckCheck className="h-3 w-3" /> Select Visible
                     </Button>
                     <Button
                       type="button"
@@ -1867,12 +2056,12 @@ export function SourceRecordPickerStep({
                   </div>
                 </div>
 
-                {/* Search & Office filter bar */}
+                {/* Search & Filter bar */}
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                     <Input
-                      placeholder="Search items by description, mode, item #, APP #..."
+                      placeholder="Search by PAP code, activity, description, mode..."
                       value={itemSearchTerm}
                       onChange={(e) => setItemSearchTerm(e.target.value)}
                       className="pl-8 h-8 text-xs bg-default-50"
@@ -1893,111 +2082,429 @@ export function SourceRecordPickerStep({
                       ))}
                     </select>
                   )}
+
+                  {availableModes.length > 0 && (
+                    <select
+                      value={modeFilter}
+                      onChange={(e) => setModeFilter(e.target.value)}
+                      className="h-8 rounded-md border border-default-300 bg-white px-2.5 text-xs text-default-800 focus:border-primary focus:outline-none"
+                    >
+                      <option value="ALL">All Modes</option>
+                      {availableModes.map((mode) => (
+                        <option key={mode} value={mode}>
+                          {mode}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
-                {/* Items Table */}
-                <div className="flex-1 overflow-y-auto max-h-[340px] border border-default-200 rounded-lg">
-                  <Table>
-                    <TableHeader className="bg-default-50 sticky top-0 z-10">
-                      <TableRow>
-                        <TableHead className="w-[44px] text-center"></TableHead>
-                        <TableHead className="w-[110px] text-xs font-bold">
-                          APP #
-                        </TableHead>
-                        <TableHead className="w-[80px] text-xs font-bold">
-                          Item #
-                        </TableHead>
-                        <TableHead className="text-xs font-bold">
-                          Description
-                        </TableHead>
-                        <TableHead className="text-xs font-bold">
-                          Office
-                        </TableHead>
-                        <TableHead className="text-xs font-bold">
-                          Mode
-                        </TableHead>
-                        <TableHead className="text-right text-xs font-bold">
-                          Effective ABC
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredItems.map((item) => {
-                        const isChecked = selectedAppItems.some(
-                          (i) => i.id === item.id,
-                        )
-                        return (
-                          <TableRow
-                            key={item.id}
-                            onClick={() => handleToggleAppItem(item)}
+                {/* Items Presentation: Grouped by PAP Code vs Flat Table */}
+                {viewMode === 'grouped' ? (
+                  <div className="flex-1 overflow-y-auto max-h-[380px] space-y-3 pr-1">
+                    {papCodeGroups.map((group) => {
+                      const selectedInPap = group.items.filter((item) =>
+                        selectedAppItems.some((s) => s.id === item.id),
+                      )
+                      const isAllSelected =
+                        selectedInPap.length === group.items.length &&
+                        group.items.length > 0
+                      const isSomeSelected =
+                        selectedInPap.length > 0 &&
+                        selectedInPap.length < group.items.length
+                      const isCollapsed = !!collapsedPaps[group.key]
+
+                      return (
+                        <div
+                          key={group.key}
+                          className={cn(
+                            'rounded-lg border transition-all overflow-hidden',
+                            isAllSelected
+                              ? 'border-primary/50 bg-primary/[0.02]'
+                              : isSomeSelected
+                                ? 'border-primary/30 bg-white'
+                                : 'border-default-200 bg-white hover:border-default-300',
+                          )}
+                        >
+                          {/* PAP Code Card Header */}
+                          <div
                             className={cn(
-                              'cursor-pointer text-xs select-none transition-colors',
-                              isChecked
-                                ? 'bg-primary/5 font-semibold'
-                                : 'hover:bg-default-50/70',
+                              'p-3 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors',
+                              isAllSelected
+                                ? 'bg-primary/10'
+                                : isSomeSelected
+                                  ? 'bg-primary/5'
+                                  : 'bg-default-50/70 hover:bg-default-100/60',
                             )}
+                            onClick={() => togglePapCollapse(group.key)}
                           >
-                            <TableCell
-                              className="text-center p-2"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Checkbox
-                                checked={isChecked}
-                                onCheckedChange={() =>
-                                  handleToggleAppItem(item)
-                                }
-                              />
-                            </TableCell>
-                            <TableCell className="font-semibold text-default-700">
-                              <Badge
-                                variant="secondary"
-                                className="text-[10px] font-medium"
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleTogglePapGroup(group.items)
+                                }}
+                                className="flex items-center"
                               >
-                                {item.appNumber || 'APP'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-bold text-primary">
-                              {item.itemNumber}
-                            </TableCell>
-                            <TableCell className="font-medium text-default-900 max-w-[200px]">
-                              <p className="truncate">
-                                {item.ppmpItemName || item.description}
-                              </p>
-                              {item.remarks && (
-                                <p className="text-[10px] text-muted-foreground truncate">
-                                  {item.remarks}
-                                </p>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-default-700">
-                              {item.officeName || '—'}
-                            </TableCell>
-                            <TableCell className="text-default-700">
-                              {item.procurementModeName || '—'}
-                            </TableCell>
-                            <TableCell className="text-right font-bold text-emerald-700">
-                              ₱
-                              {item.effectiveABC.toLocaleString('en-US', {
-                                minimumFractionDigits: 2,
+                                <Checkbox
+                                  checked={
+                                    isAllSelected
+                                      ? true
+                                      : isSomeSelected
+                                        ? 'indeterminate'
+                                        : false
+                                  }
+                                  onCheckedChange={() =>
+                                    handleTogglePapGroup(group.items)
+                                  }
+                                />
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                                <span className="text-[11px] font-bold text-default-600 uppercase tracking-wider">
+                                  PAP:
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className="font-mono text-xs font-bold bg-white text-primary border-primary/40 px-2 py-0.5"
+                                >
+                                  {group.papCode}
+                                </Badge>
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[11px] font-medium text-default-700 truncate max-w-[200px]"
+                                >
+                                  {group.officeName}
+                                </Badge>
+                                {group.mopGroups.map((m) => (
+                                  <Badge
+                                    key={m.modeName}
+                                    variant="outline"
+                                    className="text-[10px] bg-white text-default-600 font-normal border-default-300"
+                                  >
+                                    {m.modeName}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 shrink-0">
+                              <div className="text-right">
+                                <span className="text-[11px] text-muted-foreground block font-medium">
+                                  {selectedInPap.length} of {group.items.length}{' '}
+                                  selected
+                                </span>
+                                <span className="text-xs font-bold text-emerald-700">
+                                  ₱
+                                  {group.totalABC.toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                  })}
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-muted-foreground"
+                              >
+                                <ChevronDown
+                                  className={cn(
+                                    'h-4 w-4 transition-transform duration-200',
+                                    !isCollapsed && 'rotate-180',
+                                  )}
+                                />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Collapsible Content */}
+                          {!isCollapsed && (
+                            <div className="p-3 border-t border-default-200 bg-white space-y-3">
+                              {group.mopGroups.map((mop) => {
+                                const mopSelected = mop.items.filter((item) =>
+                                  selectedAppItems.some(
+                                    (s) => s.id === item.id,
+                                  ),
+                                )
+                                const isAllMopSelected =
+                                  mopSelected.length === mop.items.length &&
+                                  mop.items.length > 0
+                                const isSomeMopSelected =
+                                  mopSelected.length > 0 &&
+                                  mopSelected.length < mop.items.length
+
+                                return (
+                                  <div
+                                    key={mop.modeName}
+                                    className="rounded-md border border-default-200 overflow-hidden"
+                                  >
+                                    {/* Mode of Procurement Sub-header */}
+                                    <div
+                                      className={cn(
+                                        'px-3 py-1.5 flex items-center justify-between gap-2 text-xs border-b border-default-100 cursor-pointer select-none',
+                                        isAllMopSelected
+                                          ? 'bg-primary/10'
+                                          : 'bg-default-50/80 hover:bg-default-100/50',
+                                      )}
+                                      onClick={() =>
+                                        handleToggleMopSubGroup(mop.items)
+                                      }
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <div
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleToggleMopSubGroup(mop.items)
+                                          }}
+                                        >
+                                          <Checkbox
+                                            checked={
+                                              isAllMopSelected
+                                                ? true
+                                                : isSomeMopSelected
+                                                  ? 'indeterminate'
+                                                  : false
+                                            }
+                                            onCheckedChange={() =>
+                                              handleToggleMopSubGroup(mop.items)
+                                            }
+                                          />
+                                        </div>
+                                        <span className="font-semibold text-default-800">
+                                          Mode: {mop.modeName}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground">
+                                          ({mop.items.length} line item
+                                          {mop.items.length !== 1 ? 's' : ''})
+                                        </span>
+                                      </div>
+                                      <span className="font-bold text-emerald-700 text-xs">
+                                        ₱
+                                        {mop.totalABC.toLocaleString('en-US', {
+                                          minimumFractionDigits: 2,
+                                        })}
+                                      </span>
+                                    </div>
+
+                                    {/* Table of items under this Mode */}
+                                    <Table>
+                                      <TableHeader className="bg-default-50/50 text-[11px]">
+                                        <TableRow className="h-7">
+                                          <TableHead className="w-[36px] text-center p-1"></TableHead>
+                                          <TableHead className="w-[100px] text-[11px] font-bold p-1.5">
+                                            APP #
+                                          </TableHead>
+                                          <TableHead className="w-[80px] text-[11px] font-bold p-1.5">
+                                            Item #
+                                          </TableHead>
+                                          <TableHead className="text-[11px] font-bold p-1.5">
+                                            Description / PPMP Item
+                                          </TableHead>
+                                          <TableHead className="text-right text-[11px] font-bold p-1.5">
+                                            Budget (ABC)
+                                          </TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {mop.items.map((item) => {
+                                          const isChecked =
+                                            selectedAppItems.some(
+                                              (i) => i.id === item.id,
+                                            )
+                                          return (
+                                            <TableRow
+                                              key={item.id}
+                                              onClick={() =>
+                                                handleToggleAppItem(item)
+                                              }
+                                              className={cn(
+                                                'cursor-pointer text-xs select-none transition-colors h-9',
+                                                isChecked
+                                                  ? 'bg-primary/5 font-semibold'
+                                                  : 'hover:bg-default-50/70',
+                                              )}
+                                            >
+                                              <TableCell
+                                                className="text-center p-1"
+                                                onClick={(e) =>
+                                                  e.stopPropagation()
+                                                }
+                                              >
+                                                <Checkbox
+                                                  checked={isChecked}
+                                                  onCheckedChange={() =>
+                                                    handleToggleAppItem(item)
+                                                  }
+                                                />
+                                              </TableCell>
+                                              <TableCell className="p-1.5 text-[11px] font-medium text-default-600">
+                                                {item.appNumber || 'APP'}
+                                              </TableCell>
+                                              <TableCell className="p-1.5 font-bold text-primary text-xs">
+                                                {item.itemNumber}
+                                              </TableCell>
+                                              <TableCell className="p-1.5 text-default-900 max-w-[220px]">
+                                                <p className="truncate font-medium text-xs">
+                                                  {item.ppmpItemName ||
+                                                    item.description}
+                                                </p>
+                                                {item.remarks && (
+                                                  <p className="text-[10px] text-muted-foreground truncate">
+                                                    {item.remarks}
+                                                  </p>
+                                                )}
+                                              </TableCell>
+                                              <TableCell className="p-1.5 text-right font-bold text-emerald-700 text-xs">
+                                                ₱
+                                                {item.effectiveABC.toLocaleString(
+                                                  'en-US',
+                                                  {
+                                                    minimumFractionDigits: 2,
+                                                  },
+                                                )}
+                                              </TableCell>
+                                            </TableRow>
+                                          )
+                                        })}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                )
                               })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+
+                    {papCodeGroups.length === 0 && (
+                      <div className="rounded-lg border border-dashed border-default-200 bg-white p-8 text-center text-xs text-muted-foreground">
+                        No eligible PAP Code groups match your search or filter.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Flat Items Table */
+                  <div className="flex-1 overflow-y-auto max-h-[380px] border border-default-200 rounded-lg">
+                    <Table>
+                      <TableHeader className="bg-default-50 sticky top-0 z-10">
+                        <TableRow>
+                          <TableHead className="w-[44px] text-center"></TableHead>
+                          <TableHead className="w-[110px] text-xs font-bold">
+                            APP #
+                          </TableHead>
+                          <TableHead className="w-[110px] text-xs font-bold">
+                            PAP Code
+                          </TableHead>
+                          <TableHead className="w-[80px] text-xs font-bold">
+                            Item #
+                          </TableHead>
+                          <TableHead className="text-xs font-bold">
+                            Description
+                          </TableHead>
+                          <TableHead className="text-xs font-bold">
+                            Office
+                          </TableHead>
+                          <TableHead className="text-xs font-bold">
+                            Mode
+                          </TableHead>
+                          <TableHead className="text-right text-xs font-bold">
+                            Effective ABC
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredItems.map((item) => {
+                          const isChecked = selectedAppItems.some(
+                            (i) => i.id === item.id,
+                          )
+                          return (
+                            <TableRow
+                              key={item.id}
+                              onClick={() => handleToggleAppItem(item)}
+                              className={cn(
+                                'cursor-pointer text-xs select-none transition-colors',
+                                isChecked
+                                  ? 'bg-primary/5 font-semibold'
+                                  : 'hover:bg-default-50/70',
+                              )}
+                            >
+                              <TableCell
+                                className="text-center p-2"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Checkbox
+                                  checked={isChecked}
+                                  onCheckedChange={() =>
+                                    handleToggleAppItem(item)
+                                  }
+                                />
+                              </TableCell>
+                              <TableCell className="font-semibold text-default-700">
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] font-medium"
+                                >
+                                  {item.appNumber || 'APP'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-mono text-xs">
+                                {item.papCode ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="font-mono text-[10px] bg-default-50"
+                                  >
+                                    {item.papCode}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    —
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="font-bold text-primary">
+                                {item.itemNumber}
+                              </TableCell>
+                              <TableCell className="font-medium text-default-900 max-w-[200px]">
+                                <p className="truncate">
+                                  {item.ppmpItemName || item.description}
+                                </p>
+                                {item.remarks && (
+                                  <p className="text-[10px] text-muted-foreground truncate">
+                                    {item.remarks}
+                                  </p>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-default-700">
+                                {item.officeName || '—'}
+                              </TableCell>
+                              <TableCell className="text-default-700">
+                                {item.procurementModeName || '—'}
+                              </TableCell>
+                              <TableCell className="text-right font-bold text-emerald-700">
+                                ₱
+                                {item.effectiveABC.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                })}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+
+                        {filteredItems.length === 0 && (
+                          <TableRow>
+                            <TableCell
+                              colSpan={8}
+                              className="text-center py-8 text-xs text-muted-foreground"
+                            >
+                              No eligible line items match your search.
                             </TableCell>
                           </TableRow>
-                        )
-                      })}
-
-                      {filteredItems.length === 0 && (
-                        <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="text-center py-8 text-xs text-muted-foreground"
-                          >
-                            No eligible line items match your search.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
 
                 {/* Selection Summary Bar */}
                 <div className="rounded-lg bg-default-50 border border-default-200 p-2.5 flex items-center justify-between text-xs">
