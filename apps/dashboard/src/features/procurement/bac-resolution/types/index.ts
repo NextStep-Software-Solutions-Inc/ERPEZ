@@ -88,14 +88,25 @@ export type EligibleAppItem = {
   effectiveABC: number
   appId?: string
   appNumber?: string
+  app?: {
+    id: string
+    appNumber: string
+    name: string
+    fiscalYearId?: string
+    fiscalYearName?: string
+    fiscalYear?: FiscalYear | null
+    FiscalYear?: FiscalYear | null
+  }
 }
 
 export type EligibleAppForProcurement = {
   id: string
   appNumber: string
   name: string
-  fiscalYear?: FiscalYear | null
+  fiscalYearId?: string
   fiscalYearName?: string
+  fiscalYear?: FiscalYear | null
+  FiscalYear?: FiscalYear | null
   eligibleItems: EligibleAppItem[]
 }
 

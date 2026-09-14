@@ -7,6 +7,7 @@ public class EligibleAppForProcurementDto
     public Guid Id { get; set; }
     public string APPNumber { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public Guid FiscalYearId { get; set; }
     public string FiscalYearName { get; set; } = string.Empty;
     public APPFiscalYearResponse? FiscalYear { get; set; }
     public List<EligibleAppItemDto> EligibleItems { get; set; } = [];
