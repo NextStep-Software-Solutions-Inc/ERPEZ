@@ -181,6 +181,7 @@ export function EditBACItemDialog({
             const mergedItem: BACLineItem = {
               ...lineItem,
               id: apiData.id || lineItem.id,
+              papCode: apiData.papCode || lineItem.papCode || '',
               code: apiData.papCode || apiData.ppmpItemName || lineItem.code,
               description: apiData.itemNameOverride || apiData.ppmpItemName || apiData.PPMPItem?.name || lineItem.description || 'Procurement Item',
               name: apiData.PPMPItem?.name || apiData.ppmpItemName || lineItem.name || lineItem.description,

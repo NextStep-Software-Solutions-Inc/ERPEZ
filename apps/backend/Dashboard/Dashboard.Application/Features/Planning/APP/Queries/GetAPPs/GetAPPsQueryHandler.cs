@@ -96,7 +96,7 @@ public class GetAPPsQueryHandler(IUnitOfWork unitOfWork)
                     FundSourceName = item.FundSource?.Name ?? string.Empty,
                     OfficeId = item.OfficeId,
                     OfficeName = item.Office?.Name ?? string.Empty,
-                    PAPCode = item.PAPCode,
+                    PAPCode = !string.IsNullOrWhiteSpace(item.PAPCode) ? item.PAPCode : (item.PPMPItem?.PAPCode ?? string.Empty),
                     Remarks = item.Remarks,
                     IsEarlyProcurementActivity = item.IsEarlyProcurementActivity,
                     EPARemarks = item.EPARemarks,

@@ -27,7 +27,7 @@ public class GetAPPItemsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
             FundSourceName = entity.FundSource?.Name ?? string.Empty,
             OfficeId = entity.OfficeId,
             OfficeName = entity.Office?.Name ?? string.Empty,
-            PAPCode = entity.PAPCode,
+            PAPCode = !string.IsNullOrWhiteSpace(entity.PAPCode) ? entity.PAPCode : (entity.PPMPItem?.PAPCode ?? string.Empty),
             Remarks = entity.Remarks,
             IsEarlyProcurementActivity = entity.IsEarlyProcurementActivity,
             EPARemarks = entity.EPARemarks,

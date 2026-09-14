@@ -118,7 +118,11 @@ export function MoPTabItem({ item, onUpdate, readOnly }: MoPTabItemProps) {
         </CardHeader>
         <CardContent className="p-4 space-y-3.5">
           {/* Key PPMP Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="p-2.5 bg-white rounded-lg border border-slate-200/80">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">PAP Code</span>
+              <span className="text-sm font-mono font-bold text-slate-900 mt-0.5 block truncate">{item.papCode || item.code || '—'}</span>
+            </div>
             <div className="p-2.5 bg-white rounded-lg border border-slate-200/80">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">Quantity & Unit</span>
               <span className="text-sm font-bold text-slate-900 mt-0.5 block">{item.quantity} {item.unit}</span>

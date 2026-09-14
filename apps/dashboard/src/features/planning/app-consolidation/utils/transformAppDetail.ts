@@ -72,6 +72,7 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
     return {
       id: item.id,
       ppmpItemId: item.ppmpItemId || undefined,
+      papCode: item.papCode || '',
       code: item.code || item.ppmpItemId || item.id?.substring(0, 10) || '',
       description: item.itemNameOverride || item.ppmpItemName || item.description || '',
       itemDescription: item.generalDescription || item.description || '',

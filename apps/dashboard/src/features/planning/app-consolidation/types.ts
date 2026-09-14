@@ -104,6 +104,7 @@ export interface HybridScheduleValue {
 // ============================================================================
 export interface PPMPItem {
   id: string
+  papCode?: string
   code: string
   description: string
   unit: string
@@ -191,6 +192,7 @@ export interface BACMilestones {
 export interface BACLineItem {
   id: string
   ppmpItemId?: string
+  papCode?: string
   name?: string
   code?: string // Item code for reference (e.g., "ITEM-001", from delta extraction)
   description: string // Item name/title (e.g., "Office Chairs", "Laptops")

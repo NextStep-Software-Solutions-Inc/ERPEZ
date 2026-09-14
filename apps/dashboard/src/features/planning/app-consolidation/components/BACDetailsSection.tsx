@@ -255,7 +255,17 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
                       </div>
 
                       {/* Compact Metadata Row with Accessible High Contrast */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 py-3 px-4 bg-slate-50/80 rounded-lg text-xs border border-slate-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 py-3 px-4 bg-slate-50/80 rounded-lg text-xs border border-slate-200">
+                        {/* PAP Code */}
+                        <div>
+                          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-0.5">
+                            PAP Code
+                          </span>
+                          <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 inline-block">
+                            {item.papCode || item.code || '—'}
+                          </span>
+                        </div>
+
                         {/* Procurement Mode (Blue) */}
                         <div>
                           <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-0.5">
