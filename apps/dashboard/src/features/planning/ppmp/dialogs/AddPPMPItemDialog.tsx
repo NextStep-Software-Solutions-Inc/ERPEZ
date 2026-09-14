@@ -91,14 +91,16 @@ export default function AddPPMPItemDialog({
               },
             },
             {
-              onSuccess: () => {
-                void queryClient.invalidateQueries({
+              onSuccess: async () => {
+                await queryClient.invalidateQueries({
                   predicate: (query) =>
                     typeof query.queryKey[0] === 'string' &&
                     (query.queryKey[0].startsWith('/ppmp-items') ||
                       query.queryKey[0].startsWith('/ppmp-expenditure-items') ||
                       query.queryKey[0].startsWith('/ppmp')),
                 })
+                // Safety delay to confirm item in list before closing dialog
+                await new Promise((resolve) => setTimeout(resolve, 600))
                 onSuccess?.()
                 onOpenChange(false)
               },
@@ -125,7 +127,7 @@ export default function AddPPMPItemDialog({
     plannedQuantity: itemToEdit?.plannedQuantity ?? 1,
     procurementModeId: itemToEdit?.procurementModeId ?? '',
     papCode: itemToEdit?.papCode ?? defaultPapCode ?? '',
-    projectType: (itemToEdit?.projectType as any) ?? 'Goods',
+    projectType: itemToEdit?.projectType ?? 'Goods',
     preProcurementConference: itemToEdit?.preProcurementConference ?? false,
     procurementStartDate: itemToEdit?.procurementStartDate ? itemToEdit.procurementStartDate.split('T')[0] : '',
     procurementEndDate: itemToEdit?.procurementEndDate ? itemToEdit.procurementEndDate.split('T')[0] : '',
@@ -158,7 +160,7 @@ export default function AddPPMPItemDialog({
             loading={isLoading}
             className="bg-primary hover:bg-primary/95 text-white"
           >
-            {isLoading ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Item'}
+            {isLoading ? (isEdit ? 'Saving...' : 'Adding...') : isEdit ? 'Save Changes' : 'Add PPMP Item'}
           </SubmitButton>
         </div>
       }

@@ -19,9 +19,9 @@ import { useCalendarV2 } from '../contexts/calendar-context'
 import { useDndV2 } from '../contexts/dnd-context'
 import {
   WEEKDAY_LABELS,
-  getPaletteForProject,
-  CATEGORY_COLOR_MAP,
-  STATUS_COLOR_MAP,
+  getEventPalette,
+  getProcurementModeAbbreviation,
+  MODE_COLOR_MAP,
 } from '../constants'
 import type { BiddingMasterCalendarEvent } from '../types'
 import { cn } from '@/lib/utils'
@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils'
 interface WeekIntervalSegment {
   id: string
   event: BiddingMasterCalendarEvent
-  startCol: number // 1 to 7
+  startCol: number // 0 to 6
   span: number // 1 to 7
   trackIndex: number
   isStartEdge: boolean
@@ -63,23 +63,6 @@ export function MonthViewV2() {
   const bucketMap = useMemo(() => {
     return new Map(dayBuckets.map((b) => [b.date, b]))
   }, [dayBuckets])
-
-  // Get color palette for an event based on selected ColorTaxonomyMode
-  const getEventPalette = (event: BiddingMasterCalendarEvent) => {
-    if (colorMode === 'category') {
-      return (
-        CATEGORY_COLOR_MAP[event.procurementCategory.toLowerCase()] ??
-        getPaletteForProject(event.bacResolutionId)
-      )
-    }
-    if (colorMode === 'status') {
-      return (
-        STATUS_COLOR_MAP[event.derivedProjectStatus] ??
-        getPaletteForProject(event.bacResolutionId)
-      )
-    }
-    return getPaletteForProject(event.bacResolutionId || event.primaryProjectName)
-  }
 
   // Precompute multi-day spanning bars & point events for each week
   const weekData = useMemo(() => {
@@ -179,7 +162,7 @@ export function MonthViewV2() {
           segments.push({
             id: `${event.id}-w${format(weekSunday, 'yyyyMMdd')}`,
             event,
-            startCol: startCol + 1,
+            startCol,
             span,
             trackIndex: assignedTrack,
             isStartEdge: isSameDay(sDate, clampedStart),
@@ -297,14 +280,16 @@ export function MonthViewV2() {
                     {/* Single-day events stack (rendered in available space below spanning bars) */}
                     <div className="flex-1 min-h-0 space-y-1 mt-1 z-20 overflow-hidden">
                       {singleDayEventsByDay[dayIdx].slice(0, Math.max(1, 3 - occupiedTracks)).map((evt) => {
-                        const palette = getEventPalette(evt)
+                        const palette = getEventPalette(evt, colorMode)
+                        const modeAbbr = getProcurementModeAbbreviation(evt)
+                        const modeColor = MODE_COLOR_MAP[modeAbbr]
                         return (
                           <div
                             key={evt.id}
                             draggable
                             onDragStart={() => startDrag(evt)}
                             onClick={() => openEventModal(evt)}
-                            title={`${evt.milestoneName} - ${evt.primaryProjectName}`}
+                            title={`[${modeAbbr}] ${evt.milestoneName} - ${evt.primaryProjectName}`}
                             className={cn(
                               'group/evt flex items-center justify-between rounded-md border px-1.5 py-0.5 text-[11px] font-semibold cursor-grab active:cursor-grabbing transition-all hover:shadow-xs truncate',
                               palette.bg,
@@ -313,7 +298,14 @@ export function MonthViewV2() {
                             )}
                           >
                             <div className="flex items-center gap-1 min-w-0 truncate">
-                              <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', palette.solid)} />
+                              <span
+                                className={cn(
+                                  'px-1 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider shrink-0',
+                                  modeColor.badge,
+                                )}
+                              >
+                                {modeAbbr}
+                              </span>
                               <span className="truncate">{evt.milestoneName}</span>
                             </div>
 
@@ -331,26 +323,28 @@ export function MonthViewV2() {
               })}
 
               {/* Multi-Day Spanning Bars Layer across the week row */}
-              <div className="absolute inset-x-0 top-7 bottom-1 pointer-events-none grid grid-cols-7 gap-x-px z-10 px-1">
+              <div className="absolute inset-x-0 top-7 bottom-1 pointer-events-none z-10 px-0.5">
                 {segments.map((segment) => {
-                  const palette = getEventPalette(segment.event)
+                  const palette = getEventPalette(segment.event, colorMode)
+                  const modeAbbr = getProcurementModeAbbreviation(segment.event)
+                  const modeColor = MODE_COLOR_MAP[modeAbbr]
                   const topOffset = segment.trackIndex * 24 + 4
 
                   return (
                     <div
                       key={segment.id}
                       style={{
-                        gridColumnStart: segment.startCol,
-                        gridColumnEnd: `span ${segment.span}`,
+                        left: `${(segment.startCol / 7) * 100}%`,
+                        width: `${(segment.span / 7) * 100}%`,
                         top: `${topOffset}px`,
                       }}
-                      className="absolute h-5 pointer-events-auto cursor-grab active:cursor-grabbing"
+                      className="absolute h-5 px-0.5 pointer-events-auto cursor-grab active:cursor-grabbing"
                     >
                       <div
                         draggable
                         onDragStart={() => startDrag(segment.event)}
                         onClick={() => openEventModal(segment.event)}
-                        title={`${segment.event.milestoneName} (${segment.event.primaryProjectName})`}
+                        title={`[${modeAbbr}] ${segment.event.milestoneName} (${segment.event.primaryProjectName})`}
                         className={cn(
                           'flex h-full w-full items-center justify-between px-2 text-[10px] font-bold border transition-all hover:scale-[1.01] shadow-2xs',
                           palette.bg,
@@ -360,7 +354,15 @@ export function MonthViewV2() {
                           segment.isEndEdge ? 'rounded-r-md' : 'border-r-0 rounded-r-none',
                         )}
                       >
-                        <div className="flex items-center gap-1 truncate">
+                        <div className="flex items-center gap-1.5 min-w-0 truncate">
+                          <span
+                            className={cn(
+                              'px-1 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider shrink-0',
+                              modeColor.badge,
+                            )}
+                          >
+                            {modeAbbr}
+                          </span>
                           <Layers className="h-3 w-3 shrink-0 opacity-70" />
                           <span className="truncate font-semibold">{segment.event.milestoneName}</span>
                           <span className="text-muted-foreground font-normal truncate max-w-28 hidden sm:inline">

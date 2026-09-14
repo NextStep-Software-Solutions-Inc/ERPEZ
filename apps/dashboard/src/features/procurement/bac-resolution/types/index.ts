@@ -1,4 +1,5 @@
 import { APPItem } from "@/features/planning/annual-performance-planning/types/appItem.type"
+import type { FiscalYear } from "@/features/planning/fiscal-year-and-policies/fiscal-year-management/types/types"
 import { ConsolidatedPR } from "../../consolidated-pr/store/consolidatedPRStore"
 
 export type BacResolutionStatus =
@@ -88,13 +89,25 @@ export type EligibleAppItem = {
   papCode?: string
   appId?: string
   appNumber?: string
+  app?: {
+    id: string
+    appNumber: string
+    name: string
+    fiscalYearId?: string
+    fiscalYearName?: string
+    fiscalYear?: FiscalYear | null
+    FiscalYear?: FiscalYear | null
+  }
 }
 
 export type EligibleAppForProcurement = {
   id: string
   appNumber: string
   name: string
-  fiscalYearName: string
+  fiscalYearId?: string
+  fiscalYearName?: string
+  fiscalYear?: FiscalYear | null
+  FiscalYear?: FiscalYear | null
   eligibleItems: EligibleAppItem[]
 }
 

@@ -6,14 +6,8 @@ public class CreatePurchaseOrderCommandValidator : AbstractValidator<CreatePurch
 {
     public CreatePurchaseOrderCommandValidator()
     {
-        RuleFor(x => x.PONumber)
-            .NotEmpty().WithMessage("PO Number is required.");
-
         RuleFor(x => x.SourceDocumentId)
             .NotEmpty().WithMessage("Source Document ID is required.");
-
-        RuleFor(x => x.SupplierId)
-            .NotEmpty().WithMessage("Supplier ID is required.");
 
         RuleFor(x => x.Date)
             .NotEmpty().WithMessage("Date is required.");
@@ -23,8 +17,13 @@ public class CreatePurchaseOrderCommandValidator : AbstractValidator<CreatePurch
 
         RuleFor(x => x.SourceDocumentType)
             .IsInEnum().WithMessage("Invalid Source Document Type.");
-            
-        RuleFor(x => x.Items)
-            .NotEmpty().WithMessage("At least one PO item is required.");
+
+        When(x => x.ProcurementMode == Domain.Enums.POProcurementModeEnum.DIRECT_ACQUISITION, () =>
+        {
+            RuleFor(x => x)
+                .Must(x => (x.SupplierId.HasValue && x.SupplierId.Value != Guid.Empty) ||
+                           (x.RetailStoreInfo != null && !string.IsNullOrWhiteSpace(x.RetailStoreInfo.Name)))
+                .WithMessage("Either an existing Supplier or a Retail Store Name is required for Direct Acquisition.");
+        });
     }
 }

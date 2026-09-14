@@ -188,7 +188,7 @@ export const CreateBacResolutionForm = forwardRef<
     // Multi-APP and Multi-APP Item selection state:
     const [selectedAppIds, setSelectedAppIds] = useState<string[]>(
       initialValues?.appIds ||
-        (initialValues?.appId ? [initialValues.appId] : []),
+      (initialValues?.appId ? [initialValues.appId] : []),
     )
     const [selectedAppItems, setSelectedAppItems] = useState<EligibleAppItem[]>(
       [],
@@ -1503,7 +1503,8 @@ export function SourceRecordPickerStep({
       (app) =>
         app.appNumber.toLowerCase().includes(term) ||
         app.name.toLowerCase().includes(term) ||
-        app.fiscalYearName.toLowerCase().includes(term),
+        ((app.fiscalYear?.year || app.FiscalYear?.year)?.toString().includes(term) ?? false) ||
+        Boolean(app.fiscalYearName?.toLowerCase().includes(term)),
     )
   }, [allApps, searchTerm])
 
@@ -1517,6 +1518,15 @@ export function SourceRecordPickerStep({
         ...item,
         appId: app.id,
         appNumber: app.appNumber,
+        app: item.app || {
+          id: app.id,
+          appNumber: app.appNumber,
+          name: app.name,
+          fiscalYearId: app.fiscalYearId,
+          fiscalYearName: app.fiscalYearName,
+          fiscalYear: app.fiscalYear,
+          FiscalYear: app.FiscalYear,
+        },
       })),
     )
   }, [selectedApps])
@@ -1935,7 +1945,7 @@ export function SourceRecordPickerStep({
                         </span>
                       </div>
                       <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-800 shrink-0">
-                        {app.fiscalYearName || 'FY 2026'}
+                        {(app.fiscalYear?.year || app.FiscalYear?.year) ? `FY ${app.fiscalYear?.year || app.FiscalYear?.year}` : (app.fiscalYearName || '—')}
                       </span>
                     </div>
 

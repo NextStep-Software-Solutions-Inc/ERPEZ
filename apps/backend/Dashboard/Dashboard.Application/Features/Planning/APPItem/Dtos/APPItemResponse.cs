@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using ERPEZ.Application.Features.Planning.APP.Dtos;
 using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Planning.APPItem.Dtos;
@@ -68,6 +69,9 @@ public record APPItemAPPResponse
     public Guid Id { get; init; }
     public string APPNumber { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
+    public Guid FiscalYearId { get; init; }
+    public string FiscalYearName { get; init; } = string.Empty;
+    public APPFiscalYearResponse? FiscalYear { get; init; }
 }
 
 public record APPItemPPMPItemResponse

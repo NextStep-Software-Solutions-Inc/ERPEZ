@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select'
 import { useCalendarV2 } from '../contexts/calendar-context'
 import type { ProcurementCategory } from '../../bidding-schedule/types'
-import type { DerivedCalendarProjectStatus } from '../../bidding-master-calendar/types'
+import type { DerivedCalendarProjectStatus, ProcurementModeAbbr } from '../../bidding-master-calendar/types'
 import { cn } from '@/lib/utils'
 
 export function CalendarFiltersPopoverV2() {
@@ -30,8 +30,24 @@ export function CalendarFiltersPopoverV2() {
     if (filters.procurementCategories.length > 0) count += filters.procurementCategories.length
     if (filters.derivedStatuses.length > 0) count += filters.derivedStatuses.length
     if (filters.milestoneKeys.length > 0) count += filters.milestoneKeys.length
+    if (filters.procurementModes && filters.procurementModes.length > 0) {
+      count += filters.procurementModes.length
+    }
     return count
   }, [filters])
+
+  const toggleMode = (mode: ProcurementModeAbbr) => {
+    setFilters((prev) => {
+      const current = prev.procurementModes ?? []
+      const exists = current.includes(mode)
+      return {
+        ...prev,
+        procurementModes: exists
+          ? current.filter((m) => m !== mode)
+          : [...current, mode],
+      }
+    })
+  }
 
   const toggleCategory = (cat: ProcurementCategory) => {
     setFilters((prev) => {
@@ -56,6 +72,13 @@ export function CalendarFiltersPopoverV2() {
       }
     })
   }
+
+  const MODES: Array<{ key: ProcurementModeAbbr; label: string; abbr: string; badgeClass: string }> = [
+    { key: 'PB', label: 'Public Bidding', abbr: 'PB', badgeClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+    { key: 'DA', label: 'Direct Acquisition', abbr: 'DA', badgeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
+    { key: 'DC', label: 'Direct Contracting', abbr: 'DC', badgeClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
+    { key: 'RFQ', label: 'Request for Quotation / SVP', abbr: 'RFQ', badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
+  ]
 
   const CATEGORIES: Array<{ key: ProcurementCategory; label: string }> = [
     { key: 'goods', label: 'Goods' },
@@ -184,6 +207,37 @@ export function CalendarFiltersPopoverV2() {
                 >
                   {isSelected && <Check className="h-3 w-3" />}
                   <span>{label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Procurement Mode */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Procurement Mode</Label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {MODES.map(({ key, label, abbr, badgeClass }) => {
+              const isSelected = filters.procurementModes?.includes(key)
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  onClick={() => toggleMode(key)}
+                  className={cn(
+                    'flex items-center justify-between rounded-md px-2 py-1.5 text-xs font-medium border transition-colors cursor-pointer',
+                    isSelected
+                      ? 'border-primary/60 bg-primary/10 text-primary font-semibold'
+                      : 'border-border/60 hover:bg-muted/50 text-foreground',
+                  )}
+                >
+                  <div className="flex items-center gap-1.5 truncate">
+                    {isSelected && <Check className="h-3 w-3 text-primary shrink-0" />}
+                    <span className="truncate">{abbr}</span>
+                  </div>
+                  <span className={cn('px-1 py-0.2 rounded text-[9px] font-bold shrink-0', badgeClass)}>
+                    {abbr}
+                  </span>
                 </button>
               )
             })}

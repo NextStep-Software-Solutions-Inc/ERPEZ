@@ -11,9 +11,9 @@ import { useDndV2 } from '../contexts/dnd-context'
 import {
   WORKING_HOURS,
   WEEKDAY_LABELS,
-  getPaletteForProject,
-  CATEGORY_COLOR_MAP,
-  STATUS_COLOR_MAP,
+  getEventPalette,
+  getProcurementModeAbbreviation,
+  MODE_COLOR_MAP,
 } from '../constants'
 import type { BiddingMasterCalendarEvent } from '../types'
 import { cn } from '@/lib/utils'
@@ -36,22 +36,6 @@ export function WeekViewV2() {
       end: endOfWeek(selectedDate, { weekStartsOn: 0 }),
     })
   }, [selectedDate, weekStart])
-
-  const getEventPalette = (event: BiddingMasterCalendarEvent) => {
-    if (colorMode === 'category') {
-      return (
-        CATEGORY_COLOR_MAP[event.procurementCategory.toLowerCase()] ??
-        getPaletteForProject(event.bacResolutionId)
-      )
-    }
-    if (colorMode === 'status') {
-      return (
-        STATUS_COLOR_MAP[event.derivedProjectStatus] ??
-        getPaletteForProject(event.bacResolutionId)
-      )
-    }
-    return getPaletteForProject(event.bacResolutionId || event.primaryProjectName)
-  }
 
   // Format hour label (e.g. 8 AM or 08:00)
   const formatHourLabel = (hour: number) => {
@@ -146,14 +130,16 @@ export function WeekViewV2() {
                     className="border-r last:border-r-0 border-border/50 p-1 flex flex-col gap-1 transition-colors hover:bg-muted/20 relative"
                   >
                     {slotEvents.map((evt) => {
-                      const palette = getEventPalette(evt)
+                      const palette = getEventPalette(evt, colorMode)
+                      const modeAbbr = getProcurementModeAbbreviation(evt)
+                      const modeColor = MODE_COLOR_MAP[modeAbbr]
                       return (
                         <div
                           key={evt.id}
                           draggable
                           onDragStart={() => startDrag(evt)}
                           onClick={() => openEventModal(evt)}
-                          title={`${evt.milestoneName} - ${evt.primaryProjectName}`}
+                          title={`[${modeAbbr}] ${evt.milestoneName} - ${evt.primaryProjectName}`}
                           className={cn(
                             'group flex flex-col p-1.5 rounded-lg border text-xs font-semibold cursor-grab active:cursor-grabbing transition-all hover:shadow-xs shadow-2xs',
                             palette.bg,
@@ -162,9 +148,19 @@ export function WeekViewV2() {
                           )}
                         >
                           <div className="flex items-center justify-between gap-1">
-                            <span className="truncate font-bold text-[11px]">
-                              {evt.milestoneName}
-                            </span>
+                            <div className="flex items-center gap-1 min-w-0 truncate">
+                              <span
+                                className={cn(
+                                  'px-1 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider shrink-0',
+                                  modeColor.badge,
+                                )}
+                              >
+                                {modeAbbr}
+                              </span>
+                              <span className="truncate font-bold text-[11px]">
+                                {evt.milestoneName}
+                              </span>
+                            </div>
                             {evt.eventTime && (
                               <span className="text-[10px] opacity-80 shrink-0">
                                 {evt.eventTime}

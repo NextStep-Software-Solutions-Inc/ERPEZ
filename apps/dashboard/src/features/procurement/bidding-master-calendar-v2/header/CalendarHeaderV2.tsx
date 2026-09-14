@@ -1,9 +1,11 @@
 import { format } from 'date-fns'
+import { useNavigate } from '@tanstack/react-router'
 import {
   Printer,
   Settings,
   AlertTriangle,
   Check,
+  History,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,6 +32,7 @@ import { CalendarFiltersPopoverV2 } from './CalendarFiltersPopoverV2'
 import type { ColorTaxonomyMode } from '../types'
 
 export function CalendarHeaderV2() {
+  const navigate = useNavigate()
   const {
     setSelectedDate,
     filters,
@@ -134,6 +137,18 @@ export function CalendarHeaderV2() {
           <Printer className="h-4 w-4 text-foreground" />
         </Button>
 
+        {/* Switch to Legacy Calendar View */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate({ to: '/v2/bidding-master-calendar-legacy' })}
+          className="h-9 px-2.5 text-xs font-semibold gap-1.5 border-border/70 hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer shadow-2xs"
+          title="Switch to Legacy Calendar View"
+        >
+          <History className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">Classic Calendar <span className="font-normal text-muted-foreground italic">(Legacy)</span></span>
+        </Button>
+
         {/* Settings Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -157,6 +172,9 @@ export function CalendarHeaderV2() {
               <DropdownMenuRadioItem value="project" className="text-xs font-medium cursor-pointer">
                 By BAC Project / Resolution
               </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="mode" className="text-xs font-medium cursor-pointer">
+                By Procurement Mode (PB, DA, DC, RFQ)
+              </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="category" className="text-xs font-medium cursor-pointer">
                 By Procurement Category
               </DropdownMenuRadioItem>
@@ -176,6 +194,15 @@ export function CalendarHeaderV2() {
             >
               <span>24-Hour Military Format</span>
               {use24HourFormat && <Check className="h-3.5 w-3.5 text-primary" />}
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => navigate({ to: '/v2/bidding-master-calendar-legacy' })}
+              className="text-xs font-medium justify-between cursor-pointer text-muted-foreground hover:text-foreground"
+            >
+              <span>Switch to Classic Calendar <span className="font-normal text-muted-foreground italic">(Legacy)</span></span>
+              <History className="h-3.5 w-3.5 text-muted-foreground" />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

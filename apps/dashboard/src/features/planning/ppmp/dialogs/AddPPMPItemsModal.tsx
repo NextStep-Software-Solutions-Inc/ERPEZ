@@ -70,6 +70,7 @@ import {
   useTriggerPSDBMSync,
 } from '@/features/procurement/psdbm/hooks'
 import { PSDBMCatalogMode, type PSDBMItem } from '@/features/procurement/psdbm/types'
+import { getPPMPItemsRequest } from '../handlers/getPPMPItemsRequest'
 import { createPPMPItemRequest } from '../handlers/createPPMPItemRequest'
 import { createPPMPItemAllocationRequest } from '../handlers/createPPMPItemAllocationRequest'
 import type { AllocationMonth, ProcurementProjectType } from '../types'
@@ -77,7 +78,7 @@ import type { AllocationMonth, ProcurementProjectType } from '../types'
 import type { ProcurementItem } from '@/components/features/planning/procurement-item/types/procurementItem.types'
 import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
 
-function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem {
+function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem & { availableStock?: number } {
   return {
     id: psdbm.id || psdbm.itemCode,
     name: psdbm.description,
@@ -90,13 +91,15 @@ function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem {
     isActive: true,
     productCode: psdbm.itemCode,
     imageURL: psdbm.imageUrl,
-  } as ProcurementItem
+    availableStock: psdbm.availableStock,
+  } as ProcurementItem & { availableStock?: number }
 }
 
 const useNONCSEItems = createQueryHookFromTemplate(getNONCSEItemsRequest)
 const useProcurementModes = createQueryHookFromTemplate(
   getProcurementModesRequest,
 )
+const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
 const useCreatePPMPItem = createMutationHookFromTemplate(createPPMPItemRequest)
 const useCreatePPMPItemAllocation = createMutationHookFromTemplate(
   createPPMPItemAllocationRequest,
@@ -107,10 +110,10 @@ export interface ItemReviewConfig {
   plannedQuantity?: number
   procurementModeId: string
   projectType:
-    | 'Goods'
-    | 'Infrastructure'
-    | 'ConsultingServices'
-    | 'GeneralSupportServices'
+  | 'Goods'
+  | 'Infrastructure'
+  | 'ConsultingServices'
+  | 'GeneralSupportServices'
   papCode: string
   preProcurementConference: boolean
   procurementStartDate: string
@@ -252,6 +255,11 @@ export default function AddPPMPItemsModal({
   const [isAdding, setIsAdding] = useState(false)
   const [progressIndex, setProgressIndex] = useState(0)
   const [totalProgress, setTotalProgress] = useState(0)
+  const [processingItemName, setProcessingItemName] = useState('')
+  const [processingSubStep, setProcessingSubStep] = useState('')
+  const [failedItems, setFailedItems] = useState<
+    Array<{ id: string; name: string; error: string }>
+  >([])
   const isCommittedRef = useRef(false)
 
   // Filters by CSE tab vs Non-CSE tab
@@ -370,6 +378,48 @@ export default function AddPPMPItemsModal({
   const procurementModes = useMemo(
     () => modesResponse?.data ?? [],
     [modesResponse],
+  )
+
+  // Query existing PPMP items in this expenditure block to prevent duplicates
+  const { data: existingPPMPItemsResponse } = usePPMPItems({
+    pathParams: {},
+    queryParams: {
+      filters: ppmpExpenditureItemId ? `ppmpExpenditureItemId==${ppmpExpenditureItemId}` : undefined,
+      pageSize: 1000,
+    },
+    enabled: isOpen && Boolean(ppmpExpenditureItemId),
+  })
+
+  const existingItemsData = useMemo(() => {
+    const items = existingPPMPItemsResponse?.data || []
+    const itemNames = new Set<string>()
+    const cseIds = new Set<string>()
+    const nonCseIds = new Set<string>()
+    const ids = new Set<string>()
+
+    for (const it of items) {
+      if (it.name) itemNames.add(it.name.trim().toLowerCase())
+      if (it.cseItemId) cseIds.add(it.cseItemId.toLowerCase())
+      if (it.nonCseItemId) nonCseIds.add(it.nonCseItemId.toLowerCase())
+      if (it.id) ids.add(it.id.toLowerCase())
+    }
+
+    return { itemNames, cseIds, nonCseIds, ids }
+  }, [existingPPMPItemsResponse])
+
+  const isItemAlreadyInPPMP = useCallback(
+    (item: ProcurementItem | NONCSEItem, type: CatalogTab) => {
+      const idLower = (item.id || '').toLowerCase()
+      const nameLower = (item.name || '').trim().toLowerCase()
+      if (nameLower && existingItemsData.itemNames.has(nameLower)) return true
+      if (type === 'cse') {
+        if (existingItemsData.cseIds.has(idLower) || existingItemsData.ids.has(idLower)) return true
+      } else {
+        if (existingItemsData.nonCseIds.has(idLower) || existingItemsData.ids.has(idLower)) return true
+      }
+      return false
+    },
+    [existingItemsData],
   )
 
   const currentItems =
@@ -536,6 +586,10 @@ export default function AddPPMPItemsModal({
 
   const toggleSelected = useCallback(
     (item: ProcurementItem | NONCSEItem, type: CatalogTab) => {
+      if (isItemAlreadyInPPMP(item, type)) {
+        toast.warning(`"${item.name || 'This item'}" is already added to this PPMP expenditure block.`)
+        return
+      }
       setSelectedItems((prev) => {
         const next = new Map(prev)
         if (next.has(item.id)) {
@@ -620,6 +674,9 @@ export default function AddPPMPItemsModal({
     setDetailsItemId(null)
     setDetailsItemType(null)
     setConfirmCloseOpen(false)
+    setFailedItems([])
+    setProcessingItemName('')
+    setProcessingSubStep('')
     isCommittedRef.current = false
   }, [])
 
@@ -650,10 +707,40 @@ export default function AddPPMPItemsModal({
       return
     }
 
+    // Duplicate guard: prevent adding if item already exists in this expenditure item
+    const duplicateSelected = selectedList.filter(({ item, type }) =>
+      isItemAlreadyInPPMP(item, type),
+    )
+    if (duplicateSelected.length > 0) {
+      toast.warning(
+        `Cannot add: "${duplicateSelected[0].item.name || 'Selected item'}" is already in this PPMP expenditure block.`,
+      )
+      return
+    }
+
+    // Stock availability guard: prevent adding if planned quantity exceeds available stock
+    const stockExceededItem = selectedList.find(({ item }) => {
+      const config = configs[item.id]
+      const availStock = item.availableStock ?? item.stockOnHand
+      return (
+        typeof availStock === 'number' &&
+        availStock > 0 &&
+        (config?.plannedQuantity || 0) > availStock
+      )
+    })
+    if (stockExceededItem) {
+      toast.warning(
+        `Planned quantity for "${stockExceededItem.item.name}" cannot exceed available stock (${stockExceededItem.item.availableStock}).`,
+      )
+      return
+    }
+
     const invalidItems = selectedList.filter(({ item }) => {
       const config = configs[item.id]
       if (!config) return true
       if (!config.plannedQuantity || config.plannedQuantity < 1) return true
+      const availStock = item.availableStock ?? item.stockOnHand
+      if (typeof availStock === 'number' && availStock > 0 && config.plannedQuantity > availStock) return true
       if (!config.procurementModeId) return true
       if (config.unitPrice < 0.01) return true
       if (!config.procurementStartDate || !config.procurementEndDate || config.procurementEndDate < config.procurementStartDate) return true
@@ -671,12 +758,13 @@ export default function AddPPMPItemsModal({
 
     if (invalidItems.length > 0) {
       toast.warning(
-        'All items must have a Planned Quantity (>= 1), selected Procurement Mode, unit price >= ₱0.01, valid timeline dates, and monthly allocations not exceeding planned quantity.',
+        'All items must have a Planned Quantity (>= 1, not exceeding available stock), selected Procurement Mode, unit price >= ₱0.01, valid timeline dates, and monthly allocations not exceeding planned quantity.',
       )
       return
     }
 
     setIsAdding(true)
+    setFailedItems([])
     isCommittedRef.current = false
 
     // Calculate total operations to track progress
@@ -691,16 +779,19 @@ export default function AddPPMPItemsModal({
       }
     })
 
-    setTotalProgress(totalOps)
+    setTotalProgress(Math.max(1, totalOps))
     setProgressIndex(0)
 
     let successCount = 0
     let failedCount = 0
     const successfullyCreatedIds: string[] = []
+    const failedItemsList: Array<{ id: string; name: string; error: string }> = []
 
     try {
       for (const { type, item } of selectedList) {
         const config = configs[item.id]!
+        setProcessingItemName(item.name || 'Item')
+        setProcessingSubStep('Creating procurement item entry...')
         setProgressIndex((prev) => prev + 1)
 
         let createdItemId = ''
@@ -735,11 +826,27 @@ export default function AddPPMPItemsModal({
             payload,
           })
           // Extract GUID from response - handle both string and object payloads
-          createdItemId = typeof response.data === 'string' ? response.data : (response.data?.id ?? '')
+          createdItemId =
+            typeof response.data === 'string'
+              ? response.data
+              : (response.data?.id ?? '')
           successCount++
           successfullyCreatedIds.push(item.id)
-        } catch (err) {
+        } catch (err: unknown) {
           failedCount++
+          const errorObj = err as {
+            response?: { data?: { message?: string } }
+            message?: string
+          }
+          const errorMessage =
+            errorObj?.response?.data?.message ||
+            errorObj?.message ||
+            'Failed to create item'
+          failedItemsList.push({
+            id: item.id,
+            name: item.name || 'Item',
+            error: errorMessage,
+          })
           console.error(`Failed to add item: ${item.name}`, err)
           continue // Skip allocations if item creation failed
         }
@@ -750,6 +857,7 @@ export default function AddPPMPItemsModal({
             ([_, qty]) => qty > 0,
           )
           for (const [month, qty] of activeMonths) {
+            setProcessingSubStep(`Allocating ${qty} units for ${month}...`)
             setProgressIndex((prev) => prev + 1)
             try {
               await createAllocation({
@@ -787,10 +895,6 @@ export default function AddPPMPItemsModal({
           return next
         })
 
-        toast.success(
-          `Successfully added ${successCount} item(s) to expenditure block.`,
-        )
-
         // Invalidate queries to refresh lists and workspace
         await queryClient.invalidateQueries({
           predicate: (query) =>
@@ -803,18 +907,29 @@ export default function AddPPMPItemsModal({
         onSuccess?.()
       }
 
-      if (failedCount > 0) {
-        toast.error(`Failed to add ${failedCount} item(s).`)
-      }
-
-      // If all items succeeded, mark committed and close cleanly
       if (failedCount === 0 && successCount > 0) {
+        setProgressIndex(totalOps)
+        setProcessingSubStep('All items successfully added!')
+        toast.success(
+          `Successfully added ${successCount} item(s) to expenditure block.`,
+        )
+        // Brief 180ms frame so 100% completion is visually registered
+        await new Promise((resolve) => setTimeout(resolve, 180))
         isCommittedRef.current = true
-        forceClose()
+        onOpenChange(false)
+      } else if (failedCount > 0) {
+        setFailedItems(failedItemsList)
+        setIsAdding(false)
+        if (successCount > 0) {
+          toast.warning(
+            `Added ${successCount} item(s), but ${failedCount} item(s) failed.`,
+          )
+        } else {
+          toast.error(`Failed to add ${failedCount} item(s).`)
+        }
       }
     } catch (globalErr) {
       toast.error('An error occurred during batch creation.')
-    } finally {
       setIsAdding(false)
     }
   }
@@ -834,146 +949,226 @@ export default function AddPPMPItemsModal({
           }
         }}
         title={
-          step === 'select'
-            ? 'Add Items to Workspace'
-            : 'Configure Selected Items'
+          isAdding
+            ? 'Adding Items to Workspace'
+            : failedItems.length > 0
+              ? 'Batch Addition Incomplete'
+              : step === 'select'
+                ? 'Add Items to Workspace'
+                : 'Configure Selected Items'
         }
         description={
-          step === 'select'
-            ? 'Browse procurement catalog items, filter quickly, and select items to add to the PPMP.'
-            : 'Define procurement mode and individual unit prices for the selected items.'
+          isAdding
+            ? 'Please wait while items and monthly distribution allocations are registered.'
+            : failedItems.length > 0
+              ? 'One or more items encountered an error during batch addition.'
+              : step === 'select'
+                ? 'Browse procurement catalog items, filter quickly, and select items to add to the PPMP.'
+                : 'Define procurement mode and individual unit prices for the selected items.'
         }
         size="5xl"
-        showCloseButton={!isAdding}
+        showCloseButton={!isAdding && failedItems.length === 0}
         onPointerDownOutside={
           isAdding
             ? (e) => e.preventDefault()
             : selectedItems.size > 0 && !isCommittedRef.current
               ? (e) => {
-                  e.preventDefault()
-                  setConfirmCloseOpen(true)
-                }
+                e.preventDefault()
+                setConfirmCloseOpen(true)
+              }
               : undefined
         }
         footer={
-          <div className="sticky bottom-0 border-t border-border bg-background/95 px-1 pt-4 backdrop-blur">
-            <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Badge
-                  variant="soft"
-                  color={selectedCount > 0 ? 'default' : 'secondary'}
-                >
-                  {selectedCount} selected
-                </Badge>
-                <span>
-                  {step === 'select'
-                    ? selectedCount > 0
-                      ? 'Items ready to be configured.'
-                      : 'Select one or more items to continue.'
-                    : `Total Planned Cost: ${new Intl.NumberFormat('en-PH', {
+          isAdding || failedItems.length > 0 ? null : (
+            <div className="sticky bottom-0 border-t border-border bg-background/95 px-1 pt-4 backdrop-blur">
+              <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <Badge
+                    variant="soft"
+                    color={selectedCount > 0 ? 'default' : 'secondary'}
+                  >
+                    {selectedCount} selected
+                  </Badge>
+                  <span>
+                    {step === 'select'
+                      ? selectedCount > 0
+                        ? 'Items ready to be configured.'
+                        : 'Select one or more items to continue.'
+                      : `Total Planned Cost: ${new Intl.NumberFormat('en-PH', {
                         style: 'currency',
                         currency: 'PHP',
                       }).format(totalStep2EstimatedCost)}`}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {step === 'select' ? (
-                  <>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedItems(new Map())}
-                      disabled={selectedCount === 0}
-                    >
-                      Clear selection
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setStep('configure')
-                        if (selectedList.length > 0 && !expandedItemId) {
-                          setExpandedItemId(selectedList[0].item.id)
-                        }
-                      }}
-                      disabled={selectedCount === 0}
-                    >
-                      Review Selected ({selectedCount})
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setStep('select')}
-                      disabled={isAdding}
-                      className="gap-2"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Back to Catalog
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleConfirmAdd}
-                      disabled={isAdding || selectedCount === 0}
-                      className="gap-2 bg-primary hover:bg-primary/95 text-white"
-                    >
-                      {isAdding ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Adding...
-                        </>
-                      ) : (
-                        `Add to Workspace (${selectedCount})`
-                      )}
-                    </Button>
-                  </>
-                )}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {step === 'select' ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedItems(new Map())}
+                        disabled={selectedCount === 0}
+                      >
+                        Clear selection
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setStep('configure')
+                          if (selectedList.length > 0 && !expandedItemId) {
+                            setExpandedItemId(selectedList[0].item.id)
+                          }
+                        }}
+                        disabled={selectedCount === 0}
+                      >
+                        Review Selected ({selectedCount})
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStep('select')}
+                        disabled={isAdding}
+                        className="gap-2"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to Catalog
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleConfirmAdd}
+                        disabled={isAdding || selectedCount === 0}
+                        className="gap-2 bg-primary hover:bg-primary/95 text-white"
+                      >
+                        {isAdding ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Adding...
+                          </>
+                        ) : (
+                          `Add to Workspace (${selectedCount})`
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )
         }
       >
-        {/* 
-        Safety Overlay during Batch Addition
-      */}
-        {isAdding && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-6 text-center">
-            <div className="bg-background border border-border shadow-xl rounded-xl p-8 max-w-md w-full flex flex-col items-center space-y-4">
-              <Loader2 className="h-12 w-12 text-primary animate-spin" />
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Creating PPMP Items
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Adding item{' '}
-                  <span className="font-semibold text-foreground">
-                    {progressIndex}
-                  </span>{' '}
-                  of{' '}
-                  <span className="font-semibold text-foreground">
-                    {totalProgress}
+        {isAdding ? (
+          /* Full-Dialog Modal Takeover during Batch Addition */
+          <div className="flex flex-col items-center justify-center min-h-[440px] py-12 px-6 text-center space-y-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative flex items-center justify-center h-20 w-20 rounded-2xl bg-primary/10 border border-primary/20 shadow-xl shadow-primary/10">
+              <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping opacity-25" />
+              <Loader2 className="h-10 w-10 text-primary animate-spin" />
+            </div>
+
+            <div className="space-y-2 max-w-md w-full">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Adding to PPMP Workspace</span>
+              </div>
+
+              <h3 className="text-xl font-bold text-foreground">
+                {processingItemName ? (
+                  <span className="truncate block max-w-sm sm:max-w-md mx-auto" title={processingItemName}>
+                    {processingItemName}
                   </span>
-                  .
-                </p>
-              </div>
-              <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-primary h-full transition-all duration-300 rounded-full"
-                  style={{ width: `${(progressIndex / totalProgress) * 100}%` }}
-                />
-              </div>
-              <p className="text-xs text-rose-500 font-medium">
-                Please do not close the modal, refresh the page, or navigate
-                away.
+                ) : (
+                  'Processing PPMP Items'
+                )}
+              </h3>
+
+              <p className="text-xs text-muted-foreground min-h-[18px]">
+                {processingSubStep || 'Registering procurement records...'}
               </p>
             </div>
-          </div>
-        )}
 
-        {step === 'select' ? (
+            {/* Progress Bar & Operations Counter */}
+            <div className="w-full max-w-md space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold px-1">
+                <span className="text-muted-foreground">
+                  Step {Math.min(progressIndex, totalProgress)} of {totalProgress} operations
+                </span>
+                <span className="text-primary font-mono font-bold">
+                  {Math.min(100, Math.round((progressIndex / Math.max(1, totalProgress)) * 100))}%
+                </span>
+              </div>
+
+              <div className="w-full bg-muted/60 h-3 rounded-full overflow-hidden p-0.5 border border-border/60 shadow-inner">
+                <div
+                  className="bg-primary h-full transition-all duration-300 rounded-full shadow-xs"
+                  style={{
+                    width: `${Math.min(100, Math.max(5, (progressIndex / Math.max(1, totalProgress)) * 100))}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Safety Notice */}
+            <p className="text-xs text-muted-foreground/80 max-w-xs">
+              Please keep this window open while records and monthly distributions are being saved.
+            </p>
+          </div>
+        ) : failedItems.length > 0 ? (
+          /* Error Summary View when one or more items fail */
+          <div className="flex flex-col items-center justify-center min-h-[400px] py-10 px-6 text-center space-y-5 animate-in fade-in duration-200">
+            <div className="h-16 w-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/10">
+              <AlertCircle className="h-8 w-8" />
+            </div>
+
+            <div className="space-y-1 max-w-md">
+              <h3 className="text-lg font-bold text-foreground">
+                Batch Addition Partially Incomplete
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {failedItems.length} item(s) could not be registered. Successfully added items have been saved to your expenditure block.
+              </p>
+            </div>
+
+            {/* List of failed items */}
+            <div className="w-full max-w-lg rounded-xl border border-border bg-muted/20 p-3 max-h-56 overflow-y-auto divide-y divide-border/60 text-left">
+              {failedItems.map((fail, idx) => (
+                <div key={idx} className="py-2.5 px-2 space-y-0.5 first:pt-1 last:pb-1">
+                  <div className="text-xs font-semibold text-foreground flex items-center justify-between">
+                    <span className="truncate max-w-[280px]">{fail.name}</span>
+                    <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/30 bg-amber-500/5">
+                      Failed
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate">{fail.error}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={forceClose}
+                className="text-xs"
+              >
+                Close & Review Workspace
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleConfirmAdd}
+                className="text-xs gap-2 bg-primary hover:bg-primary/95 text-white"
+              >
+                <RefreshCcw className="h-3.5 w-3.5" />
+                Retry Failed Items ({failedItems.length})
+              </Button>
+            </div>
+          </div>
+        ) : step === 'select' ? (
           <div className="space-y-4 pr-1">
             <Tabs
               value={activeTab}
@@ -1289,13 +1484,13 @@ export default function AddPPMPItemsModal({
                                                         category,
                                                       )
                                                         ? tabFilters.categories.filter(
-                                                            (c) =>
-                                                              c !== category,
-                                                          )
+                                                          (c) =>
+                                                            c !== category,
+                                                        )
                                                         : [
-                                                            ...tabFilters.categories,
-                                                            category,
-                                                          ],
+                                                          ...tabFilters.categories,
+                                                          category,
+                                                        ],
                                                   },
                                                   true,
                                                 )
@@ -1340,12 +1535,12 @@ export default function AddPPMPItemsModal({
                                               {
                                                 unitOfMeasures: isSelected
                                                   ? tabFilters.unitOfMeasures.filter(
-                                                      (u) => u !== unit,
-                                                    )
+                                                    (u) => u !== unit,
+                                                  )
                                                   : [
-                                                      ...tabFilters.unitOfMeasures,
-                                                      unit,
-                                                    ],
+                                                    ...tabFilters.unitOfMeasures,
+                                                    unit,
+                                                  ],
                                               },
                                               true,
                                             )
@@ -1411,9 +1606,9 @@ export default function AddPPMPItemsModal({
                           </div>
                         ) : totalMatchingCount === 0 ? (
                           activeTab === 'cse' &&
-                          isReadyToFetchCse &&
-                          !search.trim() &&
-                          currentFilters.categories.length === 0 ? (
+                            isReadyToFetchCse &&
+                            !search.trim() &&
+                            currentFilters.categories.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
                               <div className="rounded-full bg-amber-500/10 p-3 mb-3 text-amber-600 dark:text-amber-400">
                                 <AlertCircle className="h-6 w-6" />
@@ -1506,21 +1701,28 @@ export default function AddPPMPItemsModal({
                             <div className="grid gap-3 min-[350px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
                               {pageItems.map((item) => {
                                 const isSelected = selectedItems.has(item.id)
+                                const isDuplicate = isItemAlreadyInPPMP(item, tab)
+                                const availableStock = item.availableStock ?? item.stockOnHand
                                 const bgTone = tone(item.name || item.id)
                                 const categoryText =
                                   tab === 'cse'
                                     ? (item as ProcurementItem).objectCodeName
                                     : (item as NONCSEItem)
-                                        .procurementCategoryName
+                                      .procurementCategoryName
 
                                 return (
                                   <div
                                     key={item.id}
                                     role="button"
                                     aria-pressed={isSelected}
-                                    tabIndex={0}
-                                    onClick={() => toggleSelected(item, tab)}
+                                    aria-disabled={isDuplicate}
+                                    tabIndex={isDuplicate ? -1 : 0}
+                                    onClick={() => {
+                                      if (isDuplicate) return
+                                      toggleSelected(item, tab)
+                                    }}
                                     onKeyDown={(e) => {
+                                      if (isDuplicate) return
                                       if (e.key === ' ' || e.key === 'Enter') {
                                         e.preventDefault()
                                         toggleSelected(item, tab)
@@ -1528,9 +1730,11 @@ export default function AddPPMPItemsModal({
                                     }}
                                     className={cn(
                                       'group flex flex-col justify-between rounded-2xl border p-3.5 text-left bg-background transition-all duration-300 relative select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                                      isSelected
-                                        ? 'border-primary bg-primary/2 ring-1 ring-primary shadow-md scale-[1.01]'
-                                        : 'border-slate-100 hover:border-slate-300 hover:shadow-lg hover:scale-[1.01]',
+                                      isDuplicate
+                                        ? 'opacity-60 bg-muted/20 border-dashed border-border cursor-not-allowed'
+                                        : isSelected
+                                          ? 'border-primary bg-primary/2 ring-1 ring-primary shadow-md scale-[1.01]'
+                                          : 'border-slate-100 hover:border-slate-300 hover:shadow-lg hover:scale-[1.01]',
                                     )}
                                   >
                                     {/* Top Row: Floating Tags / Checkbox */}
@@ -1538,22 +1742,33 @@ export default function AddPPMPItemsModal({
                                       className="absolute top-5 left-5 right-5 z-10 flex items-center justify-between pointer-events-none"
                                       onClick={(e) => e.stopPropagation()}
                                     >
-                                      <Badge
-                                        variant="soft"
-                                        color={
-                                          tab === 'cse' ? 'success' : 'info'
-                                        }
-                                        className="text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider backdrop-blur-md bg-white/85 shadow-sm border border-slate-100/50"
-                                      >
-                                        {tab === 'cse' ? 'CSE' : 'Non-CSE'}
-                                      </Badge>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <Badge
+                                          variant="soft"
+                                          color={
+                                            tab === 'cse' ? 'success' : 'info'
+                                          }
+                                          className="text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider backdrop-blur-md bg-white/85 shadow-sm border border-slate-100/50"
+                                        >
+                                          {tab === 'cse' ? 'CSE' : 'Non-CSE'}
+                                        </Badge>
+                                        {isDuplicate && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[9px] px-1.5 py-0.5 font-bold border-amber-500/50 bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
+                                          >
+                                            Already in PPMP
+                                          </Badge>
+                                        )}
+                                      </div>
                                       <div className="pointer-events-auto">
                                         <Checkbox
                                           checked={isSelected}
+                                          disabled={isDuplicate}
                                           onCheckedChange={() =>
                                             toggleSelected(item, tab)
                                           }
-                                          className="h-5 w-5 rounded-md border-slate-300 bg-white/95 shadow-sm data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                          className="h-5 w-5 rounded-md border-slate-300 bg-white/95 shadow-sm data-[state=checked]:bg-primary data-[state=checked]:border-primary disabled:opacity-40 disabled:cursor-not-allowed"
                                           onClick={(e) => e.stopPropagation()}
                                         />
                                       </div>
@@ -1638,29 +1853,41 @@ export default function AddPPMPItemsModal({
                                           <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium bg-slate-100/80 px-2 py-0.5 rounded-full shrink-0">
                                             UOM: {item.uomName || 'pcs'}
                                           </span>
+                                          {availableStock !== undefined && availableStock !== null && (
+                                            <span
+                                              className={cn(
+                                                'inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0',
+                                                availableStock > 0
+                                                  ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                                  : 'text-rose-700 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300',
+                                              )}
+                                            >
+                                              Stock: {availableStock}
+                                            </span>
+                                          )}
                                         </div>
 
                                         {((tab === 'cse' &&
                                           (item as ProcurementItem).unitPrice !==
-                                            undefined) ||
+                                          undefined) ||
                                           (tab === 'non-cse' &&
                                             (item as NONCSEItem).currentPrice !==
-                                              undefined)) && (
-                                          <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
-                                            <span className="text-[10px] text-slate-400 font-normal">
-                                              Catalog Price
-                                            </span>
-                                            <span className="text-primary font-extrabold text-[12px]">
-                                              ₱
-                                              {(tab === 'cse'
-                                                ? (item as ProcurementItem)
+                                            undefined)) && (
+                                            <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
+                                              <span className="text-[10px] text-slate-400 font-normal">
+                                                Catalog Price
+                                              </span>
+                                              <span className="text-primary font-extrabold text-[12px]">
+                                                ₱
+                                                {(tab === 'cse'
+                                                  ? (item as ProcurementItem)
                                                     .unitPrice ?? 0
-                                                : (item as NONCSEItem)
+                                                  : (item as NONCSEItem)
                                                     .currentPrice ?? 0
-                                              ).toFixed(2)}
-                                            </span>
-                                          </div>
-                                        )}
+                                                ).toFixed(2)}
+                                              </span>
+                                            </div>
+                                          )}
 
                                         <div className="flex items-center justify-between border-t border-slate-100/80 pt-2 mt-1">
                                           <button
@@ -1886,19 +2113,19 @@ export default function AddPPMPItemsModal({
                     const isPriceLocked =
                       type === 'cse'
                         ? (item as ProcurementItem).hasPrice &&
-                          typeof (item as ProcurementItem).unitPrice ===
-                            'number' &&
-                          ((item as ProcurementItem).unitPrice ?? 0) > 0
+                        typeof (item as ProcurementItem).unitPrice ===
+                        'number' &&
+                        ((item as ProcurementItem).unitPrice ?? 0) > 0
                         : typeof (item as NONCSEItem).currentPrice ===
-                            'number' &&
-                          ((item as NONCSEItem).currentPrice ?? 0) > 0
+                        'number' &&
+                        ((item as NONCSEItem).currentPrice ?? 0) > 0
 
                     const config = configs[item.id] || {
                       unitPrice:
                         type === 'cse'
                           ? (item as ProcurementItem).hasPrice &&
                             typeof (item as ProcurementItem).unitPrice ===
-                              'number' &&
+                            'number' &&
                             ((item as ProcurementItem).unitPrice ?? 0) > 0
                             ? ((item as ProcurementItem).unitPrice ?? 0)
                             : 0
@@ -1933,21 +2160,24 @@ export default function AddPPMPItemsModal({
                     const plannedQty = config.plannedQuantity || 0
                     const allocatedQty = config.enableAllocations
                       ? Object.values(config.monthlyQuantities).reduce(
-                          (a, b) => a + b,
-                          0,
-                        )
+                        (a, b) => a + b,
+                        0,
+                      )
                       : 0
                     const remainingQty = Math.max(0, plannedQty - allocatedQty)
-                    const calculatedTotal = plannedQty * config.unitPrice
+                    const calculatedTotal = plannedQty * (config.unitPrice || 0)
+                    const availableStock = item.availableStock ?? item.stockOnHand
+                    const hasStockLimit = typeof availableStock === 'number' && availableStock > 0
+                    const hasExceededStock = hasStockLimit && plannedQty > availableStock
 
                     const hasQtyError =
-                      !config.plannedQuantity || config.plannedQuantity < 1
+                      !config.plannedQuantity || config.plannedQuantity < 1 || hasExceededStock
                     const hasPriceError =
                       !config.unitPrice || config.unitPrice < 0.01
                     const hasMopError = !config.procurementModeId
                     const hasAllocError =
                       config.enableAllocations && allocatedQty > plannedQty
-                    
+
                     const hasProcStartError = !config.procurementStartDate
                     const hasProcEndError =
                       !config.procurementEndDate ||
@@ -1985,7 +2215,7 @@ export default function AddPPMPItemsModal({
                         ? (item as ProcurementItem).productCode
                         : (item as NONCSEItem).productCode
                     const imgUrl =
-                      (item as ProcurementItem).imageURL || (item as any).imageUrl
+                      (item as ProcurementItem).imageURL || item.imageUrl
 
                     const MONTH_NAMES: AllocationMonth[] = [
                       'January',
@@ -2116,7 +2346,7 @@ export default function AddPPMPItemsModal({
                             >
                               View Details
                             </Button>
-                            
+
                             <div className="text-right pl-2 border-l border-border/60">
                               <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
                                 Estimated Cost
@@ -2221,6 +2451,7 @@ export default function AddPPMPItemsModal({
                                     id={`qty-${item.id}`}
                                     type="number"
                                     min="1"
+                                    max={hasStockLimit ? availableStock : undefined}
                                     placeholder="e.g. 100"
                                     value={config.plannedQuantity ?? ''}
                                     onChange={(e) =>
@@ -2236,8 +2467,14 @@ export default function AddPPMPItemsModal({
                                       hasQtyError && 'border-red-500 bg-red-50/20',
                                     )}
                                   />
-                                  {hasQtyError && (
+                                  {hasQtyError && !hasExceededStock && (
                                     <p className="text-[10px] text-red-500 font-medium mt-0.5">Planned quantity is required (≥ 1)</p>
+                                  )}
+                                  {hasStockLimit && (
+                                    <p className={cn('text-[10px] font-medium mt-0.5', hasExceededStock ? 'text-red-500 font-semibold' : 'text-muted-foreground')}>
+                                      Available Stock: {availableStock} {item.uomName || 'units'}
+                                      {hasExceededStock && ' (Cannot exceed available stock)'}
+                                    </p>
                                   )}
                                 </div>
 
@@ -2268,16 +2505,16 @@ export default function AddPPMPItemsModal({
                                           unitPrice: Math.max(
                                             0,
                                             Number.parseFloat(e.target.value) ||
-                                              0,
+                                            0,
                                           ),
                                         })
                                       }
                                       className={cn(
                                         'pl-6 text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
                                         isPriceLocked &&
-                                          'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
+                                        'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
                                         hasPriceError &&
-                                          'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20',
+                                        'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20',
                                       )}
                                     />
                                   </div>
@@ -2308,7 +2545,7 @@ export default function AddPPMPItemsModal({
                                       className={cn(
                                         'w-full border-default-200 text-xs h-9 focus:ring-primary/25',
                                         hasMopError &&
-                                          'border-red-500 bg-red-50/20',
+                                        'border-red-500 bg-red-50/20',
                                       )}
                                     >
                                       <SelectValue placeholder="Select Mode *" />
@@ -2641,7 +2878,7 @@ export default function AddPPMPItemsModal({
                                               const qty = Math.max(
                                                 0,
                                                 Number.parseInt(e.target.value) ||
-                                                  0,
+                                                0,
                                               )
                                               const monthlyQuantities = {
                                                 ...config.monthlyQuantities,
@@ -2756,7 +2993,7 @@ export default function AddPPMPItemsModal({
                     <span className="font-semibold text-foreground mt-0.5 block truncate">
                       {detailsItemType === 'cse'
                         ? (detailData as ProcurementItem).objectCodeName ||
-                          'N/A'
+                        'N/A'
                         : 'N/A'}
                     </span>
                   </div>
@@ -2770,7 +3007,7 @@ export default function AddPPMPItemsModal({
                   <p className="text-foreground leading-relaxed mt-1 text-xs bg-muted/20 p-3 rounded-lg border border-border/40 whitespace-pre-wrap">
                     {detailsItemType === 'cse'
                       ? (detailData as ProcurementItem).specifications ||
-                        'No specifications provided.'
+                      'No specifications provided.'
                       : 'No description provided.'}
                   </p>
                 </div>
@@ -2788,7 +3025,7 @@ export default function AddPPMPItemsModal({
                     )}
                   {detailsItemType === 'cse' &&
                     typeof (detailData as ProcurementItem).itemLife ===
-                      'number' && (
+                    'number' && (
                       <div className="flex justify-between py-1 border-b border-border/20">
                         <span className="text-muted-foreground">
                           Item Life:
@@ -2800,7 +3037,7 @@ export default function AddPPMPItemsModal({
                     )}
                   {detailsItemType === 'cse' &&
                     typeof (detailData as ProcurementItem).unitPrice ===
-                      'number' && (
+                    'number' && (
                       <div className="flex justify-between py-1 border-b border-border/20">
                         <span className="text-muted-foreground">
                           Catalog Unit Price:
@@ -2817,7 +3054,7 @@ export default function AddPPMPItemsModal({
                     )}
                   {detailsItemType === 'non-cse' &&
                     typeof (detailData as NONCSEItem).currentPrice ===
-                      'number' && (
+                    'number' && (
                       <div className="flex justify-between py-1 border-b border-border/20">
                         <span className="text-muted-foreground">
                           Catalog Price:

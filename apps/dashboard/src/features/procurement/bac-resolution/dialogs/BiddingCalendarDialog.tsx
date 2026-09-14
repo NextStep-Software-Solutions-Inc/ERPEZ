@@ -15,33 +15,23 @@ import {
   Plus,
   ArrowUpDown,
   AlignLeft,
+  CalendarDays,
+  Clock,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import {
   computeRemainingDays,
+  formatRemainingDaysBadgeLabel,
   getRemainingDaysBadgeClass,
 } from '../utils/remainingDays'
 import type { ProcurementActivityType } from '@/lib/fiscal-year-and-policies/types/procurementActivityTypes'
 import type {
   ApiResponse,
+  CalendarEvent,
   CalendarEventsWithSummary,
 } from '../../bidding-schedule/types'
 import { toast } from 'sonner'
-
-interface CalendarEvent {
-  id: string
-  projectId: string
-  projectTitle: string
-  procurementActivityTypeId: string
-  procurementActivityTypeName: string
-  startDate: string
-  endDate: string
-  venue: string
-  status: string
-  remarks: string
-  executionStatus?: string
-}
 
 interface BiddingCalendarDialogProps {
   open: boolean
@@ -119,7 +109,7 @@ function CreateCalendarEventDialog({
       const msg =
         error && typeof error === 'object' && 'response' in error
           ? (error as { response?: { data?: { message?: string } } }).response
-              ?.data?.message || 'Failed to create bidding schedule.'
+            ?.data?.message || 'Failed to create bidding schedule.'
           : error instanceof Error
             ? error.message
             : 'Failed to create bidding schedule.'
@@ -284,9 +274,9 @@ export function BiddingCalendarDialog({
       // Normalize to flat array here.
       const parsedEvents: CalendarEvent[] =
         rawData &&
-        typeof rawData === 'object' &&
-        'events' in rawData &&
-        Array.isArray(rawData.events)
+          typeof rawData === 'object' &&
+          'events' in rawData &&
+          Array.isArray(rawData.events)
           ? rawData.events
           : Array.isArray(rawData)
             ? rawData
@@ -368,7 +358,7 @@ export function BiddingCalendarDialog({
                   onChange={(e) =>
                     setSortBy(
                       e.target.value as
-                        'date-asc' | 'date-desc' | 'title-asc' | 'title-desc',
+                      'date-asc' | 'date-desc' | 'title-asc' | 'title-desc',
                     )
                   }
                   className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
@@ -418,6 +408,12 @@ export function BiddingCalendarDialog({
                     isCompleted,
                     maxDays: actType?.maxDays,
                   })
+                  const displayRemainingLabel = formatRemainingDaysBadgeLabel(remainingInfo)
+                  const isTodayOrDue =
+                    remainingInfo.isToday ||
+                    remainingInfo.daysRemaining === 0 ||
+                    displayRemainingLabel === 'Today'
+                  const remainingVariant = isTodayOrDue ? 'warning' : remainingInfo.variant
 
                   return (
                     <div
@@ -492,7 +488,7 @@ export function BiddingCalendarDialog({
                             <span>Max:</span>
                             <span className="font-medium text-foreground">
                               {actType?.maxDays !== null &&
-                              actType?.maxDays !== undefined
+                                actType?.maxDays !== undefined
                                 ? `${actType.maxDays}d`
                                 : '—'}
                             </span>
@@ -505,11 +501,11 @@ export function BiddingCalendarDialog({
                               className={cn(
                                 'px-2 py-0.5 rounded-full text-xs font-semibold border',
                                 getRemainingDaysBadgeClass(
-                                  remainingInfo.variant,
+                                  remainingVariant,
                                 ),
                               )}
                             >
-                              {remainingInfo.label}
+                              {displayRemainingLabel}
                             </span>
                           </div>
                         </div>

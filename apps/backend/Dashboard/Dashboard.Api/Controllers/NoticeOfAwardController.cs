@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Commands.ApproveNoticeOfAward;
@@ -15,6 +15,7 @@ using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetAvailable
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetNoticeOfAwardById;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetNoticeOfAwards;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetNoticeOfAwardSummary;
+using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetApprovedNoasAvailableForPO;
 using ERPEZ.Application.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -48,6 +49,17 @@ public class NoticeOfAwardController(ISender mediator, ICurrentUserService curre
     public async Task<IActionResult> GetNoticeOfAwards([FromQuery] GetNoticeOfAwardsQuery query)
     {
         var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get approved Notice of Awards that are available for Purchase Order creation (not linked to an active PO)
+    /// </summary>
+    [HttpGet("available-for-po")]
+    [ProducesResponseType(typeof(ApiResponse<List<AvailableNoaDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAvailableNoasForPO()
+    {
+        var result = await mediator.Send(new GetApprovedNoasAvailableForPOQuery());
         return Ok(result);
     }
 

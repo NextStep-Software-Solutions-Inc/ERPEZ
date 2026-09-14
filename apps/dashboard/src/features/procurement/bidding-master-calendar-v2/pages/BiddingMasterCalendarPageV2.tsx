@@ -24,11 +24,13 @@ import type {
   BiddingMasterCalendarDrawerTab,
   BiddingMasterCalendarEvent,
 } from '../../bidding-master-calendar/types'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, Sparkles } from 'lucide-react'
 
-interface BiddingMasterCalendarPageV2Props {
+export interface BiddingMasterCalendarPageV2Props {
   selectedResolutionId?: string
+  resolutionId?: string
+  selectedEventId?: string
+  openDrawer?: boolean
+  drawerTab?: BiddingMasterCalendarDrawerTab
 }
 
 function CalendarContentV2() {
@@ -51,12 +53,14 @@ function CalendarContentV2() {
 
   const { data: scheduleResponse } = useBiddingSchedule({
     pathParams: { resolutionId: drawerResolutionId },
+    enabled: Boolean(isDrawerOpen && drawerResolutionId),
   })
   const realSchedule = scheduleResponse?.data ?? null
 
   const { data: resolutionResponse } = useBacResolution({
     pathParams: { id: drawerResolutionId },
     queryParams: {},
+    enabled: Boolean(isDrawerOpen && drawerResolutionId),
   })
   const realResolution = resolutionResponse?.data ?? null
 
@@ -219,29 +223,19 @@ function CalendarContentV2() {
 
 export function BiddingMasterCalendarPageV2({
   selectedResolutionId,
+  resolutionId,
+  selectedEventId,
+  openDrawer,
+  drawerTab,
 }: BiddingMasterCalendarPageV2Props) {
-  const navigate = useNavigate()
+  const effectiveResolutionId = resolutionId || selectedResolutionId
 
   return (
-    <PageContainerDashtail containerClassName="p-0 h-[calc(100vh-4rem)] flex flex-col overflow-hidden" contentClassName="p-0 flex-1 min-h-0 flex flex-col overflow-hidden">
-      {/* Top Banner indicating Playground Mode */}
-      <div className="flex items-center justify-between px-4 py-1.5 bg-primary/10 border-b border-primary/20 text-xs text-primary shrink-0 select-none">
-        <div className="flex items-center gap-2 font-bold">
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>Master BAC Calendar v2 Playground (Edge-to-Edge Full Experience)</span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate({ to: '/v2/bidding-master-calendar' })}
-          className="h-6 px-2 text-xs font-semibold hover:bg-primary/20 text-primary cursor-pointer gap-1"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          <span>Back to Classic Calendar</span>
-        </Button>
-      </div>
-
-      <CalendarProviderV2 initialResolutionId={selectedResolutionId}>
+    <PageContainerDashtail
+      containerClassName="p-0 h-[calc(100vh-4rem)] flex flex-col overflow-hidden"
+      contentClassName="p-0 flex-1 min-h-0 flex flex-col overflow-hidden"
+    >
+      <CalendarProviderV2 initialResolutionId={effectiveResolutionId}>
         <DndProviderV2>
           <CalendarContentV2 />
         </DndProviderV2>

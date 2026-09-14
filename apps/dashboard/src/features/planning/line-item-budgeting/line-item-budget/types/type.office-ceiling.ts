@@ -5,6 +5,7 @@ export type OfficeCeilingAgencyMasterBudget = {
   psAmount: number
   mooeAmount: number
   coAmount: number
+  totalAmount?: number
   sourceDocumentType?: string
 }
 

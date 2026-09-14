@@ -1166,18 +1166,6 @@ export const menusConfig = {
             icon: Book,
             permission: PERMISSIONS.Procurement.Bac.Manage,
           },
-          {
-            title: 'BAC Resolutions (Public Bidding)',
-            href: '/v2/bac-resolutions-public-bidding',
-            icon: Book,
-            permission: PERMISSIONS.Procurement.Bac.Manage,
-          },
-          {
-            title: 'Manage BAC Resolutions',
-            href: '/v2/manage-bac-resolutions',
-            icon: Files,
-            permission: PERMISSIONS.Procurement.Bac.Manage,
-          },
         ],
       },
       {
@@ -1289,6 +1277,12 @@ export const menusConfig = {
         title: 'Contracts & Ordering',
         icon: ClipBoard,
         child: [
+          {
+            title: 'Purchase Orders (All)',
+            href: '/v2/purchase-orders',
+            icon: ClipBoard2,
+            permission: PERMISSIONS.Procurement.Po.Manage,
+          },
           {
             title: 'PO : SVP',
             href: '/v2/po-svp',
@@ -1582,18 +1576,6 @@ export const menusConfig = {
             icon: Book,
             permission: PERMISSIONS.Procurement.Bac.Manage,
           },
-          {
-            title: 'BAC Resolutions (Public Bidding)',
-            href: '/v2/bac-resolutions-public-bidding',
-            icon: Book,
-            permission: PERMISSIONS.Procurement.Bac.Manage,
-          },
-          {
-            title: 'Manage BAC Resolutions',
-            href: '/v2/manage-bac-resolutions',
-            icon: Files,
-            permission: PERMISSIONS.Procurement.Bac.Manage,
-          },
         ],
       },
       {
@@ -1708,6 +1690,12 @@ export const menusConfig = {
         title: 'Contracts & Ordering',
         icon: ClipBoard,
         child: [
+          {
+            title: 'Purchase Orders (All)',
+            href: '/v2/purchase-orders',
+            icon: ClipBoard2,
+            permission: PERMISSIONS.Procurement.Po.Manage,
+          },
           {
             title: 'PO : SVP',
             href: '/v2/po-svp',

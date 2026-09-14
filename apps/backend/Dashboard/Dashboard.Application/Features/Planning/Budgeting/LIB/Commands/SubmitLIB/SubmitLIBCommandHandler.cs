@@ -54,6 +54,51 @@ public class SubmitLIBCommandHandler(
             throw new ValidationException($"Cannot submit incomplete LIB: {string.Join("; ", errors)}");
         }
 
+        // Validate Department Ceiling
+        if (entity.OfficeId.HasValue)
+        {
+            decimal? departmentCeiling = null;
+
+            if (entity.AgencyMasterBudgetId.HasValue)
+            {
+                var ceiling = await unitOfWork.OfficeCeilingRepository.FindAsync(
+                    x => x.AgencyMasterBudgetId == entity.AgencyMasterBudgetId.Value && x.OfficeId == entity.OfficeId.Value && !x.IsDeleted,
+                    cancellationToken);
+                if (ceiling != null)
+                {
+                    departmentCeiling = ceiling.PSAmount + ceiling.MOOEAmount + ceiling.COAmount;
+                }
+            }
+
+            if (!departmentCeiling.HasValue && entity.FiscalYearId.HasValue)
+            {
+                var ceiling = await unitOfWork.OfficeCeilingRepository.FindAsync(
+                    x => x.FiscalYearId == entity.FiscalYearId.Value && x.OfficeId == entity.OfficeId.Value && !x.IsDeleted,
+                    cancellationToken);
+                if (ceiling != null)
+                {
+                    departmentCeiling = ceiling.PSAmount + ceiling.MOOEAmount + ceiling.COAmount;
+                }
+                else
+                {
+                    var subCeiling = await unitOfWork.SubOfficeCeilingRepository.FindAsync(
+                        x => x.FiscalYearId == entity.FiscalYearId.Value && x.SubOfficeId == entity.OfficeId.Value && !x.IsDeleted,
+                        cancellationToken);
+                    if (subCeiling != null)
+                    {
+                        departmentCeiling = subCeiling.PSAmount + subCeiling.MOOEAmount + subCeiling.COAmount;
+                    }
+                }
+            }
+
+            var totalAmount = entity.TotalAmount;
+            if (!LineItemBudgetValidationRules.ValidateDepartmentCeiling(totalAmount, departmentCeiling))
+            {
+                throw new ValidationException(
+                    $"Cannot submit Line Item Budget: Total budget (₱{totalAmount:N2}) exceeds the department ceiling (₱{departmentCeiling!.Value:N2}).");
+            }
+        }
+
         entity.Status = nameof(LIBStatus.Submitted);
         entity.SubmittedDate = DateTime.UtcNow;
 

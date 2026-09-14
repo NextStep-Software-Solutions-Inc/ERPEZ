@@ -3,9 +3,9 @@ import { format, parseISO, differenceInCalendarDays, startOfDay } from 'date-fns
 import { Clock, Calendar as CalendarIcon, ChevronRight } from 'lucide-react'
 import { useCalendarV2 } from '../contexts/calendar-context'
 import {
-  getPaletteForProject,
-  CATEGORY_COLOR_MAP,
-  STATUS_COLOR_MAP,
+  getEventPalette,
+  getProcurementModeAbbreviation,
+  MODE_COLOR_MAP,
 } from '../constants'
 import type { BiddingMasterCalendarEvent } from '../types'
 import { Badge } from '@/components/ui/badge'
@@ -40,22 +40,6 @@ export function AgendaViewV2() {
       events,
     }))
   }, [filteredEvents])
-
-  const getEventPalette = (event: BiddingMasterCalendarEvent) => {
-    if (colorMode === 'category') {
-      return (
-        CATEGORY_COLOR_MAP[event.procurementCategory.toLowerCase()] ??
-        getPaletteForProject(event.bacResolutionId)
-      )
-    }
-    if (colorMode === 'status') {
-      return (
-        STATUS_COLOR_MAP[event.derivedProjectStatus] ??
-        getPaletteForProject(event.bacResolutionId)
-      )
-    }
-    return getPaletteForProject(event.bacResolutionId || event.primaryProjectName)
-  }
 
   if (groupedAgenda.length === 0) {
     return (
@@ -99,7 +83,9 @@ export function AgendaViewV2() {
             {/* Event Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {events.map((evt) => {
-                const palette = getEventPalette(evt)
+                const palette = getEventPalette(evt, colorMode)
+                const modeAbbr = getProcurementModeAbbreviation(evt)
+                const modeColor = MODE_COLOR_MAP[modeAbbr]
                 const diffDays = differenceInCalendarDays(dateObj, today)
                 const isCompleted = evt.executionStatus === 'completed'
 
@@ -107,6 +93,7 @@ export function AgendaViewV2() {
                   <div
                     key={evt.id}
                     onClick={() => openEventModal(evt)}
+                    title={`[${modeAbbr}] ${evt.milestoneName} - ${evt.primaryProjectName}`}
                     className={cn(
                       'flex flex-col justify-between p-3.5 rounded-xl border cursor-pointer transition-all hover:scale-[1.01] hover:shadow-md space-y-3',
                       palette.bg,
@@ -114,10 +101,20 @@ export function AgendaViewV2() {
                     )}
                   >
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-1.5">
-                        <Badge variant="outline" className={cn('text-[10px] font-bold px-1.5 py-0', palette.badge)}>
-                          {evt.bacResolutionNumber || 'BAC'}
-                        </Badge>
+                      <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={cn(
+                              'px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shrink-0 border',
+                              modeColor.badge,
+                            )}
+                          >
+                            {modeAbbr}
+                          </span>
+                          <Badge variant="outline" className={cn('text-[10px] font-bold px-1.5 py-0', palette.badge)}>
+                            {evt.bacResolutionNumber || 'BAC'}
+                          </Badge>
+                        </div>
                         {isCompleted ? (
                           <Badge className="bg-emerald-600 text-white text-[10px] font-bold py-0">
                             Completed
@@ -128,7 +125,7 @@ export function AgendaViewV2() {
                           </Badge>
                         ) : diffDays <= 3 ? (
                           <Badge className="bg-amber-600 text-white text-[10px] font-bold py-0">
-                            Due in {diffDays === 0 ? 'Today' : `${diffDays}d`}
+                            {diffDays === 0 ? 'Today' : `Due in ${diffDays}d`}
                           </Badge>
                         ) : (
                           <span className="text-[10px] text-muted-foreground">

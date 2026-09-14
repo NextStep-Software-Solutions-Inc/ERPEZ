@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft,
   Download,
@@ -27,6 +27,7 @@ import { getLIBRequest } from '@/features/planning/line-item-budgeting/line-item
 import { getLIBActivitiesRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/getLIBActivitiesRequest'
 import { getWFPRequest } from '@/components/features/planning/wfp/wfp/handlers/getWFPRequest'
 import { getOPCRRequest, OPCRActivity } from '@/features/planning/opcr'
+import { useOfficeCeilings } from '@/features/planning/line-item-budgeting/line-item-budget/hooks/useOfficeCeilings'
 import { OPCRActivityDetails } from '@/features/planning/opcr/components/OPCRActivityDetails'
 import { formatCurrencyPHP } from '@/utils/formatters'
 import CreateLIBActivityDialog from '../../../features/planning/line-item-budgeting/line-item-budget/dialogs/CreateLIBActivityDialog'
@@ -301,13 +302,47 @@ export default function LIBDetailPage({
   const totalActivitiesDetailBudget = activityDetailsBudget + orphanDetailsBudget
   const proposedLibTotalBudget = Math.max(totalActivitiesDetailBudget, lib?.totalAmount ?? 0)
 
+  // Fetch office ceilings to validate against department ceiling
+  const ceilingFilters = [
+    lib?.officeId ? `officeId==${lib.officeId}` : '',
+    lib?.fiscalYearId ? `fiscalYearId==${lib.fiscalYearId}` : '',
+  ].filter(Boolean).join(',')
+
+  const { data: officeCeilingsData } = useOfficeCeilings({
+    pathParams: {},
+    queryParams: {
+      filters: ceilingFilters,
+    },
+    enabled: !!lib?.officeId,
+  })
+
+  const departmentCeiling = useMemo(() => {
+    if (lib?.departmentCeiling) return Number(lib.departmentCeiling)
+    if (lib?.officeCeiling?.totalAmount) return Number(lib.officeCeiling.totalAmount)
+    if (lib?.agencyMasterBudget?.totalAmount) return Number(lib.agencyMasterBudget.totalAmount)
+    const ceilings = officeCeilingsData?.data || []
+    if (ceilings.length > 0) {
+      const ambId = lib?.agencyMasterBudgetId
+      if (ambId) {
+        const match = ceilings.find((c) => c.agencyMasterBudgetId === ambId || c.agencyMasterBudget?.id === ambId)
+        if (match?.agencyMasterBudget?.totalAmount) return Number(match.agencyMasterBudget.totalAmount)
+      }
+      return Number(ceilings[0]?.agencyMasterBudget?.totalAmount || 0)
+    }
+    return null
+  }, [lib, officeCeilingsData])
+
+  const isCeilingExceeded =
+    departmentCeiling != null && departmentCeiling > 0 && proposedLibTotalBudget > departmentCeiling
+
   // Check if LIB is ready for submission (proposed totalBudget >= OPCR/Source totalBudget)
   const isReadyForSubmission =
-    totalBudgetFromSource !== undefined && totalBudgetFromSource > 0
+    !isCeilingExceeded &&
+    (totalBudgetFromSource !== undefined && totalBudgetFromSource > 0
       ? proposedLibTotalBudget >= totalBudgetFromSource
       : proposedLibTotalBudget > 0 ||
         (lib?.activities && lib.activities.length > 0) ||
-        (lib?.orphanDetails && lib.orphanDetails.length > 0)
+        (lib?.orphanDetails && lib.orphanDetails.length > 0))
 
   const activityCount = lib?.activities?.length ?? 0
   const opcrActivityCount = opcrData?.data?.activityCount
@@ -383,6 +418,12 @@ export default function LIBDetailPage({
   // Handler for submitting LIB
   const handleSubmitLIB = async () => {
     if (!libId) return
+    if (isCeilingExceeded) {
+      toast.error(
+        `Cannot submit: Total budget (${formatCurrencyPHP(proposedLibTotalBudget)}) exceeds the department ceiling (${formatCurrencyPHP(departmentCeiling!)}).`,
+      )
+      return
+    }
     try {
       await updateLIBStatus(
         {
@@ -625,6 +666,7 @@ export default function LIBDetailPage({
         {/* Workflow & Submission Readiness Persistent Card */}
         <LIBReadinessCard
           lib={lib}
+          departmentCeiling={departmentCeiling}
           isLoading={
             isLoading ||
             (lib?.sourceType === 'OPCR'
@@ -634,7 +676,15 @@ export default function LIBDetailPage({
                 : false) ||
             isLIBActivitiesLoading
           }
-          onOpenSubmit={() => setIsSubmitConfirmOpen(true)}
+          onOpenSubmit={() => {
+            if (isCeilingExceeded) {
+              toast.error(
+                `Cannot submit: Total budget exceeds the department ceiling (${formatCurrencyPHP(departmentCeiling!)}).`,
+              )
+              return
+            }
+            setIsSubmitConfirmOpen(true)
+          }}
           onOpenApprove={
             lib?.status === 'Submitted' ? () => handleApproveLIB(lib.id, lib.name) : undefined
           }
@@ -644,7 +694,22 @@ export default function LIBDetailPage({
           isSubmitting={isSubmitting}
         />
 
-
+        {/* Department Ceiling Exceeded Banner */}
+        {isCeilingExceeded && (
+          <div className="bg-rose-50/90 border-l-4 border-rose-500 rounded-xl p-4 mb-8 flex items-center justify-between shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-rose-900 text-sm">
+                  Department Ceiling Exceeded
+                </h3>
+                <p className="text-rose-700 text-sm mt-0.5">
+                  The current Line-Item Budget total ({formatCurrencyPHP(proposedLibTotalBudget)}) exceeds the authorized department ceiling ({formatCurrencyPHP(departmentCeiling!)}). Submission is blocked until line-item expenditures are adjusted within the ceiling.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Returned for Revision Notice */}
         {lib?.status === 'Returned' && !isReadyForSubmission && (
@@ -768,8 +833,8 @@ export default function LIBDetailPage({
                       opcrData={opcrData?.data}
                       existingOPCRActivityIds={
                         (displayActivities || [])
-                          .map((a: any) => a.opcrActivityId)
-                          .filter(Boolean) as string[]
+                          .map((a) => a.opcrActivityId)
+                          .filter((id): id is string => Boolean(id))
                       }
                       isOPCRLoading={isOPCRLoading}
                       isWFPLoading={isWFPLoading}

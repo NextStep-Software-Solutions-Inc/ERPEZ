@@ -661,9 +661,9 @@ export const KPI_ACTIONS = [
   },
   {
     id: 'add-activity',
-    label: 'Add Activity',
+    label: 'Add Activity Indicator',
     icon: Plus,
-    description: 'Create new activity',
+    description: 'Create new activity indicator',
   },
 ]
 

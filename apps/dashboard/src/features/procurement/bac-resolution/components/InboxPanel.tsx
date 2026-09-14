@@ -242,8 +242,8 @@ export function InboxPanel({
   }
 
   return (
-    <Card className="border border-default-200 shadow-sm h-full flex flex-col">
-      <CardHeader className="space-y-2.5 pb-3">
+    <Card className="border border-default-200 shadow-sm h-full max-h-[600px] lg:max-h-full flex flex-col min-h-0 overflow-hidden">
+      <CardHeader className="space-y-2.5 pb-3 shrink-0">
         {/* Header Title with Total Count */}
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-sm font-bold text-foreground">
@@ -599,7 +599,7 @@ export function InboxPanel({
         )}
       </CardHeader>
 
-      <CardContent className="flex-1 space-y-2 overflow-y-auto max-h-[750px] p-3.5 ">
+      <CardContent className="flex-1 min-h-0 space-y-2 overflow-y-auto p-3.5">
         {isLoading ? (
           <div className="py-12 text-center text-xs text-muted-foreground space-y-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />
