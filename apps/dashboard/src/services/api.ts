@@ -19,7 +19,7 @@ api.defaults.timeout = 30000 // 30s timeout to allow database operations and deb
 api.interceptors.request.use(
   (config) => {
     let token: string | null = null
-    let tenantId = '00000000-0000-0000-0000-000000000001'
+    let tenantId: string | null = null
 
     if (typeof window !== 'undefined') {
       try {
@@ -31,7 +31,7 @@ api.interceptors.request.use(
         } else if (keycloak?.token) {
           token = keycloak.token
         }
-        tenantId = localStorage.getItem('erpez_tenant_id') || tenantId
+        tenantId = sessionStorage.getItem('erpez_candidate_tenant_id') || localStorage.getItem('erpez_tenant_id') || null
       } catch {
         // Ignore localStorage access errors
       }

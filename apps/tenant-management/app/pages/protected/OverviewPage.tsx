@@ -1,4 +1,4 @@
-import { CalendarFold, Clock, Crown, Download, FolderKey, Shield, Zap } from "lucide-react"
+import { CalendarFold, Clock, Crown, Download, FolderKey, LayoutDashboard, Shield, Zap } from "lucide-react"
 import OverviewRecentActivity from "~/components/OverviewRecentActivity"
 import { PageContainer } from "~/components/PageContainer"
 import { Button } from "~/components/ui/button"
@@ -51,6 +51,12 @@ export default function OverviewPage() {
             case "upgrade":
                 navigate("/plan")
                 break
+            case "erp": {
+                const targetTenantId = tenant?.id;
+                const dashboardUrl = import.meta.env.VITE_ERP_DASHBOARD_URL || "http://localhost:3000";
+                window.open(`${dashboardUrl}/?tenantId=${targetTenantId}`, "_blank");
+                break;
+            }
             case "license":
                 navigate("/license-management")
                 break
@@ -111,12 +117,13 @@ export default function OverviewPage() {
             </div>
             <div className="pt-8">
                 <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {quickActions.map((a) => (
                         <Card key={a.id} className="hover:shadow-md transition" role="region" aria-labelledby={`qa-${a.id}`}>
                             <CardContent className="flex flex-col items-center justify-center gap-4">
                                 <div className="flex items-center justify-center h-10 w-10 rounded-sm bg-gradient-to-br from-[var(--button-blue)]/30 to-[var(--button-green)]/30">
                                     {a.iconKey === "crown" && <Crown className="h-5 w-5 text-[var(--button-blue)]" />}
+                                    {a.iconKey === "layout-dashboard" && <LayoutDashboard className="h-5 w-5 text-[var(--button-blue)]" />}
                                     {a.iconKey === "folder-key" && <FolderKey className="h-5 w-5 text-[var(--button-blue)]" />}
                                     {a.iconKey === "downloads" && <Download className="h-5 w-5 text-[var(--button-blue)]" />}
                                 </div>
@@ -128,8 +135,8 @@ export default function OverviewPage() {
                                     variant={a.button.variant as any}
                                     onClick={() => handleAction(a.id)}
                                     aria-label={a.button.label}
-                                    className={`cursor-pointer ${a.id === "upgrade"
-                                        ? "bg-gradient-to-l from-[var(--button-green,#10B981)]/70 to-[var(--button-blue,#3B82F6)]/70"
+                                    className={`cursor-pointer ${a.id === "upgrade" || a.id === "erp"
+                                        ? "bg-gradient-to-l from-[var(--button-green,#10B981)]/70 to-[var(--button-blue,#3B82F6)]/70 text-white"
                                         : ""
                                         }`}
                                 >

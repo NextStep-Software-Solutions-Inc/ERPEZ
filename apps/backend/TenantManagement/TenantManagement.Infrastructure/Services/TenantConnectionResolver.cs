@@ -14,6 +14,7 @@ namespace ERPEZ.TenantManagement.Infrastructure.Services;
 /// </summary>
 public class TenantConnectionResolver(
     ApplicationDbContext dbContext,
+    ISecretEncryptionService encryptionService,
     IConfiguration configuration,
     IHostEnvironment env) : ITenantConnectionResolver
 {
@@ -21,28 +22,61 @@ public class TenantConnectionResolver(
         Guid authorizedTenantId,
         CancellationToken cancellationToken = default)
     {
-        var setting = await dbContext.TenantSettings!
+        // Query dedicated TenantOperationalDatabase entity strictly post-authorization
+        var opDb = await dbContext.TenantOperationalDatabases!
             .AsNoTracking()
-            .Where(ts => ts.TenantId == authorizedTenantId && !ts.IsDeleted)
-            .Select(ts => new { ts.DbConnectionString })
+            .Where(db => db.TenantId == authorizedTenantId && !db.IsDeleted)
+            .Select(db => new
+            {
+                db.EncryptedConnectionString,
+                db.EncryptionKeyVersion,
+                db.ProvisioningState
+            })
             .FirstOrDefaultAsync(cancellationToken);
 
-        var rawConnectionString = setting?.DbConnectionString;
+        string? resolvedConnectionString = null;
 
-        // In development environments, allow seeded dev tenant with empty connection string to use DefaultConnection
-        if (string.IsNullOrWhiteSpace(rawConnectionString))
+        if (opDb != null && !string.IsNullOrWhiteSpace(opDb.EncryptedConnectionString))
         {
-            if (env.IsDevelopment())
+            try
             {
-                rawConnectionString = configuration.GetConnectionString("DefaultConnection");
+                resolvedConnectionString = encryptionService.Decrypt(
+                    opDb.EncryptedConnectionString,
+                    opDb.EncryptionKeyVersion);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to decrypt operational database credentials for authorized tenant {authorizedTenantId}.", ex);
             }
         }
 
-        if (string.IsNullOrWhiteSpace(rawConnectionString))
+        // Backward compatibility fallback to legacy TenantSettings if TenantOperationalDatabase record is not yet populated
+        if (string.IsNullOrWhiteSpace(resolvedConnectionString))
+        {
+            var legacySetting = await dbContext.TenantSettings!
+                .AsNoTracking()
+                .Where(ts => ts.TenantId == authorizedTenantId && !ts.IsDeleted)
+                .Select(ts => new { ts.DbConnectionString })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            resolvedConnectionString = legacySetting?.DbConnectionString;
+        }
+
+        // In development environments, allow seeded dev tenant with empty connection string to use DefaultConnection
+        if (string.IsNullOrWhiteSpace(resolvedConnectionString))
+        {
+            if (env.IsDevelopment())
+            {
+                resolvedConnectionString = configuration.GetConnectionString("DefaultConnection");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(resolvedConnectionString))
         {
             throw new InvalidOperationException($"No valid database connection string found for authorized tenant {authorizedTenantId}.");
         }
 
-        return new TenantDatabaseConnectionInfo(authorizedTenantId, rawConnectionString);
+        return new TenantDatabaseConnectionInfo(authorizedTenantId, resolvedConnectionString);
     }
 }

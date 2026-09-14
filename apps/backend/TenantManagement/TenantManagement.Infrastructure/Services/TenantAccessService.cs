@@ -46,18 +46,26 @@ public class TenantAccessService(
         }
 
         // 2. Server-side Membership Authorization (sub -> TenantMember -> TenantId)
-        var isMember = await dbContext.TenantMembers!
+        var member = await dbContext.TenantMembers!
             .AsNoTracking()
-            .AnyAsync(tm => tm.TenantId == candidateTenantId &&
-                            (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId) &&
-                            tm.Status == Status.Active &&
-                            !tm.IsDeleted, cancellationToken);
+            .Where(tm => tm.TenantId == candidateTenantId &&
+                         (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId))
+            .Select(tm => new { tm.Status, tm.IsDeleted })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!isMember)
+        if (member == null)
         {
             return TenantAccessResult.Fail(
                 "Caller is not an active authorized member of this tenant.",
                 "TENANT_MEMBERSHIP_REQUIRED",
+                403);
+        }
+
+        if (member.Status != Status.Active || member.IsDeleted)
+        {
+            return TenantAccessResult.Fail(
+                "Caller's tenant membership is inactive or has been revoked.",
+                "TENANT_MEMBERSHIP_INACTIVE",
                 403);
         }
 
@@ -84,7 +92,7 @@ public class TenantAccessService(
         }
 
         // 4. Tenant Disabled Check
-        if (tenantInfo.IsDisabled)
+        if (tenantInfo.IsDisabled || tenantInfo.ProvisioningState == TenantProvisioningState.Disabled)
         {
             return TenantAccessResult.Fail(
                 "Tenant access has been disabled by administrator.",
@@ -92,7 +100,16 @@ public class TenantAccessService(
                 403);
         }
 
-        // 5. Tenant Provisioning Readiness Check
+        // 5. Host Domain Constraint Check (using DNS label-boundary matcher)
+        if (!HostMatcher.IsHostAllowed(requestHost, tenantInfo.AllowedDomain))
+        {
+            return TenantAccessResult.Fail(
+                $"Domain constraint violation: Host '{requestHost}' is not authorized for this tenant.",
+                "DOMAIN_VIOLATION",
+                403);
+        }
+
+        // 6. Tenant Provisioning Readiness Check
         if (tenantInfo.ProvisioningState != TenantProvisioningState.Ready)
         {
             return TenantAccessResult.Fail(
@@ -101,13 +118,19 @@ public class TenantAccessService(
                 503);
         }
 
-        // 6. Host Domain Constraint Check (using DNS label-boundary matcher)
-        if (!HostMatcher.IsHostAllowed(requestHost, tenantInfo.AllowedDomain))
+        // 7. Operational Database Readiness Check
+        var opDb = await dbContext.TenantOperationalDatabases!
+            .AsNoTracking()
+            .Where(db => db.TenantId == candidateTenantId && !db.IsDeleted)
+            .Select(db => new { db.ProvisioningState })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (opDb != null && opDb.ProvisioningState != TenantProvisioningState.Ready)
         {
             return TenantAccessResult.Fail(
-                $"Domain constraint violation: Host '{requestHost}' is not authorized for this tenant.",
-                "DOMAIN_VIOLATION",
-                403);
+                "Tenant operational database is currently being provisioned.",
+                "TENANT_PROVISIONING",
+                503);
         }
 
         // 7. License & Expiration Check

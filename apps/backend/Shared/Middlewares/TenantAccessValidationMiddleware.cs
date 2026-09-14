@@ -23,10 +23,28 @@ public class TenantAccessValidationMiddleware(RequestDelegate next)
         var isAllowAnonymous = endpoint?.Metadata.GetMetadata<IAllowAnonymous>() != null;
         var path = context.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
 
-        // Skip tenant validation for purely public/discovery routes when no candidate is supplied
+        // Skip tenant validation for purely public/discovery routes and platform-plane routes
+        var isPlatformRoute = path.StartsWith("/api/platform");
         var isPublicInfrastructureRoute = path.StartsWith("/swagger") ||
                                           path.StartsWith("/health") ||
                                           path.StartsWith("/auth/dev");
+
+        if (isAllowAnonymous || isPublicInfrastructureRoute || isPlatformRoute)
+        {
+            await next(context);
+            return;
+        }
+
+        // Formal authorization failure precedence:
+        // 1. Invalid / missing JWT -> 401 Unauthorized
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            var err = ApiResponse<object>.Fail("Authentication credentials missing or invalid.");
+            await context.Response.WriteAsync(JsonSerializer.Serialize(err));
+            return;
+        }
 
         Guid? candidateTenantId = null;
         if (context.Items.TryGetValue(TenantResolutionMiddleware.candidateTenantItemKey, out var itemVal) &&
@@ -35,26 +53,13 @@ public class TenantAccessValidationMiddleware(RequestDelegate next)
             candidateTenantId = guidVal;
         }
 
+        // 2. Missing / malformed X-Tenant-Id -> 400 Bad Request
         if (!candidateTenantId.HasValue)
         {
-            if (isAllowAnonymous || isPublicInfrastructureRoute)
-            {
-                await next(context);
-                return;
-            }
-
-            // Authenticated request attempting to access operational resources without a tenant
-            if (context.User?.Identity?.IsAuthenticated == true)
-            {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                context.Response.ContentType = "application/json";
-                var err = ApiResponse<object>.Fail("Active tenant context is required. Please specify a tenant.");
-                await context.Response.WriteAsync(JsonSerializer.Serialize(err));
-                return;
-            }
-
-            // Unauthenticated: let UseAuthentication / UseAuthorization challenge with 401
-            await next(context);
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "application/json";
+            var err = ApiResponse<object>.Fail("Active tenant context is required. Please specify a tenant.");
+            await context.Response.WriteAsync(JsonSerializer.Serialize(err));
             return;
         }
 

@@ -12,6 +12,7 @@ public static class DependencyInjection
     {
         var services = builder.Services;
         services.AddControllers();
+        services.AddHttpClient();
         var devSecurityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
             System.Text.Encoding.UTF8.GetBytes("ERPEZ_Development_Symmetric_Signing_Key_2026_Secure_Secret_12345!"));
 

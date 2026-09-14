@@ -1,5 +1,11 @@
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Enums;
+using ERPEZ.TenantManagement.Application.Common.Interfaces;
+using ERPEZ.TenantManagement.Domain.Entities;
+using ERPEZ.TenantManagement.Domain.Enums;
+using ERPEZ.TenantManagement.Domain.Interfaces;
 using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -11,7 +17,12 @@ namespace ERPEZ.TenantManagement.Api.Controllers;
 
 [Route("auth")]
 [ApiController]
-public class AuthController(IWebHostEnvironment env) : ControllerBase
+public class AuthController(
+    IWebHostEnvironment env,
+    IUnitOfWork unitOfWork,
+    IConfiguration configuration,
+    IHttpClientFactory httpClientFactory,
+    IBackgroundJobClient? backgroundJobClient = null) : ControllerBase
 {
     public const string devSigningKey = "ERPEZ_Development_Symmetric_Signing_Key_2026_Secure_Secret_12345!";
     public const string devIssuer = "https://erpez.dev/auth";
@@ -125,5 +136,248 @@ public class AuthController(IWebHostEnvironment env) : ControllerBase
         };
 
         return Ok(ApiResponse<object>.Success(responseData));
+    }
+
+    public record RegisterRequest(
+        string? Username,
+        string? Email,
+        string? Password,
+        string? FirstName,
+        string? LastName,
+        string? OrganizationName
+    );
+
+    /// <summary>
+    /// Registers a new user account, creates an initial organization workspace, and generates a session JWT.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest? request, CancellationToken cancellationToken)
+    {
+        if (request == null)
+        {
+            return BadRequest(ApiResponse<object>.Fail("Registration data is required."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Username))
+        {
+            return BadRequest(ApiResponse<object>.Fail("Username is required."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
+        {
+            return BadRequest(ApiResponse<object>.Fail("A valid email address is required."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
+        {
+            return BadRequest(ApiResponse<object>.Fail("Password must be at least 8 characters."));
+        }
+
+        var firstName = string.IsNullOrWhiteSpace(request.FirstName) ? "Admin" : request.FirstName.Trim();
+        var lastName = string.IsNullOrWhiteSpace(request.LastName) ? "User" : request.LastName.Trim();
+        var username = request.Username.Trim();
+        var email = request.Email.Trim().ToLowerInvariant();
+        var orgName = string.IsNullOrWhiteSpace(request.OrganizationName)
+            ? $"{firstName}'s Workspace"
+            : request.OrganizationName.Trim();
+
+        // 1. Check if member already exists in Control DB with same username or email
+        var existingMember = await unitOfWork.TenantMemberRepository.FindAsync(m =>
+            m.Email.ToLower() == email || m.UserId.ToLower() == username.ToLower(), cancellationToken);
+
+        if (existingMember != null)
+        {
+            return Conflict(ApiResponse<object>.Fail("An account with this email or username already exists."));
+        }
+
+        // 2. Optionally register with Keycloak if admin credentials are configured
+        var externalIdentityId = await TryCreateKeycloakUserAsync(request, cancellationToken)
+                                 ?? $"usr_{Guid.NewGuid():N}";
+
+        // 3. Create initial Tenant Organization in Control DB
+        var tenant = new Tenant
+        {
+            Name = orgName,
+            Description = $"Primary workspace for {firstName} {lastName}",
+            ProvisioningState = TenantProvisioningState.Pending,
+            TenantSetting = new()
+            {
+                BillingContactEmail = email,
+                OnPremise = false,
+                BaseURL = "",
+                DbConnectionString = ""
+            },
+            OperationalDatabase = new TenantOperationalDatabase
+            {
+                DatabaseServer = "localhost",
+                DatabaseName = $"erpez_tenant_{Guid.NewGuid():N}",
+                ProvisioningState = TenantProvisioningState.Pending,
+                RetryCount = 0
+            }
+        };
+
+        var module = await unitOfWork.ModuleRepository.FindAsync(m => m.Key == "ams", cancellationToken);
+        if (module != null)
+        {
+            tenant.Modules.Add(module);
+        }
+
+        await unitOfWork.TenantRepository.AddAsync(tenant, cancellationToken);
+
+        // 4. Create TenantMember with Tenant Administrator role
+        var tenantMember = new TenantMember
+        {
+            UserId = username,
+            ExternalIdentityId = externalIdentityId,
+            Email = email,
+            FirstName = firstName,
+            LastName = lastName,
+            Status = Status.Active
+        };
+
+        var adminRole = await unitOfWork.RoleRepository.FindAsync(r => r.NormalizedName == "TENANT ADMINISTRATOR", cancellationToken);
+        if (adminRole != null)
+        {
+            tenantMember.RoleAssignments.Add(new TenantMemberRoleAssignment
+            {
+                RoleId = adminRole.Id
+            });
+        }
+
+        tenant.TenantMembers.Add(tenantMember);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // 5. Enqueue background provisioning job for operational tenant DB
+        backgroundJobClient?.Enqueue<ITenantDatabaseProvisioner>(p => p.ProvisionTenantDatabaseAsync(tenant.Id, CancellationToken.None));
+
+        // 6. Generate signed JWT session
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, externalIdentityId),
+            new("sub", externalIdentityId),
+            new("tenant_id", tenant.Id.ToString()),
+            new("tenantId", tenant.Id.ToString()),
+            new("preferred_username", username),
+            new("name", $"{firstName} {lastName}".Trim()),
+            new(ClaimTypes.Name, $"{firstName} {lastName}".Trim()),
+            new(ClaimTypes.Email, email),
+            new("email", email),
+            new("is_super_admin", "false"),
+            new(ClaimTypes.Role, "Tenant Administrator"),
+            new("role", "Tenant Administrator")
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(devSigningKey));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddDays(7),
+            Issuer = devIssuer,
+            Audience = devAudience,
+            SigningCredentials = credentials
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        var tokenString = tokenHandler.WriteToken(token);
+
+        var responseData = new
+        {
+            Token = tokenString,
+            User = new
+            {
+                UserId = username,
+                ExternalIdentityId = externalIdentityId,
+                DisplayName = $"{firstName} {lastName}".Trim(),
+                Email = email,
+                Roles = new[] { "Tenant Administrator" },
+                TenantId = tenant.Id,
+                IsSuperAdmin = false
+            },
+            Tenant = new
+            {
+                Id = tenant.Id,
+                Name = tenant.Name
+            }
+        };
+
+        return Ok(ApiResponse<object>.Success(responseData, "Account and workspace registered successfully."));
+    }
+
+    private async Task<string?> TryCreateKeycloakUserAsync(RegisterRequest request, CancellationToken cancellationToken)
+    {
+        var keycloakUrl = configuration["Keycloak:BaseUrl"]
+            ?? configuration["Keycloak:Authority"]?.Replace("/realms/erpez", "")
+            ?? "https://keycloak.dev.nextstep-software.com";
+        var adminUser = configuration["Keycloak:AdminUsername"];
+        var adminPass = configuration["Keycloak:AdminPassword"];
+
+        if (string.IsNullOrWhiteSpace(adminUser) || string.IsNullOrWhiteSpace(adminPass))
+        {
+            return null;
+        }
+
+        try
+        {
+            var client = httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var tokenUrl = $"{keycloakUrl.TrimEnd('/')}/realms/master/protocol/openid-connect/token";
+            var tokenContent = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["client_id"] = "admin-cli",
+                ["username"] = adminUser,
+                ["password"] = adminPass,
+                ["grant_type"] = "password"
+            });
+
+            var tokenRes = await client.PostAsync(tokenUrl, tokenContent, cancellationToken);
+            if (!tokenRes.IsSuccessStatusCode) return null;
+
+            var tokenDoc = await System.Text.Json.JsonDocument.ParseAsync(await tokenRes.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+            if (!tokenDoc.RootElement.TryGetProperty("access_token", out var tokenProp)) return null;
+            var adminToken = tokenProp.GetString();
+
+            var createUserUrl = $"{keycloakUrl.TrimEnd('/')}/admin/realms/erpez/users";
+            using var userRequest = new HttpRequestMessage(HttpMethod.Post, createUserUrl);
+            userRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken);
+            userRequest.Content = JsonContent.Create(new
+            {
+                username = request.Username,
+                email = request.Email,
+                firstName = request.FirstName,
+                lastName = request.LastName,
+                enabled = true,
+                emailVerified = true,
+                credentials = new[]
+                {
+                    new
+                    {
+                        type = "password",
+                        value = request.Password,
+                        temporary = false
+                    }
+                }
+            });
+
+            var createRes = await client.SendAsync(userRequest, cancellationToken);
+            if (createRes.StatusCode == System.Net.HttpStatusCode.Created)
+            {
+                var location = createRes.Headers.Location?.ToString();
+                if (!string.IsNullOrWhiteSpace(location))
+                {
+                    return location.Substring(location.LastIndexOf('/') + 1);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Keycloak Register Notice] {ex.Message}");
+        }
+
+        return null;
     }
 }

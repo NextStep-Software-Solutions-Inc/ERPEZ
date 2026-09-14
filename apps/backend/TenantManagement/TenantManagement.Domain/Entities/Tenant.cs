@@ -21,4 +21,5 @@ public class Tenant : BaseEntity
     public virtual List<LicenseKey> LicenseKeys { get; set; } = [];
     public virtual List<TenantInvoice> TenantInvoices { get; set; } = [];
     public virtual List<TenantPaymentMethod> TenantPaymentMethods { get; set; } = [];
+    public virtual TenantOperationalDatabase? OperationalDatabase { get; set; }
 }

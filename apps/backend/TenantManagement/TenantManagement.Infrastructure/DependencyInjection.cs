@@ -38,6 +38,8 @@ public static class DependencyInjection
         services.AddScoped<ITenantAccessService, TenantAccessService>();
         services.AddScoped<ITenantConnectionResolver, TenantConnectionResolver>();
         services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
+        services.AddSingleton<ISecretEncryptionService, AesGcmSecretEncryptionService>();
+        services.AddScoped<ITenantDatabaseProvisioner, TenantDatabaseProvisioner>();
         services.AddScoped<AuditingInterceptor>();
 
         services.AddDbContext<ApplicationDbContext>((sp, options) =>

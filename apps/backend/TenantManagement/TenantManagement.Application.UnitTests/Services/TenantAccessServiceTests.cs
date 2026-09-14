@@ -330,4 +330,77 @@ public class TenantAccessServiceTests : IDisposable
         result.Context.ProvisioningState.Should().Be(TenantProvisioningState.Ready);
         result.Context.AllowedDomain.Should().Be("*.erpez.com");
     }
+
+    [Fact]
+    public async Task EvaluateAccessAsync_WhenMemberIsInactive_Returns403MembershipInactive()
+    {
+        // Arrange: Member exists but Status != Active
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-inactive");
+
+        dbContext.Tenants!.Add(new Tenant
+        {
+            Id = tenantId,
+            Name = "Acme Corp",
+            IsDisabled = false,
+            ProvisioningState = TenantProvisioningState.Ready
+        });
+
+        dbContext.TenantMembers!.Add(new TenantMember
+        {
+            TenantId = tenantId,
+            ExternalIdentityId = "user-inactive",
+            Status = Status.Inactive,
+            IsDeleted = false
+        });
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await accessService.EvaluateAccessAsync(user, tenantId, "localhost");
+
+        // Assert
+        result.IsAllowed.Should().BeFalse();
+        result.HttpStatusCode.Should().Be(403);
+        result.ErrorCode.Should().Be("TENANT_MEMBERSHIP_INACTIVE");
+    }
+
+    [Fact]
+    public async Task EvaluateAccessAsync_WhenTenantReadyButOperationalDbNotReady_Returns503TenantProvisioning()
+    {
+        // Arrange: Tenant is Ready, but OperationalDatabase is Provisioning (dual-readiness invariant test)
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-member");
+
+        dbContext.Tenants!.Add(new Tenant
+        {
+            Id = tenantId,
+            Name = "Acme Corp",
+            IsDisabled = false,
+            ProvisioningState = TenantProvisioningState.Ready
+        });
+
+        dbContext.TenantMembers!.Add(new TenantMember
+        {
+            TenantId = tenantId,
+            ExternalIdentityId = "user-member",
+            Status = Status.Active,
+            IsDeleted = false
+        });
+
+        dbContext.TenantOperationalDatabases!.Add(new TenantOperationalDatabase
+        {
+            TenantId = tenantId,
+            DatabaseName = "erpez_tenant_acme",
+            ProvisioningState = TenantProvisioningState.Provisioning
+        });
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await accessService.EvaluateAccessAsync(user, tenantId, "localhost");
+
+        // Assert
+        result.IsAllowed.Should().BeFalse();
+        result.HttpStatusCode.Should().Be(503);
+        result.ErrorCode.Should().Be("TENANT_PROVISIONING");
+    }
 }

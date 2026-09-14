@@ -46,6 +46,14 @@ export interface KeycloakContextType {
   login: () => void;
   logout: () => void;
   register: () => void;
+  registerInApp: (payload: {
+    username: string;
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    organizationName?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
   updateToken: (minValidity?: number) => Promise<boolean>;
   switchDevUser: (username: string) => Promise<void>;
 }
@@ -130,7 +138,13 @@ const DEV_PERSONAS: Record<
 
 export function KeycloakProvider({ children, onInitialized }: KeycloakProviderProps) {
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('erpez_auth_token');
+      return Boolean(stored && stored.startsWith('ey'));
+    }
+    return false;
+  });
   const [token, setToken] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -246,6 +260,7 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
             setActiveDevUser(userObj.userId);
 
             try {
+              localStorage.setItem('erpez_auth_provider', 'dev');
               localStorage.setItem('erpez_dev_user', userObj.userId);
               localStorage.setItem('erpez_auth_token', jwtToken);
               localStorage.setItem('erpez_tenant_id', userObj.tenantId || '00000000-0000-0000-0000-000000000001');
@@ -284,6 +299,7 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
       setActiveDevUser(fallback.userId);
 
       try {
+        localStorage.setItem('erpez_auth_provider', 'dev');
         localStorage.setItem('erpez_dev_user', fallback.userId);
         localStorage.setItem('erpez_auth_token', fallbackToken);
         localStorage.setItem('erpez_tenant_id', fallback.tenantId);
@@ -311,26 +327,81 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
     initializedRef.current = true;
 
     const init = async () => {
-      let savedUser = 'dev_admin';
-      try {
-        savedUser = localStorage.getItem('erpez_dev_user') || 'dev_admin';
-      } catch {
-        // Fallback
-      }
+      // 1. If keycloak instance exists and hasn't been initialized, initialize it with PKCE check-sso
+      if (keycloak && !keycloak.didInitialize) {
+        try {
+          const authenticated = await keycloak.init({
+            onLoad: 'check-sso',
+            checkLoginIframe: false,
+            pkceMethod: 'S256',
+          });
 
-      const stored = localStorage.getItem('erpez_auth_token');
-      if (!stored || !stored.startsWith('ey')) {
-        await loginAsDevUser(savedUser);
-      } else {
-        const isSuper = localStorage.getItem('erpez_is_super_admin') === 'true' || savedUser === 'dev_superadmin';
-        setIsSuperAdmin(isSuper);
-        setActiveDevUser(savedUser);
-        if (DEV_PERSONAS[savedUser]) {
-          setDisplayName(DEV_PERSONAS[savedUser].displayName);
-          setEmail(DEV_PERSONAS[savedUser].email);
-          setRoles(DEV_PERSONAS[savedUser].roles);
+          if (authenticated && keycloak.token) {
+            const jwtToken = keycloak.token;
+            setToken(jwtToken);
+            setAuthToken(jwtToken);
+            setIsAuthenticated(true);
+
+            const tokenParsed = (keycloak.tokenParsed || {}) as any;
+            const uName = tokenParsed.preferred_username || tokenParsed.name || tokenParsed.sub || 'Keycloak User';
+            const uEmail = tokenParsed.email || 'admin@erpez.dev';
+            const uDisplayName = tokenParsed.name || uName;
+
+            setUserName(uName);
+            setEmail(uEmail);
+            setDisplayName(uDisplayName);
+
+            const realmRoles = tokenParsed.realm_access?.roles || [];
+            const clientRoles = tokenParsed.resource_access?.['web-client']?.roles || [];
+            const allRoles = [...realmRoles, ...clientRoles];
+            const isSuper = allRoles.includes('SuperAdmin') || allRoles.includes('platform_administrator');
+            setIsSuperAdmin(isSuper);
+            setRoles(allRoles.length > 0 ? allRoles : ['Tenant Administrator']);
+
+            try {
+              localStorage.setItem('erpez_auth_provider', 'keycloak');
+              localStorage.setItem('erpez_auth_token', jwtToken);
+              localStorage.setItem('erpez_display_name', uDisplayName);
+              localStorage.setItem('erpez_email', uEmail);
+              localStorage.setItem('erpez_is_super_admin', String(isSuper));
+            } catch {
+              // Ignore storage errors
+            }
+
+            setIsInitialized(true);
+            if (onInitialized) onInitialized(true);
+            return;
+          }
+        } catch (kcErr) {
+          console.warn('Keycloak check-sso initialization failed or unauthenticated:', kcErr);
         }
       }
+
+      // 2. Check if user was previously authenticated via stored token or dev persona
+      const stored = localStorage.getItem('erpez_auth_token');
+      const authProvider = localStorage.getItem('erpez_auth_provider');
+
+      if (stored && stored.startsWith('ey')) {
+        const isSuper = localStorage.getItem('erpez_is_super_admin') === 'true';
+        setIsSuperAdmin(isSuper);
+        setIsAuthenticated(true);
+        setToken(stored);
+        setAuthToken(stored);
+        setDisplayName(localStorage.getItem('erpez_display_name') || 'User');
+        setEmail(localStorage.getItem('erpez_email') || '');
+      } else if (authProvider === 'dev') {
+        let savedUser = 'dev_admin';
+        try {
+          savedUser = localStorage.getItem('erpez_dev_user') || 'dev_admin';
+        } catch {}
+        await loginAsDevUser(savedUser);
+      } else {
+        // Default to unauthenticated on sign-in screen
+        setIsAuthenticated(false);
+        setToken(null);
+        setAuthToken(null);
+      }
+
       setIsInitialized(true);
       if (onInitialized) onInitialized(true);
     };
@@ -342,10 +413,36 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
     await loginAsDevUser(newUsername);
   };
 
-  const login = () => {
-    if (keycloak?.login) {
-      keycloak.login();
+  const login = async () => {
+    const keycloakUrl = import.meta.env.VITE_KEYCLOAK_URL || 'https://keycloak.dev.nextstep-software.com';
+    const realm = import.meta.env.VITE_KEYCLOAK_REALM || 'erpez';
+    const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'web-client';
+    const redirectUri = window.location.origin + '/overview';
+
+    if (keycloak) {
+      try {
+        if (!keycloak.didInitialize) {
+          await keycloak.init({
+            onLoad: 'login-required',
+            checkLoginIframe: false,
+            pkceMethod: 'S256',
+            redirectUri,
+          });
+          return;
+        }
+
+        await keycloak.login({
+          redirectUri,
+        });
+        return;
+      } catch (err) {
+        console.warn('Keycloak.js login threw, falling back to direct redirect:', err);
+      }
     }
+
+    // Direct browser redirect fallback to Keycloak authorization endpoint
+    const authUrl = `${keycloakUrl.replace(/\/+$/, '')}/realms/${realm}/protocol/openid-connect/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid`;
+    window.location.href = authUrl;
   };
 
   const logout = () => {
@@ -358,6 +455,7 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
         localStorage.removeItem('erpez_email');
         localStorage.removeItem('erpez_roles');
         localStorage.removeItem('erpez_tenant_id');
+        localStorage.removeItem('erpez_auth_provider');
       } catch {
         // Ignore
       }
@@ -366,14 +464,100 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
     setAuthToken(null);
     setIsAuthenticated(false);
     setIsSuperAdmin(false);
-    if (keycloak?.logout) {
-      keycloak.logout();
+
+    if (keycloak && keycloak.didInitialize && keycloak.logout) {
+      try {
+        keycloak.logout({ redirectUri: window.location.origin + '/sign-in' });
+        return;
+      } catch (err) {
+        console.warn('Keycloak logout threw:', err);
+      }
     }
+    window.location.href = '/sign-in';
   };
 
-  const register = () => {
-    if (keycloak?.register) {
-      keycloak.register();
+  const register = async () => {
+    const keycloakUrl = import.meta.env.VITE_KEYCLOAK_URL || 'https://keycloak.dev.nextstep-software.com';
+    const realm = import.meta.env.VITE_KEYCLOAK_REALM || 'erpez';
+    const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'web-client';
+    const redirectUri = window.location.origin + '/overview';
+
+    if (keycloak && keycloak.didInitialize) {
+      try {
+        await keycloak.register({ redirectUri });
+        return;
+      } catch (err) {
+        console.warn('Keycloak.js register threw, falling back to direct redirect:', err);
+      }
+    }
+
+    const regUrl = `${keycloakUrl.replace(/\/+$/, '')}/realms/${realm}/protocol/openid-connect/registrations?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid`;
+    window.location.href = regUrl;
+  };
+
+  const registerInApp = async (payload: {
+    username: string;
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    organizationName?: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch(`${backendUrl}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok || !json.succeeded) {
+        return {
+          success: false,
+          error: json.message || json.errors?.[0] || 'Registration failed.',
+        };
+      }
+
+      const authData = json.data;
+      if (authData?.token) {
+        const jwtToken = authData.token;
+        const userObj = authData.user;
+        const assignedTenantId = authData.tenant?.id || userObj?.tenantId;
+
+        setToken(jwtToken);
+        setAuthToken(jwtToken);
+        setIsAuthenticated(true);
+        setUserName(userObj.userId);
+        setEmail(userObj.email);
+        setDisplayName(userObj.displayName);
+        setRoles(userObj.roles || ['Tenant Administrator']);
+        setTenantId(assignedTenantId);
+        setIsSuperAdmin(false);
+
+        try {
+          localStorage.setItem('erpez_auth_provider', 'in_app');
+          localStorage.setItem('erpez_auth_token', jwtToken);
+          localStorage.setItem('erpez_tenant_id', assignedTenantId);
+          localStorage.setItem('erpez_is_super_admin', 'false');
+          localStorage.setItem('erpez_display_name', userObj.displayName);
+          localStorage.setItem('erpez_email', userObj.email);
+          localStorage.setItem('erpez_roles', JSON.stringify(userObj.roles || ['Tenant Administrator']));
+        } catch {
+          // Ignore
+        }
+
+        if (keycloak) {
+          (keycloak as any).token = jwtToken;
+          (keycloak as any).authenticated = true;
+        }
+
+        return { success: true };
+      }
+
+      return { success: false, error: 'Token missing in registration response.' };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Network error during registration.' };
     }
   };
 
@@ -417,6 +601,7 @@ export function KeycloakProvider({ children, onInitialized }: KeycloakProviderPr
         login,
         logout,
         register,
+        registerInApp,
         updateToken,
         switchDevUser,
       }}

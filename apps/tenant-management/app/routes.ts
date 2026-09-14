@@ -8,7 +8,9 @@ import {
 export default [
   index("routes/home.tsx"),
   route("sign-in", "routes/auth/sign-in.tsx"),
+  route("auth/sign-in", "routes/auth/redirect-sign-in.tsx"),
   route("sign-up", "routes/auth/sign-up.tsx"),
+  route("auth/sign-up", "routes/auth/redirect-sign-up.tsx"),
   route("sign-up/verify-email-address", "routes/auth/verify-email-address.tsx"),
   route("register", "routes/auth/register.tsx"),
 

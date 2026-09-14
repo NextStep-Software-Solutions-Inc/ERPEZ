@@ -19,7 +19,7 @@ public class TenantResolutionMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(HttpContext context)
     {
-        // 1. Extract JWT claim candidate
+        // 1. Extract JWT claim candidate (informational only)
         Guid? claimCandidate = null;
         var tenantClaim = context.User.FindFirstValue(claimTenantId)
             ?? context.User.FindFirstValue(altClaimTenantId);
@@ -29,39 +29,30 @@ public class TenantResolutionMiddleware(RequestDelegate next)
             claimCandidate = parsedClaim;
         }
 
-        // 2. Extract header candidate
+        // 2. Extract header candidate (X-Tenant-Id)
         Guid? headerCandidate = null;
-        if (context.Request.Headers.TryGetValue(headerTenantId, out var headerVal) &&
-            Guid.TryParse(headerVal.FirstOrDefault(), out var parsedHeader))
+        if (context.Request.Headers.TryGetValue(headerTenantId, out var headerVal))
         {
-            headerCandidate = parsedHeader;
-        }
-
-        // 3. Evaluate Precedence and Conflict Rules
-        Guid? resolvedCandidate = null;
-
-        if (claimCandidate.HasValue && headerCandidate.HasValue)
-        {
-            if (claimCandidate.Value != headerCandidate.Value)
+            var rawHeader = headerVal.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(rawHeader))
             {
-                // Conflict detected: token claim contradicts request header
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                context.Response.ContentType = "application/json";
-                var errorResponse = ApiResponse<object>.Fail("Conflicting tenant selectors provided in token and header.");
-                await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
-                return;
+                if (!Guid.TryParse(rawHeader, out var parsedHeader))
+                {
+                    // Malformed GUID in X-Tenant-Id header fails immediately with 400 Bad Request before DB query
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    context.Response.ContentType = "application/json";
+                    var errorResponse = ApiResponse<object>.Fail("Malformed X-Tenant-Id header. Must be a valid GUID.");
+                    await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
+                    return;
+                }
+                headerCandidate = parsedHeader;
             }
+        }
 
-            resolvedCandidate = claimCandidate.Value;
-        }
-        else if (claimCandidate.HasValue)
-        {
-            resolvedCandidate = claimCandidate.Value;
-        }
-        else if (headerCandidate.HasValue)
-        {
-            resolvedCandidate = headerCandidate.Value;
-        }
+        // 3. Evaluate Precedence:
+        // Request header is the candidate workspace selector.
+        // JWT tenant claim is informational only and MUST NOT reject the request when it differs (workspace switching).
+        Guid? resolvedCandidate = headerCandidate ?? claimCandidate;
 
         if (resolvedCandidate.HasValue)
         {

@@ -643,6 +643,76 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.ToTable("TenantMemberRoleAssignments", "public");
                 });
 
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantOperationalDatabase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DatabaseName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DatabaseServer")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EncryptedConnectionString")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("EncryptionKeyVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastAttemptedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ProvisionedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProvisioningState")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique();
+
+                    b.ToTable("TenantOperationalDatabases", "public");
+                });
+
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantPaymentMethod", b =>
                 {
                     b.Property<Guid>("Id")
@@ -975,6 +1045,17 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Navigation("TenantMember");
                 });
 
+            modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantOperationalDatabase", b =>
+                {
+                    b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
+                        .WithOne("OperationalDatabase")
+                        .HasForeignKey("ERPEZ.TenantManagement.Domain.Entities.TenantOperationalDatabase", "TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantPaymentMethod", b =>
                 {
                     b.HasOne("ERPEZ.TenantManagement.Domain.Entities.Tenant", "Tenant")
@@ -1038,6 +1119,8 @@ namespace ERP_EZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Tenant", b =>
                 {
                     b.Navigation("LicenseKeys");
+
+                    b.Navigation("OperationalDatabase");
 
                     b.Navigation("TenantInvoices");
 

@@ -91,7 +91,16 @@ export function KeycloakProvider({
   const [firstName, setFirstName] = useState<string | null>('Planning Officer')
   const [lastName, setLastName] = useState<string | null>('')
   const [roles, setRoles] = useState<string[]>(['Planning Officer'])
-  const [tenantId, setTenantId] = useState<string | null>('00000000-0000-0000-0000-000000000001')
+  const [tenantId, setTenantId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return sessionStorage.getItem('erpez_candidate_tenant_id') || localStorage.getItem('erpez_tenant_id') || null
+      } catch {
+        return null
+      }
+    }
+    return null
+  })
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [activeDevUser, setActiveDevUser] = useState<string>('dev_planner')
 
@@ -100,13 +109,17 @@ export function KeycloakProvider({
   const loginAsDevUser = useCallback(async (username: string) => {
     if (typeof window === 'undefined') return false
 
+    const candidateTenant = sessionStorage.getItem('erpez_candidate_tenant_id')
+      || localStorage.getItem('erpez_tenant_id')
+      || '00000000-0000-0000-0000-000000000001'
+
     try {
       const response = await fetch(`${backendUrl}/auth/dev/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username,
-          tenantId: '00000000-0000-0000-0000-000000000001',
+          tenantId: candidateTenant,
         }),
       })
 
@@ -127,7 +140,7 @@ export function KeycloakProvider({
         setFirstName(user.displayName)
         setLastName('')
         setRoles(user.roles || [])
-        setTenantId(user.tenantId || '00000000-0000-0000-0000-000000000001')
+        setTenantId(user.tenantId || candidateTenant)
         setIsSuperAdmin(Boolean(user.isSuperAdmin))
         setActiveDevUser(user.userId)
 
@@ -135,7 +148,7 @@ export function KeycloakProvider({
         try {
           localStorage.setItem('erpez_dev_user', user.userId)
           localStorage.setItem('erpez_auth_token', jwtToken)
-          localStorage.setItem('erpez_tenant_id', user.tenantId || '00000000-0000-0000-0000-000000000001')
+          localStorage.setItem('erpez_tenant_id', user.tenantId || candidateTenant)
         } catch {
           // Ignore storage errors
         }

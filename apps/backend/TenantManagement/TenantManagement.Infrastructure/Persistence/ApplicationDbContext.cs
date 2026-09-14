@@ -21,6 +21,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<TenantInvoice>? TenantInvoices { get; set; }
     public DbSet<TenantInvoiceItem>? TenantInvoiceItems { get; set; }
     public DbSet<TenantPaymentMethod>? TenantPaymentMethods { get; set; }
+    public DbSet<TenantOperationalDatabase>? TenantOperationalDatabases { get; set; }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
@@ -91,6 +92,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<TenantSetting>()
             .HasIndex(ts => ts.TenantId)
             .IsUnique();
+
+        // TenantOperationalDatabase
+        modelBuilder.Entity<TenantOperationalDatabase>()
+            .HasIndex(tod => tod.TenantId)
+            .IsUnique();
+
+        modelBuilder.Entity<Tenant>()
+            .HasOne(t => t.OperationalDatabase)
+            .WithOne(tod => tod.Tenant)
+            .HasForeignKey<TenantOperationalDatabase>(tod => tod.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // TenantSubscription
         modelBuilder.Entity<TenantSubscription>()

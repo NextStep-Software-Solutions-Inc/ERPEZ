@@ -1,14 +1,20 @@
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Enums;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.TenantManagement.Application.Common.Interfaces;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
+using Hangfire;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
 
-public sealed class CreateTenantCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUserService) : IRequestHandler<CreateTenantCommand, ApiResponse<Guid>>
+public sealed class CreateTenantCommandHandler(
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUserService,
+    IBackgroundJobClient? backgroundJobClient = null) : IRequestHandler<CreateTenantCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
@@ -21,12 +27,20 @@ public sealed class CreateTenantCommandHandler(IUnitOfWork unitOfWork, ICurrentU
         {
             Name = request.Name,
             Description = request.Description,
+            ProvisioningState = TenantProvisioningState.Pending,
             TenantSetting = new()
             {
                 BillingContactEmail = request.BillingContactEmail,
                 OnPremise = request.OnPremise,
                 BaseURL = "",
                 DbConnectionString = ""
+            },
+            OperationalDatabase = new TenantOperationalDatabase
+            {
+                DatabaseServer = "localhost",
+                DatabaseName = $"erpez_tenant_{Guid.NewGuid():N}",
+                ProvisioningState = TenantProvisioningState.Pending,
+                RetryCount = 0
             }
         };
 
@@ -61,6 +75,10 @@ public sealed class CreateTenantCommandHandler(IUnitOfWork unitOfWork, ICurrentU
 
         tenant.TenantMembers.Add(tenantMember);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Enqueue durable Hangfire provisioning job strictly with tenantId GUID (zero secrets in job arguments)
+        backgroundJobClient?.Enqueue<ITenantDatabaseProvisioner>(p => p.ProvisionTenantDatabaseAsync(tenant.Id, CancellationToken.None));
+
         return ApiResponse<Guid>.Success(tenant.Id, "Tenant created successfully.");
     }
 }

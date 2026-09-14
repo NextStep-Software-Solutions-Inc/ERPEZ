@@ -125,10 +125,10 @@ public class TenantSecurityBoundaryTests
     }
 
     [Fact]
-    public async Task UserInTenantA_WithConflictingJwtClaimAndHeader_FailsClosedWith403()
+    public async Task UserInTenantA_WithDifferentTenantInHeader_UsesHeaderAsCandidate_DoesNotLockout()
     {
-        // Invariant: Precedence & Conflict Detection.
-        // JWT claim says Tenant A, header says Tenant B -> 403 TENANT_SELECTOR_CONFLICT immediately.
+        // Invariant: JWT tenant claim is informational only and does NOT lock out workspace switching.
+        // CandidateTenantId is extracted from X-Tenant-Id header.
         var tenantAId = Guid.NewGuid();
         var tenantBId = Guid.NewGuid();
         var user = CreateUser("user-a", tenantAId);
@@ -146,13 +146,36 @@ public class TenantSecurityBoundaryTests
         // Act
         await resolutionMiddleware.InvokeAsync(context);
 
+        // Assert: Next is called, and CandidateTenantId is Tenant B (from header)
+        nextCalled.Should().BeTrue();
+        context.Items[TenantResolutionMiddleware.candidateTenantItemKey].Should().Be(tenantBId);
+    }
+
+    [Fact]
+    public async Task MalformedTenantHeader_FailsImmediatelyWith400()
+    {
+        // Invariant: Malformed GUID in X-Tenant-Id header fails with 400 Bad Request before DB query.
+        var user = CreateUser("user-a");
+        var context = CreateHttpContext(user);
+        context.Request.Headers["X-Tenant-Id"] = "not-a-valid-guid";
+
+        var nextCalled = false;
+        var resolutionMiddleware = new TenantResolutionMiddleware(nextContext =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        // Act
+        await resolutionMiddleware.InvokeAsync(context);
+
         // Assert
-        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
         nextCalled.Should().BeFalse();
         context.Items.ContainsKey(TenantResolutionMiddleware.candidateTenantItemKey).Should().BeFalse();
 
         var body = await ReadResponseBodyAsync(context);
-        body.Should().Contain("Conflicting tenant selectors provided in token and header.");
+        body.Should().Contain("Malformed X-Tenant-Id header. Must be a valid GUID.");
     }
 
     [Fact]
@@ -668,5 +691,51 @@ public class TenantSecurityBoundaryTests
 
         isPlatformAdmin.Should().BeFalse(
             "Workspace Administrator role belongs strictly to the tenant plane and does not grant Platform Control Plane access.");
+    }
+
+    [Fact]
+    public async Task ZeroDatabaseQuery_CredentialOrder_UnauthorizedRequest_TouchesZeroCredentialsOrOperationalDB()
+    {
+        // Invariant: Absolute Authorization Precedence.
+        // When a request fails authorization (403), zero credential resolver methods,
+        // zero decryptions, and zero operational DB connections are touched.
+        var targetTenantId = Guid.NewGuid();
+        var user = CreateUser("unauthorized-user");
+
+        var context = CreateHttpContext(user);
+        context.Request.Headers["X-Tenant-Id"] = targetTenantId.ToString();
+
+        // 1. Resolution middleware
+        var resolutionMiddleware = new TenantResolutionMiddleware(c => Task.CompletedTask);
+        await resolutionMiddleware.InvokeAsync(context);
+
+        // 2. Mock gatekeeper failure
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(
+                It.IsAny<ClaimsPrincipal>(),
+                targetTenantId,
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenantAccessResult.Fail(
+                "Caller is not an active authorized member of this tenant.",
+                "TENANT_MEMBERSHIP_REQUIRED",
+                StatusCodes.Status403Forbidden));
+
+        var validationMiddleware = new TenantAccessValidationMiddleware(c => Task.CompletedTask);
+
+        // Act
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext);
+
+        // Assert
+        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        requestContext.IsResolved.Should().BeFalse();
+
+        // CRITICAL INVARIANT: Zero credential resolution calls
+        connectionResolverMock.Verify(r => r.ResolveConnectionInfoAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        // Operational connection provider throws and cannot retrieve connection
+        var routingOptions = Options.Create(new TenantRoutingOptions { AllowDevelopmentFallback = false });
+        var provider = new TenantConnectionProvider(requestContext, configMock.Object, envMock.Object, routingOptions);
+        var act = () => provider.GetConnectionString();
+        act.Should().Throw<InvalidOperationException>();
     }
 }
