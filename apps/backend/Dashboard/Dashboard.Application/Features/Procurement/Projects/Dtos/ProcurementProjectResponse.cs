@@ -191,7 +191,7 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
             Order = l.Order,
             AppNumber = l.APPItem != null && l.APPItem.APP != null ? l.APPItem.APP.APPNumber : string.Empty,
             AppName = l.APPItem != null && l.APPItem.APP != null ? l.APPItem.APP.Name : string.Empty,
-            PAPCode = l.APPItem != null ? (!string.IsNullOrWhiteSpace(l.APPItem.PAPCode) ? l.APPItem.PAPCode : (l.APPItem.PPMPItem != null ? l.APPItem.PPMPItem.PAPCode : string.Empty)) : string.Empty,
+            PAPCode = l.APPItem != null ? (!string.IsNullOrWhiteSpace(l.APPItem.PAPCode) ? l.APPItem.PAPCode : (l.APPItem.PPMPItem != null ? l.APPItem.PPMPItem.PAPCode ?? string.Empty : string.Empty)) : string.Empty,
             ProcurementModeName = l.APPItem != null && l.APPItem.ProcurementMode != null ? l.APPItem.ProcurementMode.Name : string.Empty,
         }).ToList() : new List<APPItemLinkResponse>(),
         ApprovalEvents = c.ApprovalEvents != null
