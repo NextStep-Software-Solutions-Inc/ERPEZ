@@ -2046,6 +2046,8 @@ export default function AddPPMPItemsModal({
                           0,
                         )
                       : 0
+                    const remainingQty = Math.max(0, plannedQty - allocatedQty)
+                    const calculatedTotal = plannedQty * (config.unitPrice || 0)
                     const availableStock = item.availableStock ?? item.stockOnHand
                     const hasStockLimit = typeof availableStock === 'number' && availableStock > 0
                     const hasExceededStock = hasStockLimit && plannedQty > availableStock
