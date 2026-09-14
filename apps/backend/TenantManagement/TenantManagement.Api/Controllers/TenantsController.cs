@@ -22,7 +22,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     [ApiController]
     public class TenantsController(
         ISender mediator,
-        ITenantContextService tenantContext,
         ICurrentUserService currentUser,
         IUserAuthorizationService authorizationService) : ControllerBase
     {
@@ -57,24 +56,13 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenantById(Guid id)
         {
-            if (!currentUser.IsSuperAdmin)
+            if (!await CanAccessTenantAsync(
+                    id,
+                    Permissions.Admin.systemAdminView,
+                    Permissions.Admin.systemAdminManage,
+                    Permissions.Admin.tenantsManage))
             {
-                if (!tenantContext.TenantId.HasValue || tenantContext.TenantId.Value != id)
-                {
-                    return Forbid();
-                }
-
-                var externalId = currentUser.ExternalIdentityId;
-                var hasPermission = !string.IsNullOrEmpty(externalId) && (
-                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.systemAdminView) ||
-                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.systemAdminManage) ||
-                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.tenantsManage)
-                );
-
-                if (!hasPermission)
-                {
-                    return Forbid();
-                }
+                return Forbid();
             }
 
             var tenant = await mediator.Send(new GetTenantByIdQuery(id));
@@ -99,23 +87,12 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateTenant(Guid id, [FromBody] UpdateTenantDto updateTenant)
         {
-            if (!currentUser.IsSuperAdmin)
+            if (!await CanAccessTenantAsync(
+                    id,
+                    Permissions.Admin.systemAdminManage,
+                    Permissions.Admin.tenantsManage))
             {
-                if (!tenantContext.TenantId.HasValue || tenantContext.TenantId.Value != id)
-                {
-                    return Forbid();
-                }
-
-                var externalId = currentUser.ExternalIdentityId;
-                var hasPermission = !string.IsNullOrEmpty(externalId) && (
-                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.systemAdminManage) ||
-                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.tenantsManage)
-                );
-
-                if (!hasPermission)
-                {
-                    return Forbid();
-                }
+                return Forbid();
             }
 
             var request = new UpdateTenantCommand
@@ -135,23 +112,12 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateTenantModules(Guid id, [FromBody] List<string> moduleKeys)
         {
-            if (!currentUser.IsSuperAdmin)
+            if (!await CanAccessTenantAsync(
+                    id,
+                    Permissions.Admin.systemAdminManage,
+                    Permissions.Admin.tenantsManage))
             {
-                if (!tenantContext.TenantId.HasValue || tenantContext.TenantId.Value != id)
-                {
-                    return Forbid();
-                }
-
-                var externalId = currentUser.ExternalIdentityId;
-                var hasPermission = !string.IsNullOrEmpty(externalId) && (
-                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.systemAdminManage) ||
-                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.tenantsManage)
-                );
-
-                if (!hasPermission)
-                {
-                    return Forbid();
-                }
+                return Forbid();
             }
 
             var command = new UpdateTenantModulesCommand
@@ -162,6 +128,30 @@ namespace ERPEZ.TenantManagement.Api.Controllers
 
             var result = await mediator.Send(command);
             return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        private async Task<bool> CanAccessTenantAsync(Guid tenantId, params string[] permissions)
+        {
+            if (currentUser.IsSuperAdmin)
+            {
+                return true;
+            }
+
+            var externalIdentityId = currentUser.ExternalIdentityId;
+            if (string.IsNullOrWhiteSpace(externalIdentityId))
+            {
+                return false;
+            }
+
+            foreach (var permission in permissions)
+            {
+                if (await authorizationService.HasPermissionAsync(externalIdentityId, tenantId, permission))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         [HttpPatch("{id}/status")]
