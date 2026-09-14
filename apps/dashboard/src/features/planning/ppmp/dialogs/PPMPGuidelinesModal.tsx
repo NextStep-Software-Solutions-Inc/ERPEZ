@@ -30,7 +30,11 @@ export function PPMPGuidelinesModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] p-0"
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader className="px-6 py-4 border-b border-border bg-linear-to-r from-blue-50 to-indigo-50">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -51,7 +55,7 @@ export function PPMPGuidelinesModal({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="h-[calc(90vh-200px)]">
+        <ScrollArea className="h-[calc(90vh-130px)]">
           <div className="p-6 space-y-6">
             {guidelines.map((guideline) => (
               <div

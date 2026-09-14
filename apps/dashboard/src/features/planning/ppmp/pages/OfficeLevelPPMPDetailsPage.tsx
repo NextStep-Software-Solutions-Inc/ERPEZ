@@ -1,4 +1,11 @@
-import { useState, useMemo, useEffect, useCallback, createContext, useContext } from 'react'
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  createContext,
+  useContext,
+} from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import AddPPMPActivityDialog from '@/features/planning/ppmp/dialogs/AddPPMPActivityDialog'
 import {
@@ -84,7 +91,10 @@ import {
   MasterPPMPViewerModal,
   CreateSupplementalPpmpDialog,
 } from '../dialogs'
-import { resolveTypeOfExpenditure, type ParentObjectInfo } from '../forms/AddPPMPItemExpenditureForm'
+import {
+  resolveTypeOfExpenditure,
+  type ParentObjectInfo,
+} from '../forms/AddPPMPItemExpenditureForm'
 import { PPMPGuidelinesModal } from '../dialogs/PPMPGuidelinesModal'
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
 import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
@@ -159,7 +169,9 @@ const usePPMPExpenditureItems = createQueryHookFromTemplate(
 )
 const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
 const useObjectCodesQuery = createQueryHookFromTemplate(getObjectCodesRequest)
-const useProcurementItem = createQueryHookFromTemplate(getProcurementItemRequest)
+const useProcurementItem = createQueryHookFromTemplate(
+  getProcurementItemRequest,
+)
 const useUOM = createQueryHookFromTemplate(getUOMRequest)
 const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
 const useUpdatePPMPStatus = createMutationHookFromTemplate(
@@ -470,7 +482,7 @@ function ActivityCard({
         expanded ? 'w-120' : 'w-80',
         shouldThrob && !selected && 'animate-pulse-unselected',
         dimmed &&
-        'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
+          'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
       )}
     >
       {/* Left side (regular card content) */}
@@ -484,6 +496,9 @@ function ActivityCard({
           onClick={onSelect}
           className="flex-1 min-w-0 text-left"
         >
+          <span className="text-[10px] font-bold text-primary/80 uppercase tracking-wider block mb-0.5">
+            Activity Indicator
+          </span>
           <h3
             className="text-sm font-semibold text-default-900 group-hover:text-primary transition-colors leading-snug line-clamp-2"
             title={activity.activityName || 'Unnamed'}
@@ -557,7 +572,8 @@ function ActivityCard({
                 Market Scoping
               </div>
               {(() => {
-                const msf = activity.LinkedMarketScoping || (activity as any).linkedMarketScoping
+                const msf =
+                  activity.LinkedMarketScoping || activity.linkedMarketScoping
                 return msf ? (
                   <div
                     className="font-medium text-default-800 flex items-center gap-1 text-xs truncate text-success"
@@ -762,14 +778,32 @@ interface ItemDetailProps {
 
 const isUUID = (val: string | null | undefined): boolean => {
   if (!val) return false
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    val,
+  )
+}
+
+interface ReferencedItemDetails {
+  name?: string
+  specifications?: string
+  description?: string
+  imageURL?: string
+  productCode?: string
+  objectCodeName?: string
+  unspscCodeName?: string
+  uomName?: string
+  procurementCategoryName?: string
+  unitPrice?: number
+  currentPrice?: number
+  isActive?: boolean
+  remarks?: string
 }
 
 interface ReferencedItemModalProps {
   isOpen: boolean
   onClose: () => void
   type: 'cse' | 'non-cse'
-  itemDetails: any
+  itemDetails: ReferencedItemDetails | null | undefined
 }
 
 function ReferencedItemModal({
@@ -791,7 +825,9 @@ function ReferencedItemModal({
     <ResponsiveDialogDashtail
       open={isOpen}
       onOpenChange={(open) => !open && onClose()}
-      title={isCse ? 'CSE Catalog Item Details' : 'Non-CSE Catalog Item Details'}
+      title={
+        isCse ? 'CSE Catalog Item Details' : 'Non-CSE Catalog Item Details'
+      }
       size="xl"
     >
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4">
@@ -804,12 +840,18 @@ function ReferencedItemModal({
 
             <div className="space-y-3">
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">Product Name</span>
-                <span className="text-sm font-semibold text-default-850">{name}</span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                  Product Name
+                </span>
+                <span className="text-sm font-semibold text-default-850">
+                  {name}
+                </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">Product Code</span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                  Product Code
+                </span>
                 <span className="text-xs font-mono font-bold text-default-700 bg-default-100 px-1.5 py-0.5 rounded w-fit block mt-0.5">
                   {itemDetails.productCode || '—'}
                 </span>
@@ -818,45 +860,82 @@ function ReferencedItemModal({
               {isCse ? (
                 <>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">Object Code</span>
-                    <span className="text-xs font-medium text-default-750">{itemDetails.objectCodeName || '—'}</span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                      Object Code
+                    </span>
+                    <span className="text-xs font-medium text-default-750">
+                      {itemDetails.objectCodeName || '—'}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UNSPSC Classification</span>
-                    <span className="text-xs font-medium text-default-750">{itemDetails.unspscCodeName || '—'}</span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                      UNSPSC Classification
+                    </span>
+                    <span className="text-xs font-medium text-default-750">
+                      {itemDetails.unspscCodeName || '—'}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UOM</span>
-                    <span className="text-xs font-semibold text-default-800">{itemDetails.uomName || '—'}</span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                      UOM
+                    </span>
+                    <span className="text-xs font-semibold text-default-800">
+                      {itemDetails.uomName || '—'}
+                    </span>
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">Procurement Category</span>
-                    <span className="text-xs font-medium text-default-750">{itemDetails.procurementCategoryName || '—'}</span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                      Procurement Category
+                    </span>
+                    <span className="text-xs font-medium text-default-750">
+                      {itemDetails.procurementCategoryName || '—'}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UOM</span>
-                    <span className="text-xs font-semibold text-default-800">{itemDetails.uomName || '—'}</span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                      UOM
+                    </span>
+                    <span className="text-xs font-semibold text-default-800">
+                      {itemDetails.uomName || '—'}
+                    </span>
                   </div>
                 </>
               )}
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">Reference Price</span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                  Reference Price
+                </span>
                 <span className="text-sm font-extrabold text-primary">
-                  {formatCurrency(isCse ? (itemDetails.unitPrice || 0) : (itemDetails.currentPrice || 0))}
+                  {formatCurrency(
+                    isCse
+                      ? itemDetails.unitPrice || 0
+                      : itemDetails.currentPrice || 0,
+                  )}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">Status</span>
-                <span className={cn(
-                  "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold border-none mt-1",
-                  itemDetails.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
-                )}>
-                  <span className={cn("h-1.5 w-1.5 rounded-full", itemDetails.isActive ? "bg-emerald-500" : "bg-rose-500")} />
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                  Status
+                </span>
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold border-none mt-1',
+                    itemDetails.isActive
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-rose-50 text-rose-700',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full',
+                      itemDetails.isActive ? 'bg-emerald-500' : 'bg-rose-500',
+                    )}
+                  />
                   {itemDetails.isActive ? 'Active Catalog' : 'Inactive'}
                 </span>
               </div>
@@ -868,7 +947,9 @@ function ReferencedItemModal({
         <div className="md:col-span-7 space-y-4">
           {isCse && (
             <div className="space-y-1.5">
-              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Product Media</span>
+              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
+                Product Media
+              </span>
               {imageSrc ? (
                 <div className="relative aspect-video sm:aspect-square w-full rounded-xl overflow-hidden border border-default-200 bg-slate-50 flex items-center justify-center shadow-sm">
                   <img
@@ -887,7 +968,9 @@ function ReferencedItemModal({
           )}
 
           <div className="space-y-1.5">
-            <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Specifications & Requirements</span>
+            <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
+              Specifications & Requirements
+            </span>
             <div className="rounded-xl border border-default-200 p-4 bg-white shadow-sm leading-relaxed text-xs text-default-700 whitespace-pre-line min-h-24">
               {specifications || 'No detailed specifications provided.'}
             </div>
@@ -895,7 +978,9 @@ function ReferencedItemModal({
 
           {itemDetails.remarks && (
             <div className="space-y-1.5">
-              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Catalog Remarks</span>
+              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
+                Catalog Remarks
+              </span>
               <div className="rounded-xl border border-amber-500/10 p-3 bg-amber-500/2 text-xs italic text-amber-800 leading-relaxed">
                 {itemDetails.remarks}
               </div>
@@ -1009,7 +1094,8 @@ export function getItemDiff(
   if (
     matched.procurementModeId &&
     item.procurementModeId &&
-    matched.procurementModeId.toLowerCase() !== item.procurementModeId.toLowerCase()
+    matched.procurementModeId.toLowerCase() !==
+      item.procurementModeId.toLowerCase()
   ) {
     diffs.push({
       fieldName: 'Mode of Procurement',
@@ -1032,13 +1118,25 @@ export function getItemDiff(
   }
 
   // 5. Procurement Schedule
-  const srcStart = matched.procurementStartDate ? matched.procurementStartDate.slice(0, 7) : ''
-  const currStart = item.procurementStartDate ? item.procurementStartDate.slice(0, 7) : ''
-  const srcEnd = matched.procurementEndDate ? matched.procurementEndDate.slice(0, 7) : ''
-  const currEnd = item.procurementEndDate ? item.procurementEndDate.slice(0, 7) : ''
+  const srcStart = matched.procurementStartDate
+    ? matched.procurementStartDate.slice(0, 7)
+    : ''
+  const currStart = item.procurementStartDate
+    ? item.procurementStartDate.slice(0, 7)
+    : ''
+  const srcEnd = matched.procurementEndDate
+    ? matched.procurementEndDate.slice(0, 7)
+    : ''
+  const currEnd = item.procurementEndDate
+    ? item.procurementEndDate.slice(0, 7)
+    : ''
   if (srcStart !== currStart || srcEnd !== currEnd) {
-    const origSched = srcStart || srcEnd ? `${srcStart || '—'} to ${srcEnd || '—'}` : 'Not set'
-    const currSched = currStart || currEnd ? `${currStart || '—'} to ${currEnd || '—'}` : 'Not set'
+    const origSched =
+      srcStart || srcEnd ? `${srcStart || '—'} to ${srcEnd || '—'}` : 'Not set'
+    const currSched =
+      currStart || currEnd
+        ? `${currStart || '—'} to ${currEnd || '—'}`
+        : 'Not set'
     diffs.push({
       fieldName: 'Procurement Schedule',
       originalValue: origSched,
@@ -1047,13 +1145,27 @@ export function getItemDiff(
   }
 
   // 6. Expected Delivery Window
-  const srcDelStart = matched.expectedDeliveryStart ? matched.expectedDeliveryStart.slice(0, 7) : ''
-  const currDelStart = item.expectedDeliveryStart ? item.expectedDeliveryStart.slice(0, 7) : ''
-  const srcDelEnd = matched.expectedDeliveryEnd ? matched.expectedDeliveryEnd.slice(0, 7) : ''
-  const currDelEnd = item.expectedDeliveryEnd ? item.expectedDeliveryEnd.slice(0, 7) : ''
+  const srcDelStart = matched.expectedDeliveryStart
+    ? matched.expectedDeliveryStart.slice(0, 7)
+    : ''
+  const currDelStart = item.expectedDeliveryStart
+    ? item.expectedDeliveryStart.slice(0, 7)
+    : ''
+  const srcDelEnd = matched.expectedDeliveryEnd
+    ? matched.expectedDeliveryEnd.slice(0, 7)
+    : ''
+  const currDelEnd = item.expectedDeliveryEnd
+    ? item.expectedDeliveryEnd.slice(0, 7)
+    : ''
   if (srcDelStart !== currDelStart || srcDelEnd !== currDelEnd) {
-    const origDel = srcDelStart || srcDelEnd ? `${srcDelStart || '—'} to ${srcDelEnd || '—'}` : 'Not set'
-    const currDel = currDelStart || currDelEnd ? `${currDelStart || '—'} to ${currDelEnd || '—'}` : 'Not set'
+    const origDel =
+      srcDelStart || srcDelEnd
+        ? `${srcDelStart || '—'} to ${srcDelEnd || '—'}`
+        : 'Not set'
+    const currDel =
+      currDelStart || currDelEnd
+        ? `${currDelStart || '—'} to ${currDelEnd || '—'}`
+        : 'Not set'
     diffs.push({
       fieldName: 'Expected Delivery',
       originalValue: origDel,
@@ -1084,8 +1196,14 @@ export function getItemDiff(
   }
 
   // 9. Monthly Allocations
-  const srcAllocQty = (matched.PPMPItemAllocations || []).reduce((sum, a) => sum + (a.quantity || 0), 0)
-  const currAllocQty = (item.PPMPItemAllocations || []).reduce((sum, a) => sum + (a.quantity || 0), 0)
+  const srcAllocQty = (matched.PPMPItemAllocations || []).reduce(
+    (sum, a) => sum + (a.quantity || 0),
+    0,
+  )
+  const currAllocQty = (item.PPMPItemAllocations || []).reduce(
+    (sum, a) => sum + (a.quantity || 0),
+    0,
+  )
   if (srcAllocQty !== currAllocQty) {
     diffs.push({
       fieldName: 'Monthly Allocations',
@@ -1173,7 +1291,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
     queryParams: {},
     enabled: isUnitUuid && !!item.unit,
   })
-  const displayUnit = isUnitUuid ? (uomResp?.data?.name || 'Loading...') : (item.unit || '—')
+  const displayUnit = isUnitUuid
+    ? uomResp?.data?.name || 'Loading...'
+    : item.unit || '—'
 
   // 2. Fetch CSE Item if cseItemId exists
   const { data: cseItemResp, isLoading: isLoadingCse } = useProcurementItem({
@@ -1201,9 +1321,12 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
         <div className="flex items-start gap-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs shadow-sm">
           <PlusCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
-            <div className="font-semibold text-emerald-900 dark:text-emerald-200">New Item Added in Supplemental PPMP</div>
+            <div className="font-semibold text-emerald-900 dark:text-emerald-200">
+              New Item Added in Supplemental PPMP
+            </div>
             <p className="text-emerald-700 dark:text-emerald-400 leading-relaxed font-normal">
-              This procurement item was newly introduced in this Supplemental PPMP and was not part of the original approved plan.
+              This procurement item was newly introduced in this Supplemental
+              PPMP and was not part of the original approved plan.
             </p>
           </div>
         </div>
@@ -1213,18 +1336,29 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
         <div className="flex flex-col gap-2.5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs shadow-sm">
           <div className="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-200">
             <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>Modified Item in Supplemental PPMP ({diff.fieldDiffs.length} field{diff.fieldDiffs.length > 1 ? 's' : ''} modified from original plan)</span>
+            <span>
+              Modified Item in Supplemental PPMP ({diff.fieldDiffs.length} field
+              {diff.fieldDiffs.length > 1 ? 's' : ''} modified from original
+              plan)
+            </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-0.5">
             {diff.fieldDiffs.map((fd, idx) => (
-              <div key={idx} className="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-lg border border-amber-500/20 shadow-xs">
+              <div
+                key={idx}
+                className="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-lg border border-amber-500/20 shadow-xs"
+              >
                 <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide block">
                   {fd.fieldName}
                 </span>
                 <div className="mt-1 flex items-center gap-1.5 text-xs">
-                  <span className="line-through text-default-400 font-normal">{fd.originalValue}</span>
+                  <span className="line-through text-default-400 font-normal">
+                    {fd.originalValue}
+                  </span>
                   <span className="text-default-400 font-normal">→</span>
-                  <span className="font-semibold text-default-900 dark:text-default-100">{fd.currentValue}</span>
+                  <span className="font-semibold text-default-900 dark:text-default-100">
+                    {fd.currentValue}
+                  </span>
                 </div>
               </div>
             ))}
@@ -1235,7 +1369,10 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
       {diff.status === 'original' && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/60 dark:bg-slate-900/40 border border-default-200/80 text-default-500 text-xs font-normal">
           <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-          <span>Cloned from original PPMP — all quantities, unit prices, procurement timeline, and monthly allocations are unchanged.</span>
+          <span>
+            Cloned from original PPMP — all quantities, unit prices, procurement
+            timeline, and monthly allocations are unchanged.
+          </span>
         </div>
       )}
 
@@ -1253,32 +1390,56 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">Unit</span>
-                <span className="font-normal text-default-700 mt-0.5 block">{displayUnit}</span>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">Unit Price</span>
-                <span className="font-normal text-default-700 mt-0.5 block">{formatCurrency(item.unitPrice)}</span>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">Planned Quantity</span>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">
+                  Unit
+                </span>
                 <span className="font-normal text-default-700 mt-0.5 block">
-                  {item.plannedQuantity ? `${item.plannedQuantity} ${displayUnit}` : '—'}
+                  {displayUnit}
                 </span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">Estimated Total Cost</span>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">
+                  Unit Price
+                </span>
+                <span className="font-normal text-default-700 mt-0.5 block">
+                  {formatCurrency(item.unitPrice)}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">
+                  Planned Quantity
+                </span>
+                <span className="font-normal text-default-700 mt-0.5 block">
+                  {item.plannedQuantity
+                    ? `${item.plannedQuantity} ${displayUnit}`
+                    : '—'}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">
+                  Estimated Total Cost
+                </span>
                 <span className="font-semibold text-primary mt-0.5 block">
-                  {item.plannedQuantity ? formatCurrency(item.plannedQuantity * item.unitPrice) : '—'}
+                  {item.plannedQuantity
+                    ? formatCurrency(item.plannedQuantity * item.unitPrice)
+                    : '—'}
                 </span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">Project Type</span>
-                <span className="font-normal text-default-700 mt-0.5 block">{item.projectType || '—'}</span>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">
+                  Project Type
+                </span>
+                <span className="font-normal text-default-700 mt-0.5 block">
+                  {item.projectType || '—'}
+                </span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">PAP Code</span>
-                <span className="font-mono text-default-600 mt-0.5 block">{item.papCode || '—'}</span>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">
+                  PAP Code
+                </span>
+                <span className="font-mono text-default-600 mt-0.5 block">
+                  {item.papCode || '—'}
+                </span>
               </div>
             </div>
 
@@ -1294,7 +1455,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
 
           {item.remarks && (
             <div className="bg-default-50 p-2.5 rounded-lg border border-default-150/60 mt-2 text-xs italic text-default-600">
-              <span className="font-medium not-italic text-default-700 block text-[10px] uppercase tracking-wide mb-0.5">Remarks</span>
+              <span className="font-medium not-italic text-default-700 block text-[10px] uppercase tracking-wide mb-0.5">
+                Remarks
+              </span>
               "{item.remarks}"
             </div>
           )}
@@ -1318,7 +1481,8 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   Procurement Schedule
                 </span>
                 <p className="text-xs text-default-700 font-medium mt-0.5">
-                  {formatDateDisplay(item.procurementStartDate)} – {formatDateDisplay(item.procurementEndDate)}
+                  {formatDateDisplay(item.procurementStartDate)} –{' '}
+                  {formatDateDisplay(item.procurementEndDate)}
                 </p>
               </div>
             </div>
@@ -1331,21 +1495,24 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   Expected Delivery Window
                 </span>
                 <p className="text-xs text-default-700 font-medium mt-0.5">
-                  {formatDateDisplay(item.expectedDeliveryStart)} – {formatDateDisplay(item.expectedDeliveryEnd)}
+                  {formatDateDisplay(item.expectedDeliveryStart)} –{' '}
+                  {formatDateDisplay(item.expectedDeliveryEnd)}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="pt-3 border-t border-default-100 flex items-center justify-between text-xs">
-            <span className="text-default-500 font-normal">Pre-Procurement Conference:</span>
+            <span className="text-default-500 font-normal">
+              Pre-Procurement Conference:
+            </span>
             <Badge
               variant={item.preProcurementConference ? 'soft' : 'outline'}
               className={cn(
                 'text-[10px] font-medium py-0.5 px-2.5 rounded-full',
                 item.preProcurementConference
                   ? 'bg-rose-500/10 text-rose-700 border-none'
-                  : 'text-slate-500'
+                  : 'text-slate-500',
               )}
             >
               {item.preProcurementConference ? 'Required' : 'Not Required'}
@@ -1377,7 +1544,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 variant={item.mopOverride ? 'soft' : 'outline'}
                 className={cn(
                   'text-[10px] font-medium px-2 py-0.5 rounded-full',
-                  item.mopOverride ? 'bg-amber-500/10 text-amber-700 border-none' : 'text-default-400'
+                  item.mopOverride
+                    ? 'bg-amber-500/10 text-amber-700 border-none'
+                    : 'text-default-400',
                 )}
               >
                 {item.mopOverride ? 'MOP Overridden' : 'Standard MOP'}
@@ -1412,7 +1581,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   </span>
                 </div>
                 <h5 className="text-xs font-medium text-default-800 line-clamp-1">
-                  {isLoadingCse ? 'Loading catalog item...' : (cseItem?.name || item.name)}
+                  {isLoadingCse
+                    ? 'Loading catalog item...'
+                    : cseItem?.name || item.name}
                 </h5>
                 {!isLoadingCse && cseItem && (
                   <Button
@@ -1444,7 +1615,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   </span>
                 </div>
                 <h5 className="text-xs font-medium text-default-800 line-clamp-1">
-                  {isLoadingNonCse ? 'Loading catalog item...' : (nonCseItem?.name || item.name)}
+                  {isLoadingNonCse
+                    ? 'Loading catalog item...'
+                    : nonCseItem?.name || item.name}
                 </h5>
                 {!isLoadingNonCse && nonCseItem && (
                   <Button
@@ -1580,6 +1753,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
 
 interface ItemRowProps {
   item: PPMPItem
+  activityIndicatorName?: string
   expanded: boolean
   onToggle: () => void
   onEdit?: (item: PPMPItem) => void
@@ -1589,6 +1763,7 @@ interface ItemRowProps {
 
 function ItemRow({
   item,
+  activityIndicatorName,
   expanded,
   onToggle,
   onEdit,
@@ -1612,7 +1787,7 @@ function ItemRow({
     item.projectType === 'Infrastructure' ||
     (item.name &&
       (item.name.toLowerCase().includes('consultan') ||
-        item.name.toLowerCase().includes('consulting')))
+        item.name.toLowerCase().includes('consulting'))),
   )
 
   const subtleBgClass = validationStatus.isComplete
@@ -1624,7 +1799,11 @@ function ItemRow({
   return (
     <>
       <tr
-        className={cn('transition-colors cursor-pointer select-none', rowClasses, subtleBgClass)}
+        className={cn(
+          'transition-colors cursor-pointer select-none',
+          rowClasses,
+          subtleBgClass,
+        )}
         onClick={onToggle}
       >
         <td className="px-5 py-3 text-center">
@@ -1683,11 +1862,17 @@ function ItemRow({
                     <div className="space-y-1 text-[11px]">
                       {diff.fieldDiffs.map((fd, idx) => (
                         <div key={idx} className="flex flex-col">
-                          <span className="font-medium text-amber-300 dark:text-amber-700">{fd.fieldName}:</span>
+                          <span className="font-medium text-amber-300 dark:text-amber-700">
+                            {fd.fieldName}:
+                          </span>
                           <span className="text-slate-300 dark:text-slate-600 pl-2">
-                            <span className="line-through opacity-75">{fd.originalValue}</span>
+                            <span className="line-through opacity-75">
+                              {fd.originalValue}
+                            </span>
                             {' → '}
-                            <span className="font-semibold text-white dark:text-black">{fd.currentValue}</span>
+                            <span className="font-semibold text-white dark:text-black">
+                              {fd.currentValue}
+                            </span>
                           </span>
                         </div>
                       ))}
@@ -1739,6 +1924,9 @@ function ItemRow({
             </p>
           )}
         </td>
+        <td className="px-5 py-3 text-xs text-default-600 font-medium whitespace-nowrap">
+          {activityIndicatorName || item.activityIndicatorName || '—'}
+        </td>
         <td className="px-5 py-3 text-center">
           <Badge
             className={cn(
@@ -1760,12 +1948,12 @@ function ItemRow({
         <td className="px-5 py-3 text-right text-sm font-semibold text-default-900">
           <div>
             {formatCurrency(
-              (item.plannedQuantity && item.plannedQuantity > 0)
+              item.plannedQuantity && item.plannedQuantity > 0
                 ? item.plannedQuantity * item.unitPrice
                 : (item.PPMPItemAllocations || []).reduce(
                     (sum: number, a: PPMPItemAllocation) => sum + a.amount,
                     0,
-                  )
+                  ),
             )}
           </div>
           <div className="text-xs text-muted-foreground font-normal">
@@ -1777,17 +1965,20 @@ function ItemRow({
               )
               const remaining = planned - totalAlloc
               if (totalAlloc === 0) return 'Not yet distributed'
-              if (remaining > 0) return `${totalAlloc}/${planned} allocated (${remaining} remaining)`
-              if (remaining === 0) return `${totalAlloc}/${planned} allocated (Fully allocated)`
+              if (remaining > 0)
+                return `${totalAlloc}/${planned} allocated (${remaining} remaining)`
+              if (remaining === 0)
+                return `${totalAlloc}/${planned} allocated (Fully allocated)`
               return `Over-allocated by ${Math.abs(remaining)}`
             })()}
           </div>
         </td>
         <td className="px-5 py-3 text-right">
-          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-            <RowCompletionIndicator
-              status={validationStatus}
-            />
+          <div
+            className="flex items-center justify-end gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <RowCompletionIndicator status={validationStatus} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -1800,27 +1991,25 @@ function ItemRow({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 font-sans">
-                {validationStatus.hasAllocations ? (
-                  onEditAllocations && (
-                    <DropdownMenuItem
-                      onClick={() => onEditAllocations(item)}
-                      className="cursor-pointer"
-                    >
-                      <Pencil className="mr-2 h-4 w-4 text-primary" />
-                      <span>Edit Monthly Allocations</span>
-                    </DropdownMenuItem>
-                  )
-                ) : (
-                  onEditAllocations && (
-                    <DropdownMenuItem
-                      onClick={() => onEditAllocations(item)}
-                      className="cursor-pointer font-bold text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50/50"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      <span>Configure Monthly Allocations</span>
-                    </DropdownMenuItem>
-                  )
-                )}
+                {validationStatus.hasAllocations
+                  ? onEditAllocations && (
+                      <DropdownMenuItem
+                        onClick={() => onEditAllocations(item)}
+                        className="cursor-pointer"
+                      >
+                        <Pencil className="mr-2 h-4 w-4 text-primary" />
+                        <span>Edit Monthly Allocations</span>
+                      </DropdownMenuItem>
+                    )
+                  : onEditAllocations && (
+                      <DropdownMenuItem
+                        onClick={() => onEditAllocations(item)}
+                        className="cursor-pointer font-bold text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50/50"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        <span>Configure Monthly Allocations</span>
+                      </DropdownMenuItem>
+                    )}
                 {onEdit && (
                   <DropdownMenuItem
                     onClick={() => onEdit(item)}
@@ -1849,7 +2038,7 @@ function ItemRow({
       </tr>
       {expanded && (
         <tr className="bg-default-50/20">
-          <td colSpan={6} className="px-5 py-4 border-b border-default-200">
+          <td colSpan={7} className="px-5 py-4 border-b border-default-200">
             <ItemDetail item={item} onEditAllocations={onEditAllocations} />
           </td>
         </tr>
@@ -1890,19 +2079,17 @@ export function ExpenditureItemGroup({
 
   const items = itemsResp?.data ?? []
 
-  const totalAmount = items.reduce(
-    (sum: number, item: PPMPItem) => {
-      const allocSum = (item.PPMPItemAllocations || []).reduce(
-        (itemSum: number, a: PPMPItemAllocation) => itemSum + (a.amount || 0),
-        0,
-      )
-      const itemCost = (item.plannedQuantity && item.plannedQuantity > 0)
-        ? (item.plannedQuantity * (item.unitPrice || 0))
+  const totalAmount = items.reduce((sum: number, item: PPMPItem) => {
+    const allocSum = (item.PPMPItemAllocations || []).reduce(
+      (itemSum: number, a: PPMPItemAllocation) => itemSum + (a.amount || 0),
+      0,
+    )
+    const itemCost =
+      item.plannedQuantity && item.plannedQuantity > 0
+        ? item.plannedQuantity * (item.unitPrice || 0)
         : allocSum
-      return sum + itemCost
-    },
-    0,
-  )
+    return sum + itemCost
+  }, 0)
 
   // Object code lookup for Type and Item of Expenditure
   const { data: objectCodesResponse } = useObjectCodesQuery({
@@ -1925,7 +2112,8 @@ export function ExpenditureItemGroup({
       (item) => item.id === group.objectId,
     )
 
-    const itemName = objectInfo?.name || group.ppmpActivityName || 'Expenditure Item'
+    const itemName =
+      objectInfo?.name || group.ppmpActivityName || 'Expenditure Item'
     const itemCode = objectInfo?.code || ''
 
     const typeOfExp = resolveTypeOfExpenditure(
@@ -2000,7 +2188,9 @@ export function ExpenditureItemGroup({
               Total Cost
             </div>
             <div className="text-sm font-semibold text-default-800">
-              {formatCurrency(group.totalCost > 0 ? group.totalCost : totalAmount)}
+              {formatCurrency(
+                group.totalCost > 0 ? group.totalCost : totalAmount,
+              )}
             </div>
             <div className="text-[10px] uppercase font-medium tracking-wide text-default-400 border-l border-default-250/60 pl-3">
               Total Item Cost
@@ -2054,6 +2244,7 @@ export function ExpenditureItemGroup({
             <tr className="border-b border-default-200 bg-default-50/10 text-xs font-medium text-default-500 uppercase tracking-wide">
               <th className="w-12 px-5 py-3 text-center" />
               <th className="px-5 py-3">Item Name</th>
+              <th className="px-5 py-3">Activity Indicator</th>
               <th className="px-5 py-3 text-center">Type</th>
               <th className="px-5 py-3 text-right">Unit Price</th>
               <th className="px-5 py-3 text-right">Total Allocation</th>
@@ -2064,7 +2255,7 @@ export function ExpenditureItemGroup({
             {isItemsLoading && items.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-5 py-6 text-center text-xs text-default-400 italic"
                 >
                   Loading items...
@@ -2073,7 +2264,7 @@ export function ExpenditureItemGroup({
             ) : items.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-5 py-6 text-center text-xs text-default-400 italic"
                 >
                   No items in this expenditure item.
@@ -2084,6 +2275,7 @@ export function ExpenditureItemGroup({
                 <ItemRow
                   key={item.id}
                   item={item}
+                  activityIndicatorName={group.ppmpActivityName}
                   expanded={expandedItemIds.has(item.id)}
                   onToggle={() => onToggleItem(item.id)}
                   onEdit={onEditItem}
@@ -2348,7 +2540,7 @@ function RightPane({
 
       {/* Market Scoping Form Banner for Selected Activity */}
       {(() => {
-        const msf = activity.LinkedMarketScoping || (activity as any).linkedMarketScoping
+        const msf = activity.LinkedMarketScoping || activity.linkedMarketScoping
         return (
           <div className="px-5 pt-4">
             {msf ? (
@@ -2622,7 +2814,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const ppmp: PPMPDetails | null = ppmpResp?.data ?? null
   const isDeptMode = ppmp ? !ppmp.isMaster : false
-  const isSupplemental = Boolean(ppmp?.ppmpType === 'Supplemental' || ppmp?.sourcePPMPId)
+  const isSupplemental = Boolean(
+    ppmp?.ppmpType === 'Supplemental' || ppmp?.sourcePPMPId,
+  )
 
   const { data: sourcePpmpResp } = usePPMP({
     pathParams: { id: ppmp?.sourcePPMPId ?? '' },
@@ -2643,8 +2837,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const isProjectScope =
     lib?.scope === 'Project' ||
-    (lib as any)?.scope === 'ProjectLevel' ||
-    (lib as any)?.scopeLevel === 'Project'
+    lib?.scope === 'ProjectLevel' ||
+    lib?.scopeLevel === 'Project'
 
   // State management
   const [activeTab, setActiveTab] = useState<string>('overview')
@@ -2669,7 +2863,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   // Expose current PPMP to other components so they can read metadata defaults
   const setPpmpForEdit = useSetAtom(selectedPpmpForEditAtom)
 
-  const { mutateAsync: toggleFinal, isPending: isTogglingFinal } = useToggleFinal()
+  const { mutateAsync: toggleFinal, isPending: isTogglingFinal } =
+    useToggleFinal()
 
   const { userName, firstName, lastName } = useKeycloak()
   const actorDisplayName =
@@ -2693,7 +2888,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     type: 'project',
   })
 
-  const { mutate: unlinkMsf, isPending: isUnlinkingMsf } = useUnlinkMarketScoping()
+  const { mutate: unlinkMsf, isPending: isUnlinkingMsf } =
+    useUnlinkMarketScoping()
 
   const handleUnlinkMsf = (msfId: string) => {
     unlinkMsf(
@@ -2847,7 +3043,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const { data: currentActivityExpItemsResp } = usePPMPExpenditureItems({
     pathParams: {},
     queryParams: isProjectScope
-      ? (ppmpId ? { filters: `ppmpId==${ppmpId}` } : {})
+      ? ppmpId
+        ? { filters: `ppmpId==${ppmpId}` }
+        : {}
       : activeActivityId
         ? { filters: `ppmpActivityId==${activeActivityId}` }
         : {},
@@ -2902,7 +3100,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     if (!ppmp) return []
     if (activeTab === 'overview') {
       const masterItems = ppmp.PPMPItems || []
-      const childItems = ppmp.ChildPPMPs?.flatMap((c) => c.PPMPItems || []) || []
+      const childItems =
+        ppmp.ChildPPMPs?.flatMap((c) => c.PPMPItems || []) || []
       return [...masterItems, ...childItems]
     }
     return activeChildPpmp?.PPMPItems || ppmp.PPMPItems || []
@@ -3043,7 +3242,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       )
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Failed to update PPMP final status.',
+        err instanceof Error
+          ? err.message
+          : 'Failed to update PPMP final status.',
       )
     } finally {
       setToggleFinalConfirmOpen(false)
@@ -3084,8 +3285,12 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       URL.revokeObjectURL(link.href)
 
       toast.success(`${format} document downloaded successfully.`)
-    } catch (err: any) {
-      toast.error(err?.message ?? `Failed to generate ${format} document`)
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : `Failed to generate ${format} document`
+      toast.error(message)
     } finally {
       setIsExporting(false)
     }
@@ -3229,826 +3434,863 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const pageHeaderTitle = isSupplemental
     ? `Supplemental PPMP: ${cleanPpmpNumber}`
-    : (ppmp.ppmpNumber || 'PPMP Details')
+    : ppmp.ppmpNumber || 'PPMP Details'
 
   return (
     <SourcePpmpDiffContext.Provider
       value={{
         isSupplemental,
-        sourcePpmpNumber: ppmp.sourcePPMPNumber ?? sourcePpmpResp?.data?.ppmpNumber ?? null,
+        sourcePpmpNumber:
+          ppmp.sourcePPMPNumber ?? sourcePpmpResp?.data?.ppmpNumber ?? null,
         sourceItems,
       }}
     >
       <PageContainerDashtail
         title={pageHeaderTitle}
-      badge={
-        <div className="flex items-center gap-2">
-          {/* PPMP Type Badge */}
-          {ppmp.ppmpType === 'Supplemental' || ppmp.sourcePPMPId ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-purple-200 bg-purple-50 text-purple-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
-              Supplemental {ppmp.supplementalNumber ? `#${ppmp.supplementalNumber}` : ''}
-            </span>
-          ) : null}
-          {/* Finality Badge */}
-          {ppmp.ppmpType === 'Supplemental' || ppmp.sourcePPMPId ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-emerald-200 bg-emerald-50 text-emerald-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {ppmp.status?.toLowerCase() === 'draft' ? 'Final PPMP (Draft)' : 'Final PPMP'}
-            </span>
-          ) : ppmp.isFinal ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-emerald-200 bg-emerald-50 text-emerald-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Final PPMP
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-slate-200 bg-slate-50 text-slate-600">
-              <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-              Indicative PPMP
-            </span>
-          )}
-          {/* Mode badge */}
-          {isDeptMode ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-amber-200 bg-amber-50 text-amber-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-              Department PPMP
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-primary/20 bg-primary/5 text-primary">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              Master PPMP
-            </span>
-          )}
-          {/* Status badge */}
-          {ppmp.status && (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all duration-300',
-                ppmp.status.toLowerCase() === 'approved'
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : ppmp.status.toLowerCase() === 'submitted' ||
-                    ppmp.status.toLowerCase() === 'pending_review' ||
-                    ppmp.status.toLowerCase() === 'pending review'
-                    ? 'border-blue-200 bg-blue-50 text-blue-700'
-                    : ppmp.status.toLowerCase() === 'rejected'
-                      ? 'border-rose-200 bg-rose-50 text-rose-700'
-                      : 'border-slate-200 bg-slate-50 text-slate-700',
-              )}
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              {ppmp.status}
-            </span>
-          )}
-        </div>
-      }
-      metadata={
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-slate-500 dark:text-slate-400 text-xs">
-          <span className="flex items-center gap-1.5">
-            <Building2 className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-            <span className="text-slate-600 dark:text-slate-300 font-medium">{ppmp.officeName}</span>
-          </span>
-          <span className="h-3 w-px bg-slate-200 dark:bg-slate-700 hidden sm:inline" />
-          <span className="flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-            <span>Fiscal Year <strong className="font-medium text-slate-600 dark:text-slate-300">{ppmp.fiscalYearName}</strong></span>
-          </span>
-        </div>
-      }
-      headerVariant="branded"
-      headerSize="large"
-      backTo={true}
-
-      actions={
-        <div className="flex items-center gap-2">
-          {/* Generate Document - Export Section */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={isExporting}
-                className="flex items-center gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-              >
-                <FileText className="h-4 w-4" />
-                <span>Generate Document</span>
-                <ChevronDown className="h-3.5 w-3.5 ml-0.5 text-slate-500" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem
-                onClick={() => handleExportPPMP('Pdf')}
-                disabled={isExporting}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                <span>Download PDF</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* View PPMP Guidelines Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setGuidelinesModalOpen(true)}
-            className="flex items-center gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50"
-          >
-            <FileText className="h-4 w-4" />
-            <span>PPMP Guidelines</span>
-          </Button>
-
-          {/* Visual Separator */}
-          <div className="h-5 w-px bg-slate-200" />
-
-          {ppmp.consolidatedIntoId && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider shadow-sm">
-              <Lock className="h-3.5 w-3.5 text-slate-400" />
-              Consolidated — Read Only
-            </span>
-          )}
-
-          {!ppmp.consolidatedIntoId &&
-            (ppmp.status?.toLowerCase() === 'draft' ||
-              ppmp.status?.toLowerCase() === 'rejected') && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-block">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        disabled={incompleteItems.length > 0}
-                        onClick={() => setSubmitConfirmOpen(true)}
-                        className={cn(
-                          "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-600/20 active:scale-[0.98]",
-                          incompleteItems.length > 0 && "opacity-50 cursor-not-allowed bg-indigo-600/60 hover:bg-indigo-600/60 shadow-none"
-                        )}
-                      >
-                        <Send className="h-4 w-4" />
-                        <span>Submit PPMP</span>
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {incompleteItems.length > 0 && (
-                    <TooltipContent side="top" className="max-w-xs bg-slate-900 border-slate-800 text-white p-3 shadow-xl z-50">
-                      <div className="space-y-1.5 text-xs">
-                        <p className="font-bold text-red-400">Cannot Submit PPMP</p>
-                        <p className="text-slate-300">The following items are incomplete or have validation errors:</p>
-                        <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto text-slate-200">
-                          {incompleteItems.slice(0, 5).map((item) => (
-                            <li key={item.id}>{item.name || 'Unnamed Item'}</li>
-                          ))}
-                          {incompleteItems.length > 5 && (
-                            <li className="italic text-slate-400">and {incompleteItems.length - 5} more...</li>
-                          )}
-                        </ul>
-                      </div>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+        badge={
+          <div className="flex items-center gap-2">
+            {/* PPMP Type Badge */}
+            {ppmp.ppmpType === 'Supplemental' || ppmp.sourcePPMPId ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-purple-200 bg-purple-50 text-purple-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+                Supplemental{' '}
+                {ppmp.supplementalNumber ? `#${ppmp.supplementalNumber}` : ''}
+              </span>
+            ) : null}
+            {/* Finality Badge */}
+            {ppmp.ppmpType === 'Supplemental' || ppmp.sourcePPMPId ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-emerald-200 bg-emerald-50 text-emerald-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                {ppmp.status?.toLowerCase() === 'draft'
+                  ? 'Final PPMP (Draft)'
+                  : 'Final PPMP'}
+              </span>
+            ) : ppmp.isFinal ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-emerald-200 bg-emerald-50 text-emerald-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Final PPMP
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-slate-200 bg-slate-50 text-slate-600">
+                <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                Indicative PPMP
+              </span>
             )}
-
-          {!ppmp.consolidatedIntoId &&
-            (ppmp.status?.toLowerCase() === 'submitted' ||
-              ppmp.status?.toLowerCase() === 'pending_review' ||
-              ppmp.status?.toLowerCase() === 'pending review') && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setApproveConfirmOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
+            {/* Mode badge */}
+            {isDeptMode ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-amber-200 bg-amber-50 text-amber-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                Department PPMP
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-primary/20 bg-primary/5 text-primary">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Master PPMP
+              </span>
+            )}
+            {/* Status badge */}
+            {ppmp.status && (
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all duration-300',
+                  ppmp.status.toLowerCase() === 'approved'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : ppmp.status.toLowerCase() === 'submitted' ||
+                        ppmp.status.toLowerCase() === 'pending_review' ||
+                        ppmp.status.toLowerCase() === 'pending review'
+                      ? 'border-blue-200 bg-blue-50 text-blue-700'
+                      : ppmp.status.toLowerCase() === 'rejected'
+                        ? 'border-rose-200 bg-rose-50 text-rose-700'
+                        : 'border-slate-200 bg-slate-50 text-slate-700',
+                )}
               >
-                <TrendingUp className="h-4 w-4" />
-                <span>Approve PPMP</span>
-              </Button>
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                {ppmp.status}
+              </span>
             )}
-
-          {/* Mark as Final / Unmark as Final Toggle */}
-          {!ppmp.consolidatedIntoId && ppmp.status?.toLowerCase() === 'approved' && (
-            <Button
-              variant={ppmp.isFinal ? 'outline' : 'default'}
-              size="sm"
-              disabled={isTogglingFinal}
-              onClick={() => setToggleFinalConfirmOpen(true)}
-              className={cn(
-                'flex items-center gap-1.5 h-9 rounded-lg font-semibold transition-all duration-300 shadow-sm',
-                ppmp.isFinal
-                  ? 'border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400'
-                  : 'bg-slate-900 hover:bg-slate-800 text-white'
-              )}
-            >
-              {ppmp.isFinal ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  <span>Marked as Final</span>
-                </>
-              ) : (
-                <>
-                  <Clock className="h-4 w-4" />
-                  <span>Mark as Final</span>
-                </>
-              )}
-            </Button>
-          )}
-
-          {/* Create Supplemental PPMP Button (Only on Approved Original PPMPs, enabled once Finalized) */}
-          {!ppmp.consolidatedIntoId &&
-            ppmp.status?.toLowerCase() === 'approved' &&
-            ppmp.ppmpType !== 'Supplemental' &&
-            !ppmp.sourcePPMPId && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={!ppmp.isFinal}
-                        onClick={() => setSupplementalDialogOpen(true)}
-                        className={cn(
-                          'flex items-center gap-1.5 font-semibold h-9 rounded-lg transition-all',
-                          ppmp.isFinal
-                            ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-sm'
-                            : 'opacity-50 cursor-not-allowed border-slate-200 text-slate-400 hover:bg-transparent',
-                        )}
-                      >
-                        <FilePlus2 className="h-4 w-4" />
-                        <span>Create Supplemental PPMP</span>
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {!ppmp.isFinal && (
-                    <TooltipContent side="bottom" className="text-xs max-w-xs bg-slate-900 text-white p-2">
-                      Mark this PPMP as Final before creating a Supplemental PPMP.
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-          {/* Master mode: Consolidate button (import dept PPMPs into this master) */}
-          {!isDeptMode &&
-            ppmp.isMaster &&
-            [
-              'draft',
-              'submitted',
-              'approved',
-              'pending_review',
-              'pending review',
-            ].includes((ppmp.status ?? '').toLowerCase()) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConsolidateWorkspaceOpen(true)}
-                className="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
-              >
-                <Layers className="h-4 w-4" />
-                <span>Consolidate PPMP</span>
-              </Button>
-            )}
-
-          {/* Department mode: Consolidate into Master button */}
-          {isDeptMode &&
-            !ppmp.consolidatedIntoId &&
-            (ppmp.status ?? '').toLowerCase() === 'approved' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDeptConsolidateOpen(true)}
-                className="flex items-center gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-              >
-                <Layers className="h-4 w-4" />
-                <span>Consolidate into Master</span>
-              </Button>
-            )}
-        </div>
-      }
-    >
-      <style dangerouslySetInnerHTML={{ __html: THROB_STYLE }} />
-
-      <div className="space-y-6">
-        {isEditable && incompleteItems.length > 0 && (
-          <div className="rounded-xl border border-red-300 bg-red-50/80 dark:bg-red-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-red-500 text-red-900 dark:text-red-200">
-            <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-            <div className="space-y-0.5">
-              <h4 className="text-sm font-extrabold">PPMP Submission Blocked</h4>
-              <p className="text-xs font-semibold text-red-850/90 dark:text-red-300">
-                There are {incompleteItems.length} item(s) requiring configuration.
-                Configure all items (marked with red left borders) before submitting this PPMP.
-              </p>
-            </div>
           </div>
-        )}
+        }
+        metadata={
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-slate-500 dark:text-slate-400 text-xs">
+            <span className="flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5 text-primary/70 shrink-0" />
+              <span className="text-slate-600 dark:text-slate-300 font-medium">
+                {ppmp.officeName}
+              </span>
+            </span>
+            <span className="h-3 w-px bg-slate-200 dark:bg-slate-700 hidden sm:inline" />
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5 text-primary/70 shrink-0" />
+              <span>
+                Fiscal Year{' '}
+                <strong className="font-medium text-slate-600 dark:text-slate-300">
+                  {ppmp.fiscalYearName}
+                </strong>
+              </span>
+            </span>
+          </div>
+        }
+        headerVariant="branded"
+        headerSize="large"
+        backTo={true}
 
-        {isDeptMode && ppmp.consolidatedIntoId && (
-          <div className="rounded-xl border border-indigo-200 bg-linear-to-r from-indigo-50/90 to-indigo-100/40 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-md border-l-4 border-l-indigo-600 font-medium text-indigo-900">
-            <div className="flex items-start gap-3.5">
-              <div className="h-10 w-10 shrink-0 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-600">
-                <GitMerge className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-extrabold text-indigo-950 flex items-center gap-1.5">
-                  This Department PPMP has been consolidated
-                </h4>
-                <p className="text-xs text-indigo-900/70 leading-normal max-w-2xl font-semibold">
-                  It has been merged into a Master Procurement Plan. All details
-                  are now locked in read-only mode. You can view the
-                  consolidated Master PPMP to trace allocations and approval
-                  progress.
-                </p>
-              </div>
-            </div>
+        actions={
+          <div className="flex items-center gap-2">
+            {/* Generate Document - Export Section */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isExporting}
+                  className="flex items-center gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Generate Document</span>
+                  <ChevronDown className="h-3.5 w-3.5 ml-0.5 text-slate-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={() => handleExportPPMP('Pdf')}
+                  disabled={isExporting}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  <span>Download PDF</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* View PPMP Guidelines Button */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setConsolidatedViewerOpen(true)}
-              className="flex items-center gap-1.5 border-indigo-300 text-indigo-705 bg-white hover:bg-indigo-50 hover:border-indigo-400 font-bold shrink-0 self-start sm:self-center shadow-sm h-9 rounded-lg"
+              onClick={() => setGuidelinesModalOpen(true)}
+              className="flex items-center gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50"
             >
               <FileText className="h-4 w-4" />
-              <span>View Master PPMP</span>
+              <span>PPMP Guidelines</span>
             </Button>
-          </div>
-        )}
 
-        {/* Metadata Grid */}
-        <MetadataGrid
-          ppmp={activeChildPpmp || ppmp}
-          activityCount={activityCount}
-          itemCount={itemCount}
-          onOpenAssociateMsf={handleOpenProjectAssociateMsf}
-          onUnlinkMsf={handleUnlinkMsf}
-          isUnlinkingMsf={isUnlinkingMsf}
-          isProjectScope={isProjectScope}
-        />
+            {/* Visual Separator */}
+            <div className="h-5 w-px bg-slate-200" />
 
-        {/* Consolidated Child PPMP Tabs (Only for Master PPMP with children) */}
-        {!isDeptMode &&
-          ppmp.isMaster &&
-          ppmp.ChildPPMPs &&
-          ppmp.ChildPPMPs.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 px-0.5">
-                <Layers className="h-3.5 w-3.5 text-primary/60" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-default-400">
-                  Department PPMPs ({ppmp.ChildPPMPs.length})
-                </span>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin">
-                {/* Overview consolidated card */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('overview')
-                    setSelectedActivityId(null)
-                  }}
+            {ppmp.consolidatedIntoId && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider shadow-sm">
+                <Lock className="h-3.5 w-3.5 text-slate-400" />
+                Consolidated — Read Only
+              </span>
+            )}
+
+            {!ppmp.consolidatedIntoId &&
+              (ppmp.status?.toLowerCase() === 'draft' ||
+                ppmp.status?.toLowerCase() === 'rejected') && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-block">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          disabled={incompleteItems.length > 0}
+                          onClick={() => setSubmitConfirmOpen(true)}
+                          className={cn(
+                            'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-600/20 active:scale-[0.98]',
+                            incompleteItems.length > 0 &&
+                              'opacity-50 cursor-not-allowed bg-indigo-600/60 hover:bg-indigo-600/60 shadow-none',
+                          )}
+                        >
+                          <Send className="h-4 w-4" />
+                          <span>Submit PPMP</span>
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {incompleteItems.length > 0 && (
+                      <TooltipContent
+                        side="top"
+                        className="max-w-xs bg-slate-900 border-slate-800 text-white p-3 shadow-xl z-50"
+                      >
+                        <div className="space-y-1.5 text-xs">
+                          <p className="font-bold text-red-400">
+                            Cannot Submit PPMP
+                          </p>
+                          <p className="text-slate-300">
+                            The following items are incomplete or have
+                            validation errors:
+                          </p>
+                          <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto text-slate-200">
+                            {incompleteItems.slice(0, 5).map((item) => (
+                              <li key={item.id}>
+                                {item.name || 'Unnamed Item'}
+                              </li>
+                            ))}
+                            {incompleteItems.length > 5 && (
+                              <li className="italic text-slate-400">
+                                and {incompleteItems.length - 5} more...
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
+            {!ppmp.consolidatedIntoId &&
+              (ppmp.status?.toLowerCase() === 'submitted' ||
+                ppmp.status?.toLowerCase() === 'pending_review' ||
+                ppmp.status?.toLowerCase() === 'pending review') && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setApproveConfirmOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  <span>Approve PPMP</span>
+                </Button>
+              )}
+
+            {/* Mark as Final / Unmark as Final Toggle */}
+            {!ppmp.consolidatedIntoId &&
+              ppmp.status?.toLowerCase() === 'approved' && (
+                <Button
+                  variant={ppmp.isFinal ? 'outline' : 'default'}
+                  size="sm"
+                  disabled={isTogglingFinal}
+                  onClick={() => setToggleFinalConfirmOpen(true)}
                   className={cn(
-                    'group shrink-0 w-52 rounded-xl border p-3.5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
-                    activeTab === 'overview'
-                      ? 'border-primary bg-primary/5 shadow-md shadow-primary/10 ring-1 ring-primary/20'
-                      : 'border-default-200 bg-white hover:border-primary/30 hover:shadow-sm hover:bg-default-50/60',
+                    'flex items-center gap-1.5 h-9 rounded-lg font-semibold transition-all duration-300 shadow-sm',
+                    ppmp.isFinal
+                      ? 'border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400'
+                      : 'bg-slate-900 hover:bg-slate-800 text-white',
                   )}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div
-                      className={cn(
-                        'h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-colors',
-                        activeTab === 'overview'
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-default-100 text-default-500 group-hover:bg-primary/10 group-hover:text-primary',
-                      )}
-                    >
-                      <Layers className="h-3.5 w-3.5" />
-                    </div>
-                    <span
-                      className={cn(
-                        'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
-                        activeTab === 'overview'
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-default-100 text-default-500',
-                      )}
-                    >
-                      All
-                    </span>
-                  </div>
-                  <div className="mt-2.5 space-y-0.5">
-                    <div
-                      className={cn(
-                        'text-xs font-bold leading-tight',
-                        activeTab === 'overview'
-                          ? 'text-primary'
-                          : 'text-default-800 group-hover:text-default-900',
-                      )}
-                    >
-                      Overview (Consolidated)
-                    </div>
-                    <div className="text-[10px] text-default-400 font-medium">
-                      {ppmp.ChildPPMPs.length} departments merged
-                    </div>
-                  </div>
-                  {activeTab === 'overview' && (
-                    <div className="mt-2 h-0.5 w-full rounded-full bg-primary/30" />
+                  {ppmp.isFinal ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      <span>Marked as Final</span>
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="h-4 w-4" />
+                      <span>Mark as Final</span>
+                    </>
                   )}
-                </button>
+                </Button>
+              )}
 
-                {/* Individual child PPMP cards */}
-                {ppmp.ChildPPMPs.map((child) => {
-                  const isActive = activeTab === child.id
-                  const statusLower = (child.status ?? '').toLowerCase()
-                  const statusStyle =
-                    statusLower === 'approved'
-                      ? {
-                        badge:
-                          'bg-emerald-50 text-emerald-700 border-emerald-200',
-                        dot: 'bg-emerald-500',
-                      }
-                      : statusLower === 'submitted' ||
-                        statusLower === 'pending_review' ||
-                        statusLower === 'pending review'
-                        ? {
-                          badge: 'bg-blue-50 text-blue-700 border-blue-200',
-                          dot: 'bg-blue-500',
-                        }
-                        : statusLower === 'rejected'
-                          ? {
-                            badge: 'bg-rose-50 text-rose-700 border-rose-200',
-                            dot: 'bg-rose-500',
-                          }
-                          : {
-                            badge:
-                              'bg-slate-50 text-slate-600 border-slate-200',
-                            dot: 'bg-slate-400',
-                          }
-                  return (
-                    <button
-                      key={child.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveTab(child.id)
-                        setSelectedActivityId(null)
-                      }}
-                      className={cn(
-                        'group shrink-0 w-52 rounded-xl border text-left transition-all duration-200 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
-                        isActive
-                          ? 'border-primary shadow-md shadow-primary/10 ring-1 ring-primary/20 bg-white'
-                          : 'border-default-200 bg-white hover:border-primary/30 hover:shadow-sm',
-                      )}
-                    >
-                      {/* Colored top accent bar */}
-                      <div
-                        className={cn(
-                          'h-1 w-full transition-all duration-200',
-                          isActive
-                            ? 'bg-primary'
-                            : 'bg-default-100 group-hover:bg-primary/40',
-                        )}
-                      />
-                      <div className="p-3.5 space-y-2.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <div
-                            className={cn(
-                              'h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-colors',
-                              isActive
-                                ? 'bg-primary/10 text-primary'
-                                : 'bg-default-100 text-default-500 group-hover:bg-primary/10 group-hover:text-primary',
-                            )}
-                          >
-                            <Building2 className="h-3.5 w-3.5" />
-                          </div>
-                          <span
-                            className={cn(
-                              'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border',
-                              statusStyle.badge,
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                'h-1.5 w-1.5 rounded-full',
-                                statusStyle.dot,
-                              )}
-                            />
-                            {child.status}
-                          </span>
-                        </div>
-
-                        <div className="space-y-0.5">
-                          <div
-                            className={cn(
-                              'text-xs font-bold leading-tight line-clamp-2',
-                              isActive
-                                ? 'text-primary'
-                                : 'text-default-800 group-hover:text-default-900',
-                            )}
-                          >
-                            {child.officeName || 'Child PPMP'}
-                          </div>
-                          {child.ppmpNumber && (
-                            <div className="text-[10px] text-default-400 font-semibold font-mono tracking-tight">
-                              {child.ppmpNumber}
-                            </div>
+            {/* Create Supplemental PPMP Button (Only on Approved Original PPMPs, enabled once Finalized) */}
+            {!ppmp.consolidatedIntoId &&
+              ppmp.status?.toLowerCase() === 'approved' &&
+              ppmp.ppmpType !== 'Supplemental' &&
+              !ppmp.sourcePPMPId && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={!ppmp.isFinal}
+                          onClick={() => setSupplementalDialogOpen(true)}
+                          className={cn(
+                            'flex items-center gap-1.5 font-semibold h-9 rounded-lg transition-all',
+                            ppmp.isFinal
+                              ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-sm'
+                              : 'opacity-50 cursor-not-allowed border-slate-200 text-slate-400 hover:bg-transparent',
                           )}
-                        </div>
+                        >
+                          <FilePlus2 className="h-4 w-4" />
+                          <span>Create Supplemental PPMP</span>
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {!ppmp.isFinal && (
+                      <TooltipContent
+                        side="bottom"
+                        className="text-xs max-w-xs bg-slate-900 text-white p-2"
+                      >
+                        Mark this PPMP as Final before creating a Supplemental
+                        PPMP.
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
 
-                        {child.totalEstimatedBudget != null && (
-                          <div
-                            className={cn(
-                              'text-[11px] font-bold',
-                              isActive ? 'text-primary/80' : 'text-default-600',
-                            )}
-                          >
-                            {formatCurrency(child.totalEstimatedBudget)}
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  )
-                })}
+            {/* Master mode: Consolidate button (import dept PPMPs into this master) */}
+            {!isDeptMode &&
+              ppmp.isMaster &&
+              [
+                'draft',
+                'submitted',
+                'approved',
+                'pending_review',
+                'pending review',
+              ].includes((ppmp.status ?? '').toLowerCase()) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConsolidateWorkspaceOpen(true)}
+                  className="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
+                >
+                  <Layers className="h-4 w-4" />
+                  <span>Consolidate PPMP</span>
+                </Button>
+              )}
+
+            {/* Department mode: Consolidate into Master button */}
+            {isDeptMode &&
+              !ppmp.consolidatedIntoId &&
+              (ppmp.status ?? '').toLowerCase() === 'approved' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDeptConsolidateOpen(true)}
+                  className="flex items-center gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                >
+                  <Layers className="h-4 w-4" />
+                  <span>Consolidate into Master</span>
+                </Button>
+              )}
+          </div>
+        }
+      >
+        <style dangerouslySetInnerHTML={{ __html: THROB_STYLE }} />
+
+        <div className="space-y-6">
+          {isEditable && incompleteItems.length > 0 && (
+            <div className="rounded-xl border border-red-300 bg-red-50/80 dark:bg-red-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-red-500 text-red-900 dark:text-red-200">
+              <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-extrabold">
+                  PPMP Submission Blocked
+                </h4>
+                <p className="text-xs font-semibold text-red-850/90 dark:text-red-300">
+                  There are {incompleteItems.length} item(s) requiring
+                  configuration. Configure all items (marked with red left
+                  borders) before submitting this PPMP.
+                </p>
               </div>
             </div>
           )}
 
-        {/* Single-column workspace layout */}
-        {isProjectScope ? (
-          <ProjectLevelPPMPWorkspace
-            ppmp={activeChildPpmp || ppmp}
-            lib={lib}
-            isEditable={isEditable}
-            ExpenditureItemGroupComponent={ExpenditureItemGroup}
-            onAddItem={handleAddItem}
-            onEditItem={handleEditItem}
-            onDeleteItem={handleDeleteItem}
-            onAddGroup={handleAddGroup}
-            onEditGroup={handleEditGroup}
-            onDeleteGroup={handleDeleteGroup}
-            onEditAllocations={handleEditAllocations}
-          />
-        ) : (
-          <div className="space-y-6">
-            {/* Top horizontal scroller activities pane */}
-            <ActivitiesPane
-              activities={activities}
-              selectedId={selectedActivityId}
-              onSelect={setSelectedActivityId}
-              expandedIds={expandedActivityIds}
-              onToggleExpand={toggleExpandActivity}
-              onAdd={
-                activeTab === 'overview' && isEditable
-                  ? () => setAddDialogOpen(true)
-                  : undefined
-              }
-              onRequestDelete={
-                isEditable ? requestDeleteActivity : undefined
-              }
-              onOpenAssociateMsf={handleOpenActivityAssociateMsf}
-              totalPpmpBudget={totalPpmpBudget}
-              masterPpmpId={ppmp.id}
-              isLoading={isLoadingActivities}
-            />
-
-            {/* Bottom detail pane (expanded full width) */}
-            <div className="min-w-0">
-              <RightPane
-                activity={selectedActivity}
-                onAddItem={
-                  selectedActivity?.ppmpId === ppmp.id && isEditable
-                    ? handleAddItem
-                    : undefined
-                }
-                onEditItem={
-                  selectedActivity?.ppmpId === ppmp.id && isEditable
-                    ? handleEditItem
-                    : undefined
-                }
-                onDeleteItem={
-                  selectedActivity?.ppmpId === ppmp.id && isEditable
-                    ? handleDeleteItem
-                    : undefined
-                }
-                onAddGroup={
-                  selectedActivity?.ppmpId === ppmp.id && isEditable
-                    ? handleAddGroup
-                    : undefined
-                }
-                onEditGroup={
-                  selectedActivity?.ppmpId === ppmp.id && isEditable
-                    ? handleEditGroup
-                    : undefined
-                }
-                onDeleteGroup={
-                  selectedActivity?.ppmpId === ppmp.id && isEditable
-                    ? handleDeleteGroup
-                    : undefined
-                }
-                onEditAllocations={
-                  selectedActivity?.ppmpId === ppmp.id && isEditable
-                    ? handleEditAllocations
-                    : undefined
-                }
-                onOpenAssociateMsf={handleOpenActivityAssociateMsf}
-                onUnlinkMsf={handleUnlinkMsf}
-                isUnlinkingMsf={isUnlinkingMsf}
-              />
+          {isDeptMode && ppmp.consolidatedIntoId && (
+            <div className="rounded-xl border border-indigo-200 bg-linear-to-r from-indigo-50/90 to-indigo-100/40 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-md border-l-4 border-l-indigo-600 font-medium text-indigo-900">
+              <div className="flex items-start gap-3.5">
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-600">
+                  <GitMerge className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-extrabold text-indigo-950 flex items-center gap-1.5">
+                    This Department PPMP has been consolidated
+                  </h4>
+                  <p className="text-xs text-indigo-900/70 leading-normal max-w-2xl font-semibold">
+                    It has been merged into a Master Procurement Plan. All
+                    details are now locked in read-only mode. You can view the
+                    consolidated Master PPMP to trace allocations and approval
+                    progress.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConsolidatedViewerOpen(true)}
+                className="flex items-center gap-1.5 border-indigo-300 text-indigo-705 bg-white hover:bg-indigo-50 hover:border-indigo-400 font-bold shrink-0 self-start sm:self-center shadow-sm h-9 rounded-lg"
+              >
+                <FileText className="h-4 w-4" />
+                <span>View Master PPMP</span>
+              </Button>
             </div>
-          </div>
-        )}
-      </div>
+          )}
 
-      <AddPPMPActivityDialog
-        isOpen={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
-        ppmpId={ppmp.id}
-        libId={ppmp.libId}
-        existingLibActivityIds={existingLibActivityIds}
-        onCreated={() => {
-          /* no-op: queries invalidated inside dialog */
-        }}
-      />
-      <ConfirmAlertDialog
-        open={deleteDialogOpen}
-        onOpenChange={(s) => {
-          if (!s) setDeleteDialogOpen(false)
-        }}
-        title="Delete activity?"
-        description={`${activities.find((a) => a.id === pendingDeleteActivityId)
-          ?.activityName || 'This activity'
+          {/* Metadata Grid */}
+          <MetadataGrid
+            ppmp={activeChildPpmp || ppmp}
+            activityCount={activityCount}
+            itemCount={itemCount}
+            onOpenAssociateMsf={handleOpenProjectAssociateMsf}
+            onUnlinkMsf={handleUnlinkMsf}
+            isUnlinkingMsf={isUnlinkingMsf}
+            isProjectScope={isProjectScope}
+          />
+
+          {/* Consolidated Child PPMP Tabs (Only for Master PPMP with children) */}
+          {!isDeptMode &&
+            ppmp.isMaster &&
+            ppmp.ChildPPMPs &&
+            ppmp.ChildPPMPs.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-0.5">
+                  <Layers className="h-3.5 w-3.5 text-primary/60" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-default-400">
+                    Department PPMPs ({ppmp.ChildPPMPs.length})
+                  </span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin">
+                  {/* Overview consolidated card */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('overview')
+                      setSelectedActivityId(null)
+                    }}
+                    className={cn(
+                      'group shrink-0 w-52 rounded-xl border p-3.5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
+                      activeTab === 'overview'
+                        ? 'border-primary bg-primary/5 shadow-md shadow-primary/10 ring-1 ring-primary/20'
+                        : 'border-default-200 bg-white hover:border-primary/30 hover:shadow-sm hover:bg-default-50/60',
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div
+                        className={cn(
+                          'h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+                          activeTab === 'overview'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-default-100 text-default-500 group-hover:bg-primary/10 group-hover:text-primary',
+                        )}
+                      >
+                        <Layers className="h-3.5 w-3.5" />
+                      </div>
+                      <span
+                        className={cn(
+                          'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+                          activeTab === 'overview'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-default-100 text-default-500',
+                        )}
+                      >
+                        All
+                      </span>
+                    </div>
+                    <div className="mt-2.5 space-y-0.5">
+                      <div
+                        className={cn(
+                          'text-xs font-bold leading-tight',
+                          activeTab === 'overview'
+                            ? 'text-primary'
+                            : 'text-default-800 group-hover:text-default-900',
+                        )}
+                      >
+                        Overview (Consolidated)
+                      </div>
+                      <div className="text-[10px] text-default-400 font-medium">
+                        {ppmp.ChildPPMPs.length} departments merged
+                      </div>
+                    </div>
+                    {activeTab === 'overview' && (
+                      <div className="mt-2 h-0.5 w-full rounded-full bg-primary/30" />
+                    )}
+                  </button>
+
+                  {/* Individual child PPMP cards */}
+                  {ppmp.ChildPPMPs.map((child) => {
+                    const isActive = activeTab === child.id
+                    const statusLower = (child.status ?? '').toLowerCase()
+                    const statusStyle =
+                      statusLower === 'approved'
+                        ? {
+                            badge:
+                              'bg-emerald-50 text-emerald-700 border-emerald-200',
+                            dot: 'bg-emerald-500',
+                          }
+                        : statusLower === 'submitted' ||
+                            statusLower === 'pending_review' ||
+                            statusLower === 'pending review'
+                          ? {
+                              badge: 'bg-blue-50 text-blue-700 border-blue-200',
+                              dot: 'bg-blue-500',
+                            }
+                          : statusLower === 'rejected'
+                            ? {
+                                badge:
+                                  'bg-rose-50 text-rose-700 border-rose-200',
+                                dot: 'bg-rose-500',
+                              }
+                            : {
+                                badge:
+                                  'bg-slate-50 text-slate-600 border-slate-200',
+                                dot: 'bg-slate-400',
+                              }
+                    return (
+                      <button
+                        key={child.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveTab(child.id)
+                          setSelectedActivityId(null)
+                        }}
+                        className={cn(
+                          'group shrink-0 w-52 rounded-xl border text-left transition-all duration-200 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
+                          isActive
+                            ? 'border-primary shadow-md shadow-primary/10 ring-1 ring-primary/20 bg-white'
+                            : 'border-default-200 bg-white hover:border-primary/30 hover:shadow-sm',
+                        )}
+                      >
+                        {/* Colored top accent bar */}
+                        <div
+                          className={cn(
+                            'h-1 w-full transition-all duration-200',
+                            isActive
+                              ? 'bg-primary'
+                              : 'bg-default-100 group-hover:bg-primary/40',
+                          )}
+                        />
+                        <div className="p-3.5 space-y-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div
+                              className={cn(
+                                'h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+                                isActive
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'bg-default-100 text-default-500 group-hover:bg-primary/10 group-hover:text-primary',
+                              )}
+                            >
+                              <Building2 className="h-3.5 w-3.5" />
+                            </div>
+                            <span
+                              className={cn(
+                                'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border',
+                                statusStyle.badge,
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  'h-1.5 w-1.5 rounded-full',
+                                  statusStyle.dot,
+                                )}
+                              />
+                              {child.status}
+                            </span>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <div
+                              className={cn(
+                                'text-xs font-bold leading-tight line-clamp-2',
+                                isActive
+                                  ? 'text-primary'
+                                  : 'text-default-800 group-hover:text-default-900',
+                              )}
+                            >
+                              {child.officeName || 'Child PPMP'}
+                            </div>
+                            {child.ppmpNumber && (
+                              <div className="text-[10px] text-default-400 font-semibold font-mono tracking-tight">
+                                {child.ppmpNumber}
+                              </div>
+                            )}
+                          </div>
+
+                          {child.totalEstimatedBudget != null && (
+                            <div
+                              className={cn(
+                                'text-[11px] font-bold',
+                                isActive
+                                  ? 'text-primary/80'
+                                  : 'text-default-600',
+                              )}
+                            >
+                              {formatCurrency(child.totalEstimatedBudget)}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+          {/* Single-column workspace layout */}
+          {isProjectScope ? (
+            <ProjectLevelPPMPWorkspace
+              ppmp={activeChildPpmp || ppmp}
+              lib={lib}
+              isEditable={isEditable}
+              ExpenditureItemGroupComponent={ExpenditureItemGroup}
+              onAddItem={handleAddItem}
+              onEditItem={handleEditItem}
+              onDeleteItem={handleDeleteItem}
+              onAddGroup={handleAddGroup}
+              onEditGroup={handleEditGroup}
+              onDeleteGroup={handleDeleteGroup}
+              onEditAllocations={handleEditAllocations}
+            />
+          ) : (
+            <div className="space-y-6">
+              {/* Top horizontal scroller activities pane */}
+              <ActivitiesPane
+                activities={activities}
+                selectedId={selectedActivityId}
+                onSelect={setSelectedActivityId}
+                expandedIds={expandedActivityIds}
+                onToggleExpand={toggleExpandActivity}
+                onAdd={
+                  activeTab === 'overview' && isEditable
+                    ? () => setAddDialogOpen(true)
+                    : undefined
+                }
+                onRequestDelete={isEditable ? requestDeleteActivity : undefined}
+                onOpenAssociateMsf={handleOpenActivityAssociateMsf}
+                totalPpmpBudget={totalPpmpBudget}
+                masterPpmpId={ppmp.id}
+                isLoading={isLoadingActivities}
+              />
+
+              {/* Bottom detail pane (expanded full width) */}
+              <div className="min-w-0">
+                <RightPane
+                  activity={selectedActivity}
+                  onAddItem={
+                    selectedActivity?.ppmpId === ppmp.id && isEditable
+                      ? handleAddItem
+                      : undefined
+                  }
+                  onEditItem={
+                    selectedActivity?.ppmpId === ppmp.id && isEditable
+                      ? handleEditItem
+                      : undefined
+                  }
+                  onDeleteItem={
+                    selectedActivity?.ppmpId === ppmp.id && isEditable
+                      ? handleDeleteItem
+                      : undefined
+                  }
+                  onAddGroup={
+                    selectedActivity?.ppmpId === ppmp.id && isEditable
+                      ? handleAddGroup
+                      : undefined
+                  }
+                  onEditGroup={
+                    selectedActivity?.ppmpId === ppmp.id && isEditable
+                      ? handleEditGroup
+                      : undefined
+                  }
+                  onDeleteGroup={
+                    selectedActivity?.ppmpId === ppmp.id && isEditable
+                      ? handleDeleteGroup
+                      : undefined
+                  }
+                  onEditAllocations={
+                    selectedActivity?.ppmpId === ppmp.id && isEditable
+                      ? handleEditAllocations
+                      : undefined
+                  }
+                  onOpenAssociateMsf={handleOpenActivityAssociateMsf}
+                  onUnlinkMsf={handleUnlinkMsf}
+                  isUnlinkingMsf={isUnlinkingMsf}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <AddPPMPActivityDialog
+          isOpen={addDialogOpen}
+          onOpenChange={setAddDialogOpen}
+          ppmpId={ppmp.id}
+          libId={ppmp.libId}
+          existingLibActivityIds={existingLibActivityIds}
+          onCreated={() => {
+            /* no-op: queries invalidated inside dialog */
+          }}
+        />
+        <ConfirmAlertDialog
+          open={deleteDialogOpen}
+          onOpenChange={(s) => {
+            if (!s) setDeleteDialogOpen(false)
+          }}
+          title="Delete activity?"
+          description={`${
+            activities.find((a) => a.id === pendingDeleteActivityId)
+              ?.activityName || 'This activity'
           } and all nested items will be permanently deleted.`}
-        onConfirm={confirmDeleteActivity}
-        onCancel={() => setDeleteDialogOpen(false)}
-        confirmLabel={isDeleting ? 'Deleting…' : 'Delete'}
-        cancelLabel="Cancel"
-        loading={isDeleting}
-      />
+          onConfirm={confirmDeleteActivity}
+          onCancel={() => setDeleteDialogOpen(false)}
+          confirmLabel={isDeleting ? 'Deleting…' : 'Delete'}
+          cancelLabel="Cancel"
+          loading={isDeleting}
+        />
 
-      <AddPPMPItemDialog
-        isOpen={itemDialogOpen}
-        onOpenChange={setItemDialogOpen}
-        ppmpExpenditureItemId={itemDialogGroupId}
-        itemToEdit={itemDialogEditItem}
-      />
+        <AddPPMPItemDialog
+          isOpen={itemDialogOpen}
+          onOpenChange={setItemDialogOpen}
+          ppmpExpenditureItemId={itemDialogGroupId}
+          itemToEdit={itemDialogEditItem}
+        />
 
-      <AddPPMPItemsModal
-        isOpen={itemsPickerOpen}
-        onOpenChange={setItemsPickerOpen}
-        ppmpExpenditureItemId={itemDialogGroupId}
-        officeId={ppmp?.officeId}
-        officeName={ppmp?.officeName}
-        fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
-        ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
-      />
+        <AddPPMPItemsModal
+          isOpen={itemsPickerOpen}
+          onOpenChange={setItemsPickerOpen}
+          ppmpExpenditureItemId={itemDialogGroupId}
+          officeId={ppmp?.officeId}
+          officeName={ppmp?.officeName}
+          fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
+          ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
+        />
 
-      <EditPPMPItemAllocationsDialog
-        isOpen={allocsDialogOpen}
-        onOpenChange={setAllocsDialogOpen}
-        item={allocsDialogItem}
-      />
+        <EditPPMPItemAllocationsDialog
+          isOpen={allocsDialogOpen}
+          onOpenChange={setAllocsDialogOpen}
+          item={allocsDialogItem}
+        />
 
-      <ConfirmAlertDialog
-        open={deleteItemConfirmOpen}
-        onOpenChange={(s) => {
-          if (!s) setDeleteItemConfirmOpen(false)
-        }}
-        title="Delete item?"
-        description={`Are you sure you want to permanently delete "${pendingDeleteItem?.name || 'this item'
+        <ConfirmAlertDialog
+          open={deleteItemConfirmOpen}
+          onOpenChange={(s) => {
+            if (!s) setDeleteItemConfirmOpen(false)
+          }}
+          title="Delete item?"
+          description={`Are you sure you want to permanently delete "${
+            pendingDeleteItem?.name || 'this item'
           }"?`}
-        onConfirm={confirmDeleteItem}
-        onCancel={() => setDeleteItemConfirmOpen(false)}
-        confirmLabel={isItemDeleting ? 'Deleting…' : 'Delete'}
-        cancelLabel="Cancel"
-        loading={isItemDeleting}
-      />
+          onConfirm={confirmDeleteItem}
+          onCancel={() => setDeleteItemConfirmOpen(false)}
+          confirmLabel={isItemDeleting ? 'Deleting…' : 'Delete'}
+          cancelLabel="Cancel"
+          loading={isItemDeleting}
+        />
 
-      <AddPPMPItemExpenditureDialog
-        isOpen={groupDialogOpen}
-        onOpenChange={setGroupDialogOpen}
-        ppmpId={ppmpId}
-        ppmpActivityId={selectedActivity?.id || selectedActivityId || undefined}
-        libActivityId={selectedActivity?.libActivityId}
-        orphanDetails={lib?.orphanDetails}
-        groupToEdit={groupDialogEditGroup}
-        existingObjectIds={existingObjectIds}
-      />
+        <AddPPMPItemExpenditureDialog
+          isOpen={groupDialogOpen}
+          onOpenChange={setGroupDialogOpen}
+          ppmpId={ppmpId}
+          ppmpActivityId={
+            selectedActivity?.id || selectedActivityId || undefined
+          }
+          libActivityId={selectedActivity?.libActivityId}
+          orphanDetails={lib?.orphanDetails}
+          groupToEdit={groupDialogEditGroup}
+          existingObjectIds={existingObjectIds}
+        />
 
-      <ConfirmAlertDialog
-        open={deleteGroupConfirmOpen}
-        onOpenChange={(s) => {
-          if (!s) setDeleteGroupConfirmOpen(false)
-        }}
-        title="Delete expenditure item?"
-        description="Are you sure you want to permanently delete this expenditure item and all its sub-items?"
-        onConfirm={confirmDeleteGroup}
-        onCancel={() => setDeleteGroupConfirmOpen(false)}
-        confirmLabel={isGroupDeleting ? 'Deleting…' : 'Delete'}
-        cancelLabel="Cancel"
-        loading={isGroupDeleting}
-      />
-      <ConfirmAlertDialog
-        open={submitConfirmOpen}
-        onOpenChange={setSubmitConfirmOpen}
-        title="Submit PPMP?"
-        description="Are you sure you want to submit this PPMP for review? This will transition its status to Submitted."
-        onConfirm={handleSubmitPPMP}
-        onCancel={() => setSubmitConfirmOpen(false)}
-        confirmLabel={isUpdatingStatus ? 'Submitting…' : 'Submit'}
-        cancelLabel="Cancel"
-        loading={isUpdatingStatus}
-      />
+        <ConfirmAlertDialog
+          open={deleteGroupConfirmOpen}
+          onOpenChange={(s) => {
+            if (!s) setDeleteGroupConfirmOpen(false)
+          }}
+          title="Delete expenditure item?"
+          description="Are you sure you want to permanently delete this expenditure item and all its sub-items?"
+          onConfirm={confirmDeleteGroup}
+          onCancel={() => setDeleteGroupConfirmOpen(false)}
+          confirmLabel={isGroupDeleting ? 'Deleting…' : 'Delete'}
+          cancelLabel="Cancel"
+          loading={isGroupDeleting}
+        />
+        <ConfirmAlertDialog
+          open={submitConfirmOpen}
+          onOpenChange={setSubmitConfirmOpen}
+          title="Submit PPMP?"
+          description="Are you sure you want to submit this PPMP for review? This will transition its status to Submitted."
+          onConfirm={handleSubmitPPMP}
+          onCancel={() => setSubmitConfirmOpen(false)}
+          confirmLabel={isUpdatingStatus ? 'Submitting…' : 'Submit'}
+          cancelLabel="Cancel"
+          loading={isUpdatingStatus}
+        />
 
-      <ConfirmAlertDialog
-        open={approveConfirmOpen}
-        onOpenChange={setApproveConfirmOpen}
-        title="Approve PPMP?"
-        description="Are you sure you want to approve this PPMP? This action will record an approval history event."
-        onConfirm={handleApprovePPMP}
-        onCancel={() => setApproveConfirmOpen(false)}
-        confirmLabel={isUpdatingStatus ? 'Approving…' : 'Approve'}
-        cancelLabel="Cancel"
-        loading={isUpdatingStatus}
-      />
+        <ConfirmAlertDialog
+          open={approveConfirmOpen}
+          onOpenChange={setApproveConfirmOpen}
+          title="Approve PPMP?"
+          description="Are you sure you want to approve this PPMP? This action will record an approval history event."
+          onConfirm={handleApprovePPMP}
+          onCancel={() => setApproveConfirmOpen(false)}
+          confirmLabel={isUpdatingStatus ? 'Approving…' : 'Approve'}
+          cancelLabel="Cancel"
+          loading={isUpdatingStatus}
+        />
 
-      <ConfirmAlertDialog
-        open={toggleFinalConfirmOpen}
-        onOpenChange={setToggleFinalConfirmOpen}
-        title={ppmp.isFinal ? 'Unmark PPMP as Final?' : 'Mark PPMP as Final?'}
-        description={
-          ppmp.isFinal
-            ? 'This will revert the PPMP to Indicative status. Note that if it has already been consumed by an approved Final APP, it cannot be reverted.'
-            : 'Marking this PPMP as Final designates it as the official approved procurement plan for the fiscal year, eligible for inclusion in the Final APP.'
-        }
-        onConfirm={handleToggleFinal}
-        onCancel={() => setToggleFinalConfirmOpen(false)}
-        confirmLabel={
-          isTogglingFinal
-            ? 'Saving…'
-            : ppmp.isFinal
-              ? 'Unmark as Final'
-              : 'Confirm - Mark Final'
-        }
-        cancelLabel="Cancel"
-        loading={isTogglingFinal}
-      />
+        <ConfirmAlertDialog
+          open={toggleFinalConfirmOpen}
+          onOpenChange={setToggleFinalConfirmOpen}
+          title={ppmp.isFinal ? 'Unmark PPMP as Final?' : 'Mark PPMP as Final?'}
+          description={
+            ppmp.isFinal
+              ? 'This will revert the PPMP to Indicative status. Note that if it has already been consumed by an approved Final APP, it cannot be reverted.'
+              : 'Marking this PPMP as Final designates it as the official approved procurement plan for the fiscal year, eligible for inclusion in the Final APP.'
+          }
+          onConfirm={handleToggleFinal}
+          onCancel={() => setToggleFinalConfirmOpen(false)}
+          confirmLabel={
+            isTogglingFinal
+              ? 'Saving…'
+              : ppmp.isFinal
+                ? 'Unmark as Final'
+                : 'Confirm - Mark Final'
+          }
+          cancelLabel="Cancel"
+          loading={isTogglingFinal}
+        />
 
-      <CreateSupplementalPpmpDialog
-        open={supplementalDialogOpen}
-        onOpenChange={setSupplementalDialogOpen}
-        sourcePpmp={ppmp}
-      />
+        <CreateSupplementalPpmpDialog
+          open={supplementalDialogOpen}
+          onOpenChange={setSupplementalDialogOpen}
+          sourcePpmp={ppmp}
+        />
 
-      <PPMPGuidelinesModal
-        open={guidelinesModalOpen}
-        onOpenChange={setGuidelinesModalOpen}
-      />
+        <PPMPGuidelinesModal
+          open={guidelinesModalOpen}
+          onOpenChange={setGuidelinesModalOpen}
+        />
 
-      <ConsolidationWorkspaceSheet
-        open={consolidateWorkspaceOpen}
-        onOpenChange={setConsolidateWorkspaceOpen}
-        masterPpmp={{
-          id: ppmp.id,
-          officeId: ppmp.officeId,
-          fiscalYearId: ppmp.fiscalYearId,
-          libId: ppmp.libId,
-          documentName: ppmp.documentName,
-          ppmpNumber: ppmp.ppmpNumber,
-          officeName: ppmp.officeName,
-        }}
-      />
-
-      {isDeptMode && (
-        <DeptConsolidationSheet
-          open={deptConsolidateOpen}
-          onOpenChange={setDeptConsolidateOpen}
-          deptPpmp={{
+        <ConsolidationWorkspaceSheet
+          open={consolidateWorkspaceOpen}
+          onOpenChange={setConsolidateWorkspaceOpen}
+          masterPpmp={{
             id: ppmp.id,
             officeId: ppmp.officeId,
             fiscalYearId: ppmp.fiscalYearId,
-            fiscalYearName: ppmp.fiscalYearName,
             libId: ppmp.libId,
+            documentName: ppmp.documentName,
             ppmpNumber: ppmp.ppmpNumber,
             officeName: ppmp.officeName,
           }}
         />
-      )}
-      {isDeptMode && ppmp.consolidatedIntoId && (
-        <MasterPPMPViewerModal
-          open={consolidatedViewerOpen}
-          onOpenChange={setConsolidatedViewerOpen}
-          masterPpmpId={ppmp.consolidatedIntoId}
-        />
-      )}
 
-      <AssociateMarketScopingDialog
-        open={associateMsfOpen}
-        onOpenChange={setAssociateMsfOpen}
-        targetType={associateMsfTarget.type}
-        targetLineItemBudgetId={associateMsfTarget.targetLineItemBudgetId}
-        targetLineItemBudgetActivityId={
-          associateMsfTarget.targetLineItemBudgetActivityId
-        }
-        targetName={associateMsfTarget.targetName}
-        officeId={ppmp.officeId}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['/ppmps'] })
-        }}
-      />
-    </PageContainerDashtail>
+        {isDeptMode && (
+          <DeptConsolidationSheet
+            open={deptConsolidateOpen}
+            onOpenChange={setDeptConsolidateOpen}
+            deptPpmp={{
+              id: ppmp.id,
+              officeId: ppmp.officeId,
+              fiscalYearId: ppmp.fiscalYearId,
+              fiscalYearName: ppmp.fiscalYearName,
+              libId: ppmp.libId,
+              ppmpNumber: ppmp.ppmpNumber,
+              officeName: ppmp.officeName,
+            }}
+          />
+        )}
+        {isDeptMode && ppmp.consolidatedIntoId && (
+          <MasterPPMPViewerModal
+            open={consolidatedViewerOpen}
+            onOpenChange={setConsolidatedViewerOpen}
+            masterPpmpId={ppmp.consolidatedIntoId}
+          />
+        )}
+
+        <AssociateMarketScopingDialog
+          open={associateMsfOpen}
+          onOpenChange={setAssociateMsfOpen}
+          targetType={associateMsfTarget.type}
+          targetLineItemBudgetId={associateMsfTarget.targetLineItemBudgetId}
+          targetLineItemBudgetActivityId={
+            associateMsfTarget.targetLineItemBudgetActivityId
+          }
+          targetName={associateMsfTarget.targetName}
+          officeId={ppmp.officeId}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['/ppmps'] })
+          }}
+        />
+      </PageContainerDashtail>
     </SourcePpmpDiffContext.Provider>
   )
 }

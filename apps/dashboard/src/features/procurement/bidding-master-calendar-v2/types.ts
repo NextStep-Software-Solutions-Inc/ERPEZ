@@ -5,12 +5,15 @@ import type {
   BiddingMasterCalendarConflictGroup,
   BiddingMasterCalendarIntervalBar,
   BiddingMasterCalendarDrawerTab,
+  ProcurementModeAbbr,
 } from '../bidding-master-calendar/types'
 import type { BiddingSchedule, BiddingMilestone } from '../bidding-schedule/types'
 
 export type CalendarViewMode = 'agenda' | 'day' | 'week' | 'month' | 'year'
 
-export type ColorTaxonomyMode = 'project' | 'category' | 'status'
+export type ColorTaxonomyMode = 'project' | 'category' | 'status' | 'mode'
+
+export type { ProcurementModeAbbr }
 
 export interface DraggedMilestoneState {
   event: BiddingMasterCalendarEvent

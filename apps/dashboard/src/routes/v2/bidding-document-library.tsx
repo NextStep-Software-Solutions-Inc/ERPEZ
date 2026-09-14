@@ -6,7 +6,7 @@ import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
   tab: z
-    .enum(['SystemAdmin', 'BACSecretariat', 'PublicPortal'])
+    .enum(['SystemAdmin', 'BACSecretariat'])
     .catch('SystemAdmin'),
 })
 

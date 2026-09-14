@@ -39,7 +39,7 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                 {
                     h.Item().Row(titleRow =>
                     {
-                        titleRow.RelativeItem(3).Column(left =>
+                        titleRow.RelativeItem().Column(left =>
                         {
                             left.Item().AlignCenter()
                                 .Text("LINE ITEM BUDGET FORM")
@@ -48,42 +48,6 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                                 .Text($"FOR FISCAL YEAR {request.FiscalYear}")
                                 .Bold().FontSize(9);
                         });
-
-                        titleRow.RelativeItem(1)
-                            .Border(1).BorderColor(Colors.Blue.Darken2)
-                            .Column(docBox =>
-                            {
-                                docBox.Item()
-                                    .Background(Colors.Blue.Darken2).Padding(2).AlignCenter()
-                                    .Text("Document Code No.").Bold().FontSize(6).FontColor(Colors.White);
-
-                                docBox.Item().Padding(2).AlignCenter()
-                                    .Text(string.IsNullOrWhiteSpace(request.LIBNumber) ? "-" : request.LIBNumber)
-                                    .Bold().FontSize(7);
-
-                                docBox.Item().Row(metaRow =>
-                                {
-                                    foreach (var label in new[] { "Rev. No", "Effective Date", "Page No." })
-                                        metaRow.RelativeItem()
-                                            .Background(Colors.Blue.Darken2).Padding(2).AlignCenter()
-                                            .Text(label).Bold().FontSize(6).FontColor(Colors.White);
-                                });
-
-                                docBox.Item().Row(metaRow =>
-                                {
-                                    metaRow.RelativeItem().Padding(2).AlignCenter().Text("00").FontSize(7);
-                                    metaRow.RelativeItem().Padding(2).AlignCenter()
-                                        .Text(request.EffectiveDate.HasValue
-                                            ? request.EffectiveDate.Value.ToString("MM/dd/yy") : "-")
-                                        .FontSize(7);
-                                    metaRow.RelativeItem().Padding(2).AlignCenter().Text(t =>
-                                    {
-                                        t.CurrentPageNumber().FontSize(7);
-                                        t.Span(" of ").FontSize(7);
-                                        t.TotalPages().FontSize(7);
-                                    });
-                                });
-                            });
                     });
 
                     h.Item().PaddingTop(4).Column(agency =>

@@ -13,6 +13,25 @@ import { getBacCalendarEventsRequest } from '../handlers/getBacCalendarEventsReq
 
 const useBacCalendarEvents = createQueryHookFromTemplate(getBacCalendarEventsRequest)
 
+function formatRemainingDayLabel(remainingInfo: {
+  label: string
+  daysRemaining: number | null
+  isToday?: boolean
+}): string {
+  if (
+    remainingInfo.isToday ||
+    remainingInfo.daysRemaining === 0 ||
+    remainingInfo.label === 'Due today' ||
+    remainingInfo.label === '0 day' ||
+    remainingInfo.label === '0 days' ||
+    remainingInfo.label === '0d' ||
+    remainingInfo.label === '0d left'
+  ) {
+    return 'Today'
+  }
+  return remainingInfo.label
+}
+
 interface BiddingScheduleGanttStripProps {
   bacResolutionId?: string | null
   bacResolutionNumber?: string | null
@@ -108,6 +127,7 @@ export function BiddingScheduleGanttStrip({
       )
 
       const actType = activityTypeMap.get(event.procurementActivityTypeId)
+      const durationDays = Math.max(1, Math.round((e - s) / oneDay))
       const isCompleted =
         event.status === 'Completed' ||
         event.scheduleStatus === 'locked' ||
@@ -119,6 +139,7 @@ export function BiddingScheduleGanttStrip({
 
       return {
         ...event,
+        durationDays,
         leftPercent,
         widthPercent,
         remainingInfo,
@@ -217,7 +238,7 @@ export function BiddingScheduleGanttStrip({
                               getRemainingDaysBadgeClass(item.remainingInfo.variant),
                             )}
                           >
-                            {item.remainingInfo.label}
+                            {formatRemainingDayLabel(item.remainingInfo)}
                           </span>
                         </div>
                       </div>
@@ -237,7 +258,11 @@ export function BiddingScheduleGanttStrip({
                               )}
                             >
                               <span className="text-[9px] font-bold px-1 truncate select-none">
-                                {item.remainingInfo.durationDays}d
+                                {item.remainingInfo.isToday ||
+                                item.remainingInfo.daysRemaining === 0 ||
+                                item.durationDays === 0
+                                  ? 'Today'
+                                  : `${item.durationDays}d`}
                               </span>
                             </div>
                           </TooltipTrigger>
@@ -303,7 +328,7 @@ export function BiddingScheduleGanttStrip({
                                     getRemainingDaysBadgeClass(item.remainingInfo.variant),
                                   )}
                                 >
-                                  {item.remainingInfo.label}
+                                  {formatRemainingDayLabel(item.remainingInfo)}
                                 </span>
                               </div>
                             </div>

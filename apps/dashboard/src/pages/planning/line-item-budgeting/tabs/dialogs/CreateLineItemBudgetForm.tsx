@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -29,6 +29,7 @@ import {
 } from '@/features/planning/line-item-budgeting/line-item-budget/atoms/libDialogAtoms'
 
 import { getOfficeCeilingsRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/getOfficeCeilingsRequest'
+import { getLIBsRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/getLIBsRequest'
 import { getFundSourcesRequest } from '@/components/features/planning/fund-receiving/handlers/getFundSourcesRequest'
 import type { FundSource } from '@/features/planning/fund-source/types'
 import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
@@ -38,6 +39,7 @@ import { OfficeCeiling } from '@/features/planning/line-item-budgeting/line-item
 const useOpcrs = createQueryHookFromTemplate(getOPCRsRequest)
 const useWfps = createQueryHookFromTemplate(getWFPsRequest)
 const useFiscalYears = createQueryHookFromTemplate(getFiscalYearsRequest)
+const useLIBs = createQueryHookFromTemplate(getLIBsRequest)
 
 const useOfficeCeilingsForForm = createQueryHookFromTemplate(
   getOfficeCeilingsRequest,
@@ -195,8 +197,8 @@ export default function CreateLineItemBudgetForm({
     queryParams: {
       ...(fiscalYearValue &&
         officeIdValue && {
-          filters: `officeId==${officeIdValue},fiscalYearId==${fiscalYearValue},commitmentStatus==Approved`,
-        }),
+        filters: `officeId==${officeIdValue},fiscalYearId==${fiscalYearValue},commitmentStatus==Approved`,
+      }),
     },
   })
 
@@ -238,6 +240,30 @@ export default function CreateLineItemBudgetForm({
       enabled: canFetchCeilings,
     })
 
+  // Query existing LIBs to exclude used WFPs
+  const { data: existingLibsData } = useLIBs({
+    pathParams: {},
+    queryParams: {
+      pageSize: 1000,
+      ...(officeIdValue && { filters: `officeId==${officeIdValue}` }),
+    },
+    enabled: !!officeIdValue,
+  })
+
+  const usedWfpIds = useMemo(() => {
+    const ids = new Set<string>()
+    const libs = existingLibsData?.data || []
+    for (const item of libs) {
+      if (
+        item.sourceId &&
+        (item.sourceType === 'WFP' || item.sourceType?.toLowerCase() === 'wfp')
+      ) {
+        ids.add(item.sourceId)
+      }
+    }
+    return ids
+  }, [existingLibsData])
+
   // Format API data for display
   const formattedFiscalYears = (fiscalYearsData?.data || [])
     .map((fy: FiscalYear) => ({
@@ -273,6 +299,23 @@ export default function CreateLineItemBudgetForm({
         (oc.psAmount || 0) + (oc.mooeAmount || 0) + (oc.coAmount || 0),
     }))
 
+  // Auto-select ceiling in top-down mode if only one option or options available without selection
+  useEffect(() => {
+    if (budgetMode === 'top-down' && formattedCeilingOptions.length > 0) {
+      const currentAmbId = form.state.values.agencyMasterBudgetId
+      if (!currentAmbId || formattedCeilingOptions.length === 1) {
+        const defaultCeiling = formattedCeilingOptions[0]
+        if (currentAmbId !== defaultCeiling.id) {
+          form.setFieldValue('agencyMasterBudgetId', defaultCeiling.id)
+          setFundCluster(defaultCeiling.id)
+          if (defaultCeiling.fundSourceId) {
+            form.setFieldValue('fundSourceId', defaultCeiling.fundSourceId)
+          }
+        }
+      }
+    }
+  }, [budgetMode, formattedCeilingOptions, form.state.values.agencyMasterBudgetId])
+
   const formattedOffices = (officesData?.data || []).map((office: Office) => ({
     id: office.id,
     name: office.name || office.code || 'Unknown',
@@ -292,29 +335,31 @@ export default function CreateLineItemBudgetForm({
     }),
   )
 
-  const formattedWfps: SourceDocument[] = (wfps?.data || []).map((wfp: WFP) => {
-    const startYear = wfp.projectStartDate
-      ? new Date(wfp.projectStartDate).getFullYear().toString()
-      : ''
-    const endYear = wfp.projectEndDate
-      ? new Date(wfp.projectEndDate).getFullYear().toString()
-      : ''
-    const fyLabel =
-      startYear && endYear && startYear !== endYear
-        ? `${startYear} - ${endYear}`
-        : startYear || String(selectedYear || '')
+  const formattedWfps: SourceDocument[] = (wfps?.data || [])
+    .filter((wfp: WFP) => !usedWfpIds.has(wfp.id))
+    .map((wfp: WFP) => {
+      const startYear = wfp.projectStartDate
+        ? new Date(wfp.projectStartDate).getFullYear().toString()
+        : ''
+      const endYear = wfp.projectEndDate
+        ? new Date(wfp.projectEndDate).getFullYear().toString()
+        : ''
+      const fyLabel =
+        startYear && endYear && startYear !== endYear
+          ? `${startYear} - ${endYear}`
+          : startYear || String(selectedYear || '')
 
-    return {
-      id: wfp.id,
-      code: wfp.id.substring(0, 8).toUpperCase(),
-      name: wfp.projectTitle || 'Unnamed WFP',
-      status: wfp.status === 'Approved' ? 'Approved' : 'Draft',
-      office: wfp.officeName || selectedOffice?.name || 'Selected Office',
-      type: 'WFP',
-      fiscalYear: fyLabel,
-      projectName: wfp.projectTitle || 'Unnamed WFP',
-    }
-  })
+      return {
+        id: wfp.id,
+        code: wfp.id.substring(0, 8).toUpperCase(),
+        name: wfp.projectTitle || 'Unnamed WFP',
+        status: wfp.status === 'Approved' ? 'Approved' : 'Draft',
+        office: wfp.officeName || selectedOffice?.name || 'Selected Office',
+        type: 'WFP',
+        fiscalYear: fyLabel,
+        projectName: wfp.projectTitle || 'Unnamed WFP',
+      }
+    })
 
   // Handle budget mode toggle — reset AMB when switching mode
   const handleModeChange = (mode: BudgetMode) => {
@@ -334,21 +379,19 @@ export default function CreateLineItemBudgetForm({
 
           {/* Active Connector Line - Animated */}
           <div
-            className={`absolute top-6 left-8 h-1 bg-green-500 rounded-full transition-all duration-500 z-0 ${
-              1 < currentStep ? 'right-8' : 'right-auto w-1/2'
-            }`}
+            className={`absolute top-6 left-8 h-1 bg-green-500 rounded-full transition-all duration-500 z-0 ${1 < currentStep ? 'right-8' : 'right-auto w-1/2'
+              }`}
           />
 
           {/* Step 1 */}
           <div className="flex flex-col items-center relative z-10">
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 shadow-md ${
-                1 === currentStep
-                  ? 'bg-blue-600 text-white shadow-lg scale-110'
-                  : 1 < currentStep
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-200 text-gray-600'
-              }`}
+              className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 shadow-md ${1 === currentStep
+                ? 'bg-blue-600 text-white shadow-lg scale-110'
+                : 1 < currentStep
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-200 text-gray-600'
+                }`}
             >
               {1 < currentStep ? (
                 <svg
@@ -369,9 +412,8 @@ export default function CreateLineItemBudgetForm({
               )}
             </div>
             <span
-              className={`text-xs font-semibold mt-3 text-center transition-colors ${
-                1 <= currentStep ? 'text-foreground' : 'text-gray-500'
-              }`}
+              className={`text-xs font-semibold mt-3 text-center transition-colors ${1 <= currentStep ? 'text-foreground' : 'text-gray-500'
+                }`}
             >
               Document
             </span>
@@ -380,13 +422,12 @@ export default function CreateLineItemBudgetForm({
           {/* Step 2 */}
           <div className="flex flex-col items-center relative z-10">
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 shadow-md ${
-                2 === currentStep
-                  ? 'bg-blue-600 text-white shadow-lg scale-110'
-                  : 2 < currentStep
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-200 text-gray-600'
-              }`}
+              className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 shadow-md ${2 === currentStep
+                ? 'bg-blue-600 text-white shadow-lg scale-110'
+                : 2 < currentStep
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-200 text-gray-600'
+                }`}
             >
               {2 < currentStep ? (
                 <svg
@@ -407,9 +448,8 @@ export default function CreateLineItemBudgetForm({
               )}
             </div>
             <span
-              className={`text-xs font-semibold mt-3 text-center transition-colors ${
-                2 <= currentStep ? 'text-foreground' : 'text-gray-500'
-              }`}
+              className={`text-xs font-semibold mt-3 text-center transition-colors ${2 <= currentStep ? 'text-foreground' : 'text-gray-500'
+                }`}
             >
               Source
             </span>

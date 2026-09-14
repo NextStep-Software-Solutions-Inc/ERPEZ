@@ -79,6 +79,10 @@ export function useBiddingMasterCalendarData(
         scheduleStatus: evt.scheduleStatus || 'draft',
         fiscalYear: evt.fiscalYear ? String(evt.fiscalYear) : String(new Date(evt.startDate).getFullYear()),
         procurementCategory: evt.procurementCategory || 'goods',
+        procurementMode:
+          (evt as unknown as { procurementMode?: string; procurementModeName?: string }).procurementMode ||
+          (evt as unknown as { procurementMode?: string; procurementModeName?: string }).procurementModeName ||
+          null,
         projectNames: [evt.projectTitle],
         primaryProjectName: evt.projectTitle,
         officeLabel: evt.officeLabel || evt.venue || 'BAC Office',

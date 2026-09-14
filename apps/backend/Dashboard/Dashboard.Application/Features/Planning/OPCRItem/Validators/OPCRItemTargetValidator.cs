@@ -75,6 +75,13 @@ public class OPCRItemTargetValidator : IOPCRItemTargetValidator
                 $"KPI '{kpiName}' has Divisible/Summation behavior and is locked. " +
                 $"Sum of quarterly targets ({proposedAnnualTarget}) must equal the assigned annual target ({assignedAnnualTarget}).");
         }
+
+        if (proposedAnnualTarget > assignedAnnualTarget)
+        {
+            throw new ValidationException(
+                $"KPI '{kpiName}' has Divisible/Summation behavior. " +
+                $"Proposed annual target ({proposedAnnualTarget}) cannot exceed assigned annual target ({assignedAnnualTarget}).");
+        }
     }
 
     private static void ValidateUniform(

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { createQueryHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
-import { AlertCircle, Building2, Files, Globe, Layers, Loader2 } from 'lucide-react'
+import { AlertCircle, Building2, Files, Layers, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type {
   MasterDoc,
@@ -11,7 +11,6 @@ import type {
   Profile,
   Project,
   ProjectChecklistItem,
-  UploadedFileAttachment,
 } from '@/components/features/planning/bidding-document-library/types'
 import type { ProfileFormData } from '@/components/features/planning/bidding-document-library/dialogs/ProfileDialog'
 import { Badge } from '@/components/ui/badge'
@@ -27,7 +26,6 @@ import { DeleteMasterDocumentDialog } from '@/components/features/planning/biddi
 import { EditMasterDocumentDialog } from '@/components/features/planning/bidding-document-library/dialogs/EditMasterDocumentDialog'
 import { ProfileDialog } from '@/components/features/planning/bidding-document-library/dialogs/ProfileDialog'
 import { ProfileDocumentsDialog } from '@/components/features/planning/bidding-document-library/dialogs/ProfileDocumentsDialog'
-import { SupplierUploadDialog } from '@/components/features/planning/bidding-document-library/dialogs/SupplierUploadDialog'
 import { TemplateViewerDialog } from '@/components/features/planning/bidding-document-library/dialogs/TemplateViewerDialog'
 import { UploadedFileViewerDialog } from '@/components/features/planning/bidding-document-library/dialogs/UploadedFileViewerDialog'
 import {
@@ -49,11 +47,10 @@ import {
 import { getProjectChecklistQueryKey } from '@/components/features/planning/bidding-document-library/handlers/projectChecklistHandlers'
 import { MasterSetupTab } from '@/components/features/planning/bidding-document-library/tabs/MasterSetupTab'
 import { ProjectChecklistTab } from '@/components/features/planning/bidding-document-library/tabs/ProjectChecklistTab'
-import { PublicPortalTab } from '@/components/features/planning/bidding-document-library/tabs/PublicPortalTab'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getProjectsRequest } from '@/features/procurement/manage-supplier-portal/handlers/getProjectsRequest'
 
-type BiddingDocumentTabKey = 'SystemAdmin' | 'BACSecretariat' | 'PublicPortal'
+type BiddingDocumentTabKey = 'SystemAdmin' | 'BACSecretariat'
 
 const useBACProjects = createQueryHookFromTemplate(getProjectsRequest)
 
@@ -63,7 +60,7 @@ export default function BiddingDocumentLibraryPage() {
   const queryClient = useQueryClient()
 
   const activeTab: BiddingDocumentTabKey =
-    search.tab === 'BACSecretariat' || search.tab === 'PublicPortal'
+    search.tab === 'BACSecretariat'
       ? search.tab
       : 'SystemAdmin'
 
@@ -232,7 +229,6 @@ export default function BiddingDocumentLibraryPage() {
   const [viewingProfile, setViewingProfile] = useState<Profile | null>(null)
 
   const [customReqOpen, setCustomReqOpen] = useState(false)
-  const [supplierUploadItem, setSupplierUploadItem] = useState<ProjectChecklistItem | null>(null)
   const [uploadedFileItem, setUploadedFileItem] = useState<ProjectChecklistItem | null>(null)
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -523,18 +519,6 @@ export default function BiddingDocumentLibraryPage() {
     }
   }
 
-  // Public Portal Handlers
-  const handleUploadFile = (
-    _itemId: string,
-    upload: UploadedFileAttachment
-  ) => {
-    setSupplierUploadItem(null)
-    toast.success(`Uploaded "${upload.fileName}"`)
-  }
-
-  const handleRemoveUploaded = (_itemId: string) => {
-    toast.info('Uploaded file removed.')
-  }
 
   // ── Global Error / Loading Banners ───────────────────────────────────────
   const hasError = isMasterDocsError || isProfilesError || isProjectsError || isChecklistError
@@ -592,7 +576,7 @@ export default function BiddingDocumentLibraryPage() {
         onValueChange={handleTabChange}
         className="w-full space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-3 max-w-xl">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="SystemAdmin" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             <span>System Admin</span>
@@ -600,10 +584,6 @@ export default function BiddingDocumentLibraryPage() {
           <TabsTrigger value="BACSecretariat" className="flex items-center gap-2">
             <Layers className="h-4 w-4" />
             <span>BAC Secretariat</span>
-          </TabsTrigger>
-          <TabsTrigger value="PublicPortal" className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            <span>Public Portal</span>
           </TabsTrigger>
         </TabsList>
 
@@ -651,26 +631,6 @@ export default function BiddingDocumentLibraryPage() {
           />
         </TabsContent>
 
-        {/* Tab 3: Public Portal Preview */}
-        <TabsContent value="PublicPortal" className="space-y-6">
-          <PublicPortalTab
-            projects={projects}
-            currentProject={currentProject}
-            selectedProjectId={selectedProjectId}
-            masterDocs={masterDocs}
-            isLoading={isProjectsLoading || isChecklistLoading}
-            onSelectedProjectChange={setSelectedProjectId}
-            onDownloadTemplate={(file) =>
-              toast.info(`Downloading template: ${file}`)
-            }
-            onViewTemplate={(doc) => setTemplateViewerDoc(doc)}
-            onUploadFile={(itemId) => {
-              const item = currentProject?.checklist.find((i) => i.id === itemId)
-              if (item) setSupplierUploadItem(item)
-            }}
-            onRemoveUploaded={handleRemoveUploaded}
-          />
-        </TabsContent>
       </Tabs>
 
       {/* ── Modals & Dialogs ─────────────────────────────────────────────── */}
@@ -722,12 +682,6 @@ export default function BiddingDocumentLibraryPage() {
         onAdd={handleAddCustomRequirement}
       />
 
-      <SupplierUploadDialog
-        item={supplierUploadItem}
-        open={Boolean(supplierUploadItem)}
-        onOpenChange={(open) => !open && setSupplierUploadItem(null)}
-        onUpload={handleUploadFile}
-      />
 
       <UploadedFileViewerDialog
         item={uploadedFileItem}
