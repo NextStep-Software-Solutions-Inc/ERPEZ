@@ -7,6 +7,7 @@ export { getAOBListRequest } from './getAOBListRequest'
 export type { GetAOBListParams } from './getAOBListRequest'
 
 export { getAOBDetailRequest } from './getAOBDetailRequest'
+export { getAOBByIdRequest, useGetAOBById } from './getAOBByIdRequest'
 export { getBidMatrixRequest } from './getBidMatrixRequest'
 export { createAOBRequest } from './createAOBRequest'
 export { linkRFQRequest } from './linkRFQRequest'

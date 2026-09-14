@@ -768,6 +768,9 @@ public static class ProcurementTestDataSeeder
 
         // 12. Public Bidding Portal & Public Opportunities
         await SeedPublicBiddingPortalAsync(context, unitOfWork);
+
+        // 13. Purchase Orders & Source Documents (SVP, Public Bidding, Direct Acquisition)
+        await SeedPurchaseOrdersAndSourceDocumentsAsync(context, unitOfWork);
     }
 
     private static async Task SeedSupplierWithRequirementsAsync(
@@ -785,7 +788,7 @@ public static class ProcurementTestDataSeeder
         bool isBlocked,
         string? statusNote = null)
     {
-        // 1. Check if an active supplier with this name, TIN, or permit already exists
+        // 1. If an active supplier already exists with matching Name, TIN, or Permit, do nothing
         var activeExisting = await context.Suppliers!
             .Include(s => s.SupplierRequirements)
             .FirstOrDefaultAsync(s => s.Name == name || s.TINNumber == tin || s.BusinessPermitNo == permit);
@@ -794,16 +797,32 @@ public static class ProcurementTestDataSeeder
             return;
         }
 
-        // 2. Check if a soft-deleted supplier exists with this name, TIN, or permit to safely revive
-        var deletedExisting = await context.Suppliers!
+        // 2. Check if a soft-deleted supplier exists that can be safely restored
+        var softDeleted = await context.Suppliers!
             .IgnoreQueryFilters()
             .Include(s => s.SupplierRequirements)
             .FirstOrDefaultAsync(s => s.IsDeleted && (s.Name == name || s.TINNumber == tin || s.BusinessPermitNo == permit));
-        if (deletedExisting != null)
+
+        if (softDeleted != null)
         {
-            deletedExisting.IsDeleted = false;
-            context.Suppliers!.Update(deletedExisting);
-            await context.SaveChangesAsync();
+            var conflict = await context.Suppliers!
+                .AnyAsync(s => s.TINNumber == softDeleted.TINNumber || s.BusinessPermitNo == softDeleted.BusinessPermitNo);
+
+            if (!conflict)
+            {
+                softDeleted.IsDeleted = false;
+                context.Suppliers!.Update(softDeleted);
+                await context.SaveChangesAsync();
+                return;
+            }
+        }
+
+        // 3. Prevent inserting a duplicate if an active supplier already has this TIN or Permit
+        var hasUniqueConflict = await context.Suppliers!
+            .AnyAsync(s => s.TINNumber == tin || s.BusinessPermitNo == permit);
+
+        if (hasUniqueConflict)
+        {
             return;
         }
 
@@ -1234,5 +1253,834 @@ public static class ProcurementTestDataSeeder
             }
         }
     }
+
+    /// <summary>
+    /// Seeds comprehensive procurement test data for Purchase Orders across SVP, Public Bidding,
+    /// and Direct Acquisition, including available (unlinked) source documents and seeded POs in
+    /// all workflow states (Draft, ForApproval, Approved, Returned).
+    /// Safe and idempotent to run on startup or on demand.
+    /// </summary>
+    public static async Task SeedPurchaseOrdersAndSourceDocumentsAsync(ApplicationDbContext context, IUnitOfWork unitOfWork)
+    {
+        try
+        {
+            // 1. Resolve Prerequisites
+            var itOffice = await context.Offices!.FirstOrDefaultAsync(o => o.Code == "ICTD")
+                ?? await context.Offices!.FirstAsync();
+            var adminOffice = await context.Offices!.FirstOrDefaultAsync(o => o.Code == "GSPD")
+                ?? itOffice;
+            var fundSource = await context.FundSources!.FirstOrDefaultAsync(f => f.Code == "01101101")
+                ?? await context.FundSources!.FirstAsync();
+
+            var defaultLaptopPPMP = await context.PPMPItems!.FirstOrDefaultAsync(i => i.Name.Contains("Laptop"))
+                ?? await context.PPMPItems!.FirstAsync();
+            var defaultPrinterPPMP = await context.PPMPItems!.FirstOrDefaultAsync(i => i.Name.Contains("Printer"))
+                ?? defaultLaptopPPMP;
+
+            var apexSupplier = await context.Suppliers!.FirstOrDefaultAsync(s => s.Name.Contains("Apex IT Solutions"))
+                ?? await context.Suppliers!.FirstAsync(s => s.Status == "Approved");
+            var primeOfficeSupplier = await context.Suppliers!.FirstOrDefaultAsync(s => s.Name.Contains("PrimeOffice Depot"))
+                ?? await context.Suppliers!.FirstAsync(s => s.Status == "Approved");
+            var bayanSupplier = await context.Suppliers!.FirstOrDefaultAsync(s => s.Name.Contains("Bayan Microtech"))
+                ?? await context.Suppliers!.FirstAsync(s => s.Status == "Approved");
+            var cyberTechSupplier = await context.Suppliers!.FirstOrDefaultAsync(s => s.Name.Contains("CyberTech Logistics"))
+                ?? await context.Suppliers!.FirstAsync(s => s.Status == "Approved");
+
+            var svpMode = await context.ProcurementModes!.FirstOrDefaultAsync(m => m.Name.Contains("Small Value Procurement"))
+                ?? await context.ProcurementModes!.FirstAsync();
+            var biddingMode = await context.ProcurementModes!.FirstOrDefaultAsync(m => m.Name.Contains("Competitive Bidding") || m.Name.Contains("Public Bidding"))
+                ?? await context.ProcurementModes!.FirstAsync();
+
+            // -------------------------------------------------------------
+            // A. Small Value Procurement (SVP) Flow
+            // -------------------------------------------------------------
+            var cprSvpNumber = "CPR-2026-SVP-001";
+            var cprSvp = await context.ConsolidatedPRs!.Include(c => c.ConsolidatedPRItems).FirstOrDefaultAsync(c => c.CPRNumber == cprSvpNumber);
+            var prIct = await context.PurchaseRequests!.Include(p => p.PRItems).FirstOrDefaultAsync(p => p.PRNumber == "PR-2026-ICTD-001");
+
+            if (cprSvp == null)
+            {
+                cprSvp = new ConsolidatedPR
+                {
+                    Id = Guid.NewGuid(),
+                    CPRNumber = cprSvpNumber,
+                    Description = "Consolidated PR for Workstations & Printing Systems Modernization",
+                    Purpose = "Consolidated procurement of laptops and high-capacity laser printers for IT staff deployment.",
+                    ConsolidationDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-15)),
+                    TotalAmount = 790000m,
+                    Status = StatusEnum.Approved,
+                    CreatedAt = DateTime.UtcNow.AddDays(-15),
+                    CreatedBy = "System"
+                };
+
+                if (prIct != null)
+                {
+                    foreach (var prItem in prIct.PRItems)
+                    {
+                        cprSvp.ConsolidatedPRItems.Add(new ConsolidatedPRItem
+                        {
+                            Id = Guid.NewGuid(),
+                            ConsolidatedPRId = cprSvp.Id,
+                            PurchaseRequestId = prIct.Id,
+                            PRItemId = prItem.Id,
+                            ProcurementModeId = svpMode.Id,
+                            AllowPartial = true
+                        });
+                    }
+                }
+
+                await context.ConsolidatedPRs!.AddAsync(cprSvp);
+                await context.SaveChangesAsync();
+            }
+            else if (!cprSvp.ConsolidatedPRItems.Any() && prIct != null)
+            {
+                foreach (var prItem in prIct.PRItems)
+                {
+                    cprSvp.ConsolidatedPRItems.Add(new ConsolidatedPRItem
+                    {
+                        Id = Guid.NewGuid(),
+                        ConsolidatedPRId = cprSvp.Id,
+                        PurchaseRequestId = prIct.Id,
+                        PRItemId = prItem.Id,
+                        ProcurementModeId = svpMode.Id,
+                        AllowPartial = true
+                    });
+                }
+                await context.SaveChangesAsync();
+            }
+
+            var rfqSvpNumber = "RFQ-2026-SVP-001";
+            var rfqSvp = await context.RFQs!.Include(r => r.RFQItems).FirstOrDefaultAsync(r => r.RFQNumber == rfqSvpNumber);
+            if (rfqSvp == null)
+            {
+                rfqSvp = new RFQ
+                {
+                    Id = Guid.NewGuid(),
+                    RFQNumber = rfqSvpNumber,
+                    TracingNumber = "TRC-2026-SVP-001",
+                    Description = "Request for Quotation - Workstations & Laser Printers",
+                    ConsolidatedPRId = cprSvp.Id,
+                    ModeOfProcurementId = svpMode.Id,
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-12)),
+                    Deadline = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5)),
+                    DeliveryPeriod = "15 calendar days",
+                    Purpose = "Procure computing and printing hardware under Section 53.9",
+                    Status = StatusEnum.Approved,
+                    TotalAmount = 790000m,
+                    CreatedAt = DateTime.UtcNow.AddDays(-12),
+                    CreatedBy = "System"
+                };
+
+                foreach (var cprItem in cprSvp.ConsolidatedPRItems)
+                {
+                    var prItem = prIct?.PRItems.FirstOrDefault(p => p.Id == cprItem.PRItemId);
+                    rfqSvp.RFQItems.Add(new RFQItem
+                    {
+                        Id = Guid.NewGuid(),
+                        RFQId = rfqSvp.Id,
+                        CPRItemId = cprItem.Id,
+                        Quantity = prItem?.RequestedQuantity ?? 5,
+                        UnitPriceSnapshot = prItem?.UnitCost ?? 50000m,
+                        ItemNameSnapshot = prItem?.Name ?? "Procurement Item",
+                        CategorySnapshot = "Goods",
+                        FundSnapshot = "Regular Agency Fund",
+                        IsBrochureRequired = true
+                    });
+                }
+
+                await context.RFQs!.AddAsync(rfqSvp);
+                await context.SaveChangesAsync();
+            }
+            else if (!rfqSvp.RFQItems.Any())
+            {
+                foreach (var cprItem in cprSvp.ConsolidatedPRItems)
+                {
+                    var prItem = prIct?.PRItems.FirstOrDefault(p => p.Id == cprItem.PRItemId);
+                    rfqSvp.RFQItems.Add(new RFQItem
+                    {
+                        Id = Guid.NewGuid(),
+                        RFQId = rfqSvp.Id,
+                        CPRItemId = cprItem.Id,
+                        Quantity = prItem?.RequestedQuantity ?? 5,
+                        UnitPriceSnapshot = prItem?.UnitCost ?? 50000m,
+                        ItemNameSnapshot = prItem?.Name ?? "Procurement Item",
+                        CategorySnapshot = "Goods",
+                        FundSnapshot = "Regular Agency Fund",
+                        IsBrochureRequired = true
+                    });
+                }
+                await context.SaveChangesAsync();
+            }
+
+            // Available AOB for "Create PO" Testing (Unlinked)
+            var aobAvailable = await context.AOBs!.Include(a => a.AOBAwardedItems).FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-001");
+            if (aobAvailable == null)
+            {
+                aobAvailable = new AOB
+                {
+                    Id = Guid.NewGuid(),
+                    AOBNumber = "AOB-2026-SVP-001",
+                    Description = "Abstract of Bids - Workstation Laptops and Laser Printers (Winning Bid: Apex IT Solutions)",
+                    AwardCriterion = BidEvaluationCriteria.LCRB,
+                    AOBDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5)),
+                    OpeningDate = DateTime.UtcNow.AddDays(-7),
+                    Status = StatusEnum.Approved,
+                    ApprovedAt = DateTime.UtcNow.AddDays(-4),
+                    Remarks = "All technical and financial bids reviewed and evaluated responsive.",
+                    CreatedAt = DateTime.UtcNow.AddDays(-5),
+                    CreatedBy = "System"
+                };
+
+                foreach (var rfqItem in rfqSvp.RFQItems)
+                {
+                    decimal unitPrice = rfqItem.ItemNameSnapshot.Contains("Laptop", StringComparison.OrdinalIgnoreCase) ? 62000m : 26500m;
+                    int qty = rfqItem.Quantity;
+                    aobAvailable.AOBAwardedItems.Add(new AOBAwardedItem
+                    {
+                        Id = Guid.NewGuid(),
+                        AOBId = aobAvailable.Id,
+                        RFQItemId = rfqItem.Id,
+                        WinningSupplierId = apexSupplier.Id,
+                        AwardedQuantity = qty,
+                        AwardedUnitPrice = unitPrice,
+                        TotalAwardedAmount = qty * unitPrice,
+                        Score = 96.5m,
+                        AwardReason = "Lowest Calculated and Responsive Quotation (LCRQ)"
+                    });
+                }
+
+                await context.AOBs!.AddAsync(aobAvailable);
+                await context.SaveChangesAsync();
+            }
+            else if (!aobAvailable.AOBAwardedItems.Any())
+            {
+                foreach (var rfqItem in rfqSvp.RFQItems)
+                {
+                    decimal unitPrice = rfqItem.ItemNameSnapshot.Contains("Laptop", StringComparison.OrdinalIgnoreCase) ? 62000m : 26500m;
+                    int qty = rfqItem.Quantity;
+                    aobAvailable.AOBAwardedItems.Add(new AOBAwardedItem
+                    {
+                        Id = Guid.NewGuid(),
+                        AOBId = aobAvailable.Id,
+                        RFQItemId = rfqItem.Id,
+                        WinningSupplierId = apexSupplier.Id,
+                        AwardedQuantity = qty,
+                        AwardedUnitPrice = unitPrice,
+                        TotalAwardedAmount = qty * unitPrice,
+                        Score = 96.5m,
+                        AwardReason = "Lowest Calculated and Responsive Quotation (LCRQ)"
+                    });
+                }
+                await context.SaveChangesAsync();
+            }
+
+            // AOB for Draft PO
+            var aobDraftSource = await context.AOBs!.Include(a => a.AOBAwardedItems).FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-0002");
+            if (aobDraftSource == null)
+            {
+                var firstRfqItem = rfqSvp.RFQItems.FirstOrDefault();
+                aobDraftSource = new AOB
+                {
+                    Id = Guid.NewGuid(),
+                    AOBNumber = "AOB-2026-SVP-0002",
+                    Description = "Abstract of Bids - Specialized Ergonomic Workstations and Chairs",
+                    AwardCriterion = BidEvaluationCriteria.LCRB,
+                    AOBDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-6)),
+                    OpeningDate = DateTime.UtcNow.AddDays(-8),
+                    Status = StatusEnum.Approved,
+                    ApprovedAt = DateTime.UtcNow.AddDays(-5),
+                    CreatedAt = DateTime.UtcNow.AddDays(-6),
+                    CreatedBy = "System"
+                };
+
+                if (firstRfqItem != null)
+                {
+                    aobDraftSource.AOBAwardedItems.Add(new AOBAwardedItem
+                    {
+                        Id = Guid.NewGuid(),
+                        AOBId = aobDraftSource.Id,
+                        RFQItemId = firstRfqItem.Id,
+                        WinningSupplierId = primeOfficeSupplier.Id,
+                        AwardedQuantity = 10,
+                        AwardedUnitPrice = 18500m,
+                        TotalAwardedAmount = 185000m,
+                        Score = 94.0m,
+                        AwardReason = "Lowest compliant quotation"
+                    });
+                }
+
+                await context.AOBs!.AddAsync(aobDraftSource);
+                await context.SaveChangesAsync();
+            }
+
+            // AOB for Returned PO
+            var aobReturnedSource = await context.AOBs!.Include(a => a.AOBAwardedItems).FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-0003");
+            if (aobReturnedSource == null)
+            {
+                var firstRfqItem = rfqSvp.RFQItems.FirstOrDefault();
+                aobReturnedSource = new AOB
+                {
+                    Id = Guid.NewGuid(),
+                    AOBNumber = "AOB-2026-SVP-0003",
+                    Description = "Abstract of Bids - Interactive Smart Displays and Wall Mounts",
+                    AwardCriterion = BidEvaluationCriteria.LCRB,
+                    AOBDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)),
+                    OpeningDate = DateTime.UtcNow.AddDays(-12),
+                    Status = StatusEnum.Approved,
+                    ApprovedAt = DateTime.UtcNow.AddDays(-9),
+                    CreatedAt = DateTime.UtcNow.AddDays(-10),
+                    CreatedBy = "System"
+                };
+
+                if (firstRfqItem != null)
+                {
+                    aobReturnedSource.AOBAwardedItems.Add(new AOBAwardedItem
+                    {
+                        Id = Guid.NewGuid(),
+                        AOBId = aobReturnedSource.Id,
+                        RFQItemId = firstRfqItem.Id,
+                        WinningSupplierId = bayanSupplier.Id,
+                        AwardedQuantity = 4,
+                        AwardedUnitPrice = 230000m,
+                        TotalAwardedAmount = 920000m,
+                        Score = 98.0m,
+                        AwardReason = "Lowest calculated responsive bid"
+                    });
+                }
+
+                await context.AOBs!.AddAsync(aobReturnedSource);
+                await context.SaveChangesAsync();
+            }
+
+            // -------------------------------------------------------------
+            // B. Public Bidding Flow
+            // -------------------------------------------------------------
+            var cprPbNumber = "CPR-ITB-2026-BAC-001";
+            var cprPb = await context.ConsolidatedPRs!.Include(c => c.ConsolidatedPRItems).FirstOrDefaultAsync(c => c.CPRNumber == cprPbNumber);
+            if (cprPb == null)
+            {
+                cprPb = new ConsolidatedPR
+                {
+                    Id = Guid.NewGuid(),
+                    CPRNumber = cprPbNumber,
+                    Description = "High-Performance Computing Cluster & GPU Servers for AI Research",
+                    Purpose = "Procurement of multi-node GPU server cluster and high-speed InfiniBand network.",
+                    ConsolidationDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30)),
+                    TotalAmount = 18500000m,
+                    Status = StatusEnum.Approved,
+                    CreatedAt = DateTime.UtcNow.AddDays(-30),
+                    CreatedBy = "System"
+                };
+                await context.ConsolidatedPRs!.AddAsync(cprPb);
+                await context.SaveChangesAsync();
+            }
+
+            if (!cprPb.ConsolidatedPRItems.Any())
+            {
+                var prPb = new PurchaseRequest
+                {
+                    Id = Guid.NewGuid(),
+                    PRNumber = "PR-2026-ICTD-002",
+                    Description = "AI Research GPU Compute Nodes & Storage",
+                    Purpose = "Institutional AI infrastructure cluster build-out",
+                    PRType = PRType.NonCSE,
+                    OfficeId = itOffice.Id,
+                    FundSourceId = fundSource.Id,
+                    RequestedDate = new DateOnly(2026, 8, 1),
+                    TotalAmount = 18500000m,
+                    Status = StatusEnum.Approved,
+                    CreatedAt = DateTime.UtcNow.AddDays(-28),
+                    CreatedBy = "System"
+                };
+
+                var item1 = new PRItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseRequestId = prPb.Id,
+                    PPMPItemId = defaultLaptopPPMP.Id,
+                    Name = "Multi-GPU Server Compute Nodes (Dual AMD EPYC, 4x NVIDIA H100 80GB)",
+                    Description = "High-performance GPU deep learning nodes with 512GB DDR5 RAM",
+                    UnitCost = 3250000m,
+                    RequestedQuantity = 4,
+                    Amount = 13000000m,
+                    IsNonCSE = true
+                };
+                var item2 = new PRItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseRequestId = prPb.Id,
+                    PPMPItemId = defaultLaptopPPMP.Id,
+                    Name = "200Gbps InfiniBand High-Speed Low-Latency Switch",
+                    Description = "32-port HDR 200Gbps InfiniBand leaf-spine switch with optical cables",
+                    UnitCost = 950000m,
+                    RequestedQuantity = 2,
+                    Amount = 1900000m,
+                    IsNonCSE = true
+                };
+                var item3 = new PRItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseRequestId = prPb.Id,
+                    PPMPItemId = defaultLaptopPPMP.Id,
+                    Name = "500TB High-Speed NVMe Parallel Storage Array",
+                    Description = "Ultra-dense all-flash parallel file system storage appliance",
+                    UnitCost = 3600000m,
+                    RequestedQuantity = 1,
+                    Amount = 3600000m,
+                    IsNonCSE = true
+                };
+
+                prPb.PRItems.Add(item1);
+                prPb.PRItems.Add(item2);
+                prPb.PRItems.Add(item3);
+                await context.PurchaseRequests!.AddAsync(prPb);
+
+                cprPb.ConsolidatedPRItems.Add(new ConsolidatedPRItem { Id = Guid.NewGuid(), ConsolidatedPRId = cprPb.Id, PurchaseRequestId = prPb.Id, PRItemId = item1.Id, ProcurementModeId = biddingMode.Id });
+                cprPb.ConsolidatedPRItems.Add(new ConsolidatedPRItem { Id = Guid.NewGuid(), ConsolidatedPRId = cprPb.Id, PurchaseRequestId = prPb.Id, PRItemId = item2.Id, ProcurementModeId = biddingMode.Id });
+                cprPb.ConsolidatedPRItems.Add(new ConsolidatedPRItem { Id = Guid.NewGuid(), ConsolidatedPRId = cprPb.Id, PurchaseRequestId = prPb.Id, PRItemId = item3.Id, ProcurementModeId = biddingMode.Id });
+
+                await context.SaveChangesAsync();
+            }
+
+            var pbProject = await context.ProcurementProjects!
+                .Include(p => p.BACResolutions)
+                .FirstOrDefaultAsync(p => p.ContractNo == "ITB-2026-BAC-001");
+
+            if (pbProject == null)
+            {
+                pbProject = new ProcurementProject
+                {
+                    Id = Guid.NewGuid(),
+                    ContractNo = "ITB-2026-BAC-001",
+                    Title = "Supply, Delivery, and Installation of High-Performance Computing Cluster and GPU Servers for AI Research",
+                    ABC = 18500000m,
+                    Status = "Awarded",
+                    ProcurementModeId = biddingMode.Id,
+                    ConsolidatedPRId = cprPb.Id,
+                    ScopeOfWork = "Turnkey HPC GPU computing infrastructure deployment.",
+                    NonRefundableBidderFee = 25000m,
+                    DeliveryPeriodDays = 60,
+                    ChecklistConfirmed = true,
+                    CreatedAt = DateTime.UtcNow.AddDays(-25),
+                    CreatedBy = "System"
+                };
+                await context.ProcurementProjects!.AddAsync(pbProject);
+                await context.SaveChangesAsync();
+            }
+            else if (pbProject.ConsolidatedPRId == null)
+            {
+                pbProject.ConsolidatedPRId = cprPb.Id;
+                pbProject.Status = "Awarded";
+                context.ProcurementProjects!.Update(pbProject);
+                await context.SaveChangesAsync();
+            }
+
+            var bacResolution = await context.BACResolutions!.FirstOrDefaultAsync(b => b.ResolutionNumber == "BAC-RES-2026-001");
+            if (bacResolution == null)
+            {
+                bacResolution = new BACResolution
+                {
+                    Id = Guid.NewGuid(),
+                    ProcurementProjectId = pbProject.Id,
+                    ResolutionNumber = "BAC-RES-2026-001",
+                    ResolutionType = "Award",
+                    DateResolved = DateTime.UtcNow.AddDays(-10),
+                    Status = "Approved",
+                    WhereasClause = "WHEREAS, the Bids and Awards Committee conducted post-qualification and verified Apex IT Solutions & Enterprise Corp. as the Lowest Calculated and Responsive Bidder (LCRB)...",
+                    ResolvedLocation = "BAC Secretariat Hall, Central Office",
+                    CreatedAt = DateTime.UtcNow.AddDays(-10),
+                    CreatedBy = "System"
+                };
+                await context.BACResolutions!.AddAsync(bacResolution);
+                await context.SaveChangesAsync();
+            }
+
+            // Available NOA for "Create PO" Testing (Unlinked)
+            var noaAvailable = await context.NoticeOfAwards!.FirstOrDefaultAsync(n => n.NOANumber == "NOA-2026-PB-001");
+            if (noaAvailable == null)
+            {
+                noaAvailable = new NoticeOfAward
+                {
+                    Id = Guid.NewGuid(),
+                    NOANumber = "NOA-2026-PB-001",
+                    BACResolutionId = bacResolution.Id,
+                    ProcurementProjectId = pbProject.Id,
+                    SupplierId = apexSupplier.Id,
+                    NOADate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7)),
+                    BidDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-14)),
+                    Description = "Supply, Delivery, and Installation of High-Performance Computing Cluster and GPU Servers for AI Research",
+                    ProcurementType = NoticeOfAwardType.GoodsAndServices,
+                    AwardedAmount = 17800000m,
+                    AwardCriterion = "LCRB",
+                    Status = NoticeOfAwardStatus.Approved,
+                    ApprovedAt = DateTime.UtcNow.AddDays(-7),
+                    IssuedAt = DateTime.UtcNow.AddDays(-6),
+                    CreatedAt = DateTime.UtcNow.AddDays(-7),
+                    CreatedBy = "System"
+                };
+                await context.NoticeOfAwards!.AddAsync(noaAvailable);
+                await context.SaveChangesAsync();
+            }
+
+            // NOA for ForApproval PO
+            var noaForApprovalSource = await context.NoticeOfAwards!.FirstOrDefaultAsync(n => n.NOANumber == "NOA-2026-PB-0002");
+            if (noaForApprovalSource == null)
+            {
+                noaForApprovalSource = new NoticeOfAward
+                {
+                    Id = Guid.NewGuid(),
+                    NOANumber = "NOA-2026-PB-0002",
+                    BACResolutionId = bacResolution.Id,
+                    ProcurementProjectId = pbProject.Id,
+                    SupplierId = cyberTechSupplier.Id,
+                    NOADate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-8)),
+                    BidDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-15)),
+                    Description = "Procurement of Advanced Analytical Instruments and Spectrophotometers",
+                    ProcurementType = NoticeOfAwardType.GoodsAndServices,
+                    AwardedAmount = 8750000m,
+                    AwardCriterion = "LCRB",
+                    Status = NoticeOfAwardStatus.Approved,
+                    ApprovedAt = DateTime.UtcNow.AddDays(-8),
+                    IssuedAt = DateTime.UtcNow.AddDays(-7),
+                    CreatedAt = DateTime.UtcNow.AddDays(-8),
+                    CreatedBy = "System"
+                };
+                await context.NoticeOfAwards!.AddAsync(noaForApprovalSource);
+                await context.SaveChangesAsync();
+            }
+
+            // -------------------------------------------------------------
+            // C. Direct Acquisition Flow
+            // -------------------------------------------------------------
+            var cprDaNumber = "CPR-2026-DA-001";
+            var cprDa = await context.ConsolidatedPRs!.Include(c => c.ConsolidatedPRItems).FirstOrDefaultAsync(c => c.CPRNumber == cprDaNumber);
+            if (cprDa == null)
+            {
+                cprDa = new ConsolidatedPR
+                {
+                    Id = Guid.NewGuid(),
+                    CPRNumber = cprDaNumber,
+                    Description = "Consolidated Emergency Office Supplies & Stationery (Direct Acquisition RA 12009)",
+                    Purpose = "Urgent replenishment of administrative consumables for Central Administrative Division.",
+                    ConsolidationDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-8)),
+                    TotalAmount = 65400m,
+                    Status = StatusEnum.Approved,
+                    CreatedAt = DateTime.UtcNow.AddDays(-8),
+                    CreatedBy = "System"
+                };
+
+                var prDa = new PurchaseRequest
+                {
+                    Id = Guid.NewGuid(),
+                    PRNumber = "PR-2026-GSPD-001",
+                    Description = "Office Supplies & Consumables Requisition",
+                    Purpose = "Direct store acquisition under RA 12009",
+                    PRType = PRType.NonCSE,
+                    OfficeId = adminOffice.Id,
+                    FundSourceId = fundSource.Id,
+                    RequestedDate = new DateOnly(2026, 8, 5),
+                    TotalAmount = 65400m,
+                    Status = StatusEnum.Approved,
+                    CreatedAt = DateTime.UtcNow.AddDays(-8),
+                    CreatedBy = "System"
+                };
+
+                var paperItem = new PRItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseRequestId = prDa.Id,
+                    PPMPItemId = defaultPrinterPPMP.Id,
+                    Name = "A4 Multi-Purpose Copy Paper 80gsm (500 sheets/ream)",
+                    Description = "High-brightness multi-purpose copy and printing paper",
+                    UnitCost = 250m,
+                    RequestedQuantity = 100,
+                    Amount = 25000m,
+                    IsNonCSE = true
+                };
+                var tonerItem = new PRItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseRequestId = prDa.Id,
+                    PPMPItemId = defaultPrinterPPMP.Id,
+                    Name = "Original Black High-Yield Toner Cartridges",
+                    Description = "Compatible OEM toner cartridges for office laser printers",
+                    UnitCost = 4500m,
+                    RequestedQuantity = 6,
+                    Amount = 27000m,
+                    IsNonCSE = true
+                };
+                var staplerItem = new PRItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseRequestId = prDa.Id,
+                    PPMPItemId = defaultPrinterPPMP.Id,
+                    Name = "Heavy-Duty Desktop Stapler with Staples Pack",
+                    Description = "100-sheet binding capacity heavy-duty metal staplers",
+                    UnitCost = 1116.67m,
+                    RequestedQuantity = 12,
+                    Amount = 13400m,
+                    IsNonCSE = true
+                };
+
+                prDa.PRItems.Add(paperItem);
+                prDa.PRItems.Add(tonerItem);
+                prDa.PRItems.Add(staplerItem);
+                await context.PurchaseRequests!.AddAsync(prDa);
+
+                cprDa.ConsolidatedPRItems.Add(new ConsolidatedPRItem { Id = Guid.NewGuid(), ConsolidatedPRId = cprDa.Id, PurchaseRequestId = prDa.Id, PRItemId = paperItem.Id, ProcurementModeId = svpMode.Id });
+                cprDa.ConsolidatedPRItems.Add(new ConsolidatedPRItem { Id = Guid.NewGuid(), ConsolidatedPRId = cprDa.Id, PurchaseRequestId = prDa.Id, PRItemId = tonerItem.Id, ProcurementModeId = svpMode.Id });
+                cprDa.ConsolidatedPRItems.Add(new ConsolidatedPRItem { Id = Guid.NewGuid(), ConsolidatedPRId = cprDa.Id, PurchaseRequestId = prDa.Id, PRItemId = staplerItem.Id, ProcurementModeId = svpMode.Id });
+
+                await context.ConsolidatedPRs!.AddAsync(cprDa);
+                await context.SaveChangesAsync();
+            }
+
+            // Available Direct Acquisition for "Create PO" Testing (Unlinked)
+            var daAvailable = await context.DirectAcquisitions!.FirstOrDefaultAsync(d => d.DANumber == "DA-2026-001");
+            if (daAvailable == null)
+            {
+                daAvailable = new DirectAcquisition
+                {
+                    Id = Guid.NewGuid(),
+                    DANumber = "DA-2026-001",
+                    ConsolidatedPRId = cprDa.Id,
+                    BACProjectId = pbProject.Id,
+                    TotalABC = 65400m,
+                    Status = DirectAcquisitionStatusEnum.APPROVED,
+                    Remarks = "Direct Acquisition approved per RA 12009 for urgent off-the-shelf purchase.",
+                    CreatedAt = DateTime.UtcNow.AddDays(-5),
+                    CreatedBy = "System"
+                };
+                await context.DirectAcquisitions!.AddAsync(daAvailable);
+                await context.SaveChangesAsync();
+            }
+            else if (daAvailable.BACProjectId == null)
+            {
+                daAvailable.BACProjectId = pbProject.Id;
+                await context.SaveChangesAsync();
+            }
+
+            // Direct Acquisition for Approved PO
+            var daApprovedSource = await context.DirectAcquisitions!.FirstOrDefaultAsync(d => d.DANumber == "DA-2026-0002");
+            if (daApprovedSource == null)
+            {
+                daApprovedSource = new DirectAcquisition
+                {
+                    Id = Guid.NewGuid(),
+                    DANumber = "DA-2026-0002",
+                    ConsolidatedPRId = cprDa.Id,
+                    BACProjectId = pbProject.Id,
+                    TotalABC = 48500m,
+                    Status = DirectAcquisitionStatusEnum.APPROVED,
+                    Remarks = "Direct Acquisition approved for maintenance consumables.",
+                    CreatedAt = DateTime.UtcNow.AddDays(-10),
+                    CreatedBy = "System"
+                };
+                await context.DirectAcquisitions!.AddAsync(daApprovedSource);
+                await context.SaveChangesAsync();
+            }
+            else if (daApprovedSource.BACProjectId == null)
+            {
+                daApprovedSource.BACProjectId = pbProject.Id;
+                await context.SaveChangesAsync();
+            }
+
+            // -------------------------------------------------------------
+            // D. Pre-Seeded Purchase Orders Across Workflow States
+            // -------------------------------------------------------------
+
+            // 1. PO-2026-SVP-0001: Draft Status (SVP)
+            var poSvpDraft = await context.PurchaseOrders!.Include(p => p.PurchaseOrderItems).FirstOrDefaultAsync(p => p.PONumber == "PO-2026-SVP-0001");
+            if (poSvpDraft == null)
+            {
+                poSvpDraft = new PurchaseOrder
+                {
+                    Id = Guid.NewGuid(),
+                    PONumber = "PO-2026-SVP-0001",
+                    ProcurementMode = POProcurementModeEnum.SVP,
+                    SourceDocumentType = SourceDocumentTypeEnum.AOB,
+                    SourceDocumentId = aobDraftSource.Id,
+                    SupplierId = primeOfficeSupplier.Id,
+                    Description = "Procurement of Specialized Ergonomic Workstations and Chairs for IT Staff",
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-3)),
+                    PlaceOfDelivery = "ICT Division, 3rd Floor, Central Office",
+                    DateOfDelivery = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(15)),
+                    DeliveryTerm = "15 Calendar Days upon PO receipt",
+                    PaymentTerm = "Government Net 30 Days after full delivery and inspection",
+                    Status = StatusEnum.Draft,
+                    TotalAmount = 185000m,
+                    CreatedAt = DateTime.UtcNow.AddDays(-3),
+                    CreatedBy = "System"
+                };
+
+                poSvpDraft.PurchaseOrderItems.Add(new PurchaseOrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseOrderId = poSvpDraft.Id,
+                    SourceItemId = aobDraftSource.AOBAwardedItems.FirstOrDefault()?.Id ?? Guid.NewGuid(),
+                    Description = "Ergonomic High-Back Mesh Workstation Chairs with Lumbar Support",
+                    Quantity = 10,
+                    Unit = "unit",
+                    UnitPrice = 18500m,
+                    Amount = 185000m
+                });
+
+                await context.PurchaseOrders!.AddAsync(poSvpDraft);
+            }
+
+            // 2. PO-2026-PB-0001: ForApproval Status (Public Bidding)
+            var poPbForApproval = await context.PurchaseOrders!.Include(p => p.PurchaseOrderItems).FirstOrDefaultAsync(p => p.PONumber == "PO-2026-PB-0001");
+            if (poPbForApproval == null)
+            {
+                poPbForApproval = new PurchaseOrder
+                {
+                    Id = Guid.NewGuid(),
+                    PONumber = "PO-2026-PB-0001",
+                    ProcurementMode = POProcurementModeEnum.PUBLIC_BIDDING,
+                    SourceDocumentType = SourceDocumentTypeEnum.NOA,
+                    SourceDocumentId = noaForApprovalSource.Id,
+                    SupplierId = cyberTechSupplier.Id,
+                    Description = "Procurement of Advanced Analytical Instruments and Spectrophotometers",
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-4)),
+                    PlaceOfDelivery = "Materials Testing & Analytical Chemistry Laboratory, Building C",
+                    DateOfDelivery = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(45)),
+                    DeliveryTerm = "45 Calendar Days with on-site calibration",
+                    PaymentTerm = "Progress Billing / Net 60 Days",
+                    Status = StatusEnum.ForApproval,
+                    TotalAmount = 8750000m,
+                    CreatedAt = DateTime.UtcNow.AddDays(-4),
+                    CreatedBy = "System"
+                };
+
+                poPbForApproval.PurchaseOrderItems.Add(new PurchaseOrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseOrderId = poPbForApproval.Id,
+                    SourceItemId = Guid.NewGuid(),
+                    Description = "UV-Vis-NIR Double-Beam Research Spectrophotometer",
+                    Quantity = 2,
+                    Unit = "unit",
+                    UnitPrice = 2500000m,
+                    Amount = 5000000m
+                });
+                poPbForApproval.PurchaseOrderItems.Add(new PurchaseOrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseOrderId = poPbForApproval.Id,
+                    SourceItemId = Guid.NewGuid(),
+                    Description = "Research-Grade FTIR Spectrometer with Diamond ATR Accessory",
+                    Quantity = 1,
+                    Unit = "unit",
+                    UnitPrice = 3750000m,
+                    Amount = 3750000m
+                });
+
+                await context.PurchaseOrders!.AddAsync(poPbForApproval);
+            }
+
+            // 3. PO-2026-DA-0001: Approved Status (Direct Acquisition)
+            var poDaApproved = await context.PurchaseOrders!.Include(p => p.PurchaseOrderItems).FirstOrDefaultAsync(p => p.PONumber == "PO-2026-DA-0001");
+            if (poDaApproved == null)
+            {
+                poDaApproved = new PurchaseOrder
+                {
+                    Id = Guid.NewGuid(),
+                    PONumber = "PO-2026-DA-0001",
+                    ProcurementMode = POProcurementModeEnum.DIRECT_ACQUISITION,
+                    SourceDocumentType = SourceDocumentTypeEnum.BAC_RESOLUTION,
+                    SourceDocumentId = daApprovedSource.Id,
+                    SupplierId = primeOfficeSupplier.Id,
+                    Description = "Direct Acquisition of Emergency Printer Maintenance Kits & Heavy-Duty Consumables",
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)),
+                    PlaceOfDelivery = "General Services Division Property Warehouse",
+                    DateOfDelivery = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5)),
+                    DeliveryTerm = "Immediate / 3 Calendar Days",
+                    PaymentTerm = "Cash on Delivery / Direct Disbursement Voucher",
+                    Status = StatusEnum.Approved,
+                    ApprovedAt = DateTime.UtcNow.AddDays(-8),
+                    TotalAmount = 48500m,
+                    CreatedAt = DateTime.UtcNow.AddDays(-10),
+                    CreatedBy = "System"
+                };
+
+                poDaApproved.PurchaseOrderItems.Add(new PurchaseOrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseOrderId = poDaApproved.Id,
+                    SourceItemId = Guid.NewGuid(),
+                    Description = "Enterprise Laser Maintenance Roller & Fuser Assembly Kit",
+                    Quantity = 5,
+                    Unit = "kit",
+                    UnitPrice = 7500m,
+                    Amount = 37500m
+                });
+                poDaApproved.PurchaseOrderItems.Add(new PurchaseOrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseOrderId = poDaApproved.Id,
+                    SourceItemId = Guid.NewGuid(),
+                    Description = "High-Capacity Heavy-Duty Stapler Sets (5000 staples/box)",
+                    Quantity = 10,
+                    Unit = "set",
+                    UnitPrice = 1100m,
+                    Amount = 11000m
+                });
+
+                await context.PurchaseOrders!.AddAsync(poDaApproved);
+            }
+
+            // 4. PO-2026-SVP-0002: Returned Status (SVP)
+            var poSvpReturned = await context.PurchaseOrders!.Include(p => p.PurchaseOrderItems).FirstOrDefaultAsync(p => p.PONumber == "PO-2026-SVP-0002");
+            if (poSvpReturned == null)
+            {
+                poSvpReturned = new PurchaseOrder
+                {
+                    Id = Guid.NewGuid(),
+                    PONumber = "PO-2026-SVP-0002",
+                    ProcurementMode = POProcurementModeEnum.SVP,
+                    SourceDocumentType = SourceDocumentTypeEnum.AOB,
+                    SourceDocumentId = aobReturnedSource.Id,
+                    SupplierId = bayanSupplier.Id,
+                    Description = "Supply and Delivery of 86-inch Interactive Touchscreen Smart Displays",
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-6)),
+                    PlaceOfDelivery = "Engineering Lecture Halls, Building E",
+                    DateOfDelivery = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(20)),
+                    DeliveryTerm = "30 Calendar Days",
+                    PaymentTerm = "Net 30 upon complete acceptance and training",
+                    Status = StatusEnum.Returned,
+                    ReturnReason = "Delivery schedule conflicts with semester examination week. Please revise delivery term to 45 calendar days and attach updated delivery route plan.",
+                    TotalAmount = 920000m,
+                    CreatedAt = DateTime.UtcNow.AddDays(-6),
+                    CreatedBy = "System"
+                };
+
+                poSvpReturned.PurchaseOrderItems.Add(new PurchaseOrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseOrderId = poSvpReturned.Id,
+                    SourceItemId = aobReturnedSource.AOBAwardedItems.FirstOrDefault()?.Id ?? Guid.NewGuid(),
+                    Description = "86-inch 4K UHD Interactive Touchscreen Displays with Dual OS",
+                    Quantity = 4,
+                    Unit = "unit",
+                    UnitPrice = 230000m,
+                    Amount = 920000m
+                });
+
+                await context.PurchaseOrders!.AddAsync(poSvpReturned);
+            }
+
+            await context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ProcurementTestDataSeeder ERROR] {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+            }
+        }
+    }
 }
+
 

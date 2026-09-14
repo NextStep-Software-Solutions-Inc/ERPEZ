@@ -11,7 +11,8 @@ public record CreatePurchaseOrderCommand : IRequest<ApiResponse<Guid>>
     public POProcurementModeEnum ProcurementMode { get; init; }
     public SourceDocumentTypeEnum SourceDocumentType { get; init; }
     public Guid SourceDocumentId { get; init; }
-    public Guid SupplierId { get; init; }
+    public Guid? SupplierId { get; init; }
+    public RetailStoreInfoDto? RetailStoreInfo { get; init; }
     public string? Description { get; init; }
     public DateOnly Date { get; init; }
     public string? PlaceOfDelivery { get; init; }
@@ -19,6 +20,4 @@ public record CreatePurchaseOrderCommand : IRequest<ApiResponse<Guid>>
     public string? DeliveryTerm { get; init; }
     public string? PaymentTerm { get; init; }
     public string? SupportingDocumentUrl { get; init; }
-
-    public List<CreatePurchaseOrderItemDto> Items { get; init; } = new();
 }

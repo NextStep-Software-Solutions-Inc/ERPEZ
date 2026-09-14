@@ -8,5 +8,6 @@ public record GetPurchaseOrdersQuery(
     int PageNumber = 1,
     int PageSize = 10,
     string? Filters = null,
-    string? Sorts = null
+    string? Sorts = null,
+    string? Search = null
 ) : IRequest<PaginatedApiResponse<PurchaseOrderListItemDto>>;

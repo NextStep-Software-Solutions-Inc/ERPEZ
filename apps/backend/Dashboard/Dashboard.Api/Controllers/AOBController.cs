@@ -14,6 +14,7 @@ using ERPEZ.Application.Features.Procurement.AOBs.Dtos;
 using ERPEZ.Application.Features.Procurement.AOBs.Queries.GetAOBById;
 using ERPEZ.Application.Features.Procurement.AOBs.Queries.GetAOBMatrix;
 using ERPEZ.Application.Features.Procurement.AOBs.Queries.GetAOBs;
+using ERPEZ.Application.Features.Procurement.AOBs.Queries.GetApprovedAobsAvailableForPO;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -37,6 +38,18 @@ public class AOBController(ISender mediator) : ControllerBase
     public async Task<IActionResult> GetAOBs([FromQuery] GetAOBsQuery query)
     {
         var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get approved AOBs that are available for Purchase Order creation (not linked to an active PO)
+    /// </summary>
+    [HttpGet("available-for-po")]
+    [ProducesResponseType(typeof(ApiResponse<List<AvailableAobDto>>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.poManage)]
+    public async Task<IActionResult> GetAvailableAobsForPO()
+    {
+        var result = await mediator.Send(new GetApprovedAobsAvailableForPOQuery());
         return Ok(result);
     }
 
