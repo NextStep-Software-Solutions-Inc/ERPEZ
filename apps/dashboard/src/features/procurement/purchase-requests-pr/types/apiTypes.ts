@@ -102,8 +102,8 @@ export interface PurchaseRequestListItem {
 
 export interface PurchaseRequestDetailItemApi {
   id: string
-  /** Source PPMP item ID — always set */
-  ppmpItemId: string
+  /** Source PPMP item ID — optional/null for custom/ad-hoc items */
+  ppmpItemId?: string | null
   /** Source APR item ID — only set for Out-of-Stock CSE items */
   aprItemId?: string
   name: string

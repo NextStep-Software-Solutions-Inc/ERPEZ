@@ -73,6 +73,10 @@ import {
   Eye,
   ExternalLink,
   Loader2,
+  ShoppingBag,
+  Boxes,
+  Package,
+  FilePlus,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
@@ -87,14 +91,56 @@ import { PurchaseRequest, PRItem, PRStatus } from '../types'
 import type { UpdatePurchaseRequestItemPayload, PRBacResolutionApi } from '../types/apiTypes'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
 import { AddItemsModal } from './AddItemsModal'
+import { AddNonCSEItemModal, IndependentItemShoppingModal, FALLBACK_NON_CSE_ITEMS, FALLBACK_PROCUREMENT_MODES } from './IndependentItemShoppingModal'
 import { EditPRModal } from './EditPRModal'
 import { ReturnPRModal } from './ReturnPRModal'
 import { ApprovePRModal } from './ApprovePRModal'
 import { PRAttachmentsPanel } from './PRAttachmentsPanel'
+import { RequestItemDialog } from '@/features/planning/ppmp/catalog/dialogs/RequestItemDialog'
+import type { RequestItemFormValues } from '@/features/planning/ppmp/catalog/forms/requestItemFormSchema'
+import { useNonCSEItems } from '@/features/planning/ppmp/catalog/hooks/useNonCSEItemQueries'
+import { useProcurementModes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementModes'
 import { purchaseRequestRequiresTor } from '../utils/torAttachment'
 import { openSignedDocument } from '../utils/openSignedDocument'
 
 import api from '@/services/api'
+
+/**
+ * Deduplicate PR Items to guarantee no duplicates in View Details
+ * and preserve remaining quantity against set quantity.
+ */
+function deduplicatePRItems(items: PRItem[]): PRItem[] {
+  const result: PRItem[] = []
+  const seen = new Map<string, number>()
+
+  for (const item of items) {
+    const key = `${item.itemId || item.id || item.itemName}_${item.month || ''}`
+    if (seen.has(key)) {
+      const idx = seen.get(key)!
+      const existing = result[idx]
+      const totalQty = (existing.quantity || 0) + (item.quantity || 0)
+      const setQty = (existing.setQuantity ?? existing.quantity) + (item.setQuantity ?? item.quantity)
+      const unitPrice = existing.unitPrice ?? existing.estimatedUnitPrice ?? item.unitPrice ?? 0
+      result[idx] = {
+        ...existing,
+        quantity: totalQty,
+        setQuantity: setQty,
+        remainingQuantity: Math.max(0, setQty - totalQty),
+        totalAmount: totalQty * unitPrice,
+      }
+    } else {
+      seen.set(key, result.length)
+      const setQty = item.setQuantity ?? item.quantity
+      result.push({
+        ...item,
+        setQuantity: setQty,
+        remainingQuantity: item.remainingQuantity ?? Math.max(0, setQty - item.quantity),
+      })
+    }
+  }
+
+  return result
+}
 
 // Fixed ordered months used across the procurement views
 const ORDERED_MONTHS: string[] = [
@@ -180,6 +226,46 @@ export function PRDetailsPage({
     pathParams: { id: initialPR.id }
   })
 
+  // Fetch master catalog items so we can accurately distinguish Master Catalog vs Custom / Ad-hoc items
+  const { data: nonCseCatalogResponse } = useNonCSEItems({
+    pageSize: 200,
+    page: 1,
+  })
+
+  // Set of known Master Catalog item names and IDs (lowercased for robust matching)
+  const masterCatalogIdentifiers = useMemo(() => {
+    const set = new Set<string>()
+    for (const item of nonCseCatalogResponse?.data ?? []) {
+      if (item.id) set.add(item.id.toLowerCase())
+      if (item.name) set.add(item.name.trim().toLowerCase())
+    }
+    for (const item of FALLBACK_NON_CSE_ITEMS) {
+      if (item.id) set.add(item.id.toLowerCase())
+      if (item.name) set.add(item.name.trim().toLowerCase())
+    }
+    return set
+  }, [nonCseCatalogResponse])
+
+  // Fetch live Procurement Modes from API (/procurement-modes)
+  const { data: modesResponse } = useProcurementModes({
+    pathParams: {},
+    queryParams: { pageSize: 100 },
+  })
+
+  // Live options with graceful Philippine procurement defaults (deduplicated)
+  const procurementModeOptions = useMemo<string[]>(() => {
+    const rawModes = modesResponse?.data ?? []
+    const uniqueNames = Array.from(
+      new Set(
+        rawModes
+          .filter((m) => m.isActive && !m.isArchived && m.name && m.name.trim() !== '')
+          .map((m) => (m.name as string).trim())
+      )
+    )
+    if (uniqueNames.length > 0) return uniqueNames
+    return FALLBACK_PROCUREMENT_MODES
+  }, [modesResponse])
+
   // Sync server data into activePR whenever a fresh response arrives.
   useEffect(() => {
     const apiData = freshPRResponse?.data
@@ -187,6 +273,99 @@ export function PRDetailsPage({
     if (hasUnsavedChanges) return // Don't overwrite local edits
 
     const base = activePR ?? initialPR
+
+    // Deduplicate server items by (ppmpItemId || aprItemId || id || name) + requestedMonth
+    const deduplicatedItems: PRItem[] = []
+    const seenKeys = new Map<string, number>()
+
+    for (const i of apiData.items ?? []) {
+      const key = `${i.ppmpItemId || i.aprItemId || i.id || i.name}_${i.requestedMonth || ''}`
+      if (seenKeys.has(key)) {
+        const existingIdx = seenKeys.get(key)!
+        const existing = deduplicatedItems[existingIdx]
+        const mergedQty = (existing.quantity || 0) + (i.requestedQuantity || 0)
+        const unitCost = existing.unitPrice || i.unitCost || 0
+        const mergedSetQty = (existing.setQuantity ?? existing.quantity) + (i.requestedQuantity || 0)
+        deduplicatedItems[existingIdx] = {
+          ...existing,
+          quantity: mergedQty,
+          setQuantity: mergedSetQty,
+          remainingQuantity: Math.max(0, mergedSetQty - mergedQty),
+          totalAmount: mergedQty * unitCost,
+        }
+      } else {
+        seenKeys.set(key, deduplicatedItems.length)
+        const isLinkedToOfficePpmp = Boolean(i.ppmpItemId)
+        const isLinkedToApr = Boolean(i.aprItemId)
+        const isCatalog =
+          !isLinkedToOfficePpmp &&
+          !isLinkedToApr &&
+          (masterCatalogIdentifiers.has((i.name || '').trim().toLowerCase()) ||
+            (i.id && masterCatalogIdentifiers.has(i.id.toLowerCase())) ||
+            base.items?.some((bi) => bi.itemName === i.name && bi.source === 'catalog'))
+
+        const itemSource = isLinkedToApr
+          ? ('apr' as const)
+          : isLinkedToOfficePpmp
+            ? ('ppmp' as const)
+            : isCatalog
+              ? ('catalog' as const)
+              : ('custom' as const)
+
+        const itemQty = i.requestedQuantity || 0
+        const existingLocalItem = base.items?.find(
+          (bi) => bi.id === i.id || bi.itemId === i.id || (bi.itemName === i.name && bi.month === i.requestedMonth)
+        )
+        const catalogMatch =
+          (nonCseCatalogResponse?.data ?? []).find(
+            (c) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
+          ) ??
+          FALLBACK_NON_CSE_ITEMS.find(
+            (c) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
+          )
+
+        const itemCategory =
+          i.category ||
+          existingLocalItem?.category ||
+          catalogMatch?.procurementCategoryName ||
+          (catalogMatch as { category?: string })?.category ||
+          base.headerDetails?.procurementCategoryName ||
+          ''
+
+        const itemFund =
+          i.fund ||
+          existingLocalItem?.fund ||
+          apiData.fundSource ||
+          base.headerDetails?.fundCluster ||
+          'General Fund'
+        
+        deduplicatedItems.push({
+          id: i.id,
+          itemId: i.aprItemId ?? i.ppmpItemId ?? i.id,
+          itemName: i.name,
+          description: i.description || '',
+          category: itemCategory,
+          quantity: itemQty,
+          setQuantity: itemQty,
+          remainingQuantity: 0,
+          unitOfMeasure: i.unit || '',
+          unitPrice: i.unitCost,
+          totalAmount: i.amount || (itemQty * i.unitCost),
+          estimatedUnitPrice: i.unitCost,
+          month: i.requestedMonth,
+          fund: itemFund,
+          procurementModeId: i.procurementModeId || existingLocalItem?.procurementModeId,
+          procurementModeName: i.procurementModeName || existingLocalItem?.procurementModeName,
+          source: itemSource,
+          isNonCSE: i.isNonCSE,
+          ppmpDocId: i.ppmpId,
+          ppmpDocName: i.ppmpNumber
+            ? `${i.ppmpNumber} — ${i.officeName || apiData.officeName || ''}`
+            : undefined,
+        })
+      }
+    }
+
     const merged: PurchaseRequest = {
       ...base,
       signedPdfUrl: base.signedPdfUrl,
@@ -206,28 +385,7 @@ export function PRDetailsPage({
         officeId: apiData.officeId ?? base.headerDetails.officeId,
         officeName: apiData.officeName ?? base.headerDetails.officeName,
       },
-      // Map server items preserving source IDs for subsequent Save Changes calls
-      items: (apiData.items ?? []).map((i) => ({
-        id: i.id,
-        itemId: i.aprItemId ?? i.ppmpItemId,
-        itemName: i.name,
-        description: i.description || '',
-        category: i.category || '',
-        quantity: i.requestedQuantity,
-        unitOfMeasure: i.unit || '',
-        unitPrice: i.unitCost,
-        totalAmount: i.amount,
-        estimatedUnitPrice: i.unitCost,
-        month: i.requestedMonth,
-        fund: i.fund || '',
-        procurementModeId: i.procurementModeId,
-        procurementModeName: i.procurementModeName,
-        source: i.isNonCSE ? ('ppmp' as const) : ('apr' as const),
-        ppmpDocId: i.ppmpId,
-        ppmpDocName: i.ppmpNumber
-          ? `${i.ppmpNumber} — ${i.officeName || apiData.officeName || ''}`
-          : undefined,
-      })),
+      items: deduplicatedItems,
     }
 
     setActivePR(merged)
@@ -254,32 +412,33 @@ export function PRDetailsPage({
       }
 
       const isApr = group.source === 'apr'
+      const isIndependent = group.source === 'independent' || group.source === 'catalog' || group.source === 'custom'
       
       // If there's a monthlyQuantities object (from optimistic UI state), split it up
       if (group.monthlyQuantities && Object.keys(group.monthlyQuantities).length > 0) {
         return Object.entries(group.monthlyQuantities).filter(([, qty]) => qty > 0).map(([m, qty]) => ({
-          ppmpItemId: isApr ? undefined : (group.itemId || group.id),
+          ppmpItemId: (isApr || isIndependent) ? undefined : (group.itemId || group.id),
           aprItemId: isApr ? (group.itemId || group.id) : undefined,
           name: group.itemName,
           description: group.description || '',
           unitCost: group.unitPrice || group.estimatedUnitPrice || 0,
           requestedQuantity: qty,
           stockNo: group.stockNo || '',
-          isNonCSE: !isApr,
+          isNonCSE: group.isNonCSE !== undefined ? group.isNonCSE : !isApr,
           requestedMonth: m
         }))
       }
 
       // Single month item (synced from server or single-month optimistic)
       return [{
-        ppmpItemId: isApr ? undefined : (group.itemId || group.id),
+        ppmpItemId: (isApr || isIndependent) ? undefined : (group.itemId || group.id),
         aprItemId: isApr ? (group.itemId || group.id) : undefined,
         name: group.itemName,
         description: group.description || '',
         unitCost: group.unitPrice || group.estimatedUnitPrice || 0,
         requestedQuantity: group.quantity,
         stockNo: group.stockNo || '',
-        isNonCSE: !isApr,
+        isNonCSE: group.isNonCSE !== undefined ? group.isNonCSE : !isApr,
         requestedMonth: group.month || 'January',
       }]
     })
@@ -310,7 +469,14 @@ export function PRDetailsPage({
     )
   }
 
-  const pr = activePR || initialPR
+  const rawPr = activePR || initialPR
+  const pr = useMemo(() => {
+    if (!rawPr) return rawPr
+    return {
+      ...rawPr,
+      items: deduplicatePRItems(rawPr.items || []),
+    }
+  }, [rawPr])
 
   // Derive a display status: if remarks exist but status wasn't set to 'returned', prefer showing Returned
   const getDisplayStatus = (p: typeof pr) => {
@@ -326,17 +492,28 @@ export function PRDetailsPage({
   const displayStatus = getDisplayStatus(pr)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showAddItems, setShowAddItems] = useState(false)
+  const [showShoppingModal, setShowShoppingModal] = useState(false)
   const [showReturnModal, setShowReturnModal] = useState(false)
   const [showApproveModal, setShowApproveModal] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [showSubmitConfirmDialog, setShowSubmitConfirmDialog] = useState(false)
-  const [expandedPPMPs, setExpandedPPMPs] = useState<Set<string>>(new Set())
+  const [expandedPPMPs, setExpandedPPMPs] = useState<Set<string>>(new Set(['independent-items']))
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [monthFilter, setMonthFilter] = useState<string>('all')
   const [fundFilter, setFundFilter] = useState<string>('all')
   const [torSubmitError, setTorSubmitError] = useState<string | null>(null)
   const torSectionRef = useRef<HTMLDivElement | null>(null)
+
+  const isIndependentPR = Boolean(
+    pr.isIndependent ||
+    pr.headerDetails?.isIndependent ||
+    pr.headerDetails?.sourceType === 'INDEPENDENT' ||
+    pr.headerDetails?.prNumber?.startsWith('PR-IND') ||
+    pr.prNumber?.startsWith('PR-IND') ||
+    pr.items.some((item) => item.source === 'independent' || item.source === 'catalog' || item.source === 'custom')
+  )
+
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
     isOpen: boolean
     ppmpId: string | null
@@ -350,6 +527,21 @@ export function PRDetailsPage({
     itemIds: [],
     type: 'ppmp',
   })
+
+  const [requestItemModalOpen, setRequestItemModalOpen] = useState(false)
+  const [prefilledRequestItem, setPrefilledRequestItem] = useState<Partial<RequestItemFormValues> | null>(null)
+
+  const handleOpenSubmitItemRequest = (item: PRItem) => {
+    setPrefilledRequestItem({
+      name: item.itemName,
+      specifications: item.description || `Procurement specification for ${item.itemName}`,
+      estimatedUnitCost: item.unitPrice ?? item.estimatedUnitPrice ?? 0,
+      procurementCategory: 'Goods',
+      itemCategory: item.category || 'Other Non-CSE Goods & Equipment',
+      unitOfMeasure: item.unitOfMeasure || 'unit',
+    })
+    setRequestItemModalOpen(true)
+  }
 
   const navigate = useNavigate()
   const [generatingDocId, setGeneratingDocId] = useState<string | null>(null)
@@ -442,7 +634,7 @@ export function PRDetailsPage({
     pr.type === 'non-cse'
       ? Array.from(
           pr.items.reduce((map, item) => {
-            const ppmpId = item.ppmpDocId || 'unknown'
+            const ppmpId = item.ppmpDocId || (item.source === 'independent' || item.source === 'catalog' || item.source === 'custom' ? 'independent-items' : 'unknown')
             if (!map.has(ppmpId)) {
               map.set(ppmpId, [])
             }
@@ -451,6 +643,19 @@ export function PRDetailsPage({
           }, new Map<string, PRItem[]>()),
         ).map(([ppmpId, items]) => ({ ppmpId, items }))
       : []
+
+  // Auto-expand all item groups by default so items and actions (like Submit as Item Request) are visible
+  useEffect(() => {
+    if (groupedPPMPs.length > 0) {
+      setExpandedPPMPs((prev) => {
+        const next = new Set(prev)
+        for (const g of groupedPPMPs) {
+          next.add(g.ppmpId)
+        }
+        return next
+      })
+    }
+  }, [groupedPPMPs.length])
 
   // Count APR-grouped PR items (for out-of-stock/consolidated PRs)
   const aprGroupCount = (pr.items || []).filter((i) => i.aprGroup).length
@@ -479,14 +684,14 @@ export function PRDetailsPage({
 
   const months =
     pr.type === 'non-cse'
-      ? []
-      : Array.from(
+      ? Array.from(
           new Set(
             pr.items
               .map((item) => item.month)
-              .filter((m): m is string => Boolean(m) && m !== ''),
-          ),
-        )
+              .filter((m): m is string => Boolean(m) && m !== '')
+          )
+        ).sort()
+      : []
 
   const funds =
     pr.type === 'non-cse'
@@ -499,31 +704,40 @@ export function PRDetailsPage({
         ).sort()
       : []
 
-  // Filter PPMPs based on selected filters
+  // Filter grouped PPMPs based on search and filters
   const filteredGroupedPPMPs =
     pr.type === 'non-cse'
       ? groupedPPMPs
-          .map(({ ppmpId, items: ppmItems }) => {
-            const filteredItems = ppmItems.filter((item) => {
-              const ppmpName = ppmItems[0]?.ppmpDocName || ''
-              const searchMatch =
+          .map(({ ppmpId, items }) => {
+            const filteredItems = items.filter((item) => {
+              const matchesSearch =
+                searchTerm === '' ||
                 item.itemName
                   .toLowerCase()
                   .includes(searchTerm.toLowerCase()) ||
-                item.category
-                  .toLowerCase()
+                item.description
+                  ?.toLowerCase()
                   .includes(searchTerm.toLowerCase()) ||
-                ppmpName.toLowerCase().includes(searchTerm.toLowerCase())
-              const categoryMatch =
+                item.category.toLowerCase().includes(searchTerm.toLowerCase())
+
+              const matchesCategory =
                 categoryFilter === 'all' || item.category === categoryFilter
-              const monthMatch =
+              const matchesMonth =
                 monthFilter === 'all' || item.month === monthFilter
-              const fundMatch = fundFilter === 'all' || item.fund === fundFilter
-              return searchMatch && categoryMatch && monthMatch && fundMatch
+              const matchesFund =
+                fundFilter === 'all' || item.fund === fundFilter
+
+              return (
+                matchesSearch &&
+                matchesCategory &&
+                matchesMonth &&
+                matchesFund
+              )
             })
+
             return { ppmpId, items: filteredItems }
           })
-          .filter(({ items: ppmItems }) => ppmItems.length > 0)
+          .filter(({ items }) => items.length > 0)
       : []
 
   const openDeletePPMPDialog = (
@@ -531,38 +745,46 @@ export function PRDetailsPage({
     ppmpName: string,
     items: PRItem[],
   ) => {
+    const itemIds = items.map((i) => i.id)
     setDeleteConfirmDialog({
       isOpen: true,
       ppmpId,
       ppmpName,
-      itemIds: items.map((i) => i.id),
+      itemIds,
       type: 'ppmp',
     })
   }
 
-  const openDeleteAPRDialog = (
-    aprId: string,
-    aprName: string,
+  const openDeleteAPRGroupDialog = (
+    aprGroupNumber: string,
     items: PRItem[],
   ) => {
+    const itemIds = items.map((i) => i.id)
     setDeleteConfirmDialog({
       isOpen: true,
-      ppmpId: aprId,
-      ppmpName: aprName,
-      itemIds: items.map((i) => i.id),
+      ppmpId: aprGroupNumber,
+      ppmpName: `APR #${aprGroupNumber}`,
+      itemIds,
       type: 'apr',
     })
   }
 
-  const handleConfirmDeletePPMP = () => {
-    if (deleteConfirmDialog.type === 'apr' && deleteConfirmDialog.ppmpId) {
-      const aprId = deleteConfirmDialog.ppmpId
-      const newItems = pr.items.filter(
-        (i) => !(i.aprGroup && i.aprGroup.id === aprId),
+  const handleConfirmDelete = () => {
+    const { ppmpId, type } = deleteConfirmDialog
+
+    if (type === 'apr') {
+      const updatedItems = pr.items.filter((item) => {
+        if (!item.aprGroup) return true
+        return item.aprGroup.aprNumber !== ppmpId
+      })
+
+      const newTotal = updatedItems.reduce(
+        (sum, item) => sum + item.totalAmount,
+        0,
       )
-      const newTotal = newItems.reduce((sum, i) => sum + i.totalAmount, 0)
+
       updatePurchaseRequest(pr.id, {
-        items: newItems,
+        items: updatedItems,
         totalAmount: newTotal,
       })
       setHasUnsavedChanges(true)
@@ -570,24 +792,19 @@ export function PRDetailsPage({
       toast.success('APR Removed', {
         description: 'The APR and its items have been removed.',
       })
-
-      setDeleteConfirmDialog({
-        isOpen: false,
-        ppmpId: null,
-        ppmpName: null,
-        itemIds: [],
-        type: 'ppmp',
+    } else {
+      const updatedItems = pr.items.filter((item) => {
+        const itemPpmpId = item.ppmpDocId || (item.source === 'independent' || item.source === 'catalog' || item.source === 'custom' ? 'independent-items' : 'unknown')
+        return itemPpmpId !== ppmpId
       })
-      return
-    }
 
-    if (deleteConfirmDialog.ppmpId && deleteConfirmDialog.itemIds.length > 0) {
-      const newItems = pr.items.filter(
-        (i) => !deleteConfirmDialog.itemIds.includes(i.id),
+      const newTotal = updatedItems.reduce(
+        (sum, item) => sum + item.totalAmount,
+        0,
       )
-      const newTotal = newItems.reduce((sum, i) => sum + i.totalAmount, 0)
+
       updatePurchaseRequest(pr.id, {
-        items: newItems,
+        items: updatedItems,
         totalAmount: newTotal,
       })
       setHasUnsavedChanges(true)
@@ -607,9 +824,42 @@ export function PRDetailsPage({
   }
 
   const handleAddItems = (items: PRItem[]) => {
-    const updatedItems = [...pr.items, ...items]
+    const updatedItems = [...pr.items]
+
+    for (const incoming of items) {
+      const incomingKey = (incoming.itemId || incoming.id || incoming.itemName) + `_${incoming.month || ''}`
+      const existingIndex = updatedItems.findIndex((existing) => {
+        const existingKey = (existing.itemId || existing.id || existing.itemName) + `_${existing.month || ''}`
+        return existingKey === incomingKey || existing.id === incoming.id
+      })
+
+      if (existingIndex >= 0) {
+        const existing = updatedItems[existingIndex]
+        const incomingSetQty = incoming.setQuantity ?? incoming.quantity
+        const currentSetQty = existing.setQuantity ?? existing.quantity
+        const newSetQty = currentSetQty + incomingSetQty
+        const newQty = existing.quantity + incoming.quantity
+        const unitCost = existing.unitPrice ?? existing.estimatedUnitPrice ?? incoming.unitPrice ?? 0
+
+        updatedItems[existingIndex] = {
+          ...existing,
+          quantity: newQty,
+          setQuantity: newSetQty,
+          remainingQuantity: Math.max(0, newSetQty - newQty),
+          totalAmount: newQty * unitCost,
+        }
+      } else {
+        const setQty = incoming.setQuantity ?? incoming.quantity
+        updatedItems.push({
+          ...incoming,
+          setQuantity: setQty,
+          remainingQuantity: incoming.remainingQuantity ?? Math.max(0, setQty - incoming.quantity),
+        })
+      }
+    }
+
     const newTotal = updatedItems.reduce(
-      (sum, item) => sum + item.totalAmount,
+      (sum, item) => sum + (item.totalAmount || 0),
       0,
     )
 
@@ -620,10 +870,11 @@ export function PRDetailsPage({
     setHasUnsavedChanges(true)
 
     toast.success('Items Added', {
-      description: `${items.length} item(s) have been added to this PR.`,
+      description: `${items.length} item(s) processed.`,
     })
 
     setShowAddItems(false)
+    setShowShoppingModal(false)
   }
 
   const handleSubmitPR = () => {
@@ -1256,25 +1507,31 @@ export function PRDetailsPage({
           <div className="space-y-4">
             <div>
               <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-50">
-                {pr.type === 'non-cse' ? 'Office PPMPs' : 'APRs'}
+                {isIndependentPR
+                  ? 'Requisition Items'
+                  : pr.type === 'non-cse'
+                    ? 'Office PPMPs'
+                    : 'APRs'}
               </CardTitle>
               <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
-                {pr.type === 'non-cse'
-                  ? (() => {
-                      const uniquePPMPs = new Set(
-                        pr.items
-                          .filter((item) => item.ppmpDocId)
-                          .map((item) => item.ppmpDocId),
-                      )
-                      const ppmpCount = uniquePPMPs.size
-                      return `${ppmpCount} Office PPMP${ppmpCount !== 1 ? 's' : ''} selected`
-                    })()
-                  : (() => {
-                      const aprCount = (pr.items || []).filter(
-                        (i) => i.aprGroup,
-                      ).length
-                      return `${aprCount} APR${aprCount !== 1 ? 's' : ''} selected`
-                    })()}
+                {isIndependentPR
+                  ? `${pr.items.length} item${pr.items.length !== 1 ? 's' : ''} in Purchase Request`
+                  : pr.type === 'non-cse'
+                    ? (() => {
+                        const uniquePPMPs = new Set(
+                          pr.items
+                            .filter((item) => item.ppmpDocId)
+                            .map((item) => item.ppmpDocId),
+                        )
+                        const ppmpCount = uniquePPMPs.size
+                        return `${ppmpCount} Office PPMP${ppmpCount !== 1 ? 's' : ''} selected`
+                      })()
+                    : (() => {
+                        const aprCount = (pr.items || []).filter(
+                          (i) => i.aprGroup,
+                        ).length
+                        return `${aprCount} APR${aprCount !== 1 ? 's' : ''} selected`
+                      })()}
               </CardDescription>
             </div>
 
@@ -1285,9 +1542,11 @@ export function PRDetailsPage({
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder={
-                        pr.type === 'non-cse'
-                          ? 'Search by item name, category, or PPMP...'
-                          : 'Search by APR number, office, or item...'
+                        isIndependentPR
+                          ? 'Search by item name, category, or code...'
+                          : pr.type === 'non-cse'
+                            ? 'Search by item name, category, or PPMP...'
+                            : 'Search by APR number, office, or item...'
                       }
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -1351,14 +1610,36 @@ export function PRDetailsPage({
               </div>
 
               {canAddItems && (
-                <Button
-                  onClick={() => setShowAddItems(true)}
-                  size="sm"
-                  className="gap-2 flex-shrink-0"
-                >
-                  <Plus className="h-4 w-4" />
-                  {pr.type === 'non-cse' ? 'Add Office PPMP' : 'Add APR'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  {isIndependentPR ? (
+                    <Button
+                      onClick={() => setShowShoppingModal(true)}
+                      size="sm"
+                      className="gap-2 flex-shrink-0"
+                    >
+                      <Boxes className="h-4 w-4" />
+                      Add Non-CSE Items
+                    </Button>
+                  ) : pr.type === 'non-cse' ? (
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      size="sm"
+                      className="gap-2 flex-shrink-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Office PPMP
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      size="sm"
+                      className="gap-2 flex-shrink-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add APR
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -1380,18 +1661,43 @@ export function PRDetailsPage({
           ) : pr.items.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-muted-foreground mb-4">
-                {pr.type === 'non-cse'
-                  ? 'No Office PPMP added yet'
-                  : 'No items added yet'}
+                {isIndependentPR
+                  ? 'No Non-CSE items added yet'
+                  : pr.type === 'non-cse'
+                    ? 'No Office PPMP or items added yet'
+                    : 'No items added yet'}
               </p>
               {canAddItems && (
-                <Button
-                  onClick={() => setShowAddItems(true)}
-                  variant="outline"
-                  size="sm"
-                >
-                  {pr.type === 'non-cse' ? 'Add Office PPMP' : 'Add APR'}
-                </Button>
+                <div className="flex items-center justify-center gap-3">
+                  {isIndependentPR ? (
+                    <Button
+                      onClick={() => setShowShoppingModal(true)}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Boxes className="h-4 w-4" />
+                      Add Non-CSE Items
+                    </Button>
+                  ) : pr.type === 'non-cse' ? (
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Office PPMP
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add APR
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           ) : pr.type === 'non-cse' ? (
@@ -1419,7 +1725,14 @@ export function PRDetailsPage({
                         />
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold truncate text-slate-900 dark:text-slate-50">
-                            {items[0]?.ppmpDocName || 'Office PPMP'}
+                            {items[0]?.ppmpDocName ||
+                              (ppmpId === 'independent-items'
+                                ? items.every((i) => i.source === 'catalog' || masterCatalogIdentifiers.has((i.itemName || '').trim().toLowerCase()))
+                                  ? 'Master Catalog Items'
+                                  : items.every((i) => (i.source === 'custom' || (!i.source && !i.ppmpItemId && !i.aprItemId)) && !masterCatalogIdentifiers.has((i.itemName || '').trim().toLowerCase()))
+                                    ? 'Custom / Ad-hoc Items'
+                                    : 'Custom / Catalog Items (Independent)'
+                                : 'Office PPMP')}
                           </div>
                           <div className="text-xs truncate text-slate-600 dark:text-slate-400">
                             {items.length} item(s)
@@ -1434,17 +1747,18 @@ export function PRDetailsPage({
                             ₱{ppmpTotal.toLocaleString()}
                           </Badge>
 
-                          {!canAddItems ? null : (
+                          {pr.status === 'draft' && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 p-0 text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300"
+                              className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                              title={`Delete ${ppmpId === 'independent-items' ? 'all independent items' : 'PPMP group'}`}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 openDeletePPMPDialog(
                                   ppmpId,
-                                  items[0]?.ppmpDocName || 'Office PPMP',
-                                  items,
+                                  items[0]?.ppmpDocName ?? (ppmpId === 'independent-items' ? 'Independent Items' : 'Office PPMP'),
+                                  items.map((it) => it.id),
                                 )
                               }}
                             >
@@ -1461,7 +1775,7 @@ export function PRDetailsPage({
                               <TableRow className="bg-muted/40">
                                 <TableHead>Item Name</TableHead>
                                 <TableHead>Category</TableHead>
-                                <TableHead>Mode of Procurement</TableHead>
+                                <TableHead className="min-w-[190px]">Mode of Procurement</TableHead>
                                 <TableHead>Fund</TableHead>
                                 {hasAnyMonth && <TableHead className="text-center">Month</TableHead>}
                                 <TableHead className="text-center w-32">Req Qty</TableHead>
@@ -1470,7 +1784,7 @@ export function PRDetailsPage({
                                   Total Amount
                                 </TableHead>
                                 {pr.status === 'draft' && (
-                                  <TableHead className="text-center w-16">
+                                  <TableHead className="text-center w-64">
                                     Actions
                                   </TableHead>
                                 )}
@@ -1481,16 +1795,90 @@ export function PRDetailsPage({
                                 const unitPrice =
                                   item.unitPrice ?? item.estimatedUnitPrice ?? 0
 
+                                const isCatalogItem =
+                                  item.source === 'catalog' ||
+                                  (!item.ppmpDocId &&
+                                    masterCatalogIdentifiers.has((item.itemName || '').trim().toLowerCase()))
+                                const isCustomItem = !isCatalogItem && item.source === 'custom'
+
                                 return (
                                   <TableRow key={item.id}>
                                     <TableCell className="font-medium">
-                                      {item.itemName}
+                                      <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                                            {item.itemName}
+                                          </span>
+                                          {isCustomItem && (
+                                            <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 text-[10px] font-semibold py-0 px-1.5">
+                                              Custom / Ad-hoc
+                                            </Badge>
+                                          )}
+                                          {isCatalogItem && (
+                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 text-[10px] font-semibold py-0 px-1.5">
+                                              Master Catalog
+                                            </Badge>
+                                          )}
+                                          {item.source === 'ppmp' && (
+                                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 text-[10px] font-semibold py-0 px-1.5">
+                                              Office PPMP
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        {item.description && (
+                                          <span className="text-xs text-muted-foreground line-clamp-1">
+                                            {item.description}
+                                          </span>
+                                        )}
+                                      </div>
                                     </TableCell>
                                     <TableCell>{item.category}</TableCell>
-                                    <TableCell>
-                                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-semibold whitespace-nowrap">
-                                        {item.procurementModeName || 'Direct Acquisition'}
-                                      </Badge>
+                                    <TableCell className="min-w-[190px]">
+                                      {pr.status === 'draft' ? (
+                                        <Select
+                                          value={item.procurementModeName || 'unassigned'}
+                                          onValueChange={(val) => {
+                                            const selectedModeName = val === 'unassigned' ? undefined : val
+                                            const matchedMode = (modesResponse?.data ?? []).find(
+                                              (m) => m.name?.trim().toLowerCase() === val.trim().toLowerCase()
+                                            )
+                                            const updatedItems = pr.items.map((pi) => {
+                                              if (pi.id === item.id) {
+                                                return {
+                                                  ...pi,
+                                                  procurementModeName: selectedModeName,
+                                                  procurementModeId: matchedMode?.id || (selectedModeName ? pi.procurementModeId : undefined),
+                                                }
+                                              }
+                                              return pi
+                                            })
+                                            updatePurchaseRequest(pr.id, {
+                                              items: updatedItems,
+                                            })
+                                            setHasUnsavedChanges(true)
+                                          }}
+                                        >
+                                          <SelectTrigger className="h-8 text-xs w-[180px] bg-white dark:bg-slate-900 border-slate-200">
+                                            <SelectValue placeholder="Select MoP" />
+                                          </SelectTrigger>
+                                          <SelectContent className="max-h-56">
+                                            <SelectItem value="unassigned" className="text-xs text-muted-foreground">
+                                              Select MoP
+                                            </SelectItem>
+                                            {procurementModeOptions.map((mode) => (
+                                              <SelectItem key={mode} value={mode} className="text-xs">
+                                                {mode}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      ) : item.procurementModeName ? (
+                                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-semibold whitespace-nowrap">
+                                          {item.procurementModeName}
+                                        </Badge>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">—</span>
+                                      )}
                                     </TableCell>
                                     <TableCell>{item.fund || '—'}</TableCell>
                                     {hasAnyMonth && (
@@ -1499,39 +1887,50 @@ export function PRDetailsPage({
                                       </TableCell>
                                     )}
                                     <TableCell className="text-center">
-                                      <div className="flex items-center justify-center gap-1.5">
-                                        <Input
-                                          type="number"
-                                          min={1}
-                                          value={item.quantity || 0}
-                                          onChange={(e) => {
-                                            const v = parseInt(e.target.value || '0', 10)
-                                            const val = Number.isNaN(v) ? 0 : Math.max(0, v)
-                                            
-                                            const updatedItems = pr.items.map((pi) => {
-                                              if (pi.id === item.id) {
-                                                return {
-                                                  ...pi,
-                                                  quantity: val,
-                                                  totalAmount: val * unitPrice,
+                                      <div className="flex flex-col items-center justify-center gap-1">
+                                        <div className="flex items-center justify-center gap-1.5">
+                                          <Input
+                                            type="number"
+                                            min={1}
+                                            value={item.quantity || 0}
+                                            onChange={(e) => {
+                                              const v = parseInt(e.target.value || '0', 10)
+                                              const val = Number.isNaN(v) ? 0 : Math.max(0, v)
+                                              
+                                              const updatedItems = pr.items.map((pi) => {
+                                                if (pi.id === item.id) {
+                                                  const setQty = pi.setQuantity ?? (pi.quantity > 0 ? pi.quantity : val)
+                                                  const remainingQty = Math.max(0, setQty - val)
+                                                  return {
+                                                    ...pi,
+                                                    quantity: val,
+                                                    setQuantity: setQty,
+                                                    remainingQuantity: remainingQty,
+                                                    totalAmount: val * unitPrice,
+                                                  }
                                                 }
-                                              }
-                                              return pi
-                                            })
-                                            
-                                            const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
-                                            updatePurchaseRequest(pr.id, {
-                                              items: updatedItems,
-                                              totalAmount: newTotal,
-                                            })
-                                            setHasUnsavedChanges(true)
-                                          }}
-                                          disabled={pr.status !== 'draft'}
-                                          className="h-8 w-20 text-center font-medium tabular-nums"
-                                        />
-                                        <span className="text-xs text-muted-foreground pointer-events-none">
-                                          {item.unitOfMeasure || 'pcs'}
-                                        </span>
+                                                return pi
+                                              })
+                                              
+                                              const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+                                              updatePurchaseRequest(pr.id, {
+                                                items: updatedItems,
+                                                totalAmount: newTotal,
+                                              })
+                                              setHasUnsavedChanges(true)
+                                            }}
+                                            disabled={pr.status !== 'draft'}
+                                            className="h-8 w-20 text-center font-medium tabular-nums"
+                                          />
+                                          <span className="text-xs text-muted-foreground pointer-events-none">
+                                            {item.unitOfMeasure || 'pcs'}
+                                          </span>
+                                        </div>
+                                        {item.setQuantity !== undefined && item.setQuantity > 0 && (
+                                          <span className="text-[10px] text-muted-foreground whitespace-nowrap block">
+                                            Rem: <span className="font-semibold text-primary">{item.remainingQuantity ?? Math.max(0, item.setQuantity - (item.quantity || 0))}</span> / {item.setQuantity}
+                                          </span>
+                                        )}
                                       </div>
                                     </TableCell>
                                     <TableCell>
@@ -1545,26 +1944,40 @@ export function PRDetailsPage({
                                     </TableCell>
                                     {pr.status === 'draft' && (
                                       <TableCell className="text-center">
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                                          title={`Remove ${item.itemName}`}
-                                          onClick={() => {
-                                            const updatedItems = pr.items.filter((pi) => pi.id !== item.id)
-                                            const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
-                                            updatePurchaseRequest(pr.id, {
-                                              items: updatedItems,
-                                              totalAmount: newTotal,
-                                            })
-                                            setHasUnsavedChanges(true)
-                                            toast.success('Item Removed', {
-                                              description: `${item.itemName} (${item.month}) removed from PR.`,
-                                            })
-                                          }}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        <div className="flex items-center justify-center gap-1.5">
+                                          {isCustomItem && (
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-7 text-xs px-2.5 gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50 hover:text-violet-800 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/50"
+                                              title="Propose this item to the Master Catalog"
+                                              onClick={() => handleOpenSubmitItemRequest(item)}
+                                            >
+                                              <FilePlus className="h-3.5 w-3.5" />
+                                              <span>Submit as Item Request</span>
+                                            </Button>
+                                          )}
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                                            title={`Remove ${item.itemName}`}
+                                            onClick={() => {
+                                              const updatedItems = pr.items.filter((pi) => pi.id !== item.id)
+                                              const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+                                              updatePurchaseRequest(pr.id, {
+                                                items: updatedItems,
+                                                totalAmount: newTotal,
+                                              })
+                                              setHasUnsavedChanges(true)
+                                              toast.success('Item Removed', {
+                                                description: `${item.itemName} (${item.month}) removed from PR.`,
+                                              })
+                                            }}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </div>
                                       </TableCell>
                                     )}
                                   </TableRow>
@@ -1856,6 +2269,13 @@ export function PRDetailsPage({
         currentItems={pr.items}
       />
 
+      <AddNonCSEItemModal
+        open={showShoppingModal}
+        onOpenChange={setShowShoppingModal}
+        onAddItems={handleAddItems}
+        onSubmitItemRequest={handleOpenSubmitItemRequest}
+      />
+
       <ReturnPRModal
         open={showReturnModal}
         onOpenChange={setShowReturnModal}
@@ -1954,7 +2374,7 @@ export function PRDetailsPage({
           <div className="flex gap-3 justify-end">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleConfirmDeletePPMP}
+              onClick={handleConfirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Remove
@@ -2010,6 +2430,21 @@ export function PRDetailsPage({
         pr={pr}
         onSuccess={() => {
           setShowEditModal(false)
+        }}
+      />
+
+      {/* Intentional Item Request Dialog for Custom/Ad-hoc PR Items */}
+      <RequestItemDialog
+        open={requestItemModalOpen}
+        onOpenChange={setRequestItemModalOpen}
+        initialOfficeId={pr.headerDetails?.officeId}
+        initialValues={prefilledRequestItem ?? undefined}
+        onSuccess={() => {
+          setRequestItemModalOpen(false)
+          setPrefilledRequestItem(null)
+          toast.success('Item Request submitted', {
+            description: 'Item Request submitted to BAC for catalog evaluation. Your PR line item remains unaffected.',
+          })
         }}
       />
     </div>

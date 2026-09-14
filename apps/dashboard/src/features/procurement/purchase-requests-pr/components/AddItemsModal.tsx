@@ -658,6 +658,8 @@ export function AddItemsModal({
                 procurementModeId: it.procurementModeId,
                 procurementModeName: it.procurementModeName,
                 source: 'ppmp',
+                setQuantity: maxAvail,
+                remainingQuantity: Math.max(0, maxAvail - editedQty),
                 ppmpDocId: doc.id,
                 ppmpDocName: doc.documentName,
               })
@@ -666,7 +668,8 @@ export function AddItemsModal({
             for (const alloc of (it.monthlyAllocations || [])) {
               const compositeKey = `${it.id}-${alloc.month}`
               if (selectedNonCseRows.has(compositeKey)) {
-                const editedQty = editedQuantityMap[compositeKey] !== undefined ? editedQuantityMap[compositeKey] : (alloc.availableQuantity || 0)
+                const maxAllocAvail = alloc.availableQuantity || 0
+                const editedQty = editedQuantityMap[compositeKey] !== undefined ? editedQuantityMap[compositeKey] : maxAllocAvail
                 if (editedQty <= 0) continue
 
                 itemsToAdd.push({
@@ -683,6 +686,8 @@ export function AddItemsModal({
                   procurementModeId: it.procurementModeId,
                   procurementModeName: it.procurementModeName,
                   source: 'ppmp',
+                  setQuantity: maxAllocAvail,
+                  remainingQuantity: Math.max(0, maxAllocAvail - editedQty),
                   ppmpDocId: doc.id,
                   ppmpDocName: doc.documentName,
                 })

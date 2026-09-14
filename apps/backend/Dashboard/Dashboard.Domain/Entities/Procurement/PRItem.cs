@@ -12,9 +12,9 @@ public class PRItem : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid PurchaseRequestId { get; set; }
 
-    // Always set — references the PPMPItem being requested (NonCSE or CSE out-of-stock)
+    // Optional — references the PPMPItem being requested (null for independent/custom PR items)
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid PPMPItemId { get; set; }
+    public Guid? PPMPItemId { get; set; }
 
     // Only set for OutOfStockCSE tab — null for NonCSE items
     [Sieve(CanFilter = true, CanSort = true)]
@@ -47,7 +47,7 @@ public class PRItem : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public AllocationMonthEnum RequestedMonth { get; set; }
     public virtual PurchaseRequest PurchaseRequest { get; set; } = null!;
-    public virtual PPMPItem PPMPItem { get; set; } = null!;
+    public virtual PPMPItem? PPMPItem { get; set; }
     public virtual APRItem? APRItem { get; set; }
     public virtual List<ConsolidatedPRItem> ConsolidatedPRItems { get; set; } = [];
 }

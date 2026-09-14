@@ -948,8 +948,8 @@ export function ConsolidatedPrDetailsPage({
                         <TableHead className="text-right text-xs font-semibold text-muted-foreground">Unit Price</TableHead>
                         <TableHead className="text-right text-xs font-semibold text-muted-foreground">Total Amount</TableHead>
                         <TableHead className="min-w-[180px] text-xs font-semibold text-muted-foreground">Allocation / Schedule (From PRs)</TableHead>
-                        <TableHead className="min-w-[190px] text-xs font-semibold text-muted-foreground">Mode of Procurement (Consolidated PR)</TableHead>
                         <TableHead className="w-24 text-center text-xs font-semibold text-muted-foreground">Allow Partial</TableHead>
+                        <TableHead className="min-w-[190px] text-xs font-semibold text-muted-foreground">Mode of Procurement (Consolidated PR)</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1046,6 +1046,34 @@ export function ConsolidatedPrDetailsPage({
                                 </div>
                               </TableCell>
 
+                              {/* Allow Partial */}
+                              <TableCell className="align-top py-3.5 text-center">
+                                {isEditable ? (
+                                  <div className="flex justify-center pt-1.5">
+                                    <Checkbox
+                                      checked={item.allowPartial ?? false}
+                                      disabled={!item.procurementModeId}
+                                      className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                                      onCheckedChange={(checked) =>
+                                        handleUpdateItemMop(
+                                          itemId,
+                                          item.procurementModeId ?? '',
+                                          checked === true,
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    {typeof item.allowPartial === 'boolean'
+                                      ? item.allowPartial
+                                        ? 'Yes'
+                                        : 'No'
+                                      : '—'}
+                                  </span>
+                                )}
+                              </TableCell>
+
                               {/* Mode of Procurement */}
                               <TableCell className="align-top py-3.5">
                                 {isEditable ? (
@@ -1078,34 +1106,6 @@ export function ConsolidatedPrDetailsPage({
                                   <span className="text-xs font-medium text-foreground">
                                     {item.procurementModeId
                                       ? (mopOptions.find((o) => o.value === item.procurementModeId)?.label ?? '—')
-                                      : '—'}
-                                  </span>
-                                )}
-                              </TableCell>
-
-                              {/* Allow Partial */}
-                              <TableCell className="align-top py-3.5 text-center">
-                                {isEditable ? (
-                                  <div className="flex justify-center pt-1.5">
-                                    <Checkbox
-                                      checked={item.allowPartial ?? false}
-                                      disabled={!item.procurementModeId}
-                                      className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
-                                      onCheckedChange={(checked) =>
-                                        handleUpdateItemMop(
-                                          itemId,
-                                          item.procurementModeId ?? '',
-                                          checked === true,
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">
-                                    {typeof item.allowPartial === 'boolean'
-                                      ? item.allowPartial
-                                        ? 'Yes'
-                                        : 'No'
                                       : '—'}
                                   </span>
                                 )}

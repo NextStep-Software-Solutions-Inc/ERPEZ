@@ -2770,6 +2770,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(i => i.PPMPItem)
             .WithMany()
             .HasForeignKey(i => i.PPMPItemId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PRItem>()
