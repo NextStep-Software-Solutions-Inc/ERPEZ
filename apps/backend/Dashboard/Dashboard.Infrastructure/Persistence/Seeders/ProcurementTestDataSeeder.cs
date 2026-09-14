@@ -785,18 +785,25 @@ public static class ProcurementTestDataSeeder
         bool isBlocked,
         string? statusNote = null)
     {
-        var existing = await context.Suppliers!
-            .IgnoreQueryFilters()
+        // 1. Check if an active supplier with this name, TIN, or permit already exists
+        var activeExisting = await context.Suppliers!
             .Include(s => s.SupplierRequirements)
             .FirstOrDefaultAsync(s => s.Name == name || s.TINNumber == tin || s.BusinessPermitNo == permit);
-        if (existing != null)
+        if (activeExisting != null)
         {
-            if (existing.IsDeleted)
-            {
-                existing.IsDeleted = false;
-                context.Suppliers!.Update(existing);
-                await context.SaveChangesAsync();
-            }
+            return;
+        }
+
+        // 2. Check if a soft-deleted supplier exists with this name, TIN, or permit to safely revive
+        var deletedExisting = await context.Suppliers!
+            .IgnoreQueryFilters()
+            .Include(s => s.SupplierRequirements)
+            .FirstOrDefaultAsync(s => s.IsDeleted && (s.Name == name || s.TINNumber == tin || s.BusinessPermitNo == permit));
+        if (deletedExisting != null)
+        {
+            deletedExisting.IsDeleted = false;
+            context.Suppliers!.Update(deletedExisting);
+            await context.SaveChangesAsync();
             return;
         }
 
