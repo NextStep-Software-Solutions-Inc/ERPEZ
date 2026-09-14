@@ -340,7 +340,7 @@ public class GenerateBacResolutionDocumentCommandHandler(
             : DateTime.Now.ToString("dddd, MMMM dd, yyyy");
         var resolvedLocation = !string.IsNullOrWhiteSpace(bacResolution.ResolvedLocation)
             ? bacResolution.ResolvedLocation
-            : "University of Science and Technology of Southern Philippines, Cagayan de Oro City";
+            : "Procuring Entity Premises";
 
         // Build dynamic placeholder replacement map
         var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -442,8 +442,8 @@ public class GenerateBacResolutionDocumentCommandHandler(
             })
             .ToList();
 
-        var headOfAgencyName = configuration["BacDocument:HeadOfAgencyName"] ?? "DR. AMBROSIO B. CULTURA II";
-        var headOfAgencyTitle = configuration["BacDocument:HeadOfAgencyTitle"] ?? "PRESIDENT, USTP-SYSTEM";
+        var headOfAgencyName = configuration["BacDocument:HeadOfAgencyName"] ?? string.Empty;
+        var headOfAgencyTitle = configuration["BacDocument:HeadOfAgencyTitle"] ?? "HEAD OF THE PROCURING ENTITY";
 
         var dataDto = new BacResolutionDataDto
         {

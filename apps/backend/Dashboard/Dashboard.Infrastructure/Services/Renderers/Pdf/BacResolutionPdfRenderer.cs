@@ -40,8 +40,9 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                         col.Item().AlignCenter().Height(50).Image(logoBytes);
                     }
 
-                    col.Item().AlignCenter().Text("UNIVERSITY OF SCIENCE AND TECHNOLOGY OF SOUTHERN PHILIPPINES")
-                        .Bold().FontSize(10);
+                    col.Item().PaddingTop(2).AlignCenter()
+                        .Text("[Agency Letterhead with Logo]")
+                        .Bold().FontSize(9.5f).Italic();
 
                     col.Item().PaddingTop(6).AlignCenter()
                         .Text($"BAC Resolution No. {request.ResolutionNumber}")
@@ -280,7 +281,7 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                             : DateTime.Now.ToString("dddd, MMMM dd, yyyy");
                         var location = !string.IsNullOrWhiteSpace(request.ResolvedLocation)
                             ? request.ResolvedLocation
-                            : "University of Science and Technology of Southern Philippines, Cagayan de Oro City";
+                            : "Procuring Entity Premises";
 
                         col.Item().PaddingBottom(10).Text(t =>
                         {
@@ -313,16 +314,32 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                             {
                                 row.RelativeItem().Column(sc =>
                                 {
-                                    sc.Item().Text(left.Name).Bold();
-                                    sc.Item().Text(left.Position).FontSize(8);
+                                    if (!string.IsNullOrWhiteSpace(left.Name))
+                                    {
+                                        sc.Item().Text(left.Name).Bold();
+                                        sc.Item().Text(left.Position).FontSize(8);
+                                    }
+                                    else
+                                    {
+                                        sc.Item().PaddingTop(18).MaxWidth(180).LineHorizontal(1).LineColor(Colors.Black);
+                                        sc.Item().PaddingTop(3).Text(left.Position).FontSize(8);
+                                    }
                                 });
 
                                 if (right != null)
                                 {
                                     row.RelativeItem().Column(sc =>
                                     {
-                                        sc.Item().Text(right.Name).Bold();
-                                        sc.Item().Text(right.Position).FontSize(8);
+                                        if (!string.IsNullOrWhiteSpace(right.Name))
+                                        {
+                                            sc.Item().Text(right.Name).Bold();
+                                            sc.Item().Text(right.Position).FontSize(8);
+                                        }
+                                        else
+                                        {
+                                            sc.Item().PaddingTop(18).MaxWidth(180).LineHorizontal(1).LineColor(Colors.Black);
+                                            sc.Item().PaddingTop(3).Text(right.Position).FontSize(8);
+                                        }
                                     });
                                 }
                                 else
@@ -349,8 +366,22 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
 
                         slip.Item().PaddingTop(24).AlignCenter().Column(head =>
                         {
-                            head.Item().Text(request.HeadOfAgencyName.ToUpper()).Bold().FontSize(10);
-                            head.Item().Text(request.HeadOfAgencyTitle.ToUpper()).FontSize(8);
+                            if (!string.IsNullOrWhiteSpace(request.HeadOfAgencyName) &&
+                                !request.HeadOfAgencyName.Contains("CULTURA", StringComparison.OrdinalIgnoreCase))
+                            {
+                                head.Item().Text(request.HeadOfAgencyName.ToUpper()).Bold().FontSize(10);
+                            }
+                            else
+                            {
+                                head.Item().MaxWidth(220).LineHorizontal(1).LineColor(Colors.Black);
+                            }
+
+                            var title = !string.IsNullOrWhiteSpace(request.HeadOfAgencyTitle) &&
+                                        !request.HeadOfAgencyTitle.Contains("USTP", StringComparison.OrdinalIgnoreCase)
+                                ? request.HeadOfAgencyTitle.ToUpper()
+                                : "HEAD OF THE PROCURING ENTITY";
+
+                            head.Item().PaddingTop(3).Text(title).FontSize(8);
                         });
                     });
                 });
@@ -377,56 +408,61 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
 
     private static string FormatRole(string role)
     {
-        if (string.IsNullOrWhiteSpace(role)) return "BAC MEMBER";
+        if (string.IsNullOrWhiteSpace(role)) return "BAC REGULAR MEMBER";
         if (role.StartsWith("BAC", StringComparison.OrdinalIgnoreCase))
         {
-            return role.ToUpper();
+            var clean = System.Text.RegularExpressions.Regex.Replace(role, @"^BAC\s+(?:[IVXLCDM]+\s+)?", "BAC ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return clean.Trim().ToUpper();
         }
 
         var spacedRole = System.Text.RegularExpressions.Regex.Replace(role, "(?<!^)([A-Z])", " $1").Trim().ToUpper();
-        return $"BAC IV {spacedRole}";
+        return $"BAC {spacedRole}";
     }
 
     private static List<SignatoryItem> BuildSignatoryPairs(BacResolutionDataDto request)
     {
         var list = new List<SignatoryItem>();
 
-        // 1. Provisional Representatives
+        // 1. Provisional Representatives (names omitted for generic client presentation)
         list.Add(new SignatoryItem
         {
-            Name = request.EndUserRepName.ToUpper(),
-            Position = request.EndUserRepPosition
+            Name = string.Empty,
+            Position = !string.IsNullOrWhiteSpace(request.EndUserRepPosition)
+                ? request.EndUserRepPosition
+                : "Provisional Member, End-user Rep"
         });
 
         list.Add(new SignatoryItem
         {
-            Name = request.TechRepName.ToUpper(),
-            Position = request.TechRepPosition
+            Name = string.Empty,
+            Position = !string.IsNullOrWhiteSpace(request.TechRepPosition)
+                ? request.TechRepPosition
+                : "Provisional Member, Tech Rep"
         });
 
-        // 2. BAC Members from Database (if available)
+        // 2. BAC Members (names omitted for generic client presentation)
         if (request.BacMembers != null && request.BacMembers.Any())
         {
             foreach (var member in request.BacMembers)
             {
                 var position = !string.IsNullOrWhiteSpace(member.Role)
                     ? FormatRole(member.Role)
-                    : (!string.IsNullOrWhiteSpace(member.Position) ? member.Position : "BAC MEMBER");
+                    : (!string.IsNullOrWhiteSpace(member.Position) ? member.Position : "BAC REGULAR MEMBER");
 
                 list.Add(new SignatoryItem
                 {
-                    Name = member.FullName.ToUpper(),
+                    Name = string.Empty,
                     Position = position
                 });
             }
         }
         else
         {
-            // Default BAC Members fallback matching standard structure
-            list.Add(new SignatoryItem { Name = "ATTY. NIVRA LYN K. EMPIALES", Position = "BAC IV REGULAR MEMBER" });
-            list.Add(new SignatoryItem { Name = "DR. GREG M. CUBIO", Position = "BAC IV REGULAR MEMBER" });
-            list.Add(new SignatoryItem { Name = "ATTY. SARAH JANE F. BEHIGA", Position = "BAC IV VICE CHAIRPERSON" });
-            list.Add(new SignatoryItem { Name = "ENGR. ALEX L. MAUREAL", Position = "BAC IV CHAIRPERSON" });
+            // Default BAC Members structure without personal names
+            list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC REGULAR MEMBER" });
+            list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC REGULAR MEMBER" });
+            list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC VICE CHAIRPERSON" });
+            list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC CHAIRPERSON" });
         }
 
         return list;
