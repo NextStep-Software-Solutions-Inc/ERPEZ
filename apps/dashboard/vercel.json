@@ -1,5 +1,5 @@
 {
-    "buildCommand": "cd ../erpez-shared-lib && pnpm build && cd ../dashboard && pnpm build",
+    "buildCommand": "pnpm --filter erpez-shared-lib build && pnpm --filter dashboard build",
     "installCommand": "pnpm install",
     "rewrites": [
         {
