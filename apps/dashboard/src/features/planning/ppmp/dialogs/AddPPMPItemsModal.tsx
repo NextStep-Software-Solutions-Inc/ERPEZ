@@ -253,6 +253,11 @@ export default function AddPPMPItemsModal({
   const [isAdding, setIsAdding] = useState(false)
   const [progressIndex, setProgressIndex] = useState(0)
   const [totalProgress, setTotalProgress] = useState(0)
+  const [processingItemName, setProcessingItemName] = useState('')
+  const [processingSubStep, setProcessingSubStep] = useState('')
+  const [failedItems, setFailedItems] = useState<
+    Array<{ id: string; name: string; error: string }>
+  >([])
   const isCommittedRef = useRef(false)
 
   // Filters by CSE tab vs Non-CSE tab
@@ -667,6 +672,9 @@ export default function AddPPMPItemsModal({
     setDetailsItemId(null)
     setDetailsItemType(null)
     setConfirmCloseOpen(false)
+    setFailedItems([])
+    setProcessingItemName('')
+    setProcessingSubStep('')
     isCommittedRef.current = false
   }, [])
 
@@ -754,6 +762,7 @@ export default function AddPPMPItemsModal({
     }
 
     setIsAdding(true)
+    setFailedItems([])
     isCommittedRef.current = false
 
     // Calculate total operations to track progress
@@ -768,16 +777,19 @@ export default function AddPPMPItemsModal({
       }
     })
 
-    setTotalProgress(totalOps)
+    setTotalProgress(Math.max(1, totalOps))
     setProgressIndex(0)
 
     let successCount = 0
     let failedCount = 0
     const successfullyCreatedIds: string[] = []
+    const failedItemsList: Array<{ id: string; name: string; error: string }> = []
 
     try {
       for (const { type, item } of selectedList) {
         const config = configs[item.id]!
+        setProcessingItemName(item.name || 'Item')
+        setProcessingSubStep('Creating procurement item entry...')
         setProgressIndex((prev) => prev + 1)
 
         let createdItemId = ''
@@ -812,11 +824,27 @@ export default function AddPPMPItemsModal({
             payload,
           })
           // Extract GUID from response - handle both string and object payloads
-          createdItemId = typeof response.data === 'string' ? response.data : (response.data?.id ?? '')
+          createdItemId =
+            typeof response.data === 'string'
+              ? response.data
+              : (response.data?.id ?? '')
           successCount++
           successfullyCreatedIds.push(item.id)
-        } catch (err) {
+        } catch (err: unknown) {
           failedCount++
+          const errorObj = err as {
+            response?: { data?: { message?: string } }
+            message?: string
+          }
+          const errorMessage =
+            errorObj?.response?.data?.message ||
+            errorObj?.message ||
+            'Failed to create item'
+          failedItemsList.push({
+            id: item.id,
+            name: item.name || 'Item',
+            error: errorMessage,
+          })
           console.error(`Failed to add item: ${item.name}`, err)
           continue // Skip allocations if item creation failed
         }
@@ -827,6 +855,7 @@ export default function AddPPMPItemsModal({
             ([_, qty]) => qty > 0,
           )
           for (const [month, qty] of activeMonths) {
+            setProcessingSubStep(`Allocating ${qty} units for ${month}...`)
             setProgressIndex((prev) => prev + 1)
             try {
               await createAllocation({
@@ -864,10 +893,6 @@ export default function AddPPMPItemsModal({
           return next
         })
 
-        toast.success(
-          `Successfully added ${successCount} item(s) to expenditure block.`,
-        )
-
         // Invalidate queries to refresh lists and workspace
         await queryClient.invalidateQueries({
           predicate: (query) =>
@@ -880,19 +905,29 @@ export default function AddPPMPItemsModal({
         onSuccess?.()
       }
 
-      if (failedCount > 0) {
-        toast.error(`Failed to add ${failedCount} item(s).`)
-      }
-
-      // If all items succeeded, wait a 600ms safety delay for list updates, mark committed and close cleanly
       if (failedCount === 0 && successCount > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 600))
+        setProgressIndex(totalOps)
+        setProcessingSubStep('All items successfully added!')
+        toast.success(
+          `Successfully added ${successCount} item(s) to expenditure block.`,
+        )
+        // Brief 180ms frame so 100% completion is visually registered
+        await new Promise((resolve) => setTimeout(resolve, 180))
         isCommittedRef.current = true
-        forceClose()
+        onOpenChange(false)
+      } else if (failedCount > 0) {
+        setFailedItems(failedItemsList)
+        setIsAdding(false)
+        if (successCount > 0) {
+          toast.warning(
+            `Added ${successCount} item(s), but ${failedCount} item(s) failed.`,
+          )
+        } else {
+          toast.error(`Failed to add ${failedCount} item(s).`)
+        }
       }
     } catch (globalErr) {
       toast.error('An error occurred during batch creation.')
-    } finally {
       setIsAdding(false)
     }
   }
@@ -912,17 +947,25 @@ export default function AddPPMPItemsModal({
           }
         }}
         title={
-          step === 'select'
-            ? 'Add Items to Workspace'
-            : 'Configure Selected Items'
+          isAdding
+            ? 'Adding Items to Workspace'
+            : failedItems.length > 0
+              ? 'Batch Addition Incomplete'
+              : step === 'select'
+                ? 'Add Items to Workspace'
+                : 'Configure Selected Items'
         }
         description={
-          step === 'select'
-            ? 'Browse procurement catalog items, filter quickly, and select items to add to the PPMP.'
-            : 'Define procurement mode and individual unit prices for the selected items.'
+          isAdding
+            ? 'Please wait while items and monthly distribution allocations are registered.'
+            : failedItems.length > 0
+              ? 'One or more items encountered an error during batch addition.'
+              : step === 'select'
+                ? 'Browse procurement catalog items, filter quickly, and select items to add to the PPMP.'
+                : 'Define procurement mode and individual unit prices for the selected items.'
         }
         size="5xl"
-        showCloseButton={!isAdding}
+        showCloseButton={!isAdding && failedItems.length === 0}
         onPointerDownOutside={
           isAdding
             ? (e) => e.preventDefault()
@@ -934,124 +977,196 @@ export default function AddPPMPItemsModal({
               : undefined
         }
         footer={
-          <div className="sticky bottom-0 border-t border-border bg-background/95 px-1 pt-4 backdrop-blur">
-            <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Badge
-                  variant="soft"
-                  color={selectedCount > 0 ? 'default' : 'secondary'}
-                >
-                  {selectedCount} selected
-                </Badge>
-                <span>
-                  {step === 'select'
-                    ? selectedCount > 0
-                      ? 'Items ready to be configured.'
-                      : 'Select one or more items to continue.'
-                    : `Total Planned Cost: ${new Intl.NumberFormat('en-PH', {
-                      style: 'currency',
-                      currency: 'PHP',
-                    }).format(totalStep2EstimatedCost)}`}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {step === 'select' ? (
-                  <>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedItems(new Map())}
-                      disabled={selectedCount === 0}
-                    >
-                      Clear selection
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setStep('configure')
-                        if (selectedList.length > 0 && !expandedItemId) {
-                          setExpandedItemId(selectedList[0].item.id)
-                        }
-                      }}
-                      disabled={selectedCount === 0}
-                    >
-                      Review Selected ({selectedCount})
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setStep('select')}
-                      disabled={isAdding}
-                      className="gap-2"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Back to Catalog
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleConfirmAdd}
-                      disabled={isAdding || selectedCount === 0}
-                      className="gap-2 bg-primary hover:bg-primary/95 text-white"
-                    >
-                      {isAdding ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Adding...
-                        </>
-                      ) : (
-                        `Add to Workspace (${selectedCount})`
-                      )}
-                    </Button>
-                  </>
-                )}
+          isAdding || failedItems.length > 0 ? null : (
+            <div className="sticky bottom-0 border-t border-border bg-background/95 px-1 pt-4 backdrop-blur">
+              <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <Badge
+                    variant="soft"
+                    color={selectedCount > 0 ? 'default' : 'secondary'}
+                  >
+                    {selectedCount} selected
+                  </Badge>
+                  <span>
+                    {step === 'select'
+                      ? selectedCount > 0
+                        ? 'Items ready to be configured.'
+                        : 'Select one or more items to continue.'
+                      : `Total Planned Cost: ${new Intl.NumberFormat('en-PH', {
+                        style: 'currency',
+                        currency: 'PHP',
+                      }).format(totalStep2EstimatedCost)}`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {step === 'select' ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedItems(new Map())}
+                        disabled={selectedCount === 0}
+                      >
+                        Clear selection
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setStep('configure')
+                          if (selectedList.length > 0 && !expandedItemId) {
+                            setExpandedItemId(selectedList[0].item.id)
+                          }
+                        }}
+                        disabled={selectedCount === 0}
+                      >
+                        Review Selected ({selectedCount})
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStep('select')}
+                        disabled={isAdding}
+                        className="gap-2"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to Catalog
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleConfirmAdd}
+                        disabled={isAdding || selectedCount === 0}
+                        className="gap-2 bg-primary hover:bg-primary/95 text-white"
+                      >
+                        {isAdding ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Adding...
+                          </>
+                        ) : (
+                          `Add to Workspace (${selectedCount})`
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )
         }
       >
-        {/* 
-        Safety Overlay during Batch Addition
-      */}
-        {isAdding && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-6 text-center">
-            <div className="bg-background border border-border shadow-xl rounded-xl p-8 max-w-md w-full flex flex-col items-center space-y-4">
-              <Loader2 className="h-12 w-12 text-primary animate-spin" />
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Creating PPMP Items
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Adding item{' '}
-                  <span className="font-semibold text-foreground">
-                    {progressIndex}
-                  </span>{' '}
-                  of{' '}
-                  <span className="font-semibold text-foreground">
-                    {totalProgress}
+        {isAdding ? (
+          /* Full-Dialog Modal Takeover during Batch Addition */
+          <div className="flex flex-col items-center justify-center min-h-[440px] py-12 px-6 text-center space-y-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative flex items-center justify-center h-20 w-20 rounded-2xl bg-primary/10 border border-primary/20 shadow-xl shadow-primary/10">
+              <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping opacity-25" />
+              <Loader2 className="h-10 w-10 text-primary animate-spin" />
+            </div>
+
+            <div className="space-y-2 max-w-md w-full">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Adding to PPMP Workspace</span>
+              </div>
+
+              <h3 className="text-xl font-bold text-foreground">
+                {processingItemName ? (
+                  <span className="truncate block max-w-sm sm:max-w-md mx-auto" title={processingItemName}>
+                    {processingItemName}
                   </span>
-                  .
-                </p>
-              </div>
-              <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-primary h-full transition-all duration-300 rounded-full"
-                  style={{ width: `${(progressIndex / totalProgress) * 100}%` }}
-                />
-              </div>
-              <p className="text-xs text-rose-500 font-medium">
-                Please do not close the modal, refresh the page, or navigate
-                away.
+                ) : (
+                  'Processing PPMP Items'
+                )}
+              </h3>
+
+              <p className="text-xs text-muted-foreground min-h-[18px]">
+                {processingSubStep || 'Registering procurement records...'}
               </p>
             </div>
-          </div>
-        )}
 
-        {step === 'select' ? (
+            {/* Progress Bar & Operations Counter */}
+            <div className="w-full max-w-md space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold px-1">
+                <span className="text-muted-foreground">
+                  Step {Math.min(progressIndex, totalProgress)} of {totalProgress} operations
+                </span>
+                <span className="text-primary font-mono font-bold">
+                  {Math.min(100, Math.round((progressIndex / Math.max(1, totalProgress)) * 100))}%
+                </span>
+              </div>
+
+              <div className="w-full bg-muted/60 h-3 rounded-full overflow-hidden p-0.5 border border-border/60 shadow-inner">
+                <div
+                  className="bg-primary h-full transition-all duration-300 rounded-full shadow-xs"
+                  style={{
+                    width: `${Math.min(100, Math.max(5, (progressIndex / Math.max(1, totalProgress)) * 100))}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Safety Notice */}
+            <p className="text-xs text-muted-foreground/80 max-w-xs">
+              Please keep this window open while records and monthly distributions are being saved.
+            </p>
+          </div>
+        ) : failedItems.length > 0 ? (
+          /* Error Summary View when one or more items fail */
+          <div className="flex flex-col items-center justify-center min-h-[400px] py-10 px-6 text-center space-y-5 animate-in fade-in duration-200">
+            <div className="h-16 w-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/10">
+              <AlertCircle className="h-8 w-8" />
+            </div>
+
+            <div className="space-y-1 max-w-md">
+              <h3 className="text-lg font-bold text-foreground">
+                Batch Addition Partially Incomplete
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {failedItems.length} item(s) could not be registered. Successfully added items have been saved to your expenditure block.
+              </p>
+            </div>
+
+            {/* List of failed items */}
+            <div className="w-full max-w-lg rounded-xl border border-border bg-muted/20 p-3 max-h-56 overflow-y-auto divide-y divide-border/60 text-left">
+              {failedItems.map((fail, idx) => (
+                <div key={idx} className="py-2.5 px-2 space-y-0.5 first:pt-1 last:pb-1">
+                  <div className="text-xs font-semibold text-foreground flex items-center justify-between">
+                    <span className="truncate max-w-[280px]">{fail.name}</span>
+                    <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/30 bg-amber-500/5">
+                      Failed
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate">{fail.error}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={forceClose}
+                className="text-xs"
+              >
+                Close & Review Workspace
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleConfirmAdd}
+                className="text-xs gap-2 bg-primary hover:bg-primary/95 text-white"
+              >
+                <RefreshCcw className="h-3.5 w-3.5" />
+                Retry Failed Items ({failedItems.length})
+              </Button>
+            </div>
+          </div>
+        ) : step === 'select' ? (
           <div className="space-y-4 pr-1">
             <Tabs
               value={activeTab}

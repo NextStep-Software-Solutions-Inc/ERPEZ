@@ -4124,15 +4124,17 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           itemToEdit={itemDialogEditItem}
         />
 
-        <AddPPMPItemsModal
-          isOpen={itemsPickerOpen}
-          onOpenChange={setItemsPickerOpen}
-          ppmpExpenditureItemId={itemDialogGroupId}
-          officeId={ppmp?.officeId}
-          officeName={ppmp?.officeName}
-          fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
-          ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
-        />
+        {itemsPickerOpen && (
+          <AddPPMPItemsModal
+            isOpen={itemsPickerOpen}
+            onOpenChange={setItemsPickerOpen}
+            ppmpExpenditureItemId={itemDialogGroupId}
+            officeId={ppmp?.officeId}
+            officeName={ppmp?.officeName}
+            fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
+            ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
+          />
+        )}
 
         <EditPPMPItemAllocationsDialog
           isOpen={allocsDialogOpen}
