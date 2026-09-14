@@ -33,6 +33,12 @@ public class CreateAPPItemCommandValidator : AbstractValidator<CreateAPPItemComm
         RuleFor(x => x.Remarks)
             .MaximumLength(1000);
 
+        RuleFor(x => x.ItemNameOverride)
+            .MaximumLength(500);
+
+        RuleFor(x => x.GeneralDescription)
+            .MaximumLength(2000);
+
         RuleFor(x => x.BidEvaluationCriteria)
             .IsEnumName(typeof(BidEvaluationCriteria), caseSensitive: false)
             .When(x => x.BidEvaluationCriteria != null)

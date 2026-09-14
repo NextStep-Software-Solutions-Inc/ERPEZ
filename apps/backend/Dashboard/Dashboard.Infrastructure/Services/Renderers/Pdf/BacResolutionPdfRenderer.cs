@@ -40,8 +40,9 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                         col.Item().AlignCenter().Height(50).Image(logoBytes);
                     }
 
-                    col.Item().AlignCenter().Text("UNIVERSITY OF SCIENCE AND TECHNOLOGY OF SOUTHERN PHILIPPINES")
-                        .Bold().FontSize(10);
+                    col.Item().PaddingTop(2).AlignCenter()
+                        .Text("[Agency Letterhead with Logo]")
+                        .Bold().FontSize(9.5f).Italic();
 
                     col.Item().PaddingTop(6).AlignCenter()
                         .Text($"BAC Resolution No. {request.ResolutionNumber}")
@@ -160,77 +161,158 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                     {
                         col.Item().PaddingTop(4).PaddingBottom(10).Column(itemsSection =>
                         {
-                            itemsSection.Item().PaddingBottom(4).Text("ITEM SPECIFICATIONS & ALLOCATIONS").Bold().FontSize(8.5f);
-
-                            foreach (var group in request.ItemGroups)
+                            if (request.SourceType == "APPItem")
                             {
-                                itemsSection.Item().PaddingTop(4).PaddingBottom(2).Background(Colors.Grey.Lighten3).Padding(4).Row(gh =>
+                                int groupIndex = 1;
+                                foreach (var group in request.ItemGroups)
                                 {
-                                    gh.RelativeItem().Text(group.GroupTitle).Bold().FontSize(8);
-                                    gh.ConstantItem(140).AlignRight().Text($"Subtotal: Php {group.Subtotal:N2}").Bold().FontSize(8);
-                                });
-
-                                itemsSection.Item().Table(table =>
-                                {
-                                    table.ColumnsDefinition(columns =>
+                                    if (request.ItemGroups.Count > 1)
                                     {
-                                        columns.ConstantColumn(20); // #
-                                        columns.RelativeColumn(3.5f); // Item Name / Description
-                                        columns.RelativeColumn(2); // Office
-                                        columns.ConstantColumn(30); // Qty
-                                        columns.ConstantColumn(30); // Unit
-                                        columns.ConstantColumn(60); // Unit Cost
-                                        columns.ConstantColumn(70); // Total Cost
-                                    });
-
-                                    // Header
-                                    table.Header(header =>
-                                    {
-                                        header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).Text("#").Bold().FontSize(7);
-                                        header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).Text("Item / Description").Bold().FontSize(7);
-                                        header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).Text("Office / End-User").Bold().FontSize(7);
-                                        header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).AlignCenter().Text("Qty").Bold().FontSize(7);
-                                        header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).AlignCenter().Text("Unit").Bold().FontSize(7);
-                                        header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).AlignRight().Text("Unit Cost").Bold().FontSize(7);
-                                        header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).AlignRight().Text("Total Amount").Bold().FontSize(7);
-                                    });
-
-                                    // Rows
-                                    int itemIndex = 1;
-                                    foreach (var item in group.Items)
-                                    {
-                                        var bg = itemIndex % 2 == 0 ? Colors.Grey.Lighten4 : Colors.White;
-                                        table.Cell().Background(bg).Padding(2).Text(itemIndex.ToString()).FontSize(7);
-                                        table.Cell().Background(bg).Padding(2).Column(c =>
-                                        {
-                                            c.Item().Text(item.ItemName).Bold().FontSize(7);
-                                            if (!string.IsNullOrWhiteSpace(item.Description) && item.Description != item.ItemName)
-                                            {
-                                                c.Item().Text(item.Description).FontSize(6).Italic();
-                                            }
-                                            if (!string.IsNullOrWhiteSpace(item.ItemCode) && item.ItemCode != item.ItemName)
-                                            {
-                                                c.Item().Text($"Code: {item.ItemCode}").FontSize(6).FontColor(Colors.Grey.Darken2);
-                                            }
-                                        });
-                                        table.Cell().Background(bg).Padding(2).Text(item.OfficeName).FontSize(7);
-                                        table.Cell().Background(bg).Padding(2).AlignCenter().Text(item.Quantity.ToString()).FontSize(7);
-                                        table.Cell().Background(bg).Padding(2).AlignCenter().Text(item.Unit).FontSize(7);
-                                        table.Cell().Background(bg).Padding(2).AlignRight().Text($"Php {item.UnitCost:N2}").FontSize(7);
-                                        table.Cell().Background(bg).Padding(2).AlignRight().Text($"Php {item.TotalAmount:N2}").Bold().FontSize(7);
-                                        itemIndex++;
+                                        itemsSection.Item().PaddingTop(6).PaddingBottom(3).Text($"{groupIndex}. {group.GroupTitle}").Bold().FontSize(8.5f);
                                     }
-                                });
-                            }
+                                    else
+                                    {
+                                        itemsSection.Item().PaddingTop(4).PaddingBottom(3).Text(group.GroupTitle).Bold().FontSize(8.5f);
+                                    }
 
-                            var grandTotal = request.ItemGroups.Sum(g => g.Subtotal);
-                            if (grandTotal > 0)
-                            {
-                                itemsSection.Item().PaddingTop(3).AlignRight().Text(t =>
+                                    // Aggregate line items by (PAPCode, ProcurementModeName, OfficeName)
+                                    var aggregatedRows = group.Items
+                                        .GroupBy(i => new
+                                        {
+                                            PAPCode = !string.IsNullOrWhiteSpace(i.PAPCode) ? i.PAPCode : (!string.IsNullOrWhiteSpace(i.ItemCode) ? i.ItemCode : "—"),
+                                            Mode = !string.IsNullOrWhiteSpace(i.ProcurementModeName) ? i.ProcurementModeName : (!string.IsNullOrWhiteSpace(request.ModeOfProcurement) ? request.ModeOfProcurement : "Small Value Procurement"),
+                                            Office = !string.IsNullOrWhiteSpace(i.OfficeName) ? i.OfficeName : "—"
+                                        })
+                                        .Select(g => new
+                                        {
+                                            g.Key.PAPCode,
+                                            ModesOfProcurement = g.Key.Mode,
+                                            EndUser = g.Key.Office,
+                                            Amount = g.Sum(x => x.TotalAmount)
+                                        })
+                                        .ToList();
+
+                                    itemsSection.Item().Table(table =>
+                                    {
+                                        table.ColumnsDefinition(columns =>
+                                        {
+                                            columns.RelativeColumn(2.5f); // Code (PAP)
+                                            columns.RelativeColumn(3.5f); // Modes of Procurement
+                                            columns.RelativeColumn(3.5f); // End-User or Implementing Unit
+                                            columns.RelativeColumn(2.5f); // Amount of Estimated Budget
+                                        });
+
+                                        // Header
+                                        table.Header(header =>
+                                        {
+                                            header.Cell().Border(0.5f).BorderColor(Colors.Grey.Medium).Background(Colors.Grey.Lighten3).Padding(4).AlignCenter().AlignMiddle().Text("Code (PAP)").Bold().FontSize(7.5f);
+                                            header.Cell().Border(0.5f).BorderColor(Colors.Grey.Medium).Background(Colors.Grey.Lighten3).Padding(4).AlignCenter().AlignMiddle().Text("Modes of Procurement").Bold().FontSize(7.5f);
+                                            header.Cell().Border(0.5f).BorderColor(Colors.Grey.Medium).Background(Colors.Grey.Lighten3).Padding(4).AlignCenter().AlignMiddle().Text("End-User or Implementing Unit").Bold().FontSize(7.5f);
+                                            header.Cell().Border(0.5f).BorderColor(Colors.Grey.Medium).Background(Colors.Grey.Lighten3).Padding(4).AlignCenter().AlignMiddle().Text("Amount of Estimated Budget").Bold().FontSize(7.5f);
+                                        });
+
+                                        // Rows
+                                        foreach (var row in aggregatedRows)
+                                        {
+                                            table.Cell().Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(4).AlignCenter().AlignMiddle().Text(row.PAPCode).FontSize(7.5f);
+                                            table.Cell().Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(4).AlignCenter().AlignMiddle().Text(row.ModesOfProcurement).FontSize(7.5f);
+                                            table.Cell().Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(4).AlignCenter().AlignMiddle().Text(row.EndUser).FontSize(7.5f);
+                                            table.Cell().Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(4).AlignRight().AlignMiddle().Text($"Php {row.Amount:N2}").FontSize(7.5f);
+                                        }
+
+                                        // Total Row
+                                        var groupTotal = aggregatedRows.Sum(r => r.Amount);
+                                        table.Cell().ColumnSpan(3).Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(4).AlignRight().AlignMiddle().Text("Total:").Bold().FontSize(7.5f);
+                                        table.Cell().Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(4).AlignRight().AlignMiddle().Text($"Php {groupTotal:N2}").Bold().FontSize(7.5f);
+                                    });
+
+                                    groupIndex++;
+                                }
+
+                                var grandTotal = request.ItemGroups.Sum(g => g.Subtotal);
+                                if (request.ItemGroups.Count > 1 && grandTotal > 0)
                                 {
-                                    t.Span("Grand Total: ").Bold().FontSize(8);
-                                    t.Span($"Php {grandTotal:N2}").Bold().FontSize(8).FontColor(Colors.Green.Darken2);
-                                });
+                                    itemsSection.Item().PaddingTop(4).AlignRight().Text(t =>
+                                    {
+                                        t.Span("Grand Total: ").Bold().FontSize(8.5f);
+                                        t.Span($"Php {grandTotal:N2}").Bold().FontSize(8.5f).FontColor(Colors.Green.Darken2);
+                                    });
+                                }
+                            }
+                            else
+                            {
+                                itemsSection.Item().PaddingBottom(4).Text("ITEM SPECIFICATIONS & ALLOCATIONS").Bold().FontSize(8.5f);
+
+                                foreach (var group in request.ItemGroups)
+                                {
+                                    itemsSection.Item().PaddingTop(4).PaddingBottom(2).Background(Colors.Grey.Lighten3).Padding(4).Row(gh =>
+                                    {
+                                        gh.RelativeItem().Text(group.GroupTitle).Bold().FontSize(8);
+                                        gh.ConstantItem(140).AlignRight().Text($"Subtotal: Php {group.Subtotal:N2}").Bold().FontSize(8);
+                                    });
+
+                                    itemsSection.Item().Table(table =>
+                                    {
+                                        table.ColumnsDefinition(columns =>
+                                        {
+                                            columns.ConstantColumn(20); // #
+                                            columns.RelativeColumn(3.5f); // Item Name / Description
+                                            columns.RelativeColumn(2); // Office
+                                            columns.ConstantColumn(30); // Qty
+                                            columns.ConstantColumn(30); // Unit
+                                            columns.ConstantColumn(60); // Unit Cost
+                                            columns.ConstantColumn(70); // Total Cost
+                                        });
+
+                                        // Header
+                                        table.Header(header =>
+                                        {
+                                            header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).Text("#").Bold().FontSize(7);
+                                            header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).Text("Item / Description").Bold().FontSize(7);
+                                            header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).Text("Office / End-User").Bold().FontSize(7);
+                                            header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).AlignCenter().Text("Qty").Bold().FontSize(7);
+                                            header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).AlignCenter().Text("Unit").Bold().FontSize(7);
+                                            header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).AlignRight().Text("Unit Cost").Bold().FontSize(7);
+                                            header.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).Padding(2).AlignRight().Text("Total Amount").Bold().FontSize(7);
+                                        });
+
+                                        // Rows
+                                        int itemIndex = 1;
+                                        foreach (var item in group.Items)
+                                        {
+                                            var bg = itemIndex % 2 == 0 ? Colors.Grey.Lighten4 : Colors.White;
+                                            table.Cell().Background(bg).Padding(2).Text(itemIndex.ToString()).FontSize(7);
+                                            table.Cell().Background(bg).Padding(2).Column(c =>
+                                            {
+                                                c.Item().Text(item.ItemName).Bold().FontSize(7);
+                                                if (!string.IsNullOrWhiteSpace(item.Description) && item.Description != item.ItemName)
+                                                {
+                                                    c.Item().Text(item.Description).FontSize(6).Italic();
+                                                }
+                                                if (!string.IsNullOrWhiteSpace(item.ItemCode) && item.ItemCode != item.ItemName)
+                                                {
+                                                    c.Item().Text($"Code: {item.ItemCode}").FontSize(6).FontColor(Colors.Grey.Darken2);
+                                                }
+                                            });
+                                            table.Cell().Background(bg).Padding(2).Text(item.OfficeName).FontSize(7);
+                                            table.Cell().Background(bg).Padding(2).AlignCenter().Text(item.Quantity.ToString()).FontSize(7);
+                                            table.Cell().Background(bg).Padding(2).AlignCenter().Text(item.Unit).FontSize(7);
+                                            table.Cell().Background(bg).Padding(2).AlignRight().Text($"Php {item.UnitCost:N2}").FontSize(7);
+                                            table.Cell().Background(bg).Padding(2).AlignRight().Text($"Php {item.TotalAmount:N2}").Bold().FontSize(7);
+                                            itemIndex++;
+                                        }
+                                    });
+                                }
+
+                                var grandTotal = request.ItemGroups.Sum(g => g.Subtotal);
+                                if (grandTotal > 0)
+                                {
+                                    itemsSection.Item().PaddingTop(3).AlignRight().Text(t =>
+                                    {
+                                        t.Span("Grand Total: ").Bold().FontSize(8);
+                                        t.Span($"Php {grandTotal:N2}").Bold().FontSize(8).FontColor(Colors.Green.Darken2);
+                                    });
+                                }
                             }
                         });
                     }
@@ -280,7 +362,7 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                             : DateTime.Now.ToString("dddd, MMMM dd, yyyy");
                         var location = !string.IsNullOrWhiteSpace(request.ResolvedLocation)
                             ? request.ResolvedLocation
-                            : "University of Science and Technology of Southern Philippines, Cagayan de Oro City";
+                            : "Procuring Entity Premises";
 
                         col.Item().PaddingBottom(10).Text(t =>
                         {
@@ -313,16 +395,32 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                             {
                                 row.RelativeItem().Column(sc =>
                                 {
-                                    sc.Item().Text(left.Name).Bold();
-                                    sc.Item().Text(left.Position).FontSize(8);
+                                    if (!string.IsNullOrWhiteSpace(left.Name))
+                                    {
+                                        sc.Item().Text(left.Name).Bold();
+                                        sc.Item().Text(left.Position).FontSize(8);
+                                    }
+                                    else
+                                    {
+                                        sc.Item().PaddingTop(18).MaxWidth(180).LineHorizontal(1).LineColor(Colors.Black);
+                                        sc.Item().PaddingTop(3).Text(left.Position).FontSize(8);
+                                    }
                                 });
 
                                 if (right != null)
                                 {
                                     row.RelativeItem().Column(sc =>
                                     {
-                                        sc.Item().Text(right.Name).Bold();
-                                        sc.Item().Text(right.Position).FontSize(8);
+                                        if (!string.IsNullOrWhiteSpace(right.Name))
+                                        {
+                                            sc.Item().Text(right.Name).Bold();
+                                            sc.Item().Text(right.Position).FontSize(8);
+                                        }
+                                        else
+                                        {
+                                            sc.Item().PaddingTop(18).MaxWidth(180).LineHorizontal(1).LineColor(Colors.Black);
+                                            sc.Item().PaddingTop(3).Text(right.Position).FontSize(8);
+                                        }
                                     });
                                 }
                                 else
@@ -349,8 +447,22 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
 
                         slip.Item().PaddingTop(24).AlignCenter().Column(head =>
                         {
-                            head.Item().Text(request.HeadOfAgencyName.ToUpper()).Bold().FontSize(10);
-                            head.Item().Text(request.HeadOfAgencyTitle.ToUpper()).FontSize(8);
+                            if (!string.IsNullOrWhiteSpace(request.HeadOfAgencyName) &&
+                                !request.HeadOfAgencyName.Contains("CULTURA", StringComparison.OrdinalIgnoreCase))
+                            {
+                                head.Item().Text(request.HeadOfAgencyName.ToUpper()).Bold().FontSize(10);
+                            }
+                            else
+                            {
+                                head.Item().MaxWidth(220).LineHorizontal(1).LineColor(Colors.Black);
+                            }
+
+                            var title = !string.IsNullOrWhiteSpace(request.HeadOfAgencyTitle) &&
+                                        !request.HeadOfAgencyTitle.Contains("USTP", StringComparison.OrdinalIgnoreCase)
+                                ? request.HeadOfAgencyTitle.ToUpper()
+                                : "HEAD OF THE PROCURING ENTITY";
+
+                            head.Item().PaddingTop(3).Text(title).FontSize(8);
                         });
                     });
                 });
@@ -377,56 +489,61 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
 
     private static string FormatRole(string role)
     {
-        if (string.IsNullOrWhiteSpace(role)) return "BAC MEMBER";
+        if (string.IsNullOrWhiteSpace(role)) return "BAC REGULAR MEMBER";
         if (role.StartsWith("BAC", StringComparison.OrdinalIgnoreCase))
         {
-            return role.ToUpper();
+            var clean = System.Text.RegularExpressions.Regex.Replace(role, @"^BAC\s+(?:[IVXLCDM]+\s+)?", "BAC ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return clean.Trim().ToUpper();
         }
 
         var spacedRole = System.Text.RegularExpressions.Regex.Replace(role, "(?<!^)([A-Z])", " $1").Trim().ToUpper();
-        return $"BAC IV {spacedRole}";
+        return $"BAC {spacedRole}";
     }
 
     private static List<SignatoryItem> BuildSignatoryPairs(BacResolutionDataDto request)
     {
         var list = new List<SignatoryItem>();
 
-        // 1. Provisional Representatives
+        // 1. Provisional Representatives (names omitted for generic client presentation)
         list.Add(new SignatoryItem
         {
-            Name = request.EndUserRepName.ToUpper(),
-            Position = request.EndUserRepPosition
+            Name = string.Empty,
+            Position = !string.IsNullOrWhiteSpace(request.EndUserRepPosition)
+                ? request.EndUserRepPosition
+                : "Provisional Member, End-user Rep"
         });
 
         list.Add(new SignatoryItem
         {
-            Name = request.TechRepName.ToUpper(),
-            Position = request.TechRepPosition
+            Name = string.Empty,
+            Position = !string.IsNullOrWhiteSpace(request.TechRepPosition)
+                ? request.TechRepPosition
+                : "Provisional Member, Tech Rep"
         });
 
-        // 2. BAC Members from Database (if available)
+        // 2. BAC Members (names omitted for generic client presentation)
         if (request.BacMembers != null && request.BacMembers.Any())
         {
             foreach (var member in request.BacMembers)
             {
                 var position = !string.IsNullOrWhiteSpace(member.Role)
                     ? FormatRole(member.Role)
-                    : (!string.IsNullOrWhiteSpace(member.Position) ? member.Position : "BAC MEMBER");
+                    : (!string.IsNullOrWhiteSpace(member.Position) ? member.Position : "BAC REGULAR MEMBER");
 
                 list.Add(new SignatoryItem
                 {
-                    Name = member.FullName.ToUpper(),
+                    Name = string.Empty,
                     Position = position
                 });
             }
         }
         else
         {
-            // Default BAC Members fallback matching standard structure
-            list.Add(new SignatoryItem { Name = "ATTY. NIVRA LYN K. EMPIALES", Position = "BAC IV REGULAR MEMBER" });
-            list.Add(new SignatoryItem { Name = "DR. GREG M. CUBIO", Position = "BAC IV REGULAR MEMBER" });
-            list.Add(new SignatoryItem { Name = "ATTY. SARAH JANE F. BEHIGA", Position = "BAC IV VICE CHAIRPERSON" });
-            list.Add(new SignatoryItem { Name = "ENGR. ALEX L. MAUREAL", Position = "BAC IV CHAIRPERSON" });
+            // Default BAC Members structure without personal names
+            list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC REGULAR MEMBER" });
+            list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC REGULAR MEMBER" });
+            list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC VICE CHAIRPERSON" });
+            list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC CHAIRPERSON" });
         }
 
         return list;

@@ -114,7 +114,7 @@ interface LineItemBudgetDetailsDefaults {
 // Helper to extract the form type
 const useLineItemBudgetDetailsFormInstance = (
   defaultValues: LineItemBudgetDetailsDefaults,
-  onLineItemCreated: (lineItem: CreateLineItemBudgetDetailsFormValues) => void,
+  onLineItemCreated: (lineItem: CreateLineItemBudgetDetailsFormValues) => Promise<void> | void,
 ) =>
   useForm({
     defaultValues,
@@ -122,7 +122,7 @@ const useLineItemBudgetDetailsFormInstance = (
       onChange: createLineItemBudgetDetailsSchema,
     },
     onSubmit: async ({ value }) => {
-      onLineItemCreated(value)
+      await onLineItemCreated(value)
     },
   })
 
@@ -337,7 +337,8 @@ export default function CreateLineItemBudgetDetailsForm({
             void queryClient.invalidateQueries({
               predicate: (query) =>
                 typeof query.queryKey[0] === 'string' &&
-                query.queryKey[0].includes('/lib-activities'),
+                (query.queryKey[0].includes('/lib-activities') ||
+                  query.queryKey[0].includes('/libs')),
             })
             onCreated?.()
             onClose?.()
@@ -347,7 +348,8 @@ export default function CreateLineItemBudgetDetailsForm({
             void queryClient.invalidateQueries({
               predicate: (query) =>
                 typeof query.queryKey[0] === 'string' &&
-                query.queryKey[0].includes('/lib-activities'),
+                (query.queryKey[0].includes('/lib-activities') ||
+                  query.queryKey[0].includes('/libs')),
             })
             // Keep form open to show failures
           } else {
@@ -377,7 +379,8 @@ export default function CreateLineItemBudgetDetailsForm({
           void queryClient.invalidateQueries({
             predicate: (query) =>
               typeof query.queryKey[0] === 'string' &&
-              query.queryKey[0].includes('/lib-activities'),
+              (query.queryKey[0].includes('/lib-activities') ||
+                query.queryKey[0].includes('/libs')),
           })
           onCreated?.()
           onClose?.()

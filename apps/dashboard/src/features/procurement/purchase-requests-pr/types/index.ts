@@ -39,7 +39,9 @@ export interface PRHeaderDetails {
   bacResolutionId?: string
   bacResolutionNumber?: string
   modeOfProcurement?: string
-  sourceType?: 'APP_ITEM' | 'CONSOLIDATED_PR'
+  sourceType?: 'APP_ITEM' | 'CONSOLIDATED_PR' | 'INDEPENDENT'
+  isIndependent?: boolean
+  dateSubmitted?: string
 }
 
 export interface PRAttachment {
@@ -63,7 +65,10 @@ export interface PRItem {
   totalAmount: number
   description?: string
   stockNo?: string
-  source?: 'ppmp' | 'apr' | 'bac' // Source of item
+  source?: 'ppmp' | 'apr' | 'bac' | 'independent' | 'catalog' | 'custom' // Source of item
+  isNonCSE?: boolean // Item classification (Non-CSE vs CSE)
+  setQuantity?: number // Available/set quantity from source PPMP or allocation
+  remainingQuantity?: number // Remaining balance deducted from setQuantity
   ppmpDocId?: string // For non-CSE PRs, track which PPMP document this item came from
   ppmpDocName?: string // For non-CSE PRs, store the PPMP document name
   month?: string
@@ -102,6 +107,8 @@ export interface PurchaseRequest {
   totalAmount: number
   officeCode?: string
   officeName?: string
+  isIndependent?: boolean
+  dateSubmitted?: string
   createdBy: string
   createdAt: string
   updatedAt: string

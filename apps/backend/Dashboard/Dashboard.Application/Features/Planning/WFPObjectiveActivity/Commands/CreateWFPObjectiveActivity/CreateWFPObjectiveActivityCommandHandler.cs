@@ -122,17 +122,6 @@ public class CreateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
                 TimelineType = Enum.Parse<TimelineTypeEnum>(d.TimelineType, ignoreCase: true)
             })];
     }
-    else
-    {
-        var year = wfp.ProjectStartDate.Year > 0 ? wfp.ProjectStartDate.Year : DateTime.UtcNow.Year;
-        activity.WFPObjectiveTimelines = new List<Domain.Entities.Planning.WFPObjectiveTimeline>
-        {
-            new() { StartDate = new DateOnly(year, 1, 1), EndDate = new DateOnly(year, 3, 31), TargetValue = 25m, TimelineType = TimelineTypeEnum.Quarterly },
-            new() { StartDate = new DateOnly(year, 4, 1), EndDate = new DateOnly(year, 6, 30), TargetValue = 25m, TimelineType = TimelineTypeEnum.Quarterly },
-            new() { StartDate = new DateOnly(year, 7, 1), EndDate = new DateOnly(year, 9, 30), TargetValue = 25m, TimelineType = TimelineTypeEnum.Quarterly },
-            new() { StartDate = new DateOnly(year, 10, 1), EndDate = new DateOnly(year, 12, 31), TargetValue = 25m, TimelineType = TimelineTypeEnum.Quarterly }
-        };
-    }
 
     await unitOfWork.WFPObjectiveActivityRepository.AddAsync(activity, cancellationToken);
     await unitOfWork.SaveChangesAsync(cancellationToken);

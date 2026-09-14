@@ -105,7 +105,13 @@ export default function LIBItemExpenditures({
             {/* Left Section - Title and Info */}
             <div className="flex items-center gap-4 flex-1">
               <button
-                onClick={() =>
+                onClick={() => {
+                  void queryClient.invalidateQueries({
+                    predicate: (query) =>
+                      typeof query.queryKey[0] === 'string' &&
+                      (query.queryKey[0].includes('/libs') ||
+                        query.queryKey[0].includes('/lib-activities')),
+                  })
                   navigation({
                     search: (prev) => ({
                       ...prev,
@@ -113,7 +119,7 @@ export default function LIBItemExpenditures({
                       wfpObjectiveActivityId: undefined,
                     }),
                   })
-                }
+                }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Go back"
               >
@@ -144,6 +150,11 @@ export default function LIBItemExpenditures({
                   {currentActivityName}
                 </span>
               )}
+              {currentActivity?.papCode && (
+                <span className="text-xs font-mono bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded-full font-semibold">
+                  PAP: {currentActivity.papCode}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -167,6 +178,11 @@ export default function LIBItemExpenditures({
                 <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">
                   {currentActivityName}
                 </span>
+                {currentActivity?.papCode && (
+                  <span className="text-xs font-mono bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-semibold">
+                    PAP: {currentActivity.papCode}
+                  </span>
+                )}
               </div>
               {lib?.sourceType && !isReadOnly && (
                 <CreateLineItemBudgetDetailsDialog
@@ -179,9 +195,11 @@ export default function LIBItemExpenditures({
                     void queryClient.invalidateQueries({
                       predicate: (query) =>
                         typeof query.queryKey[0] === 'string' &&
-                        query.queryKey[0].startsWith(
+                        (query.queryKey[0].startsWith(
                           '/line-item-budget-details',
-                        ),
+                        ) ||
+                          query.queryKey[0].includes('/libs') ||
+                          query.queryKey[0].includes('/lib-activities')),
                     })
                   }}
                 />
@@ -215,9 +233,11 @@ export default function LIBItemExpenditures({
                           void queryClient.invalidateQueries({
                             predicate: (query) =>
                               typeof query.queryKey[0] === 'string' &&
-                              query.queryKey[0].startsWith(
+                              (query.queryKey[0].startsWith(
                                 '/line-item-budget-details',
-                              ),
+                              ) ||
+                                query.queryKey[0].includes('/libs') ||
+                                query.queryKey[0].includes('/lib-activities')),
                           })
                         },
                         onError: (error: unknown) => {

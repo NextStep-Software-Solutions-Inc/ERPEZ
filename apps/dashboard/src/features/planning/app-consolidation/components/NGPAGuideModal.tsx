@@ -103,7 +103,7 @@ export function NGPAGuideModal({
                         {currentGuide.particular}
                       </h3>
                     </div>
-                    <Badge variant="outline" className="text-slate-600 bg-slate-50 border-slate-300 font-mono text-[11px]">
+                    <Badge variant="outline" className="text-slate-600 bg-slate-50 border-slate-300 font-medium text-[11px]">
                       <Scale className="w-3 h-3 mr-1 text-slate-400" />
                       {currentGuide.legalBasis}
                     </Badge>

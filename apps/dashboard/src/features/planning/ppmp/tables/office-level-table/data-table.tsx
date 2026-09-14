@@ -161,8 +161,10 @@ export function DataTable<TData, TValue>({
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="pending_review">Pending Review</SelectItem>
+              <SelectItem value="submitted">Submitted</SelectItem>
+              <SelectItem value="returned">Returned</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="pending_review">Pending Review</SelectItem>
               <SelectItem value="amending">Amending</SelectItem>
               <SelectItem value="superseded">Superseded</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>

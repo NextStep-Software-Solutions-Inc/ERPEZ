@@ -40,6 +40,8 @@ public class UpdateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
         entity.OfficeId = request.OfficeId;
         entity.PAPCode = request.PAPCode;
         entity.Remarks = request.Remarks;
+        entity.ItemNameOverride = request.ItemNameOverride;
+        entity.GeneralDescription = request.GeneralDescription;
         entity.IsEarlyProcurementActivity = request.IsEarlyProcurementActivity;
         entity.EPARemarks = request.EPARemarks;
         entity.IsOutsourced = request.IsOutsourced;

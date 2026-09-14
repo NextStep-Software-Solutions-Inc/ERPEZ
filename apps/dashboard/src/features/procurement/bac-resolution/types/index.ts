@@ -86,6 +86,7 @@ export type EligibleAppItem = {
   fundSourceId: string | null
   fundSourceName: string
   effectiveABC: number
+  papCode?: string
   appId?: string
   appNumber?: string
   app?: {
@@ -160,6 +161,8 @@ export type AppItemLinkItem = {
   order: number
   appNumber: string
   appName: string
+  papCode?: string
+  procurementModeName?: string
 }
 
 export type WhereasClauses = {

@@ -85,7 +85,7 @@ public class GetEligibleAppsForProcurementQueryHandler(IUnitOfWork unitOfWork)
                     ProcurementModeName = item.ProcurementMode?.Name ?? "Public Bidding",
                     FundSourceId = item.FundSourceId,
                     FundSourceName = item.FundSource?.Name ?? "GAA (General Appropriations Act)",
-                    PAPCode = item.PAPCode,
+                    PAPCode = !string.IsNullOrWhiteSpace(item.PAPCode) ? item.PAPCode : (item.PPMPItem?.PAPCode ?? string.Empty),
                     Remarks = item.Remarks,
                     IsEarlyProcurementActivity = item.IsEarlyProcurementActivity,
                     IsOutsourced = item.IsOutsourced,

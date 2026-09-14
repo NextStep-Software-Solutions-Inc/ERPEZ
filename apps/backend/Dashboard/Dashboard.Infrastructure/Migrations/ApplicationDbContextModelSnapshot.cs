@@ -192,6 +192,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("FundSourceId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("GeneralDescription")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -206,6 +210,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<bool>("IsRevised")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("ItemNameOverride")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("OfficeId")
                         .HasColumnType("uuid");
@@ -2473,6 +2481,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<Guid?>("OPCRActivityId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("PAPCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -9768,7 +9781,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("PPMPItemId")
+                    b.Property<Guid?>("PPMPItemId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("PurchaseRequestId")
@@ -13693,8 +13706,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasOne("ERPEZ.Domain.Entities.Planning.PPMPItem", "PPMPItem")
                         .WithMany()
                         .HasForeignKey("PPMPItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.PurchaseRequest", "PurchaseRequest")
                         .WithMany("PRItems")

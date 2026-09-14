@@ -68,12 +68,13 @@ export default function CreateWFPObjectiveTargetExpenditureDialog({ onCreated, w
         },
         {
           onSuccess: () => {
-            // Refetch both endpoints to ensure UI reflects new expenditure
+            // Refetch endpoints to ensure UI reflects new expenditure
             void queryClient.invalidateQueries({
               predicate: (query) => query.queryKey.some(key => 
                 typeof key === 'string' && (
                   key.includes('/wfp-objective-activities') ||
-                  key.includes('/wfp-objective-activity-expenditures')
+                  key.includes('/wfp-objective-activity-expenditures') ||
+                  key.includes('/wfps')
                 )
               ),
             })

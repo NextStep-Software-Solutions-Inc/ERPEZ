@@ -1700,6 +1700,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMaxLength(500);
 
         modelBuilder.Entity<LineItemBudgetActivity>()
+            .Property(e => e.PAPCode)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<LineItemBudgetActivity>()
             .HasIndex(e => e.LineItemBudgetId);
 
         modelBuilder.Entity<LineItemBudgetActivity>()
@@ -2082,6 +2086,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<APPItem>()
             .Property(e => e.Remarks)
             .HasMaxLength(1000);
+
+        modelBuilder.Entity<APPItem>()
+            .Property(e => e.ItemNameOverride)
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<APPItem>()
+            .Property(e => e.GeneralDescription)
+            .HasMaxLength(2000);
 
         modelBuilder.Entity<APPItem>()
             .Property(e => e.BidEvaluationCriteria)
@@ -2762,6 +2774,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(i => i.PPMPItem)
             .WithMany()
             .HasForeignKey(i => i.PPMPItemId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PRItem>()

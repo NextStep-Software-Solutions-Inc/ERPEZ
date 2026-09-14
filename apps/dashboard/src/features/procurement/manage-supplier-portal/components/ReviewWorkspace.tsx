@@ -238,7 +238,7 @@ export function ReviewWorkspace({
                   ) : (
                     <>
                       <Download className="h-3.5 w-3.5" />
-                      Download All
+                      Download All (ZIP)
                     </>
                   )}
                 </Button>

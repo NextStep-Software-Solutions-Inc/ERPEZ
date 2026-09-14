@@ -111,7 +111,7 @@ export function SupplementalMetadataForm({
               type="text"
               value={metadata.supplementalCode}
               disabled
-              className="bg-gray-50 font-mono"
+              className="bg-gray-50 font-medium"
             />
             <p className="text-xs text-gray-600">
               Format: Original APP Code + "-S" + Sequential Number

@@ -71,7 +71,6 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork, ICur
                 $"Duplicate descriptions found in the batch: {string.Join(", ", batchDuplicates)}");
         }
 
-        var year = wfp.ProjectStartDate.Year > 0 ? wfp.ProjectStartDate.Year : DateTime.UtcNow.Year;
         var createdObjectivesCount = 0;
         var currentUserId = string.IsNullOrWhiteSpace(currentUserService.UserId) ? "system" : currentUserService.UserId;
         var now = DateTime.UtcNow;
@@ -112,20 +111,6 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork, ICur
 
                         await unitOfWork.WFPObjectiveActivityRepository.AddAsync(wfpActivity, cancellationToken);
                         await unitOfWork.SaveChangesAsync(cancellationToken);
-
-                        // Auto-create Q1-Q4 quarterly timelines for each created activity
-                        var timelines = new List<WfpObjectiveTimelineEntity>
-                        {
-                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 1, 1), EndDate = new DateOnly(year, 3, 31), TargetValue = 25m, CreatedAt = now, CreatedBy = currentUserId },
-                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 4, 1), EndDate = new DateOnly(year, 6, 30), TargetValue = 25m, CreatedAt = now, CreatedBy = currentUserId },
-                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 7, 1), EndDate = new DateOnly(year, 9, 30), TargetValue = 25m, CreatedAt = now, CreatedBy = currentUserId },
-                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 10, 1), EndDate = new DateOnly(year, 12, 31), TargetValue = 25m, CreatedAt = now, CreatedBy = currentUserId }
-                        };
-
-                        foreach (var timeline in timelines)
-                        {
-                            await unitOfWork.WFPObjectiveTimelineRepository.AddAsync(timeline, cancellationToken);
-                        }
                     }
                 }
             }

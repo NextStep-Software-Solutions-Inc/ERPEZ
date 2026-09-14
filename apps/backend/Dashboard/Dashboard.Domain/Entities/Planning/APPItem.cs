@@ -54,6 +54,12 @@ public class APPItem : BaseEntity
     public DateTime? EndOfProcurementOverride { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
+    public string? ItemNameOverride { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? GeneralDescription { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
     public decimal? EstimatedBudgetOverride { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]

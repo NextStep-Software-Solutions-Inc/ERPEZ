@@ -38,15 +38,22 @@ export const getOfficesRequest: QueryBlueprintFromTemplate<
   Office[]
 > = {
   endpoint,
-  key: ({ url }) => [url] as const,
+  key: ({ url }) => ['offices-extracted-list', url] as const,
   fetcher: async ({ finalUrl }) => {
     try {
-      const response = await api.get<OfficesResponse>(finalUrl)
-      // Extract offices array from paginated response
-      return response.data.data || []
+      const response = await api.get<any>(finalUrl)
+      const resData = response?.data
+      if (Array.isArray(resData)) {
+        return resData
+      }
+      if (Array.isArray(resData?.data)) {
+        return resData.data
+      }
+      return []
     } catch (error) {
       console.error('Failed to fetch offices:', error)
-      throw error
+      return []
     }
   },
 }
+

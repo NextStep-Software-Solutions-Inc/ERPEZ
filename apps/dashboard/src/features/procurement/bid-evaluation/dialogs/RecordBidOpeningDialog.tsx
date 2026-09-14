@@ -14,7 +14,7 @@ import {
   Unlock,
   XCircle,
 } from 'lucide-react'
-import { previewDocument } from '@/features/procurement/manage-supplier-portal/utils'
+import { DocumentPreviewDialog, type PreviewableDocument } from './DocumentPreviewDialog'
 import { useRecordBidOpening } from '../hooks/useBidEvaluationApi'
 import type { BiddingSubmissionResponse } from '../types/bidEvaluationApi.types'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -58,21 +58,16 @@ export function RecordBidOpeningDialog({
   const [asReadBidAmount, setAsReadBidAmount] = useState<string>('')
   const [remarks, setRemarks] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
-  const [previewingDocId, setPreviewingDocId] = useState<string | null>(null)
+  const [previewDoc, setPreviewDoc] = useState<PreviewableDocument | null>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 
   // 8. Historical state preservation: once Envelope 2 was opened, lock reversal
   const isAlreadyOpened = submission?.openingRecord?.envelope2Opened === true
 
-  const handlePreview = async (doc: { id: string; name: string; url: string; type?: string }) => {
+  const handlePreview = (doc: { id: string; name: string; url: string; type?: string }) => {
     if (!doc.url) return
-    setPreviewingDocId(doc.id)
-    try {
-      await previewDocument(doc.url, doc.name, doc.type)
-    } catch (err) {
-      console.error('Failed to preview document:', err)
-    } finally {
-      setPreviewingDocId(null)
-    }
+    setPreviewDoc(doc)
+    setIsPreviewOpen(true)
   }
 
   useEffect(() => {
@@ -386,15 +381,10 @@ export function RecordBidOpeningDialog({
                             type="button"
                             variant="ghost"
                             size="sm"
-                            disabled={previewingDocId === doc.id}
                             className="h-6 text-[11px] px-2 text-primary hover:text-primary hover:bg-primary/10 gap-1 shrink-0 font-semibold"
                             onClick={() => handlePreview(doc)}
                           >
-                            {previewingDocId === doc.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              'Preview'
-                            )}
+                            Preview
                           </Button>
                         )}
                       </div>
@@ -598,15 +588,10 @@ export function RecordBidOpeningDialog({
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                disabled={previewingDocId === doc.id}
                                 className="h-6 text-[11px] px-2 text-purple-700 hover:text-purple-800 hover:bg-purple-100 gap-1 shrink-0 font-semibold"
                                 onClick={() => handlePreview(doc)}
                               >
-                                {previewingDocId === doc.id ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  'Preview'
-                                )}
+                                Preview
                               </Button>
                             )}
                           </div>
@@ -647,6 +632,12 @@ export function RecordBidOpeningDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <DocumentPreviewDialog
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        document={previewDoc}
+      />
     </Dialog>
   )
 }

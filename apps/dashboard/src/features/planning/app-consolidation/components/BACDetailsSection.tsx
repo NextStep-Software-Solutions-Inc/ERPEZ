@@ -210,7 +210,7 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="flex-1 min-w-[280px] space-y-1.5">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs font-bold font-mono text-purple-800 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                            <span className="text-xs font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
                               {String(idx + 1).padStart(2, '0')}
                             </span>
                             <h3 className="text-base font-semibold text-slate-900 leading-tight">
@@ -255,7 +255,17 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
                       </div>
 
                       {/* Compact Metadata Row with Accessible High Contrast */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 py-3 px-4 bg-slate-50/80 rounded-lg text-xs border border-slate-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 py-3 px-4 bg-slate-50/80 rounded-lg text-xs border border-slate-200">
+                        {/* PAP Code */}
+                        <div>
+                          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-0.5">
+                            PAP Code
+                          </span>
+                          <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 inline-block">
+                            {item.papCode || item.code || '—'}
+                          </span>
+                        </div>
+
                         {/* Procurement Mode (Blue) */}
                         <div>
                           <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-0.5">

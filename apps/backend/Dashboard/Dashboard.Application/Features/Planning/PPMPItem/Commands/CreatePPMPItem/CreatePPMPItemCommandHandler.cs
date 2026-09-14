@@ -54,6 +54,19 @@ public class CreatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
             ? (request.UnitPrice > 0 ? request.UnitPrice : 0m)
             : nonCseItem?.CurrentPrice > 0 ? nonCseItem.CurrentPrice : request.UnitPrice;
 
+        var papCode = request.PAPCode;
+        if (string.IsNullOrWhiteSpace(papCode) && expenditureItem.PPMPActivityId.HasValue)
+        {
+            var ppmpActivity = await unitOfWork.PPMPActivityRepository.GetByIdAsync(
+                expenditureItem.PPMPActivityId.Value, cancellationToken);
+            if (ppmpActivity != null)
+            {
+                var libActivity = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(
+                    ppmpActivity.LIBActivityId, cancellationToken);
+                papCode = libActivity?.PAPCode;
+            }
+        }
+
         // Create PPMP Item
         var ppmpItem = new Domain.Entities.Planning.PPMPItem
         {
@@ -62,7 +75,7 @@ public class CreatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
             CSEItemId = request.CSEItemId,
             NonCSEItemId = request.NonCSEItemId,
             ProcurementModeId = request.ProcurementModeId,
-            PAPCode = request.PAPCode,
+            PAPCode = papCode,
             Name = name,
             Description = description,
             Unit = unit,

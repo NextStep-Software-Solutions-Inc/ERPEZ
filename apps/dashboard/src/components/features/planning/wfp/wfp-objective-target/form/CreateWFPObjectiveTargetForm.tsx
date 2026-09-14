@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button'
 export const createWFPObjectiveTargetSchema = z.object({
   wfpObjectiveId: z.string().min(1),
   activityName: z.string().min(1),
-  indicator: z.string().min(1),
+  indicator: z.string().min(3, 'Indicator must be at least 3 characters long'),
   weight: z.number().min(0).max(100).optional(),
   dates: z.array(z.object({
     timelineType: z.enum(['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annual']),
@@ -269,13 +269,13 @@ export default function CreateWFPObjectiveTargetForm({
       <form.Field
         name="indicator"
         validators={{
-          onChange: z.string().min(1, 'Indicator is required'),
+          onChange: z.string().min(3, 'Indicator must be at least 3 characters long'),
         }}
         children={(indicatorField) => (
           <div>
-            <Label className="text-sm font-bold text-gray-700">Target Accomplishment <div className="text-red-500 inline">*</div></Label>
+            <Label className="text-sm font-bold text-gray-700">Target Accomplishment (Indicator) <div className="text-red-500 inline">*</div></Label>
             <Input
-              placeholder="Enter Target Accomplishment"
+              placeholder="e.g., 10 blueprints drafted and submitted"
               className="border-gray-200"
               value={indicatorField.state.value}
               onChange={(e) => indicatorField.handleChange(e.target.value)}
@@ -349,6 +349,7 @@ export default function CreateWFPObjectiveTargetForm({
         selectedType={selectedType}
         getPeriodDates={getPeriodDates}
         projectStart={wfpData?.projectStartDate}
+        onRemovePeriod={(period) => handleTargetChange(period, '')}
       />
       {/* Footer Buttons */}
       <div className="flex justify-end gap-3 pt-6 border-t">

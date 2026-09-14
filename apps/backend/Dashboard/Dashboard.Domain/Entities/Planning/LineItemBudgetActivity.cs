@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
@@ -26,6 +26,9 @@ public class LineItemBudgetActivity : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string PAPCode { get; set; } = string.Empty;
     
     // Navigation properties
     public virtual LineItemBudget LineItemBudget { get; set; } = null!;

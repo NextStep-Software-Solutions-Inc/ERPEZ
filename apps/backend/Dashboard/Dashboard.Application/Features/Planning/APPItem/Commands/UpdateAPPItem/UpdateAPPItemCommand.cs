@@ -14,6 +14,8 @@ public class UpdateAPPItemCommand : IRequest<ApiResponse<Guid>>
     public Guid OfficeId { get; set; }
     public string PAPCode { get; set; } = string.Empty;
     public string? Remarks { get; set; }
+    public string? ItemNameOverride { get; set; }
+    public string? GeneralDescription { get; set; }
     public bool IsEarlyProcurementActivity { get; set; }
     public string? EPARemarks { get; set; }
     public bool IsOutsourced { get; set; }

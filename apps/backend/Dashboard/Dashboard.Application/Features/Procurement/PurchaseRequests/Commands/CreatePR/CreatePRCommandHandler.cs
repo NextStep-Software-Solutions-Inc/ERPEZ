@@ -38,31 +38,34 @@
 
             foreach (var itemRequest in request.Items)
             {
-                var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
-                    itemRequest.PPMPItemId!.Value, cancellationToken)
-                    ?? throw new NotFoundException($"PPMP Item with ID {itemRequest.PPMPItemId} not found.");
+                if (itemRequest.PPMPItemId.HasValue)
+                {
+                    var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
+                        itemRequest.PPMPItemId.Value, cancellationToken)
+                        ?? throw new NotFoundException($"PPMP Item with ID {itemRequest.PPMPItemId} not found.");
 
-                if (request.PRType == PRType.NonCSE && ppmpItem.CSEItemId.HasValue)
-                    throw new ValidationException($"Item '{ppmpItem.Name}' is a CSE item and cannot be added to a Non-CSE PR.");
+                    if (request.PRType == PRType.NonCSE && ppmpItem.CSEItemId.HasValue)
+                        throw new ValidationException($"Item '{ppmpItem.Name}' is a CSE item and cannot be added to a Non-CSE PR.");
 
-                var itemOfficeId = ppmpItem.PPMPExpenditureItem?.PPMP?.OfficeId
-                                ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId;
-                if (itemOfficeId.HasValue && itemOfficeId.Value != request.OfficeId)
-                    throw new ValidationException($"Item '{ppmpItem.Name}' belongs to another office and cannot be added to this Purchase Request.");
+                    var itemOfficeId = ppmpItem.PPMPExpenditureItem?.PPMP?.OfficeId
+                                    ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId;
+                    if (itemOfficeId.HasValue && itemOfficeId.Value != request.OfficeId)
+                        throw new ValidationException($"Item '{ppmpItem.Name}' belongs to another office and cannot be added to this Purchase Request.");
 
-                var ppmpStatus = ppmpItem.PPMPExpenditureItem?.PPMP?.Status
-                              ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Status;
-                if (ppmpStatus != StatusEnum.Approved)
-                    throw new ValidationException($"Item '{ppmpItem.Name}' belongs to a PPMP that is not approved.");
+                    var ppmpStatus = ppmpItem.PPMPExpenditureItem?.PPMP?.Status
+                                  ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Status;
+                    if (ppmpStatus != StatusEnum.Approved)
+                        throw new ValidationException($"Item '{ppmpItem.Name}' belongs to a PPMP that is not approved.");
 
-                var isAppApproved = ppmpItem.APPItems.Any(ai => !ai.IsDeleted && !ai.APP.IsDeleted && ai.APP.Status == StatusEnum.Approved);
-                if (!isAppApproved)
-                    throw new ValidationException($"Item '{ppmpItem.Name}' has not been consolidated into an approved Annual Procurement Plan (APP).");
+                    var isAppApproved = ppmpItem.APPItems.Any(ai => !ai.IsDeleted && !ai.APP.IsDeleted && ai.APP.Status == StatusEnum.Approved);
+                    if (!isAppApproved)
+                        throw new ValidationException($"Item '{ppmpItem.Name}' has not been consolidated into an approved Annual Procurement Plan (APP).");
 
-                if (request.PRType == PRType.NonCSE && ppmpItem.NonCSEItemId == null)
-                    throw new ValidationException($"Item '{ppmpItem.Name}' is not an approved Non-CSE item.");
+                    if (request.PRType == PRType.NonCSE && ppmpItem.NonCSEItemId == null)
+                        throw new ValidationException($"Item '{ppmpItem.Name}' is not an approved Non-CSE item.");
 
-                await ValidatePPMPItemBudget(ppmpItem.Id, itemRequest.RequestedMonth, itemRequest.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, null, cancellationToken);
+                    await ValidatePPMPItemBudget(ppmpItem.Id, itemRequest.RequestedMonth, itemRequest.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, null, cancellationToken);
+                }
 
                 prItems.Add(BuildPRItem(itemRequest));
                 totalAmount += itemRequest.RequestedQuantity * itemRequest.UnitCost;
@@ -156,7 +159,7 @@
 
         private static PRItem BuildPRItem(PRItemRequest req) => new()
         {
-            PPMPItemId        = req.PPMPItemId!.Value,
+            PPMPItemId        = req.PPMPItemId,
             APRItemId         = req.APRItemId,
             Name              = req.Name,
             Description       = req.Description,

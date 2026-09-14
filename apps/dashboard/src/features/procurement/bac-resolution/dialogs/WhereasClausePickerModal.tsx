@@ -109,7 +109,7 @@ export function WhereasClausePickerModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden max-h-[85vh] flex flex-col gap-0">
+      <DialogContent size="2xl" className="max-w-6xl w-[95vw] h-[82vh] max-h-[850px] p-0 overflow-hidden flex flex-col gap-0">
         <DialogHeader className="p-4 pb-3 border-b border-default-200 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export function WhereasClausePickerModal({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[420px]">
+            <div className="flex-1 overflow-y-auto pr-1 space-y-2 min-h-0">
               {isPending ? (
                 <div className="flex flex-col items-center justify-center p-12 text-xs text-muted-foreground">
                   <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
@@ -252,7 +252,7 @@ export function WhereasClausePickerModal({
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[420px]">
+            <div className="flex-1 overflow-y-auto pr-1 space-y-2 min-h-0">
               {draftItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-8 text-center text-xs text-muted-foreground h-full border border-dashed border-default-200 rounded-lg bg-white">
                   <FileText className="h-8 w-8 text-default-300 mb-2 stroke-[1.5]" />

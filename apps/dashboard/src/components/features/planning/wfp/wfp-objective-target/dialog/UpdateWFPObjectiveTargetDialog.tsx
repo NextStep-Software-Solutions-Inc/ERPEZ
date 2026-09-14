@@ -144,7 +144,7 @@ export default function UpdateWFPObjectiveTargetDialog() {
               ...formData,
             }}
             wfpObjectiveId={wfpObjectiveTargetData?.wfpObjective?.id || ''}
-            wfpData={wfpObjectiveTargetData?.wfpObjective?.wfp}
+            wfpData={wfpObjectiveTargetData?.wfpObjective?.wfp || (wfpObjectiveTargetData as any)?.wfp}
           />
         )}
       </ResponsiveDialog>
