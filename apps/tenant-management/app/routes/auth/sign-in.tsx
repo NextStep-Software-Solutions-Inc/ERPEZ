@@ -70,6 +70,20 @@ export default function SignInPage() {
     e.preventDefault();
     setErrorMessage(null);
 
+    // Production authentication is delegated to Keycloak's Authorization Code Flow with PKCE.
+    // Credentials are not submitted to the ERPEZ API in that environment.
+    if (!envAllowsDevPersonas) {
+      setIsSubmitting(true);
+      try {
+        await login();
+      } catch (err: any) {
+        setErrorMessage(err?.message || "Unable to start secure Keycloak sign-in.");
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     if (!usernameOrEmail.trim()) {
       setErrorMessage("Username or email is required.");
       return;
@@ -154,6 +168,13 @@ export default function SignInPage() {
 
           {/* Native In-App Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {!envAllowsDevPersonas && (
+              <p className="rounded-lg bg-blue-50 p-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                You will sign in securely on the Keycloak identity provider.
+              </p>
+            )}
+            {envAllowsDevPersonas && (
+              <>
             <div className="space-y-2">
               <Label htmlFor="usernameOrEmail">Username or email</Label>
               <div className="relative">
@@ -228,6 +249,8 @@ export default function SignInPage() {
                 Remember me on this browser
               </Label>
             </div>
+              </>
+            )}
 
             {/* Submit Button */}
             <Button
@@ -241,7 +264,7 @@ export default function SignInPage() {
                   Signing in...
                 </>
               ) : (
-                "Sign In"
+                envAllowsDevPersonas ? "Sign In" : "Continue with Keycloak"
               )}
             </Button>
           </form>

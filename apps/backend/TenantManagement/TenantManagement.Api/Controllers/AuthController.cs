@@ -143,13 +143,19 @@ public class AuthController(
     public record LoginRequest(string? UsernameOrEmail, string? Password, bool RememberMe = false);
 
     /// <summary>
-    /// Authenticates a user in-app via Keycloak Direct Access Grant (ROPC) or dev persona fallback.
-    /// Returns bearer token and user/tenant profile.
+    /// Authenticates local development personas. Production authentication is performed by
+    /// Keycloak Authorization Code Flow with PKCE in the browser.
     /// </summary>
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest? request, CancellationToken cancellationToken)
     {
+        // Direct Access Grant (ROPC) is intentionally unavailable outside Development.
+        if (!env.IsDevelopment())
+        {
+            return NotFound();
+        }
+
         if (request == null || string.IsNullOrWhiteSpace(request.UsernameOrEmail) || string.IsNullOrWhiteSpace(request.Password))
         {
             return BadRequest(ApiResponse<object>.Fail("Username or email and password are required."));
@@ -158,7 +164,7 @@ public class AuthController(
         var usernameOrEmail = request.UsernameOrEmail.Trim();
         var password = request.Password;
 
-        // 1. Try Keycloak Direct Access Grant (ROPC flow)
+        // 1. Development-only Keycloak Direct Access Grant (ROPC flow)
         var keycloakAuthResult = await TryKeycloakDirectLoginAsync(usernameOrEmail, password, cancellationToken);
         if (keycloakAuthResult != null)
         {
@@ -550,7 +556,8 @@ public class AuthController(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Keycloak user creation failed for user {Username} ({Email}): {ErrorMessage}", request.Username, request.Email, ex.Message);
+            // Never include the request, password, token, or exception message as a log property.
+            logger.LogWarning(ex, "Keycloak user creation failed for user {Username} ({Email}).", request.Username, request.Email);
         }
 
         return null;
@@ -685,7 +692,8 @@ public class AuthController(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Keycloak direct login failed for user {UsernameOrEmail}: {ErrorMessage}", usernameOrEmail, ex.Message);
+            // Passwords and token responses are intentionally excluded from this log event.
+            logger.LogWarning(ex, "Keycloak direct login failed for user {UsernameOrEmail}.", usernameOrEmail);
             return null;
         }
     }
