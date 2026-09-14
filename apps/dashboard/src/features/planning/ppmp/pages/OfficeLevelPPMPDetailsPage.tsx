@@ -475,7 +475,7 @@ function ActivityCard({
   return (
     <li
       className={cn(
-        'rounded-xl border bg-white shadow-sm transition-all duration-200 overflow-hidden relative flex shrink-0 h-30',
+        'rounded-xl border bg-white shadow-sm transition-all duration-200 overflow-hidden relative flex shrink-0 min-h-[148px] h-auto',
         selected
           ? 'ring-1 shadow-md bg-primary/5 scale-[1.015] z-10 animate-pulse-selected border-primary'
           : 'border-default-200 hover:border-default-300 hover:shadow-md',
@@ -486,7 +486,7 @@ function ActivityCard({
       )}
     >
       {/* Left side (regular card content) */}
-      <div className="w-80 shrink-0 flex items-start gap-3 p-4">
+      <div className="w-80 shrink-0 flex items-start gap-3 p-4 pb-4">
         {selected && (
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r" />
         )}
@@ -494,27 +494,29 @@ function ActivityCard({
         <button
           type="button"
           onClick={onSelect}
-          className="flex-1 min-w-0 text-left"
+          className="flex-1 min-w-0 text-left flex flex-col justify-between self-stretch"
         >
-          <span className="text-[10px] font-bold text-primary/80 uppercase tracking-wider block mb-0.5">
-            Activity Indicator
-          </span>
-          <h3
-            className="text-sm font-semibold text-default-900 group-hover:text-primary transition-colors leading-snug line-clamp-2"
-            title={activity.activityName || 'Unnamed'}
-          >
-            {activity.activityName || 'Unnamed'}
-          </h3>
-          <div className="mt-1 flex items-baseline gap-1 text-xs text-default-500">
-            <span className="text-sm font-semibold text-default-900">
-              {activity.totalAllocationAmount
-                ? formatCurrency(activity.totalAllocationAmount)
-                : '—'}
+          <div>
+            <span className="text-[10px] font-bold text-primary/80 uppercase tracking-wider block mb-0.5">
+              Activity Indicator
             </span>
+            <h3
+              className="text-sm font-semibold text-default-900 group-hover:text-primary transition-colors leading-snug line-clamp-2"
+              title={activity.activityName || 'Unnamed'}
+            >
+              {activity.activityName || 'Unnamed'}
+            </h3>
+            <div className="mt-1 flex items-baseline gap-1 text-xs text-default-500">
+              <span className="text-sm font-semibold text-default-900">
+                {activity.totalAllocationAmount
+                  ? formatCurrency(activity.totalAllocationAmount)
+                  : '—'}
+              </span>
+            </div>
           </div>
 
           {/* Progress bar of total budget */}
-          <div className="mt-2.5 space-y-1">
+          <div className="mt-3 space-y-1">
             <div className="flex items-center justify-between text-xs text-default-500">
               <span className="font-normal">PPMP Budget Share</span>
               <span className="font-medium text-default-600">
@@ -2293,8 +2295,12 @@ export function ExpenditureItemGroup({
 
 function MonthlyScheduleMatrix({
   activity,
+  expenditureItems = [],
+  isExpenditureLoading = false,
 }: {
   activity: PPMPActivityForDisplay
+  expenditureItems?: PPMPExpenditureItem[]
+  isExpenditureLoading?: boolean
 }) {
   const months = [
     'January',
@@ -2311,6 +2317,41 @@ function MonthlyScheduleMatrix({
     'December',
   ]
 
+  const expenditureItemIds = useMemo(
+    () => (expenditureItems || []).map((g) => g.id).filter(Boolean),
+    [expenditureItems],
+  )
+
+  const itemsFilter = useMemo(() => {
+    if (expenditureItemIds.length === 0) return ''
+    return `ppmpExpenditureItemId==${expenditureItemIds.join('|')}`
+  }, [expenditureItemIds])
+
+  const { data: itemsResp, isLoading: isItemsLoading } = usePPMPItems({
+    pathParams: {},
+    queryParams: itemsFilter
+      ? {
+          filters: itemsFilter,
+          pageSize: 1000,
+        }
+      : {},
+    enabled: !!itemsFilter,
+  })
+
+  const fetchedItems = itemsResp?.data ?? []
+
+  const directItems = useMemo(
+    () =>
+      activity.ppmpExpenditureItems?.flatMap(
+        (group) => group.ppmpItems || [],
+      ) || [],
+    [activity.ppmpExpenditureItems],
+  )
+
+  const allItems = directItems.length > 0 ? directItems : fetchedItems
+  const isLoading =
+    isExpenditureLoading || (expenditureItemIds.length > 0 && isItemsLoading)
+
   const monthlyData = useMemo(() => {
     const agg: Record<
       string,
@@ -2320,25 +2361,33 @@ function MonthlyScheduleMatrix({
       agg[m] = { quantity: 0, amount: 0, itemCount: 0 }
     })
 
-    activity.ppmpExpenditureItems?.forEach((group) => {
-      group.ppmpItems?.forEach((item) => {
-        let hasAllocInMonth = false
-        item.PPMPItemAllocations?.forEach((alloc) => {
-          const month = alloc.allocationMonth
-          if (agg[month]) {
-            agg[month].quantity += alloc.quantity || 0
-            agg[month].amount += alloc.amount || 0
-            hasAllocInMonth = true
+    allItems.forEach((item) => {
+      const monthsWithAlloc = new Set<string>()
+      item.PPMPItemAllocations?.forEach((alloc) => {
+        const rawMonth = alloc.allocationMonth
+        const targetMonth = months.find(
+          (m) =>
+            m.toLowerCase() === rawMonth?.toLowerCase() ||
+            (rawMonth && m.toLowerCase().startsWith(rawMonth.toLowerCase())) ||
+            (rawMonth &&
+              rawMonth.toLowerCase().startsWith(m.toLowerCase().substring(0, 3))),
+        )
+
+        if (targetMonth && agg[targetMonth]) {
+          const qty = alloc.quantity || 0
+          const amt =
+            alloc.amount ||
+            (qty > 0 && item.unitPrice ? qty * item.unitPrice : 0)
+
+          if (qty > 0 || amt > 0) {
+            agg[targetMonth].quantity += qty
+            agg[targetMonth].amount += amt
+            monthsWithAlloc.add(targetMonth)
           }
-        })
-        if (hasAllocInMonth) {
-          item.PPMPItemAllocations?.forEach((alloc) => {
-            const m = alloc.allocationMonth
-            if (agg[m] && (alloc.quantity > 0 || alloc.amount > 0)) {
-              agg[m].itemCount += 1
-            }
-          })
         }
+      })
+      monthsWithAlloc.forEach((m) => {
+        agg[m].itemCount += 1
       })
     })
 
@@ -2348,7 +2397,7 @@ function MonthlyScheduleMatrix({
       amount: agg[m].amount,
       itemCount: agg[m].itemCount,
     }))
-  }, [activity])
+  }, [allItems])
 
   return (
     <div className="space-y-4">
@@ -2364,54 +2413,68 @@ function MonthlyScheduleMatrix({
           for this activity across the fiscal year.
         </p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {monthlyData.map(({ month, amount, itemCount }) => {
-            const isActive = amount > 0
-            return (
-              <div
-                key={month}
-                className={cn(
-                  'rounded-xl border p-3.5 transition-all duration-205 flex flex-col justify-between min-h-22.5',
-                  isActive
-                    ? 'bg-primary/2 border-primary/20 shadow-sm'
-                    : 'bg-default-50/50 border-default-200 text-default-450',
-                )}
-              >
-                <div>
-                  <div
-                    className={cn(
-                      'text-xs font-bold uppercase tracking-wider',
-                      isActive
-                        ? 'text-primary font-semibold'
-                        : 'text-default-400',
+        {isLoading ? (
+          <div className="flex h-40 items-center justify-center p-10 text-center text-sm text-default-400 bg-default-50 border border-dashed border-default-200 rounded-xl">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-default-300 border-t-primary mr-2" />
+            Loading monthly schedule...
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {monthlyData.map(({ month, amount, quantity, itemCount }) => {
+              const isActive = amount > 0 || quantity > 0
+              return (
+                <div
+                  key={month}
+                  className={cn(
+                    'rounded-xl border p-3.5 transition-all duration-205 flex flex-col justify-between min-h-22.5',
+                    isActive
+                      ? 'bg-primary/2 border-primary/20 shadow-sm'
+                      : 'bg-default-50/50 border-default-200 text-default-450',
+                  )}
+                >
+                  <div>
+                    <div
+                      className={cn(
+                        'text-xs font-bold uppercase tracking-wider',
+                        isActive
+                          ? 'text-primary font-semibold'
+                          : 'text-default-400',
+                      )}
+                    >
+                      {month}
+                    </div>
+                    {isActive && (
+                      <div className="mt-2 text-xs font-semibold text-default-700">
+                        {itemCount} {itemCount === 1 ? 'item' : 'items'} scheduled
+                      </div>
                     )}
-                  >
-                    {month}
                   </div>
-                  {isActive && (
-                    <div className="mt-2 text-xs font-semibold text-default-700">
-                      {itemCount} {itemCount === 1 ? 'item' : 'items'} scheduled
+                  {isActive ? (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-default-400 font-medium">
+                          Scheduled Amount
+                        </span>
+                        {quantity > 0 && (
+                          <span className="text-[10px] text-default-500 font-medium">
+                            Qty: {quantity}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm font-bold text-default-900 leading-tight">
+                        {formatCurrency(amount)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-3 text-[10px] italic text-default-400 font-medium">
+                      No procurement
                     </div>
                   )}
                 </div>
-                {isActive ? (
-                  <div className="mt-3">
-                    <div className="text-[10px] text-default-400 font-medium">
-                      Scheduled Amount
-                    </div>
-                    <div className="text-sm font-bold text-default-900 leading-tight">
-                      {formatCurrency(amount)}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-3 text-[10px] italic text-default-400 font-medium">
-                    No procurement
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -2684,7 +2747,11 @@ function RightPane({
         )}
 
         {rightPaneTab === 'schedule' && (
-          <MonthlyScheduleMatrix activity={activity} />
+          <MonthlyScheduleMatrix
+            activity={activity}
+            expenditureItems={expenditureItems}
+            isExpenditureLoading={isExpenditureLoading}
+          />
         )}
       </div>
     </div>
@@ -4124,15 +4191,17 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           itemToEdit={itemDialogEditItem}
         />
 
-        <AddPPMPItemsModal
-          isOpen={itemsPickerOpen}
-          onOpenChange={setItemsPickerOpen}
-          ppmpExpenditureItemId={itemDialogGroupId}
-          officeId={ppmp?.officeId}
-          officeName={ppmp?.officeName}
-          fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
-          ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
-        />
+        {itemsPickerOpen && (
+          <AddPPMPItemsModal
+            isOpen={itemsPickerOpen}
+            onOpenChange={setItemsPickerOpen}
+            ppmpExpenditureItemId={itemDialogGroupId}
+            officeId={ppmp?.officeId}
+            officeName={ppmp?.officeName}
+            fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
+            ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
+          />
+        )}
 
         <EditPPMPItemAllocationsDialog
           isOpen={allocsDialogOpen}
