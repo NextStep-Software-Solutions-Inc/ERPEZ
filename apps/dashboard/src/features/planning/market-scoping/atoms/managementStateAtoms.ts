@@ -5,7 +5,10 @@
  */
 
 import { atom } from 'jotai'
-import type { ActivityTypeDefinition, ParameterDefinition } from '../types/managementTypes'
+import type {
+  ActivityTypeDefinition,
+  ParameterDefinition,
+} from '../types/managementTypes'
 
 /**
  * Activity Types Management Atoms
@@ -15,10 +18,12 @@ import type { ActivityTypeDefinition, ParameterDefinition } from '../types/manag
 export const activityTypesAtom = atom<ActivityTypeDefinition[]>([])
 
 // Selected activity type for editing/deletion
-export const selectedActivityTypeForEditAtom = atom<ActivityTypeDefinition | null>(null)
+export const selectedActivityTypeForEditAtom =
+  atom<ActivityTypeDefinition | null>(null)
 
 // Selected activity type for deletion (stores full object)
-export const selectedActivityTypeForDeleteAtom = atom<ActivityTypeDefinition | null>(null)
+export const selectedActivityTypeForDeleteAtom =
+  atom<ActivityTypeDefinition | null>(null)
 
 // Activity type filter state
 export const activityTypeListFilterAtom = atom({
@@ -34,10 +39,14 @@ export const activityTypeListFilterAtom = atom({
 export const parametersAtom = atom<ParameterDefinition[]>([])
 
 // Selected parameter for editing/deletion
-export const selectedParameterForEditAtom = atom<ParameterDefinition | null>(null)
+export const selectedParameterForEditAtom = atom<ParameterDefinition | null>(
+  null,
+)
 
 // Selected parameter for deletion (stores full object)
-export const selectedParameterForDeleteAtom = atom<ParameterDefinition | null>(null)
+export const selectedParameterForDeleteAtom = atom<ParameterDefinition | null>(
+  null,
+)
 
 // Parameter filter state
 export const parameterListFilterAtom = atom({

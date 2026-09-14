@@ -106,6 +106,25 @@ public class EvaluateProjectBidsCommandHandler(
             throw new FluentValidation.ValidationException($"Unsupported bid evaluation criterion '{criterion}'.");
         }
 
+        // Safeguard: Prevent changing AwardCriterion, TechnicalWeight, or FinancialWeight after a completed evaluation
+        if (evaluation != null && string.Equals(evaluation.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!string.Equals(evaluation.AwardCriterion, criterion, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new FluentValidation.ValidationException(
+                    $"Cannot change evaluation criterion from '{evaluation.AwardCriterion}' to '{criterion}' for a completed bid evaluation.");
+            }
+
+            if (isMearb)
+            {
+                if (evaluation.TechnicalWeight != techWeight || evaluation.FinancialWeight != finWeight)
+                {
+                    throw new FluentValidation.ValidationException(
+                        $"Cannot change MEARB weights after evaluation has been completed. Existing methodology is locked at {evaluation.TechnicalWeight}% Technical / {evaluation.FinancialWeight}% Financial.");
+                }
+            }
+        }
+
         // 4. Validate bidders presence
         if (command.Request.Bidders == null || command.Request.Bidders.Count == 0)
         {
@@ -145,13 +164,31 @@ public class EvaluateProjectBidsCommandHandler(
         {
             if (isMearb)
             {
+                // Explicit technical score validation for MEARB
+                foreach (var input in responsiveInputs)
+                {
+                    if (!input.TechnicalScore.HasValue)
+                    {
+                        var record = validOpeningRecords[input.BidOpeningRecordId];
+                        var supplierName = record.BiddingSubmission?.Supplier?.Name ?? "Responsive bidder";
+                        throw new FluentValidation.ValidationException($"Technical score is required for all responsive bidders under MEARB evaluation. Missing score for bidder '{supplierName}'.");
+                    }
+
+                    if (input.TechnicalScore.Value < 0m || input.TechnicalScore.Value > 100m)
+                    {
+                        var record = validOpeningRecords[input.BidOpeningRecordId];
+                        var supplierName = record.BiddingSubmission?.Supplier?.Name ?? "Responsive bidder";
+                        throw new FluentValidation.ValidationException($"Technical score for bidder '{supplierName}' must be between 0 and 100.");
+                    }
+                }
+
                 var lowestPrice = responsiveInputs.Min(b => b.EvaluatedBidPrice);
                 if (lowestPrice <= 0) lowestPrice = 1;
 
                 var scoredList = responsiveInputs.Select(input =>
                 {
                     var record = validOpeningRecords[input.BidOpeningRecordId];
-                    var tech = input.TechnicalScore ?? 0m;
+                    var tech = input.TechnicalScore!.Value;
                     var normFin = Math.Round((lowestPrice / (input.EvaluatedBidPrice > 0 ? input.EvaluatedBidPrice : 1)) * 100m, 2);
                     var total = Math.Round((tech * (techWeight!.Value / 100m)) + (normFin * (finWeight!.Value / 100m)), 2);
 

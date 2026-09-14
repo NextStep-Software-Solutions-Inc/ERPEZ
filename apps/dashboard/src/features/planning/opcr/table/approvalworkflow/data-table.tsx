@@ -28,7 +28,9 @@ interface DataTableProps<TData extends OPCR, TValue> {
   readonly data: TData[]
   readonly isLoading?: boolean
   readonly onSearch?: (searchValue: string) => void
-  readonly onStatusFilter?: (status: string | null) => void
+  readonly fiscalYearId?: string
+  readonly onFiscalYearChange?: (fyId: string | null) => void
+  readonly onResetFilters?: () => void
   readonly showToolbar?: boolean
   readonly meta?: ApprovalWorkflowTableMeta
   readonly pageNumber: number
@@ -44,7 +46,9 @@ export function DataTable<TData extends OPCR, TValue>({
   data,
   isLoading = false,
   onSearch,
-  onStatusFilter,
+  fiscalYearId,
+  onFiscalYearChange,
+  onResetFilters,
   showToolbar = true,
   meta,
   pageNumber,
@@ -65,7 +69,10 @@ export function DataTable<TData extends OPCR, TValue>({
   const table = useReactTable({
     data,
     columns,
-    meta,
+    meta: {
+      readonly: false,
+      ...meta,
+    },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -93,7 +100,9 @@ export function DataTable<TData extends OPCR, TValue>({
         <DataTableToolbar
           table={table}
           onSearch={onSearch}
-          onStatusFilter={onStatusFilter}
+          fiscalYearId={fiscalYearId}
+          onFiscalYearChange={onFiscalYearChange}
+          onResetFilters={onResetFilters}
           isLoading={isLoading}
         />
       )}

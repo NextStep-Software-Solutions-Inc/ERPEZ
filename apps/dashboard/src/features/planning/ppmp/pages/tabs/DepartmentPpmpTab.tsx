@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useAtom } from 'jotai'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PpmpManagementOverview } from '../../components'
@@ -6,7 +7,12 @@ import {
   CreatePpmpDialog,
   DeletePpmpDialog,
   UpdatePpmpDialog,
+  CreateSupplementalPpmpDialog,
 } from '../../dialogs'
+import {
+  supplementalDialogOpenAtom,
+  selectedPpmpForSupplementalAtom,
+} from '../../atoms/ppmpStateAtoms'
 import { getPPMPsRequest } from '../../handlers/getPpmpsRequest'
 import { useSubOfficeCeilings } from '@/lib/fiscal-year-and-policies/requests/hooks/useSubOfficeCeilings'
 import { computePpmpManagementOverview } from '../../lib/ppmpUtils'
@@ -29,6 +35,10 @@ export default function DepartmentPpmpTab({
   handleUpdateSearch,
 }: DepartmentPpmpTabProps) {
   const [createOpen, setCreateOpen] = useState(false)
+  const [supplementalOpen, setSupplementalOpen] = useAtom(
+    supplementalDialogOpenAtom,
+  )
+  const [selectedSupplementalPpmp] = useAtom(selectedPpmpForSupplementalAtom)
   const { offices, fiscalYears, libs } = usePpmpFormData({ enabled: true })
 
   // 1. Paginated Table Filters
@@ -155,6 +165,14 @@ export default function DepartmentPpmpTab({
       />
       <UpdatePpmpDialog />
       <DeletePpmpDialog onSuccess={reload} />
+      <CreateSupplementalPpmpDialog
+        open={supplementalOpen}
+        onOpenChange={setSupplementalOpen}
+        sourcePpmp={selectedSupplementalPpmp}
+        onSuccess={() => {
+          void reload()
+        }}
+      />
     </div>
   )
 }

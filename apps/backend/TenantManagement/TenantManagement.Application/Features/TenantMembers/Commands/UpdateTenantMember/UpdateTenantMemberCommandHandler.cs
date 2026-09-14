@@ -1,56 +1,152 @@
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
+using ERPEZ.Shared.Interfaces;
 using ERPEZ.TenantManagement.Domain.Entities;
+using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.UpdateTenantMember;
 
-public class UpdateTenantMemberCommandHandler(IUnitOfWork unitOfWork)
+public class UpdateTenantMemberCommandHandler(
+    IUnitOfWork unitOfWork,
+    ITenantContextService tenantContext,
+    ICurrentUserService currentUser,
+    IRoleAssignmentValidator roleAssignmentValidator,
+    ITenantAuditService auditService)
     : IRequestHandler<UpdateTenantMemberCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<Guid>> Handle(UpdateTenantMemberCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(UpdateTenantMemberCommand command, CancellationToken cancellationToken)
     {
-        if (request?.UpdateTenantMember == null) throw new NotFoundException("Update tenant member cannot be null.");
-
-        var dto = request.UpdateTenantMember;
-        if (dto.TenantId.HasValue)
+        if (!tenantContext.TenantId.HasValue)
         {
-            _ = await unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant cannot be found.");
+            throw new UnauthorizedException("Tenant context is missing or unauthenticated.");
         }
-        var tenantMember = await unitOfWork.TenantMemberRepository
-            .FindAsync(ts => ts.Id == request.Id && ts.TenantId == dto.TenantId, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant member not found");
 
-        var duplicate = await unitOfWork.TenantMemberRepository
-            .FindAsync(tm => tm.UserId == dto.UserId && tm.TenantId == dto.TenantId && tm.Id != request.Id, cancellationToken: cancellationToken);
+        var tenantId = tenantContext.TenantId.Value;
+        var actorExternalId = currentUser.ExternalIdentityId ?? currentUser.UserId;
+        var actorEmail = currentUser.Email ?? string.Empty;
 
-        if (duplicate != null) throw new ConflictException("Another tenant member with the same UserId already exists for this tenant.");
-
-        tenantMember.TenantId = dto?.TenantId ?? tenantMember.TenantId;
-        tenantMember.UserId = dto?.UserId ?? tenantMember.UserId;
-        if (!string.IsNullOrWhiteSpace(dto?.ExternalIdentityId))
+        if (string.IsNullOrWhiteSpace(actorExternalId))
         {
-            tenantMember.ExternalIdentityId = dto.ExternalIdentityId;
+            throw new UnauthorizedException("Current user identity is unauthenticated.");
         }
-        tenantMember.Status = dto?.Status ?? tenantMember.Status;
 
-        if (dto?.RoleIds != null)
+        if (command.UpdateTenantMember == null)
         {
-            tenantMember.RoleAssignments.Clear();
-            foreach (var roleId in dto.RoleIds.Distinct())
+            throw new ValidationException("Update payload cannot be null.");
+        }
+
+        return await unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
+            // 1. Pessimistic row lock on the parent Tenant record to serialize concurrent admin demotions
+            await unitOfWork.LockTenantRowAsync(tenantId, cancellationToken);
+
+            // 2. Load current member state
+            var member = await unitOfWork.TenantMemberRepository.Query()
+                .Include(m => m.RoleAssignments).ThenInclude(ra => ra.Role)
+                .FirstOrDefaultAsync(m => m.Id == command.Id && m.TenantId == tenantId && !m.IsDeleted, cancellationToken)
+                ?? throw new NotFoundException("Tenant member not found.");
+
+            // 3. Optimistic concurrency check
+            if (member.ConcurrencyStamp != command.UpdateTenantMember.ConcurrencyStamp)
             {
-                tenantMember.RoleAssignments.Add(new TenantMemberRoleAssignment
+                throw new ConflictException("The member record was modified concurrently. Please refresh and retry.");
+            }
+
+            var holdsTenantAdmin = member.RoleAssignments.Any(ra => ra.Role.NormalizedName == "TENANT ADMINISTRATOR");
+
+            var candidateRoleIds = command.UpdateTenantMember.RoleIds.Distinct().ToList();
+            var candidateRoles = await unitOfWork.RoleRepository.Query()
+                .Where(r => candidateRoleIds.Contains(r.Id))
+                .ToListAsync(cancellationToken);
+
+            var willHoldTenantAdmin = candidateRoles.Any(r => r.NormalizedName == "TENANT ADMINISTRATOR");
+
+            // 4. Last Tenant Administrator invariant check
+            if (holdsTenantAdmin && !willHoldTenantAdmin && member.Status == Status.Active)
+            {
+                var otherActiveAdminCount = await unitOfWork.TenantMemberRepository.Query()
+                    .CountAsync(m => m.TenantId == tenantId &&
+                                     m.Id != member.Id &&
+                                     m.Status == Status.Active &&
+                                     !m.IsDeleted &&
+                                     m.RoleAssignments.Any(ra => ra.Role.NormalizedName == "TENANT ADMINISTRATOR"),
+                                cancellationToken);
+
+                if (otherActiveAdminCount == 0)
                 {
-                    TenantMemberId = tenantMember.Id,
+                    throw new ValidationException("Cannot remove the last active Tenant Administrator from this tenant.");
+                }
+            }
+
+            // 5. Role delegation and self-lockout validation
+            await roleAssignmentValidator.ValidateRoleAssignmentsAsync(
+                tenantId,
+                actorExternalId,
+                targetMemberId: member.Id,
+                candidateRoleIds,
+                cancellationToken);
+
+            // 6. Mutate member details & roles and rotate concurrency stamp
+            var beforeState = new
+            {
+                member.FirstName,
+                member.LastName,
+                member.Email,
+                Roles = member.RoleAssignments.Select(ra => ra.Role.Name).ToList(),
+                Status = member.Status.ToString()
+            };
+
+            if (command.UpdateTenantMember.FirstName != null)
+            {
+                member.FirstName = command.UpdateTenantMember.FirstName.Trim();
+            }
+
+            if (command.UpdateTenantMember.LastName != null)
+            {
+                member.LastName = command.UpdateTenantMember.LastName.Trim();
+            }
+
+            member.RoleAssignments.Clear();
+            foreach (var roleId in candidateRoleIds)
+            {
+                member.RoleAssignments.Add(new TenantMemberRoleAssignment
+                {
+                    TenantMemberId = member.Id,
                     RoleId = roleId
                 });
             }
-        }
 
-        unitOfWork.TenantMemberRepository.Update(tenantMember);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            member.ConcurrencyStamp = Guid.NewGuid();
+            member.UpdatedAt = DateTime.UtcNow;
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Guid>.Success(tenantMember.Id, "Tenant member updated successfully.");
+            // 7. Append audit log
+            var afterRoleNames = candidateRoles.Select(r => r.Name).ToList();
+
+            await auditService.LogMemberEventAsync(
+                tenantId,
+                actorExternalId,
+                actorEmail,
+                member.Id,
+                member.Email,
+                "MEMBER_UPDATED",
+                beforeState,
+                new
+                {
+                    member.FirstName,
+                    member.LastName,
+                    member.Email,
+                    Roles = afterRoleNames,
+                    Status = member.Status.ToString()
+                },
+                cancellationToken);
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return ApiResponse<Guid>.Success(member.Id, "Tenant member updated successfully.");
+        }, cancellationToken: cancellationToken);
     }
 }
-

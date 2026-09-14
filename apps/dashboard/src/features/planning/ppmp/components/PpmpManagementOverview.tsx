@@ -4,7 +4,6 @@
  */
 
 import { Card, CardContent } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import type { LineItemBudget, PPMP } from '../types'
 import {
@@ -77,15 +76,15 @@ function MiniMetricCard({
   return (
     <div
       className={cn(
-        'rounded-md border bg-white px-3 py-2 shadow-sm',
+        'flex w-[88px] flex-col items-center justify-center rounded-md border bg-white px-3 py-2 text-center shadow-sm',
         tone === 'warning' && 'border-amber-200 bg-amber-50/70',
         tone === 'success' && 'border-emerald-200 bg-emerald-50/70',
       )}
     >
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
-      <div className="mt-0.5 text-sm font-semibold text-foreground">
+      <div className="mt-0.5 text-base font-bold text-foreground">
         {value}
       </div>
     </div>
@@ -95,12 +94,10 @@ function MiniMetricCard({
 export function PpmpManagementOverview({
   summary: providedSummary,
   ppmps = [],
-  lineItemBudgets,
   ceilings = [],
   fiscalYearId,
   officeId,
   isMaster,
-  fiscalYear,
   className,
   statusSummary,
 }: PpmpManagementOverviewProps) {
@@ -128,8 +125,6 @@ export function PpmpManagementOverview({
       ? `${percent.toLocaleString()}%`
       : `${percent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
   }
-
-  const progressBarValue = Math.min(100, Math.max(0, rawUsedPercent))
 
   const draftCount = statusSummary?.draft ?? summary.draftCount
   const pendingCount = statusSummary?.pending ?? summary.pendingCount
@@ -207,7 +202,11 @@ export function PpmpManagementOverview({
           <StatCard
             label="Used Amount"
             value={formatCurrency(summary.usedAmount)}
-            sublabel={hasCeiling ? `${formatPercent(rawUsedPercent)} committed` : 'Total planned budget'}
+            sublabel={
+              hasCeiling
+                ? `${formatPercent(rawUsedPercent)} committed • ${formatCurrency(summary.remainingAmount)} remaining`
+                : 'Total planned budget'
+            }
             className={cn(
               hasCeiling && summary.remainingAmount < 0
                 ? 'border-red-100/80 bg-red-50/20 border-l-4 border-l-red-500'
@@ -218,21 +217,6 @@ export function PpmpManagementOverview({
                 ? 'text-red-700 dark:text-red-300'
                 : 'text-teal-700 dark:text-teal-300',
             )}
-          />
-        </div>
-
-        <div className="rounded-2xl border border-border bg-white/80 p-4 shadow-sm">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>
-              Remaining balance: {hasCeiling ? formatCurrency(summary.remainingAmount) : '₱0.00 (No ceiling configured)'}
-            </span>
-            <span>{hasCeiling ? `${formatPercent(rawUsedPercent)} committed` : '0% committed'}</span>
-          </div>
-          <Progress
-            value={progressBarValue}
-            color={hasCeiling && summary.remainingAmount < 0 ? 'destructive' : 'primary'}
-            size="sm"
-            className="h-3"
           />
         </div>
       </CardContent>

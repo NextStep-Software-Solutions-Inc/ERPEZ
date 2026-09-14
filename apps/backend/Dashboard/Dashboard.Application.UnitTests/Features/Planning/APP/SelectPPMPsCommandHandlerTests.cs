@@ -349,4 +349,197 @@ public class SelectPPMPsCommandHandlerTests
         addedLinks.Single().PPMPId.Should().Be(ppmp2Id);
         addedLinks.Single().APPId.Should().Be(batch2AppId);
     }
+
+    [Fact]
+    public async Task SelectPPMPs_WhenPPMPNotApproved_ThrowsValidationException()
+    {
+        // Arrange
+        var appId = Guid.NewGuid();
+        var fiscalYearId = Guid.NewGuid();
+        var ppmpId = Guid.NewGuid();
+
+        var app = new ERPEZ.Domain.Entities.Planning.APP
+        {
+            Id = appId,
+            APPNumber = "APP-2026-001",
+            FiscalYearId = fiscalYearId,
+            APPType = "Indicative"
+        };
+
+        var ppmp = new ERPEZ.Domain.Entities.Planning.PPMP
+        {
+            Id = ppmpId,
+            PPMPNumber = "PPMP-2026-DRAFT",
+            FiscalYearId = fiscalYearId,
+            Status = StatusEnum.Draft,
+            PPMPType = PPMPTypeEnum.Original
+        };
+
+        appRepoMock.Setup(r => r.GetAPPWithDetailsAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(app);
+
+        ppmpRepoMock.Setup(r => r.FindAllAsync(It.IsAny<Expression<Func<ERPEZ.Domain.Entities.Planning.PPMP, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ERPEZ.Domain.Entities.Planning.PPMP> { ppmp });
+
+        var command = new SelectPPMPsCommand
+        {
+            APPId = appId,
+            PPMPIds = [ppmpId]
+        };
+
+        // Act
+        var act = () => handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var ex = await act.Should().ThrowAsync<ValidationException>();
+        ex.WithMessage("*Only approved PPMPs can be consolidated into an APP*PPMP-2026-DRAFT*Draft*");
+    }
+
+    [Fact]
+    public async Task SelectPPMPs_WhenIndicativeAPPTriesToSelectSupplementalPPMP_ThrowsValidationException()
+    {
+        // Arrange
+        var appId = Guid.NewGuid();
+        var fiscalYearId = Guid.NewGuid();
+        var ppmpId = Guid.NewGuid();
+
+        var app = new ERPEZ.Domain.Entities.Planning.APP
+        {
+            Id = appId,
+            APPNumber = "APP-2026-IND",
+            FiscalYearId = fiscalYearId,
+            APPType = "Indicative"
+        };
+
+        var ppmp = new ERPEZ.Domain.Entities.Planning.PPMP
+        {
+            Id = ppmpId,
+            PPMPNumber = "PPMP-2026-SUP-001",
+            FiscalYearId = fiscalYearId,
+            Status = StatusEnum.Approved,
+            PPMPType = PPMPTypeEnum.Supplemental
+        };
+
+        appRepoMock.Setup(r => r.GetAPPWithDetailsAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(app);
+
+        ppmpRepoMock.Setup(r => r.FindAllAsync(It.IsAny<Expression<Func<ERPEZ.Domain.Entities.Planning.PPMP, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ERPEZ.Domain.Entities.Planning.PPMP> { ppmp });
+
+        var command = new SelectPPMPsCommand
+        {
+            APPId = appId,
+            PPMPIds = [ppmpId]
+        };
+
+        // Act
+        var act = () => handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var ex = await act.Should().ThrowAsync<ValidationException>();
+        ex.WithMessage("*Supplemental PPMPs cannot be consolidated into a 'Indicative' APP*PPMP-2026-SUP-001*");
+    }
+
+    [Fact]
+    public async Task SelectPPMPs_WhenFinalAPPTriesToSelectSupplementalPPMP_ThrowsValidationException()
+    {
+        // Arrange
+        var appId = Guid.NewGuid();
+        var fiscalYearId = Guid.NewGuid();
+        var ppmpId = Guid.NewGuid();
+
+        var app = new ERPEZ.Domain.Entities.Planning.APP
+        {
+            Id = appId,
+            APPNumber = "APP-2026-FINAL",
+            FiscalYearId = fiscalYearId,
+            APPType = "Final"
+        };
+
+        var ppmp = new ERPEZ.Domain.Entities.Planning.PPMP
+        {
+            Id = ppmpId,
+            PPMPNumber = "PPMP-2026-SUP-001",
+            FiscalYearId = fiscalYearId,
+            Status = StatusEnum.Approved,
+            PPMPType = PPMPTypeEnum.Supplemental
+        };
+
+        appRepoMock.Setup(r => r.GetAPPWithDetailsAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(app);
+
+        ppmpRepoMock.Setup(r => r.FindAllAsync(It.IsAny<Expression<Func<ERPEZ.Domain.Entities.Planning.PPMP, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ERPEZ.Domain.Entities.Planning.PPMP> { ppmp });
+
+        var command = new SelectPPMPsCommand
+        {
+            APPId = appId,
+            PPMPIds = [ppmpId]
+        };
+
+        // Act
+        var act = () => handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var ex = await act.Should().ThrowAsync<ValidationException>();
+        ex.WithMessage("*Supplemental PPMPs cannot be consolidated into a 'Final' APP*PPMP-2026-SUP-001*");
+    }
+
+    [Fact]
+    public async Task SelectPPMPs_WhenUpdatedAPPSelectsApprovedSupplementalPPMP_Succeeds()
+    {
+        // Arrange
+        var appId = Guid.NewGuid();
+        var fiscalYearId = Guid.NewGuid();
+        var ppmpId = Guid.NewGuid();
+
+        var app = new ERPEZ.Domain.Entities.Planning.APP
+        {
+            Id = appId,
+            APPNumber = "APP-2026-UPDATED-V1",
+            FiscalYearId = fiscalYearId,
+            APPType = "Updated"
+        };
+
+        var ppmp = new ERPEZ.Domain.Entities.Planning.PPMP
+        {
+            Id = ppmpId,
+            PPMPNumber = "PPMP-2026-SUP-001",
+            FiscalYearId = fiscalYearId,
+            Status = StatusEnum.Approved,
+            PPMPType = PPMPTypeEnum.Supplemental
+        };
+
+        appRepoMock.Setup(r => r.GetAPPWithDetailsAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(app);
+
+        ppmpRepoMock.Setup(r => r.FindAllAsync(It.IsAny<Expression<Func<ERPEZ.Domain.Entities.Planning.PPMP, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ERPEZ.Domain.Entities.Planning.PPMP> { ppmp });
+
+        appPpmpRepoMock.Setup(r => r.GetActiveLinksByPPMPIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<APPPPMP>());
+
+        appPpmpRepoMock.Setup(r => r.GetLinksByAppAndPpmpIdsAsync(appId, It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<APPPPMP>());
+
+        var addedLinks = new List<APPPPMP>();
+        appPpmpRepoMock.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<APPPPMP>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<APPPPMP>, CancellationToken>((links, _) => addedLinks.AddRange(links))
+            .Returns(Task.CompletedTask);
+
+        var command = new SelectPPMPsCommand
+        {
+            APPId = appId,
+            PPMPIds = [ppmpId]
+        };
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeTrue();
+        addedLinks.Should().HaveCount(1);
+        addedLinks.Single().PPMPId.Should().Be(ppmpId);
+        addedLinks.Single().APPId.Should().Be(appId);
+    }
 }

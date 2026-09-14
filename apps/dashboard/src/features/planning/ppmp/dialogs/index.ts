@@ -22,4 +22,5 @@ export { default as EditPPMPItemAllocationsDialog } from './EditPPMPItemAllocati
 export { ConsolidationWorkspaceSheet } from './ConsolidationWorkspaceSheet'
 export { MasterPPMPViewerModal } from './MasterPPMPViewerModal'
 export { default as AssociateMarketScopingDialog } from './AssociateMarketScopingDialog'
+export { CreateSupplementalPpmpDialog } from './CreateSupplementalPpmpDialog'
 

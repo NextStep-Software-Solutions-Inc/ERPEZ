@@ -40,9 +40,7 @@ export default function ParametersTable({
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        No parameters found
-      </div>
+      <div className="text-center py-8 text-gray-500">No parameters found</div>
     )
   }
 
@@ -54,22 +52,32 @@ export default function ParametersTable({
             <TableHead className="font-semibold">Parameter Name</TableHead>
             <TableHead className="font-semibold">Guided Question</TableHead>
             <TableHead className="font-semibold">Description</TableHead>
-            <TableHead className="font-semibold w-20 text-center">Sort Order</TableHead>
-            <TableHead className="font-semibold w-24 text-center">Status</TableHead>
-            <TableHead className="font-semibold w-24 text-center">Actions</TableHead>
+            <TableHead className="font-semibold w-20 text-center">
+              Sort Order
+            </TableHead>
+            <TableHead className="font-semibold w-24 text-center">
+              Status
+            </TableHead>
+            <TableHead className="font-semibold w-24 text-center">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.map((parameter) => (
             <TableRow key={parameter.id} className="hover:bg-gray-50">
-              <TableCell className="font-medium">{parameter.displayName}</TableCell>
+              <TableCell className="font-medium">
+                {parameter.displayName}
+              </TableCell>
               <TableCell className="text-sm max-w-xs truncate">
                 {parameter.guidedQuestion}
               </TableCell>
               <TableCell className="text-gray-600 text-sm max-w-xs truncate">
                 {parameter.description || 'N/A'}
               </TableCell>
-              <TableCell className="text-center text-sm">{parameter.sortOrder}</TableCell>
+              <TableCell className="text-center text-sm">
+                {parameter.sortOrder}
+              </TableCell>
               <TableCell className="text-center">
                 <Badge
                   color={parameter.isActive ? 'default' : 'secondary'}

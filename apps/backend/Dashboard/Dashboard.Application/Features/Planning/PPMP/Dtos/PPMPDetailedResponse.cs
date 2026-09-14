@@ -21,6 +21,11 @@ public record PPMPDetailedResponse
     public string? Description { get; init; }
     public int Version { get; init; }
     public decimal TotalEstimatedBudget { get; init; }
+    public bool IsFinal { get; init; }
+    public string PPMPType { get; init; } = string.Empty;
+    public Guid? SourcePPMPId { get; init; }
+    public string? SourcePPMPNumber { get; init; }
+    public int? SupplementalNumber { get; init; }
     public string Status { get; init; } = string.Empty;
     public DateTime? SubmittedDate { get; init; }
     public DateTime? ApprovedDate { get; init; }

@@ -10,7 +10,10 @@ import { useAtomValue, useSetAtom } from 'jotai'
 import { toast } from 'sonner'
 import { createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import { selectedActivityTypeForDeleteAtom, activityTypesAtom } from '../atoms/managementStateAtoms'
+import {
+  selectedActivityTypeForDeleteAtom,
+  activityTypesAtom,
+} from '../atoms/managementStateAtoms'
 import { deleteActivityTypeRequest } from '../handlers/getActivityTypesRequest'
 
 interface DeleteActivityTypeDialogProps {
@@ -27,7 +30,7 @@ export function DeleteActivityTypeDialog({
   const clearSelected = useSetAtom(selectedActivityTypeForDeleteAtom)
   const setActivityTypes = useSetAtom(activityTypesAtom)
   const deleteActivityType = createMutationHookFromTemplate(
-    deleteActivityTypeRequest(targetActivity?.id ?? '')
+    deleteActivityTypeRequest(targetActivity?.id ?? ''),
   )()
 
   if (!targetActivity) {
@@ -37,9 +40,15 @@ export function DeleteActivityTypeDialog({
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await deleteActivityType.mutateAsync({ pathParams: { id: targetActivity.id } })
-      setActivityTypes((prev) => prev.filter((item) => item.id !== targetActivity.id))
-      toast.success(`Activity type "${targetActivity.label}" deleted successfully.`)
+      await deleteActivityType.mutateAsync({
+        pathParams: { id: targetActivity.id },
+      })
+      setActivityTypes((prev) =>
+        prev.filter((item) => item.id !== targetActivity.id),
+      )
+      toast.success(
+        `Activity type "${targetActivity.label}" deleted successfully.`,
+      )
       onOpenChange(false)
       clearSelected(null)
     } finally {

@@ -5,12 +5,36 @@ import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { buildCards, type CardItem } from "~/data/overview/cards"
 import { buildQuickActions } from "~/data/overview/quickActions"
+import { useNavigate } from "react-router"
+import { useTenant } from "~/providers/TenantProvider"
+import { useBillingData } from "~/features/billing/hooks/useBillingData"
+import { createQueryHookFromTemplate } from "erpez-shared-lib"
+import { getTenantLicenseRequest } from "~/features/license/handlers/getTenantLicenseRequest"
+
+const useTenantLicense = createQueryHookFromTemplate(getTenantLicenseRequest);
 
 export default function OverviewPage() {
-    const licenseDays = 14
-    const planName = "Trial"
-    const status = { label: "Active", color: "green" }
-    const lastUpdated = "2 months ago"
+    const navigate = useNavigate();
+    const { tenant } = useTenant();
+    const { data: billingData } = useBillingData();
+    const { data: licenseResponse } = useTenantLicense({
+        pathParams: { id: tenant?.id || "00000000-0000-0000-0000-000000000001" },
+        queryParams: { domain: typeof window !== "undefined" ? window.location.hostname : "" },
+    });
+
+    const license = licenseResponse?.data;
+    const subscription = billingData?.subscription;
+
+    const planName = subscription?.planName || tenant?.tenantSubscription?.plan || "Enterprise";
+    const licenseDays = license?.remainingDays ?? 730;
+    const status = {
+        label: tenant?.isDisabled ? "Inactive" : "Active",
+        color: tenant?.isDisabled ? "red" : "green",
+    };
+    const lastUpdated = "Today";
+    const licenseHint = license
+        ? `Valid until ${new Date(license.expiresAt).toLocaleDateString()}`
+        : "Enterprise license active";
 
     const cards = buildCards({
         licenseDays,
@@ -18,19 +42,20 @@ export default function OverviewPage() {
         statusLabel: status.label,
         statusColor: status.color,
         lastUpdated,
-    })
+        licenseHint,
+    });
 
     const quickActions = buildQuickActions()
     const handleAction = (id: string) => { 
         switch (id) {
             case "upgrade":
-                console.log("Navigate to plans")
+                navigate("/plan")
                 break
             case "license":
-                console.log("Navigate to licenses")
+                navigate("/license-management")
                 break
             case "downloads":
-                console.log("Navigate to downloads")
+                navigate("/package-download")
                 break
         }
     }

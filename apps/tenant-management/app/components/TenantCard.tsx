@@ -18,6 +18,8 @@ interface TenantCardProps {
     amount?: number;
     modules?: string[];
     tenant?: Tenant;
+    isDisabled?: boolean;
+    onToggleStatus?: (id: string, newDisabled: boolean) => void;
 }
 
 export function TenantCard({
@@ -32,8 +34,12 @@ export function TenantCard({
     amount, 
     modules: modulesProp,
     tenant,
+    isDisabled: isDisabledProp,
+    onToggleStatus,
 }: TenantCardProps) {
     const navigate = useNavigate();
+    const isTenantDisabled = isDisabledProp ?? tenant?.isDisabled ?? false;
+    const allowedDomain = tenant?.allowedDomain ?? tenant?.tenantSetting?.allowedDomain;
     const name = tenant?.name ?? nameProp ?? "Unnamed";
     const initials = name
         .split(" ")
@@ -74,13 +80,23 @@ export function TenantCard({
 
             <CardContent className="space-y-2">
                 <div className="flex justify-between items-center">
+                    <p className="text-sm text-muted-foreground">Access State</p>
+                    <Badge className={isTenantDisabled ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"}>
+                        {isTenantDisabled ? "Disabled (Disallowed)" : "Active / Allowed"}
+                    </Badge>
+                </div>
+                <div className="flex justify-between items-center">
                     <p className="text-sm text-muted-foreground">Plan</p>
                     <Badge variant="secondary">{displayPlan}</Badge>
                 </div>
-                <div className="flex justify-between items-center">
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge className={statusColor}>{displayStatus ?? "-"}</Badge> 
-                </div>
+                {allowedDomain && (
+                    <div className="flex justify-between items-center">
+                        <p className="text-sm text-muted-foreground">Domain Lock</p>
+                        <span className="text-xs font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                            {allowedDomain}
+                        </span>
+                    </div>
+                )}
                 <div className="flex justify-between items-center">
                     <p className="text-sm text-muted-foreground">Users</p>
                     <p className="font-medium">{users ?? 0}</p>
@@ -103,9 +119,22 @@ export function TenantCard({
                         )}
                     </div>
                 </div>
-                <Button variant="outline" className="w-full mt-3" onClick={() => navigate(`/super-admin/tenant/${id}`)}>
-                    View Profile
-                </Button>
+
+                <div className="flex gap-2 pt-2">
+                    {onToggleStatus && id && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className={`flex-1 text-xs ${isTenantDisabled ? "text-emerald-700 border-emerald-300 hover:bg-emerald-50" : "text-red-700 border-red-300 hover:bg-red-50"}`}
+                            onClick={() => onToggleStatus(id, !isTenantDisabled)}
+                        >
+                            {isTenantDisabled ? "Allow Tenant" : "Disallow / Disable"}
+                        </Button>
+                    )}
+                    <Button variant="default" size="sm" className="flex-1 text-xs" onClick={() => navigate(`/super-admin/tenant/${id}`)}>
+                        View Profile
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );

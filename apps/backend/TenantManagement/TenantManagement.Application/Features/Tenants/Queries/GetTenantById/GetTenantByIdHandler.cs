@@ -18,13 +18,16 @@ public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork) : IRequest
                 Id = t.Id,
                 Name = t.Name,
                 Description = t.Description,
+                IsDisabled = t.IsDisabled,
                 TenantSetting = new()
                 {
                     Id = t.TenantSetting.Id,
                     OnPremise = t.TenantSetting.OnPremise,
                     BaseURL = t.TenantSetting.BaseURL,
                     DbConnectionString = t.TenantSetting.DbConnectionString,
-                    BillingContactEmail = t.TenantSetting.BillingContactEmail
+                    BillingContactEmail = t.TenantSetting.BillingContactEmail,
+                    AllowedDomain = t.TenantSetting.AllowedDomain,
+                    MaxAllowedTenants = t.TenantSetting.MaxAllowedTenants
                 },
                 TenantSubscriptions = t.TenantSubscriptions.Select(ts => new TenantSubscriptionDto
                 {
@@ -37,6 +40,14 @@ public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork) : IRequest
                     StartDate = ts.StartDate,
                     EndDate = ts.EndDate,
                     AutoRenew = ts.AutoRenew
+                }).ToList(),
+                Modules = t.Modules.Select(m => new TenantModuleDto
+                {
+                    Id = m.Id,
+                    Key = m.Key,
+                    Name = m.Name,
+                    Description = m.Description,
+                    IsActive = m.IsActive
                 }).ToList()
             });
 

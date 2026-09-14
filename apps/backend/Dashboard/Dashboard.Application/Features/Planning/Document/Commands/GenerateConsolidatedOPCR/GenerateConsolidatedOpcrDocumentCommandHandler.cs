@@ -138,11 +138,35 @@ public class GenerateConsolidatedOpcrDocumentCommandHandler(
         var rawQ2 = item.Q2Target != 0 ? item.Q2Target : (item.KPIAssignment?.AssignedTargetQ2 ?? 0m);
         var rawQ3 = item.Q3Target != 0 ? item.Q3Target : (item.KPIAssignment?.AssignedTargetQ3 ?? 0m);
         var rawQ4 = item.Q4Target != 0 ? item.Q4Target : (item.KPIAssignment?.AssignedTargetQ4 ?? 0m);
-        var rawTotal = (item.Q1Target + item.Q2Target + item.Q3Target + item.Q4Target) != 0
-            ? (item.Q1Target + item.Q2Target + item.Q3Target + item.Q4Target)
-            : ((item.KPIAssignment?.AssignedTargetAnnual ?? 0m) != 0
+        var behavior = fy.DistributionBehavior?.Trim() ?? string.Empty;
+        var isUniform = behavior.Equals("Uniform", StringComparison.OrdinalIgnoreCase) ||
+                        behavior.Equals("Uniform/Average", StringComparison.OrdinalIgnoreCase);
+        var isMax = behavior.Equals("Maximum", StringComparison.OrdinalIgnoreCase);
+        var isMin = behavior.Equals("Minimum", StringComparison.OrdinalIgnoreCase);
+
+        decimal rawTotal;
+        if (isUniform)
+        {
+            rawTotal = (item.KPIAssignment?.AssignedTargetAnnual ?? 0m) != 0
                 ? item.KPIAssignment!.AssignedTargetAnnual
-                : (rawQ1 + rawQ2 + rawQ3 + rawQ4));
+                : (rawQ1 != 0 ? rawQ1 : (rawQ2 != 0 ? rawQ2 : (rawQ3 != 0 ? rawQ3 : rawQ4)));
+        }
+        else if (isMax)
+        {
+            rawTotal = Math.Max(Math.Max(rawQ1, rawQ2), Math.Max(rawQ3, rawQ4));
+        }
+        else if (isMin)
+        {
+            var nonZeros = new[] { rawQ1, rawQ2, rawQ3, rawQ4 }.Where(v => v > 0).ToList();
+            rawTotal = nonZeros.Count > 0 ? nonZeros.Min() : 0m;
+        }
+        else
+        {
+            var sum = rawQ1 + rawQ2 + rawQ3 + rawQ4;
+            rawTotal = sum != 0
+                ? sum
+                : (item.KPIAssignment?.AssignedTargetAnnual ?? 0m);
+        }
 
         return new OfficeContributionDto
         {

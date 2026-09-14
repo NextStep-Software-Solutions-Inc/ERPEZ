@@ -39,20 +39,21 @@ public class KPIAssignmentBehaviorValidator : IKPIAssignmentBehaviorValidator
     }
 
     /// <summary>
-    /// Validates quarterly targets for Uniform behavior: each provided quarterly must equal the assigned annual target.
+    /// Validates quarterly targets for Uniform behavior: each non-zero provided quarterly must equal the assigned annual target.
+    /// Quarters set to 0 or null are treated as inactive (no scheduled activity for that period).
     /// </summary>
     public void ValidateUniformQuarterly(string kpiName, decimal assignedAnnualTarget, decimal? q1, decimal? q2, decimal? q3, decimal? q4)
     {
-        if (q1.HasValue && Math.Abs(q1.Value - assignedAnnualTarget) > 0.01m)
+        if (q1.HasValue && q1.Value != 0 && Math.Abs(q1.Value - assignedAnnualTarget) > 0.01m)
             throw new ValidationException($"For Uniform behavior in KPI '{kpiName}', Q1 target must equal assigned annual target ({assignedAnnualTarget}).");
 
-        if (q2.HasValue && Math.Abs(q2.Value - assignedAnnualTarget) > 0.01m)
+        if (q2.HasValue && q2.Value != 0 && Math.Abs(q2.Value - assignedAnnualTarget) > 0.01m)
             throw new ValidationException($"For Uniform behavior in KPI '{kpiName}', Q2 target must equal assigned annual target ({assignedAnnualTarget}).");
 
-        if (q3.HasValue && Math.Abs(q3.Value - assignedAnnualTarget) > 0.01m)
+        if (q3.HasValue && q3.Value != 0 && Math.Abs(q3.Value - assignedAnnualTarget) > 0.01m)
             throw new ValidationException($"For Uniform behavior in KPI '{kpiName}', Q3 target must equal assigned annual target ({assignedAnnualTarget}).");
 
-        if (q4.HasValue && Math.Abs(q4.Value - assignedAnnualTarget) > 0.01m)
+        if (q4.HasValue && q4.Value != 0 && Math.Abs(q4.Value - assignedAnnualTarget) > 0.01m)
             throw new ValidationException($"For Uniform behavior in KPI '{kpiName}', Q4 target must equal assigned annual target ({assignedAnnualTarget}).");
     }
 

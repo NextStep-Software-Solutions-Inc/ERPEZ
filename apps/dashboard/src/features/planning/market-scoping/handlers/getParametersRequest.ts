@@ -9,7 +9,14 @@ import type {
   CreateParameterPayload,
   UpdateParameterPayload,
 } from '../types/managementTypes'
-import type { QueryBlueprintFromTemplate, MutationBlueprintFromTemplate, PaginationResponse, APIResponse, QueryKey, QueryParams } from 'erpez-shared-lib'
+import type {
+  QueryBlueprintFromTemplate,
+  MutationBlueprintFromTemplate,
+  PaginationResponse,
+  APIResponse,
+  QueryKey,
+  QueryParams,
+} from 'erpez-shared-lib'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import api from '@/services/api'
 
@@ -24,8 +31,10 @@ export interface ParameterSettingResponse {
 
 const getParametersEndpoint = '/market-scoping-parameter-settings' as const
 const createParameterEndpoint = '/market-scoping-parameter-settings' as const
-const updateParameterEndpoint = '/market-scoping-parameter-settings/:id' as const
-const deleteParameterEndpoint = '/market-scoping-parameter-settings/:id' as const
+const updateParameterEndpoint =
+  '/market-scoping-parameter-settings/:id' as const
+const deleteParameterEndpoint =
+  '/market-scoping-parameter-settings/:id' as const
 
 // Keep api imported for commented-out real API code below
 void api
@@ -46,7 +55,8 @@ export const getParametersRequest: QueryBlueprintFromTemplate<
   endpoint: getParametersEndpoint,
   key: ({ url }) => [url] as const,
   fetcher: async ({ finalUrl }) => {
-    const response = await api.get<PaginationResponse<ParameterSettingResponse>>(finalUrl)
+    const response =
+      await api.get<PaginationResponse<ParameterSettingResponse>>(finalUrl)
     return response.data
   },
 }
@@ -66,7 +76,10 @@ export const createParameterRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint: createParameterEndpoint,
   fetcher: async ({ payload = {} as CreateParameterPayload }) => {
-    const response = await api.post<APIResponse<{ data: ParameterDefinition }>>(createParameterEndpoint, payload)
+    const response = await api.post<APIResponse<{ data: ParameterDefinition }>>(
+      createParameterEndpoint,
+      payload,
+    )
     return response.data
   },
 }
@@ -78,7 +91,9 @@ export const createParameterRequest: MutationBlueprintFromTemplate<
  *   const response = await api.put<APIResponse<{ data: ParameterDefinition }>>(`/market-scoping-parameter-settings/${id}`, payload);
  *   return response.data;
  */
-export const updateParameterRequest = (id: string): MutationBlueprintFromTemplate<
+export const updateParameterRequest = (
+  id: string,
+): MutationBlueprintFromTemplate<
   typeof updateParameterEndpoint,
   APIResponse<{ data: ParameterDefinition }>,
   undefined,
@@ -88,7 +103,7 @@ export const updateParameterRequest = (id: string): MutationBlueprintFromTemplat
   fetcher: async ({ payload = {} as UpdateParameterPayload }) => {
     const response = await api.put<APIResponse<{ data: ParameterDefinition }>>(
       `/market-scoping-parameter-settings/${id}`,
-      payload
+      payload,
     )
     return response.data
   },
@@ -100,8 +115,10 @@ export const updateParameterRequest = (id: string): MutationBlueprintFromTemplat
  * TO SWITCH TO REAL API: Replace the return statement with:
  *   const response = await api.delete<APIResponse<null>>(`/market-scoping-parameter-settings/${id}`);
  *   return response.data;
- */// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const deleteParameterRequest = (id: string): MutationBlueprintFromTemplate<
+ */ // eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const deleteParameterRequest = (
+  id: string,
+): MutationBlueprintFromTemplate<
   typeof deleteParameterEndpoint,
   APIResponse<null>,
   undefined,
@@ -109,7 +126,9 @@ export const deleteParameterRequest = (id: string): MutationBlueprintFromTemplat
 > => ({
   endpoint: deleteParameterEndpoint,
   fetcher: async () => {
-    const response = await api.delete<APIResponse<null>>(`/market-scoping-parameter-settings/${id}`)
+    const response = await api.delete<APIResponse<null>>(
+      `/market-scoping-parameter-settings/${id}`,
+    )
     return response.data
   },
 })

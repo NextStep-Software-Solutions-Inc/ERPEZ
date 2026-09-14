@@ -19,6 +19,7 @@ import { downloadNoticeOfAwardBlob } from '../utils/downloadNoticeOfAwardBlob'
 import { NoticeOfAwardDetailsShell } from '../components/NoticeOfAwardDetailsShell'
 import {
   ApproveNoticeOfAwardDialog,
+  LogConformeDialog,
   ReturnNoticeOfAwardDialog,
 } from '../dialogs'
 
@@ -40,6 +41,7 @@ export function NoticeOfAwardDetailsPage({
   const [isMutating, setIsMutating] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
   const [approveOpen, setApproveOpen] = useState(false)
+  const [logConformeOpen, setLogConformeOpen] = useState(false)
 
   const loadNoticeOfAward = async () => {
     if (!isGuid(noaId)) {
@@ -225,6 +227,11 @@ export function NoticeOfAwardDetailsPage({
             ? () => setApproveOpen(true)
             : undefined
         }
+        onOpenLogConforme={
+          role === 'procurement-staff' && noticeOfAward.status === 'approved'
+            ? () => setLogConformeOpen(true)
+            : undefined
+        }
         onLogMilestone={
           noticeOfAward.status === 'approved'
             ? async (milestone, file) => {
@@ -363,7 +370,7 @@ export function NoticeOfAwardDetailsPage({
                 data: payload,
               })
               setApproveOpen(false)
-              toast.success('NOA approved / issued. 10-day SLA started.')
+              toast.success('NOA approved and issued successfully.')
               await loadNoticeOfAward()
             } catch (error) {
               toast.error(
@@ -377,6 +384,40 @@ export function NoticeOfAwardDetailsPage({
           }}
         />
       ) : null}
+
+      <LogConformeDialog
+        open={logConformeOpen}
+        onOpenChange={setLogConformeOpen}
+        noaId={noticeOfAward.id}
+        noaNumber={noticeOfAward.noaNumber}
+        issuedAt={noticeOfAward.issuedAt}
+        isLoading={isMutating}
+        onConfirm={async ({ date, file, remarks }) => {
+          setIsMutating(true)
+          try {
+            await logNoticeOfAwardMilestoneRequest.fetcher({
+              data: {
+                noaId: noticeOfAward.id,
+                milestone: 'conforme_received_date',
+                date,
+                file: file ?? undefined,
+                remarks,
+              },
+            })
+            toast.success('NOA Receipt / Conforme logged successfully.')
+            await loadNoticeOfAward()
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : 'Failed to record NOA receipt.',
+            )
+            throw error
+          } finally {
+            setIsMutating(false)
+          }
+        }}
+      />
     </PageContainerDashtail>
   )
 }

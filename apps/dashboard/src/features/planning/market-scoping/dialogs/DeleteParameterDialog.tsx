@@ -10,7 +10,10 @@ import { useAtomValue, useSetAtom } from 'jotai'
 import { toast } from 'sonner'
 import { createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import { selectedParameterForDeleteAtom, parametersAtom } from '../atoms/managementStateAtoms'
+import {
+  selectedParameterForDeleteAtom,
+  parametersAtom,
+} from '../atoms/managementStateAtoms'
 import { deleteParameterRequest } from '../handlers/getParametersRequest'
 
 interface DeleteParameterDialogProps {
@@ -27,7 +30,7 @@ export function DeleteParameterDialog({
   const clearSelected = useSetAtom(selectedParameterForDeleteAtom)
   const setParameters = useSetAtom(parametersAtom)
   const deleteParameter = createMutationHookFromTemplate(
-    deleteParameterRequest(targetParameter?.id ?? '')
+    deleteParameterRequest(targetParameter?.id ?? ''),
   )()
 
   if (!targetParameter) {
@@ -37,9 +40,15 @@ export function DeleteParameterDialog({
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await deleteParameter.mutateAsync({ pathParams: { id: targetParameter.id } })
-      setParameters((prev) => prev.filter((item) => item.id !== targetParameter.id))
-      toast.success(`Parameter "${targetParameter.displayName}" deleted successfully.`)
+      await deleteParameter.mutateAsync({
+        pathParams: { id: targetParameter.id },
+      })
+      setParameters((prev) =>
+        prev.filter((item) => item.id !== targetParameter.id),
+      )
+      toast.success(
+        `Parameter "${targetParameter.displayName}" deleted successfully.`,
+      )
       onOpenChange(false)
       clearSelected(null)
     } finally {
@@ -64,4 +73,3 @@ export function DeleteParameterDialog({
     />
   )
 }
-

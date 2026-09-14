@@ -6,18 +6,30 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { AlertCircle, Upload, Loader2 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { useAtom } from 'jotai'
-import { draftMarketScopingAtom, currentFormStepAtom } from '../atoms/marketScopingStateAtom'
+import {
+  draftMarketScopingAtom,
+  currentFormStepAtom,
+} from '../atoms/marketScopingStateAtom'
 import { FILE_UPLOAD_CONFIG } from '../utils/constants'
 import { AttachmentViewer } from '../components/AttachmentViewer'
 import { fetchActivitySettings } from '../handlers/getActivitySettingsRequest'
-import type { ActivityEvidence, FileAttachment, MarketScopingForm } from '../types/marketScopingTypes'
+import type {
+  ActivityEvidence,
+  FileAttachment,
+} from '../types/marketScopingTypes'
 import type { RawActivityConducted } from '../types/marketScopingApiTypes'
 
 type DraftActivityItem = ActivityEvidence | RawActivityConducted
@@ -25,18 +37,25 @@ type DraftActivityItem = ActivityEvidence | RawActivityConducted
 interface ActivitiesConductedFormProps {
   onNext: (activities: ActivityEvidence[]) => void
   onPrevious: () => void
+  onSaveDraft?: (activities: ActivityEvidence[]) => void
 }
 
-export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConductedFormProps) {
+export function ActivitiesConductedForm({
+  onNext,
+  onPrevious,
+  onSaveDraft,
+}: ActivitiesConductedFormProps) {
   const [draft] = useAtom(draftMarketScopingAtom)
   const [, setCurrentStep] = useAtom(currentFormStepAtom)
   const { toast } = useToast()
-  
+
   // State for API loading
   const [isLoading, setIsLoading] = useState(true)
-  
+
   // State for form activities
-  const [activities, setActivities] = useState<ActivityEvidence[]>(draft?.activities || [])
+  const [activities, setActivities] = useState<ActivityEvidence[]>(
+    draft?.activities || [],
+  )
 
   // Fetch activity settings on mount & hydrate from draft
   useEffect(() => {
@@ -44,16 +63,16 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
       setIsLoading(true)
       try {
         const settings = await fetchActivitySettings()
-        
+
         const draftActivities: DraftActivityItem[] =
-          draft?.activities ||
-          (draft as Partial<MarketScopingForm> & { activitiesConducted?: RawActivityConducted[] })?.activitiesConducted ||
-          []
+          draft?.activities || draft?.activitiesConducted || []
         const draftedMap = new Map<string, DraftActivityItem>()
 
         draftActivities.forEach((act: DraftActivityItem) => {
-          if (act.activitySettingsId) draftedMap.set(act.activitySettingsId, act)
-          if ('activityId' in act && act.activityId) draftedMap.set(act.activityId, act)
+          if (act.activitySettingsId)
+            draftedMap.set(act.activitySettingsId, act)
+          if ('activityId' in act && act.activityId)
+            draftedMap.set(act.activityId, act)
           if (act.id) draftedMap.set(act.id, act)
           if (act.label) draftedMap.set(act.label.toLowerCase().trim(), act)
         })
@@ -64,8 +83,37 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
             draftedMap.get(setting.label?.toLowerCase()?.trim() || '')
 
           if (match) {
-            const isChecked = 'checked' in match ? match.checked ?? true : true
-            const attachments = match.attachments || []
+            const isChecked =
+              'checked' in match ? (match.checked ?? true) : true
+            const attachments: FileAttachment[] = (match.attachments || []).map(
+              (att, attIdx) => {
+                const url =
+                  att.fileUrl ||
+                  ('url' in att && att.url) ||
+                  ('fileId' in att && att.fileId) ||
+                  ''
+                return {
+                  id:
+                    att.id ||
+                    ('fileId' in att && att.fileId) ||
+                    url ||
+                    `att-${setting.id}-${attIdx}`,
+                  fileName:
+                    att.fileName ||
+                    ('name' in att && att.name) ||
+                    `Attachment ${attIdx + 1}`,
+                  fileUrl: url,
+                  fileSize:
+                    att.fileSize ?? ('size' in att ? att.size : undefined),
+                  fileType:
+                    att.fileType ?? ('type' in att ? att.type : undefined),
+                  uploadedDate: att.uploadedDate
+                    ? new Date(att.uploadedDate)
+                    : undefined,
+                  rawFile: 'rawFile' in att ? att.rawFile : undefined,
+                }
+              },
+            )
             return {
               id: setting.id,
               activitySettingsId: setting.id,
@@ -100,7 +148,7 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
         setIsLoading(false)
       }
     }
-    
+
     loadActivitySettings()
   }, [draft])
 
@@ -113,37 +161,34 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
       prev.map((activity) =>
         activity.activitySettingsId === settingsId
           ? { ...activity, checked: !activity.checked }
-          : activity
-      )
+          : activity,
+      ),
     )
   }
 
-  const handleFileChange = useCallback(
-    (settingsId: string, files: File[]) => {
-      setActivities((prev) =>
-        prev.map((activity) => {
-          if (activity.activitySettingsId === settingsId) {
-            const newAttachments: FileAttachment[] = files.map((file) => ({
-              id: `${Date.now()}-${Math.random()}`,
-              fileName: file.name,
-              fileUrl: URL.createObjectURL(file),
-              fileSize: file.size,
-              fileType: file.type,
-              uploadedDate: new Date(),
-              rawFile: file,
-            }))
+  const handleFileChange = useCallback((settingsId: string, files: File[]) => {
+    setActivities((prev) =>
+      prev.map((activity) => {
+        if (activity.activitySettingsId === settingsId) {
+          const newAttachments: FileAttachment[] = files.map((file) => ({
+            id: `${Date.now()}-${Math.random()}`,
+            fileName: file.name,
+            fileUrl: URL.createObjectURL(file),
+            fileSize: file.size,
+            fileType: file.type,
+            uploadedDate: new Date(),
+            rawFile: file,
+          }))
 
-            return {
-              ...activity,
-              attachments: [...(activity.attachments || []), ...newAttachments],
-            }
+          return {
+            ...activity,
+            attachments: [...(activity.attachments || []), ...newAttachments],
           }
-          return activity
-        })
-      )
-    },
-    []
-  )
+        }
+        return activity
+      }),
+    )
+  }, [])
 
   const removeAttachment = (settingsId: string, attachmentId: string) => {
     setActivities((prev) =>
@@ -151,10 +196,12 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
         activity.activitySettingsId === settingsId
           ? {
               ...activity,
-              attachments: activity.attachments.filter((att) => att.id !== attachmentId),
+              attachments: activity.attachments.filter(
+                (att) => att.id !== attachmentId,
+              ),
             }
-          : activity
-      )
+          : activity,
+      ),
     )
   }
 
@@ -166,20 +213,20 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
             return {
               ...activity,
               attachments: activity.attachments.map((att) =>
-                att.id === attachmentId ? { ...att, fileName: newName } : att
+                att.id === attachmentId ? { ...att, fileName: newName } : att,
               ),
             }
           }
           return activity
-        })
+        }),
       )
     },
-    []
+    [],
   )
 
   const checkedCount = activities.filter((a) => a.checked).length
   const hasUnsupportedCheckedActivities = activities.some(
-    (a) => a.checked && a.attachments.length === 0
+    (a) => a.checked && a.attachments.length === 0,
   )
 
   if (isLoading) {
@@ -188,7 +235,9 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
         <CardContent className="pt-6">
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-gray-600">Loading activity settings...</span>
+            <span className="ml-2 text-gray-600">
+              Loading activity settings...
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -201,7 +250,8 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
         <CardHeader>
           <CardTitle>Activities Conducted</CardTitle>
           <CardDescription>
-            Select the market research activities you conducted and attach supporting evidence
+            Select the market research activities you conducted and attach
+            supporting evidence
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -210,7 +260,10 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
             {activities.map((activity) => {
               const settingsId = activity.activitySettingsId || activity.id
               return (
-                <div key={settingsId} className="border rounded-lg p-4 space-y-3">
+                <div
+                  key={settingsId}
+                  className="border rounded-lg p-4 space-y-3"
+                >
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id={`activity-${settingsId}`}
@@ -219,8 +272,8 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
                       className="mt-1"
                     />
                     <div className="flex-1">
-                      <Label 
-                        htmlFor={`activity-${settingsId}`} 
+                      <Label
+                        htmlFor={`activity-${settingsId}`}
                         className="text-base font-medium cursor-pointer"
                       >
                         {activity.label}
@@ -248,10 +301,12 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
                       />
 
                       {activity.attachments.length === 0 && (
-                        <div className="flex items-start gap-2 p-3 bg-orange-50 border border-orange-200 rounded">
-                          <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-orange-800">
-                            At least one supporting document is required for checked activities
+                        <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded">
+                          <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-amber-800">
+                            Draft Notice: Supporting document not yet attached.
+                            You can proceed or save as draft now, but files must
+                            be attached before final submission.
                           </p>
                         </div>
                       )}
@@ -264,29 +319,58 @@ export function ActivitiesConductedForm({ onNext, onPrevious }: ActivitiesConduc
             {/* Summary and Validation */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-900">
-                <strong>{checkedCount}</strong> activit{checkedCount !== 1 ? 'ies' : 'y'} selected
+                <strong>{checkedCount}</strong> activit
+                {checkedCount !== 1 ? 'ies' : 'y'} selected
               </p>
               {hasUnsupportedCheckedActivities && (
-                <div className="flex items-start gap-2 mt-2 p-2 bg-red-50 border border-red-200 rounded">
-                  <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-red-800">
-                    All checked activities must have at least one supporting document
+                <div className="flex items-start gap-2 mt-2 p-2 bg-amber-50 border border-amber-200 rounded">
+                  <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-amber-800">
+                    Draft mode:{' '}
+                    {
+                      activities.filter(
+                        (a) => a.checked && a.attachments.length === 0,
+                      ).length
+                    }{' '}
+                    checked activit
+                    {activities.filter(
+                      (a) => a.checked && a.attachments.length === 0,
+                    ).length > 1
+                      ? 'ies'
+                      : 'y'}{' '}
+                    missing supporting documents. You can save as draft or
+                    proceed, but attachments are required before submitting for
+                    approval.
                   </p>
                 </div>
+              )}
+              {checkedCount === 0 && (
+                <p className="text-xs text-blue-700 mt-1">
+                  Draft tip: You can select activities and upload evidence now,
+                  or save your draft and return to complete this step later.
+                </p>
               )}
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between pt-4">
+            <div className="flex justify-between items-center pt-4 border-t">
               <Button variant="outline" onClick={onPrevious}>
                 Previous
               </Button>
-              <Button
-                onClick={() => onNext(activities)}
-                disabled={checkedCount === 0 || hasUnsupportedCheckedActivities}
-              >
-                Next: Parameter Evaluation
-              </Button>
+              <div className="flex items-center gap-3">
+                {onSaveDraft && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onSaveDraft(activities)}
+                  >
+                    Save as Draft
+                  </Button>
+                )}
+                <Button onClick={() => onNext(activities)}>
+                  Next: Parameter Evaluation
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -318,7 +402,7 @@ function FileUploadDropzone({
     setIsDragging(false)
     const droppedFiles = Array.from(e.dataTransfer.files)
     const validFiles = droppedFiles.filter((file) =>
-      (FILE_UPLOAD_CONFIG.ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)
+      FILE_UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(file.type),
     )
     if (validFiles.length > 0) {
       onFilesChange(activityId, validFiles)
@@ -360,7 +444,10 @@ function FileUploadDropzone({
           className="hidden"
           id={`file-input-${activityId}`}
         />
-        <Label htmlFor={`file-input-${activityId}`} className="cursor-pointer text-primary text-sm">
+        <Label
+          htmlFor={`file-input-${activityId}`}
+          className="cursor-pointer text-primary text-sm"
+        >
           Browse files
         </Label>
       </div>

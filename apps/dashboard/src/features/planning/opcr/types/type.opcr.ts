@@ -1,7 +1,6 @@
 import { DeliveryUnit, Office } from '@/components/features/planning/office'
 import { OPCRActivity } from './type.opcr-activity'
 import { KPIAssignment } from '../../kpi-assignment'
-import { CommitmentStatus } from '../table/approvalworkflow'
 import { MasterKPI } from '../../master-kpi/types'
 import { FileType } from '@/components/features/planning/file-upload/handlers/createFileRequest'
 type FunctionAllocation = {
@@ -187,7 +186,7 @@ type OPCRItemMOV = {
   createdBy?: string
 }
 
-type CommitmentStatus = 'Draft' | 'Submitted' | 'Approved' | 'Rejected'
+type CommitmentStatus = 'Draft' | 'Submitted' | 'Approved' | 'Returned'
 type ReviewStatus = 'Pending' | 'Draft' | 'Submitted' | 'Returned' | 'Finalized'
 
 export type {

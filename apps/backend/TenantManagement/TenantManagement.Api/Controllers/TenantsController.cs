@@ -1,9 +1,12 @@
 using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Interfaces;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.DeleteTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.UpdateTenant;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.UpdateTenantModules;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.ToggleTenantStatus;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantById;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
@@ -17,10 +20,14 @@ namespace ERPEZ.TenantManagement.Api.Controllers
 {
     [Route("tenants")]
     [ApiController]
-    public class TenantsController(ISender mediator) : ControllerBase
+    public class TenantsController(
+        ISender mediator,
+        ITenantContextService tenantContext,
+        ICurrentUserService currentUser,
+        IUserAuthorizationService authorizationService) : ControllerBase
     {
         [HttpPost]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         [HasPermission(Permissions.Admin.tenantsManage)]
@@ -35,7 +42,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<TenantDto>), StatusCodes.Status200OK)]
         [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> GetTenants([FromQuery] GetTenantsQuery query)
@@ -45,18 +52,38 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> GetTenantById(Guid id)
         {
+            if (!currentUser.IsSuperAdmin)
+            {
+                if (!tenantContext.TenantId.HasValue || tenantContext.TenantId.Value != id)
+                {
+                    return Forbid();
+                }
+
+                var externalId = currentUser.ExternalIdentityId;
+                var hasPermission = !string.IsNullOrEmpty(externalId) && (
+                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.systemAdminView) ||
+                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.systemAdminManage) ||
+                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.tenantsManage)
+                );
+
+                if (!hasPermission)
+                {
+                    return Forbid();
+                }
+            }
+
             var tenant = await mediator.Send(new GetTenantByIdQuery(id));
 
             return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
         }
+
         [HttpGet("my")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<IReadOnlyList<TenantDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetMyTenants([FromQuery] GetMyTenantsQuery query)
@@ -66,13 +93,31 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-        [HasPermission(Permissions.Admin.tenantsManage)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateTenant(Guid id, [FromBody] UpdateTenantDto updateTenant)
         {
+            if (!currentUser.IsSuperAdmin)
+            {
+                if (!tenantContext.TenantId.HasValue || tenantContext.TenantId.Value != id)
+                {
+                    return Forbid();
+                }
+
+                var externalId = currentUser.ExternalIdentityId;
+                var hasPermission = !string.IsNullOrEmpty(externalId) && (
+                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.systemAdminManage) ||
+                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.tenantsManage)
+                );
+
+                if (!hasPermission)
+                {
+                    return Forbid();
+                }
+            }
+
             var request = new UpdateTenantCommand
             {
                 Id = id,
@@ -83,8 +128,56 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             return tenant.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(tenant);
         }
 
+        [HttpPut("{id}/modules")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateTenantModules(Guid id, [FromBody] List<string> moduleKeys)
+        {
+            if (!currentUser.IsSuperAdmin)
+            {
+                if (!tenantContext.TenantId.HasValue || tenantContext.TenantId.Value != id)
+                {
+                    return Forbid();
+                }
+
+                var externalId = currentUser.ExternalIdentityId;
+                var hasPermission = !string.IsNullOrEmpty(externalId) && (
+                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.systemAdminManage) ||
+                    await authorizationService.HasPermissionAsync(externalId, id, Permissions.Admin.tenantsManage)
+                );
+
+                if (!hasPermission)
+                {
+                    return Forbid();
+                }
+            }
+
+            var command = new UpdateTenantModulesCommand
+            {
+                TenantId = id,
+                ModuleKeys = moduleKeys
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPatch("{id}/status")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HasPermission(Permissions.Admin.tenantsManage)]
+        public async Task<IActionResult> ToggleTenantStatus(Guid id, [FromBody] bool isDisabled)
+        {
+            var result = await mediator.Send(new ToggleTenantStatusCommand(id, isDisabled));
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
         [HttpDelete("{id}")]
-        //[Authorize]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HasPermission(Permissions.Admin.tenantsManage)]

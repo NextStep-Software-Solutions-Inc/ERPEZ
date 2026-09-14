@@ -21,19 +21,21 @@ export function buildCards({
   statusLabel,
   statusColor,
   lastUpdated,
+  licenseHint,
 }: {
   licenseDays: number;
   planName: string;
   statusLabel: string;
   statusColor?: string;
   lastUpdated: string;
+  licenseHint?: string;
 }): CardItem[] {
   return [
     {
       id: "license",
       title: "License Expiry",
       value: { type: "text", value: `${licenseDays} days` },
-      hint: "Trial ends Jan 15, 2025",
+      hint: licenseHint ?? (licenseDays > 30 ? "Enterprise license active" : "License expiring soon"),
       iconKey: "calendar",
     },
     {

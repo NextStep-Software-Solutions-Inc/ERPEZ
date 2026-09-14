@@ -13,4 +13,4 @@ export {
   getMockMarketScopingByStatus,
   getMockMarketScopingById,
   getMockStatusSummary,
-} from "./mockMarketScopingData";
+} from './mockMarketScopingData'

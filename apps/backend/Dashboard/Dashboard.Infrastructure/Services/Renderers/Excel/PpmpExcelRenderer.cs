@@ -19,12 +19,22 @@ internal sealed class PpmpExcelRenderer
         using var wb = LoadTemplate("ppmp_template.xlsx");
         var ws = wb.Worksheet(1);
 
-        ws.Cell("C2").Value = $"PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP) NO. {request.PpmpNumber}";
+        var titlePrefix = request.IsSupplemental
+            ? "SUPPLEMENTAL PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP)"
+            : "PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP)";
+        var cleanPpmpNumber = request.PpmpNumber;
+        if (cleanPpmpNumber.StartsWith("SUPPLEMENTAL ", StringComparison.OrdinalIgnoreCase))
+        {
+            cleanPpmpNumber = cleanPpmpNumber["SUPPLEMENTAL ".Length..].Trim();
+        }
+        ws.Cell("C2").Value = $"{titlePrefix} NO. {cleanPpmpNumber}";
         ws.Cell("C2").Style.Font.Bold = true;
         ws.Cell("C2").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-        ws.Cell("D4").Value = !request.IsFinal ? "☑ INDICATIVE" : "☐ INDICATIVE";
-        ws.Cell("F4").Value =  request.IsFinal ? "☑ FINAL"      : "☐ FINAL";
+        var isIndicative = !request.IsFinal && !request.IsSupplemental;
+        var isFinal = request.IsFinal || request.IsSupplemental;
+        ws.Cell("D4").Value = isIndicative ? "☑ INDICATIVE" : "☐ INDICATIVE";
+        ws.Cell("F4").Value = isFinal ? "☑ FINAL" : "☐ FINAL";
         ws.Cell("A6").Value = $"Fiscal Year: {request.FiscalYear}";
         ws.Cell("A7").Value = $"End-User or Implementing Unit: {request.EndUserUnit}";
 
