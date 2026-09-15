@@ -1,6 +1,5 @@
 {
     "buildCommand": "export NODE_OPTIONS=\"--max-old-space-size=6144\" && pnpm --filter erpez-shared-lib build && pnpm --filter dashboard build",
-    "installCommand": "echo 'Dependencies already installed'",
     "rewrites": [
         {
             "source": "/(.*)",
