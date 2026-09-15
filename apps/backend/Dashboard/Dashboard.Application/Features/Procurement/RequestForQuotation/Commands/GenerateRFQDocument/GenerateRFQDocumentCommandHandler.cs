@@ -27,12 +27,140 @@ public class GenerateRFQDocumentCommandHandler(
             throw new NotFoundException($"RFQ with ID '{request.RFQId}' was not found.");
         }
 
+        // 1. Resolve OfficeId from sourcing hierarchy
+        Guid officeId = Guid.Empty;
+
+        var prOfficeId = rfq.RFQItems?
+            .Select(i => i.CPRItem?.PurchaseRequest?.OfficeId ?? i.CPRItem?.PRItem?.PurchaseRequest?.OfficeId)
+            .FirstOrDefault(id => id.HasValue && id.Value != Guid.Empty);
+
+        if (prOfficeId.HasValue)
+        {
+            officeId = prOfficeId.Value;
+        }
+        else
+        {
+            var cprOfficeId = rfq.ConsolidatedPR?.ConsolidatedPRItems?
+                .Select(ci => ci.PurchaseRequest?.OfficeId)
+                .FirstOrDefault(id => id.HasValue && id.Value != Guid.Empty);
+
+            if (cprOfficeId.HasValue)
+            {
+                officeId = cprOfficeId.Value;
+            }
+        }
+
+        if (officeId == Guid.Empty)
+        {
+            var defaultOffice = await unitOfWork.OfficeRepository.FindAsync(o => !o.IsDeleted, cancellationToken)
+                ?? await unitOfWork.OfficeRepository.FindAsync(o => true, cancellationToken);
+            if (defaultOffice != null)
+            {
+                officeId = defaultOffice.Id;
+            }
+        }
+
+        if (officeId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Cannot generate RFQ document because no valid Office could be associated with this document.");
+        }
+
+        // 2. Resolve Main Organization or Head Office for document header
+        string? mainOrgOrHeadOfficeName = null;
+        string? mainOrgOrHeadOfficeAddress = null;
+
+        var currentOffice = await unitOfWork.OfficeRepository.GetByIdWithDetailsAsync(officeId, cancellationToken);
+        if (currentOffice != null)
+        {
+            while (currentOffice.ParentId.HasValue && currentOffice.ParentId.Value != Guid.Empty)
+            {
+                var parentOffice = await unitOfWork.OfficeRepository.GetByIdWithDetailsAsync(currentOffice.ParentId.Value, cancellationToken);
+                if (parentOffice == null) break;
+                currentOffice = parentOffice;
+            }
+
+            if (currentOffice.Organization != null && !string.IsNullOrWhiteSpace(currentOffice.Organization.Name))
+            {
+                mainOrgOrHeadOfficeName = currentOffice.Organization.Name;
+            }
+            else if (!string.IsNullOrWhiteSpace(currentOffice.Name))
+            {
+                mainOrgOrHeadOfficeName = currentOffice.Name;
+            }
+
+            if (!string.IsNullOrWhiteSpace(currentOffice.Address))
+            {
+                mainOrgOrHeadOfficeAddress = currentOffice.Address;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName))
+        {
+            var topOrg = await unitOfWork.OrganizationRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)
+                ?? await unitOfWork.OrganizationRepository.FindAsync(o => !o.IsDeleted, cancellationToken);
+
+            if (topOrg != null && !string.IsNullOrWhiteSpace(topOrg.Name))
+            {
+                mainOrgOrHeadOfficeName = topOrg.Name;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName))
+        {
+            var rootOffice = await unitOfWork.OfficeRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken);
+            if (rootOffice != null && !string.IsNullOrWhiteSpace(rootOffice.Name))
+            {
+                mainOrgOrHeadOfficeName = rootOffice.Name;
+                if (!string.IsNullOrWhiteSpace(rootOffice.Address))
+                {
+                    mainOrgOrHeadOfficeAddress = rootOffice.Address;
+                }
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName))
+        {
+            mainOrgOrHeadOfficeName = configuration["Procurement:ProcuringEntityName"]
+                ?? configuration["Procurement:OrganizationName"]
+                ?? configuration["Procurement:HeadOfficeName"];
+        }
+
+        var procuringEntity = !string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName)
+            ? mainOrgOrHeadOfficeName
+            : "[Head Office / Procuring Entity]";
+
+        var procuringEntityAddress = !string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeAddress)
+            ? mainOrgOrHeadOfficeAddress
+            : (configuration["Procurement:ProcuringEntityAddress"] ?? string.Empty);
+
+        // 3. Resolve live BAC Members or placeholders
+        var bacChairperson = await unitOfWork.BACMemberRepository.FindAsync(
+            m => m.IsActive && !m.IsDeleted && (m.Role == "Chairperson" || m.Role.Contains("Chair")),
+            cancellationToken);
+
+        var bacSecretariat = await unitOfWork.BACMemberRepository.FindAsync(
+            m => m.IsActive && !m.IsDeleted && (m.Role.Contains("Sec") || m.Position.Contains("Sec")),
+            cancellationToken);
+
+        var bacChairpersonName = bacChairperson?.FullName
+            ?? configuration["Procurement:BacChairpersonName"]
+            ?? "[BAC Chairperson / Secretariat Name]";
+
+        var bacChairpersonTitle = (!string.IsNullOrWhiteSpace(bacChairperson?.Position) ? bacChairperson.Position : null)
+            ?? configuration["Procurement:BacChairpersonTitle"]
+            ?? "[BAC Chairperson / Secretariat Designation]";
+
+        var bacSecName = bacSecretariat?.FullName
+            ?? configuration["Procurement:BacSecName"]
+            ?? "[BAC Secretariat]";
+
+        // 4. Resolve dynamic fields without hardcoded sample fallbacks
         var projectName = !string.IsNullOrWhiteSpace(rfq.Description)
             ? rfq.Description
-            : (!string.IsNullOrWhiteSpace(rfq.Purpose) ? rfq.Purpose : "Procurement Project");
+            : (!string.IsNullOrWhiteSpace(rfq.Purpose) ? rfq.Purpose : "[Project Name / Purpose]");
 
         var modeName = rfq.ModeOfProcurement?.Name
-            ?? "Negotiated Procurement - Small Value Procurement - Section 53.9, Rule XVI, Revised IRR of RA 9184";
+            ?? "[Mode of Procurement]";
 
         var dateFormatted = rfq.Date != default
             ? rfq.Date.ToString("MMMM dd, yyyy")
@@ -40,25 +168,28 @@ public class GenerateRFQDocumentCommandHandler(
 
         var deadlineFormatted = rfq.Deadline.HasValue
             ? rfq.Deadline.Value.ToString("dddd, MMMM dd, yyyy 'at 12:00 noon'")
-            : "To be announced";
-
-        var procuringEntity = configuration["Procurement:ProcuringEntityName"]
-            ?? "University of Science and Technology of Southern Philippines";
+            : "[Deadline Date]";
 
         var submissionLocation = configuration["Procurement:SubmissionLocation"]
-            ?? "Procurement Unit, 2nd Floor, USTP Gymnasium building";
+            ?? (!string.IsNullOrWhiteSpace(procuringEntityAddress) ? procuringEntityAddress : "[Submission Location]");
 
-        var contactEmail = configuration["Procurement:BacEmail"] ?? "bacsec@ustp.edu.ph";
-        var contactPhone = configuration["Procurement:BacPhone"] ?? "856-1738 Local 1164";
-        var bacChairpersonName = configuration["Procurement:BacChairpersonName"] ?? "ENGR. ALEX L. MAUREAL";
-        var bacChairpersonTitle = configuration["Procurement:BacChairpersonTitle"] ?? "BAC IV CHAIRPERSON";
+        var deliveryLocation = configuration["Procurement:DeliveryLocation"]
+            ?? (!string.IsNullOrWhiteSpace(procuringEntityAddress) ? procuringEntityAddress : "[Delivery Location]");
+
+        var contactEmail = configuration["Procurement:BacEmail"]
+            ?? "[BAC Email Address]";
+
+        var contactPhone = configuration["Procurement:BacPhone"]
+            ?? "[BAC Contact Number]";
+
         var deliveryPeriod = !string.IsNullOrWhiteSpace(rfq.DeliveryPeriod)
             ? rfq.DeliveryPeriod
-            : "15 CALENDAR DAY UPON RECEIPT OF Purchase Order.";
+            : "[Delivery Period]";
 
-        // Resolve CPR / PR / BAC Resolution Numbers
-        var prNumber = rfq.ConsolidatedPR?.CPRNumber ?? (!string.IsNullOrWhiteSpace(rfq.TracingNumber) ? rfq.TracingNumber : "2025-3540-18");
-        var bacResNumber = "ALT-25-0524 s. 2025, ALT-25-0524a s. 2025";
+        var prNumber = rfq.ConsolidatedPR?.CPRNumber
+            ?? (!string.IsNullOrWhiteSpace(rfq.TracingNumber) ? rfq.TracingNumber : "[PR / Tracing No.]");
+
+        var bacResNumber = "[BAC Resolution No.]";
 
         // Query bids submitted for this RFQ
         var bids = await unitOfWork.SupplierBidRepository.Query()
@@ -138,9 +269,12 @@ public class GenerateRFQDocumentCommandHandler(
         {
             suppliers.Add(new RfqSupplierDataDto
             {
-                SupplierName = "Prospective Bidder / Supplier",
-                TradeName = "Prospective Bidder / Supplier",
-                Address = "Cagayan de Oro City",
+                SupplierName = "[Supplier / Bidder Name]",
+                TradeName = "[Business / Store Name]",
+                Address = "[Supplier Address]",
+                ContactPerson = "[Contact Person]",
+                ContactNumber = "[Contact Number]",
+                Email = "[Supplier Email]",
                 QuotedItems = rfqItems
             });
         }
@@ -158,11 +292,14 @@ public class GenerateRFQDocumentCommandHandler(
             PRNumber = prNumber,
             BacResolutionNumber = bacResNumber,
             ProcuringEntity = procuringEntity,
+            ProcuringEntityAddress = procuringEntityAddress,
             SubmissionLocation = submissionLocation,
+            DeliveryLocation = deliveryLocation,
             ContactEmail = contactEmail,
             ContactPhone = contactPhone,
             BacChairpersonName = bacChairpersonName,
             BacChairpersonTitle = bacChairpersonTitle,
+            BacSecName = bacSecName,
             DeliveryPeriod = deliveryPeriod,
             Items = rfqItems,
             Suppliers = suppliers
@@ -176,47 +313,6 @@ public class GenerateRFQDocumentCommandHandler(
         var extension = request.Format == ExportFormat.Excel ? "xlsx" : "pdf";
         var fileName = $"RFQ_{rfq.RFQNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.{extension}";
         var storagePath = await storageService.SaveAsync(bytes, fileName, cancellationToken);
-
-        // Resolve OfficeId
-        Guid officeId = Guid.Empty;
-
-        // 1. Try from RFQItems' CPRItem -> PurchaseRequest Office
-        var prOfficeId = rfq.RFQItems?
-            .Select(i => i.CPRItem?.PurchaseRequest?.OfficeId ?? i.CPRItem?.PRItem?.PurchaseRequest?.OfficeId)
-            .FirstOrDefault(id => id.HasValue && id.Value != Guid.Empty);
-
-        if (prOfficeId.HasValue)
-        {
-            officeId = prOfficeId.Value;
-        }
-        else
-        {
-            // 2. Try from ConsolidatedPRItems
-            var cprOfficeId = rfq.ConsolidatedPR?.ConsolidatedPRItems?
-                .Select(ci => ci.PurchaseRequest?.OfficeId)
-                .FirstOrDefault(id => id.HasValue && id.Value != Guid.Empty);
-
-            if (cprOfficeId.HasValue)
-            {
-                officeId = cprOfficeId.Value;
-            }
-        }
-
-        // 3. Fallback to first available office in DB if still empty
-        if (officeId == Guid.Empty)
-        {
-            var defaultOffice = await unitOfWork.OfficeRepository.FindAsync(o => !o.IsDeleted, cancellationToken)
-                ?? await unitOfWork.OfficeRepository.FindAsync(o => true, cancellationToken);
-            if (defaultOffice != null)
-            {
-                officeId = defaultOffice.Id;
-            }
-        }
-
-        if (officeId == Guid.Empty)
-        {
-            throw new InvalidOperationException("Cannot generate RFQ document because no valid Office could be associated with this document.");
-        }
 
         var record = new GeneratedDocument
         {

@@ -25,12 +25,14 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
         var pdf = Document.Create(doc =>
         {
-            var primarySupplier = request.Suppliers.FirstOrDefault() ?? new RfqSupplierDataDto
-            {
-                SupplierName = "Prospective Bidder / Supplier",
-                TradeName = "Prospective Bidder / Supplier",
-                Address = "Cagayan de Oro City"
-            };
+            var primarySupplier = request.Suppliers.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s.SupplierName) && !s.SupplierName.StartsWith("["))
+                ?? request.Suppliers.FirstOrDefault()
+                ?? new RfqSupplierDataDto
+                {
+                    SupplierName = "[Supplier / Bidder Name]",
+                    TradeName = "[Business / Store Name]",
+                    Address = "[Supplier Address]"
+                };
 
             // ══════════════════════════════════════════════════════════════════════
             // PAGE 1: INVITATION / REQUEST FOR SUBMISSION OF PRICE QUOTATION
@@ -44,10 +46,10 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                 page.Header().Column(col =>
                 {
-                    RenderHeaderLogo(col, logoBytes, request.ProcuringEntity);
+                    RenderHeaderLogo(col, logoBytes, request.ProcuringEntity, request.ProcuringEntityAddress);
 
                     col.Item().PaddingTop(16).AlignCenter()
-                        .Text("INVITATION /REQUEST FOR SUBMISSION OF PRICE QUOTATION")
+                        .Text("INVITATION / REQUEST FOR SUBMISSION OF PRICE QUOTATION")
                         .Bold().FontSize(11.5f);
 
                     col.Item().PaddingTop(2).AlignCenter()
@@ -57,7 +59,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                 page.Content().PaddingTop(14).Column(col =>
                 {
-                    col.Item().Text("The University of Science & Technology of Southern Philippines, through the Bids and Awards Committee (BAC) hereby invites interested parties to submit quotation for the procurement of the following item:")
+                    col.Item().Text($"The {request.ProcuringEntity}, through the Bids and Awards Committee (BAC) hereby invites interested parties to submit quotation for the procurement of the following item:")
                         .FontSize(9).LineHeight(1.3f);
 
                     // Notice summary table
@@ -98,11 +100,11 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                         t.Span(request.Deadline).Bold().FontSize(8.5f);
                         t.Span($" at the {request.SubmissionLocation}. You may submit your quotation through email: ").FontSize(8.5f);
                         t.Span(request.ContactEmail).Bold().FontSize(8.5f);
-                        t.Span($" or call our telephone number {request.ContactPhone} or through personal delivery in a sealed envelope.").FontSize(8.5f);
+                        t.Span($" or call telephone number {request.ContactPhone} or through personal delivery in a sealed envelope.").FontSize(8.5f);
                     });
 
                     // Reservation clause
-                    col.Item().PaddingTop(12).Text("The University of Science & Technology of Southern Philippines reserves the right to accept or reject any or all bids / price quotations, to annul the process, and to reject all bids at any time prior to contract award, without thereby incurring any liability to the affected bidder or bidders.")
+                    col.Item().PaddingTop(12).Text($"The {request.ProcuringEntity} reserves the right to accept or reject any or all bids / price quotations, to annul the process, and to reject all bids at any time prior to contract award, without thereby incurring any liability to the affected bidder or bidders.")
                         .FontSize(8.5f).LineHeight(1.25f);
 
                     // Signatory
@@ -128,7 +130,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                 page.Header().Column(col =>
                 {
-                    RenderHeaderLogo(col, logoBytes, request.ProcuringEntity);
+                    RenderHeaderLogo(col, logoBytes, request.ProcuringEntity, request.ProcuringEntityAddress);
 
                     // Metadata Row
                     col.Item().PaddingTop(6).Row(row =>
@@ -145,7 +147,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                         row.RelativeItem(5).Column(right =>
                         {
                             right.Item().Text($"Date: {request.Date}").FontSize(8);
-                            right.Item().Text($"Quotation No: {request.QuotationNo}").Bold().FontSize(8);
+                            right.Item().Text($"Quotation No: {(!string.IsNullOrWhiteSpace(request.QuotationNo) ? request.QuotationNo : request.RFQNumber)}").Bold().FontSize(8);
                             right.Item().Text($"Project Name: {request.ProjectName}").Bold().FontSize(8);
                         });
                     });
@@ -171,12 +173,12 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                     col.Item().PaddingTop(4).Column(nc =>
                     {
                         nc.Item().Text("NOTE:").Bold().FontSize(7.5f);
-                        nc.Item().Text($"1. DELIVERY PERIOD OF {request.DeliveryPeriod}").FontSize(7);
-                        nc.Item().Text("2. DELIVERY LOCATION: SUPPLY OFFICE, USTP-CDO, C. M. RECTO AVENUE, LAPASAN CAGAYAN DE ORO CITY, MISAMIS ORIENTAL").FontSize(7);
+                        nc.Item().Text($"1. DELIVERY PERIOD: {request.DeliveryPeriod}").FontSize(7);
+                        nc.Item().Text($"2. DELIVERY LOCATION: {request.DeliveryLocation}").FontSize(7);
                         nc.Item().Text("3. PAYMENT TERMS: One Time Payment").FontSize(7);
                         nc.Item().Text("4. PRICE VALIDITY SHALL BE FOR A PERIOD OF 30 CALENDAR DAYS").FontSize(7);
                         nc.Item().Text("5. BIDDERS MUST INDICATE THE BRAND AND/OR MODEL NUMBER FOR EQUIPMENT AND ITS ACCESSORIES OR PERIPHERALS AND FOR ALL OTHER ITEMS IF APPLICABLE. BIDDERS SHALL SUBMIT ORIGINAL BROCHURES SHOWING CERTIFICATIONS OF THE PRODUCT BEING OFFERED IF APPLICABLE.").FontSize(7);
-                        nc.Item().Text("6. THE USTP RESERVES THE RIGHT TO REJECT ANY OR ALL BIDS FOR ANY JUSTIFIABLE GROUND WHERE THE AWARD OF THE CONTRACT WILL NOT REDOUND TO THE BENEFIT OF THE GOP.").FontSize(7);
+                        nc.Item().Text($"6. THE {request.ProcuringEntity.ToUpper()} RESERVES THE RIGHT TO REJECT ANY OR ALL BIDS FOR ANY JUSTIFIABLE GROUND WHERE THE AWARD OF THE CONTRACT WILL NOT REDOUND TO THE BENEFIT OF THE GOP.").FontSize(7);
                         nc.Item().Text("7. REQUIREMENTS: PHILGEPS REGISTRATION.").FontSize(7);
                     });
                 });
@@ -232,7 +234,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                                 {
                                     oc.Item().Text(item.OfferedSpecifications).FontSize(8);
                                 }
-                                oc.Item().PaddingTop(2).Text("Delivery period in days: 15 days").FontSize(6.5f).Italic();
+                                oc.Item().PaddingTop(2).Text($"Delivery period: {request.DeliveryPeriod}").FontSize(6.5f).Italic();
                             });
 
                             table.Cell().Element(TableDataCell).Column(qc =>
@@ -271,7 +273,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                 page.Header().Column(col =>
                 {
-                    RenderHeaderLogo(col, logoBytes, request.ProcuringEntity);
+                    RenderHeaderLogo(col, logoBytes, request.ProcuringEntity, request.ProcuringEntityAddress);
 
                     col.Item().PaddingTop(10).Row(r =>
                     {
@@ -299,7 +301,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                     col.Item().AlignRight().PaddingRight(20).Border(1.5f).BorderColor(Colors.Blue.Medium).Width(180).Height(80).Padding(6).Column(sc =>
                     {
                         sc.Item().AlignCenter().Text("RECEIVED & VERIFIED").Bold().FontSize(8).FontColor(Colors.Blue.Medium);
-                        sc.Item().PaddingTop(16).AlignCenter().Text("BAC SECRETARIAT").FontSize(7.5f).FontColor(Colors.Blue.Medium);
+                        sc.Item().PaddingTop(16).AlignCenter().Text(request.BacSecName).FontSize(7.5f).FontColor(Colors.Blue.Medium);
                         sc.Item().AlignCenter().Text(request.Date).FontSize(7).FontColor(Colors.Blue.Medium);
                     });
                 });
@@ -311,18 +313,32 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
         return Task.FromResult(pdf.GeneratePdf());
     }
 
-    private static void RenderHeaderLogo(ColumnDescriptor col, byte[]? logoBytes, string procuringEntity)
+    private static void RenderHeaderLogo(ColumnDescriptor col, byte[]? logoBytes, string procuringEntity, string? address = null)
     {
         col.Item().Row(r =>
         {
             if (logoBytes != null && logoBytes.Length > 0)
             {
                 r.AutoItem().Height(35).Image(logoBytes);
-                r.RelativeItem().PaddingLeft(10).AlignMiddle().Text(procuringEntity).Bold().FontSize(10.5f);
+                r.RelativeItem().PaddingLeft(10).AlignMiddle().Column(c =>
+                {
+                    c.Item().Text(procuringEntity.ToUpper()).Bold().FontSize(10.5f);
+                    if (!string.IsNullOrWhiteSpace(address) && !address.StartsWith("["))
+                    {
+                        c.Item().Text(address).FontSize(8);
+                    }
+                });
             }
             else
             {
-                r.RelativeItem().AlignCenter().Text(procuringEntity).Bold().FontSize(10.5f);
+                r.RelativeItem().AlignCenter().Column(c =>
+                {
+                    c.Item().Text(procuringEntity.ToUpper()).Bold().FontSize(10.5f);
+                    if (!string.IsNullOrWhiteSpace(address) && !address.StartsWith("["))
+                    {
+                        c.Item().Text(address).FontSize(8);
+                    }
+                });
             }
         });
     }
@@ -331,7 +347,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
     {
         page.Footer().PaddingTop(4).Row(row =>
         {
-            row.RelativeItem().Text("GIAMS 2022, (c) Copyright 2022, Digital Transformation Office (DTO)").FontSize(7).Italic();
+            row.RelativeItem().Text("ERPEZ Procurement Management System").FontSize(7).Italic();
             row.RelativeItem().AlignRight().Text(t =>
             {
                 t.Span("Page: ").FontSize(7);

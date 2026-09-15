@@ -40,13 +40,16 @@ public class RfqDataDto
     public decimal ApprovedBudgetForContract { get; set; }
     public string PRNumber { get; set; } = string.Empty;
     public string BacResolutionNumber { get; set; } = string.Empty;
-    public string ProcuringEntity { get; set; } = "University of Science and Technology of Southern Philippines";
-    public string SubmissionLocation { get; set; } = "Procurement Unit, 2nd Floor, USTP Gymnasium building";
-    public string ContactEmail { get; set; } = "bacsec@ustp.edu.ph";
-    public string ContactPhone { get; set; } = "856-1738 Local 1164";
-    public string BacChairpersonName { get; set; } = "ENGR. ALEX L. MAUREAL";
-    public string BacChairpersonTitle { get; set; } = "BAC IV CHAIRPERSON";
-    public string DeliveryPeriod { get; set; } = "15 CALENDAR DAY UPON RECEIPT OF Purchase Order.";
+    public string ProcuringEntity { get; set; } = "[Head Office / Procuring Entity]";
+    public string ProcuringEntityAddress { get; set; } = string.Empty;
+    public string SubmissionLocation { get; set; } = "[Submission Location]";
+    public string DeliveryLocation { get; set; } = "[Delivery Location]";
+    public string ContactEmail { get; set; } = "[BAC Email Address]";
+    public string ContactPhone { get; set; } = "[BAC Contact Number]";
+    public string BacChairpersonName { get; set; } = "[BAC Chairperson / Secretariat Name]";
+    public string BacChairpersonTitle { get; set; } = "[BAC Chairperson / Secretariat Designation]";
+    public string BacSecName { get; set; } = "[BAC Secretariat]";
+    public string DeliveryPeriod { get; set; } = "[Delivery Period]";
     public List<RfqItemDataDto> Items { get; set; } = [];
     public List<RfqSupplierDataDto> Suppliers { get; set; } = [];
 }
