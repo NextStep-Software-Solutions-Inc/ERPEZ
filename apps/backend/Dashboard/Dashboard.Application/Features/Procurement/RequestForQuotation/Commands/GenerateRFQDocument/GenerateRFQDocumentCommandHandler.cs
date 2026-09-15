@@ -9,6 +9,7 @@ using ERPEZ.Shared.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.GenerateRFQDocument;
 
@@ -16,7 +17,8 @@ public class GenerateRFQDocumentCommandHandler(
     IUnitOfWork unitOfWork,
     IDocumentRendererService rendererService,
     IDocumentStorageService storageService,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    ILogger<GenerateRFQDocumentCommandHandler> logger)
     : IRequestHandler<GenerateRFQDocumentCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(GenerateRFQDocumentCommand request, CancellationToken cancellationToken)
@@ -57,6 +59,9 @@ public class GenerateRFQDocumentCommandHandler(
             if (defaultOffice != null)
             {
                 officeId = defaultOffice.Id;
+                logger.LogWarning(
+                    "RFQ {RFQNumber} (ID: {RFQId}) items do not specify an originating Purchase Request office; falling back to active database office {OfficeId}.",
+                    rfq.RFQNumber, rfq.Id, officeId);
             }
         }
 
@@ -125,9 +130,23 @@ public class GenerateRFQDocumentCommandHandler(
                 ?? configuration["Procurement:HeadOfficeName"];
         }
 
+        if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName))
+        {
+            logger.LogWarning(
+                "RFQ {RFQNumber} (ID: {RFQId}) could not resolve Head Office / Procuring Entity name from office hierarchy, database organizations, or configuration ('Procurement:ProcuringEntityName'). Falling back to placeholder '{Placeholder}'.",
+                rfq.RFQNumber, rfq.Id, "[Head Office / Procuring Entity]");
+        }
+
         var procuringEntity = !string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName)
             ? mainOrgOrHeadOfficeName
             : "[Head Office / Procuring Entity]";
+
+        if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeAddress) && string.IsNullOrWhiteSpace(configuration["Procurement:ProcuringEntityAddress"]))
+        {
+            logger.LogWarning(
+                "RFQ {RFQNumber} (ID: {RFQId}) could not resolve Procuring Entity address from office hierarchy or configuration ('Procurement:ProcuringEntityAddress').",
+                rfq.RFQNumber, rfq.Id);
+        }
 
         var procuringEntityAddress = !string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeAddress)
             ? mainOrgOrHeadOfficeAddress
@@ -142,13 +161,34 @@ public class GenerateRFQDocumentCommandHandler(
             m => m.IsActive && !m.IsDeleted && (m.Role.Contains("Sec") || m.Position.Contains("Sec")),
             cancellationToken);
 
+        if (bacChairperson == null && string.IsNullOrWhiteSpace(configuration["Procurement:BacChairpersonName"]))
+        {
+            logger.LogWarning(
+                "RFQ {RFQNumber} (ID: {RFQId}) could not find an active BAC Chairperson in database or configuration ('Procurement:BacChairpersonName'). Falling back to placeholder '{Placeholder}'.",
+                rfq.RFQNumber, rfq.Id, "[BAC Chairperson / Secretariat Name]");
+        }
+
         var bacChairpersonName = bacChairperson?.FullName
             ?? configuration["Procurement:BacChairpersonName"]
             ?? "[BAC Chairperson / Secretariat Name]";
 
+        if (string.IsNullOrWhiteSpace(bacChairperson?.Position) && string.IsNullOrWhiteSpace(configuration["Procurement:BacChairpersonTitle"]))
+        {
+            logger.LogWarning(
+                "RFQ {RFQNumber} (ID: {RFQId}) could not resolve BAC Chairperson designation/title from database or configuration ('Procurement:BacChairpersonTitle'). Falling back to placeholder '{Placeholder}'.",
+                rfq.RFQNumber, rfq.Id, "[BAC Chairperson / Secretariat Designation]");
+        }
+
         var bacChairpersonTitle = (!string.IsNullOrWhiteSpace(bacChairperson?.Position) ? bacChairperson.Position : null)
             ?? configuration["Procurement:BacChairpersonTitle"]
             ?? "[BAC Chairperson / Secretariat Designation]";
+
+        if (bacSecretariat == null && string.IsNullOrWhiteSpace(configuration["Procurement:BacSecName"]))
+        {
+            logger.LogWarning(
+                "RFQ {RFQNumber} (ID: {RFQId}) could not find an active BAC Secretariat in database or configuration ('Procurement:BacSecName'). Falling back to placeholder '{Placeholder}'.",
+                rfq.RFQNumber, rfq.Id, "[BAC Secretariat]");
+        }
 
         var bacSecName = bacSecretariat?.FullName
             ?? configuration["Procurement:BacSecName"]
@@ -170,14 +210,42 @@ public class GenerateRFQDocumentCommandHandler(
             ? rfq.Deadline.Value.ToString("dddd, MMMM dd, yyyy 'at 12:00 noon'")
             : "[Deadline Date]";
 
+        if (string.IsNullOrWhiteSpace(configuration["Procurement:SubmissionLocation"]) && string.IsNullOrWhiteSpace(procuringEntityAddress))
+        {
+            logger.LogWarning(
+                "RFQ {RFQNumber} (ID: {RFQId}) missing configuration for 'Procurement:SubmissionLocation' and no entity address available. Falling back to placeholder '{Placeholder}'.",
+                rfq.RFQNumber, rfq.Id, "[Submission Location]");
+        }
+
         var submissionLocation = configuration["Procurement:SubmissionLocation"]
             ?? (!string.IsNullOrWhiteSpace(procuringEntityAddress) ? procuringEntityAddress : "[Submission Location]");
+
+        if (string.IsNullOrWhiteSpace(configuration["Procurement:DeliveryLocation"]) && string.IsNullOrWhiteSpace(procuringEntityAddress))
+        {
+            logger.LogWarning(
+                "RFQ {RFQNumber} (ID: {RFQId}) missing configuration for 'Procurement:DeliveryLocation' and no entity address available. Falling back to placeholder '{Placeholder}'.",
+                rfq.RFQNumber, rfq.Id, "[Delivery Location]");
+        }
 
         var deliveryLocation = configuration["Procurement:DeliveryLocation"]
             ?? (!string.IsNullOrWhiteSpace(procuringEntityAddress) ? procuringEntityAddress : "[Delivery Location]");
 
+        if (string.IsNullOrWhiteSpace(configuration["Procurement:BacEmail"]))
+        {
+            logger.LogWarning(
+                "RFQ {RFQNumber} (ID: {RFQId}) missing configuration for 'Procurement:BacEmail'. Falling back to placeholder '{Placeholder}'.",
+                rfq.RFQNumber, rfq.Id, "[BAC Email Address]");
+        }
+
         var contactEmail = configuration["Procurement:BacEmail"]
             ?? "[BAC Email Address]";
+
+        if (string.IsNullOrWhiteSpace(configuration["Procurement:BacPhone"]))
+        {
+            logger.LogWarning(
+                "RFQ {RFQNumber} (ID: {RFQId}) missing configuration for 'Procurement:BacPhone'. Falling back to placeholder '{Placeholder}'.",
+                rfq.RFQNumber, rfq.Id, "[BAC Contact Number]");
+        }
 
         var contactPhone = configuration["Procurement:BacPhone"]
             ?? "[BAC Contact Number]";
