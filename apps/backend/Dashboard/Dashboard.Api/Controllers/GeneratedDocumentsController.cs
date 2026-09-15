@@ -9,6 +9,7 @@ using ERPEZ.Application.Features.Planning.Document.Commands.GenerateOPCR;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateConsolidatedOPCR;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateMarketScoping;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateWFP;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.GenerateRFQDocument;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
@@ -252,6 +253,23 @@ public class DocumentController(IMediator mediator,
         var command = new ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.GenerateAprDocument.GenerateAprDocumentCommand
         {
             APRId = aprId,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("rfq/{rfqId:guid}/generate")]
+    [HasPermission(Permissions.Procurement.rfqManage)]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateRfq(
+        Guid rfqId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new GenerateRFQDocumentCommand
+        {
+            RFQId = rfqId,
             Format = format,
             GeneratedBy = User.Identity?.Name ?? "system"
         };
