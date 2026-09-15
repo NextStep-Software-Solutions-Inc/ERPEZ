@@ -187,7 +187,7 @@ export function CreatePRModal({
             isHighlyTechnicalGoodsServices:
               selectedCategory?.isHighlyTechnicalGoodsServices,
             isIndependent,
-            sourceType: isIndependent ? 'INDEPENDENT' : 'PPMP',
+            sourceType: isIndependent ? 'INDEPENDENT' : 'APP_ITEM',
           },
           items: [],
           totalAmount: 0,
