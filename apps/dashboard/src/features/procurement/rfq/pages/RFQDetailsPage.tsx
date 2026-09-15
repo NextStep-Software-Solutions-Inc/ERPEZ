@@ -76,7 +76,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ExportComingSoonDialog } from '@/components/ExportComingSoonDialog'
+import { generateAndDownloadRfqDocument } from '../utils/generateRfqDocumentRequest'
 import api from '@/services/api'
 import type { APIResponse } from 'erpez-shared-lib'
 import type { SupplierDetail } from '../types'
@@ -97,13 +97,13 @@ export function RFQDetailsPage({
   const { fetchRFQById, submitRFQ, addRFQItems, removeRFQItem } = useRFQStore()
   const [rfq, setRfq] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [greenSpecs, setGreenSpecs] = useState<Record<string, string>>({})
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddPRModal, setShowAddPRModal] = useState(false)
   const [showQuotationModal, setShowQuotationModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [showExportDialog, setShowExportDialog] = useState(false)
   const [viewingSupplier, setViewingSupplier] = useState<string | null>(null)
   const [viewingSupplierDetail, setViewingSupplierDetail] = useState<SupplierDetail | null>(null)
   const [isLoadingSupplierDetail, setIsLoadingSupplierDetail] = useState(false)
@@ -112,8 +112,8 @@ export function RFQDetailsPage({
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedFund, setSelectedFund] = useState<string>('all')
 
-  const loadRFQ = async () => {
-    setIsLoading(true)
+  const loadRFQ = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     if (isSupplierPortal && supplierId) {
       try {
         const rfqRes = await api.get<{ data: any }>(`/api/supplier/rfqs/${rfqId}?supplierId=${supplierId}`)
@@ -179,7 +179,7 @@ export function RFQDetailsPage({
             }),
             invitedSuppliers: [],
           })
-          setIsLoading(false)
+          if (!silent) setIsLoading(false)
           return
         }
       } catch (e) {
@@ -189,7 +189,7 @@ export function RFQDetailsPage({
 
     const res = await fetchRFQById(rfqId)
     setRfq(res)
-    setIsLoading(false)
+    if (!silent) setIsLoading(false)
   }
 
   useEffect(() => {
@@ -248,13 +248,30 @@ export function RFQDetailsPage({
   const toggleBrochure = async (itemId: string, v: boolean) => {
     const item = rfq.items.find((it: any) => it.id === itemId)
     if (!item) return
-    await addRFQItems(rfqId, [{
-      cprItemId: item.itemId || item.prId || '',
-      quantity: item.quantity,
-      isBrochureRequired: v,
-      greenSpecification: greenSpecs[itemId] !== undefined ? greenSpecs[itemId] : (item.greenSpecification || ''),
-    }])
-    loadRFQ()
+
+    // Optimistic in-place update to prevent jump or reload disruption
+    setRfq((prev: any) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        items: (prev.items || []).map((it: any) =>
+          it.id === itemId ? { ...it, isRequiredBrochure: v } : it
+        ),
+      }
+    })
+
+    try {
+      await addRFQItems(rfqId, [{
+        cprItemId: item.itemId || item.prId || '',
+        quantity: item.quantity,
+        isBrochureRequired: v,
+        greenSpecification: greenSpecs[itemId] !== undefined ? greenSpecs[itemId] : (item.greenSpecification || ''),
+      }])
+      loadRFQ(true)
+    } catch (err) {
+      console.error('Failed to toggle brochure requirement:', err)
+      loadRFQ(true)
+    }
   }
 
   const handleGreenSpecificationChange = (itemId: string, value: string) => {
@@ -270,7 +287,7 @@ export function RFQDetailsPage({
       isBrochureRequired: !!item.isRequiredBrochure,
       greenSpecification: value,
     }])
-    loadRFQ()
+    loadRFQ(true)
   }
 
   const handleDeleteClick = (itemId: string) => {
@@ -503,6 +520,17 @@ export function RFQDetailsPage({
       }
     }
 
+    const activeMonths = mockMonths
+      .map((m, i) => ({ month: m, qty: monthlyQty[i] }))
+      .filter((x) => x.qty > 0)
+
+    let monthBadgeText = '—'
+    if (activeMonths.length === 1) {
+      monthBadgeText = `${activeMonths[0].month} (${activeMonths[0].qty})`
+    } else if (activeMonths.length > 1) {
+      monthBadgeText = activeMonths.map((a) => a.month).join(', ')
+    }
+
     return (
       <TableRow key={it.id}>
         <TableCell>{it.itemName}</TableCell>
@@ -516,36 +544,50 @@ export function RFQDetailsPage({
           <Popover>
             <PopoverTrigger asChild>
               <button
-                className="flex items-center gap-2"
-                title={monthLabel}
-                aria-label={`View month breakdown for ${monthLabel}`}
+                type="button"
+                className="flex items-center gap-1.5 focus:outline-none"
+                title={`Month breakdown for ${it.itemName}`}
+                aria-label={`View month breakdown for ${it.itemName}`}
               >
-                <Badge className="px-2 py-1">View months</Badge>
+                {activeMonths.length === 0 ? (
+                  <span className="text-muted-foreground">—</span>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="px-2 py-0.5 text-xs font-medium cursor-pointer border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+                  >
+                    {monthBadgeText}
+                  </Badge>
+                )}
               </button>
             </PopoverTrigger>
             <PopoverContent
               align="start"
               sideOffset={6}
-              className="min-w-[300px] max-w-[420px] p-3"
+              className="min-w-[320px] max-w-[420px] p-3 shadow-md"
             >
-              <div className="text-sm font-medium mb-2">Month breakdown</div>
+              <div className="text-sm font-semibold mb-2 flex items-center justify-between">
+                <span>Monthly Allocation</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Total: {monthlyQty.reduce((s, q) => s + q, 0)} {it.unitOfMeasure || 'units'}
+                </span>
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 {mockMonths.map((m, mi) => (
                   <div
                     key={m}
-                    className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-slate-50"
+                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs ${
+                      monthlyQty[mi] > 0
+                        ? 'bg-primary/10 border border-primary/20 text-primary font-medium'
+                        : 'bg-slate-50 text-slate-500'
+                    }`}
                   >
-                    <div className="text-sm whitespace-nowrap mr-2">{m}</div>
-                    <Badge
-                      className={`ml-2 px-2 py-0.5 text-xs ${monthlyQty[mi] > 0 ? 'bg-primary text-primary-foreground' : 'bg-slate-100 text-muted-foreground'}`}
-                    >
+                    <div className="whitespace-nowrap">{m}</div>
+                    <span className={monthlyQty[mi] > 0 ? 'font-bold' : ''}>
                       {monthlyQty[mi] > 0 ? monthlyQty[mi] : '—'}
-                    </Badge>
+                    </span>
                   </div>
                 ))}
-              </div>
-              <div className="mt-3 text-xs text-muted-foreground">
-                Total: {monthlyQty.reduce((s, q) => s + q, 0)}
               </div>
             </PopoverContent>
           </Popover>
@@ -964,6 +1006,35 @@ export function RFQDetailsPage({
     }
   }
 
+  const handleExportPDF = async () => {
+    if (!rfq?.id) return
+    setIsExporting(true)
+    toast({
+      title: 'Generating RFQ PDF...',
+      description: 'Please wait while the PDF is being prepared.',
+    })
+    try {
+      await generateAndDownloadRfqDocument({
+        rfqId: rfq.id,
+        format: 'Pdf',
+        filename: `RFQ_${rfq.rfqNumber || rfq.id}.pdf`,
+      })
+      toast({
+        title: 'RFQ PDF Downloaded',
+        description: `Successfully exported RFQ ${rfq.rfqNumber || ''}.`,
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to export RFQ PDF'
+      toast({
+        title: 'Export Failed',
+        description: msg,
+        variant: 'destructive',
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="w-full space-y-6 pb-10">
       {/* Back above card */}
@@ -1050,11 +1121,12 @@ export function RFQDetailsPage({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowExportDialog(true)}
+                disabled={isExporting}
+                onClick={handleExportPDF}
                 className="gap-2"
               >
-                <Download className="w-4 h-4" />
-                Export
+                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                Export PDF
               </Button>
 
               {!isSupplierPortal && canEdit && (
@@ -1587,6 +1659,7 @@ export function RFQDetailsPage({
         open={showAddPRModal}
         onOpenChange={setShowAddPRModal}
         onAdd={handleAddConsolidatedPR}
+        existingCPRItemIds={(rfq?.items || []).map((it: any) => it.itemId || it.prId || '')}
       />
 
       {/* Set Quotation Modal */}
@@ -1626,12 +1699,6 @@ export function RFQDetailsPage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <ExportComingSoonDialog
-        open={showExportDialog}
-        onOpenChange={setShowExportDialog}
-        entityLabel="RFQ details"
-      />
 
       {/* Edit RFQ Modal */}
       <CreateRFQModal

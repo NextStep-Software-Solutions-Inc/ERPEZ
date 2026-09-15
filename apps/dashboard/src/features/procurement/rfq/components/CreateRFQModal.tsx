@@ -53,7 +53,7 @@ interface CreateRFQModalProps {
 }
 
 export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = null }: CreateRFQModalProps) {
-  const { createRFQ, updateRFQ } = useRFQStore()
+  const { createRFQ, updateRFQ, fetchNextRFQNumber } = useRFQStore()
   const { toast } = useToast()
   const isEditMode = !!initialRFQ
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -113,20 +113,24 @@ export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = nul
         supplierIds: initialSupplierIds,
       })
       setSelectedSupplierIds(initialSupplierIds)
+    } else if (open) {
+      fetchNextRFQNumber().then((nextNum) => {
+        if (nextNum && !form.getValues('rfqNumber')) {
+          form.setValue('rfqNumber', nextNum, { shouldValidate: true })
+        }
+      })
     } else {
       // reset when modal closes
-      if (!open) {
-        form.reset({
-          date: new Date(),
-          rfqNumber: '',
-          description: '',
-          tracingNumber: '',
-          deadline: undefined,
-          deliveryPeriod: '',
-          supplierIds: [],
-        })
-        setSelectedSupplierIds([])
-      }
+      form.reset({
+        date: new Date(),
+        rfqNumber: '',
+        description: '',
+        tracingNumber: '',
+        deadline: undefined,
+        deliveryPeriod: '',
+        supplierIds: [],
+      })
+      setSelectedSupplierIds([])
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialRFQ, open])
@@ -268,6 +272,7 @@ export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = nul
                 <FormControl>
                   <Input placeholder="e.g., RFQ-2026-001" {...field} />
                 </FormControl>
+                <p className="text-xs text-muted-foreground mt-1">Auto-generated based on system sequence. You may edit or override.</p>
                 <FormMessage />
               </FormItem>
             )}

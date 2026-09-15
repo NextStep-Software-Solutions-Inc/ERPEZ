@@ -180,6 +180,9 @@ public static class DependencyInjection
         // APR — PDF
         services.AddScoped<IDocumentRenderer<AprDataDto>, AprPdfRenderer>();
 
+        // RFQ — PDF
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos.RfqDataDto>, RfqPdfRenderer>();
+
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()
