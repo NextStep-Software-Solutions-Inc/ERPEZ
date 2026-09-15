@@ -98,7 +98,7 @@ public class GenerateRFQDocumentCommandHandler(
 
             var quotedItems = rfqItems.Select(baseItem =>
             {
-                var bidItem = matchingBid?.SupplierBidItems.FirstOrDefault(bi =>
+                var bidItem = matchingBid?.SupplierBidItems?.FirstOrDefault(bi =>
                     rawRfqItems.Any(ri => ri.Id == bi.RFQItemId && ri.ItemNameSnapshot == baseItem.ItemName));
 
                 return new RfqItemDataDto
@@ -177,10 +177,52 @@ public class GenerateRFQDocumentCommandHandler(
         var fileName = $"RFQ_{rfq.RFQNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.{extension}";
         var storagePath = await storageService.SaveAsync(bytes, fileName, cancellationToken);
 
+        // Resolve OfficeId
+        Guid officeId = Guid.Empty;
+
+        // 1. Try from RFQItems' CPRItem -> PurchaseRequest Office
+        var prOfficeId = rfq.RFQItems?
+            .Select(i => i.CPRItem?.PurchaseRequest?.OfficeId ?? i.CPRItem?.PRItem?.PurchaseRequest?.OfficeId)
+            .FirstOrDefault(id => id.HasValue && id.Value != Guid.Empty);
+
+        if (prOfficeId.HasValue)
+        {
+            officeId = prOfficeId.Value;
+        }
+        else
+        {
+            // 2. Try from ConsolidatedPRItems
+            var cprOfficeId = rfq.ConsolidatedPR?.ConsolidatedPRItems?
+                .Select(ci => ci.PurchaseRequest?.OfficeId)
+                .FirstOrDefault(id => id.HasValue && id.Value != Guid.Empty);
+
+            if (cprOfficeId.HasValue)
+            {
+                officeId = cprOfficeId.Value;
+            }
+        }
+
+        // 3. Fallback to first available office in DB if still empty
+        if (officeId == Guid.Empty)
+        {
+            var defaultOffice = await unitOfWork.OfficeRepository.FindAsync(o => !o.IsDeleted, cancellationToken)
+                ?? await unitOfWork.OfficeRepository.FindAsync(o => true, cancellationToken);
+            if (defaultOffice != null)
+            {
+                officeId = defaultOffice.Id;
+            }
+        }
+
+        if (officeId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Cannot generate RFQ document because no valid Office could be associated with this document.");
+        }
+
         var record = new GeneratedDocument
         {
             DocumentType = DocumentType.Rfq,
             Format = request.Format,
+            OfficeId = officeId,
             SourceDocumentId = rfq.Id,
             StoragePath = storagePath,
             FileName = fileName,

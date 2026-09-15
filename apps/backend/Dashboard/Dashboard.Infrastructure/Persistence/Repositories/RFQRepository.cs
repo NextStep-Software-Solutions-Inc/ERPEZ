@@ -24,11 +24,22 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
         var baseQuery = query ?? context.Set<RFQ>();
 
         return baseQuery
+            .Include(r => r.ConsolidatedPR)
+                .ThenInclude(c => c!.ConsolidatedPRItems
+                    .Where(ci => !ci.IsDeleted))
+                    .ThenInclude(ci => ci.PurchaseRequest)
+                        .ThenInclude(pr => pr.Office)
             .Include(r => r.ModeOfProcurement)
             .Include(r => r.RFQItems
                 .Where(item => !item.IsDeleted))
                 .ThenInclude(item => item.CPRItem)
+                    .ThenInclude(ci => ci.PurchaseRequest)
+                        .ThenInclude(pr => pr.Office)
+            .Include(r => r.RFQItems
+                .Where(item => !item.IsDeleted))
+                .ThenInclude(item => item.CPRItem)
                     .ThenInclude(ci => ci.PRItem)
+                        .ThenInclude(pi => pi.PPMPItem)
             .Include(r => r.RFQSuppliers
                 .Where(s => !s.IsDeleted))
                 .ThenInclude(s => s.Supplier)
