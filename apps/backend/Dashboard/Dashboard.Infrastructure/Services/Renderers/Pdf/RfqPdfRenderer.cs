@@ -25,7 +25,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
         var pdf = Document.Create(doc =>
         {
-            var primarySupplier = request.Suppliers.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s.SupplierName) && !s.SupplierName.StartsWith("["))
+            var primarySupplier = request.Suppliers.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s.SupplierName) && !s.SupplierName.Trim().StartsWith("["))
                 ?? request.Suppliers.FirstOrDefault()
                 ?? new RfqSupplierDataDto
                 {
@@ -334,9 +334,9 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                 r.RelativeItem().AlignCenter().Column(c =>
                 {
                     c.Item().Text(procuringEntity.ToUpper()).Bold().FontSize(10.5f);
-                    if (!string.IsNullOrWhiteSpace(address) && !address.StartsWith("["))
+                    if (!string.IsNullOrWhiteSpace(address) && !address.Trim().StartsWith("["))
                     {
-                        c.Item().Text(address).FontSize(8);
+                        c.Item().Text(address.Trim()).FontSize(8);
                     }
                 });
             }

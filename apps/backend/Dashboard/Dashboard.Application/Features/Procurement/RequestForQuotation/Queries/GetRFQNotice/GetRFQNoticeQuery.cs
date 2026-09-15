@@ -77,16 +77,16 @@ public class GetRFQNoticeQueryHandler(
 
                 if (currentOffice.Organization != null && !string.IsNullOrWhiteSpace(currentOffice.Organization.Name))
                 {
-                    mainOrgOrHeadOfficeName = currentOffice.Organization.Name;
+                    mainOrgOrHeadOfficeName = currentOffice.Organization.Name.Trim();
                 }
                 else if (!string.IsNullOrWhiteSpace(currentOffice.Name))
                 {
-                    mainOrgOrHeadOfficeName = currentOffice.Name;
+                    mainOrgOrHeadOfficeName = currentOffice.Name.Trim();
                 }
 
                 if (!string.IsNullOrWhiteSpace(currentOffice.Address))
                 {
-                    mainOrgOrHeadOfficeAddress = currentOffice.Address;
+                    mainOrgOrHeadOfficeAddress = currentOffice.Address.Trim();
                 }
             }
         }
@@ -98,7 +98,7 @@ public class GetRFQNoticeQueryHandler(
 
             if (topOrg != null && !string.IsNullOrWhiteSpace(topOrg.Name))
             {
-                mainOrgOrHeadOfficeName = topOrg.Name;
+                mainOrgOrHeadOfficeName = topOrg.Name.Trim();
             }
         }
 
@@ -107,19 +107,19 @@ public class GetRFQNoticeQueryHandler(
             var rootOffice = await unitOfWork.OfficeRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken);
             if (rootOffice != null && !string.IsNullOrWhiteSpace(rootOffice.Name))
             {
-                mainOrgOrHeadOfficeName = rootOffice.Name;
+                mainOrgOrHeadOfficeName = rootOffice.Name.Trim();
                 if (!string.IsNullOrWhiteSpace(rootOffice.Address))
                 {
-                    mainOrgOrHeadOfficeAddress = rootOffice.Address;
+                    mainOrgOrHeadOfficeAddress = rootOffice.Address.Trim();
                 }
             }
         }
 
         if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName))
         {
-            mainOrgOrHeadOfficeName = configuration["Procurement:ProcuringEntityName"]
-                ?? configuration["Procurement:OrganizationName"]
-                ?? configuration["Procurement:HeadOfficeName"];
+            mainOrgOrHeadOfficeName = GetConfigValue(configuration, "Procurement:ProcuringEntityName")
+                ?? GetConfigValue(configuration, "Procurement:OrganizationName")
+                ?? GetConfigValue(configuration, "Procurement:HeadOfficeName");
         }
 
         if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName))
@@ -130,10 +130,11 @@ public class GetRFQNoticeQueryHandler(
         }
 
         var procuringEntity = !string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName)
-            ? mainOrgOrHeadOfficeName
+            ? mainOrgOrHeadOfficeName.Trim()
             : "[Head Office / Procuring Entity]";
 
-        if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeAddress) && string.IsNullOrWhiteSpace(configuration["Procurement:ProcuringEntityAddress"]))
+        var configProcuringEntityAddress = GetConfigValue(configuration, "Procurement:ProcuringEntityAddress");
+        if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeAddress) && configProcuringEntityAddress == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) could not resolve Procuring Entity address from office hierarchy or configuration ('Procurement:ProcuringEntityAddress').",
@@ -141,57 +142,61 @@ public class GetRFQNoticeQueryHandler(
         }
 
         var procuringEntityAddress = !string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeAddress)
-            ? mainOrgOrHeadOfficeAddress
-            : (configuration["Procurement:ProcuringEntityAddress"] ?? string.Empty);
+            ? mainOrgOrHeadOfficeAddress.Trim()
+            : (configProcuringEntityAddress ?? string.Empty);
 
         // 3. Resolve live BAC Members or placeholders
         var bacChairperson = await unitOfWork.BACMemberRepository.FindAsync(
-            m => m.IsActive && !m.IsDeleted && (m.Role == "Chairperson" || m.Role.Contains("Chair")),
+            m => m.IsActive && !m.IsDeleted && (m.Role.Trim() == "Chairperson" || m.Role.Contains("Chair")),
             cancellationToken);
 
         var bacSecretariat = await unitOfWork.BACMemberRepository.FindAsync(
             m => m.IsActive && !m.IsDeleted && (m.Role.Contains("Sec") || m.Position.Contains("Sec")),
             cancellationToken);
 
-        if (bacChairperson == null && string.IsNullOrWhiteSpace(configuration["Procurement:BacChairpersonName"]))
+        var configBacChairpersonName = GetConfigValue(configuration, "Procurement:BacChairpersonName");
+        if (bacChairperson == null && configBacChairpersonName == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) could not find an active BAC Chairperson in database or configuration ('Procurement:BacChairpersonName'). Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Chairperson / Secretariat Name]");
         }
 
-        var bacChairpersonName = bacChairperson?.FullName
-            ?? configuration["Procurement:BacChairpersonName"]
+        var bacChairpersonName = (!string.IsNullOrWhiteSpace(bacChairperson?.FullName) ? bacChairperson.FullName.Trim() : null)
+            ?? configBacChairpersonName
             ?? "[BAC Chairperson / Secretariat Name]";
 
-        if (string.IsNullOrWhiteSpace(bacChairperson?.Position) && string.IsNullOrWhiteSpace(configuration["Procurement:BacChairpersonTitle"]))
+        var configBacChairpersonTitle = GetConfigValue(configuration, "Procurement:BacChairpersonTitle");
+        if (string.IsNullOrWhiteSpace(bacChairperson?.Position) && configBacChairpersonTitle == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) could not resolve BAC Chairperson designation/title from database or configuration ('Procurement:BacChairpersonTitle'). Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Chairperson / Secretariat Designation]");
         }
 
-        var bacChairpersonTitle = (!string.IsNullOrWhiteSpace(bacChairperson?.Position) ? bacChairperson.Position : null)
-            ?? configuration["Procurement:BacChairpersonTitle"]
+        var bacChairpersonTitle = (!string.IsNullOrWhiteSpace(bacChairperson?.Position) ? bacChairperson.Position.Trim() : null)
+            ?? configBacChairpersonTitle
             ?? "[BAC Chairperson / Secretariat Designation]";
 
-        if (bacSecretariat == null && string.IsNullOrWhiteSpace(configuration["Procurement:BacSecName"]))
+        var configBacSecName = GetConfigValue(configuration, "Procurement:BacSecName");
+        if (bacSecretariat == null && configBacSecName == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) could not find an active BAC Secretariat in database or configuration ('Procurement:BacSecName'). Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Secretariat]");
         }
 
-        var bacSecName = bacSecretariat?.FullName
-            ?? configuration["Procurement:BacSecName"]
+        var bacSecName = (!string.IsNullOrWhiteSpace(bacSecretariat?.FullName) ? bacSecretariat.FullName.Trim() : null)
+            ?? configBacSecName
             ?? "[BAC Secretariat]";
 
         var projectName = !string.IsNullOrWhiteSpace(rfq.Description)
-            ? rfq.Description
-            : (!string.IsNullOrWhiteSpace(rfq.Purpose) ? rfq.Purpose : "[Project Name / Purpose]");
+            ? rfq.Description.Trim()
+            : (!string.IsNullOrWhiteSpace(rfq.Purpose) ? rfq.Purpose.Trim() : "[Project Name / Purpose]");
 
-        var modeName = rfq.ModeOfProcurement?.Name
-            ?? "[Mode of Procurement]";
+        var modeName = !string.IsNullOrWhiteSpace(rfq.ModeOfProcurement?.Name)
+            ? rfq.ModeOfProcurement.Name.Trim()
+            : "[Mode of Procurement]";
 
         var datePosted = rfq.Date != default
             ? rfq.Date.ToString("MMMM dd, yyyy")
@@ -201,48 +206,50 @@ public class GetRFQNoticeQueryHandler(
             ? rfq.Deadline.Value.ToString("dddd, MMMM dd, yyyy 'at 12:00 noon'")
             : "[Deadline Date]";
 
-        if (string.IsNullOrWhiteSpace(configuration["Procurement:SubmissionLocation"]) && string.IsNullOrWhiteSpace(procuringEntityAddress))
+        var configSubmissionLocation = GetConfigValue(configuration, "Procurement:SubmissionLocation");
+        if (configSubmissionLocation == null && string.IsNullOrWhiteSpace(procuringEntityAddress))
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) missing configuration for 'Procurement:SubmissionLocation' and no entity address available. Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[Submission Location]");
         }
 
-        var submissionLocation = configuration["Procurement:SubmissionLocation"]
+        var submissionLocation = configSubmissionLocation
             ?? (!string.IsNullOrWhiteSpace(procuringEntityAddress) ? procuringEntityAddress : "[Submission Location]");
 
-        if (string.IsNullOrWhiteSpace(configuration["Procurement:DeliveryLocation"]) && string.IsNullOrWhiteSpace(procuringEntityAddress))
+        var configDeliveryLocation = GetConfigValue(configuration, "Procurement:DeliveryLocation");
+        if (configDeliveryLocation == null && string.IsNullOrWhiteSpace(procuringEntityAddress))
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) missing configuration for 'Procurement:DeliveryLocation' and no entity address available. Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[Delivery Location]");
         }
 
-        var deliveryLocation = configuration["Procurement:DeliveryLocation"]
+        var deliveryLocation = configDeliveryLocation
             ?? (!string.IsNullOrWhiteSpace(procuringEntityAddress) ? procuringEntityAddress : "[Delivery Location]");
 
-        if (string.IsNullOrWhiteSpace(configuration["Procurement:BacEmail"]))
+        var configEmail = GetConfigValue(configuration, "Procurement:BacEmail");
+        if (configEmail == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) missing configuration for 'Procurement:BacEmail'. Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Email Address]");
         }
 
-        var contactEmail = configuration["Procurement:BacEmail"]
-            ?? "[BAC Email Address]";
+        var contactEmail = configEmail ?? "[BAC Email Address]";
 
-        if (string.IsNullOrWhiteSpace(configuration["Procurement:BacPhone"]))
+        var configPhone = GetConfigValue(configuration, "Procurement:BacPhone");
+        if (configPhone == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) missing configuration for 'Procurement:BacPhone'. Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Contact Number]");
         }
 
-        var contactPhone = configuration["Procurement:BacPhone"]
-            ?? "[BAC Contact Number]";
+        var contactPhone = configPhone ?? "[BAC Contact Number]";
 
         var deliveryPeriod = !string.IsNullOrWhiteSpace(rfq.DeliveryPeriod)
-            ? rfq.DeliveryPeriod
+            ? rfq.DeliveryPeriod.Trim()
             : "[Delivery Period]";
 
         var items = (rfq.RFQItems ?? [])
@@ -250,10 +257,10 @@ public class GetRFQNoticeQueryHandler(
             .Select((item, idx) => new RFQNoticeItemDto
             {
                 ItemNo = idx + 1,
-                ItemName = item.ItemNameSnapshot,
-                Description = item.CPRItem?.PRItem?.Description ?? item.ItemNameSnapshot,
+                ItemName = item.ItemNameSnapshot?.Trim() ?? string.Empty,
+                Description = item.CPRItem?.PRItem?.Description?.Trim() ?? item.ItemNameSnapshot?.Trim() ?? string.Empty,
                 Quantity = item.Quantity,
-                Unit = item.CPRItem?.PRItem?.PPMPItem?.Unit ?? "unit",
+                Unit = item.CPRItem?.PRItem?.PPMPItem?.Unit?.Trim() ?? "unit",
                 ApprovedUnitCost = item.UnitPriceSnapshot,
                 TotalCost = item.Quantity * item.UnitPriceSnapshot
             })
@@ -292,5 +299,11 @@ public class GetRFQNoticeQueryHandler(
         };
 
         return ApiResponse<RFQNoticeDto>.Success(noticeDto);
+    }
+
+    private static string? GetConfigValue(IConfiguration config, string key)
+    {
+        var val = config[key]?.Trim();
+        return string.IsNullOrWhiteSpace(val) ? null : val;
     }
 }
