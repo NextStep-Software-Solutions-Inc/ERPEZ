@@ -133,6 +133,17 @@ export function RFQPage() {
     }
   }
 
+  const handleSearchChange = (v: string) => {
+    const nextVal = String(v ?? '')
+    setSearch((prev) => {
+      if (prev !== nextVal) {
+        setPage(1)
+        return nextVal
+      }
+      return prev
+    })
+  }
+
   return (
     <div className="w-full space-y-6 pb-10">
       {/* Module header */}
@@ -240,10 +251,7 @@ export function RFQPage() {
               <DebouncedInput
                 placeholder="Search RFQ number, description or tracing number"
                 value={search}
-                onChange={(v: any) => {
-                  setSearch(String(v))
-                  setPage(1)
-                }}
+                onChange={handleSearchChange}
                 className="w-full pl-10"
               />
             </div>
