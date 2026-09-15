@@ -30,7 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ChevronLeft, MoreVertical, AlertCircle, CheckCircle, Clock, Download, Info, Trophy, Printer, Trash2, Send } from 'lucide-react'
+import { ChevronLeft, MoreVertical, AlertCircle, CheckCircle, Clock, Download, Info, Trophy, Printer, Trash2, Send, Plus } from 'lucide-react'
 import { BidEvaluationMatrix } from '../tables/BidEvaluationMatrix'
 import { ItemBidDetailsTable } from '../tables/ItemBidDetailsTable'
 import { AddRFQsAndBidsDialog } from '../dialogs/AddRFQsAndBidsDialog'
@@ -111,7 +111,7 @@ function getStatusIcon(status: string) {
  * Check if all items have winners selected
  */
 function areAllItemsAwarded(bidMatrix: BidMatrix | undefined | null): boolean {
-  if (!bidMatrix?.lineItems) return false
+  if (!bidMatrix?.lineItems || bidMatrix.lineItems.length === 0) return false
   return bidMatrix.lineItems.every((item) => item.selectedWinnerId)
 }
 
@@ -152,6 +152,9 @@ export function AOBDetailsPage({
   useEffect(() => {
     setBidMatrix(initialBidMatrix)
   }, [initialBidMatrix])
+
+  const hasBidData = Boolean(bidMatrix && bidMatrix.lineItems && bidMatrix.lineItems.length > 0)
+  const canModifyAOB = (aob.status === AOBStatus.DRAFT || aob.status === AOBStatus.RETURNED) && !isAdmin
 
   const allItemsAwarded = useMemo(() => areAllItemsAwarded(bidMatrix), [bidMatrix])
 
@@ -313,6 +316,19 @@ export function AOBDetailsPage({
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuLabel>More Actions</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {canModifyAOB && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => setShowAddRFQDialog(true)}
+                        disabled={isProcessing}
+                        className="gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Link RFQs & Bids
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   {aob.status === AOBStatus.FOR_APPROVAL && isAdmin && (
                     <>
                       <DropdownMenuItem
@@ -383,17 +399,28 @@ export function AOBDetailsPage({
 
         {/* Action Buttons - Role-Based */}
         <div className="flex gap-2 justify-end pt-4">
-          {aob.status === AOBStatus.DRAFT && !isAdmin && (
+          {canModifyAOB && (
             <>
               <Button
-                variant="destructive"
-                onClick={() => setShowDeleteConfirm(true)}
+                variant="outline"
+                onClick={() => setShowAddRFQDialog(true)}
                 disabled={isProcessing}
                 className="gap-2"
               >
-                <Trash2 className="w-4 h-4" />
-                Delete
+                <Plus className="w-4 h-4" />
+                Add RFQs & Bids
               </Button>
+              {aob.status === AOBStatus.DRAFT && (
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isProcessing}
+                  className="gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </Button>
+              )}
               <Button
                 onClick={() => onSubmitForApproval?.()}
                 disabled={isProcessing}
@@ -439,11 +466,23 @@ export function AOBDetailsPage({
       )}
 
       {/* Alert if no bid data */}
-      {!bidMatrix && (
+      {!hasBidData && (
         <Alert className="border-blue-200 bg-blue-50">
           <Info className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-800">
-            No bid matrix data available yet. Link RFQs and import supplier bids to begin evaluation.
+          <AlertDescription className="text-blue-800 flex items-center justify-between">
+            <span>No bid matrix data available yet. Link RFQs and import supplier bids to begin evaluation.</span>
+            {canModifyAOB && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowAddRFQDialog(true)}
+                disabled={isProcessing}
+                className="ml-4 gap-2 shrink-0 bg-white hover:bg-blue-50 text-blue-900 border-blue-300"
+              >
+                <Plus className="w-4 h-4" />
+                Add RFQs & Bids
+              </Button>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -451,10 +490,10 @@ export function AOBDetailsPage({
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="matrix" disabled={!bidMatrix}>
+          <TabsTrigger value="matrix">
             Bid Matrix
           </TabsTrigger>
-          <TabsTrigger value="summary" disabled={!bidMatrix}>
+          <TabsTrigger value="summary">
             Award Summary
           </TabsTrigger>
           <TabsTrigger value="details">Details & Stats</TabsTrigger>
@@ -462,7 +501,7 @@ export function AOBDetailsPage({
 
         {/* Bid Evaluation Matrix Tab */}
         <TabsContent value="matrix" className="space-y-4">
-          {bidMatrix ? (
+          {hasBidData && bidMatrix ? (
             <>
               {/* Toolbar with export/print */}
               <Card>
@@ -477,6 +516,18 @@ export function AOBDetailsPage({
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      {canModifyAOB && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowAddRFQDialog(true)}
+                          disabled={isProcessing}
+                          className="gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add RFQs & Bids
+                        </Button>
+                      )}
                       {aob.status !== AOBStatus.APPROVED && (
                         <Button
                           size="sm"
@@ -505,10 +556,20 @@ export function AOBDetailsPage({
             <Card>
               <CardContent className="pt-6 text-center py-12">
                 <AlertCircle className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-gray-600">No bid matrix available</p>
-                <Button variant="outline" size="sm" onClick={() => setShowAddRFQDialog(true)} className="mt-4" disabled={isProcessing}>
-                  Add RFQs & Bids
-                </Button>
+                <p className="text-gray-600 font-medium">No bid matrix available</p>
+                <p className="text-sm text-gray-500 mt-1">Link RFQs to generate the comparison matrix and evaluate bids.</p>
+                {canModifyAOB && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddRFQDialog(true)}
+                    className="mt-4 gap-2"
+                    disabled={isProcessing}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add RFQs & Bids
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
@@ -614,7 +675,7 @@ export function AOBDetailsPage({
       />
 
       {/* Select Winners Dialog */}
-      {bidMatrix && (
+      {bidMatrix && hasBidData && (
         <SelectWinnerDialog
           open={showSelectWinnerDialog}
           onOpenChange={setShowSelectWinnerDialog}
