@@ -10,6 +10,8 @@ on:
       - 'apps/tenant-management/**'
       - 'packages/erpez-shared-lib/**'
       - 'packages/ui/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
       - .github/workflows/deploy-tenant-management-fe-prod.yml
   workflow_dispatch:
     inputs:
