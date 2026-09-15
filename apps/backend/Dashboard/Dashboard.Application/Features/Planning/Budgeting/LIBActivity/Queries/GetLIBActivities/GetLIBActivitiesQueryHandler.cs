@@ -30,7 +30,7 @@ public class GetLIBActivitiesQueryHandler(IUnitOfWork unitOfWork)
                     OPCRActivityId = entity.OPCRActivityId,
                     Name = entity.Name,
                     PAPCode = entity.PAPCode,
-                    Budget = entity.LineItemBudgetDetails.Sum(d => d.Budget), 
+                    Budget = entity.LineItemBudgetDetails.Where(d => !d.IsDeleted).Sum(d => d.Budget), 
                     LineItemBudget = entity.LineItemBudget == null ? null : new LIBActivityLineItemBudgetResponse
                     {
                         Id = entity.LineItemBudget.Id,
@@ -51,7 +51,22 @@ public class GetLIBActivitiesQueryHandler(IUnitOfWork unitOfWork)
                         PAPDepartments = entity.OPCRActivity.OPCRPAPDepartments
                             .Select(p => p.OfficeId)
                             .ToList()
-                    }
+                    },
+                    Details = entity.LineItemBudgetDetails
+                        .Where(d => !d.IsDeleted)
+                        .Select(d => new LIBActivityNestedDetailResponse
+                        {
+                            Id = d.Id,
+                            ObjectId = d.ObjectId,
+                            Description = d.Description,
+                            UnitQuantity = d.UnitQuantity,
+                            UnitCost = d.UnitCost,
+                            TimelineType = d.TimelineType,
+                            StartDate = d.StartDate,
+                            EndDate = d.EndDate,
+                            Budget = d.Budget
+                        })
+                        .ToList()
                 })
             .ToList();
 

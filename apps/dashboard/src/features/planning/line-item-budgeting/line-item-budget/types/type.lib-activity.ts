@@ -28,6 +28,7 @@ export type LIBActivity = {
   opcrActivityId?: string
   name?: string
   papCode?: string
+  budget?: number
   lineItemBudget: {
     id: string
     libNumber: string
