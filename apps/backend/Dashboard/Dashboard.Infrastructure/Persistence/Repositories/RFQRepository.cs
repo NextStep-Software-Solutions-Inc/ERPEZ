@@ -152,4 +152,37 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
 
         return results.ToDictionary(r => r.CPRItemId, r => r.TotalQuantity);
     }
+
+    public async Task<string?> GetLastRFQNumberAsync(int year, CancellationToken cancellationToken = default)
+    {
+        var yearPrefix = $"RFQ-{year}-";
+        var rfqNumbers = await context.Set<RFQ>()
+            .AsNoTracking()
+            .Where(r => !r.IsDeleted && (r.RFQNumber.StartsWith(yearPrefix) || r.Date.Year == year))
+            .Select(r => r.RFQNumber)
+            .ToListAsync(cancellationToken);
+
+        return rfqNumbers
+            .OrderByDescending(num =>
+            {
+                var parts = num.Split('-');
+                if (parts.Length >= 3 && int.TryParse(parts[^1], out var seq))
+                {
+                    return seq;
+                }
+                return 0;
+            })
+            .FirstOrDefault();
+    }
+
+    public async Task<List<RFQItem>> GetItemsByRfqAndCprItemIdsAsync(
+        Guid rfqId,
+        List<Guid> cprItemIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.Set<RFQItem>()
+            .IgnoreQueryFilters()
+            .Where(i => i.RFQId == rfqId && cprItemIds.Contains(i.CPRItemId))
+            .ToListAsync(cancellationToken);
+    }
 }

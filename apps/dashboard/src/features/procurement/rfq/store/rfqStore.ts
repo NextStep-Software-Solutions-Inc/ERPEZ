@@ -90,6 +90,7 @@ interface RFQStore {
   removeRFQItem: (rfqId: string, itemId: string) => Promise<boolean>
   removeRFQ: (id: string) => void
   fetchConsolidatedPrItemsForRFQ: () => Promise<any[]>
+  fetchNextRFQNumber: (year?: number) => Promise<string>
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +131,8 @@ export const useRFQStore = create<RFQStore>((set) => ({
       })
       const data = response.data
       const mapped = (data.data || []).map(mapBackendRFQListItemToFrontend)
-      set({ rfqs: mapped, totalCount: data.totalRows || mapped.length })
+      const count = (data as any).totalCount ?? (data as any).totalRows ?? mapped.length
+      set({ rfqs: mapped, totalCount: count })
     } catch (e) {
       console.error('Failed to fetch RFQs:', e)
     } finally {
@@ -251,6 +253,18 @@ export const useRFQStore = create<RFQStore>((set) => ({
     } catch (e) {
       console.error('Failed to fetch eligible consolidated PR items for RFQ:', e)
       return []
+    }
+  },
+
+  fetchNextRFQNumber: async (year?: number) => {
+    try {
+      const response = await api.get<APIResponse<string>>('/rfqs/next-number', {
+        params: year ? { year } : undefined,
+      })
+      return response.data.data || ''
+    } catch (e) {
+      console.error('Failed to fetch next RFQ number:', e)
+      return ''
     }
   },
 }))

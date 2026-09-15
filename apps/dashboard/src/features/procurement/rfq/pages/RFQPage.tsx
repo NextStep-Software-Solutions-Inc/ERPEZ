@@ -240,12 +240,21 @@ export function RFQPage() {
               <DebouncedInput
                 placeholder="Search RFQ number, description or tracing number"
                 value={search}
-                onChange={(v: any) => setSearch(String(v))}
+                onChange={(v: any) => {
+                  setSearch(String(v))
+                  setPage(1)
+                }}
                 className="w-full pl-10"
               />
             </div>
 
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => {
+                setStatusFilter(v as any)
+                setPage(1)
+              }}
+            >
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filter by Status" />
               </SelectTrigger>
@@ -258,7 +267,13 @@ export function RFQPage() {
               </SelectContent>
             </Select>
 
-            <Select value={modeFilter} onValueChange={(v) => setModeFilter(v)}>
+            <Select
+              value={modeFilter}
+              onValueChange={(v) => {
+                setModeFilter(v)
+                setPage(1)
+              }}
+            >
               <SelectTrigger className="w-56">
                 <SelectValue placeholder="Filter by Mode" />
               </SelectTrigger>
@@ -421,7 +436,7 @@ export function RFQPage() {
             <div className="flex items-center gap-2">
               <div className="text-sm text-muted-foreground">Page {page} of {totalPages}</div>
               <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage(Math.max(1, page - 1))}>Previous</Button>
-              <Button size="sm" onClick={() => setPage(Math.min(totalPages, page + 1))}>Next</Button>
+              <Button size="sm" disabled={page >= totalPages} onClick={() => setPage(Math.min(totalPages, page + 1))}>Next</Button>
             </div>
           </div>
         </CardContent>

@@ -38,6 +38,12 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
             .GetByIdsWithDetailsAsync(cprItemIds, cancellationToken);
         var cprItemsById = cprItems.ToDictionary(x => x.Id);
 
+        // Fetch any existing RFQ items (including soft-deleted) for this RFQ to reactivate/update
+        // rather than attempting an INSERT that violates the IX_RFQItems_RFQId_CPRItemId constraint.
+        var existingItems = await unitOfWork.RFQRepository.GetItemsByRfqAndCprItemIdsAsync(
+            rfq.Id, cprItemIds, cancellationToken);
+        var existingItemsByCprId = existingItems.ToDictionary(x => x.CPRItemId);
+
         foreach (var itemDto in request.Items)
         {
             if (!cprItemsById.TryGetValue(itemDto.CPRItemId, out var cprItem))
@@ -85,7 +91,9 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
             // (excluding this RFQ's own existing rows for this CPR item, since we may be updating) must not exceed RequestedQuantity.
             sourcedQuantities.TryGetValue(itemDto.CPRItemId, out var alreadySourced);
 
-            var existingItem = rfq.RFQItems.FirstOrDefault(i => i.CPRItemId == itemDto.CPRItemId);
+            existingItemsByCprId.TryGetValue(itemDto.CPRItemId, out var existingItem);
+            existingItem ??= rfq.RFQItems.FirstOrDefault(i => i.CPRItemId == itemDto.CPRItemId);
+
             if (alreadySourced + itemDto.Quantity > prItem.RequestedQuantity)
             {
                 return ApiResponse<bool>.Fail(
@@ -101,6 +109,9 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
 
             if (existingItem is not null)
             {
+                existingItem.IsDeleted = false;
+                existingItem.DeletedAt = null;
+                existingItem.DeletedBy = null;
                 existingItem.Quantity = itemDto.Quantity;
                 existingItem.IsBrochureRequired = itemDto.IsBrochureRequired;
                 existingItem.GreenSpecification = itemDto.GreenSpecification;
@@ -108,6 +119,11 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
                 existingItem.ItemNameSnapshot = prItem.Name;
                 existingItem.CategorySnapshot = categorySnapshot;
                 existingItem.FundSnapshot = fundSnapshot;
+
+                if (!rfq.RFQItems.Any(i => i.Id == existingItem.Id))
+                {
+                    rfq.RFQItems.Add(existingItem);
+                }
             }
             else
             {
@@ -126,7 +142,9 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
             }
         }
 
-        rfq.TotalAmount = rfq.RFQItems.Sum(i => i.Quantity * i.UnitPriceSnapshot);
+        rfq.TotalAmount = rfq.RFQItems
+            .Where(i => !i.IsDeleted)
+            .Sum(i => i.Quantity * i.UnitPriceSnapshot);
 
         unitOfWork.RFQRepository.Update(rfq);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -63,6 +63,7 @@ public class GetConsolidatedPrItemsForRFQQueryHandler(IUnitOfWork unitOfWork)
                     Category = category,
                     Fund = fund,
                     Month = prItem.RequestedMonth,
+                    Unit = prItem.PPMPItem?.Unit ?? "pc",
                     UnitCost = prItem.UnitCost,
                     RequestedQuantity = prItem.RequestedQuantity,
                     AlreadySourcedQuantity = alreadySourced,

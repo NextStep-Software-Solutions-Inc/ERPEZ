@@ -7,8 +7,12 @@ using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.AddRFQ
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.RemoveRFQItem;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.ReopenRFQ;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.ChangeRFQStatus;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.GenerateRFQDocument;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.UpdateRFQ;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetNextRFQNumber;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQNotice;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQById;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQs;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQSummary;
@@ -68,6 +72,18 @@ public class RFQController(ISender mediator) : ControllerBase
     }
 
     /// <summary>
+    /// Get the next auto-generated RFQ number
+    /// </summary>
+    [HttpGet("next-number")]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
+    public async Task<IActionResult> GetNextRFQNumber([FromQuery] int? year)
+    {
+        var result = await mediator.Send(new GetNextRFQNumberQuery(year));
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Get RFQ by ID with details
     /// </summary>
     [HttpGet("{id}")]
@@ -77,6 +93,19 @@ public class RFQController(ISender mediator) : ControllerBase
     public async Task<IActionResult> GetRFQById(Guid id)
     {
         var result = await mediator.Send(new GetRFQByIdQuery(id));
+        return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    /// <summary>
+    /// Get RFQ BAC portal posting notice details
+    /// </summary>
+    [HttpGet("{id}/bac-notice")]
+    [ProducesResponseType(typeof(ApiResponse<RFQNoticeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<RFQNoticeDto>), StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
+    public async Task<IActionResult> GetRFQNotice(Guid id)
+    {
+        var result = await mediator.Send(new GetRFQNoticeQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
@@ -197,6 +226,28 @@ public class RFQController(ISender mediator) : ControllerBase
             BidId = bidId,
             Request = request
         });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Generate RFQ document (PDF/Excel)
+    /// </summary>
+    [HttpPost("{id}/generate")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.rfqManage)]
+    public async Task<IActionResult> GenerateRFQ(
+        Guid id,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new GenerateRFQDocumentCommand
+        {
+            RFQId = id,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

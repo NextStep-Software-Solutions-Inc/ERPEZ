@@ -29,13 +29,63 @@ const ORDERED_MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
+function resolveMonthIndex(monthVal: any): number {
+  if (monthVal === undefined || monthVal === null || monthVal === '') return -1
+
+  if (typeof monthVal === 'number') {
+    if (monthVal >= 0 && monthVal <= 11) return monthVal
+    if (monthVal >= 1 && monthVal <= 12) return monthVal - 1
+  }
+
+  const str = String(monthVal).trim().toLowerCase()
+
+  const num = parseInt(str, 10)
+  if (!isNaN(num) && String(num) === str) {
+    if (num >= 0 && num <= 11) return num
+    if (num >= 1 && num <= 12) return num - 1
+  }
+
+  const parts = str.split('-')
+  if (parts.length === 2) {
+    const mn = parseInt(parts[1], 10)
+    if (!isNaN(mn) && mn >= 1 && mn <= 12) return mn - 1
+  }
+
+  const fullIdx = ORDERED_MONTHS.findIndex((mm) => mm.toLowerCase() === str)
+  if (fullIdx !== -1) return fullIdx
+
+  const shortMonthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+  const shortIdx = shortMonthNames.indexOf(str)
+  if (shortIdx !== -1) return shortIdx
+
+  return -1
+}
+
+function getItemQtyForMonth(item: any, monthIdx: number): number {
+  if (Array.isArray(item.monthlyAllocations) && item.monthlyAllocations.length > 0) {
+    const alloc = item.monthlyAllocations.find((a: any) => resolveMonthIndex(a.month) === monthIdx)
+    if (alloc) return alloc.quantity ?? alloc.qty ?? 0
+  }
+  const itemMonthIdx = resolveMonthIndex(item.month)
+  if (itemMonthIdx === monthIdx) {
+    return item.qty ?? item.remainingQuantity ?? 0
+  }
+  return 0
+}
+
 interface AddConsolidatedPRModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAdd: (items: RFQItem[]) => void
+  existingCPRItemIds?: string[]
 }
 
-export function AddConsolidatedPRModal({ open, onOpenChange, onAdd }: AddConsolidatedPRModalProps) {
+export function AddConsolidatedPRModal({
+  open,
+  onOpenChange,
+  onAdd,
+  existingCPRItemIds = [],
+}: AddConsolidatedPRModalProps) {
   const { fetchConsolidatedPrItemsForRFQ } = useRFQStore()
   const [searchTerm, setSearchTerm] = useState('')
   const [flatItems, setFlatItems] = useState<ConsolidatedPRItem[]>([])
@@ -83,9 +133,10 @@ export function AddConsolidatedPRModal({ open, onOpenChange, onAdd }: AddConsoli
         fund: item.fund || 'General Fund',
         month: item.month || 'January',
         qty: item.remainingQuantity || 1,
-        unit: 'pc',
+        unit: item.unit || item.unitOfMeasure || 'pc',
         unitPrice: item.unitCost || 0,
         totalAmount: (item.remainingQuantity || 1) * (item.unitCost || 0),
+        monthlyAllocations: item.monthlyAllocations,
       })
     })
     return Array.from(prMap.values())
@@ -112,18 +163,8 @@ export function AddConsolidatedPRModal({ open, onOpenChange, onAdd }: AddConsoli
       const prItems = pr.selectedPRItems || []
 
       const getMonthName = (m?: string | null) => {
-        if (!m) return null
-        const s = String(m).trim()
-        // handle YYYY-MM or YYYY-M
-        const parts = s.split('-')
-        if (parts.length === 2 && /^\d{4}$/.test(parts[0])) {
-          const mn = parseInt(parts[1], 10)
-          if (!isNaN(mn) && mn >= 1 && mn <= 12) return ORDERED_MONTHS[mn - 1]
-        }
-        // handle full month name (case-insensitive)
-        const idx = ORDERED_MONTHS.findIndex((mm) => mm.toLowerCase() === s.toLowerCase())
-        if (idx !== -1) return ORDERED_MONTHS[idx]
-        return null
+        const idx = resolveMonthIndex(m)
+        return idx !== -1 ? ORDERED_MONTHS[idx] : null
       }
 
       // Check if at least one item passes month filter (normalize YYYY-MM -> full month name)
@@ -386,43 +427,47 @@ export function AddConsolidatedPRModal({ open, onOpenChange, onAdd }: AddConsoli
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {prItems.map((item: any) => {
-                                const isSelected = selectedItems.has(`${pr.id}-${item.id}`)
+                                {prItems.map((item: any) => {
+                                  const isSelected = selectedItems.has(`${pr.id}-${item.id}`)
+                                  const isAlreadyAdded = existingCPRItemIds.includes(item.id)
 
-                                // derive itemMonth short label (e.g., 'Jan') from item.month (supports 'YYYY-MM')
-                                const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-                                let itemMonthIndex = -1
-                                try {
-                                  const parts = String(item.month || '').split('-')
-                                  if (parts.length === 2) {
-                                    const mn = parseInt(parts[1], 10)
-                                    if (!isNaN(mn)) itemMonthIndex = mn - 1
-                                  }
-                                } catch (e) { /* ignore */ }
+                                  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
-                                return (
-                                  <TableRow key={item.id} className={isSelected ? 'bg-muted/50' : ''}>
-                                    <TableCell>
-                                      <Checkbox
-                                        checked={isSelected}
-                                        onCheckedChange={() => toggleItemSelection(pr.id, item)}
-                                      />
-                                    </TableCell>
-                                    <TableCell className="font-medium">{item.itemName}</TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">{item.category}</TableCell>
-                                    <TableCell className="text-sm">{item.fund}</TableCell>
-                                    {monthNames.map((m, idx) => (
-                                      <TableCell key={m} className="text-center">
-                                        {itemMonthIndex === idx ? (
-                                          <div className="inline-flex items-center justify-center px-3 py-1 rounded-md bg-muted/10">
-                                            <span className="text-sm font-medium">{item.qty}</span>
-                                            <span className="text-xs text-muted-foreground ml-1">{item.unit}</span>
-                                          </div>
-                                        ) : (
-                                          <div className="text-sm text-muted-foreground">0 {item.unit}</div>
-                                        )}
+                                  return (
+                                    <TableRow key={item.id} className={isSelected ? 'bg-muted/50' : ''}>
+                                      <TableCell>
+                                        <Checkbox
+                                          checked={isSelected}
+                                          onCheckedChange={() => toggleItemSelection(pr.id, item)}
+                                        />
                                       </TableCell>
-                                    ))}
+                                      <TableCell className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                          <span>{item.itemName}</span>
+                                          {isAlreadyAdded && (
+                                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                                              In RFQ
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-sm text-muted-foreground">{item.category}</TableCell>
+                                      <TableCell className="text-sm">{item.fund}</TableCell>
+                                    {monthNames.map((m, idx) => {
+                                      const monthQty = getItemQtyForMonth(item, idx)
+                                      return (
+                                        <TableCell key={m} className="text-center">
+                                          {monthQty > 0 ? (
+                                            <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-primary/10 text-primary border border-primary/20 font-medium">
+                                              <span className="text-sm font-semibold">{monthQty}</span>
+                                              <span className="text-xs text-muted-foreground ml-1">{item.unit}</span>
+                                            </div>
+                                          ) : (
+                                            <div className="text-sm text-muted-foreground">0 {item.unit}</div>
+                                          )}
+                                        </TableCell>
+                                      )
+                                    })}
                                     <TableCell className="text-center">
                                       <div className="inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 font-semibold">{item.qty} {item.unit}</div>
                                     </TableCell>
