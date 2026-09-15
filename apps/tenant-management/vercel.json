@@ -1,6 +1,6 @@
 {
     "buildCommand": "pnpm --filter erpez-shared-lib build && pnpm --filter erpez_fe build",
-    "installCommand": "pnpm install",
+    "installCommand": "echo 'Dependencies already installed'",
     "outputDirectory": "build/client",
     "rewrites": [
         {
