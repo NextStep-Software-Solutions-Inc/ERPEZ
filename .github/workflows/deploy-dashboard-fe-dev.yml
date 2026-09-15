@@ -28,6 +28,7 @@ on:
 env:
   APP_NAME: dashboard
   ENVIRONMENT: Development
+  NODE_OPTIONS: '--max-old-space-size=6144'
 
 jobs:
   deploy:
@@ -68,6 +69,7 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_DASHBOARD }}
+          NODE_OPTIONS: '--max-old-space-size=6144'
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy Project Artifacts to Vercel
