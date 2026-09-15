@@ -1215,8 +1215,8 @@ export default function ConsolidatePrsPage() {
                                       <TableHead className="text-right text-xs font-semibold">Unit Price</TableHead>
                                       <TableHead className="text-right text-xs font-semibold">Total Amount</TableHead>
                                       <TableHead className="min-w-[170px] text-xs font-semibold">Allocation / Schedule (From PRs)</TableHead>
-                                      <TableHead className="min-w-[190px] text-xs font-semibold">Mode of Procurement (Consolidated PR)</TableHead>
                                       <TableHead className="w-24 text-center text-xs font-semibold">Allow Partial</TableHead>
+                                      <TableHead className="min-w-[190px] text-xs font-semibold">Mode of Procurement (Consolidated PR)</TableHead>
                                     </TableRow>
                                   </TableHeader>
 
@@ -1315,6 +1315,33 @@ export default function ConsolidatePrsPage() {
                                               </div>
                                             </TableCell>
 
+                                            {/* Allow Partial */}
+                                            <TableCell className="align-top py-3.5 text-center">
+                                              <div className="flex justify-center pt-1.5">
+                                                <Checkbox
+                                                  checked={
+                                                    activePR?.itemMOPs?.[itemKey]
+                                                      ?.allowPartial || false
+                                                  }
+                                                  onCheckedChange={(checked) => {
+                                                    if (!activePR) return
+                                                    toast.promise(
+                                                      updateItemMutation.mutateAsync({
+                                                        pathParams: { id: activePR.id, itemId: itemKey },
+                                                        queryParams: {},
+                                                        payload: { procurementModeId: activePR.itemMOPs?.[itemKey]?.mop || '', allowPartial: checked === true }
+                                                      }),
+                                                      {
+                                                        loading: 'Updating Partial Allowance...',
+                                                        success: 'Partial allowance updated.',
+                                                        error: (e: unknown) => (e instanceof Error ? e.message : 'Failed to update partial allowance'),
+                                                      }
+                                                    )
+                                                  }}
+                                                />
+                                              </div>
+                                            </TableCell>
+
                                             {/* Mode of Procurement */}
                                             <TableCell className="align-top py-3.5">
                                               <div className="flex justify-center">
@@ -1350,33 +1377,6 @@ export default function ConsolidatePrsPage() {
                                                     ))}
                                                   </SelectContent>
                                                 </Select>
-                                              </div>
-                                            </TableCell>
-
-                                            {/* Allow Partial */}
-                                            <TableCell className="align-top py-3.5 text-center">
-                                              <div className="flex justify-center pt-1.5">
-                                                <Checkbox
-                                                  checked={
-                                                    activePR?.itemMOPs?.[itemKey]
-                                                      ?.allowPartial || false
-                                                  }
-                                                  onCheckedChange={(checked) => {
-                                                    if (!activePR) return
-                                                    toast.promise(
-                                                      updateItemMutation.mutateAsync({
-                                                        pathParams: { id: activePR.id, itemId: itemKey },
-                                                        queryParams: {},
-                                                        payload: { procurementModeId: activePR.itemMOPs?.[itemKey]?.mop || '', allowPartial: checked === true }
-                                                      }),
-                                                      {
-                                                        loading: 'Updating Partial Allowance...',
-                                                        success: 'Partial allowance updated.',
-                                                        error: (e: unknown) => (e instanceof Error ? e.message : 'Failed to update partial allowance'),
-                                                      }
-                                                    )
-                                                  }}
-                                                />
                                               </div>
                                             </TableCell>
                                           </TableRow>

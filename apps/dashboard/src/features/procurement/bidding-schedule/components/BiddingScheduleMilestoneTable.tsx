@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   computeRemainingDays,
+  formatRemainingDaysBadgeLabel,
   getRemainingDaysBadgeClass,
 } from '@/features/procurement/bac-resolution'
 import { useProcurementActivityTypes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementActivityTypes'
@@ -213,6 +214,12 @@ export function BiddingScheduleMilestoneTable({
                 isCompleted,
                 maxDays,
               })
+              const displayRemainingLabel = formatRemainingDaysBadgeLabel(remainingInfo)
+              const isTodayOrDue =
+                remainingInfo.isToday ||
+                remainingInfo.daysRemaining === 0 ||
+                displayRemainingLabel === 'Today'
+              const remainingVariant = isTodayOrDue ? 'warning' : remainingInfo.variant
 
               return (
                 <TableRow
@@ -345,10 +352,10 @@ export function BiddingScheduleMilestoneTable({
                         variant="outline"
                         className={cn(
                           'text-xs font-semibold px-2 py-0.5 border',
-                          getRemainingDaysBadgeClass(remainingInfo.variant),
+                          getRemainingDaysBadgeClass(remainingVariant),
                         )}
                       >
-                        {remainingInfo.label}
+                        {displayRemainingLabel}
                       </Badge>
                       {remainingInfo.maxDays !== null && (
                         <span className="text-[11px] text-muted-foreground whitespace-nowrap">

@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   APIResponse,
   MutationBlueprintFromTemplate,
 } from 'erpez-shared-lib'
@@ -12,6 +12,7 @@ export type CreateLIBActivityPayload = {
   wfpObjectiveActivityId?: string
   opcrActivityId?: string
   name?: string
+  papCode?: string
 }
 
 export const createLIBActivityRequest: MutationBlueprintFromTemplate<

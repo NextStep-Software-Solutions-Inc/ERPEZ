@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using ERPEZ.Application.Features.Planning.APP.Dtos;
 using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Planning.APPItem.Dtos;
@@ -9,6 +10,8 @@ public record APPItemResponse
     public Guid APPId { get; init; }
     public Guid PPMPItemId { get; init; }
     public string PPMPItemName { get; init; } = string.Empty;
+    public string? ItemNameOverride { get; init; }
+    public string? GeneralDescription { get; init; }
     public Guid ProcurementModeId { get; init; }
     public string ProcurementModeName { get; init; } = string.Empty;
     public Guid FundSourceId { get; init; }
@@ -18,6 +21,7 @@ public record APPItemResponse
     public string PAPCode { get; init; } = string.Empty;
     public string? Remarks { get; init; }
     public bool IsEarlyProcurementActivity { get; init; }
+    public string? EPARemarks { get; init; }
     public bool IsOutsourced { get; init; }
     public BidEvaluationCriteria? BidEvaluationCriteria { get; init; }
     public List<ProcurementStrategy>? ProcurementStrategies { get; init; }
@@ -65,6 +69,9 @@ public record APPItemAPPResponse
     public Guid Id { get; init; }
     public string APPNumber { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
+    public Guid FiscalYearId { get; init; }
+    public string FiscalYearName { get; init; } = string.Empty;
+    public APPFiscalYearResponse? FiscalYear { get; init; }
 }
 
 public record APPItemPPMPItemResponse

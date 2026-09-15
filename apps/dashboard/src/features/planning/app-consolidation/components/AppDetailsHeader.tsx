@@ -95,7 +95,7 @@ export function AppDetailsHeader({ app }: AppDetailsHeaderProps) {
             <div className="flex items-center gap-4 pt-1">
               <p className="text-xs text-slate-600 flex items-center gap-1.5 font-medium">
                 <span className="w-2 h-2 bg-purple-600 rounded-full"></span>
-                Code: <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{app.appCode}</span>
+                Code: <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{app.appCode}</span>
               </p>
               <ProgressBadge 
                 itemsAdded={hasPpmps ? 1 : 0}
@@ -109,7 +109,7 @@ export function AppDetailsHeader({ app }: AppDetailsHeaderProps) {
           {/* APP Number Badge Box */}
           <div className="text-left md:text-right bg-slate-50/90 rounded-lg p-3.5 border border-slate-200 shrink-0">
             <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">APP Number</p>
-            <p className="text-lg md:text-xl font-bold font-mono text-slate-900 mt-0.5">{app.appNumber}</p>
+            <p className="text-lg md:text-xl font-bold text-slate-900 mt-0.5">{app.appNumber}</p>
           </div>
         </div>
       </CardHeader>

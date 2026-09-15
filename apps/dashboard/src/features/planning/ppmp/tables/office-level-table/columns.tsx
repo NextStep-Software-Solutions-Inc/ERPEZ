@@ -187,9 +187,11 @@ export const columns: ColumnDef<PPMP>[] = [
               ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
               : status.toLowerCase() === 'submitted'
                 ? 'border-blue-200 bg-blue-50 text-blue-700'
-                : status.toLowerCase() === 'rejected'
-                  ? 'border-rose-200 bg-rose-50 text-rose-700'
-                  : 'border-slate-200 bg-slate-50 text-slate-700',
+                : status.toLowerCase() === 'returned'
+                  ? 'border-amber-200 bg-amber-50 text-amber-700'
+                  : status.toLowerCase() === 'rejected'
+                    ? 'border-rose-200 bg-rose-50 text-rose-700'
+                    : 'border-slate-200 bg-slate-50 text-slate-700',
           )}
         >
           {status}
@@ -349,7 +351,7 @@ export const columns: ColumnDef<PPMP>[] = [
               Export as PDF
             </DropdownMenuItem>
 
-            {isApproved && (
+            {isApproved && ppmp.ppmpType !== 'Supplemental' && !ppmp.sourcePPMPId && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -359,25 +361,23 @@ export const columns: ColumnDef<PPMP>[] = [
                   <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-600" />
                   {ppmp.isFinal ? 'Unmark as Final' : 'Mark as Final'}
                 </DropdownMenuItem>
-                {ppmp.ppmpType !== 'Supplemental' && !ppmp.sourcePPMPId && (
-                  <DropdownMenuItem
-                    onClick={handleCreateSupplemental}
-                    disabled={!ppmp.isFinal}
-                    title={
-                      !ppmp.isFinal
-                        ? 'Must be marked as Final before creating Supplemental PPMP'
-                        : undefined
-                    }
-                  >
-                    <FilePlus2 className="mr-2 h-4 w-4 text-indigo-600" />
-                    <span>Create Supplemental PPMP</span>
-                    {!ppmp.isFinal && (
-                      <span className="ml-auto text-[10px] text-muted-foreground pl-2">
-                        (Needs Final)
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem
+                  onClick={handleCreateSupplemental}
+                  disabled={!ppmp.isFinal}
+                  title={
+                    !ppmp.isFinal
+                      ? 'Must be marked as Final before creating Supplemental PPMP'
+                      : undefined
+                  }
+                >
+                  <FilePlus2 className="mr-2 h-4 w-4 text-indigo-600" />
+                  <span>Create Supplemental PPMP</span>
+                  {!ppmp.isFinal && (
+                    <span className="ml-auto text-[10px] text-muted-foreground pl-2">
+                      (Needs Final)
+                    </span>
+                  )}
+                </DropdownMenuItem>
               </>
             )}
 

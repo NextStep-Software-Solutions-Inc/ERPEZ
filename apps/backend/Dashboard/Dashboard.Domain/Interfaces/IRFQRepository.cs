@@ -42,4 +42,16 @@ public interface IRFQRepository : IRepository<RFQ>
         List<Guid> cprItemIds,
         Guid? excludingRfqId = null,
         CancellationToken cancellationToken = default);
+
+    Task<string?> GetLastRFQNumberAsync(int year, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetches all RFQItems (including soft-deleted records) for a given RFQ that match the specified CPRItemIds.
+    /// Used by AddRFQItemsCommandHandler to reactivate/update existing records rather than violating the
+    /// IX_RFQItems_RFQId_CPRItemId unique constraint.
+    /// </summary>
+    Task<List<RFQItem>> GetItemsByRfqAndCprItemIdsAsync(
+        Guid rfqId,
+        List<Guid> cprItemIds,
+        CancellationToken cancellationToken = default);
 }

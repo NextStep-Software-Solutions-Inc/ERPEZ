@@ -45,6 +45,7 @@ import {
   FilePlus2,
   PlusCircle,
   Sparkles,
+  Undo2,
 } from 'lucide-react'
 import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getUOMRequest } from '@/components/features/planning/procurement-library/unit-of-measurement/handlers/getUOMRequest'
@@ -90,6 +91,7 @@ import {
   EditPPMPItemAllocationsDialog,
   MasterPPMPViewerModal,
   CreateSupplementalPpmpDialog,
+  ReturnPPMPDialog,
 } from '../dialogs'
 import {
   resolveTypeOfExpenditure,
@@ -99,6 +101,8 @@ import { PPMPGuidelinesModal } from '../dialogs/PPMPGuidelinesModal'
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
 import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
 import { updatePPMPStatusRequest } from '../handlers/updatePPMPStatusRequest'
+import { approvePpmpRequest } from '../handlers/approvePpmpRequest'
+import { returnPpmpRequest } from '../handlers/returnPpmpRequest'
 import { togglePpmpFinalizationRequest } from '../handlers/togglePpmpFinalizationRequest'
 import { generatePPMPDocumentRequest } from '../handlers/generatePPMPDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
@@ -177,6 +181,8 @@ const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
 const useUpdatePPMPStatus = createMutationHookFromTemplate(
   updatePPMPStatusRequest,
 )
+const useApprovePPMP = createMutationHookFromTemplate(approvePpmpRequest)
+const useReturnPPMP = createMutationHookFromTemplate(returnPpmpRequest)
 const useGeneratePPMPDocument = createMutationHookFromTemplate(
   generatePPMPDocumentRequest,
 )
@@ -475,7 +481,7 @@ function ActivityCard({
   return (
     <li
       className={cn(
-        'rounded-xl border bg-white shadow-sm transition-all duration-200 overflow-hidden relative flex shrink-0 h-30',
+        'rounded-xl border bg-white shadow-sm transition-all duration-200 overflow-hidden relative flex shrink-0 min-h-[148px] h-auto',
         selected
           ? 'ring-1 shadow-md bg-primary/5 scale-[1.015] z-10 animate-pulse-selected border-primary'
           : 'border-default-200 hover:border-default-300 hover:shadow-md',
@@ -486,7 +492,7 @@ function ActivityCard({
       )}
     >
       {/* Left side (regular card content) */}
-      <div className="w-80 shrink-0 flex items-start gap-3 p-4">
+      <div className="w-80 shrink-0 flex items-start gap-3 p-4 pb-4">
         {selected && (
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r" />
         )}
@@ -494,27 +500,29 @@ function ActivityCard({
         <button
           type="button"
           onClick={onSelect}
-          className="flex-1 min-w-0 text-left"
+          className="flex-1 min-w-0 text-left flex flex-col justify-between self-stretch"
         >
-          <span className="text-[10px] font-bold text-primary/80 uppercase tracking-wider block mb-0.5">
-            Activity Indicator
-          </span>
-          <h3
-            className="text-sm font-semibold text-default-900 group-hover:text-primary transition-colors leading-snug line-clamp-2"
-            title={activity.activityName || 'Unnamed'}
-          >
-            {activity.activityName || 'Unnamed'}
-          </h3>
-          <div className="mt-1 flex items-baseline gap-1 text-xs text-default-500">
-            <span className="text-sm font-semibold text-default-900">
-              {activity.totalAllocationAmount
-                ? formatCurrency(activity.totalAllocationAmount)
-                : '—'}
+          <div>
+            <span className="text-[10px] font-bold text-primary/80 uppercase tracking-wider block mb-0.5">
+              Activity Indicator
             </span>
+            <h3
+              className="text-sm font-semibold text-default-900 group-hover:text-primary transition-colors leading-snug line-clamp-2"
+              title={activity.activityName || 'Unnamed'}
+            >
+              {activity.activityName || 'Unnamed'}
+            </h3>
+            <div className="mt-1 flex items-baseline gap-1 text-xs text-default-500">
+              <span className="text-sm font-semibold text-default-900">
+                {activity.totalAllocationAmount
+                  ? formatCurrency(activity.totalAllocationAmount)
+                  : '—'}
+              </span>
+            </div>
           </div>
 
           {/* Progress bar of total budget */}
-          <div className="mt-2.5 space-y-1">
+          <div className="mt-3 space-y-1">
             <div className="flex items-center justify-between text-xs text-default-500">
               <span className="font-normal">PPMP Budget Share</span>
               <span className="font-medium text-default-600">
@@ -2051,7 +2059,7 @@ export interface ExpenditureItemGroupProps {
   group: PPMPExpenditureItem
   expandedItemIds: Set<string>
   onToggleItem: (id: string) => void
-  onAddItem?: (groupId: string) => void
+  onAddItem?: (groupId: string, papCode?: string) => void
   onEditItem?: (item: PPMPItem) => void
   onDeleteItem?: (item: PPMPItem) => void
   onEditGroup?: (group: PPMPExpenditureItem) => void
@@ -2204,7 +2212,7 @@ export function ExpenditureItemGroup({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => onAddItem(group.id)}
+              onClick={() => onAddItem(group.id, (group as any).papCode)}
               className="h-8 text-xs font-medium flex items-center gap-1.5 border-primary/20 hover:bg-primary/5 text-primary rounded-lg"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -2293,8 +2301,12 @@ export function ExpenditureItemGroup({
 
 function MonthlyScheduleMatrix({
   activity,
+  expenditureItems = [],
+  isExpenditureLoading = false,
 }: {
   activity: PPMPActivityForDisplay
+  expenditureItems?: PPMPExpenditureItem[]
+  isExpenditureLoading?: boolean
 }) {
   const months = [
     'January',
@@ -2311,6 +2323,41 @@ function MonthlyScheduleMatrix({
     'December',
   ]
 
+  const expenditureItemIds = useMemo(
+    () => (expenditureItems || []).map((g) => g.id).filter(Boolean),
+    [expenditureItems],
+  )
+
+  const itemsFilter = useMemo(() => {
+    if (expenditureItemIds.length === 0) return ''
+    return `ppmpExpenditureItemId==${expenditureItemIds.join('|')}`
+  }, [expenditureItemIds])
+
+  const { data: itemsResp, isLoading: isItemsLoading } = usePPMPItems({
+    pathParams: {},
+    queryParams: itemsFilter
+      ? {
+          filters: itemsFilter,
+          pageSize: 1000,
+        }
+      : {},
+    enabled: !!itemsFilter,
+  })
+
+  const fetchedItems = itemsResp?.data ?? []
+
+  const directItems = useMemo(
+    () =>
+      activity.ppmpExpenditureItems?.flatMap(
+        (group) => group.ppmpItems || [],
+      ) || [],
+    [activity.ppmpExpenditureItems],
+  )
+
+  const allItems = directItems.length > 0 ? directItems : fetchedItems
+  const isLoading =
+    isExpenditureLoading || (expenditureItemIds.length > 0 && isItemsLoading)
+
   const monthlyData = useMemo(() => {
     const agg: Record<
       string,
@@ -2320,25 +2367,33 @@ function MonthlyScheduleMatrix({
       agg[m] = { quantity: 0, amount: 0, itemCount: 0 }
     })
 
-    activity.ppmpExpenditureItems?.forEach((group) => {
-      group.ppmpItems?.forEach((item) => {
-        let hasAllocInMonth = false
-        item.PPMPItemAllocations?.forEach((alloc) => {
-          const month = alloc.allocationMonth
-          if (agg[month]) {
-            agg[month].quantity += alloc.quantity || 0
-            agg[month].amount += alloc.amount || 0
-            hasAllocInMonth = true
+    allItems.forEach((item) => {
+      const monthsWithAlloc = new Set<string>()
+      item.PPMPItemAllocations?.forEach((alloc) => {
+        const rawMonth = alloc.allocationMonth
+        const targetMonth = months.find(
+          (m) =>
+            m.toLowerCase() === rawMonth?.toLowerCase() ||
+            (rawMonth && m.toLowerCase().startsWith(rawMonth.toLowerCase())) ||
+            (rawMonth &&
+              rawMonth.toLowerCase().startsWith(m.toLowerCase().substring(0, 3))),
+        )
+
+        if (targetMonth && agg[targetMonth]) {
+          const qty = alloc.quantity || 0
+          const amt =
+            alloc.amount ||
+            (qty > 0 && item.unitPrice ? qty * item.unitPrice : 0)
+
+          if (qty > 0 || amt > 0) {
+            agg[targetMonth].quantity += qty
+            agg[targetMonth].amount += amt
+            monthsWithAlloc.add(targetMonth)
           }
-        })
-        if (hasAllocInMonth) {
-          item.PPMPItemAllocations?.forEach((alloc) => {
-            const m = alloc.allocationMonth
-            if (agg[m] && (alloc.quantity > 0 || alloc.amount > 0)) {
-              agg[m].itemCount += 1
-            }
-          })
         }
+      })
+      monthsWithAlloc.forEach((m) => {
+        agg[m].itemCount += 1
       })
     })
 
@@ -2348,7 +2403,7 @@ function MonthlyScheduleMatrix({
       amount: agg[m].amount,
       itemCount: agg[m].itemCount,
     }))
-  }, [activity])
+  }, [allItems])
 
   return (
     <div className="space-y-4">
@@ -2364,54 +2419,68 @@ function MonthlyScheduleMatrix({
           for this activity across the fiscal year.
         </p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {monthlyData.map(({ month, amount, itemCount }) => {
-            const isActive = amount > 0
-            return (
-              <div
-                key={month}
-                className={cn(
-                  'rounded-xl border p-3.5 transition-all duration-205 flex flex-col justify-between min-h-22.5',
-                  isActive
-                    ? 'bg-primary/2 border-primary/20 shadow-sm'
-                    : 'bg-default-50/50 border-default-200 text-default-450',
-                )}
-              >
-                <div>
-                  <div
-                    className={cn(
-                      'text-xs font-bold uppercase tracking-wider',
-                      isActive
-                        ? 'text-primary font-semibold'
-                        : 'text-default-400',
+        {isLoading ? (
+          <div className="flex h-40 items-center justify-center p-10 text-center text-sm text-default-400 bg-default-50 border border-dashed border-default-200 rounded-xl">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-default-300 border-t-primary mr-2" />
+            Loading monthly schedule...
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {monthlyData.map(({ month, amount, quantity, itemCount }) => {
+              const isActive = amount > 0 || quantity > 0
+              return (
+                <div
+                  key={month}
+                  className={cn(
+                    'rounded-xl border p-3.5 transition-all duration-205 flex flex-col justify-between min-h-22.5',
+                    isActive
+                      ? 'bg-primary/2 border-primary/20 shadow-sm'
+                      : 'bg-default-50/50 border-default-200 text-default-450',
+                  )}
+                >
+                  <div>
+                    <div
+                      className={cn(
+                        'text-xs font-bold uppercase tracking-wider',
+                        isActive
+                          ? 'text-primary font-semibold'
+                          : 'text-default-400',
+                      )}
+                    >
+                      {month}
+                    </div>
+                    {isActive && (
+                      <div className="mt-2 text-xs font-semibold text-default-700">
+                        {itemCount} {itemCount === 1 ? 'item' : 'items'} scheduled
+                      </div>
                     )}
-                  >
-                    {month}
                   </div>
-                  {isActive && (
-                    <div className="mt-2 text-xs font-semibold text-default-700">
-                      {itemCount} {itemCount === 1 ? 'item' : 'items'} scheduled
+                  {isActive ? (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-default-400 font-medium">
+                          Scheduled Amount
+                        </span>
+                        {quantity > 0 && (
+                          <span className="text-[10px] text-default-500 font-medium">
+                            Qty: {quantity}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm font-bold text-default-900 leading-tight">
+                        {formatCurrency(amount)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-3 text-[10px] italic text-default-400 font-medium">
+                      No procurement
                     </div>
                   )}
                 </div>
-                {isActive ? (
-                  <div className="mt-3">
-                    <div className="text-[10px] text-default-400 font-medium">
-                      Scheduled Amount
-                    </div>
-                    <div className="text-sm font-bold text-default-900 leading-tight">
-                      {formatCurrency(amount)}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-3 text-[10px] italic text-default-400 font-medium">
-                    No procurement
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -2420,7 +2489,7 @@ function MonthlyScheduleMatrix({
 interface RightPaneProps {
   activity: PPMPActivityForDisplay | null
 
-  onAddItem?: (groupId: string) => void
+  onAddItem?: (groupId: string, papCode?: string) => void
   onEditItem?: (item: PPMPItem) => void
   onDeleteItem?: (item: PPMPItem) => void
   onAddGroup?: () => void
@@ -2671,7 +2740,11 @@ function RightPane({
                   group={group}
                   expandedItemIds={expandedItemIds}
                   onToggleItem={toggleItem}
-                  onAddItem={onAddItem}
+                  onAddItem={
+                    onAddItem
+                      ? (id, pap) => onAddItem(id, pap || activity?.papCode)
+                      : undefined
+                  }
                   onEditItem={onEditItem}
                   onDeleteItem={onDeleteItem}
                   onEditGroup={onEditGroup}
@@ -2684,7 +2757,11 @@ function RightPane({
         )}
 
         {rightPaneTab === 'schedule' && (
-          <MonthlyScheduleMatrix activity={activity} />
+          <MonthlyScheduleMatrix
+            activity={activity}
+            expenditureItems={expenditureItems}
+            isExpenditureLoading={isExpenditureLoading}
+          />
         )}
       </div>
     </div>
@@ -2851,6 +2928,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false)
   const [consolidateWorkspaceOpen, setConsolidateWorkspaceOpen] =
     useState(false)
   const [deptConsolidateOpen, setDeptConsolidateOpen] = useState(false)
@@ -2874,6 +2952,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const { mutateAsync: updatePPMPStatus, isPending: isUpdatingStatus } =
     useUpdatePPMPStatus()
+  const { mutateAsync: approvePPMP, isPending: isApproving } = useApprovePPMP()
+  const { mutateAsync: returnPPMP, isPending: isReturning } = useReturnPPMP()
   const { mutateAsync: generatePPMPDocument } = useGeneratePPMPDocument()
   const { mutateAsync: downloadDocument } = useDownloadDocument()
 
@@ -2941,6 +3021,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const [itemDialogOpen, setItemDialogOpen] = useState(false)
   const [itemsPickerOpen, setItemsPickerOpen] = useState(false)
   const [itemDialogGroupId, setItemDialogGroupId] = useState('')
+  const [dialogPapCode, setDialogPapCode] = useState('')
   const [itemDialogEditItem, setItemDialogEditItem] = useState<PPMPItem | null>(
     null,
   )
@@ -3058,6 +3139,39 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       .map((item) => item.objectId!)
   }, [currentActivityExpItemsResp?.data, groupDialogEditGroup])
 
+  const defaultPapCode = useMemo(() => {
+    if (dialogPapCode) return dialogPapCode
+    if (itemDialogGroupId) {
+      const parentAct = activities.find(
+        (a) =>
+          a.id === itemDialogGroupId ||
+          a.ppmpExpenditureItems?.some((g: any) => g.id === itemDialogGroupId) ||
+          (a as any).PPMPExpenditureItems?.some((g: any) => g.id === itemDialogGroupId),
+      )
+      if (parentAct?.papCode) return parentAct.papCode
+
+      const expItem = currentActivityExpItemsResp?.data?.find(
+        (e) => e.id === itemDialogGroupId,
+      )
+      if (expItem?.ppmpActivityId) {
+        const act = activities.find((a) => a.id === expItem.ppmpActivityId)
+        if (act?.papCode) return act.papCode
+      }
+    }
+    if (selectedActivity?.papCode) return selectedActivity.papCode
+    if (lib?.lineItemBudgetActivities?.[0]?.papCode) {
+      return lib.lineItemBudgetActivities[0].papCode
+    }
+    return ''
+  }, [
+    dialogPapCode,
+    activities,
+    itemDialogGroupId,
+    selectedActivity,
+    lib,
+    currentActivityExpItemsResp?.data,
+  ])
+
   const existingLibActivityIds = useMemo(() => {
     if (!ppmp) return []
     return activities
@@ -3068,7 +3182,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const isEditable = useMemo(() => {
     if (!ppmp || ppmp.consolidatedIntoId) return false
     const status = (ppmp.status ?? '').toLowerCase().trim()
-    return status === 'draft' || status === 'rejected'
+    return status === 'draft' || status === 'rejected' || status === 'returned'
   }, [ppmp])
 
   // Current PPMP budget context for progress bars
@@ -3183,12 +3297,10 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const handleApprovePPMP = async () => {
     try {
-      await updatePPMPStatus(
+      await approvePPMP(
         {
-          pathParams: {},
+          pathParams: { id: ppmpId },
           payload: {
-            id: ppmpId,
-            action: 'approved',
             actorName: actorDisplayName,
             role: 'Approver',
             notes: 'PPMP approved via details page',
@@ -3212,6 +3324,37 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       )
     } finally {
       setApproveConfirmOpen(false)
+    }
+  }
+
+  const handleReturnPPMP = async (remarks: string) => {
+    try {
+      await returnPPMP(
+        {
+          pathParams: { id: ppmpId },
+          payload: {
+            actorName: actorDisplayName,
+            role: 'Reviewer',
+            remarks: remarks.trim(),
+          },
+        },
+        {
+          onSuccess: () => {
+            toast.success('PPMP returned to office for revision.')
+            void queryClient.invalidateQueries({
+              predicate: (query) =>
+                typeof query.queryKey[0] === 'string' &&
+                (query.queryKey[0].startsWith('/ppmps') ||
+                  query.queryKey[0].startsWith('/ppmp')),
+            })
+            setReturnDialogOpen(false)
+          },
+        },
+      )
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to return PPMP.',
+      )
     }
   }
 
@@ -3334,15 +3477,17 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     }
   }
 
-  const handleAddItem = (groupId: string) => {
+  const handleAddItem = (groupId: string, papCode?: string) => {
     setItemDialogGroupId(groupId)
     setItemDialogEditItem(null)
+    setDialogPapCode(papCode || '')
     setItemsPickerOpen(true)
   }
 
   const handleEditItem = (item: PPMPItem) => {
     setItemDialogGroupId(item.ppmpExpenditureItemId)
     setItemDialogEditItem(item)
+    setDialogPapCode(item.papCode || '')
     setItemDialogOpen(true)
   }
 
@@ -3448,199 +3593,190 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       <PageContainerDashtail
         title={pageHeaderTitle}
         badge={
-          <div className="flex items-center gap-2">
-            {/* PPMP Type Badge */}
-            {ppmp.ppmpType === 'Supplemental' || ppmp.sourcePPMPId ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-purple-200 bg-purple-50 text-purple-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
-                Supplemental{' '}
-                {ppmp.supplementalNumber ? `#${ppmp.supplementalNumber}` : ''}
-              </span>
-            ) : null}
-            {/* Finality Badge */}
-            {ppmp.ppmpType === 'Supplemental' || ppmp.sourcePPMPId ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-emerald-200 bg-emerald-50 text-emerald-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                {ppmp.status?.toLowerCase() === 'draft'
-                  ? 'Final PPMP (Draft)'
-                  : 'Final PPMP'}
-              </span>
-            ) : ppmp.isFinal ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-emerald-200 bg-emerald-50 text-emerald-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Final PPMP
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-slate-200 bg-slate-50 text-slate-600">
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                Indicative PPMP
-              </span>
-            )}
-            {/* Mode badge */}
-            {isDeptMode ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-amber-200 bg-amber-50 text-amber-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                Department PPMP
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-primary/20 bg-primary/5 text-primary">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Master PPMP
-              </span>
-            )}
-            {/* Status badge */}
-            {ppmp.status && (
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all duration-300',
-                  ppmp.status.toLowerCase() === 'approved'
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                    : ppmp.status.toLowerCase() === 'submitted' ||
-                        ppmp.status.toLowerCase() === 'pending_review' ||
-                        ppmp.status.toLowerCase() === 'pending review'
-                      ? 'border-blue-200 bg-blue-50 text-blue-700'
+        <div className="flex items-center gap-2">
+          {/* PPMP Type Badge */}
+          {ppmp.ppmpType === 'Supplemental' || ppmp.sourcePPMPId ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-purple-200 bg-purple-50 text-purple-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+              Supplemental {ppmp.supplementalNumber ? `#${ppmp.supplementalNumber}` : ''}
+            </span>
+          ) : null}
+          {/* Finality Badge */}
+          {ppmp.ppmpType === 'Supplemental' || ppmp.sourcePPMPId ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-emerald-200 bg-emerald-50 text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {ppmp.status?.toLowerCase() === 'draft' ? 'Final PPMP (Draft)' : 'Final PPMP'}
+            </span>
+          ) : ppmp.isFinal ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-emerald-200 bg-emerald-50 text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Final PPMP
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-slate-200 bg-slate-50 text-slate-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+              Indicative PPMP
+            </span>
+          )}
+          {/* Mode badge */}
+          {isDeptMode ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-amber-200 bg-amber-50 text-amber-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              Department PPMP
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-primary/20 bg-primary/5 text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              Master PPMP
+            </span>
+          )}
+          {/* Status badge */}
+          {ppmp.status && (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all duration-300',
+                ppmp.status.toLowerCase() === 'approved'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : ppmp.status.toLowerCase() === 'submitted' ||
+                    ppmp.status.toLowerCase() === 'pending_review' ||
+                    ppmp.status.toLowerCase() === 'pending review'
+                    ? 'border-blue-200 bg-blue-50 text-blue-700'
+                    : ppmp.status.toLowerCase() === 'returned'
+                      ? 'border-amber-200 bg-amber-50 text-amber-700'
                       : ppmp.status.toLowerCase() === 'rejected'
                         ? 'border-rose-200 bg-rose-50 text-rose-700'
                         : 'border-slate-200 bg-slate-50 text-slate-700',
-                )}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {ppmp.status}
-              </span>
-            )}
-          </div>
-        }
-        metadata={
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-slate-500 dark:text-slate-400 text-xs">
-            <span className="flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-              <span className="text-slate-600 dark:text-slate-300 font-medium">
-                {ppmp.officeName}
-              </span>
+              )}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              {ppmp.status}
             </span>
-            <span className="h-3 w-px bg-slate-200 dark:bg-slate-700 hidden sm:inline" />
-            <span className="flex items-center gap-1.5">
-              <CalendarDays className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-              <span>
-                Fiscal Year{' '}
-                <strong className="font-medium text-slate-600 dark:text-slate-300">
-                  {ppmp.fiscalYearName}
-                </strong>
-              </span>
-            </span>
-          </div>
-        }
-        headerVariant="branded"
-        headerSize="large"
-        backTo={true}
+          )}
+        </div>
+      }
+      metadata={
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-slate-500 dark:text-slate-400 text-xs">
+          <span className="flex items-center gap-1.5">
+            <Building2 className="h-3.5 w-3.5 text-primary/70 shrink-0" />
+            <span className="text-slate-600 dark:text-slate-300 font-medium">{ppmp.officeName}</span>
+          </span>
+          <span className="h-3 w-px bg-slate-200 dark:bg-slate-700 hidden sm:inline" />
+          <span className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5 text-primary/70 shrink-0" />
+            <span>Fiscal Year <strong className="font-medium text-slate-600 dark:text-slate-300">{ppmp.fiscalYearName}</strong></span>
+          </span>
+        </div>
+      }
+      headerVariant="branded"
+      headerSize="large"
+      backTo={true}
 
-        actions={
-          <div className="flex items-center gap-2">
-            {/* Generate Document - Export Section */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+      actions={
+        <div className="flex items-center gap-2">
+          {/* Generate Document - Export Section */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isExporting}
+                className="flex items-center gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Generate Document</span>
+                <ChevronDown className="h-3.5 w-3.5 ml-0.5 text-slate-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={() => handleExportPPMP('Pdf')}
+                disabled={isExporting}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                <span>Download PDF</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* View PPMP Guidelines Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setGuidelinesModalOpen(true)}
+            className="flex items-center gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50"
+          >
+            <FileText className="h-4 w-4" />
+            <span>PPMP Guidelines</span>
+          </Button>
+
+          {/* Visual Separator */}
+          <div className="h-5 w-px bg-slate-200" />
+
+          {ppmp.consolidatedIntoId && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider shadow-sm">
+              <Lock className="h-3.5 w-3.5 text-slate-400" />
+              Consolidated — Read Only
+            </span>
+          )}
+
+          {!ppmp.consolidatedIntoId &&
+            (ppmp.status?.toLowerCase() === 'draft' ||
+              ppmp.status?.toLowerCase() === 'rejected' ||
+              ppmp.status?.toLowerCase() === 'returned') && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        disabled={incompleteItems.length > 0}
+                        onClick={() => setSubmitConfirmOpen(true)}
+                        className={cn(
+                          "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-600/20 active:scale-[0.98]",
+                          incompleteItems.length > 0 && "opacity-50 cursor-not-allowed bg-indigo-600/60 hover:bg-indigo-600/60 shadow-none"
+                        )}
+                      >
+                        <Send className="h-4 w-4" />
+                        <span>{ppmp.status?.toLowerCase() === 'returned' ? 'Resubmit PPMP' : 'Submit PPMP'}</span>
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {incompleteItems.length > 0 && (
+                    <TooltipContent side="top" className="max-w-xs bg-slate-900 border-slate-800 text-white p-3 shadow-xl z-50">
+                      <div className="space-y-1.5 text-xs">
+                        <p className="font-bold text-red-400">Cannot Submit PPMP</p>
+                        <p className="text-slate-300">The following items are incomplete or have validation errors:</p>
+                        <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto text-slate-200">
+                          {incompleteItems.slice(0, 5).map((item) => (
+                            <li key={item.id}>{item.name || 'Unnamed Item'}</li>
+                          ))}
+                          {incompleteItems.length > 5 && (
+                            <li className="italic text-slate-400">and {incompleteItems.length - 5} more...</li>
+                          )}
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
+          {!ppmp.consolidatedIntoId &&
+            (ppmp.status?.toLowerCase() === 'submitted' ||
+              ppmp.status?.toLowerCase() === 'pending_review' ||
+              ppmp.status?.toLowerCase() === 'pending review') && (
+              <>
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={isExporting}
-                  className="flex items-center gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  onClick={() => setReturnDialogOpen(true)}
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 active:scale-[0.98]"
                 >
-                  <FileText className="h-4 w-4" />
-                  <span>Generate Document</span>
-                  <ChevronDown className="h-3.5 w-3.5 ml-0.5 text-slate-500" />
+                  <Undo2 className="h-4 w-4" />
+                  <span>Return PPMP</span>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={() => handleExportPPMP('Pdf')}
-                  disabled={isExporting}
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  <span>Download PDF</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
 
-            {/* View PPMP Guidelines Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setGuidelinesModalOpen(true)}
-              className="flex items-center gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50"
-            >
-              <FileText className="h-4 w-4" />
-              <span>PPMP Guidelines</span>
-            </Button>
-
-            {/* Visual Separator */}
-            <div className="h-5 w-px bg-slate-200" />
-
-            {ppmp.consolidatedIntoId && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider shadow-sm">
-                <Lock className="h-3.5 w-3.5 text-slate-400" />
-                Consolidated — Read Only
-              </span>
-            )}
-
-            {!ppmp.consolidatedIntoId &&
-              (ppmp.status?.toLowerCase() === 'draft' ||
-                ppmp.status?.toLowerCase() === 'rejected') && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="inline-block">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          disabled={incompleteItems.length > 0}
-                          onClick={() => setSubmitConfirmOpen(true)}
-                          className={cn(
-                            'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-600/20 active:scale-[0.98]',
-                            incompleteItems.length > 0 &&
-                              'opacity-50 cursor-not-allowed bg-indigo-600/60 hover:bg-indigo-600/60 shadow-none',
-                          )}
-                        >
-                          <Send className="h-4 w-4" />
-                          <span>Submit PPMP</span>
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    {incompleteItems.length > 0 && (
-                      <TooltipContent
-                        side="top"
-                        className="max-w-xs bg-slate-900 border-slate-800 text-white p-3 shadow-xl z-50"
-                      >
-                        <div className="space-y-1.5 text-xs">
-                          <p className="font-bold text-red-400">
-                            Cannot Submit PPMP
-                          </p>
-                          <p className="text-slate-300">
-                            The following items are incomplete or have
-                            validation errors:
-                          </p>
-                          <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto text-slate-200">
-                            {incompleteItems.slice(0, 5).map((item) => (
-                              <li key={item.id}>
-                                {item.name || 'Unnamed Item'}
-                              </li>
-                            ))}
-                            {incompleteItems.length > 5 && (
-                              <li className="italic text-slate-400">
-                                and {incompleteItems.length - 5} more...
-                              </li>
-                            )}
-                          </ul>
-                        </div>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-
-            {!ppmp.consolidatedIntoId &&
-              (ppmp.status?.toLowerCase() === 'submitted' ||
-                ppmp.status?.toLowerCase() === 'pending_review' ||
-                ppmp.status?.toLowerCase() === 'pending review') && (
                 <Button
                   variant="default"
                   size="sm"
@@ -3650,120 +3786,118 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                   <TrendingUp className="h-4 w-4" />
                   <span>Approve PPMP</span>
                 </Button>
-              )}
+              </>
+            )}
 
-            {/* Mark as Final / Unmark as Final Toggle */}
-            {!ppmp.consolidatedIntoId &&
-              ppmp.status?.toLowerCase() === 'approved' && (
-                <Button
-                  variant={ppmp.isFinal ? 'outline' : 'default'}
-                  size="sm"
-                  disabled={isTogglingFinal}
-                  onClick={() => setToggleFinalConfirmOpen(true)}
-                  className={cn(
-                    'flex items-center gap-1.5 h-9 rounded-lg font-semibold transition-all duration-300 shadow-sm',
-                    ppmp.isFinal
-                      ? 'border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400'
-                      : 'bg-slate-900 hover:bg-slate-800 text-white',
-                  )}
-                >
-                  {ppmp.isFinal ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      <span>Marked as Final</span>
-                    </>
-                  ) : (
-                    <>
-                      <Clock className="h-4 w-4" />
-                      <span>Mark as Final</span>
-                    </>
-                  )}
-                </Button>
+          {/* Mark as Final / Unmark as Final Toggle (Original PPMPs only; Supplementals are inherently final) */}
+          {!ppmp.consolidatedIntoId &&
+            ppmp.status?.toLowerCase() === 'approved' &&
+            !isSupplemental && (
+            <Button
+              variant={ppmp.isFinal ? 'outline' : 'default'}
+              size="sm"
+              disabled={isTogglingFinal}
+              onClick={() => setToggleFinalConfirmOpen(true)}
+              className={cn(
+                'flex items-center gap-1.5 h-9 rounded-lg font-semibold transition-all duration-300 shadow-sm',
+                ppmp.isFinal
+                  ? 'border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400'
+                  : 'bg-slate-900 hover:bg-slate-800 text-white'
               )}
+            >
+              {ppmp.isFinal ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <span>Marked as Final</span>
+                </>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4" />
+                  <span>Mark as Final</span>
+                </>
+              )}
+            </Button>
+          )}
 
-            {/* Create Supplemental PPMP Button (Only on Approved Original PPMPs, enabled once Finalized) */}
-            {!ppmp.consolidatedIntoId &&
-              ppmp.status?.toLowerCase() === 'approved' &&
-              ppmp.ppmpType !== 'Supplemental' &&
-              !ppmp.sourcePPMPId && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={!ppmp.isFinal}
-                          onClick={() => setSupplementalDialogOpen(true)}
-                          className={cn(
-                            'flex items-center gap-1.5 font-semibold h-9 rounded-lg transition-all',
-                            ppmp.isFinal
-                              ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-sm'
-                              : 'opacity-50 cursor-not-allowed border-slate-200 text-slate-400 hover:bg-transparent',
-                          )}
-                        >
-                          <FilePlus2 className="h-4 w-4" />
-                          <span>Create Supplemental PPMP</span>
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    {!ppmp.isFinal && (
-                      <TooltipContent
-                        side="bottom"
-                        className="text-xs max-w-xs bg-slate-900 text-white p-2"
+          {/* Create Supplemental PPMP Button (Only on Approved Original PPMPs, enabled once Finalized) */}
+          {!ppmp.consolidatedIntoId &&
+            ppmp.status?.toLowerCase() === 'approved' &&
+            ppmp.ppmpType !== 'Supplemental' &&
+            !ppmp.sourcePPMPId && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!ppmp.isFinal}
+                        onClick={() => setSupplementalDialogOpen(true)}
+                        className={cn(
+                          'flex items-center gap-1.5 font-semibold h-9 rounded-lg transition-all',
+                          ppmp.isFinal
+                            ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-sm'
+                            : 'opacity-50 cursor-not-allowed border-slate-200 text-slate-400 hover:bg-transparent',
+                        )}
                       >
-                        Mark this PPMP as Final before creating a Supplemental
-                        PPMP.
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+                        <FilePlus2 className="h-4 w-4" />
+                        <span>Create Supplemental PPMP</span>
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!ppmp.isFinal && (
+                    <TooltipContent side="bottom" className="text-xs max-w-xs bg-slate-900 text-white p-2">
+                      Mark this PPMP as Final before creating a Supplemental PPMP.
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            )}
 
-            {/* Master mode: Consolidate button (import dept PPMPs into this master) */}
-            {!isDeptMode &&
-              ppmp.isMaster &&
-              [
-                'draft',
-                'submitted',
-                'approved',
-                'pending_review',
-                'pending review',
-              ].includes((ppmp.status ?? '').toLowerCase()) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setConsolidateWorkspaceOpen(true)}
-                  className="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
-                >
-                  <Layers className="h-4 w-4" />
-                  <span>Consolidate PPMP</span>
-                </Button>
-              )}
+          {/* Master mode: Consolidate button (import dept PPMPs into this master) */}
+          {!isDeptMode &&
+            ppmp.isMaster &&
+            [
+              'draft',
+              'submitted',
+              'approved',
+              'pending_review',
+              'pending review',
+            ].includes((ppmp.status ?? '').toLowerCase()) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConsolidateWorkspaceOpen(true)}
+                className="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
+              >
+                <Layers className="h-4 w-4" />
+                <span>Consolidate PPMP</span>
+              </Button>
+            )}
 
-            {/* Department mode: Consolidate into Master button */}
-            {isDeptMode &&
-              !ppmp.consolidatedIntoId &&
-              (ppmp.status ?? '').toLowerCase() === 'approved' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDeptConsolidateOpen(true)}
-                  className="flex items-center gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                >
-                  <Layers className="h-4 w-4" />
-                  <span>Consolidate into Master</span>
-                </Button>
-              )}
-          </div>
-        }
-      >
-        <style dangerouslySetInnerHTML={{ __html: THROB_STYLE }} />
+          {/* Department mode: Consolidate into Master button */}
+          {isDeptMode &&
+            !ppmp.consolidatedIntoId &&
+            (ppmp.status ?? '').toLowerCase() === 'approved' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeptConsolidateOpen(true)}
+                className="flex items-center gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+              >
+                <Layers className="h-4 w-4" />
+                <span>Consolidate into Master</span>
+              </Button>
+            )}
+        </div>
+      }
+    >
+      <style dangerouslySetInnerHTML={{ __html: THROB_STYLE }} />
 
-        <div className="space-y-6">
-          {isEditable && incompleteItems.length > 0 && (
-            <div className="rounded-xl border border-red-300 bg-red-50/80 dark:bg-red-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-red-500 text-red-900 dark:text-red-200">
-              <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+      <div className="space-y-6">
+        {isEditable && incompleteItems.length > 0 && (
+          <div className="rounded-xl border border-red-300 bg-red-50/80 dark:bg-red-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-red-500 text-red-900 dark:text-red-200">
+            <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <h4 className="text-sm font-extrabold">
                   PPMP Submission Blocked
@@ -4122,17 +4256,21 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           onOpenChange={setItemDialogOpen}
           ppmpExpenditureItemId={itemDialogGroupId}
           itemToEdit={itemDialogEditItem}
+          defaultPapCode={defaultPapCode}
         />
 
-        <AddPPMPItemsModal
-          isOpen={itemsPickerOpen}
-          onOpenChange={setItemsPickerOpen}
-          ppmpExpenditureItemId={itemDialogGroupId}
-          officeId={ppmp?.officeId}
-          officeName={ppmp?.officeName}
-          fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
-          ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
-        />
+        {itemsPickerOpen && (
+          <AddPPMPItemsModal
+            isOpen={itemsPickerOpen}
+            onOpenChange={setItemsPickerOpen}
+            ppmpExpenditureItemId={itemDialogGroupId}
+            officeId={ppmp?.officeId}
+            officeName={ppmp?.officeName}
+            fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
+            ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
+            defaultPapCode={defaultPapCode}
+          />
+        )}
 
         <EditPPMPItemAllocationsDialog
           isOpen={allocsDialogOpen}
@@ -4185,13 +4323,31 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         <ConfirmAlertDialog
           open={submitConfirmOpen}
           onOpenChange={setSubmitConfirmOpen}
-          title="Submit PPMP?"
-          description="Are you sure you want to submit this PPMP for review? This will transition its status to Submitted."
+          title={ppmp.status?.toLowerCase() === 'returned' ? 'Resubmit PPMP?' : 'Submit PPMP?'}
+          description={
+            ppmp.status?.toLowerCase() === 'returned'
+              ? 'Are you sure you want to resubmit this PPMP for review? This will transition its status back to Submitted.'
+              : 'Are you sure you want to submit this PPMP for review? This will transition its status to Submitted.'
+          }
           onConfirm={handleSubmitPPMP}
           onCancel={() => setSubmitConfirmOpen(false)}
-          confirmLabel={isUpdatingStatus ? 'Submitting…' : 'Submit'}
+          confirmLabel={
+            isUpdatingStatus
+              ? 'Submitting…'
+              : ppmp.status?.toLowerCase() === 'returned'
+                ? 'Resubmit'
+                : 'Submit'
+          }
           cancelLabel="Cancel"
           loading={isUpdatingStatus}
+        />
+
+        <ReturnPPMPDialog
+          open={returnDialogOpen}
+          onOpenChange={setReturnDialogOpen}
+          ppmp={ppmp}
+          isSubmitting={isReturning}
+          onConfirm={handleReturnPPMP}
         />
 
         <ConfirmAlertDialog
@@ -4201,9 +4357,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           description="Are you sure you want to approve this PPMP? This action will record an approval history event."
           onConfirm={handleApprovePPMP}
           onCancel={() => setApproveConfirmOpen(false)}
-          confirmLabel={isUpdatingStatus ? 'Approving…' : 'Approve'}
+          confirmLabel={isApproving ? 'Approving…' : 'Approve'}
           cancelLabel="Cancel"
-          loading={isUpdatingStatus}
+          loading={isApproving}
         />
 
         <ConfirmAlertDialog

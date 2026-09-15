@@ -107,7 +107,7 @@ export function InboxPanel({
   // Fetch real list from API
   const { data: responseData, isPending: isLoading } = useBacResolutions({
     pathParams: {},
-    queryParams: {},
+    queryParams: { pageSize: 100 },
   })
 
   const rawProjects = useMemo<BacProject[]>(() => {
@@ -120,6 +120,16 @@ export function InboxPanel({
     }
     return []
   }, [responseData])
+
+  const totalCount = useMemo<number>(() => {
+    if (!responseData) return 0
+    if (typeof responseData === 'object' && responseData !== null) {
+      const record = responseData as Record<string, unknown>
+      if (typeof record.totalCount === 'number') return record.totalCount
+      if (typeof record.totalRows === 'number') return record.totalRows
+    }
+    return rawProjects.length
+  }, [responseData, rawProjects.length])
 
   // Client-side filtering & sorting
   const filteredResolutions = useMemo(() => {
@@ -171,8 +181,15 @@ export function InboxPanel({
       .sort((a, b) => {
         if (sortBy === 'amount-desc') return (b.abc || 0) - (a.abc || 0)
         if (sortBy === 'amount-asc') return (a.abc || 0) - (b.abc || 0)
-        // newest/oldest (default newest)
-        return 0
+        if (sortBy === 'oldest') {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          return timeA - timeB
+        }
+        // newest (default)
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        return timeB - timeA
       })
   }, [
     rawProjects,
@@ -225,8 +242,8 @@ export function InboxPanel({
   }
 
   return (
-    <Card className="border border-default-200 shadow-sm h-full flex flex-col">
-      <CardHeader className="space-y-2.5 pb-3">
+    <Card className="border border-default-200 shadow-sm h-full max-h-[600px] lg:max-h-full flex flex-col min-h-0 overflow-hidden">
+      <CardHeader className="space-y-2.5 pb-3 shrink-0">
         {/* Header Title with Total Count */}
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-sm font-bold text-foreground">
@@ -234,7 +251,7 @@ export function InboxPanel({
             BAC-Resolutions
           </CardTitle>
           <span className="text-[11px] font-semibold text-muted-foreground bg-default-100 px-2 py-0.5 rounded-full">
-            {filteredResolutions.length} of {rawProjects.length}
+            {filteredResolutions.length} of {totalCount || rawProjects.length}
           </span>
         </div>
 

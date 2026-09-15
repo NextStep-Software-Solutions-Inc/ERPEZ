@@ -146,7 +146,7 @@ export function CreateFinalAPPDialog({
                 Final APP Already Exists
               </p>
               <p className="text-xs text-amber-800">
-                A Final APP (<span className="font-mono font-bold">{indicativeApp.derivedFinalAppNumber}</span>) has already been created from this Indicative APP. Subsequent adjustments should be performed on the Final APP or by creating an Updated APP from the latest approved version.
+                A Final APP (<span className="font-bold">{indicativeApp.derivedFinalAppNumber}</span>) has already been created from this Indicative APP. Subsequent adjustments should be performed on the Final APP or by creating an Updated APP from the latest approved version.
               </p>
             </div>
             <DialogFooter className="flex items-center justify-end gap-2 pt-3 border-t">
@@ -178,7 +178,7 @@ export function CreateFinalAPPDialog({
                   Source Indicative APP — Data to carry forward:
                 </p>
                 <p className="text-sm font-bold text-amber-900">{indicativeApp.appName}</p>
-                <p className="text-xs text-amber-800 font-mono">
+                <p className="text-xs text-amber-800 font-medium">
                   Code: {indicativeApp.appCode} · FY {indicativeApp.fiscalYear}
                 </p>
                 <div className="flex items-center gap-2 mt-1">

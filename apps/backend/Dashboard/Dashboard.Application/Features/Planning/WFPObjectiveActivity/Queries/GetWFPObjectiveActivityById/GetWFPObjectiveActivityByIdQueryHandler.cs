@@ -29,6 +29,18 @@ public class GetWFPObjectiveActivityByIdQueryHandler(IUnitOfWork unitOfWork)
                 CreatedAt = target.CreatedAt,
                 CreatedBy = target.CreatedBy,
                 WFPStatus = target.WFPObjective != null && target.WFPObjective.WFP != null ? target.WFPObjective.WFP.Status.ToString() : null,
+                WFP = target.WFP != null ? new WFPResponse
+                {
+                    Id = target.WFP.Id,
+                    Status = target.WFP.Status.ToString(),
+                    GeneralObjective = target.WFP.GeneralObjective,
+                    ProjectTitle = target.WFP.ProjectTitle,
+                    ProposedBudget = target.WFP.ProposedBudget,
+                    ProjectStartDate = target.WFP.ProjectStartDate,
+                    ProjectEndDate = target.WFP.ProjectEndDate,
+                    CreatedAt = target.WFP.CreatedAt,
+                    CreatedBy = target.WFP.CreatedBy,
+                } : null,
                 WFPObjective = target.WFPObjective != null ? new WFPObjectiveResponse
                 {
                     Id = target.WFPObjective.Id,
@@ -48,6 +60,8 @@ public class GetWFPObjectiveActivityByIdQueryHandler(IUnitOfWork unitOfWork)
                         GeneralObjective = target.WFPObjective.WFP.GeneralObjective,
                         ProjectTitle = target.WFPObjective.WFP.ProjectTitle,
                         ProposedBudget = target.WFPObjective.WFP.ProposedBudget,
+                        ProjectStartDate = target.WFPObjective.WFP.ProjectStartDate,
+                        ProjectEndDate = target.WFPObjective.WFP.ProjectEndDate,
                         CreatedAt = target.WFPObjective.WFP.CreatedAt,
                         CreatedBy = target.WFPObjective.WFP.CreatedBy,
                     } : null,

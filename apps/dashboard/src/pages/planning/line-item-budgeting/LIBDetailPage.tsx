@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft,
   Download,
@@ -228,14 +228,25 @@ export default function LIBDetailPage({
   })
 
   // Fetch LIB Activities filtered by libId
-  const { data: libActivitiesData, isLoading: isLIBActivitiesLoading } =
-    useLIBActivities({
-      pathParams: {},
-      queryParams: {
-        filters: `lineItemBudgetId==${libId}`,
-      },
-      enabled: !!libId,
-    })
+  const {
+    data: libActivitiesData,
+    isLoading: isLIBActivitiesLoading,
+    refetch: refetchLibActivities,
+  } = useLIBActivities({
+    pathParams: {},
+    queryParams: {
+      filters: `lineItemBudgetId==${libId}`,
+    },
+    enabled: !!libId,
+  })
+
+  // Whenever returning from activity expenditures view, immediately refetch to evaluate readiness without delay
+  useEffect(() => {
+    if (libId && !libActivityId) {
+      void refetch()
+      void refetchLibActivities()
+    }
+  }, [libId, libActivityId, refetch, refetchLibActivities])
 
   const lib = libData?.data
   const displayActivities = libActivitiesData?.data || []
@@ -1169,9 +1180,16 @@ export function LIBActivityCard({
             </div>
 
             <div>
-              <h3 className="font-semibold text-gray-900">{activity.name}</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-gray-900">{activity.name}</h3>
+                {activity.papCode && (
+                  <span className="font-mono text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 rounded-full font-semibold">
+                    PAP: {activity.papCode}
+                  </span>
+                )}
+              </div>
 
-              {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+              {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
             </div>
           </div>
 

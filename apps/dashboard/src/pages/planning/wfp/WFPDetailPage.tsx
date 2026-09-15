@@ -23,6 +23,7 @@ import {
   Loader2,
   Trash2,
   Archive,
+  Send,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -46,8 +47,10 @@ import { updateWFPRequest } from '@/components/features/planning/wfp/wfp/handler
 import { toTitleCase, formatDisplayDate } from '@/utils/formatters'
 import AssignOPCRDialog from '@/components/features/planning/wfp/wfp/dialog/AssignOPCRDialog'
 import UpdateWFPDialog from '@/components/features/planning/wfp/wfp/dialog/UpdateWFPDialog'
+import SubmitWfpDialog, { submitWfpDialogAtom } from '@/components/features/planning/wfp/wfp/dialog/SubmitWfpDialog'
+import ApproveWfpDialog from '@/components/features/planning/wfp/wfp/dialog/ApproveWfpDialog'
 import ImportOPCRActivitiesDialog from '@/components/features/planning/wfp/wfp/dialog/ImportOPCRActivitiesDialog'
-import { updateDialogAtom } from '@/components/features/planning/wfp/wfp/atoms'
+import { updateDialogAtom, approveDialogAtom } from '@/components/features/planning/wfp/wfp/atoms'
 import { TemplateTable } from '@/components/TemplateTable'
 import { Column } from '@/components/features/planning/wfp/wfp-objective/table'
 import Toolbar from '@/components/features/planning/wfp/wfp-objective/table/Toolbar'
@@ -85,9 +88,10 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false)
   const [validationModalOpen, setValidationModalOpen] = useState(false)
   const [archiveModalOpen, setArchiveModalOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const setUpdateDialog = useSetAtom(updateDialogAtom)
+  const setSubmitDialog = useSetAtom(submitWfpDialogAtom)
+  const setApproveDialog = useSetAtom(approveDialogAtom)
 
   const { data: wfpData, isLoading, refetch: refetchWFP } = useWFP({
     pathParams: { id: wfpId },
@@ -211,21 +215,7 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
       return
     }
 
-    setIsSubmitting(true)
-    updateWFP(
-      { pathParams: { id: wfpId }, payload: { status: 'ReadyForSubmission' } },
-      {
-        onSuccess: () => {
-          setIsSubmitting(false)
-          refetchWFP()
-          toast.success('WFP is now marked ready for submission!')
-        },
-        onError: () => {
-          setIsSubmitting(false)
-          toast.error('Unable to update WFP status. Please retry.')
-        },
-      },
-    )
+    setSubmitDialog({ isOpen: true, wfpId })
   }
 
   const breadcrumbs = (
@@ -271,16 +261,23 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
           {isEditableState && actions.includes('write') && (
             <Button
               size="sm"
-              disabled={isSubmitting}
               onClick={handleSubmissionClick}
               className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs h-8 px-3"
             >
-              {isSubmitting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Check className="w-3.5 h-3.5" />
-              )}
-              Mark Ready for Submission
+              <Send className="w-3.5 h-3.5" />
+              Submit for Approval
+            </Button>
+          )}
+
+          {/* Primary Approval Action (when Submitted) */}
+          {wfp?.status === 'Submitted' && (
+            <Button
+              size="sm"
+              onClick={() => setApproveDialog({ isOpen: true, selectedId: wfpId })}
+              className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-2xs h-8 px-3"
+            >
+              <Check className="w-3.5 h-3.5" />
+              Approve WFP
             </Button>
           )}
 
@@ -473,7 +470,7 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
               Submission Readiness Validation
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              The following requirements must be resolved before marking this WFP ready for submission:
+              The following requirements must be resolved before submitting this WFP for approval:
             </DialogDescription>
           </DialogHeader>
 
@@ -550,6 +547,8 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
       </Dialog>
 
       {/* Dialog Containers */}
+      <SubmitWfpDialog onSuccess={refetchWFP} />
+      <ApproveWfpDialog onSuccess={refetchWFP} />
       <UpdateWFPDialog />
       <ImportOPCRActivitiesDialog
         open={importDialogOpen}

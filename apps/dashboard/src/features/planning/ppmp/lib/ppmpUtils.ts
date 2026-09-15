@@ -385,7 +385,7 @@ export function computePpmpManagementOverview(
 
     for (const p of rawPpmps) {
       const st = String(p.status || p.state || '').toLowerCase()
-      if (st === 'draft') draftCount++
+      if (st === 'draft' || st === 'returned') draftCount++
       else if (st === 'pending_review' || st === 'submitted' || st === 'pending') pendingCount++
       else if (st === 'approved') approvedCount++
     }
@@ -450,7 +450,7 @@ export function computePpmpManagementOverview(
 
   for (const p of scopedPpmps) {
     const st = String(p.status || p.state || '').toLowerCase()
-    if (st === 'draft') {
+    if (st === 'draft' || st === 'returned') {
       draftCount++
     } else if (st === 'pending_review' || st === 'submitted' || st === 'pending') {
       pendingCount++

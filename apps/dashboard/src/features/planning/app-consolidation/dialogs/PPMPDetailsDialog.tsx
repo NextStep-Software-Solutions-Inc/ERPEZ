@@ -65,7 +65,7 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Item Code / PAP Code</p>
-                <p className="text-sm font-bold text-slate-800 font-mono bg-white px-2.5 py-1.5 rounded border border-slate-200 inline-block">
+                <p className="text-sm font-bold text-slate-800 bg-white px-2.5 py-1.5 rounded border border-slate-200 inline-block">
                   {details?.papCode || selectedItem?.code || '—'}
                 </p>
               </div>
@@ -108,7 +108,7 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
                   {details?.officeName || details?.Office?.name || selectedItem?.office || '—'}
                 </p>
                 {details?.Office?.code && (
-                  <span className="text-[10px] font-mono text-slate-400 uppercase">Code: {details.Office.code}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-medium">Code: {details.Office.code}</span>
                 )}
               </div>
 
@@ -118,7 +118,7 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
                   {details?.fundSourceName || details?.FundSource?.name || selectedItem?.fundSource || '—'}
                 </p>
                 {details?.FundSource?.code && (
-                  <span className="text-[10px] font-mono text-slate-400 uppercase">Code: {details.FundSource.code}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-medium">Code: {details.FundSource.code}</span>
                 )}
               </div>
 

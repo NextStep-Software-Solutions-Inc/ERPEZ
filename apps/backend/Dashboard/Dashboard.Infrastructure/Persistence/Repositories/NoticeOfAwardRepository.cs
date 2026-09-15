@@ -26,4 +26,15 @@ public class NoticeOfAwardRepository : Repository<NoticeOfAward>, INoticeOfAward
                 .ThenInclude(p => p.APPItem)
                     .ThenInclude(ai => ai!.APP);
     }
+
+    public async Task<List<NoticeOfAward>> GetApprovedAvailableForPOAsync(IEnumerable<Guid> excludedIds, CancellationToken cancellationToken = default)
+    {
+        var excludedList = excludedIds.ToList();
+        return await context.NoticeOfAwards!
+            .Include(n => n.Supplier)
+            .Where(n => n.Status == ERPEZ.Domain.Enums.NoticeOfAwardStatus.Approved && !excludedList.Contains(n.Id) && !n.IsDeleted)
+            .OrderByDescending(n => n.NOADate)
+            .ToListAsync(cancellationToken);
+    }
 }
+

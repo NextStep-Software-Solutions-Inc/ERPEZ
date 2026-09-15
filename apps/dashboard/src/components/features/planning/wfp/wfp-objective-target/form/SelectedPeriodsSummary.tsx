@@ -1,4 +1,4 @@
-import { Calendar } from 'lucide-react'
+import { Calendar, X } from 'lucide-react'
 import { getFullMonthName } from './constants'
 
 interface SelectedPeriodsSummaryProps {
@@ -7,6 +7,7 @@ interface SelectedPeriodsSummaryProps {
   selectedType: string
   getPeriodDates: (period: string, type: string, projectStart?: string) => string
   projectStart?: string
+  onRemovePeriod?: (period: string) => void
 }
 
 export function SelectedPeriodsSummary({
@@ -14,7 +15,8 @@ export function SelectedPeriodsSummary({
   targetValues,
   selectedType,
   getPeriodDates,
-  projectStart
+  projectStart,
+  onRemovePeriod,
 }: SelectedPeriodsSummaryProps) {
   if (selectedCount === 0) return null
 
@@ -49,9 +51,24 @@ export function SelectedPeriodsSummary({
               </div>
             </div>
 
-            <div className="text-right border-l border-white/20 pl-4">
-              <p className="text-sm font-black leading-none">{val}</p>
-              <p className="text-[8px] uppercase font-bold opacity-80 mt-1 tracking-tighter">Target</p>
+            <div className="flex items-center gap-3">
+              <div className="text-right border-l border-white/20 pl-4">
+                <p className="text-sm font-black leading-none">{val}</p>
+                <p className="text-[8px] uppercase font-bold opacity-80 mt-1 tracking-tighter">Target</p>
+              </div>
+              {onRemovePeriod && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRemovePeriod(period)
+                  }}
+                  className="text-white/70 hover:text-white hover:bg-white/20 p-1.5 rounded-lg transition-colors cursor-pointer"
+                  title={`Remove ${period}`}
+                >
+                  <X size={15} />
+                </button>
+              )}
             </div>
           </div>
         ))}

@@ -38,6 +38,7 @@ public class BacMemberDto
 public class BacResolutionItemDetailDto
 {
     public string ItemCode { get; set; } = string.Empty;
+    public string PAPCode { get; set; } = string.Empty;
     public string ItemName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
@@ -45,6 +46,7 @@ public class BacResolutionItemDetailDto
     public decimal UnitCost { get; set; }
     public decimal TotalAmount { get; set; }
     public string OfficeName { get; set; } = string.Empty;
+    public string ProcurementModeName { get; set; } = string.Empty;
 }
 
 public class BacResolutionGroupDto
@@ -233,13 +235,15 @@ public class GenerateBacResolutionDocumentCommandHandler(
                         Items = grp.Select(ai => new BacResolutionItemDetailDto
                         {
                             ItemCode = !string.IsNullOrWhiteSpace(ai.PAPCode) ? ai.PAPCode : (ai.PPMPItem != null && !string.IsNullOrWhiteSpace(ai.PPMPItem.PAPCode) ? ai.PPMPItem.PAPCode : ai.Id.ToString()[..8]),
+                            PAPCode = !string.IsNullOrWhiteSpace(ai.PAPCode) ? ai.PAPCode : (ai.PPMPItem != null && !string.IsNullOrWhiteSpace(ai.PPMPItem.PAPCode) ? ai.PPMPItem.PAPCode : string.Empty),
                             ItemName = ai.PPMPItem != null && !string.IsNullOrWhiteSpace(ai.PPMPItem.Name) ? ai.PPMPItem.Name : (ai.Remarks ?? "APP Item"),
                             Description = ai.PPMPItem != null && !string.IsNullOrWhiteSpace(ai.PPMPItem.Description) ? ai.PPMPItem.Description : (ai.Remarks ?? string.Empty),
                             Unit = ai.PPMPItem != null && !string.IsNullOrWhiteSpace(ai.PPMPItem.Unit) ? ai.PPMPItem.Unit : "lot",
                             Quantity = 1,
                             UnitCost = ai.EffectiveABC,
                             TotalAmount = ai.EffectiveABC,
-                            OfficeName = ai.Office != null ? ai.Office.Name : officeName
+                            OfficeName = ai.Office != null ? ai.Office.Name : officeName,
+                            ProcurementModeName = ai.ProcurementMode != null ? ai.ProcurementMode.Name : (ai.PPMPItem != null && ai.PPMPItem.ProcurementMode != null ? ai.PPMPItem.ProcurementMode.Name : string.Empty)
                         }).ToList()
                     };
                     itemGroups.Add(groupDto);
@@ -306,7 +310,9 @@ public class GenerateBacResolutionDocumentCommandHandler(
                                 Quantity = ci.PRItem.RequestedQuantity > 0 ? ci.PRItem.RequestedQuantity : 1,
                                 UnitCost = ci.PRItem.UnitCost > 0 ? ci.PRItem.UnitCost : (ci.PRItem.RequestedQuantity > 0 ? ci.PRItem.Amount / ci.PRItem.RequestedQuantity : ci.PRItem.Amount),
                                 TotalAmount = ci.PRItem.Amount,
-                                OfficeName = prOffice
+                                OfficeName = prOffice,
+                                PAPCode = ci.PRItem.PPMPItem?.PAPCode ?? string.Empty,
+                                ProcurementModeName = ci.ProcurementMode?.Name ?? string.Empty
                             }).ToList()
                         };
                         itemGroups.Add(groupDto);
@@ -340,7 +346,7 @@ public class GenerateBacResolutionDocumentCommandHandler(
             : DateTime.Now.ToString("dddd, MMMM dd, yyyy");
         var resolvedLocation = !string.IsNullOrWhiteSpace(bacResolution.ResolvedLocation)
             ? bacResolution.ResolvedLocation
-            : "University of Science and Technology of Southern Philippines, Cagayan de Oro City";
+            : "Procuring Entity Premises";
 
         // Build dynamic placeholder replacement map
         var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -442,8 +448,8 @@ public class GenerateBacResolutionDocumentCommandHandler(
             })
             .ToList();
 
-        var headOfAgencyName = configuration["BacDocument:HeadOfAgencyName"] ?? "DR. AMBROSIO B. CULTURA II";
-        var headOfAgencyTitle = configuration["BacDocument:HeadOfAgencyTitle"] ?? "PRESIDENT, USTP-SYSTEM";
+        var headOfAgencyName = configuration["BacDocument:HeadOfAgencyName"] ?? string.Empty;
+        var headOfAgencyTitle = configuration["BacDocument:HeadOfAgencyTitle"] ?? "HEAD OF THE PROCURING ENTITY";
 
         var dataDto = new BacResolutionDataDto
         {

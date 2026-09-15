@@ -75,6 +75,7 @@ export type PPMPItemFormValues = z.infer<typeof ppmpItemSchema>
 interface AddPPMPItemFormProps {
   formId?: string
   initialValues?: Partial<PPMPItemFormValues>
+  defaultPapCode?: string
   onSubmit: (values: PPMPItemFormValues) => void
   isLoading?: boolean
 }
@@ -82,6 +83,7 @@ interface AddPPMPItemFormProps {
 export function AddPPMPItemForm({
   formId = 'add-ppmp-item-form',
   initialValues,
+  defaultPapCode,
   onSubmit,
   isLoading = false,
 }: AddPPMPItemFormProps) {
@@ -100,7 +102,7 @@ export function AddPPMPItemForm({
       unitPrice: initialValues?.unitPrice ?? 0,
       plannedQuantity: initialValues?.plannedQuantity ?? 1,
       procurementModeId: initialValues?.procurementModeId ?? '',
-      papCode: initialValues?.papCode ?? '',
+      papCode: defaultPapCode || initialValues?.papCode || '',
       projectType: (initialValues?.projectType as any) ?? 'Goods',
       preProcurementConference:
         initialValues?.preProcurementConference ?? false,
@@ -114,7 +116,10 @@ export function AddPPMPItemForm({
       // Validate using Zod schema before submission
       try {
         const validatedData = await ppmpItemSchema.parseAsync(value)
-        onSubmit(validatedData)
+        onSubmit({
+          ...validatedData,
+          papCode: defaultPapCode || validatedData.papCode || '',
+        })
       } catch (error) {
         if (error instanceof z.ZodError) {
           // Surface Zod validation errors to form fields with proper error display
@@ -156,7 +161,7 @@ export function AddPPMPItemForm({
       unitPrice: initialValues?.unitPrice ?? 0,
       plannedQuantity: initialValues?.plannedQuantity ?? 1,
       procurementModeId: initialValues?.procurementModeId ?? '',
-      papCode: initialValues?.papCode ?? '',
+      papCode: defaultPapCode || initialValues?.papCode || '',
       projectType: (initialValues?.projectType as any) ?? 'Goods',
       preProcurementConference:
         initialValues?.preProcurementConference ?? false,
@@ -166,7 +171,7 @@ export function AddPPMPItemForm({
       expectedDeliveryEnd: initialValues?.expectedDeliveryEnd ?? '',
       remarks: initialValues?.remarks ?? '',
     } as PPMPItemFormValues)
-  }, [initialValues, form])
+  }, [initialValues, defaultPapCode, form])
 
   return (
     <form
@@ -403,26 +408,40 @@ export function AddPPMPItemForm({
       <div>
         <form.Field
           name="papCode"
-          children={(field) => (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
-                <Label htmlFor={field.name}>PAP Code</Label>
-                <FieldDescriptionTooltip
-                  fieldKey="papCode"
-                  className="h-4 w-4"
-                />
+          children={(field) => {
+            const displayPapCode = defaultPapCode || field.state.value || initialValues?.papCode
+            return (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor={field.name}>PAP Code</Label>
+                  <FieldDescriptionTooltip
+                    fieldKey="papCode"
+                    className="h-4 w-4"
+                  />
+                </div>
+                <div className="h-9 px-3 py-2 rounded-md border border-border/60 bg-muted/40 flex items-center justify-between text-xs">
+                  {displayPapCode ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-medium text-foreground">
+                        {displayPapCode}
+                      </span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800">
+                        Inherited
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground italic text-xs">
+                      No PAP Code assigned
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Auto-inherited from parent Program / Activity / Project (PAP).
+                </p>
+                <FieldInfo field={field} />
               </div>
-              <Input
-                id={field.name}
-                placeholder="e.g. 5-02-03-010"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                disabled={isLoading}
-                className="border-default-250 focus-visible:ring-primary/20 text-xs"
-              />
-              <FieldInfo field={field} />
-            </div>
-          )}
+            )
+          }}
         />
       </div>
 

@@ -48,5 +48,11 @@ public class PurchaseOrder : BaseEntity
 
     public string? SupportingDocumentUrl { get; set; }
 
+    public string? ReturnReason { get; set; }
+
+    public Guid? ApprovedById { get; set; }
+
+    public DateTime? ApprovedAt { get; set; }
+
     public virtual List<PurchaseOrderItem> PurchaseOrderItems { get; set; } = [];
 }

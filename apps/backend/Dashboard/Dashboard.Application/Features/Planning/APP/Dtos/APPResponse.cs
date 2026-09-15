@@ -72,6 +72,8 @@ public record APPItemSummaryResponse
     public bool IsNonCSE { get; init; }
     public string PPMPItemName { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
+    public string? ItemNameOverride { get; init; }
+    public string? GeneralDescription { get; init; }
     public string Unit { get; init; } = string.Empty;
     public int Quantity { get; init; }
     public decimal UnitCost { get; init; }

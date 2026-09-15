@@ -146,15 +146,7 @@ export default function OPCRTab() {
                 Manage Office Performance Commitment and Review records
               </p>
             </div>
-            <CreateOPCRDialog
-              existingFiscalYears={opcrs
-                .map((o) =>
-                  typeof o.fiscalYear === 'number'
-                    ? o.fiscalYear
-                    : o.fiscalYear?.year,
-                )
-                .filter((y): y is number => typeof y === 'number')}
-            />
+            <CreateOPCRDialog />
           </div>
 
           <OPCRToolbar

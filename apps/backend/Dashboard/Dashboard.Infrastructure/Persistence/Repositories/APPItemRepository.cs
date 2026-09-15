@@ -74,6 +74,7 @@ public class APPItemRepository : Repository<APPItem>, IAPPItemRepository
     {
         return query
             .Include(a => a.APP)
+                .ThenInclude(app => app.FiscalYear)
             .Include(a => a.ProcurementMode)
             .Include(a => a.FundSource)
             .Include(a => a.Office)

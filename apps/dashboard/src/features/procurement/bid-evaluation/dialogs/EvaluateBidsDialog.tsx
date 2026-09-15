@@ -35,6 +35,7 @@ interface EvaluateBidsDialogProps {
   technicalWeight?: number | null
   financialWeight?: number | null
   admittedSubmissions: Array<BiddingSubmissionResponse>
+  isWinnerDeclared?: boolean
 }
 
 interface BidderInputState {
@@ -55,6 +56,7 @@ export function EvaluateBidsDialog({
   technicalWeight,
   financialWeight,
   admittedSubmissions,
+  isWinnerDeclared = false,
 }: EvaluateBidsDialogProps) {
   const evaluateBidsMutation = useEvaluateProjectBids()
 
@@ -238,6 +240,16 @@ export function EvaluateBidsDialog({
           </DialogHeader>
 
           <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+            {isWinnerDeclared && (
+              <Alert variant="outline" className="border-amber-300 bg-amber-50/70 text-amber-900">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-xs font-bold">Evaluation Locked</AlertTitle>
+                <AlertDescription className="text-xs mt-1">
+                  A winning bidder has already been declared and recommended for award for this project. Bids cannot be re-evaluated.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Criterion Selection / Configuration */}
             <div className="p-4 rounded-lg bg-default-50 border border-default-200 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -469,7 +481,7 @@ export function EvaluateBidsDialog({
               type="submit"
               color="primary"
               className="gap-1.5 font-bold shadow-sm"
-              disabled={evaluateBidsMutation.isPending}
+              disabled={evaluateBidsMutation.isPending || isWinnerDeclared}
             >
               {evaluateBidsMutation.isPending ? (
                 'Evaluating...'

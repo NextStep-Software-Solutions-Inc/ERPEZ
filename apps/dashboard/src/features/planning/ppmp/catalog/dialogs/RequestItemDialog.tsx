@@ -57,6 +57,7 @@ export interface RequestItemDialogProps {
   onOpenChange?: (open: boolean) => void
   initialOfficeId?: string
   ppmpContext?: PPMPContextInfo
+  initialValues?: Partial<RequestItemFormValues>
   onSuccess?: () => void
 }
 
@@ -65,6 +66,7 @@ export function RequestItemDialog({
   onOpenChange: controlledOnOpenChange,
   initialOfficeId,
   ppmpContext,
+  initialValues,
   onSuccess,
 }: RequestItemDialogProps = {}) {
   const [atomOpen, setAtomOpen] = useAtom(requestItemDialogOpenAtom)
@@ -127,6 +129,27 @@ export function RequestItemDialog({
       form.setFieldValue('itemCategory', '')
     }
   }, [form.getFieldValue('procurementCategory')])
+
+  // Pre-fill form values when initialValues are provided (e.g. from Custom/Ad-hoc PR item)
+  useEffect(() => {
+    if (isOpen && initialValues) {
+      if (initialValues.name !== undefined) form.setFieldValue('name', initialValues.name)
+      if (initialValues.specifications !== undefined) form.setFieldValue('specifications', initialValues.specifications)
+      if (initialValues.estimatedUnitCost !== undefined) form.setFieldValue('estimatedUnitCost', initialValues.estimatedUnitCost)
+      if (
+        initialValues.procurementCategory &&
+        (PROCUREMENT_CATEGORIES as readonly string[]).includes(initialValues.procurementCategory)
+      ) {
+        form.setFieldValue(
+          'procurementCategory',
+          initialValues.procurementCategory as RequestItemFormValues['procurementCategory'],
+        )
+      }
+      if (initialValues.itemCategory !== undefined) form.setFieldValue('itemCategory', initialValues.itemCategory)
+      if (initialValues.unitOfMeasure !== undefined) form.setFieldValue('unitOfMeasure', initialValues.unitOfMeasure)
+      if (initialValues.uomId !== undefined) form.setFieldValue('uomId', initialValues.uomId)
+    }
+  }, [isOpen, initialValues])
 
   const getMatchedOfficeId = () => {
     if (initialOfficeId) return initialOfficeId

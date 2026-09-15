@@ -176,15 +176,35 @@ export function parseUACSFundSource(
   const formattedLabel = cleanCode ? `${cleanCode} - ${displayName}${authSuffix}` : displayName
   const formattedShort = cleanCode ? `[${cleanCode}] ${displayName}` : displayName
 
+  // Build aliases and acronyms for better searchability
+  const aliases: string[] = []
+  if (financingName.toLowerCase().includes('general fund') || financingCode === '1') {
+    aliases.push('gf')
+  }
+  if (authorizationCode === '01') {
+    aliases.push('nga', 'gaa', 'general appropriations act', 'new general')
+  } else if (authorizationCode === '02') {
+    aliases.push('ca', 'continuing')
+  } else if (authorizationCode === '03') {
+    aliases.push('sa', 'supplemental')
+  } else if (authorizationCode === '04') {
+    aliases.push('aa', 'automatic')
+  }
+
+  const codeWithoutLeadingZeroes = digitsOnly.replace(/^0+/, '')
+
   // Search string combining all potential search terms
   const searchString = [
     cleanCode,
     digitsOnly,
+    codeWithoutLeadingZeroes && codeWithoutLeadingZeroes !== digitsOnly ? codeWithoutLeadingZeroes : '',
+    subCategoryCode,
     displayName,
     authorizationName,
     badge.shortLabel,
     clusterName,
     financingName,
+    ...aliases,
   ]
     .filter(Boolean)
     .join(' ')
@@ -206,4 +226,26 @@ export function parseUACSFundSource(
     formattedLabel,
     formattedShort,
   }
+}
+
+/**
+ * Returns authorization name from authorization code (e.g. '01' -> 'New General Appropriations')
+ */
+export function getUACSAuthorizationName(code: string): string {
+  return UACS_AUTHORIZATIONS[code] || `Authorization ${code}`
+}
+
+/**
+ * Returns badge styling for an authorization code
+ */
+export function getUACSBadge(code: string): UACSBadgeStyle {
+  return (
+    UACS_AUTHORIZATION_BADGES[code] || {
+      label: getUACSAuthorizationName(code),
+      shortLabel: getUACSAuthorizationName(code),
+      bg: 'bg-gray-100',
+      text: 'text-gray-700',
+      border: 'border-gray-200',
+    }
+  )
 }

@@ -8,6 +8,8 @@ using ERPEZ.Application.Common.Sieve;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Validators;
 using ERPEZ.Application.Features.Planning.OPCRItem.Validators;
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Validators;
+using ERPEZ.Application.Interfaces.Services;
+using ERPEZ.Application.Services;
 using ERPEZ.Domain.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Sieve.Models;
@@ -25,6 +27,9 @@ public static class DependencyInjection
 
         // Register PIN hashing service
         builder.Services.AddScoped<IPINHashingService, PINHashingService>();
+
+        // Register shared RFQ document context resolver (DRY: shared between generate and notice handlers)
+        builder.Services.AddScoped<IRFQDocumentContextService, RFQDocumentContextService>();
 
         // Register KPI Assignment behavior validator
         builder.Services.AddScoped<IKPIAssignmentBehaviorValidator, KPIAssignmentBehaviorValidator>();

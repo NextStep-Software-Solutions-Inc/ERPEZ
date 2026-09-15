@@ -332,19 +332,19 @@ export function BidEvaluationPage() {
         <TabsList className="bg-default-100 p-1 rounded-lg border border-default-200">
           <TabsTrigger value="opening" className="gap-2 font-bold text-xs">
             <FolderOpen className="h-4 w-4 text-primary" />
-            1. Bid Opening (Live API)
+            1. Bid Opening
           </TabsTrigger>
           <TabsTrigger value="evaluation" className="gap-2 font-bold text-xs">
             <Calculator className="h-4 w-4 text-purple-600" />
-            2. Evaluation & Ranking (Live API)
+            2. Evaluation & Ranking
           </TabsTrigger>
           <TabsTrigger value="postqual" className="gap-2 font-bold text-xs">
             <Sparkles className="h-4 w-4 text-amber-600" />
-            3. Post-Qualification (Live API)
+            3. Post-Qualification
           </TabsTrigger>
           <TabsTrigger value="award" className="gap-2 font-bold text-xs">
             <Award className="h-4 w-4 text-emerald-600" />
-            4. Award Recommendation (Live API)
+            4. Award Recommendation
           </TabsTrigger>
         </TabsList>
 

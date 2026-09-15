@@ -130,10 +130,10 @@ export function APPOverviewCard({ app }: APPOverviewCardProps) {
             <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
               APP Identifiers
             </span>
-            <p className="font-mono font-bold text-slate-900 text-sm">
+            <p className="font-bold text-slate-900 text-sm">
               {app.appNumber || '—'}
             </p>
-            <p className="font-mono text-slate-600 text-xs">
+            <p className="text-slate-600 text-xs font-medium">
               {app.appCode || '—'}
             </p>
           </div>

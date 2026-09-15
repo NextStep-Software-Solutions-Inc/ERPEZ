@@ -85,7 +85,7 @@ public class GetEligibleAppsForProcurementQueryHandler(IUnitOfWork unitOfWork)
                     ProcurementModeName = item.ProcurementMode?.Name ?? "Public Bidding",
                     FundSourceId = item.FundSourceId,
                     FundSourceName = item.FundSource?.Name ?? "GAA (General Appropriations Act)",
-                    PAPCode = item.PAPCode,
+                    PAPCode = !string.IsNullOrWhiteSpace(item.PAPCode) ? item.PAPCode : (item.PPMPItem?.PAPCode ?? string.Empty),
                     Remarks = item.Remarks,
                     IsEarlyProcurementActivity = item.IsEarlyProcurementActivity,
                     IsOutsourced = item.IsOutsourced,
@@ -111,7 +111,17 @@ public class GetEligibleAppsForProcurementQueryHandler(IUnitOfWork unitOfWork)
                     {
                         Id = item.APP.Id,
                         APPNumber = item.APP.APPNumber,
-                        Name = item.APP.Name
+                        Name = item.APP.Name,
+                        FiscalYearId = item.APP.FiscalYearId,
+                        FiscalYearName = item.APP.FiscalYear != null ? $"FY {item.APP.FiscalYear.Year}" : string.Empty,
+                        FiscalYear = item.APP.FiscalYear == null ? null : new APPFiscalYearResponse
+                        {
+                            Id = item.APP.FiscalYear.Id,
+                            Year = item.APP.FiscalYear.Year,
+                            Status = item.APP.FiscalYear.Status,
+                            StartDate = item.APP.FiscalYear.StartDate,
+                            EndDate = item.APP.FiscalYear.EndDate
+                        }
                     },
                     PPMPItem = item.PPMPItem == null ? null : new APPItemPPMPItemResponse
                     {
@@ -162,7 +172,16 @@ public class GetEligibleAppsForProcurementQueryHandler(IUnitOfWork unitOfWork)
                     Id = app.Id,
                     APPNumber = app.APPNumber,
                     Name = app.Name,
+                    FiscalYearId = app.FiscalYearId,
                     FiscalYearName = app.FiscalYear != null ? $"FY {app.FiscalYear.Year}" : string.Empty,
+                    FiscalYear = app.FiscalYear == null ? null : new APPFiscalYearResponse
+                    {
+                        Id = app.FiscalYear.Id,
+                        Year = app.FiscalYear.Year,
+                        Status = app.FiscalYear.Status,
+                        StartDate = app.FiscalYear.StartDate,
+                        EndDate = app.FiscalYear.EndDate
+                    },
                     EligibleItems = eligibleItems
                 });
             }
