@@ -150,43 +150,71 @@ public class GetRFQNoticeQueryHandler(
             m => m.IsActive && !m.IsDeleted && (m.Role.Trim() == "Chairperson" || m.Role.Contains("Chair")),
             cancellationToken);
 
+        string? resolvedChairpersonName = !string.IsNullOrWhiteSpace(bacChairperson?.FullName) ? bacChairperson.FullName.Trim() : null;
+        string? resolvedChairpersonTitle = !string.IsNullOrWhiteSpace(bacChairperson?.Position) ? bacChairperson.Position.Trim() : null;
+
+        // If not in BACMemberRepository, check live PersonnelPosition with position matching BAC Chair
+        if (string.IsNullOrWhiteSpace(resolvedChairpersonName))
+        {
+            var chairPersonnel = await unitOfWork.PersonnelPositionRepository.GetActiveByPositionTitleAsync("BAC Chair", cancellationToken);
+
+            if (chairPersonnel != null)
+            {
+                resolvedChairpersonName = chairPersonnel.User?.FullName?.Trim();
+                resolvedChairpersonTitle = chairPersonnel.Position?.FunctionalTitle?.Trim() ?? chairPersonnel.Position?.Title?.Trim();
+            }
+        }
+
         var bacSecretariat = await unitOfWork.BACMemberRepository.FindAsync(
             m => m.IsActive && !m.IsDeleted && (m.Role.Contains("Sec") || m.Position.Contains("Sec")),
             cancellationToken);
 
+        string? resolvedSecName = !string.IsNullOrWhiteSpace(bacSecretariat?.FullName) ? bacSecretariat.FullName.Trim() : null;
+
+        // If not in BACMemberRepository, check live PersonnelPosition with position matching BAC Secretariat
+        if (string.IsNullOrWhiteSpace(resolvedSecName))
+        {
+            var secPersonnel = await unitOfWork.PersonnelPositionRepository.GetActiveByPositionTitleAsync("BAC Sec", cancellationToken);
+
+            if (secPersonnel != null)
+            {
+                resolvedSecName = secPersonnel.User?.FullName?.Trim();
+            }
+        }
+
         var configBacChairpersonName = GetConfigValue(configuration, "Procurement:BacChairpersonName");
-        if (bacChairperson == null && configBacChairpersonName == null)
+        if (string.IsNullOrWhiteSpace(resolvedChairpersonName) && configBacChairpersonName == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) could not find an active BAC Chairperson in database or configuration ('Procurement:BacChairpersonName'). Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Chairperson / Secretariat Name]");
         }
 
-        var bacChairpersonName = (!string.IsNullOrWhiteSpace(bacChairperson?.FullName) ? bacChairperson.FullName.Trim() : null)
+        var bacChairpersonName = resolvedChairpersonName
             ?? configBacChairpersonName
             ?? "[BAC Chairperson / Secretariat Name]";
 
         var configBacChairpersonTitle = GetConfigValue(configuration, "Procurement:BacChairpersonTitle");
-        if (string.IsNullOrWhiteSpace(bacChairperson?.Position) && configBacChairpersonTitle == null)
+        if (string.IsNullOrWhiteSpace(resolvedChairpersonTitle) && configBacChairpersonTitle == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) could not resolve BAC Chairperson designation/title from database or configuration ('Procurement:BacChairpersonTitle'). Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Chairperson / Secretariat Designation]");
         }
 
-        var bacChairpersonTitle = (!string.IsNullOrWhiteSpace(bacChairperson?.Position) ? bacChairperson.Position.Trim() : null)
+        var bacChairpersonTitle = resolvedChairpersonTitle
             ?? configBacChairpersonTitle
             ?? "[BAC Chairperson / Secretariat Designation]";
 
         var configBacSecName = GetConfigValue(configuration, "Procurement:BacSecName");
-        if (bacSecretariat == null && configBacSecName == null)
+        if (string.IsNullOrWhiteSpace(resolvedSecName) && configBacSecName == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) could not find an active BAC Secretariat in database or configuration ('Procurement:BacSecName'). Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Secretariat]");
         }
 
-        var bacSecName = (!string.IsNullOrWhiteSpace(bacSecretariat?.FullName) ? bacSecretariat.FullName.Trim() : null)
+        var bacSecName = resolvedSecName
             ?? configBacSecName
             ?? "[BAC Secretariat]";
 

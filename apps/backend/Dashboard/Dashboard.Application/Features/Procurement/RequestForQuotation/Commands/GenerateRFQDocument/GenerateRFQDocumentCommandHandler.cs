@@ -7,7 +7,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -158,43 +157,71 @@ public class GenerateRFQDocumentCommandHandler(
             m => m.IsActive && !m.IsDeleted && (m.Role.Trim() == "Chairperson" || m.Role.Contains("Chair")),
             cancellationToken);
 
+        string? resolvedChairpersonName = !string.IsNullOrWhiteSpace(bacChairperson?.FullName) ? bacChairperson.FullName.Trim() : null;
+        string? resolvedChairpersonTitle = !string.IsNullOrWhiteSpace(bacChairperson?.Position) ? bacChairperson.Position.Trim() : null;
+
+        // If not in BACMemberRepository, check live PersonnelPosition with position matching BAC Chair
+        if (string.IsNullOrWhiteSpace(resolvedChairpersonName))
+        {
+            var chairPersonnel = await unitOfWork.PersonnelPositionRepository.GetActiveByPositionTitleAsync("BAC Chair", cancellationToken);
+
+            if (chairPersonnel != null)
+            {
+                resolvedChairpersonName = chairPersonnel.User?.FullName?.Trim();
+                resolvedChairpersonTitle = chairPersonnel.Position?.FunctionalTitle?.Trim() ?? chairPersonnel.Position?.Title?.Trim();
+            }
+        }
+
         var bacSecretariat = await unitOfWork.BACMemberRepository.FindAsync(
             m => m.IsActive && !m.IsDeleted && (m.Role.Contains("Sec") || m.Position.Contains("Sec")),
             cancellationToken);
 
+        string? resolvedSecName = !string.IsNullOrWhiteSpace(bacSecretariat?.FullName) ? bacSecretariat.FullName.Trim() : null;
+
+        // If not in BACMemberRepository, check live PersonnelPosition with position matching BAC Secretariat
+        if (string.IsNullOrWhiteSpace(resolvedSecName))
+        {
+            var secPersonnel = await unitOfWork.PersonnelPositionRepository.GetActiveByPositionTitleAsync("BAC Sec", cancellationToken);
+
+            if (secPersonnel != null)
+            {
+                resolvedSecName = secPersonnel.User?.FullName?.Trim();
+            }
+        }
+
         var configBacChairpersonName = GetConfigValue(configuration, "Procurement:BacChairpersonName");
-        if (bacChairperson == null && configBacChairpersonName == null)
+        if (string.IsNullOrWhiteSpace(resolvedChairpersonName) && configBacChairpersonName == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) could not find an active BAC Chairperson in database or configuration ('Procurement:BacChairpersonName'). Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Chairperson / Secretariat Name]");
         }
 
-        var bacChairpersonName = (!string.IsNullOrWhiteSpace(bacChairperson?.FullName) ? bacChairperson.FullName.Trim() : null)
+        var bacChairpersonName = resolvedChairpersonName
             ?? configBacChairpersonName
             ?? "[BAC Chairperson / Secretariat Name]";
 
         var configBacChairpersonTitle = GetConfigValue(configuration, "Procurement:BacChairpersonTitle");
-        if (string.IsNullOrWhiteSpace(bacChairperson?.Position) && configBacChairpersonTitle == null)
+        if (string.IsNullOrWhiteSpace(resolvedChairpersonTitle) && configBacChairpersonTitle == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) could not resolve BAC Chairperson designation/title from database or configuration ('Procurement:BacChairpersonTitle'). Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Chairperson / Secretariat Designation]");
         }
 
-        var bacChairpersonTitle = (!string.IsNullOrWhiteSpace(bacChairperson?.Position) ? bacChairperson.Position.Trim() : null)
+        var bacChairpersonTitle = resolvedChairpersonTitle
             ?? configBacChairpersonTitle
             ?? "[BAC Chairperson / Secretariat Designation]";
 
         var configBacSecName = GetConfigValue(configuration, "Procurement:BacSecName");
-        if (bacSecretariat == null && configBacSecName == null)
+        if (string.IsNullOrWhiteSpace(resolvedSecName) && configBacSecName == null)
         {
             logger.LogWarning(
                 "RFQ {RFQNumber} (ID: {RFQId}) could not find an active BAC Secretariat in database or configuration ('Procurement:BacSecName'). Falling back to placeholder '{Placeholder}'.",
                 rfq.RFQNumber, rfq.Id, "[BAC Secretariat]");
         }
 
-        var bacSecName = (!string.IsNullOrWhiteSpace(bacSecretariat?.FullName) ? bacSecretariat.FullName.Trim() : null)
+        var bacSecName = resolvedSecName
             ?? configBacSecName
             ?? "[BAC Secretariat]";
 
@@ -268,11 +295,7 @@ public class GenerateRFQDocumentCommandHandler(
         var bacResNumber = "[BAC Resolution No.]";
 
         // Query bids submitted for this RFQ
-        var bids = await unitOfWork.SupplierBidRepository.Query()
-            .Include(b => b.Supplier)
-            .Include(b => b.SupplierBidItems)
-            .Where(b => b.RFQId == rfq.Id && !b.IsDeleted)
-            .ToListAsync(cancellationToken);
+        var bids = await unitOfWork.SupplierBidRepository.GetByRFQIdAsync(rfq.Id, cancellationToken);
 
         var rawRfqItems = (rfq.RFQItems ?? []).Where(i => !i.IsDeleted).ToList();
         var rfqItems = rawRfqItems
@@ -390,6 +413,37 @@ public class GenerateRFQDocumentCommandHandler(
         var fileName = $"RFQ_{rfq.RFQNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.{extension}";
         var storagePath = await storageService.SaveAsync(bytes, fileName, cancellationToken);
 
+        string generatedByInfo = !string.IsNullOrWhiteSpace(request.GeneratedBy) ? request.GeneratedBy.Trim() : "system";
+        if (!string.IsNullOrWhiteSpace(request.GeneratedBy) && !string.Equals(request.GeneratedBy, "system", StringComparison.OrdinalIgnoreCase))
+        {
+            // Resolve user via domain interface methods — no EF dependency in Application layer
+            var generatedByValue = request.GeneratedBy.Trim();
+            var user = await unitOfWork.UserRepository.GetByExternalIdentityIdAsync(generatedByValue, cancellationToken)
+                ?? await unitOfWork.UserRepository.GetByUsernameAsync(generatedByValue, cancellationToken)
+                ?? await unitOfWork.UserRepository.GetByEmailAsync(generatedByValue, cancellationToken);
+
+            if (user != null && !string.IsNullOrWhiteSpace(user.FullName))
+            {
+                // PersonnelPositions may already be loaded (GetByExternalIdentityIdAsync includes them);
+                // otherwise fall back to a separate repository call.
+                var activePos = user.PersonnelPositions
+                    .Where(pp => pp.IsActive && !pp.IsDeleted)
+                    .FirstOrDefault()?.Position;
+
+                if (activePos == null)
+                {
+                    var positions = await unitOfWork.PersonnelPositionRepository.GetByUserIdAsync(user.Id, cancellationToken);
+                    activePos = positions.FirstOrDefault()?.Position;
+                }
+
+                var posTitle = activePos?.FunctionalTitle?.Trim() ?? activePos?.Title?.Trim();
+                generatedByInfo = !string.IsNullOrWhiteSpace(posTitle)
+                    ? $"{user.FullName.Trim()} ({posTitle})"
+                    : user.FullName.Trim();
+            }
+        }
+
+
         var record = new GeneratedDocument
         {
             DocumentType = DocumentType.Rfq,
@@ -400,7 +454,7 @@ public class GenerateRFQDocumentCommandHandler(
             FileName = fileName,
             FileSizeBytes = bytes.Length,
             FiscalYear = DateTime.UtcNow.Year.ToString(),
-            GeneratedBy = request.GeneratedBy
+            GeneratedBy = generatedByInfo
         };
 
         await unitOfWork.GeneratedDocumentRepository.AddAsync(record, cancellationToken);
