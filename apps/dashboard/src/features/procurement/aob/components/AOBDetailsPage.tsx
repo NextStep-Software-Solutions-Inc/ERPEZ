@@ -646,13 +646,19 @@ export function AOBDetailsPage({
 
         {/* Award Summary Tab */}
         <TabsContent value="summary">
-          {bidMatrix && bidMatrix.lineItems && bidMatrix.lineItems.length > 0 && flatBids.length > 0 ? (
-            <ItemBidDetailsTable lineItems={bidMatrix.lineItems} bids={flatBids} variant="detailed" />
+          {bidMatrix && bidMatrix.lineItems && bidMatrix.lineItems.length > 0 ? (
+            <ItemBidDetailsTable
+              lineItems={bidMatrix.lineItems}
+              bids={flatBids}
+              aob={aob}
+              variant="detailed"
+            />
           ) : (
             <Card>
               <CardContent className="pt-6 text-center py-12">
                 <AlertCircle className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-gray-600">No award summary data available</p>
+                <p className="text-gray-600 font-medium">No award summary data available</p>
+                <p className="text-sm text-gray-500 mt-1">Link RFQs to generate the line items and award evaluation summary.</p>
               </CardContent>
             </Card>
           )}

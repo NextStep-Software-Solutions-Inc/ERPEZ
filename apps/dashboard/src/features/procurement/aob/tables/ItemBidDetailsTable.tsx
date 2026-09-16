@@ -1,10 +1,10 @@
-/**
+﻿/**
  * Item Bid Details Table Component
  * Summary view of winning bids for each line item
- * Shows final award decisions and pricing
+ * Shows final award decisions, savings analysis, and bid details inspection
  */
 
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import {
   createColumnHelper,
   flexRender,
@@ -14,38 +14,40 @@ import {
 } from '@tanstack/react-table'
 import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trophy, AlertCircle } from 'lucide-react'
-import type { SupplierBid, LineItem } from '../types/aobTypes'
+import { Trophy, AlertCircle, TrendingDown, Eye, CheckCircle2 } from 'lucide-react'
+import type { SupplierBid, LineItem, AOB } from '../types/aobTypes'
+import { ItemBidDetailsDialog, type ItemSummaryData } from '../dialogs/ItemBidDetailsDialog'
 
 interface ItemBidDetailsTableProps {
   lineItems: LineItem[]
-  bids: SupplierBid[]
+  bids?: SupplierBid[]
+  aob?: AOB
   variant?: 'compact' | 'detailed'
 }
 
-interface ItemSummary {
-  itemId: string
-  itemCode: string
-  description: string
-  quantity: number
-  unit: string
-  abc: number
-  winnerSupplier?: string
-  winnerBid?: SupplierBid
-  secondPlace?: SupplierBid
-  totalBids: number
-  responsiveBids: number
-}
+export type ItemSummary = ItemSummaryData
 
 const columnHelper = createColumnHelper<ItemSummary>()
+
+function formatPHP(amount: number | null | undefined): string {
+  if (amount == null) return '-'
+  return `₱${amount.toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
+}
 
 /**
  * Create column definitions for item bid summary
  */
-function createItemBidColumns(variant: 'compact' | 'detailed' = 'detailed'): ColumnDef<ItemSummary>[] {
-  // Columns inferred by columnHelper; return type ensures type safety
+function createItemBidColumns(
+  variant: 'compact' | 'detailed' = 'detailed',
+  onViewItemDetails?: (item: ItemSummary) => void
+): ColumnDef<ItemSummary>[] {
   const columns = []
+
   if (variant === 'compact') {
     columns.push(
       columnHelper.accessor('itemCode', {
@@ -68,11 +70,11 @@ function createItemBidColumns(variant: 'compact' | 'detailed' = 'detailed'): Col
           const item = info.row.original
           return item.winnerSupplier ? (
             <div className="flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-yellow-500" />
+              <Trophy className="w-4 h-4 text-yellow-500 flex-shrink-0" />
               <span className="text-sm font-medium">{item.winnerSupplier}</span>
             </div>
           ) : (
-            <span className="text-xs bg-amber-50 px-2 py-1 rounded">
+            <span className="text-xs bg-amber-50 text-amber-800 px-2 py-1 rounded">
               Not Awarded
             </span>
           )
@@ -84,12 +86,31 @@ function createItemBidColumns(variant: 'compact' | 'detailed' = 'detailed'): Col
         size: 130,
         cell: (info) => {
           const item = info.row.original
+          const price = item.winnerBid?.totalBid ?? (item.winnerBid?.unitBid ? item.winnerBid.unitBid * item.quantity : null)
           return (
             <div className="text-right font-semibold">
-              {item.winnerBid?.totalBid ? `₱${item.winnerBid.totalBid.toLocaleString()}` : '-'}
+              {price != null ? formatPHP(price) : '-'}
             </div>
           )
         },
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: () => <div className="text-center">Action</div>,
+        size: 120,
+        cell: (info) => (
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewItemDetails?.(info.row.original)}
+              className="h-7 text-xs gap-1"
+            >
+              <Eye className="w-3.5 h-3.5 text-blue-600" />
+              View
+            </Button>
+          </div>
+        ),
       })
     )
     return columns as ColumnDef<ItemSummary>[]
@@ -99,51 +120,56 @@ function createItemBidColumns(variant: 'compact' | 'detailed' = 'detailed'): Col
   columns.push(
     columnHelper.accessor('itemCode', {
       header: 'Item',
-      size: 80,
+      size: 90,
       cell: (info) => (
-        <div>
-          <div className="font-semibold text-sm">{info.getValue() as string}</div>
-        </div>
+        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+          {info.getValue() as string}
+        </span>
       ),
     }),
     columnHelper.accessor('description', {
       header: 'Description',
-      size: 200,
+      size: 220,
       cell: (info) => (
-        <div className="text-sm text-gray-700 line-clamp-2">{info.getValue() as string}</div>
+        <div>
+          <div className="font-semibold text-sm text-gray-900 line-clamp-1">{info.row.original.itemName || info.getValue() as string}</div>
+          <div className="text-xs text-muted-foreground line-clamp-2">{info.getValue() as string}</div>
+        </div>
       ),
     }),
     columnHelper.accessor('quantity', {
-      header: 'Qty',
-      size: 60,
+      header: () => <div className="text-center">Qty</div>,
+      size: 70,
       cell: (info) => (
-        <div className="text-center">
-          {info.getValue() as number} {info.row.original.unit}
+        <div className="text-center font-medium text-xs">
+          {info.getValue() as number} {info.row.original.unit || 'unit'}
         </div>
       ),
     }),
     columnHelper.display({
       id: 'abc',
-      header: 'ABC',
-      size: 120,
+      header: () => <div className="text-right">ABC Budget</div>,
+      size: 130,
       cell: (info) => {
         const item = info.row.original
+        const unitABC = item.quantity > 0 ? item.abc / item.quantity : item.abc
         return (
-          <div className="text-right font-semibold text-sm">
-            ₱{item.abc.toLocaleString()}
+          <div className="text-right">
+            <div className="font-bold text-sm text-gray-900">{formatPHP(item.abc)}</div>
+            <div className="text-[11px] text-muted-foreground">{formatPHP(unitABC)} / unit</div>
           </div>
         )
       },
     }),
     columnHelper.display({
       id: 'bids',
-      header: 'Bids',
+      header: () => <div className="text-center">Bids</div>,
       size: 80,
       cell: (info) => {
         const item = info.row.original
         return (
           <div className="text-center">
-            <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+            <span className="text-xs font-semibold bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
               {item.responsiveBids}/{item.totalBids}
             </span>
           </div>
@@ -153,54 +179,57 @@ function createItemBidColumns(variant: 'compact' | 'detailed' = 'detailed'): Col
     columnHelper.display({
       id: 'winner',
       header: 'Awarded Supplier',
-      size: 180,
+      size: 200,
       cell: (info) => {
         const item = info.row.original
         return item.winnerSupplier ? (
-          <div className="flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-            <div className="flex-1">
-              <div className="font-semibold text-sm">{item.winnerSupplier}</div>
-              {item.winnerBid?.qualityScore && (
-                <div className="text-xs text-gray-600">
-                  Quality: {item.winnerBid.qualityScore}/100
-                </div>
-              )}
+          <div className="flex items-start gap-2">
+            <Trophy className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-sm text-gray-900 truncate" title={item.winnerSupplier}>
+                {item.winnerSupplier}
+              </div>
+              <div className="text-[11px] text-emerald-700 font-medium">
+                {item.winnerBid?.winningReason || 'Lowest Calculated Responsive Bid'}
+              </div>
             </div>
           </div>
         ) : (
-          <span className="text-xs bg-amber-50 px-2 py-1 rounded text-amber-900">
-            ⚠️ Not Awarded
+          <span className="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-medium">
+            <AlertCircle className="w-3 h-3" /> Not Awarded
           </span>
         )
       },
     }),
     columnHelper.display({
       id: 'winnerPrice',
-      header: 'Unit Price',
+      header: () => <div className="text-right">Award Unit Price</div>,
       size: 130,
-      cell: (info) => (
-        <div className="text-right font-semibold text-sm">
-          {info.row.original.winnerBid?.unitBid
-            ? `₱${info.row.original.winnerBid.unitBid.toLocaleString()}`
-            : '-'}
-        </div>
-      ),
+      cell: (info) => {
+        const item = info.row.original
+        const unitBid = item.winnerBid?.unitBid ?? item.winnerBid?.unitPrice
+        return (
+          <div className="text-right font-medium text-sm">
+            {unitBid != null ? formatPHP(unitBid) : '-'}
+          </div>
+        )
+      },
     }),
     columnHelper.display({
       id: 'awardTotal',
-      header: 'Total Award',
+      header: () => <div className="text-right">Total Award</div>,
       size: 140,
       cell: (info) => {
         const item = info.row.original
-        const exceedsABC = item.winnerBid?.totalBid && item.winnerBid.totalBid > item.abc
+        const totalBid = item.winnerBid?.totalBid ?? (item.winnerBid?.unitBid ? item.winnerBid.unitBid * item.quantity : null)
+        const exceedsABC = totalBid != null && totalBid > item.abc
         return (
-          <div className={`text-right font-bold text-sm flex items-center justify-end gap-1 ${exceedsABC ? 'text-red-600 bg-red-50 px-2 py-1 rounded' : 'text-green-600'}`}>
-            {item.winnerBid?.totalBid
-              ? `₱${item.winnerBid.totalBid.toLocaleString()}`
-              : '-'}
+          <div className="text-right">
+            <div className={`font-bold text-sm ${exceedsABC ? 'text-red-600' : 'text-emerald-700'}`}>
+              {totalBid != null ? formatPHP(totalBid) : '-'}
+            </div>
             {exceedsABC && (
-              <Badge variant="soft" className="text-xs bg-red-200 text-red-800 whitespace-nowrap">
+              <Badge variant="soft" className="text-[10px] bg-red-100 text-red-800">
                 Over ABC
               </Badge>
             )}
@@ -210,60 +239,157 @@ function createItemBidColumns(variant: 'compact' | 'detailed' = 'detailed'): Col
     }),
     columnHelper.display({
       id: 'savings',
-      header: 'Budget Savings',
-      size: 140,
+      header: () => <div className="text-right">Budget Savings</div>,
+      size: 150,
       cell: (info) => {
         const item = info.row.original
-        if (!item.winnerBid?.totalBid) return <span>-</span>
+        if (!item.winnerSupplier) return <div className="text-right text-gray-400 text-sm">-</div>
+
+        if (item.savingsAmount > 0) {
+          return (
+            <div className="text-right">
+              <div className="font-bold text-sm text-emerald-600">
+                +{formatPHP(item.savingsAmount)}
+              </div>
+              <div className="text-[11px] text-emerald-700 font-semibold">
+                ({item.savingsPercentage.toFixed(1)}% saved)
+              </div>
+            </div>
+          )
+        } else if (item.savingsAmount === 0) {
+          return (
+            <div className="text-right">
+              <div className="font-medium text-xs text-gray-600">₱0.00</div>
+              <div className="text-[10px] text-gray-400">(0.0%)</div>
+            </div>
+          )
+        } else {
+          return (
+            <div className="text-right">
+              <div className="font-bold text-sm text-red-600">
+                -{formatPHP(Math.abs(item.savingsAmount))}
+              </div>
+              <div className="text-[11px] text-red-600 font-semibold">
+                ({Math.abs(item.savingsPercentage).toFixed(1)}% over)
+              </div>
+            </div>
+          )
+        }
+      },
+    }),
+    columnHelper.display({
+      id: 'actions',
+      header: () => <div className="text-center font-semibold">Actions</div>,
+      size: 165,
+      cell: (info) => {
+        const item = info.row.original
         return (
-          <div className="text-right text-sm">
-            <span className="text-gray-600">-</span>
+          <div className="flex items-center justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewItemDetails?.(item)}
+              className="h-8 px-2.5 text-xs font-medium gap-1.5 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 transition-colors"
+            >
+              <Eye className="w-3.5 h-3.5 text-blue-600" />
+              <span>View Item Bid Details</span>
+            </Button>
           </div>
         )
       },
     })
   )
-  
+
   return columns as ColumnDef<ItemSummary>[]
 }
 
 export function ItemBidDetailsTable({
   lineItems,
-  bids,
+  bids = [],
+  aob,
   variant = 'detailed',
 }: ItemBidDetailsTableProps) {
-  const columns = useMemo(() => createItemBidColumns(variant), [variant])
+  const [viewingItem, setViewingItem] = useState<ItemSummary | null>(null)
 
-  // Build item summaries
+  // Build item summaries with comprehensive winner, bid, and savings resolution
   const itemSummaries = useMemo<ItemSummary[]>(() => {
-    return lineItems.map((item) => {
-      const itemBids = bids.filter((bid) => bid.lineItemId === item.id)
-      // Responsive bids are those with a valid unit bid price
-      // Quality score requirements depend on the award criterion (LCRB/MEARB/MARB)
-      // and should be validated separately based on the specific criterion
-      const responsiveBids = itemBids.filter((bid) => bid.unitBid != null)
-      const winnerBid = itemBids.find((bid) => bid.isWinner)
+    return lineItems.map((item, index) => {
+      // Find all bids for this line item
+      const itemBids = (item.lineItems && item.lineItems.length > 0)
+        ? item.lineItems
+        : bids.filter((b) => b.lineItemId === item.id || b.rfqItemId === item.rfqItemId || b.rfqItemId === item.id)
+
+      const responsiveBids = itemBids.filter((b) => b.unitBid != null && b.isResponsive !== false)
+
+      // 1. Check if an official awarded item exists on the AOB entity
+      const awardedItem = aob?.awardedItems?.find(
+        (ai) => ai.rfqItemId === item.rfqItemId || ai.rfqItemId === item.id
+      )
+
+      let winnerBid = itemBids.find((b) => b.isWinner)
+      let winnerSupplier = winnerBid?.supplierName
+      let winnerSupplierId = winnerBid?.supplierId
+
+      if (awardedItem) {
+        winnerSupplier = awardedItem.winningSupplierName
+        winnerSupplierId = awardedItem.winningSupplierId
+        winnerBid = itemBids.find((b) => b.supplierId === awardedItem.winningSupplierId) || {
+          supplierId: awardedItem.winningSupplierId,
+          supplierName: awardedItem.winningSupplierName,
+          unitBid: awardedItem.awardedUnitPrice,
+          totalBid: awardedItem.totalAwardedAmount || (awardedItem.awardedUnitPrice * awardedItem.awardedQuantity),
+          isWinner: true,
+          winningReason: awardedItem.awardReason || 'Lowest calculated responsive quotation',
+        }
+      } else if (item.selectedWinnerId) {
+        winnerSupplierId = item.selectedWinnerId
+        winnerBid = item.selectedWinnerBid || itemBids.find((b) => b.supplierId === item.selectedWinnerId)
+        winnerSupplier = winnerBid?.supplierName
+      }
+
+      // Sorted bids for second place calculation
       const sortedBids = [...itemBids].sort((a, b) => {
-        if (!a.unitBid) return 1
-        if (!b.unitBid) return -1
-        return a.unitBid - b.unitBid
+        const priceA = a.unitBid ?? a.unitPrice ?? Infinity
+        const priceB = b.unitBid ?? b.unitPrice ?? Infinity
+        return priceA - priceB
       })
+
+      const secondPlace = sortedBids.find((b) => b.supplierId !== winnerSupplierId && b.isResponsive)
+
+      const abc = item.approvedBudgetForContract || (item.abcUnitPrice ? item.abcUnitPrice * item.quantity : 0)
+      const awardedTotal = winnerBid?.totalBid ?? (winnerBid?.unitBid ? winnerBid.unitBid * item.quantity : 0)
+
+      const savingsAmount = winnerSupplier ? abc - awardedTotal : 0
+      const savingsPercentage = winnerSupplier && abc > 0 ? (savingsAmount / abc) * 100 : 0
 
       return {
         itemId: item.id,
-        itemCode: item.itemCode,
-        description: item.description,
+        rfqItemId: item.rfqItemId,
+        itemCode: item.itemCode || `Item #${index + 1}`,
+        description: item.description || item.itemName || 'Line item',
+        itemName: item.itemName || item.name,
         quantity: item.quantity,
-        unit: item.unit,
-        abc: item.approvedBudgetForContract,
-        winnerSupplier: winnerBid?.supplierName,
+        unit: item.unit || 'unit',
+        abc,
+        abcUnitPrice: item.abcUnitPrice,
+        winnerSupplier,
+        winnerSupplierId,
         winnerBid,
-        secondPlace: sortedBids[1] && sortedBids[1].id !== winnerBid?.id ? sortedBids[1] : undefined,
+        secondPlace,
         totalBids: itemBids.length,
         responsiveBids: responsiveBids.length,
+        savingsAmount,
+        savingsPercentage,
+        rawItem: item,
+        allBids: itemBids,
       }
     })
-  }, [lineItems, bids])
+  }, [lineItems, bids, aob])
+
+  const columns = useMemo(
+    () => createItemBidColumns(variant, (item) => setViewingItem(item)),
+    [variant]
+  )
 
   const table = useReactTable({
     data: itemSummaries,
@@ -271,109 +397,205 @@ export function ItemBidDetailsTable({
     getCoreRowModel: getCoreRowModel(),
   })
 
-  // Check if all items are awarded
-  const allAwarded = itemSummaries.every((item) => item.winnerSupplier)
-  const totalAwardAmount = itemSummaries.reduce(
-    (sum, item) => sum + (item.winnerBid?.totalBid || 0),
-    0
-  )
+  // Award Statistics calculations
+  const totalItems = itemSummaries.length
+  const awardedCount = itemSummaries.filter((i) => i.winnerSupplier).length
+  const pendingCount = totalItems - awardedCount
+  const allAwarded = totalItems > 0 && awardedCount === totalItems
+
+  const totalABC = useMemo(() => {
+    return itemSummaries.reduce((sum, item) => sum + item.abc, 0)
+  }, [itemSummaries])
+
+  const totalAwardAmount = useMemo(() => {
+    return itemSummaries.reduce((sum, item) => {
+      if (!item.winnerSupplier) return sum
+      return sum + (item.winnerBid?.totalBid ?? (item.winnerBid?.unitBid ? item.winnerBid.unitBid * item.quantity : 0))
+    }, 0)
+  }, [itemSummaries])
+
+  const totalAwardedABC = useMemo(() => {
+    return itemSummaries
+      .filter((i) => i.winnerSupplier)
+      .reduce((sum, item) => sum + item.abc, 0)
+  }, [itemSummaries])
+
+  const totalSavings = totalAwardedABC - totalAwardAmount
+  const totalSavingsPercent = totalAwardedABC > 0 ? (totalSavings / totalAwardedABC) * 100 : 0
+
+  const uniqueWinningSuppliers = useMemo(() => {
+    const suppliers = new Set<string>()
+    itemSummaries.forEach((i) => {
+      if (i.winnerSupplier) suppliers.add(i.winnerSupplier)
+    })
+    return suppliers
+  }, [itemSummaries])
+
+  const winningSuppliersSubtitle = useMemo(() => {
+    const arr = Array.from(uniqueWinningSuppliers)
+    if (arr.length === 0) return 'No suppliers awarded yet'
+    if (arr.length === 1) return arr[0]
+    return `Across ${arr.length} unique vendors`
+  }, [uniqueWinningSuppliers])
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Award Summary</CardTitle>
-        <CardDescription>
-          Final bid evaluation and award decisions by line item
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="p-3 bg-blue-50 rounded border border-blue-200">
-            <div className="text-xs text-gray-600">Total Items</div>
-            <div className="text-2xl font-bold text-blue-600">{itemSummaries.length}</div>
-          </div>
-          <div className="p-3 bg-green-50 rounded border border-green-200">
-            <div className="text-xs text-gray-600">Awarded</div>
-            <div className="text-2xl font-bold text-green-600">
-              {itemSummaries.filter((i) => i.winnerSupplier).length}
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Award Summary</CardTitle>
+          <CardDescription>
+            Final bid evaluation and award decisions by line item
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Summary Stats Cards */}
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {/* 1. Total Line Items */}
+            <div className="p-4 bg-blue-50/70 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900/50">
+              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
+                Total Line Items
+              </div>
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">
+                {totalItems}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Total ABC: {formatPHP(totalABC)}
+              </div>
             </div>
-          </div>
-          <div className="p-3 bg-amber-50 rounded border border-amber-200">
-            <div className="text-xs text-gray-600">Pending</div>
-            <div className="text-2xl font-bold text-amber-600">
-              {itemSummaries.filter((i) => !i.winnerSupplier).length}
-            </div>
-          </div>
-          <div className="p-3 bg-purple-50 rounded border border-purple-200">
-            <div className="text-xs text-gray-600">Total Award</div>
-            <div className="text-lg font-bold text-purple-600">
-              ₱{totalAwardAmount.toLocaleString()}
-            </div>
-          </div>
-        </div>
 
-        {/* Status Alert */}
-        {!allAwarded && (
-          <div className="flex items-start gap-3 p-4 bg-amber-50 rounded border border-amber-200">
-            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <h4 className="font-semibold text-sm text-amber-900">
-                {itemSummaries.filter((i) => !i.winnerSupplier).length} items awaiting award
-              </h4>
-              <p className="text-xs text-amber-800 mt-1">
-                Please select winners for all line items before submitting
-              </p>
+            {/* 2. Items Awarded */}
+            <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-900/50">
+              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
+                Items Awarded
+              </div>
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+                {awardedCount} of {totalItems}
+              </div>
+              <div className="mt-1">
+                {allAwarded ? (
+                  <Badge variant="soft" className="bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
+                    100% Completed
+                  </Badge>
+                ) : (
+                  <Badge variant="soft" className="bg-amber-100 text-amber-800 text-[10px] font-semibold">
+                    {pendingCount} Pending Award
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* 3. Winning Suppliers */}
+            <div className="p-4 bg-purple-50/70 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-900/50">
+              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
+                Winning Suppliers
+              </div>
+              <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">
+                {uniqueWinningSuppliers.size}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate" title={winningSuppliersSubtitle}>
+                {winningSuppliersSubtitle}
+              </div>
+            </div>
+
+            {/* 4. Total Award Amount & Savings */}
+            <div className="p-4 bg-amber-50/70 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900/50">
+              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
+                Total Award Amount
+              </div>
+              <div className="text-xl font-bold text-amber-700 dark:text-amber-400">
+                {formatPHP(totalAwardAmount)}
+              </div>
+              {totalAwardedABC > 0 && totalAwardAmount > 0 ? (
+                <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 mt-1">
+                  <TrendingDown className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>
+                    Savings: {formatPHP(totalSavings)} ({totalSavingsPercent.toFixed(1)}% vs ABC)
+                  </span>
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground mt-1">Awaiting winner selection</div>
+              )}
             </div>
           </div>
-        )}
 
-        {/* Table */}
-        <div className="overflow-x-auto border rounded">
-          <UITable>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      style={{
-                        width: header.getSize(),
-                      }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="hover:bg-gray-50">
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      style={{
-                        width: cell.column.getSize(),
-                      }}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+          {/* Status Alert */}
+          {!allAwarded && totalItems > 0 && (
+            <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-sm text-amber-900">
+                  {pendingCount} line item{pendingCount > 1 ? 's' : ''} awaiting award decision
+                </h4>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  Review submitted quotations in the Bid Evaluation Matrix and select winning suppliers for each line item.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Table */}
+          <div className="overflow-x-auto border rounded-lg">
+            <UITable>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="bg-gray-50/80 dark:bg-gray-900/50">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        style={{
+                          width: header.getSize(),
+                        }}
+                        className="text-xs font-semibold text-gray-700 dark:text-gray-300"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="text-center py-8 text-sm text-muted-foreground">
+                      No line items available in this AOB.
                     </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </UITable>
-        </div>
-      </CardContent>
-    </Card>
+                  </TableRow>
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id} className="hover:bg-gray-50/70 dark:hover:bg-gray-900/40">
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          style={{
+                            width: cell.column.getSize(),
+                          }}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </UITable>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* View Item Bid Details Dialog */}
+      <ItemBidDetailsDialog
+        open={Boolean(viewingItem)}
+        onOpenChange={(open) => !open && setViewingItem(null)}
+        item={viewingItem}
+      />
+    </>
   )
 }
