@@ -30,7 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ChevronLeft, MoreVertical, AlertCircle, CheckCircle, Clock, Download, Info, Trophy, Printer, Trash2, Send, Plus } from 'lucide-react'
+import { ChevronLeft, MoreVertical, AlertCircle, CheckCircle, Clock, Download, Info, Trophy, Printer, Trash2, Send, Plus, X } from 'lucide-react'
 import { BidEvaluationMatrix } from '../tables/BidEvaluationMatrix'
 import { ItemBidDetailsTable } from '../tables/ItemBidDetailsTable'
 import { AddRFQsAndBidsDialog } from '../dialogs/AddRFQsAndBidsDialog'
@@ -46,10 +46,10 @@ import {
   useQueryClient,
 } from 'erpez-shared-lib'
 import { selectWinnerRequest } from '../handlers/selectWinnerRequest'
-import { getAOBDetailRequest } from '../handlers/getAOBDetailRequest'
-import { getBidMatrixRequest } from '../handlers/getBidMatrixRequest'
+import { unlinkRFQRequest } from '../handlers/unlinkRFQRequest'
 
 const useSelectWinner = createMutationHookFromTemplate(selectWinnerRequest)
+const useUnlinkRFQ = createMutationHookFromTemplate(unlinkRFQRequest)
 
 interface AOBDetailsPageProps {
   aob: AOB
@@ -145,9 +145,11 @@ export function AOBDetailsPage({
   const [showReturnDialog, setShowReturnDialog] = useState(false)
   const [showSelectWinnerDialog, setShowSelectWinnerDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [rfqToUnlink, setRfqToUnlink] = useState<{ id: string; rfqNumber: string } | null>(null)
 
   const queryClient = useQueryClient()
   const { mutateAsync: awardAOB } = useSelectWinner()
+  const { mutateAsync: unlinkRFQ, isPending: isUnlinkingRFQ } = useUnlinkRFQ()
 
   useEffect(() => {
     setBidMatrix(initialBidMatrix)
@@ -156,7 +158,42 @@ export function AOBDetailsPage({
   const hasBidData = Boolean(bidMatrix && bidMatrix.lineItems && bidMatrix.lineItems.length > 0)
   const canModifyAOB = (aob.status === AOBStatus.DRAFT || aob.status === AOBStatus.RETURNED) && !isAdmin
 
+  const linkedRFQs = useMemo(() => {
+    if (aob.rfqs && aob.rfqs.length > 0) return aob.rfqs
+    if (bidMatrix?.linkedRFQs && bidMatrix.linkedRFQs.length > 0) return bidMatrix.linkedRFQs
+    return []
+  }, [aob.rfqs, bidMatrix?.linkedRFQs])
+
   const allItemsAwarded = useMemo(() => areAllItemsAwarded(bidMatrix), [bidMatrix])
+
+  const handleConfirmUnlinkRFQ = useCallback(async () => {
+    if (!rfqToUnlink || !aob.id) return
+
+    try {
+      await unlinkRFQ({
+        pathParams: { id: aob.id, rfqId: rfqToUnlink.id },
+      })
+
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (k) => typeof k === 'string' && !!aob.id && k.includes(aob.id)
+          ),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aob.id}`],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aob.id}/matrix`],
+      })
+
+      toast.success(`Successfully unlinked ${rfqToUnlink.rfqNumber}`)
+      setRfqToUnlink(null)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to unlink RFQ'
+      toast.error(msg)
+    }
+  }, [rfqToUnlink, aob.id, unlinkRFQ, queryClient])
 
   const handleConfirmWinners = useCallback(
     async (selections: Record<string, string>) => {
@@ -184,11 +221,17 @@ export function AOBDetailsPage({
             pathParams: { id: aob.id },
             payload: { awardedItems },
           })
-          void queryClient.invalidateQueries({
-            queryKey: [getAOBDetailRequest.endpoint, aob.id],
+          await queryClient.invalidateQueries({
+            predicate: (query) =>
+              query.queryKey.some(
+                (k) => typeof k === 'string' && !!aob.id && k.includes(aob.id)
+              ),
           })
           void queryClient.invalidateQueries({
-            queryKey: [getBidMatrixRequest.endpoint, aob.id],
+            queryKey: [`/aobs/${aob.id}`],
+          })
+          void queryClient.invalidateQueries({
+            queryKey: [`/aobs/${aob.id}/matrix`],
           })
           toast.success('Winning bids saved successfully')
         }
@@ -376,8 +419,34 @@ export function AOBDetailsPage({
           <CardContent>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">RFQ Number</div>
-                <div className="font-semibold mt-1">{aob.rfqNumber || '-'}</div>
+                <div className="text-xs font-semibold text-gray-600 uppercase">Linked RFQs</div>
+                <div className="mt-1 flex flex-wrap gap-1.5 items-center">
+                  {linkedRFQs.length > 0 ? (
+                    linkedRFQs.map((rfq) => (
+                      <span
+                        key={rfq.id}
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                      >
+                        {rfq.rfqNumber}
+                        {canModifyAOB && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setRfqToUnlink({ id: rfq.id, rfqNumber: rfq.rfqNumber })
+                            }}
+                            className="text-blue-500 hover:text-red-600 rounded p-0.5 hover:bg-blue-100 transition-colors"
+                            title={`Unlink ${rfq.rfqNumber}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="font-semibold text-sm mt-1 block">{aob.rfqNumber || '-'}</span>
+                  )}
+                </div>
               </div>
               <div>
                 <div className="text-xs font-semibold text-gray-600 uppercase">Award Criterion</div>
@@ -386,7 +455,7 @@ export function AOBDetailsPage({
               <div>
                 <div className="text-xs font-semibold text-gray-600 uppercase">Created</div>
                 <div className="font-semibold text-sm mt-1">
-                  {new Date(aob.createdAt).toLocaleDateString()}
+                  {aob.createdAt ? new Date(aob.createdAt).toLocaleDateString() : '-'}
                 </div>
               </div>
               <div>
@@ -654,13 +723,76 @@ export function AOBDetailsPage({
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-600 uppercase">Created Date</label>
-                  <p className="font-medium mt-1">{new Date(aob.createdAt).toLocaleDateString()}</p>
+                  <p className="font-medium mt-1">{aob.createdAt ? new Date(aob.createdAt).toLocaleDateString() : '-'}</p>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-600 uppercase">Created By</label>
                   <p className="font-medium mt-1">{aob.createdBy || 'System'}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Linked RFQs Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle className="text-base">Linked RFQs</CardTitle>
+                <CardDescription>RFQs currently evaluated under this Abstract of Bids</CardDescription>
+              </div>
+              {canModifyAOB && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddRFQDialog(true)}
+                  disabled={isProcessing}
+                  className="gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add RFQ
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {linkedRFQs.length > 0 ? (
+                <div className="divide-y rounded-md border">
+                  {linkedRFQs.map((rfq) => (
+                    <div key={rfq.id} className="flex items-center justify-between p-3.5">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm text-gray-900">{rfq.rfqNumber}</span>
+                          {rfq.status && (
+                            <span className="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 font-medium">
+                              {rfq.status}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          {rfq.tracingNumber && <span>Tracking: {rfq.tracingNumber}</span>}
+                          {rfq.totalAmount !== undefined && <span>Total: {formatPHP(rfq.totalAmount)}</span>}
+                          {rfq.date && <span>Date: {new Date(rfq.date).toLocaleDateString()}</span>}
+                        </div>
+                      </div>
+                      {canModifyAOB && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setRfqToUnlink({ id: rfq.id, rfqNumber: rfq.rfqNumber })}
+                          disabled={isProcessing || isUnlinkingRFQ}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Unlink
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No RFQs currently linked to this AOB.
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -672,6 +804,7 @@ export function AOBDetailsPage({
         onOpenChange={setShowAddRFQDialog}
         aobId={aob.id}
         onBidMatrixGenerated={setBidMatrix}
+        currentlyLinkedRfqIds={linkedRFQs.map((r) => r.id)}
       />
 
       {/* Select Winners Dialog */}
@@ -727,6 +860,29 @@ export function AOBDetailsPage({
               className="bg-red-600 text-white hover:bg-red-700"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unlink RFQ Confirmation Dialog */}
+      <AlertDialog open={Boolean(rfqToUnlink)} onOpenChange={(open) => !open && setRfqToUnlink(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unlink RFQ</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unlink <span className="font-semibold text-gray-900">{rfqToUnlink?.rfqNumber}</span> from this AOB?
+              This will remove all its items, associated supplier bids, and any awarded winners from the evaluation matrix.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUnlinkingRFQ}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmUnlinkRFQ}
+              disabled={isUnlinkingRFQ}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {isUnlinkingRFQ ? 'Unlinking...' : 'Unlink RFQ'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

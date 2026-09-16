@@ -103,7 +103,7 @@ export const getBidMatrixRequest: QueryBlueprintFromTemplate<
 
     const supplierMap = new Map(suppliers.map((s) => [s.supplierId, s]))
 
-    const lineItems: LineItem[] = (data.items || []).map((item) => {
+    const lineItems: LineItem[] = (data.items || []).map((item, index) => {
       const itemBids: SupplierBid[] = (data.bids || [])
         .filter((b) => b.rfqItemId === item.rfqItemId)
         .map((b) => ({
@@ -139,7 +139,7 @@ export const getBidMatrixRequest: QueryBlueprintFromTemplate<
         aobId: data.aobId,
         rfqId: item.rfqId,
         rfqItemId: item.rfqItemId,
-        itemCode: item.rfqItemId.substring(0, 8).toUpperCase(),
+        itemCode: `Item #${index + 1}`,
         description: item.name,
         itemName: item.name,
         name: item.name,
@@ -172,7 +172,7 @@ export const getBidMatrixRequest: QueryBlueprintFromTemplate<
       isBidsOpened: data.isBidsOpened,
       hasMinimumCanvassWarning: data.hasMinimumCanvassWarning,
       remarks: data.remarks,
-      linkedRFQs: data.linkedRFQs,
+      linkedRFQs: data.linkedRFQs || (data as any).linkedRfQs || [],
       suppliers,
       items: lineItems,
       lineItems,

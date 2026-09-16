@@ -6,6 +6,7 @@ using ERPEZ.Application.Features.Procurement.AOBs.Commands.CreateAOB;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.DeleteAOB;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.FinalizeRFQ;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.LinkRFQs;
+using ERPEZ.Application.Features.Procurement.AOBs.Commands.UnlinkRFQ;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.ReturnAOB;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.SubmitAOB;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.SubmitSupplierBid;
@@ -149,6 +150,20 @@ public class AOBController(ISender mediator) : ControllerBase
         }
 
         var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Unlink an RFQ from an AOB and remove its items from the evaluation matrix
+    /// </summary>
+    [HttpDelete("{id}/rfqs/{rfqId}")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
+    public async Task<IActionResult> UnlinkRFQ(Guid id, Guid rfqId)
+    {
+        var result = await mediator.Send(new UnlinkRFQCommand(id, rfqId));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

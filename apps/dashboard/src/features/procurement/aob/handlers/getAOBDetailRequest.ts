@@ -58,6 +58,8 @@ export const getAOBDetailRequest: QueryBlueprintFromTemplate<
     const response = await api.get<{ data: RawBackendAOBDetailResponse }>(finalUrl, { signal })
     const d = response.data.data
 
+    const rawRfqs = d.rfqs || (d as any).rfQs || []
+
     const aobDetail: AOBDetail = {
       id: d.id,
       aobNumber: d.aobNumber,
@@ -67,9 +69,9 @@ export const getAOBDetailRequest: QueryBlueprintFromTemplate<
       openingDate: d.openingDate || '',
       status: d.status,
       awardCriterion: d.awardCriterion,
-      rfqNumber: d.rfqs && d.rfqs.length > 0 ? d.rfqs.map((r) => r.rfqNumber).join(', ') : '-',
-      rfqIds: d.rfqs ? d.rfqs.map((r) => r.id) : [],
-      rfqs: d.rfqs || [],
+      rfqNumber: rawRfqs.length > 0 ? rawRfqs.map((r) => r.rfqNumber).join(', ') : '-',
+      rfqIds: rawRfqs.map((r) => r.id),
+      rfqs: rawRfqs,
       submittedBy: d.submittedBy,
       submittedAt: d.submittedAt,
       approvedBy: d.approvedBy,

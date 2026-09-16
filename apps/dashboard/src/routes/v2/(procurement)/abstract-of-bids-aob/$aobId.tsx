@@ -92,11 +92,17 @@ function RouteComponent() {
         payload: {},
       })
 
-      void queryClient.invalidateQueries({
-        queryKey: [getAOBDetailRequest.endpoint, aobId],
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (k) => typeof k === 'string' && k.includes(aobId)
+          ),
       })
       void queryClient.invalidateQueries({
-        queryKey: [getBidMatrixRequest.endpoint, aobId],
+        queryKey: [`/aobs/${aobId}`],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aobId}/matrix`],
       })
       void queryClient.invalidateQueries({
         queryKey: [getAOBListRequest.endpoint],
@@ -128,11 +134,17 @@ function RouteComponent() {
         },
       })
 
-      void queryClient.invalidateQueries({
-        queryKey: [getAOBDetailRequest.endpoint, aobId],
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (k) => typeof k === 'string' && k.includes(aobId)
+          ),
       })
       void queryClient.invalidateQueries({
-        queryKey: [getBidMatrixRequest.endpoint, aobId],
+        queryKey: [`/aobs/${aobId}`],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aobId}/matrix`],
       })
       void queryClient.invalidateQueries({
         queryKey: [getAOBListRequest.endpoint],

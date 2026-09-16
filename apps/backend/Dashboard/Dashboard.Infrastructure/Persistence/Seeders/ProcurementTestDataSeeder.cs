@@ -528,6 +528,136 @@ public static class ProcurementTestDataSeeder
             await context.SaveChangesAsync();
         }
 
+        // 9.5. Approved Non-CSE Items (Catalog & Item Requests)
+        var nonCseLaptop = await context.NonCSEItems!.FirstOrDefaultAsync(n => n.Name.Contains("Laptop"));
+        if (nonCseLaptop == null)
+        {
+            var itemReqLaptop = new ItemRequest
+            {
+                Id = Guid.NewGuid(),
+                OfficeId = itOffice.Id,
+                Name = "High-Performance Workstation Laptop 15.6 inch",
+                ItemCategory = "Information and Communications Technology Equipment",
+                Status = "Approved",
+                EstimatedUnitCost = 65000m,
+                UACSCode = "50604050 00",
+                RequestDate = DateTime.UtcNow.AddDays(-30),
+                SubmittedAt = DateTime.UtcNow.AddDays(-28),
+                ReviewedAt = DateTime.UtcNow.AddDays(-25)
+            };
+            await context.ItemRequests!.AddAsync(itemReqLaptop);
+
+            nonCseLaptop = new NonCSEItem
+            {
+                Id = Guid.NewGuid(),
+                Name = "High-Performance Workstation Laptop 15.6 inch",
+                Description = "Intel Core i7 / Ryzen 7, 16GB DDR5 RAM, 512GB NVMe SSD, 15.6 inch FHD Display",
+                CurrentPrice = 65000m,
+                BaseCost = 65000m,
+                SellingPrice = 65000m,
+                Type = "Goods",
+                ItemRequestId = itemReqLaptop.Id
+            };
+            await context.NonCSEItems!.AddAsync(nonCseLaptop);
+        }
+
+        var nonCsePrinter = await context.NonCSEItems!.FirstOrDefaultAsync(n => n.Name.Contains("Printer"));
+        if (nonCsePrinter == null)
+        {
+            var itemReqPrinter = new ItemRequest
+            {
+                Id = Guid.NewGuid(),
+                OfficeId = itOffice.Id,
+                Name = "Enterprise Multi-Function Monochrome Laser Printer",
+                ItemCategory = "Information and Communications Technology Equipment",
+                Status = "Approved",
+                EstimatedUnitCost = 28000m,
+                UACSCode = "50604050 00",
+                RequestDate = DateTime.UtcNow.AddDays(-30),
+                SubmittedAt = DateTime.UtcNow.AddDays(-28),
+                ReviewedAt = DateTime.UtcNow.AddDays(-25)
+            };
+            await context.ItemRequests!.AddAsync(itemReqPrinter);
+
+            nonCsePrinter = new NonCSEItem
+            {
+                Id = Guid.NewGuid(),
+                Name = "Enterprise Multi-Function Monochrome Laser Printer",
+                Description = "Heavy-duty print/scan/copy, 40ppm duplex, network Ethernet & Wi-Fi",
+                CurrentPrice = 28000m,
+                BaseCost = 28000m,
+                SellingPrice = 28000m,
+                Type = "Goods",
+                ItemRequestId = itemReqPrinter.Id
+            };
+            await context.NonCSEItems!.AddAsync(nonCsePrinter);
+        }
+
+        var nonCseDisplay = await context.NonCSEItems!.FirstOrDefaultAsync(n => n.Name.Contains("Interactive Touchscreen"));
+        if (nonCseDisplay == null)
+        {
+            var itemReqDisplay = new ItemRequest
+            {
+                Id = Guid.NewGuid(),
+                OfficeId = itOffice.Id,
+                Name = "86-Inch 4K UHD Interactive Touchscreen Display",
+                ItemCategory = "Information and Communications Technology Equipment",
+                Status = "Approved",
+                EstimatedUnitCost = 150000m,
+                UACSCode = "50604050 00",
+                RequestDate = DateTime.UtcNow.AddDays(-30),
+                SubmittedAt = DateTime.UtcNow.AddDays(-28),
+                ReviewedAt = DateTime.UtcNow.AddDays(-25)
+            };
+            await context.ItemRequests!.AddAsync(itemReqDisplay);
+
+            nonCseDisplay = new NonCSEItem
+            {
+                Id = Guid.NewGuid(),
+                Name = "86-Inch 4K UHD Interactive Touchscreen Display",
+                Description = "86-inch 4K UHD 20-point touch smart board with OPS slot and wall mount",
+                CurrentPrice = 150000m,
+                BaseCost = 150000m,
+                SellingPrice = 150000m,
+                Type = "Goods",
+                ItemRequestId = itemReqDisplay.Id
+            };
+            await context.NonCSEItems!.AddAsync(nonCseDisplay);
+        }
+
+        var nonCseStand = await context.NonCSEItems!.FirstOrDefaultAsync(n => n.Name.Contains("Floor Stand"));
+        if (nonCseStand == null)
+        {
+            var itemReqStand = new ItemRequest
+            {
+                Id = Guid.NewGuid(),
+                OfficeId = itOffice.Id,
+                Name = "Heavy-Duty Mobile Floor Stand & Wall Bracket Assembly",
+                ItemCategory = "Information and Communications Technology Equipment",
+                Status = "Approved",
+                EstimatedUnitCost = 40000m,
+                UACSCode = "50604050 00",
+                RequestDate = DateTime.UtcNow.AddDays(-30),
+                SubmittedAt = DateTime.UtcNow.AddDays(-28),
+                ReviewedAt = DateTime.UtcNow.AddDays(-25)
+            };
+            await context.ItemRequests!.AddAsync(itemReqStand);
+
+            nonCseStand = new NonCSEItem
+            {
+                Id = Guid.NewGuid(),
+                Name = "Heavy-Duty Mobile Floor Stand & Wall Bracket Assembly",
+                Description = "Heavy-duty locking caster mobile display trolley stand with integrated shelf",
+                CurrentPrice = 40000m,
+                BaseCost = 40000m,
+                SellingPrice = 40000m,
+                Type = "Goods",
+                ItemRequestId = itemReqStand.Id
+            };
+            await context.NonCSEItems!.AddAsync(nonCseStand);
+        }
+        await context.SaveChangesAsync();
+
         // 10. Approved PPMP (Project Procurement Management Plan)
         var ppmp = await context.PPMPs!.FirstOrDefaultAsync(p => p.PPMPNumber == "PPMP-2026-ICTD-001");
         if (ppmp == null)
@@ -547,7 +677,7 @@ public static class ProcurementTestDataSeeder
                 IsMaster = false,
                 IsFinal = true,
                 Version = 1,
-                TotalEstimatedBudget = 790000m,
+                TotalEstimatedBudget = 7890000m,
                 Status = StatusEnum.Approved,
                 SubmittedDate = DateTime.UtcNow.AddDays(-20),
                 ApprovedDate = DateTime.UtcNow.AddDays(-15),
@@ -570,11 +700,11 @@ public static class ProcurementTestDataSeeder
                 PPMPActivityId = ppmpActivity.Id,
                 ObjectId = ictObject.Id,
                 IsProcurable = true,
-                TotalCost = 790000m
+                TotalCost = 7890000m
             };
             ppmp.PPMPExpenditureItems.Add(ppmpExpenditure);
 
-            // Item 1: Laptop
+            // Item 1: Laptop (50 total, 40 unreserved after PR-2026-ICTD-001 claims 10)
             var laptopItem = new PPMPItem
             {
                 Id = Guid.NewGuid(),
@@ -583,7 +713,7 @@ public static class ProcurementTestDataSeeder
                 Description = "Intel Core i7 / Ryzen 7, 16GB DDR5 RAM, 512GB NVMe SSD, 15.6 inch FHD Display",
                 Unit = "Unit",
                 UnitPrice = 65000m,
-                PlannedQuantity = 10,
+                PlannedQuantity = 50,
                 ProcurementModeId = svpMode.Id,
                 ProjectType = ProcurementProjectType.Goods,
                 PreProcurementConference = false,
@@ -592,27 +722,27 @@ public static class ProcurementTestDataSeeder
                 ExpectedDeliveryStart = new DateOnly(2026, 9, 1),
                 ExpectedDeliveryEnd = new DateOnly(2026, 9, 15),
                 CSEItemId = null,
-                NonCSEItemId = null
+                NonCSEItemId = nonCseLaptop.Id
             };
             laptopItem.PPMPItemAllocations.Add(new PPMPItemAllocation
             {
                 Id = Guid.NewGuid(),
                 PPMPItemId = laptopItem.Id,
                 AllocationMonth = AllocationMonthEnum.January,
-                Quantity = 5,
-                Amount = 325000m
+                Quantity = 25,
+                Amount = 1625000m
             });
             laptopItem.PPMPItemAllocations.Add(new PPMPItemAllocation
             {
                 Id = Guid.NewGuid(),
                 PPMPItemId = laptopItem.Id,
                 AllocationMonth = AllocationMonthEnum.February,
-                Quantity = 5,
-                Amount = 325000m
+                Quantity = 25,
+                Amount = 1625000m
             });
             ppmpExpenditure.PPMPItems.Add(laptopItem);
 
-            // Item 2: Printer
+            // Item 2: Printer (30 total, 25 unreserved after PR-2026-ICTD-001 claims 5)
             var printerItem = new PPMPItem
             {
                 Id = Guid.NewGuid(),
@@ -621,7 +751,7 @@ public static class ProcurementTestDataSeeder
                 Description = "Heavy-duty print/scan/copy, 40ppm duplex, network Ethernet & Wi-Fi",
                 Unit = "Unit",
                 UnitPrice = 28000m,
-                PlannedQuantity = 5,
+                PlannedQuantity = 30,
                 ProcurementModeId = svpMode.Id,
                 ProjectType = ProcurementProjectType.Goods,
                 PreProcurementConference = false,
@@ -630,63 +760,161 @@ public static class ProcurementTestDataSeeder
                 ExpectedDeliveryStart = new DateOnly(2026, 9, 1),
                 ExpectedDeliveryEnd = new DateOnly(2026, 9, 15),
                 CSEItemId = null,
-                NonCSEItemId = null
+                NonCSEItemId = nonCsePrinter.Id
             };
             printerItem.PPMPItemAllocations.Add(new PPMPItemAllocation
             {
                 Id = Guid.NewGuid(),
                 PPMPItemId = printerItem.Id,
                 AllocationMonth = AllocationMonthEnum.January,
-                Quantity = 2,
-                Amount = 56000m
+                Quantity = 15,
+                Amount = 420000m
             });
             printerItem.PPMPItemAllocations.Add(new PPMPItemAllocation
             {
                 Id = Guid.NewGuid(),
                 PPMPItemId = printerItem.Id,
                 AllocationMonth = AllocationMonthEnum.February,
-                Quantity = 3,
-                Amount = 84000m
+                Quantity = 15,
+                Amount = 420000m
             });
             ppmpExpenditure.PPMPItems.Add(printerItem);
+
+            // Item 3: Interactive Display (20 total, 20 unreserved)
+            var displayItem = new PPMPItem
+            {
+                Id = Guid.NewGuid(),
+                PPMPExpenditureItemId = ppmpExpenditure.Id,
+                Name = "86-Inch 4K UHD Interactive Touchscreen Display",
+                Description = "86-inch 4K UHD 20-point touch smart board with OPS slot and wall mount",
+                Unit = "Unit",
+                UnitPrice = 150000m,
+                PlannedQuantity = 20,
+                ProcurementModeId = svpMode.Id,
+                ProjectType = ProcurementProjectType.Goods,
+                PreProcurementConference = false,
+                ProcurementStartDate = new DateOnly(2026, 8, 1),
+                ProcurementEndDate = new DateOnly(2026, 8, 15),
+                ExpectedDeliveryStart = new DateOnly(2026, 9, 1),
+                ExpectedDeliveryEnd = new DateOnly(2026, 9, 15),
+                CSEItemId = null,
+                NonCSEItemId = nonCseDisplay.Id
+            };
+            displayItem.PPMPItemAllocations.Add(new PPMPItemAllocation
+            {
+                Id = Guid.NewGuid(),
+                PPMPItemId = displayItem.Id,
+                AllocationMonth = AllocationMonthEnum.January,
+                Quantity = 10,
+                Amount = 1500000m
+            });
+            displayItem.PPMPItemAllocations.Add(new PPMPItemAllocation
+            {
+                Id = Guid.NewGuid(),
+                PPMPItemId = displayItem.Id,
+                AllocationMonth = AllocationMonthEnum.February,
+                Quantity = 10,
+                Amount = 1500000m
+            });
+            ppmpExpenditure.PPMPItems.Add(displayItem);
+
+            // Item 4: Mobile Stand (20 total, 20 unreserved)
+            var standItem = new PPMPItem
+            {
+                Id = Guid.NewGuid(),
+                PPMPExpenditureItemId = ppmpExpenditure.Id,
+                Name = "Heavy-Duty Mobile Floor Stand & Wall Bracket Assembly",
+                Description = "Heavy-duty locking caster mobile display trolley stand with integrated shelf",
+                Unit = "Unit",
+                UnitPrice = 40000m,
+                PlannedQuantity = 20,
+                ProcurementModeId = svpMode.Id,
+                ProjectType = ProcurementProjectType.Goods,
+                PreProcurementConference = false,
+                ProcurementStartDate = new DateOnly(2026, 8, 1),
+                ProcurementEndDate = new DateOnly(2026, 8, 15),
+                ExpectedDeliveryStart = new DateOnly(2026, 9, 1),
+                ExpectedDeliveryEnd = new DateOnly(2026, 9, 15),
+                CSEItemId = null,
+                NonCSEItemId = nonCseStand.Id
+            };
+            standItem.PPMPItemAllocations.Add(new PPMPItemAllocation
+            {
+                Id = Guid.NewGuid(),
+                PPMPItemId = standItem.Id,
+                AllocationMonth = AllocationMonthEnum.January,
+                Quantity = 10,
+                Amount = 400000m
+            });
+            standItem.PPMPItemAllocations.Add(new PPMPItemAllocation
+            {
+                Id = Guid.NewGuid(),
+                PPMPItemId = standItem.Id,
+                AllocationMonth = AllocationMonthEnum.February,
+                Quantity = 10,
+                Amount = 400000m
+            });
+            ppmpExpenditure.PPMPItems.Add(standItem);
 
             await context.PPMPs!.AddAsync(ppmp);
             await context.SaveChangesAsync();
         }
         else
         {
-            // Backfill existing seeded PPMP items if PlannedQuantity or dates were missing
+            // Backfill existing seeded PPMP items: link NonCSEItemId and allocate sufficient unreserved quantity
             var existingItems = await context.PPMPItems!
+                .Include(i => i.PPMPItemAllocations)
                 .Where(i => i.PPMPExpenditureItem.PPMPId == ppmp.Id)
                 .ToListAsync();
 
-            bool modified = false;
+            var expenditure = await context.PPMPExpenditureItems!.FirstOrDefaultAsync(e => e.PPMPId == ppmp.Id);
+
             foreach (var item in existingItems)
             {
-                if (item.PlannedQuantity == 0)
+                if (item.Name.Contains("Laptop", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (item.Name.Contains("Laptop", StringComparison.OrdinalIgnoreCase))
-                    {
-                        item.PlannedQuantity = 10;
-                    }
-                    else if (item.Name.Contains("Printer", StringComparison.OrdinalIgnoreCase))
-                    {
-                        item.PlannedQuantity = 5;
-                    }
+                    item.NonCSEItemId = nonCseLaptop.Id;
+                    item.PlannedQuantity = 50;
+                    var janAlloc = item.PPMPItemAllocations.FirstOrDefault(a => a.AllocationMonth == AllocationMonthEnum.January);
+                    if (janAlloc != null) { janAlloc.Quantity = 25; janAlloc.Amount = 25 * 65000m; }
+                    var febAlloc = item.PPMPItemAllocations.FirstOrDefault(a => a.AllocationMonth == AllocationMonthEnum.February);
+                    if (febAlloc != null) { febAlloc.Quantity = 25; febAlloc.Amount = 25 * 65000m; }
                     else
                     {
-                        var totalAllocated = await context.PPMPItemAllocations!
-                            .Where(a => a.PPMPItemId == item.Id)
-                            .SumAsync(a => a.Quantity);
-                        item.PlannedQuantity = totalAllocated > 0 ? totalAllocated : 1;
+                        item.PPMPItemAllocations.Add(new PPMPItemAllocation
+                        {
+                            Id = Guid.NewGuid(),
+                            PPMPItemId = item.Id,
+                            AllocationMonth = AllocationMonthEnum.February,
+                            Quantity = 25,
+                            Amount = 25 * 65000m
+                        });
                     }
-                    modified = true;
+                }
+                else if (item.Name.Contains("Printer", StringComparison.OrdinalIgnoreCase))
+                {
+                    item.NonCSEItemId = nonCsePrinter.Id;
+                    item.PlannedQuantity = 30;
+                    var janAlloc = item.PPMPItemAllocations.FirstOrDefault(a => a.AllocationMonth == AllocationMonthEnum.January);
+                    if (janAlloc != null) { janAlloc.Quantity = 15; janAlloc.Amount = 15 * 28000m; }
+                    var febAlloc = item.PPMPItemAllocations.FirstOrDefault(a => a.AllocationMonth == AllocationMonthEnum.February);
+                    if (febAlloc != null) { febAlloc.Quantity = 15; febAlloc.Amount = 15 * 28000m; }
+                    else
+                    {
+                        item.PPMPItemAllocations.Add(new PPMPItemAllocation
+                        {
+                            Id = Guid.NewGuid(),
+                            PPMPItemId = item.Id,
+                            AllocationMonth = AllocationMonthEnum.February,
+                            Quantity = 15,
+                            Amount = 15 * 28000m
+                        });
+                    }
                 }
 
                 if (item.PreProcurementConference == null)
                 {
                     item.PreProcurementConference = false;
-                    modified = true;
                 }
                 if (item.ProcurementStartDate == null)
                 {
@@ -694,15 +922,137 @@ public static class ProcurementTestDataSeeder
                     item.ProcurementEndDate = new DateOnly(2026, 8, 15);
                     item.ExpectedDeliveryStart = new DateOnly(2026, 9, 1);
                     item.ExpectedDeliveryEnd = new DateOnly(2026, 9, 15);
-                    modified = true;
                 }
             }
 
-            if (modified)
+            // Also add Display and Stand to existing PPMP if not present
+            if (expenditure != null && !existingItems.Any(i => i.Name.Contains("Interactive Touchscreen")))
             {
-                await context.SaveChangesAsync();
+                var displayItem = new PPMPItem
+                {
+                    Id = Guid.NewGuid(),
+                    PPMPExpenditureItemId = expenditure.Id,
+                    Name = "86-Inch 4K UHD Interactive Touchscreen Display",
+                    Description = "86-inch 4K UHD 20-point touch smart board with OPS slot and wall mount",
+                    Unit = "Unit",
+                    UnitPrice = 150000m,
+                    PlannedQuantity = 20,
+                    ProcurementModeId = svpMode.Id,
+                    ProjectType = ProcurementProjectType.Goods,
+                    PreProcurementConference = false,
+                    ProcurementStartDate = new DateOnly(2026, 8, 1),
+                    ProcurementEndDate = new DateOnly(2026, 8, 15),
+                    ExpectedDeliveryStart = new DateOnly(2026, 9, 1),
+                    ExpectedDeliveryEnd = new DateOnly(2026, 9, 15),
+                    CSEItemId = null,
+                    NonCSEItemId = nonCseDisplay.Id
+                };
+                displayItem.PPMPItemAllocations.Add(new PPMPItemAllocation
+                {
+                    Id = Guid.NewGuid(),
+                    PPMPItemId = displayItem.Id,
+                    AllocationMonth = AllocationMonthEnum.January,
+                    Quantity = 10,
+                    Amount = 1500000m
+                });
+                displayItem.PPMPItemAllocations.Add(new PPMPItemAllocation
+                {
+                    Id = Guid.NewGuid(),
+                    PPMPItemId = displayItem.Id,
+                    AllocationMonth = AllocationMonthEnum.February,
+                    Quantity = 10,
+                    Amount = 1500000m
+                });
+                await context.PPMPItems!.AddAsync(displayItem);
+            }
+
+            if (expenditure != null && !existingItems.Any(i => i.Name.Contains("Floor Stand")))
+            {
+                var standItem = new PPMPItem
+                {
+                    Id = Guid.NewGuid(),
+                    PPMPExpenditureItemId = expenditure.Id,
+                    Name = "Heavy-Duty Mobile Floor Stand & Wall Bracket Assembly",
+                    Description = "Heavy-duty locking caster mobile display trolley stand with integrated shelf",
+                    Unit = "Unit",
+                    UnitPrice = 40000m,
+                    PlannedQuantity = 20,
+                    ProcurementModeId = svpMode.Id,
+                    ProjectType = ProcurementProjectType.Goods,
+                    PreProcurementConference = false,
+                    ProcurementStartDate = new DateOnly(2026, 8, 1),
+                    ProcurementEndDate = new DateOnly(2026, 8, 15),
+                    ExpectedDeliveryStart = new DateOnly(2026, 9, 1),
+                    ExpectedDeliveryEnd = new DateOnly(2026, 9, 15),
+                    CSEItemId = null,
+                    NonCSEItemId = nonCseStand.Id
+                };
+                standItem.PPMPItemAllocations.Add(new PPMPItemAllocation
+                {
+                    Id = Guid.NewGuid(),
+                    PPMPItemId = standItem.Id,
+                    AllocationMonth = AllocationMonthEnum.January,
+                    Quantity = 10,
+                    Amount = 400000m
+                });
+                standItem.PPMPItemAllocations.Add(new PPMPItemAllocation
+                {
+                    Id = Guid.NewGuid(),
+                    PPMPItemId = standItem.Id,
+                    AllocationMonth = AllocationMonthEnum.February,
+                    Quantity = 10,
+                    Amount = 400000m
+                });
+                await context.PPMPItems!.AddAsync(standItem);
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        // 10.5. Approved APP (Annual Procurement Plan)
+        var app = await context.APPs!.Include(a => a.APPItems).FirstOrDefaultAsync(a => a.APPNumber == "APP-2026-BAC-001");
+        if (app == null)
+        {
+            app = new APP
+            {
+                Id = Guid.NewGuid(),
+                APPNumber = "APP-2026-BAC-001",
+                Name = "Annual Procurement Plan for FY 2026",
+                FiscalYearId = fy2026.Id,
+                APPType = "Final",
+                Status = StatusEnum.Approved,
+                SubmittedDate = DateTime.UtcNow.AddDays(-18),
+                ApprovedDate = DateTime.UtcNow.AddDays(-14),
+                CreatedAt = DateTime.UtcNow.AddDays(-20),
+                CreatedBy = "System"
+            };
+            await context.APPs!.AddAsync(app);
+            await context.SaveChangesAsync();
+        }
+
+        var allPpmpItems = await context.PPMPItems!
+            .Where(i => i.PPMPExpenditureItem.PPMPId == ppmp.Id && !i.IsDeleted)
+            .ToListAsync();
+
+        foreach (var item in allPpmpItems)
+        {
+            var hasAppItem = await context.APPItems!.AnyAsync(ai => ai.PPMPItemId == item.Id && ai.APPId == app.Id && !ai.IsDeleted);
+            if (!hasAppItem)
+            {
+                context.APPItems!.Add(new APPItem
+                {
+                    Id = Guid.NewGuid(),
+                    APPId = app.Id,
+                    PPMPItemId = item.Id,
+                    ProcurementModeId = svpMode.Id,
+                    FundSourceId = fundSource.Id,
+                    OfficeId = itOffice.Id,
+                    PAPCode = "ICT-PAP-01",
+                    EstimatedBudgetOverride = item.UnitPrice * item.PlannedQuantity
+                });
             }
         }
+        await context.SaveChangesAsync();
 
         // 11. Test Purchase Request (Submitted Non-CSE PR from ICT Division)
         var pr = await context.PurchaseRequests!.FirstOrDefaultAsync(p => p.PRNumber == "PR-2026-ICTD-001");
@@ -1412,8 +1762,256 @@ public static class ProcurementTestDataSeeder
                 await context.SaveChangesAsync();
             }
 
-            // Available AOB for "Create PO" Testing (Unlinked)
-            var aobAvailable = await context.AOBs!.Include(a => a.AOBAwardedItems).FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-001");
+            // -------------------------------------------------------------
+            // A.1 SVP RFQ for AOB Testing: Interactive Smart Displays & Wall Mounts
+            // -------------------------------------------------------------
+            var rfqDisplaysNumber = "RFQ-2026-SVP-002";
+            var rfqDisplays = await context.RFQs!
+                .Include(r => r.RFQItems)
+                .Include(r => r.RFQSuppliers)
+                .FirstOrDefaultAsync(r => r.RFQNumber == rfqDisplaysNumber);
+
+            if (rfqDisplays == null)
+            {
+                rfqDisplays = new RFQ
+                {
+                    Id = Guid.NewGuid(),
+                    RFQNumber = rfqDisplaysNumber,
+                    TracingNumber = "TRC-2026-SVP-002",
+                    Description = "Request for Quotation - Interactive Smart Displays & Mobile Floor Mounts",
+                    ConsolidatedPRId = cprSvp.Id,
+                    ModeOfProcurementId = svpMode.Id,
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)),
+                    Deadline = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-3)),
+                    DeliveryPeriod = "15 calendar days",
+                    Purpose = "Procure interactive smart displays and floor stand mounts for conference rooms",
+                    Status = StatusEnum.Approved,
+                    TotalAmount = 950000m,
+                    CreatedAt = DateTime.UtcNow.AddDays(-10),
+                    CreatedBy = "System"
+                };
+
+                var item1 = new RFQItem
+                {
+                    Id = Guid.NewGuid(),
+                    RFQId = rfqDisplays.Id,
+                    Quantity = 5,
+                    UnitPriceSnapshot = 40000m,
+                    ItemNameSnapshot = "Heavy-Duty Mobile Floor Stand & Wall Bracket Assembly With Cable Management",
+                    CategorySnapshot = "Goods",
+                    FundSnapshot = "Regular Agency Fund",
+                    IsBrochureRequired = true
+                };
+
+                var item2 = new RFQItem
+                {
+                    Id = Guid.NewGuid(),
+                    RFQId = rfqDisplays.Id,
+                    Quantity = 5,
+                    UnitPriceSnapshot = 150000m,
+                    ItemNameSnapshot = "86-Inch 4K UHD Interactive Touchscreen Display With Dual OS (Android 13 / Windows 11 Pro OPS)",
+                    CategorySnapshot = "Goods",
+                    FundSnapshot = "Regular Agency Fund",
+                    IsBrochureRequired = true
+                };
+
+                rfqDisplays.RFQItems.Add(item1);
+                rfqDisplays.RFQItems.Add(item2);
+
+                rfqDisplays.RFQSuppliers.Add(new RFQSupplier { Id = Guid.NewGuid(), RFQId = rfqDisplays.Id, SupplierId = bayanSupplier.Id });
+                rfqDisplays.RFQSuppliers.Add(new RFQSupplier { Id = Guid.NewGuid(), RFQId = rfqDisplays.Id, SupplierId = apexSupplier.Id });
+                rfqDisplays.RFQSuppliers.Add(new RFQSupplier { Id = Guid.NewGuid(), RFQId = rfqDisplays.Id, SupplierId = cyberTechSupplier.Id });
+                rfqDisplays.RFQSuppliers.Add(new RFQSupplier { Id = Guid.NewGuid(), RFQId = rfqDisplays.Id, SupplierId = primeOfficeSupplier.Id });
+
+                await context.RFQs!.AddAsync(rfqDisplays);
+                await context.SaveChangesAsync();
+            }
+
+            // Seed submitted bids for rfqDisplays if none exist
+            var hasBidsForDisplays = await context.SupplierBids!.AnyAsync(b => b.RFQId == rfqDisplays.Id);
+            if (!hasBidsForDisplays && rfqDisplays.RFQItems.Count >= 2)
+            {
+                var item1 = rfqDisplays.RFQItems[0];
+                var item2 = rfqDisplays.RFQItems[1];
+
+                // 1. Bayan Microtech (Rank 1 - Lowest prices)
+                var bayanBid = new SupplierBid
+                {
+                    Id = Guid.NewGuid(),
+                    RFQId = rfqDisplays.Id,
+                    SupplierId = bayanSupplier.Id,
+                    SubmissionType = "Electronic",
+                    Status = "SUBMITTED",
+                    ValidityPeriodDays = 60,
+                    DeliveryPeriod = "15 calendar days",
+                    PaymentTerms = "Government Terms",
+                    WarrantyTerms = "2 Years Comprehensive On-site",
+                    TotalAmount = 870000m,
+                    SubmittedAt = DateTime.UtcNow.AddDays(-5),
+                    Remarks = "Full compliance with technical specifications.",
+                    SupplierBidItems =
+                    [
+                        new SupplierBidItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQItemId = item1.Id,
+                            UnitPrice = 36000m,
+                            TotalPrice = 180000m,
+                            Brand = "ErgoStand",
+                            Model = "ES-86PRO",
+                            IsResponsive = true,
+                            QualityScore = 100m
+                        },
+                        new SupplierBidItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQItemId = item2.Id,
+                            UnitPrice = 138000m,
+                            TotalPrice = 690000m,
+                            Brand = "MaxHub",
+                            Model = "V6-Classic-86",
+                            IsResponsive = true,
+                            QualityScore = 100m
+                        }
+                    ]
+                };
+
+                // 2. Apex IT Solutions (Rank 2)
+                var apexBid = new SupplierBid
+                {
+                    Id = Guid.NewGuid(),
+                    RFQId = rfqDisplays.Id,
+                    SupplierId = apexSupplier.Id,
+                    SubmissionType = "Electronic",
+                    Status = "SUBMITTED",
+                    ValidityPeriodDays = 60,
+                    DeliveryPeriod = "15 calendar days",
+                    PaymentTerms = "Government Terms",
+                    WarrantyTerms = "1 Year Standard",
+                    TotalAmount = 910000m,
+                    SubmittedAt = DateTime.UtcNow.AddDays(-5),
+                    Remarks = "Standard manufacturer warranty included.",
+                    SupplierBidItems =
+                    [
+                        new SupplierBidItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQItemId = item1.Id,
+                            UnitPrice = 38000m,
+                            TotalPrice = 190000m,
+                            Brand = "Vogel",
+                            Model = "F1644B",
+                            IsResponsive = true,
+                            QualityScore = 95m
+                        },
+                        new SupplierBidItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQItemId = item2.Id,
+                            UnitPrice = 144000m,
+                            TotalPrice = 720000m,
+                            Brand = "ViewSonic",
+                            Model = "IFP8650-5",
+                            IsResponsive = true,
+                            QualityScore = 95m
+                        }
+                    ]
+                };
+
+                // 3. CyberTech Logistics (Rank 3)
+                var cyberTechBid = new SupplierBid
+                {
+                    Id = Guid.NewGuid(),
+                    RFQId = rfqDisplays.Id,
+                    SupplierId = cyberTechSupplier.Id,
+                    SubmissionType = "Electronic",
+                    Status = "SUBMITTED",
+                    ValidityPeriodDays = 60,
+                    DeliveryPeriod = "20 calendar days",
+                    PaymentTerms = "Government Terms",
+                    WarrantyTerms = "1 Year Parts & Service",
+                    TotalAmount = 937500m,
+                    SubmittedAt = DateTime.UtcNow.AddDays(-4),
+                    Remarks = "Includes delivery and installation assistance.",
+                    SupplierBidItems =
+                    [
+                        new SupplierBidItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQItemId = item1.Id,
+                            UnitPrice = 39500m,
+                            TotalPrice = 197500m,
+                            Brand = "NB North Bayou",
+                            Model = "AVA1800-70",
+                            IsResponsive = true,
+                            QualityScore = 90m
+                        },
+                        new SupplierBidItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQItemId = item2.Id,
+                            UnitPrice = 148000m,
+                            TotalPrice = 740000m,
+                            Brand = "Newline",
+                            Model = "TruTouch-86",
+                            IsResponsive = true,
+                            QualityScore = 92m
+                        }
+                    ]
+                };
+
+                // 4. PrimeOffice Depot (Over ABC - Disqualified)
+                var primeOfficeBid = new SupplierBid
+                {
+                    Id = Guid.NewGuid(),
+                    RFQId = rfqDisplays.Id,
+                    SupplierId = primeOfficeSupplier.Id,
+                    SubmissionType = "Physical",
+                    Status = "SUBMITTED",
+                    ValidityPeriodDays = 30,
+                    DeliveryPeriod = "30 calendar days",
+                    PaymentTerms = "30 Days Net",
+                    WarrantyTerms = "6 Months Limited",
+                    TotalAmount = 1000000m,
+                    SubmittedAt = DateTime.UtcNow.AddDays(-4),
+                    Remarks = "Physical quotation sealed submission.",
+                    SupplierBidItems =
+                    [
+                        new SupplierBidItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQItemId = item1.Id,
+                            UnitPrice = 42000m,
+                            TotalPrice = 210000m,
+                            Brand = "HeavyDuty Mount",
+                            Model = "HDM-100",
+                            IsResponsive = true,
+                            QualityScore = 80m
+                        },
+                        new SupplierBidItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQItemId = item2.Id,
+                            UnitPrice = 158000m,
+                            TotalPrice = 790000m,
+                            Brand = "Clevertouch",
+                            Model = "Plus-86",
+                            IsResponsive = true,
+                            QualityScore = 85m
+                        }
+                    ]
+                };
+
+                await context.SupplierBids!.AddRangeAsync(bayanBid, apexBid, cyberTechBid, primeOfficeBid);
+                await context.SaveChangesAsync();
+            }
+
+            // Available AOB for "Create PO" Testing: AOB-2026-SVP-001
+            var aobAvailable = await context.AOBs!
+                .Include(a => a.AOBAwardedItems)
+                .Include(a => a.AOBRFQMappings)
+                .FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-001");
+
             if (aobAvailable == null)
             {
                 aobAvailable = new AOB
@@ -1452,30 +2050,23 @@ public static class ProcurementTestDataSeeder
                 await context.AOBs!.AddAsync(aobAvailable);
                 await context.SaveChangesAsync();
             }
-            else if (!aobAvailable.AOBAwardedItems.Any())
+
+            if (!aobAvailable.AOBRFQMappings.Any(m => m.RFQId == rfqSvp.Id))
             {
-                foreach (var rfqItem in rfqSvp.RFQItems)
+                aobAvailable.AOBRFQMappings.Add(new AOBRFQMapping
                 {
-                    decimal unitPrice = rfqItem.ItemNameSnapshot.Contains("Laptop", StringComparison.OrdinalIgnoreCase) ? 62000m : 26500m;
-                    int qty = rfqItem.Quantity;
-                    aobAvailable.AOBAwardedItems.Add(new AOBAwardedItem
-                    {
-                        Id = Guid.NewGuid(),
-                        AOBId = aobAvailable.Id,
-                        RFQItemId = rfqItem.Id,
-                        WinningSupplierId = apexSupplier.Id,
-                        AwardedQuantity = qty,
-                        AwardedUnitPrice = unitPrice,
-                        TotalAwardedAmount = qty * unitPrice,
-                        Score = 96.5m,
-                        AwardReason = "Lowest Calculated and Responsive Quotation (LCRQ)"
-                    });
-                }
+                    AOBId = aobAvailable.Id,
+                    RFQId = rfqSvp.Id
+                });
                 await context.SaveChangesAsync();
             }
 
-            // AOB for Draft PO
-            var aobDraftSource = await context.AOBs!.Include(a => a.AOBAwardedItems).FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-0002");
+            // AOB for Draft PO: AOB-2026-SVP-0002
+            var aobDraftSource = await context.AOBs!
+                .Include(a => a.AOBAwardedItems)
+                .Include(a => a.AOBRFQMappings)
+                .FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-0002");
+
             if (aobDraftSource == null)
             {
                 var firstRfqItem = rfqSvp.RFQItems.FirstOrDefault();
@@ -1513,11 +2104,24 @@ public static class ProcurementTestDataSeeder
                 await context.SaveChangesAsync();
             }
 
-            // AOB for Returned PO
-            var aobReturnedSource = await context.AOBs!.Include(a => a.AOBAwardedItems).FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-0003");
+            if (!aobDraftSource.AOBRFQMappings.Any(m => m.RFQId == rfqSvp.Id))
+            {
+                aobDraftSource.AOBRFQMappings.Add(new AOBRFQMapping
+                {
+                    AOBId = aobDraftSource.Id,
+                    RFQId = rfqSvp.Id
+                });
+                await context.SaveChangesAsync();
+            }
+
+            // AOB for Returned PO: AOB-2026-SVP-0003 (Pre-populated reference matching screenshot)
+            var aobReturnedSource = await context.AOBs!
+                .Include(a => a.AOBAwardedItems)
+                .Include(a => a.AOBRFQMappings)
+                .FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-0003");
+
             if (aobReturnedSource == null)
             {
-                var firstRfqItem = rfqSvp.RFQItems.FirstOrDefault();
                 aobReturnedSource = new AOB
                 {
                     Id = Guid.NewGuid(),
@@ -1532,23 +2136,70 @@ public static class ProcurementTestDataSeeder
                     CreatedBy = "System"
                 };
 
-                if (firstRfqItem != null)
-                {
-                    aobReturnedSource.AOBAwardedItems.Add(new AOBAwardedItem
-                    {
-                        Id = Guid.NewGuid(),
-                        AOBId = aobReturnedSource.Id,
-                        RFQItemId = firstRfqItem.Id,
-                        WinningSupplierId = bayanSupplier.Id,
-                        AwardedQuantity = 4,
-                        AwardedUnitPrice = 230000m,
-                        TotalAwardedAmount = 920000m,
-                        Score = 98.0m,
-                        AwardReason = "Lowest calculated responsive bid"
-                    });
-                }
-
                 await context.AOBs!.AddAsync(aobReturnedSource);
+                await context.SaveChangesAsync();
+            }
+
+            if (!aobReturnedSource.AOBRFQMappings.Any(m => m.RFQId == rfqDisplays.Id))
+            {
+                aobReturnedSource.AOBRFQMappings.Add(new AOBRFQMapping
+                {
+                    AOBId = aobReturnedSource.Id,
+                    RFQId = rfqDisplays.Id
+                });
+                await context.SaveChangesAsync();
+            }
+
+            if (!aobReturnedSource.AOBAwardedItems.Any() && rfqDisplays.RFQItems.Count >= 2)
+            {
+                var dispItem1 = rfqDisplays.RFQItems[0];
+                var dispItem2 = rfqDisplays.RFQItems[1];
+
+                aobReturnedSource.AOBAwardedItems.Add(new AOBAwardedItem
+                {
+                    Id = Guid.NewGuid(),
+                    AOBId = aobReturnedSource.Id,
+                    RFQItemId = dispItem1.Id,
+                    WinningSupplierId = bayanSupplier.Id,
+                    AwardedQuantity = 5,
+                    AwardedUnitPrice = 36000m,
+                    TotalAwardedAmount = 180000m,
+                    Score = 100.0m,
+                    AwardReason = "Lowest calculated responsive bid (LCRB)"
+                });
+
+                aobReturnedSource.AOBAwardedItems.Add(new AOBAwardedItem
+                {
+                    Id = Guid.NewGuid(),
+                    AOBId = aobReturnedSource.Id,
+                    RFQItemId = dispItem2.Id,
+                    WinningSupplierId = bayanSupplier.Id,
+                    AwardedQuantity = 5,
+                    AwardedUnitPrice = 138000m,
+                    TotalAwardedAmount = 690000m,
+                    Score = 100.0m,
+                    AwardReason = "Lowest calculated responsive bid (LCRB)"
+                });
+                await context.SaveChangesAsync();
+            }
+
+            // Fresh Unlinked Draft AOB for Testing the Workflow: AOB-2026-SVP-0004
+            var aobDraftTest = await context.AOBs!.FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-0004");
+            if (aobDraftTest == null)
+            {
+                aobDraftTest = new AOB
+                {
+                    Id = Guid.NewGuid(),
+                    AOBNumber = "AOB-2026-SVP-0004",
+                    Description = "Abstract of Bids - Smart Displays & Workstations (Ready to Link RFQ)",
+                    AwardCriterion = BidEvaluationCriteria.LCRB,
+                    AOBDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                    OpeningDate = DateTime.UtcNow.AddHours(-1),
+                    Status = StatusEnum.Draft,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                };
+                await context.AOBs!.AddAsync(aobDraftTest);
                 await context.SaveChangesAsync();
             }
 

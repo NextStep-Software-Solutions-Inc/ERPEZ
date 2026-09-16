@@ -17,7 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Trophy, AlertCircle, ChevronLeft, ChevronRight, Lock, AlertTriangle } from 'lucide-react'
+import { Trophy, AlertCircle, ChevronLeft, ChevronRight, Lock, AlertTriangle, TrendingDown } from 'lucide-react'
 import { BidDetailsViewer } from '../components/BidDetailsViewer'
 import type { BidMatrix, SupplierBid } from '../types/aobTypes'
 
@@ -26,9 +26,23 @@ interface BidEvaluationMatrixProps {
   itemsPerPage?: number
 }
 
+function formatPHP(amount: number | null | undefined): string {
+  if (amount == null || isNaN(amount)) return '-'
+  return `₱${amount.toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
+}
+
+function getSavingsPercent(bidAmount: number, abcAmount: number): string | null {
+  if (!abcAmount || !bidAmount || bidAmount >= abcAmount) return null
+  const percent = ((abcAmount - bidAmount) / abcAmount) * 100
+  return `-${percent.toFixed(1)}%`
+}
+
 export function BidEvaluationMatrix({
   bidMatrix,
-  itemsPerPage = 3,
+  itemsPerPage = 6,
 }: BidEvaluationMatrixProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [viewingBidDetails, setViewingBidDetails] = useState<{
@@ -53,7 +67,7 @@ export function BidEvaluationMatrix({
 
   const lineItems = bidMatrix.lineItems || []
 
-  const totalPages = Math.ceil(lineItems.length / itemsPerPage)
+  const totalPages = Math.max(1, Math.ceil(lineItems.length / itemsPerPage))
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedItems = lineItems.slice(startIndex, endIndex)
@@ -75,10 +89,44 @@ export function BidEvaluationMatrix({
     return grouped
   }, [suppliers, paginatedItems])
 
+  // Calculate total bids and won items per supplier across all items
+  const supplierTotals = useMemo(() => {
+    const totals: Record<string, { total: number; wonCount: number }> = {}
+    suppliers.forEach((supplier) => {
+      let total = 0
+      let wonCount = 0
+      lineItems.forEach((item) => {
+        const bid = item.lineItems?.find((b) => b.supplierId === supplier.id)
+        if (bid?.totalBid && bid.totalBid > 0) {
+          total += bid.totalBid
+        }
+        if (bid?.isWinner) {
+          wonCount++
+        }
+      })
+      totals[supplier.id] = { total, wonCount }
+    })
+    return totals
+  }, [suppliers, lineItems])
+
+  // Lowest total responsive bidder across package
+  const lowestTotalSupplierId = useMemo(() => {
+    let lowestId: string | null = null
+    let lowestAmount = Infinity
+    suppliers.forEach((supplier) => {
+      const data = supplierTotals[supplier.id]
+      if (data && data.total > 0 && data.total < lowestAmount) {
+        lowestAmount = data.total
+        lowestId = supplier.id
+      }
+    })
+    return lowestId
+  }, [suppliers, supplierTotals])
+
   const handleViewBidDetails = (supplier: typeof suppliers[0], item: typeof paginatedItems[0], bid: SupplierBid) => {
     setViewingBidDetails({
       open: true,
-      itemCode: item.itemCode || item.id.substring(0, 8),
+      itemCode: item.itemCode || `Item #${lineItems.indexOf(item) + 1}`,
       itemDescription: item.description || item.name || '',
       itemABC: item.abcUnitPrice || item.approvedBudgetForContract || 0,
       supplierName: supplier.supplierName || supplier.name || '',
@@ -123,155 +171,245 @@ export function BidEvaluationMatrix({
         )}
 
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Bid Evaluation Matrix</CardTitle>
+                <CardTitle className="text-lg">Bid Evaluation Matrix</CardTitle>
                 <CardDescription>
-                  Tabulation of bids by supplier and line item with award criteria evaluation
+                  Tabulation of quotations across suppliers with automatic ranking and GPPB compliance evaluation
                   {lineItems.length > itemsPerPage && (
-                    <span className="ml-2 text-xs font-medium">
-                      (Showing {startIndex + 1} - {Math.min(endIndex, lineItems.length)} of {lineItems.length} items)
+                    <span className="ml-2 text-xs font-semibold text-primary">
+                      (Showing items {startIndex + 1} – {Math.min(endIndex, lineItems.length)} of {lineItems.length})
                     </span>
                   )}
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="overflow-x-auto border rounded-lg">
+          <CardContent className="space-y-4 pt-0">
+            <div className="overflow-x-auto border rounded-lg bg-card shadow-xs">
               <UITable>
                 <TableHeader>
-                  <TableRow className="border-b-0">
-                    <TableHead rowSpan={2} className="w-[180px] sticky left-0 bg-white z-10 border-r text-center align-middle">
-                      Supplier
+                  <TableRow className="border-b bg-muted/40">
+                    <TableHead rowSpan={2} className="w-[200px] min-w-[200px] sticky left-0 bg-background z-20 border-r text-center align-middle font-semibold text-foreground">
+                      Supplier / Bidder
                     </TableHead>
-                    {paginatedItems.map((item) => (
-                      <TableHead key={item.id} colSpan={3} className="text-center bg-gray-50 border-x">
-                        <div className="flex flex-col items-center gap-1">
-                          <div>
-                            <div className="font-semibold text-xs">{item.itemCode || item.id.substring(0, 8)}</div>
-                            <div className="text-xs text-gray-600 line-clamp-2">{item.description || item.name}</div>
-                            <div className="text-xs text-gray-500">Qty: {item.quantity}</div>
+
+                    {paginatedItems.map((item, idx) => {
+                      const itemNumber = startIndex + idx + 1
+                      const abcUnitPrice = item.abcUnitPrice || item.approvedBudgetForContract || 0
+                      const totalABC = item.totalABC || (abcUnitPrice * (item.quantity || 1))
+
+                      return (
+                        <TableHead key={item.id} colSpan={2} className="text-center bg-muted/20 border-x py-3 px-3">
+                          <div className="flex flex-col items-center gap-1.5 min-w-[220px]">
+                            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                              <Badge variant="secondary" className="font-semibold text-xs py-0 px-2">
+                                {item.itemCode || `Item #${itemNumber}`}
+                              </Badge>
+                              {item.category && (
+                                <Badge variant="outline" className="text-[10px] py-0 px-1 text-muted-foreground">
+                                  {item.category}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="font-semibold text-xs text-foreground line-clamp-2 text-center" title={item.description || item.name}>
+                              {item.description || item.name}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground font-normal">
+                              Quantity: <span className="font-semibold text-foreground">{item.quantity}</span> {item.unit || 'units'}
+                            </div>
+                            <div className="text-[11px] text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 w-full text-center">
+                              <span className="font-medium text-[10px] uppercase text-emerald-700 block">ABC Unit Budget</span>
+                              <span className="font-bold text-xs">{formatPHP(abcUnitPrice)}</span>
+                              <span className="text-[10px] text-emerald-600 block">Total: {formatPHP(totalABC)}</span>
+                            </div>
                           </div>
-                        </div>
-                      </TableHead>
-                    ))}
-                    <TableHead rowSpan={2} className="w-[90px] text-center bg-yellow-50 align-middle">
-                      Winner
+                        </TableHead>
+                      )
+                    })}
+
+                    <TableHead rowSpan={2} className="w-[140px] min-w-[140px] text-center bg-muted/30 border-x font-semibold text-xs align-middle">
+                      Total Quotation
+                    </TableHead>
+
+                    <TableHead rowSpan={2} className="w-[110px] min-w-[110px] text-center bg-amber-50/70 align-middle font-semibold text-xs text-amber-900">
+                      Award Status
                     </TableHead>
                   </TableRow>
-                  <TableRow>
+
+                  <TableRow className="border-b bg-muted/20">
                     {paginatedItems.map((item) => (
-                      <React.Fragment key={`${item.id}-subheader`}>
-                        <TableHead className="text-center text-xs bg-gray-50 font-medium w-[100px]">
-                          ABC Unit
+                      <React.Fragment key={`${item.id}-subheaders`}>
+                        <TableHead className="text-center text-xs font-semibold text-foreground w-[110px] min-w-[110px] border-l">
+                          Unit Bid
                         </TableHead>
-                        <TableHead className="text-center text-xs bg-gray-50 font-medium w-[110px]">
-                          Unit Price
-                        </TableHead>
-                        <TableHead className="text-center text-xs bg-gray-50 font-medium w-[120px] border-r">
-                          Total
+                        <TableHead className="text-center text-xs font-semibold text-foreground w-[120px] min-w-[120px] border-r">
+                          Total Bid
                         </TableHead>
                       </React.Fragment>
                     ))}
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
-                  {suppliers.map((supplier) => (
-                    <TableRow key={supplier.id}>
-                      <TableCell className="font-medium sticky left-0 bg-white z-10 border-r text-center align-middle">
-                        <div>
-                          <div>{supplier.supplierName || supplier.name}</div>
-                          {supplier.submissionType && (
-                            <Badge variant="outline" className="text-[10px] py-0 px-1 mt-1 font-normal">
-                              {supplier.submissionType}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      {paginatedItems.map((item) => {
-                        const bid = groupedData[supplier.id]?.find((b) => b.lineItemId === item.id || b.rfqItemId === item.id)
-                        const abcUnitPrice = item.abcUnitPrice || item.approvedBudgetForContract || 0
-                        const exceedsABC = bid?.isOverABC || (bid?.unitBid && abcUnitPrice > 0 && bid.unitBid > abcUnitPrice)
-                        
-                        return (
-                          <React.Fragment key={`${supplier.id}-${item.id}`}>
-                            <TableCell className="text-center text-xs align-middle bg-gray-50 font-medium">
-                              ₱{abcUnitPrice.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-center text-sm align-middle">
-                              {bidMatrix.isBidsOpened === false ? (
-                                <span className="text-xs text-muted-foreground italic">Sealed</span>
-                              ) : bid?.unitBid ? (
-                                <div>
-                                  <div>₱{bid.unitBid.toLocaleString()}</div>
-                                  {bid.rank && bid.rank > 0 && !exceedsABC && (
-                                    <Badge variant="outline" className="text-[10px] py-0 px-1 font-semibold text-emerald-700 bg-emerald-50 border-emerald-300">
-                                      Rank {bid.rank} ({bid.score}%)
-                                    </Badge>
-                                  )}
-                                </div>
-                              ) : '-'}
-                            </TableCell>
-                            <TableCell 
-                              className={`text-center text-sm font-semibold align-middle border-r cursor-pointer ${
-                                exceedsABC 
-                                  ? 'bg-red-50 text-red-900' 
-                                  : 'hover:bg-gray-100'
-                              }`}
-                              onClick={() => bid && handleViewBidDetails(supplier, item, bid)}
-                            >
-                              {bidMatrix.isBidsOpened === false ? (
-                                <span className="text-xs text-muted-foreground italic">Sealed</span>
-                              ) : (
-                                <div className="flex flex-col items-center justify-center gap-1">
-                                  <span>{bid?.totalBid ? `₱${bid.totalBid.toLocaleString()}` : '-'}</span>
-                                  {exceedsABC && (
-                                    <Badge variant="outline" className="text-[10px] bg-red-100 text-red-700 border-red-300">
-                                      Over ABC
-                                    </Badge>
-                                  )}
-                                </div>
+                  {suppliers.map((supplier) => {
+                    const totalData = supplierTotals[supplier.id] || { total: 0, wonCount: 0 }
+                    const isLowestOverall = lowestTotalSupplierId === supplier.id
+
+                    return (
+                      <TableRow key={supplier.id} className="hover:bg-muted/50 transition-colors">
+                        {/* Supplier Info */}
+                        <TableCell className="font-medium sticky left-0 bg-background z-10 border-r text-center align-middle py-3">
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <span className="font-semibold text-xs text-foreground leading-tight">
+                              {supplier.supplierName || supplier.name}
+                            </span>
+                            {supplier.submissionType && (
+                              <Badge variant="outline" className="text-[10px] py-0 px-1 font-normal text-muted-foreground">
+                                {supplier.submissionType}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        {/* Line Item Bids */}
+                        {paginatedItems.map((item) => {
+                          const bid = groupedData[supplier.id]?.find(
+                            (b) => b.lineItemId === item.id || b.rfqItemId === item.id
+                          )
+                          const abcUnitPrice = item.abcUnitPrice || item.approvedBudgetForContract || 0
+                          const exceedsABC = Boolean(
+                            bid?.isOverABC || (bid?.unitBid && abcUnitPrice > 0 && bid.unitBid > abcUnitPrice)
+                          )
+                          const savingsPercent = bid?.unitBid ? getSavingsPercent(bid.unitBid, abcUnitPrice) : null
+
+                          return (
+                            <React.Fragment key={`${supplier.id}-${item.id}`}>
+                              {/* Unit Bid Cell */}
+                              <TableCell className="text-center text-sm align-middle border-l py-2.5">
+                                {bidMatrix.isBidsOpened === false ? (
+                                  <span className="text-xs text-muted-foreground italic flex items-center justify-center gap-1">
+                                    <Lock className="w-3 h-3" /> Sealed
+                                  </span>
+                                ) : bid?.unitBid ? (
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <span className="font-semibold text-xs">{formatPHP(bid.unitBid)}</span>
+                                    {bid.rank === 1 && !exceedsABC && (
+                                      <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] py-0 px-1.5 font-bold shadow-xs">
+                                        Rank 1 (LCRB)
+                                      </Badge>
+                                    )}
+                                    {bid.rank > 1 && !exceedsABC && (
+                                      <Badge variant="outline" className="text-[10px] py-0 px-1 font-medium text-slate-700 bg-slate-50 border-slate-300">
+                                        Rank {bid.rank} ({bid.score}%)
+                                      </Badge>
+                                    )}
+                                    {exceedsABC && (
+                                      <Badge variant="outline" className="text-[10px] bg-red-100 text-red-700 border-red-300">
+                                        Disqualified
+                                      </Badge>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+
+                              {/* Total Bid Cell */}
+                              <TableCell
+                                className={`text-center text-sm align-middle border-r cursor-pointer transition-colors py-2.5 ${
+                                  exceedsABC
+                                    ? 'bg-red-50/70 text-red-900 font-semibold'
+                                    : 'hover:bg-muted font-medium'
+                                }`}
+                                onClick={() => bid && handleViewBidDetails(supplier, item, bid)}
+                                title="Click to view quotation specifications and attachments"
+                              >
+                                {bidMatrix.isBidsOpened === false ? (
+                                  <span className="text-xs text-muted-foreground italic">Sealed</span>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <span className="font-semibold text-xs">{bid?.totalBid ? formatPHP(bid.totalBid) : '-'}</span>
+                                    {exceedsABC ? (
+                                      <Badge variant="outline" className="text-[10px] bg-red-100 text-red-700 border-red-300">
+                                        Over ABC
+                                      </Badge>
+                                    ) : savingsPercent ? (
+                                      <span className="inline-flex items-center text-[10px] text-emerald-700 font-medium bg-emerald-50 px-1 rounded border border-emerald-200">
+                                        <TrendingDown className="w-2.5 h-2.5 mr-0.5" />
+                                        {savingsPercent} vs ABC
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                )}
+                              </TableCell>
+                            </React.Fragment>
+                          )
+                        })}
+
+                        {/* Overall Total Quotation Column */}
+                        <TableCell className="text-center align-middle border-x py-2.5 font-medium">
+                          {bidMatrix.isBidsOpened === false ? (
+                            <span className="text-xs text-muted-foreground italic">Sealed</span>
+                          ) : totalData.total > 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-0.5">
+                              <span className="font-bold text-xs text-foreground">{formatPHP(totalData.total)}</span>
+                              {isLowestOverall && suppliers.length > 1 && (
+                                <Badge variant="outline" className="text-[10px] py-0 px-1 font-semibold text-emerald-700 bg-emerald-50 border-emerald-300">
+                                  Lowest Package
+                                </Badge>
                               )}
-                            </TableCell>
-                          </React.Fragment>
-                        )
-                      })}
-                      <TableCell className="text-center align-middle">
-                        {paginatedItems.some((item) =>
-                          groupedData[supplier.id]?.find((b) => (b.lineItemId === item.id || b.rfqItemId === item.id) && b.isWinner)
-                        ) && <Trophy className="w-4 h-4 text-yellow-500 mx-auto" />}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+
+                        {/* Award Status Column */}
+                        <TableCell className="text-center align-middle py-2.5 bg-amber-50/30">
+                          {totalData.wonCount > 0 ? (
+                            <Badge className="bg-amber-500 hover:bg-amber-600 text-white gap-1 text-[11px] py-0.5 px-2 font-semibold shadow-xs inline-flex items-center">
+                              <Trophy className="w-3 h-3" />
+                              Winner ({totalData.wonCount})
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </UITable>
             </div>
 
+            {/* Pagination Controls */}
             {lineItems.length > itemsPerPage && (
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
+              <div className="flex items-center justify-between pt-3 border-t">
+                <div className="text-xs text-muted-foreground">
+                  Page {currentPage} of {totalPages} ({lineItems.length} total items)
                 </div>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    className="h-8 gap-1 text-xs"
                   >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Previous
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    Previous Items
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    className="h-8 gap-1 text-xs"
                   >
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
+                    Next Items
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               </div>

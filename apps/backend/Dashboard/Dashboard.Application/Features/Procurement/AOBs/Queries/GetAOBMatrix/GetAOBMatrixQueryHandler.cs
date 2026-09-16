@@ -35,7 +35,7 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
         var bids = await unitOfWork.SupplierBidRepository.Query()
             .Include(sb => sb.Supplier)
             .Include(sb => sb.SupplierBidItems)
-            .Where(sb => rfqIds.Contains(sb.RFQId) && sb.Status == "SUBMITTED")
+            .Where(sb => rfqIds.Contains(sb.RFQId) && !sb.IsDeleted && sb.Status != "Draft" && sb.Status != "Cancelled" && sb.Status != "Withdrawn")
             .ToListAsync(cancellationToken);
 
         // 3. Opening Date check
@@ -121,8 +121,10 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
                         Color = isBidsOpened ? bidItem.Color : null,
                         BrochureFileId = isBidsOpened ? bidItem.BrochureFileId : null,
                         BrochureFileUrl = isBidsOpened ? bidItem.BrochureFileUrl : null,
-                        IsResponsive = bidItem.IsResponsive,
-                        DisqualificationReason = bidItem.DisqualificationReason,
+                        IsResponsive = bidItem.IsResponsive && !string.Equals(bid.Status, "Failed", StringComparison.OrdinalIgnoreCase) && !string.Equals(bid.Status, "Disqualified", StringComparison.OrdinalIgnoreCase),
+                        DisqualificationReason = string.Equals(bid.Status, "Failed", StringComparison.OrdinalIgnoreCase)
+                            ? (bid.Remarks ?? "Failed BAC evaluation")
+                            : bidItem.DisqualificationReason,
                         IsOverABC = isOverABC,
                         QualityScore = isBidsOpened ? bidItem.QualityScore : null,
                         Rank = 0,

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Queries.GetAOBMatrix;
@@ -15,6 +16,7 @@ public class AOBMatrixResponse
     public bool HasMinimumCanvassWarning { get; set; }
     public string? Remarks { get; set; }
 
+    [JsonPropertyName("linkedRFQs")]
     public List<AOBMatrixRFQDto> LinkedRFQs { get; set; } = [];
     public List<AOBMatrixSupplierDto> Suppliers { get; set; } = [];
     public List<AOBMatrixItemDto> Items { get; set; } = [];
