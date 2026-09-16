@@ -2006,202 +2006,8 @@ public static class ProcurementTestDataSeeder
                 await context.SaveChangesAsync();
             }
 
-            // Available AOB for "Create PO" Testing: AOB-2026-SVP-001
-            var aobAvailable = await context.AOBs!
-                .Include(a => a.AOBAwardedItems)
-                .Include(a => a.AOBRFQMappings)
-                .FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-001");
-
-            if (aobAvailable == null)
-            {
-                aobAvailable = new AOB
-                {
-                    Id = Guid.NewGuid(),
-                    AOBNumber = "AOB-2026-SVP-001",
-                    Description = "Abstract of Bids - Workstation Laptops and Laser Printers (Winning Bid: Apex IT Solutions)",
-                    AwardCriterion = BidEvaluationCriteria.LCRB,
-                    AOBDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5)),
-                    OpeningDate = DateTime.UtcNow.AddDays(-7),
-                    Status = StatusEnum.Approved,
-                    ApprovedAt = DateTime.UtcNow.AddDays(-4),
-                    Remarks = "All technical and financial bids reviewed and evaluated responsive.",
-                    CreatedAt = DateTime.UtcNow.AddDays(-5),
-                    CreatedBy = "System"
-                };
-
-                foreach (var rfqItem in rfqSvp.RFQItems)
-                {
-                    decimal unitPrice = rfqItem.ItemNameSnapshot.Contains("Laptop", StringComparison.OrdinalIgnoreCase) ? 62000m : 26500m;
-                    int qty = rfqItem.Quantity;
-                    aobAvailable.AOBAwardedItems.Add(new AOBAwardedItem
-                    {
-                        Id = Guid.NewGuid(),
-                        AOBId = aobAvailable.Id,
-                        RFQItemId = rfqItem.Id,
-                        WinningSupplierId = apexSupplier.Id,
-                        AwardedQuantity = qty,
-                        AwardedUnitPrice = unitPrice,
-                        TotalAwardedAmount = qty * unitPrice,
-                        Score = 96.5m,
-                        AwardReason = "Lowest Calculated and Responsive Quotation (LCRQ)"
-                    });
-                }
-
-                await context.AOBs!.AddAsync(aobAvailable);
-                await context.SaveChangesAsync();
-            }
-
-            if (!aobAvailable.AOBRFQMappings.Any(m => m.RFQId == rfqSvp.Id))
-            {
-                aobAvailable.AOBRFQMappings.Add(new AOBRFQMapping
-                {
-                    AOBId = aobAvailable.Id,
-                    RFQId = rfqSvp.Id
-                });
-                await context.SaveChangesAsync();
-            }
-
-            // AOB for Draft PO: AOB-2026-SVP-0002
-            var aobDraftSource = await context.AOBs!
-                .Include(a => a.AOBAwardedItems)
-                .Include(a => a.AOBRFQMappings)
-                .FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-0002");
-
-            if (aobDraftSource == null)
-            {
-                var firstRfqItem = rfqSvp.RFQItems.FirstOrDefault();
-                aobDraftSource = new AOB
-                {
-                    Id = Guid.NewGuid(),
-                    AOBNumber = "AOB-2026-SVP-0002",
-                    Description = "Abstract of Bids - Specialized Ergonomic Workstations and Chairs",
-                    AwardCriterion = BidEvaluationCriteria.LCRB,
-                    AOBDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-6)),
-                    OpeningDate = DateTime.UtcNow.AddDays(-8),
-                    Status = StatusEnum.Approved,
-                    ApprovedAt = DateTime.UtcNow.AddDays(-5),
-                    CreatedAt = DateTime.UtcNow.AddDays(-6),
-                    CreatedBy = "System"
-                };
-
-                if (firstRfqItem != null)
-                {
-                    aobDraftSource.AOBAwardedItems.Add(new AOBAwardedItem
-                    {
-                        Id = Guid.NewGuid(),
-                        AOBId = aobDraftSource.Id,
-                        RFQItemId = firstRfqItem.Id,
-                        WinningSupplierId = primeOfficeSupplier.Id,
-                        AwardedQuantity = 10,
-                        AwardedUnitPrice = 18500m,
-                        TotalAwardedAmount = 185000m,
-                        Score = 94.0m,
-                        AwardReason = "Lowest compliant quotation"
-                    });
-                }
-
-                await context.AOBs!.AddAsync(aobDraftSource);
-                await context.SaveChangesAsync();
-            }
-
-            if (!aobDraftSource.AOBRFQMappings.Any(m => m.RFQId == rfqSvp.Id))
-            {
-                aobDraftSource.AOBRFQMappings.Add(new AOBRFQMapping
-                {
-                    AOBId = aobDraftSource.Id,
-                    RFQId = rfqSvp.Id
-                });
-                await context.SaveChangesAsync();
-            }
-
-            // AOB for Returned PO: AOB-2026-SVP-0003 (Pre-populated reference matching screenshot)
-            var aobReturnedSource = await context.AOBs!
-                .Include(a => a.AOBAwardedItems)
-                .Include(a => a.AOBRFQMappings)
-                .FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-0003");
-
-            if (aobReturnedSource == null)
-            {
-                aobReturnedSource = new AOB
-                {
-                    Id = Guid.NewGuid(),
-                    AOBNumber = "AOB-2026-SVP-0003",
-                    Description = "Abstract of Bids - Interactive Smart Displays and Wall Mounts",
-                    AwardCriterion = BidEvaluationCriteria.LCRB,
-                    AOBDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)),
-                    OpeningDate = DateTime.UtcNow.AddDays(-12),
-                    Status = StatusEnum.Approved,
-                    ApprovedAt = DateTime.UtcNow.AddDays(-9),
-                    CreatedAt = DateTime.UtcNow.AddDays(-10),
-                    CreatedBy = "System"
-                };
-
-                await context.AOBs!.AddAsync(aobReturnedSource);
-                await context.SaveChangesAsync();
-            }
-
-            if (!aobReturnedSource.AOBRFQMappings.Any(m => m.RFQId == rfqDisplays.Id))
-            {
-                aobReturnedSource.AOBRFQMappings.Add(new AOBRFQMapping
-                {
-                    AOBId = aobReturnedSource.Id,
-                    RFQId = rfqDisplays.Id
-                });
-                await context.SaveChangesAsync();
-            }
-
-            if (!aobReturnedSource.AOBAwardedItems.Any() && rfqDisplays.RFQItems.Count >= 2)
-            {
-                var dispItem1 = rfqDisplays.RFQItems[0];
-                var dispItem2 = rfqDisplays.RFQItems[1];
-
-                aobReturnedSource.AOBAwardedItems.Add(new AOBAwardedItem
-                {
-                    Id = Guid.NewGuid(),
-                    AOBId = aobReturnedSource.Id,
-                    RFQItemId = dispItem1.Id,
-                    WinningSupplierId = bayanSupplier.Id,
-                    AwardedQuantity = 5,
-                    AwardedUnitPrice = 36000m,
-                    TotalAwardedAmount = 180000m,
-                    Score = 100.0m,
-                    AwardReason = "Lowest calculated responsive bid (LCRB)"
-                });
-
-                aobReturnedSource.AOBAwardedItems.Add(new AOBAwardedItem
-                {
-                    Id = Guid.NewGuid(),
-                    AOBId = aobReturnedSource.Id,
-                    RFQItemId = dispItem2.Id,
-                    WinningSupplierId = bayanSupplier.Id,
-                    AwardedQuantity = 5,
-                    AwardedUnitPrice = 138000m,
-                    TotalAwardedAmount = 690000m,
-                    Score = 100.0m,
-                    AwardReason = "Lowest calculated responsive bid (LCRB)"
-                });
-                await context.SaveChangesAsync();
-            }
-
-            // Fresh Unlinked Draft AOB for Testing the Workflow: AOB-2026-SVP-0004
-            var aobDraftTest = await context.AOBs!.FirstOrDefaultAsync(a => a.AOBNumber == "AOB-2026-SVP-0004");
-            if (aobDraftTest == null)
-            {
-                aobDraftTest = new AOB
-                {
-                    Id = Guid.NewGuid(),
-                    AOBNumber = "AOB-2026-SVP-0004",
-                    Description = "Abstract of Bids - Smart Displays & Workstations (Ready to Link RFQ)",
-                    AwardCriterion = BidEvaluationCriteria.LCRB,
-                    AOBDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                    OpeningDate = DateTime.UtcNow.AddHours(-1),
-                    Status = StatusEnum.Draft,
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = "System"
-                };
-                await context.AOBs!.AddAsync(aobDraftTest);
-                await context.SaveChangesAsync();
-            }
+            // Note: Dummy Approved AOBs (AOB-2026-SVP-001, 0002, 0003) removed as requested.
+            // AOBs should be created and evaluated dynamically with valid RFQs and supplier bids.
 
             // -------------------------------------------------------------
             // B. Public Bidding Flow
@@ -2550,7 +2356,7 @@ public static class ProcurementTestDataSeeder
                     PONumber = "PO-2026-SVP-0001",
                     ProcurementMode = POProcurementModeEnum.SVP,
                     SourceDocumentType = SourceDocumentTypeEnum.AOB,
-                    SourceDocumentId = aobDraftSource.Id,
+                    SourceDocumentId = Guid.NewGuid(),
                     SupplierId = primeOfficeSupplier.Id,
                     Description = "Procurement of Specialized Ergonomic Workstations and Chairs for IT Staff",
                     Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-3)),
@@ -2568,7 +2374,7 @@ public static class ProcurementTestDataSeeder
                 {
                     Id = Guid.NewGuid(),
                     PurchaseOrderId = poSvpDraft.Id,
-                    SourceItemId = aobDraftSource.AOBAwardedItems.FirstOrDefault()?.Id ?? Guid.NewGuid(),
+                    SourceItemId = Guid.NewGuid(),
                     Description = "Ergonomic High-Back Mesh Workstation Chairs with Lumbar Support",
                     Quantity = 10,
                     Unit = "unit",
@@ -2690,7 +2496,7 @@ public static class ProcurementTestDataSeeder
                     PONumber = "PO-2026-SVP-0002",
                     ProcurementMode = POProcurementModeEnum.SVP,
                     SourceDocumentType = SourceDocumentTypeEnum.AOB,
-                    SourceDocumentId = aobReturnedSource.Id,
+                    SourceDocumentId = Guid.NewGuid(),
                     SupplierId = bayanSupplier.Id,
                     Description = "Supply and Delivery of 86-inch Interactive Touchscreen Smart Displays",
                     Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-6)),
@@ -2709,7 +2515,7 @@ public static class ProcurementTestDataSeeder
                 {
                     Id = Guid.NewGuid(),
                     PurchaseOrderId = poSvpReturned.Id,
-                    SourceItemId = aobReturnedSource.AOBAwardedItems.FirstOrDefault()?.Id ?? Guid.NewGuid(),
+                    SourceItemId = Guid.NewGuid(),
                     Description = "86-inch 4K UHD Interactive Touchscreen Displays with Dual OS",
                     Quantity = 4,
                     Unit = "unit",
