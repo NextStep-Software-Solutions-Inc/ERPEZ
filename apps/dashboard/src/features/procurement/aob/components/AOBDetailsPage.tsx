@@ -569,58 +569,43 @@ export function AOBDetailsPage({
         </TabsList>
 
         {/* Bid Evaluation Matrix Tab */}
-        <TabsContent value="matrix" className="space-y-4">
+        <TabsContent value="matrix">
           {hasBidData && bidMatrix ? (
-            <>
-              {/* Toolbar with export/print */}
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-600">
-                      {bidStatistics.responsiveBids} responsive bids • {bidStatistics.totalSuppliers} suppliers
-                      {winnerCount > 0 && (
-                        <span className="ml-3 text-yellow-600 font-medium">
-                          • {winnerCount}/{totalItems} winners selected
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {canModifyAOB && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowAddRFQDialog(true)}
-                          disabled={isProcessing}
-                          className="gap-2"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add RFQs & Bids
-                        </Button>
-                      )}
-                      {aob.status !== AOBStatus.APPROVED && (
-                        <Button
-                          size="sm"
-                          variant={allItemsAwarded ? 'outline' : 'default'}
-                          onClick={() => setShowSelectWinnerDialog(true)}
-                          disabled={isProcessing}
-                          className="gap-2"
-                        >
-                          <Trophy className="w-4 h-4" />
-                          {allItemsAwarded ? 'Edit Winners' : 'Select Winners'}
-                        </Button>
-                      )}
-                      <Button variant="outline" size="sm" onClick={onExport} disabled={isProcessing}>
-                        <Download className="w-4 h-4 mr-1" />
-                        Export
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Bid Matrix */}
-              <BidEvaluationMatrix bidMatrix={bidMatrix} />
-            </>
+            <BidEvaluationMatrix
+              bidMatrix={bidMatrix}
+              actions={
+                <div className="flex items-center gap-2">
+                  {canModifyAOB && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowAddRFQDialog(true)}
+                      disabled={isProcessing}
+                      className="gap-1.5 h-8 text-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add RFQs & Bids
+                    </Button>
+                  )}
+                  {aob.status !== AOBStatus.APPROVED && (
+                    <Button
+                      size="sm"
+                      variant={allItemsAwarded ? 'outline' : 'default'}
+                      onClick={() => setShowSelectWinnerDialog(true)}
+                      disabled={isProcessing}
+                      className="gap-1.5 h-8 text-xs"
+                    >
+                      <Trophy className="w-3.5 h-3.5" />
+                      {allItemsAwarded ? 'Edit Winners' : 'Select Winners'}
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={onExport} disabled={isProcessing} className="h-8 text-xs">
+                    <Download className="w-3.5 h-3.5 mr-1" />
+                    Export
+                  </Button>
+                </div>
+              }
+            />
           ) : (
             <Card>
               <CardContent className="pt-6 text-center py-12">
