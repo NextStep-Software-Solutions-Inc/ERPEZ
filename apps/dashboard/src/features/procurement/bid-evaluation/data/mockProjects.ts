@@ -1,7 +1,6 @@
 import { PublicBiddingProject, SupplierBid } from '../types';
 
-export const RA_12009_BAC_DAYS = 10; // IRR Section 63 placeholder default
-export const RA_9184_BAC_DAYS = 12;
+export const RA_12009_BAC_DAYS = 10;
 export const BIDDER_SLA_DAYS = 5;
 
 // Helper to calculate the MEARB scores and sort suppliers accordingly
@@ -73,7 +72,7 @@ export const initialMockProjects: PublicBiddingProject[] = [
     projectName: 'Procurement of Enterprise Server Infrastructure & Core Switch Upgrades',
     abc: 5000000,
     resolutionNumber: 'BAC-RES-2026-0045',
-    governingLaw: 'RA_9184',
+    governingLaw: 'RA_12009',
     awardCriterion: 'LCRB',
     projectStatus: 'Active',
     suppliers: [
@@ -190,7 +189,7 @@ export const initialMockProjects: PublicBiddingProject[] = [
     projectName: 'Supply and Delivery of Medical Grade Air Conditioning & Air Quality Units',
     abc: 3000000,
     resolutionNumber: 'BAC-RES-2026-0012',
-    governingLaw: 'RA_9184',
+    governingLaw: 'RA_12009',
     awardCriterion: 'LCRB',
     projectStatus: 'Active',
     suppliers: [
