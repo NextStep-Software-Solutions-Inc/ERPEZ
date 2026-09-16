@@ -121,12 +121,13 @@ export function NoticeOfAwardDetailsShell({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 h-9 font-medium shadow-sm hover:bg-default-50 transition-all duration-200"
+                  className="gap-1.5 h-9 font-semibold border-primary/30 text-primary hover:bg-primary/5 shadow-sm transition-all duration-200"
                   onClick={onPrint}
                   disabled={isLoading}
+                  title="Generate official NGPA-compliant Notice of Award PDF"
                 >
-                  <FileDown className="h-4 w-4" />
-                  Print NOA
+                  <FileText className="h-4 w-4" />
+                  Generate NOA
                 </Button>
               ) : null}
 

@@ -33,7 +33,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
-import { RadioGroupItem } from '@/components/ui/radio-group'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Dialog,
   DialogContent,
@@ -321,8 +321,28 @@ export function CreatePRModal({
                 <Label className="text-xs font-bold uppercase tracking-wider text-default-700 dark:text-slate-300">
                   PR Type / Requisition Source <span className="text-destructive">*</span>
                 </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <RadioGroup
+                  value={isIndependent ? 'independent' : 'ppmp'}
+                  onValueChange={(val) => {
+                    const nextIsIndependent = val === 'independent'
+                    setIsIndependent(nextIsIndependent)
+                    if (!nextIsIndependent) {
+                      if (form.getFieldValue('prNumber')?.startsWith('PR-IND-')) {
+                        form.setFieldValue('prNumber', '')
+                      }
+                    } else {
+                      if (!form.getFieldValue('prNumber')) {
+                        form.setFieldValue(
+                          'prNumber',
+                          `PR-IND-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+                        )
+                      }
+                    }
+                  }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                >
                   <label
+                    htmlFor="src-ppmp"
                     onClick={() => {
                       setIsIndependent(false)
                       if (form.getFieldValue('prNumber')?.startsWith('PR-IND-')) {
@@ -336,7 +356,7 @@ export function CreatePRModal({
                     }`}
                   >
                     <div className="mt-0.5">
-                      <RadioGroupItem value="ppmp" checked={!isIndependent} id="src-ppmp" />
+                      <RadioGroupItem value="ppmp" id="src-ppmp" />
                     </div>
                     <div className="space-y-0.5">
                       <div className="text-xs font-bold text-default-900 dark:text-slate-100 flex items-center gap-1.5">
@@ -350,6 +370,7 @@ export function CreatePRModal({
                   </label>
 
                   <label
+                    htmlFor="src-independent"
                     onClick={() => {
                       setIsIndependent(true)
                       if (!form.getFieldValue('prNumber')) {
@@ -366,7 +387,7 @@ export function CreatePRModal({
                     }`}
                   >
                     <div className="mt-0.5">
-                      <RadioGroupItem value="independent" checked={isIndependent} id="src-independent" />
+                      <RadioGroupItem value="independent" id="src-independent" />
                     </div>
                     <div className="space-y-0.5">
                       <div className="text-xs font-bold text-default-900 dark:text-slate-100 flex items-center gap-1.5">
@@ -378,7 +399,7 @@ export function CreatePRModal({
                       </p>
                     </div>
                   </label>
-                </div>
+                </RadioGroup>
               </div>
             )}
 

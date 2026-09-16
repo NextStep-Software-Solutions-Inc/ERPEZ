@@ -13,5 +13,6 @@ public enum DocumentType
     MarketScoping,
     BacResolution,
     PurchaseRequest,
-    Apr
+    Apr,
+    NoticeOfAward
 }

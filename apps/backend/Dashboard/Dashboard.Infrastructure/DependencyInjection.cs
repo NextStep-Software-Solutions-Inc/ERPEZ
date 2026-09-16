@@ -22,6 +22,7 @@ using ERPEZ.Infrastructure.Services.DocumentGeneration.Storage;
 using SharedCurrentUserService     = ERPEZ.Shared.Interfaces.ICurrentUserService;
 using SharedCurrentUserServiceImpl = ERPEZ.Shared.Services.CurrentUserService;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
+using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Dtos;
 using ERPEZ.Infrastructure.Services.DocumentGeneration.Renderers.Excel;
 
 namespace ERPEZ.Infrastructure;
@@ -179,6 +180,9 @@ public static class DependencyInjection
 
         // APR — PDF
         services.AddScoped<IDocumentRenderer<AprDataDto>, AprPdfRenderer>();
+
+        // Notice of Award — PDF (RA 12009 NGPA Compliant)
+        services.AddScoped<IDocumentRenderer<NoticeOfAwardDataDto>, NoticeOfAwardPdfRenderer>();
 
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config

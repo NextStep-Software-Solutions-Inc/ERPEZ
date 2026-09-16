@@ -305,15 +305,17 @@ export default function PurchaseRequestPageV2() {
       </Card>
 
       {/* Create PR Modal */}
-      <CreatePRModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-        prType={currentPRType}
-        onSuccess={(pr: PurchaseRequest) => {
-          // Optionally navigate to details
-          handleViewDetails(pr)
-        }}
-      />
+      {showCreateModal && (
+        <CreatePRModal
+          open={showCreateModal}
+          onOpenChange={setShowCreateModal}
+          prType={currentPRType}
+          onSuccess={(pr: PurchaseRequest) => {
+            // Optionally navigate to details
+            handleViewDetails(pr)
+          }}
+        />
+      )}
     </div>
   )
 }

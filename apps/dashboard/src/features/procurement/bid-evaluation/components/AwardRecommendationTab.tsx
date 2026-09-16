@@ -102,7 +102,7 @@ export function AwardRecommendationTab({
               Bids and Awards Committee (BAC) Award Recommendation
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              Authoritative recommendation of award based on verified Post-Qualification results under RA 12009 / RA 9184.
+              Authoritative recommendation of award based on verified Post-Qualification results under RA 12009.
             </CardDescription>
           </div>
           <Button
