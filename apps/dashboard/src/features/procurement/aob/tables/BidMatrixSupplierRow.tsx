@@ -38,19 +38,11 @@ export function BidMatrixSupplierRow({
 
   return (
     <TableRow
-      className={`transition-colors ${
-        isWinnerRow
-          ? 'bg-emerald-50/30 hover:bg-emerald-50/50 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30'
-          : 'hover:bg-muted/40'
-      }`}
+      className="bg-card hover:bg-slate-50/80 dark:hover:bg-slate-900/40 transition-colors border-b"
     >
-      {/* 1. Sticky Supplier Cell (Center-aligned, subtle emerald tint for winners) */}
+      {/* 1. Sticky Supplier Cell (Center-aligned, white body matching Award Summary) */}
       <TableCell
-        className={`sticky left-0 z-20 border-r text-center align-middle py-3 px-3 shadow-xs ${
-          isWinnerRow
-            ? 'bg-emerald-50/40 dark:bg-emerald-950/30'
-            : 'bg-background'
-        }`}
+        className="sticky left-0 z-20 border-r text-center align-middle py-3 px-3 shadow-xs bg-card"
       >
         <div className="flex flex-col items-center justify-center gap-1 min-w-[180px] max-w-[240px] mx-auto text-center">
           <div className="flex items-center justify-center gap-1.5">

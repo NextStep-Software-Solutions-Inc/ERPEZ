@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Item Bid Details Table Component
  * Summary view of winning bids for each line item
  * Shows final award decisions, savings analysis, and bid details inspection
@@ -119,7 +119,7 @@ function createItemBidColumns(
   // Detailed variant
   columns.push(
     columnHelper.accessor('itemCode', {
-      header: 'Item',
+      header: () => <div className="text-center font-bold">Item</div>,
       size: 90,
       cell: (info) => (
         <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
@@ -128,7 +128,7 @@ function createItemBidColumns(
       ),
     }),
     columnHelper.accessor('description', {
-      header: 'Description',
+      header: () => <div className="text-center font-bold">Description</div>,
       size: 220,
       cell: (info) => (
         <div>
@@ -138,7 +138,7 @@ function createItemBidColumns(
       ),
     }),
     columnHelper.accessor('quantity', {
-      header: () => <div className="text-center">Qty</div>,
+      header: () => <div className="text-center font-bold">Qty</div>,
       size: 70,
       cell: (info) => (
         <div className="text-center font-medium text-xs">
@@ -148,7 +148,7 @@ function createItemBidColumns(
     }),
     columnHelper.display({
       id: 'abc',
-      header: () => <div className="text-right">ABC Budget</div>,
+      header: () => <div className="text-center font-bold">ABC Budget</div>,
       size: 130,
       cell: (info) => {
         const item = info.row.original
@@ -163,7 +163,7 @@ function createItemBidColumns(
     }),
     columnHelper.display({
       id: 'bids',
-      header: () => <div className="text-center">Bids</div>,
+      header: () => <div className="text-center font-bold">Bids</div>,
       size: 80,
       cell: (info) => {
         const item = info.row.original
@@ -178,7 +178,7 @@ function createItemBidColumns(
     }),
     columnHelper.display({
       id: 'winner',
-      header: 'Awarded Supplier',
+      header: () => <div className="text-center font-bold">Awarded Supplier</div>,
       size: 200,
       cell: (info) => {
         const item = info.row.original
@@ -203,7 +203,7 @@ function createItemBidColumns(
     }),
     columnHelper.display({
       id: 'winnerPrice',
-      header: () => <div className="text-right">Award Unit Price</div>,
+      header: () => <div className="text-center font-bold">Award Unit Price</div>,
       size: 130,
       cell: (info) => {
         const item = info.row.original
@@ -217,7 +217,7 @@ function createItemBidColumns(
     }),
     columnHelper.display({
       id: 'awardTotal',
-      header: () => <div className="text-right">Total Award</div>,
+      header: () => <div className="text-center font-bold">Total Award</div>,
       size: 140,
       cell: (info) => {
         const item = info.row.original
@@ -239,7 +239,7 @@ function createItemBidColumns(
     }),
     columnHelper.display({
       id: 'savings',
-      header: () => <div className="text-right">Budget Savings</div>,
+      header: () => <div className="text-center font-bold">Budget Savings</div>,
       size: 150,
       cell: (info) => {
         const item = info.row.original
@@ -279,7 +279,7 @@ function createItemBidColumns(
     }),
     columnHelper.display({
       id: 'actions',
-      header: () => <div className="text-center font-semibold">Actions</div>,
+      header: () => <div className="text-center font-bold">Actions</div>,
       size: 165,
       cell: (info) => {
         const item = info.row.original
@@ -538,14 +538,14 @@ export function ItemBidDetailsTable({
             <UITable>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} className="bg-gray-50/80 dark:bg-gray-900/50">
+                  <TableRow key={headerGroup.id} className="bg-slate-100 dark:bg-slate-800 border-b">
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
                         style={{
                           width: header.getSize(),
                         }}
-                        className="text-xs font-semibold text-gray-700 dark:text-gray-300"
+                        className="text-xs font-bold text-foreground text-center py-3"
                       >
                         {header.isPlaceholder
                           ? null
@@ -567,7 +567,7 @@ export function ItemBidDetailsTable({
                   </TableRow>
                 ) : (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-gray-50/70 dark:hover:bg-gray-900/40">
+                    <TableRow key={row.id} className="bg-card hover:bg-slate-50/80 dark:hover:bg-slate-900/40 transition-colors border-b">
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}

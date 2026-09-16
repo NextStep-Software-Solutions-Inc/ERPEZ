@@ -259,11 +259,11 @@ export function BidEvaluationMatrix({
           <div className="overflow-x-auto border rounded-lg bg-card shadow-xs">
             <UITable>
               <TableHeader>
-                <TableRow className="border-b bg-muted/40">
-                  {/* Sticky Supplier Corner Header (Center Aligned) */}
+                <TableRow className="border-b bg-slate-100 dark:bg-slate-800/90">
+                  {/* Sticky Supplier Corner Header (Center Aligned, grayer than body) */}
                   <TableHead
                     rowSpan={2}
-                    className="w-[200px] min-w-[200px] sticky left-0 top-0 z-30 bg-background border-r text-center align-middle font-semibold text-xs text-foreground py-3 shadow-xs"
+                    className="w-[200px] min-w-[200px] sticky left-0 top-0 z-30 bg-slate-100 dark:bg-slate-800/90 border-r text-center align-middle font-bold text-xs text-foreground py-3 shadow-xs"
                   >
                     Supplier / Bidder
                   </TableHead>
@@ -278,25 +278,25 @@ export function BidEvaluationMatrix({
                     />
                   ))}
 
-                  {/* Package Total Header (Center Aligned) */}
+                  {/* Package Total Header (Center Aligned, grayer than body) */}
                   <TableHead
                     rowSpan={2}
-                    className="w-[140px] min-w-[140px] text-center bg-muted/30 border-x font-semibold text-xs align-middle text-foreground py-3"
+                    className="w-[140px] min-w-[140px] text-center bg-slate-100 dark:bg-slate-800/90 border-x font-bold text-xs align-middle text-foreground py-3"
                   >
                     Total Quotation
                   </TableHead>
 
-                  {/* Award Header (Center Aligned with Amber Background) */}
+                  {/* Award Header (Center Aligned with soft Amber-tinted Gray) */}
                   <TableHead
                     rowSpan={2}
-                    className="w-[120px] min-w-[120px] text-center bg-amber-50/70 dark:bg-amber-950/40 border-l align-middle font-semibold text-xs text-amber-900 dark:text-amber-300 py-3"
+                    className="w-[130px] min-w-[130px] text-center bg-amber-50/80 dark:bg-amber-950/50 border-l align-middle font-bold text-xs text-amber-900 dark:text-amber-200 py-3"
                   >
                     Award Status
                   </TableHead>
                 </TableRow>
 
                 {/* Subheaders: Unit Bid / Total Bid */}
-                <TableRow className="border-b bg-muted/20">
+                <TableRow className="border-b bg-slate-100/80 dark:bg-slate-800/70">
                   {paginatedItems.map((item) => (
                     <BidMatrixItemSubheaders key={`${item.id}-subheaders`} itemId={item.id} />
                   ))}

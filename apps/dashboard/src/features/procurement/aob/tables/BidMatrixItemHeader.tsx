@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import { TableHead } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -28,7 +28,7 @@ export function BidMatrixItemHeader({
   return (
     <TableHead
       colSpan={2}
-      className="text-center bg-muted/20 border-x py-3 px-3 align-top"
+      className="text-center bg-slate-100 dark:bg-slate-800 border-x py-3 px-3 align-top"
     >
       <div className="flex flex-col items-center gap-1.5 min-w-[220px] max-w-[280px] mx-auto text-center">
         {/* Top row: Item badge and Category */}
@@ -91,10 +91,10 @@ export function BidMatrixItemHeader({
 export function BidMatrixItemSubheaders({ itemId }: { itemId: string }) {
   return (
     <React.Fragment key={`${itemId}-subheaders`}>
-      <TableHead className="text-center text-xs font-semibold text-foreground w-[110px] min-w-[110px] border-l py-2 bg-muted/20">
+      <TableHead className="text-center text-xs font-bold text-foreground w-[110px] min-w-[110px] border-l py-2.5 bg-slate-100/80 dark:bg-slate-800/60">
         Unit Bid
       </TableHead>
-      <TableHead className="text-center text-xs font-semibold text-foreground w-[120px] min-w-[120px] border-r py-2 bg-muted/20">
+      <TableHead className="text-center text-xs font-bold text-foreground w-[120px] min-w-[120px] border-r py-2.5 bg-slate-100/80 dark:bg-slate-800/60">
         Total Bid
       </TableHead>
     </React.Fragment>
