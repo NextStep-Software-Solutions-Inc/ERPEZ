@@ -36,6 +36,8 @@ export function BidEvaluationMatrix({
     itemCode: string
     itemDescription: string
     itemABC: number
+    unitABC?: number
+    quantity?: number
     supplierName: string
     bid: SupplierBid | null
   }>({
@@ -43,6 +45,8 @@ export function BidEvaluationMatrix({
     itemCode: '',
     itemDescription: '',
     itemABC: 0,
+    unitABC: 0,
+    quantity: 0,
     supplierName: '',
     bid: null,
   })
@@ -76,11 +80,16 @@ export function BidEvaluationMatrix({
   }, [suppliers, paginatedItems])
 
   const handleViewBidDetails = (supplier: typeof suppliers[0], item: typeof paginatedItems[0], bid: SupplierBid) => {
+    const abcUnitPrice = item.abcUnitPrice || item.approvedBudgetForContract || 0
+    const totalABC = item.totalABC || (abcUnitPrice * (item.quantity || 1))
+
     setViewingBidDetails({
       open: true,
       itemCode: item.itemCode || item.id.substring(0, 8),
       itemDescription: item.description || item.name || '',
-      itemABC: item.abcUnitPrice || item.approvedBudgetForContract || 0,
+      itemABC: totalABC,
+      unitABC: abcUnitPrice,
+      quantity: item.quantity,
       supplierName: supplier.supplierName || supplier.name || '',
       bid,
     })
@@ -107,7 +116,7 @@ export function BidEvaluationMatrix({
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="font-semibold text-amber-800">Minimum Canvass Notice</AlertTitle>
             <AlertDescription className="text-sm text-amber-700">
-              Fewer than three (3) suppliers have submitted quotations. Under Philippine Procurement Law (RA 9184 & RA 12009) guidelines for Alternative Procurement (Shopping & Small Value Procurement), please ensure at least three suppliers are canvassed where possible.
+              Fewer than three (3) suppliers have submitted quotations. Under Philippine Procurement Law (RA 12009) guidelines for Alternative Procurement (Shopping & Small Value Procurement), please ensure at least three suppliers are canvassed where possible.
             </AlertDescription>
           </Alert>
         )}
@@ -146,35 +155,54 @@ export function BidEvaluationMatrix({
                     <TableHead rowSpan={2} className="w-[180px] sticky left-0 bg-white z-10 border-r text-center align-middle">
                       Supplier
                     </TableHead>
-                    {paginatedItems.map((item) => (
-                      <TableHead key={item.id} colSpan={3} className="text-center bg-gray-50 border-x">
-                        <div className="flex flex-col items-center gap-1">
-                          <div>
-                            <div className="font-semibold text-xs">{item.itemCode || item.id.substring(0, 8)}</div>
-                            <div className="text-xs text-gray-600 line-clamp-2">{item.description || item.name}</div>
-                            <div className="text-xs text-gray-500">Qty: {item.quantity}</div>
+                    {paginatedItems.map((item) => {
+                      const abcUnitPrice = item.abcUnitPrice || item.approvedBudgetForContract || 0
+                      const totalABC = item.totalABC || (abcUnitPrice * (item.quantity || 1))
+
+                      return (
+                        <TableHead key={item.id} colSpan={3} className="text-center bg-gray-50 border-x py-2.5">
+                          <div className="flex flex-col items-center gap-1 px-1">
+                            <div className="font-semibold text-xs text-gray-900">{item.itemCode || item.id.substring(0, 8)}</div>
+                            <div className="text-xs text-gray-600 line-clamp-2 max-w-[280px]" title={item.description || item.name}>
+                              {item.description || item.name}
+                            </div>
+                            <div className="flex flex-wrap items-center justify-center gap-1.5 mt-0.5 text-xs">
+                              <span className="text-gray-500 font-medium">Qty: {item.quantity}</span>
+                              <span className="text-gray-300">•</span>
+                              <Badge variant="outline" className="text-[11px] font-semibold bg-blue-50 text-blue-700 border-blue-200 py-0.5 px-2">
+                                Approved ABC: ₱{totalABC.toLocaleString()}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
-                      </TableHead>
-                    ))}
+                        </TableHead>
+                      )
+                    })}
                     <TableHead rowSpan={2} className="w-[90px] text-center bg-yellow-50 align-middle">
                       Winner
                     </TableHead>
                   </TableRow>
                   <TableRow>
-                    {paginatedItems.map((item) => (
-                      <React.Fragment key={`${item.id}-subheader`}>
-                        <TableHead className="text-center text-xs bg-gray-50 font-medium w-[100px]">
-                          ABC Unit
-                        </TableHead>
-                        <TableHead className="text-center text-xs bg-gray-50 font-medium w-[110px]">
-                          Unit Price
-                        </TableHead>
-                        <TableHead className="text-center text-xs bg-gray-50 font-medium w-[120px] border-r">
-                          Total
-                        </TableHead>
-                      </React.Fragment>
-                    ))}
+                    {paginatedItems.map((item) => {
+                      const abcUnitPrice = item.abcUnitPrice || item.approvedBudgetForContract || 0
+                      const totalABC = item.totalABC || (abcUnitPrice * (item.quantity || 1))
+
+                      return (
+                        <React.Fragment key={`${item.id}-subheader`}>
+                          <TableHead className="text-center text-xs bg-gray-50 font-medium w-[100px]">
+                            ABC Unit
+                          </TableHead>
+                          <TableHead className="text-center text-xs bg-gray-50 font-medium w-[110px]">
+                            Unit Price
+                          </TableHead>
+                          <TableHead className="text-center text-xs bg-gray-50 font-medium w-[120px] border-r">
+                            <div className="flex flex-col items-center leading-tight">
+                              <span>Total</span>
+                              <span className="text-[10px] text-gray-400 font-normal">ABC: ₱{totalABC.toLocaleString()}</span>
+                            </div>
+                          </TableHead>
+                        </React.Fragment>
+                      )
+                    })}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -193,6 +221,7 @@ export function BidEvaluationMatrix({
                       {paginatedItems.map((item) => {
                         const bid = groupedData[supplier.id]?.find((b) => b.lineItemId === item.id || b.rfqItemId === item.id)
                         const abcUnitPrice = item.abcUnitPrice || item.approvedBudgetForContract || 0
+                        const itemTotalABC = item.totalABC || (abcUnitPrice * (item.quantity || 1))
                         const exceedsABC = bid?.isOverABC || (bid?.unitBid && abcUnitPrice > 0 && bid.unitBid > abcUnitPrice)
                         
                         return (
@@ -220,6 +249,7 @@ export function BidEvaluationMatrix({
                                   ? 'bg-red-50 text-red-900' 
                                   : 'hover:bg-gray-100'
                               }`}
+                              title={exceedsABC ? `Exceeds Approved ABC of ₱${itemTotalABC.toLocaleString()}` : undefined}
                               onClick={() => bid && handleViewBidDetails(supplier, item, bid)}
                             >
                               {bidMatrix.isBidsOpened === false ? (
@@ -228,7 +258,7 @@ export function BidEvaluationMatrix({
                                 <div className="flex flex-col items-center justify-center gap-1">
                                   <span>{bid?.totalBid ? `₱${bid.totalBid.toLocaleString()}` : '-'}</span>
                                   {exceedsABC && (
-                                    <Badge variant="outline" className="text-[10px] bg-red-100 text-red-700 border-red-300">
+                                    <Badge variant="outline" className="text-[10px] bg-red-100 text-red-700 border-red-300" title={`Exceeds Approved ABC of ₱${itemTotalABC.toLocaleString()}`}>
                                       Over ABC
                                     </Badge>
                                   )}
@@ -291,14 +321,22 @@ export function BidEvaluationMatrix({
           itemCode={viewingBidDetails.itemCode}
           itemDescription={viewingBidDetails.itemDescription}
           itemABC={viewingBidDetails.itemABC}
+          unitABC={viewingBidDetails.unitABC}
+          quantity={viewingBidDetails.quantity}
           supplierName={viewingBidDetails.supplierName}
           bidDetails={{
             unitBid: viewingBidDetails.bid.unitBid,
             totalBid: viewingBidDetails.bid.totalBid,
+            brand: viewingBidDetails.bid.brand,
+            model: viewingBidDetails.bid.model,
+            color: viewingBidDetails.bid.color,
+            rank: viewingBidDetails.bid.rank,
+            score: viewingBidDetails.bid.score,
             qualityScore: viewingBidDetails.bid.qualityScore,
             calculatedQualityPriceRatio: viewingBidDetails.bid.calculatedQualityPriceRatio,
             remarks: viewingBidDetails.bid.remarks,
             offerDocumentUrl: viewingBidDetails.bid.brochureFileUrl || viewingBidDetails.bid.offerDocumentUrl,
+            brochureFileUrl: viewingBidDetails.bid.brochureFileUrl,
             isWinner: viewingBidDetails.bid.isWinner,
           }}
         />

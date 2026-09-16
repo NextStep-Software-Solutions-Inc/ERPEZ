@@ -30,7 +30,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ChevronLeft, MoreVertical, AlertCircle, CheckCircle, Clock, Download, Info, Trophy, Printer, Trash2, Send } from 'lucide-react'
+import {
+  ChevronLeft,
+  MoreVertical,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Download,
+  Info,
+  Trophy,
+  Printer,
+  Trash2,
+  Send,
+  Scale,
+  Coins,
+  Calendar,
+  User,
+  FileText,
+  RotateCcw,
+} from 'lucide-react'
 import { BidEvaluationMatrix } from '../tables/BidEvaluationMatrix'
 import { ItemBidDetailsTable } from '../tables/ItemBidDetailsTable'
 import { AddRFQsAndBidsDialog } from '../dialogs/AddRFQsAndBidsDialog'
@@ -70,40 +88,62 @@ interface AOBDetailsPageProps {
 }
 
 /**
- * Get status badge styling
+ * Get status badge styling with rich colors and icon
+ * Respects user/creator view (Submitted) vs admin/manager view (For Approval)
  */
-function getStatusBadgeVariant(status: string): 'outline' | 'soft' {
-  switch (status) {
-    case AOBStatus.DRAFT:
-      return 'soft'
-    case AOBStatus.FOR_APPROVAL:
-      return 'outline'
-    case AOBStatus.APPROVED:
-      return 'soft'
-    case AOBStatus.REJECTED:
-      return 'soft'
-    case AOBStatus.CANCELLED:
-      return 'outline'
-    default:
-      return 'outline'
+function getStatusBadge(status: string, isAdmin: boolean = false) {
+  if (status === AOBStatus.FOR_APPROVAL || status === 'For Approval' || status === 'Submitted') {
+    if (isAdmin) {
+      return (
+        <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 gap-1.5 px-2.5 py-1 text-xs font-semibold">
+          <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+          For Approval
+        </Badge>
+      )
+    }
+    return (
+      <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-300 gap-1.5 px-2.5 py-1 text-xs font-semibold">
+        <Clock className="w-3.5 h-3.5 text-blue-600" />
+        Submitted
+      </Badge>
+    )
   }
-}
 
-/**
- * Get status icon
- */
-function getStatusIcon(status: string) {
   switch (status) {
     case AOBStatus.DRAFT:
-      return <Clock className="w-4 h-4" />
-    case AOBStatus.FOR_APPROVAL:
-      return <AlertCircle className="w-4 h-4" />
+      return (
+        <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-300 gap-1.5 px-2.5 py-1 text-xs font-semibold">
+          <Clock className="w-3.5 h-3.5 text-slate-500" />
+          Draft
+        </Badge>
+      )
     case AOBStatus.APPROVED:
-      return <CheckCircle className="w-4 h-4" />
+      return (
+        <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-300 gap-1.5 px-2.5 py-1 text-xs font-semibold">
+          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+          Approved
+        </Badge>
+      )
+    case AOBStatus.RETURNED:
     case AOBStatus.REJECTED:
-      return <AlertCircle className="w-4 h-4" />
+      return (
+        <Badge variant="outline" className="bg-rose-50 text-rose-800 border-rose-300 gap-1.5 px-2.5 py-1 text-xs font-semibold">
+          <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+          Returned for Revision
+        </Badge>
+      )
+    case AOBStatus.CANCELLED:
+      return (
+        <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300 gap-1.5 px-2.5 py-1 text-xs font-semibold">
+          Cancelled
+        </Badge>
+      )
     default:
-      return null
+      return (
+        <Badge variant="outline" className="gap-1.5 px-2.5 py-1 text-xs font-semibold">
+          {status === 'ForApproval' ? (isAdmin ? 'For Approval' : 'Submitted') : status}
+        </Badge>
+      )
   }
 }
 
@@ -154,6 +194,11 @@ export function AOBDetailsPage({
   }, [initialBidMatrix])
 
   const allItemsAwarded = useMemo(() => areAllItemsAwarded(bidMatrix), [bidMatrix])
+
+  const isForApproval =
+    aob.status === AOBStatus.FOR_APPROVAL ||
+    aob.status === 'For Approval' ||
+    aob.status === 'Submitted'
 
   const handleConfirmWinners = useCallback(
     async (selections: Record<string, string>) => {
@@ -272,6 +317,65 @@ export function AOBDetailsPage({
     return bidMatrix.lineItems.flatMap((item) => item.lineItems || [])
   }, [bidMatrix])
 
+  const totalABC = useMemo(() => {
+    if (!bidMatrix?.lineItems?.length) return 0
+    return bidMatrix.lineItems.reduce((sum, item) => {
+      const unitABC = item.abcUnitPrice || item.approvedBudgetForContract || 0
+      return sum + (item.totalABC || unitABC * (item.quantity || 1))
+    }, 0)
+  }, [bidMatrix])
+
+  const rfqDisplay = useMemo(() => {
+    if (aob.rfqNumber && aob.rfqNumber !== '-') return aob.rfqNumber
+    if (aob.rfqs && aob.rfqs.length > 0) {
+      const valid = aob.rfqs.map((r) => r.rfqNumber).filter(Boolean)
+      if (valid.length > 0) return valid.join(', ')
+    }
+    if (bidMatrix?.linkedRFQs && bidMatrix.linkedRFQs.length > 0) {
+      const valid = bidMatrix.linkedRFQs.map((r) => r.rfqNumber).filter(Boolean)
+      if (valid.length > 0) return valid.join(', ')
+    }
+    return null
+  }, [aob.rfqNumber, aob.rfqs, bidMatrix?.linkedRFQs])
+
+  const procurementMode = useMemo(() => {
+    const num = (aob.aobNumber || '').toUpperCase()
+    if (num.includes('SVP')) return { code: 'SVP', label: 'Small Value Procurement', sec: 'Sec. 53.9' }
+    if (num.includes('PB')) return { code: 'PB', label: 'Competitive Bidding', sec: 'Sec. 10' }
+    if (num.includes('SHOP')) return { code: 'Shopping', label: 'Shopping', sec: 'Sec. 52.1' }
+    if (num.includes('DA')) return { code: 'DA', label: 'Direct Acquisition', sec: 'ABC ≤ ₱200k' }
+    if (num.includes('DC')) return { code: 'DC', label: 'Direct Contracting', sec: 'Sec. 50' }
+    return { code: 'Alternative', label: 'Alternative Mode', sec: 'RA 12009' }
+  }, [aob.aobNumber])
+
+  const createdDateFormatted = useMemo(() => {
+    const d = aob.createdAt || aob.aobDate || aob.date
+    if (!d) return '-'
+    try {
+      return new Date(d).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    } catch {
+      return d
+    }
+  }, [aob.createdAt, aob.aobDate, aob.date])
+
+  const openingDateFormatted = useMemo(() => {
+    const d = aob.openingDate
+    if (!d) return 'Same day'
+    try {
+      return new Date(d).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    } catch {
+      return d
+    }
+  }, [aob.openingDate])
+
   return (
     <div className="space-y-4">
       {/* Header Section */}
@@ -289,96 +393,255 @@ export function AOBDetailsPage({
           </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <CardTitle className="text-2xl">{aob.aobNumber}</CardTitle>
-                  <Badge variant={getStatusBadgeVariant(aob.status)} className="flex items-center gap-1">
-                    {getStatusIcon(aob.status)}
-                    <span>{aob.status}</span>
+        <Card className="border border-slate-200/90 shadow-sm bg-white overflow-hidden">
+          {/* Header Tier */}
+          <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">
+                    {aob.aobNumber}
+                  </h1>
+                  {getStatusBadge(aob.status, isAdmin)}
+                  <Badge variant="outline" className="bg-blue-50/70 text-blue-750 border-blue-200 text-xs font-medium">
+                    {procurementMode.label}
+                  </Badge>
+                  <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-250 text-[11px]">
+                    RA 12009 (NGPA)
                   </Badge>
                 </div>
-                <CardDescription className="text-base">{aob.description}</CardDescription>
+                <CardDescription className="text-sm text-slate-600 max-w-3xl leading-relaxed">
+                  {aob.description || 'Abstract of Bids & Quotations Evaluation'}
+                </CardDescription>
               </div>
 
-              {/* Actions Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={isProcessing}>
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuLabel>More Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {aob.status === AOBStatus.FOR_APPROVAL && isAdmin && (
-                    <>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setActiveTab('matrix')
-                          setShowSelectWinnerDialog(true)
-                        }}
-                        disabled={isProcessing || !bidMatrix}
-                      >
-                        Continue Evaluation
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  {aob.status === AOBStatus.APPROVED && (
-                    <>
-                      <DropdownMenuItem onClick={() => setActiveTab('summary')} disabled={isProcessing}>
-                        View Award Summary
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem 
-                    onClick={() => printAOB(aob, bidMatrix)} 
-                    disabled={isProcessing}
-                    className="gap-2"
-                  >
-                    <Printer className="w-4 h-4" />
-                    Print AOB
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onExport} disabled={isProcessing}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Export PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onExport} disabled={isProcessing}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Export Excel
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Top Quick Actions */}
+              <div className="flex items-center gap-2 shrink-0">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => printAOB(aob, bidMatrix)} 
+                  disabled={isProcessing}
+                  className="gap-1.5 h-9 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  title="Print Abstract of Bids"
+                >
+                  <Printer className="w-4 h-4 text-slate-500" />
+                  <span>Print AOB</span>
+                </Button>
+
+                {/* Dropdown Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 w-9 p-0" disabled={isProcessing}>
+                      <MoreVertical className="w-4 h-4 text-slate-600" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuLabel>Document Options</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {isForApproval && isAdmin && (
+                      <>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setActiveTab('matrix')
+                            setShowSelectWinnerDialog(true)
+                          }}
+                          disabled={isProcessing || !bidMatrix}
+                        >
+                          Continue Evaluation
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    {aob.status === AOBStatus.APPROVED && (
+                      <>
+                        <DropdownMenuItem onClick={() => setActiveTab('summary')} disabled={isProcessing}>
+                          View Award Recommendation
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem onClick={onExport} disabled={isProcessing}>
+                      <Download className="w-4 h-4 mr-2 text-slate-500" />
+                      Export Summary PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onExport} disabled={isProcessing}>
+                      <Download className="w-4 h-4 mr-2 text-slate-500" />
+                      Export Excel (CSV)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
-          </CardHeader>
+          </div>
 
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              <div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">RFQ Number</div>
-                <div className="font-semibold mt-1">{aob.rfqNumber || '-'}</div>
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Award Criterion</div>
-                <div className="font-semibold mt-1">{aob.awardCriterion || 'LCRB'}</div>
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Created</div>
-                <div className="font-semibold text-sm mt-1">
-                  {new Date(aob.createdAt).toLocaleDateString()}
+          {/* Metadata Section - 5 Micro-Card Tiles */}
+          <CardContent className="p-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {/* 1. RFQ Reference */}
+              <div className="p-3 bg-slate-50/80 rounded-lg border border-slate-200/80 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                    RFQ Reference
+                  </div>
+                  <div className="mt-1">
+                    {rfqDisplay ? (
+                      <span className="text-xs font-semibold text-slate-900 bg-blue-50/80 px-2 py-0.5 rounded border border-blue-200/80 inline-block truncate max-w-full" title={rfqDisplay}>
+                        {rfqDisplay}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-block">
+                        Consolidated Canvass
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-2 font-medium">
+                  {procurementMode.sec}
                 </div>
               </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Created By</div>
-                <div className="font-semibold text-sm mt-1">{aob.createdBy || 'System'}</div>
+
+              {/* 2. Award Criterion */}
+              <div className="p-3 bg-purple-50/40 rounded-lg border border-purple-100 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-700 uppercase tracking-wider mb-1">
+                    <Scale className="w-3.5 h-3.5 text-purple-600" />
+                    Award Criterion
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <span className="font-bold text-sm text-purple-950">
+                      {aob.awardCriterion || 'LCRB'}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-purple-100/60 text-purple-800 border-purple-200 font-medium">
+                      {aob.awardCriterion === 'MEARB' ? 'QPR Score' : 'Lowest Price'}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="text-[11px] text-purple-800/80 mt-2">
+                  {aob.awardCriterion === 'MEARB'
+                    ? 'Quality-Price Ratio'
+                    : 'Lowest Calculated & Responsive'}
+                </div>
+              </div>
+
+              {/* 3. Budget Ceiling (ABC) */}
+              <div className="p-3 bg-emerald-50/40 rounded-lg border border-emerald-100 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 uppercase tracking-wider mb-1">
+                    <Coins className="w-3.5 h-3.5 text-emerald-600" />
+                    Budget Ceiling (ABC)
+                  </div>
+                  <div className="mt-1 font-bold text-sm text-emerald-950">
+                    {totalABC > 0 ? formatPHP(totalABC) : '-'}
+                  </div>
+                </div>
+                <div className="text-[11px] text-emerald-700 mt-2">
+                  {totalItems > 0 ? `${totalItems} line item${totalItems !== 1 ? 's' : ''} budgeted` : 'Approved allocation'}
+                </div>
+              </div>
+
+              {/* 4. Date Created & Opened */}
+              <div className="p-3 bg-slate-50/80 rounded-lg border border-slate-200/80 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                    Canvass Date
+                  </div>
+                  <div className="mt-1 font-semibold text-xs text-slate-900">
+                    {createdDateFormatted}
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-2">
+                  Opening: {openingDateFormatted}
+                </div>
+              </div>
+
+              {/* 5. Created / Evaluated By */}
+              <div className="p-3 bg-slate-50/80 rounded-lg border border-slate-200/80 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    <User className="w-3.5 h-3.5 text-slate-500" />
+                    Prepared By
+                  </div>
+                  <div className="mt-1 font-semibold text-xs text-slate-900 truncate" title={aob.createdBy || 'System'}>
+                    {aob.createdBy || 'System'}
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-2 truncate">
+                  {aob.status === AOBStatus.APPROVED && aob.approvedBy
+                    ? `Approved: ${aob.approvedBy}`
+                    : 'BAC Secretariat'}
+                </div>
               </div>
             </div>
           </CardContent>
+
+          {/* Contextual Status Banner for ForApproval / Submitted */}
+          {isForApproval && (
+            <div
+              className={`border-t px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs ${
+                isAdmin
+                  ? 'border-amber-200/80 bg-amber-50/70 text-amber-900'
+                  : 'border-blue-200/80 bg-blue-50/70 text-blue-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {isAdmin ? (
+                  <>
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>
+                      <strong>Awaiting Approving Authority Sign-Off:</strong> All quotation canvasses have been completed. Review the evaluation matrix and line-item awards before issuing the Notice of Award.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>
+                      <strong>Quotation Canvass Submitted:</strong> This Abstract of Bids has been submitted for evaluation and approval by the Bids and Awards Committee.
+                    </span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setActiveTab('summary')}
+                  className={`h-8 text-xs bg-white ${
+                    isAdmin
+                      ? 'hover:bg-amber-50 border-amber-300 text-amber-900'
+                      : 'hover:bg-blue-50 border-blue-300 text-blue-900'
+                  }`}
+                >
+                  Review Awards
+                </Button>
+                {isAdmin && onApprove && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowApproveDialog(true)}
+                    disabled={isProcessing || !allItemsAwarded}
+                    className="h-8 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Approve AOB
+                  </Button>
+                )}
+                {isAdmin && onReturn && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowReturnDialog(true)}
+                    disabled={isProcessing}
+                    className="h-8 text-xs font-semibold border-rose-300 text-rose-700 hover:bg-rose-50 gap-1"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Return
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* Action Buttons - Role-Based */}
@@ -404,7 +667,7 @@ export function AOBDetailsPage({
               </Button>
             </>
           )}
-          {aob.status === AOBStatus.FOR_APPROVAL && isAdmin && (
+          {isForApproval && isAdmin && (
             <>
               <Button
                 variant="outline"
@@ -429,7 +692,7 @@ export function AOBDetailsPage({
       </div>
 
       {/* Alert if evaluation incomplete */}
-      {aob.status === AOBStatus.FOR_APPROVAL && !allItemsAwarded && bidMatrix && (
+      {isForApproval && !allItemsAwarded && bidMatrix && (
         <Alert className="border-amber-200 bg-amber-50">
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
@@ -455,7 +718,7 @@ export function AOBDetailsPage({
             Bid Matrix
           </TabsTrigger>
           <TabsTrigger value="summary" disabled={!bidMatrix}>
-            Award Summary
+            Award Recommendation
           </TabsTrigger>
           <TabsTrigger value="details">Details & Stats</TabsTrigger>
         </TabsList>
@@ -472,12 +735,12 @@ export function AOBDetailsPage({
                       {bidStatistics.responsiveBids} responsive bids • {bidStatistics.totalSuppliers} suppliers
                       {winnerCount > 0 && (
                         <span className="ml-3 text-yellow-600 font-medium">
-                          • {winnerCount}/{totalItems} winners selected
+                          • {winnerCount}/{totalItems} items awarded
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      {aob.status !== AOBStatus.APPROVED && (
+                      {aob.status !== AOBStatus.APPROVED ? (
                         <Button
                           size="sm"
                           variant={allItemsAwarded ? 'outline' : 'default'}
@@ -487,6 +750,17 @@ export function AOBDetailsPage({
                         >
                           <Trophy className="w-4 h-4" />
                           {allItemsAwarded ? 'Edit Winners' : 'Select Winners'}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowSelectWinnerDialog(true)}
+                          disabled={isProcessing}
+                          className="gap-2"
+                        >
+                          <Trophy className="w-4 h-4 text-amber-500" />
+                          Review Award Decisions
                         </Button>
                       )}
                       <Button variant="outline" size="sm" onClick={onExport} disabled={isProcessing}>
@@ -517,7 +791,13 @@ export function AOBDetailsPage({
         {/* Award Summary Tab */}
         <TabsContent value="summary">
           {bidMatrix && bidMatrix.lineItems && bidMatrix.lineItems.length > 0 && flatBids.length > 0 ? (
-            <ItemBidDetailsTable lineItems={bidMatrix.lineItems} bids={flatBids} variant="detailed" />
+            <ItemBidDetailsTable
+              lineItems={bidMatrix.lineItems}
+              bids={flatBids}
+              variant="detailed"
+              onSelectWinners={() => setShowSelectWinnerDialog(true)}
+              isApproved={aob.status === AOBStatus.APPROVED}
+            />
           ) : (
             <Card>
               <CardContent className="pt-6 text-center py-12">
@@ -620,6 +900,7 @@ export function AOBDetailsPage({
           onOpenChange={setShowSelectWinnerDialog}
           bidMatrix={bidMatrix}
           onConfirm={handleConfirmWinners}
+          readOnly={aob.status === AOBStatus.APPROVED}
         />
       )}
 
