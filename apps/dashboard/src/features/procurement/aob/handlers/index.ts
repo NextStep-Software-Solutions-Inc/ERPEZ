@@ -20,4 +20,5 @@ export { deleteAOBRequest } from './deleteAOBRequest'
 export { unlinkRFQRequest } from './unlinkRFQRequest'
 export { getRFQListRequest } from './getRFQListRequest'
 export type { GetRFQListParams, RFQListItem } from './getRFQListRequest'
+export * from './generateAOBDocumentRequest'
 

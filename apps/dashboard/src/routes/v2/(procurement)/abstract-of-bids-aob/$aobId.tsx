@@ -18,6 +18,7 @@ import { approveAOBRequest } from '@/features/procurement/aob/handlers/approveAO
 import { getAOBListRequest } from '@/features/procurement/aob/handlers/getAOBListRequest'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, Loader2 } from 'lucide-react'
+import { printAOB } from '@/features/procurement/aob/utils/printAOB'
 
 const useAOBDetail = createQueryHookFromTemplate(getAOBDetailRequest)
 const useBidMatrix = createQueryHookFromTemplate(getBidMatrixRequest)
@@ -163,7 +164,11 @@ function RouteComponent() {
   }
 
   const handleExport = () => {
-    toast.info('Export functionality triggered')
+    if (aob && bidMatrix) {
+      printAOB(aob, bidMatrix)
+    } else {
+      toast.info('Bid matrix not loaded yet')
+    }
   }
 
   if (isAobLoading || isMatrixLoading) {

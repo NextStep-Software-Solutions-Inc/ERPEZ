@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Constants;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.ApproveAOB;
@@ -233,6 +234,29 @@ public class AOBController(ISender mediator) : ControllerBase
     public async Task<IActionResult> ReturnAOB(Guid id, [FromBody] ReturnAOBCommand command)
     {
         var result = await mediator.Send(command with { AOBId = id });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Generate official Abstract of Bids / Quotation PDF document
+    /// </summary>
+    [HttpPost("{id}/generate")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
+    public async Task<IActionResult> GenerateAOBDocument(
+        Guid id,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.AOBs.Commands.GenerateAOBDocument.GenerateAOBDocumentCommand
+        {
+            AOBId = id,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

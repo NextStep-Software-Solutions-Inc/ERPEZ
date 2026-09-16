@@ -37,9 +37,10 @@ import { AddRFQsAndBidsDialog } from '../dialogs/AddRFQsAndBidsDialog'
 import { ApproveAOBDialog } from '../dialogs/ApproveAOBDialog'
 import { ReturnAOBDialog } from '../dialogs/ReturnAOBDialog'
 import { SelectWinnerDialog } from '../dialogs/SelectWinnerDialog'
+import { ExportAOBDialog } from '../dialogs/ExportAOBDialog'
 import type { AOB, BidMatrix, AwardItemInputDto } from '../types/aobTypes'
 import { AOBStatus } from '../types/aobTypes'
-import { printAOB } from '../utils/printAOB'
+import { printAOB, exportAOBCSV } from '../utils/printAOB'
 import { toast } from 'sonner'
 import {
   createMutationHookFromTemplate,
@@ -144,6 +145,7 @@ export function AOBDetailsPage({
   const [showApproveDialog, setShowApproveDialog] = useState(false)
   const [showReturnDialog, setShowReturnDialog] = useState(false)
   const [showSelectWinnerDialog, setShowSelectWinnerDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [rfqToUnlink, setRfqToUnlink] = useState<{ id: string; rfqNumber: string } | null>(null)
 
@@ -349,70 +351,91 @@ export function AOBDetailsPage({
                 <CardDescription className="text-base">{aob.description}</CardDescription>
               </div>
 
-              {/* Actions Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={isProcessing}>
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuLabel>More Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {canModifyAOB && (
-                    <>
-                      <DropdownMenuItem
-                        onClick={() => setShowAddRFQDialog(true)}
-                        disabled={isProcessing}
-                        className="gap-2"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Link RFQs & Bids
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  {aob.status === AOBStatus.FOR_APPROVAL && isAdmin && (
-                    <>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setActiveTab('matrix')
-                          setShowSelectWinnerDialog(true)
-                        }}
-                        disabled={isProcessing || !bidMatrix}
-                      >
-                        Continue Evaluation
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  {aob.status === AOBStatus.APPROVED && (
-                    <>
-                      <DropdownMenuItem onClick={() => setActiveTab('summary')} disabled={isProcessing}>
-                        View Award Summary
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem 
-                    onClick={() => printAOB(aob, bidMatrix)} 
-                    disabled={isProcessing}
-                    className="gap-2"
-                  >
-                    <Printer className="w-4 h-4" />
-                    Print AOB
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onExport} disabled={isProcessing}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Export PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onExport} disabled={isProcessing}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Export Excel
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Header Action Buttons & More Dropdown */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowExportDialog(true)}
+                  disabled={isProcessing}
+                  className="gap-1.5 h-8 text-xs font-semibold"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Export
+                </Button>
+
+                {/* Actions Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" disabled={isProcessing} className="h-8 w-8 p-0">
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>More Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {canModifyAOB && (
+                      <>
+                        <DropdownMenuItem
+                          onClick={() => setShowAddRFQDialog(true)}
+                          disabled={isProcessing}
+                          className="gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Link RFQs & Bids
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    {aob.status === AOBStatus.FOR_APPROVAL && isAdmin && (
+                      <>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setActiveTab('matrix')
+                            setShowSelectWinnerDialog(true)
+                          }}
+                          disabled={isProcessing || !bidMatrix}
+                        >
+                          Continue Evaluation
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    {aob.status === AOBStatus.APPROVED && (
+                      <>
+                        <DropdownMenuItem onClick={() => setActiveTab('summary')} disabled={isProcessing}>
+                          View Award Summary
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem 
+                      onClick={() => setShowExportDialog(true)} 
+                      disabled={isProcessing}
+                      className="gap-2 font-medium"
+                    >
+                      <Download className="w-4 h-4" />
+                      Export Abstract of Quotation
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => printAOB(aob, bidMatrix)} 
+                      disabled={isProcessing}
+                      className="gap-2"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Print / Save as PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => exportAOBCSV(aob, bidMatrix)}
+                      disabled={isProcessing}
+                      className="gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download CSV Data
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </CardHeader>
 
@@ -599,8 +622,14 @@ export function AOBDetailsPage({
                       {allItemsAwarded ? 'Edit Winners' : 'Select Winners'}
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" onClick={onExport} disabled={isProcessing} className="h-8 text-xs">
-                    <Download className="w-3.5 h-3.5 mr-1" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowExportDialog(true)}
+                    disabled={isProcessing}
+                    className="gap-1.5 h-8 text-xs font-semibold"
+                  >
+                    <Download className="w-3.5 h-3.5" />
                     Export
                   </Button>
                 </div>
@@ -878,6 +907,14 @@ export function AOBDetailsPage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Export Abstract of Quotation Dialog */}
+      <ExportAOBDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        aob={aob}
+        bidMatrix={bidMatrix}
+      />
     </div>
   )
 }

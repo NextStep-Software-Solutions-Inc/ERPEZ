@@ -139,7 +139,7 @@ export const getBidMatrixRequest: QueryBlueprintFromTemplate<
         aobId: data.aobId,
         rfqId: item.rfqId,
         rfqItemId: item.rfqItemId,
-        itemCode: `Item #${index + 1}`,
+        itemCode: `${index + 1}`,
         description: item.name,
         itemName: item.name,
         name: item.name,
