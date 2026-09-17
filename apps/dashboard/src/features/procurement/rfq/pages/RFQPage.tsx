@@ -373,12 +373,32 @@ export function RFQPage() {
                         )}
                         {columnVisibility.status && (
                           <TableCell>
-                            <Badge
-                              color={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.color}
-                              variant={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.variant}
-                            >
-                              {normalizeStatus(r).toUpperCase()}
-                            </Badge>
+                            {r.remarks && normalizeStatus(r) === 'returned' ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge
+                                      className="cursor-help"
+                                      color={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.color}
+                                      variant={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.variant}
+                                    >
+                                      {normalizeStatus(r).toUpperCase()}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs text-xs">
+                                    <p className="font-semibold mb-1">Return Reason / Remarks:</p>
+                                    <p className="text-slate-600">{r.remarks}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <Badge
+                                color={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.color}
+                                variant={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.variant}
+                              >
+                                {normalizeStatus(r).toUpperCase()}
+                              </Badge>
+                            )}
                           </TableCell>
                         )}
                         <TableCell>

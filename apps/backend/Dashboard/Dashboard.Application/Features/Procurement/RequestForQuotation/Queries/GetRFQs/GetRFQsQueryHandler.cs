@@ -43,7 +43,8 @@ public class GetRFQsQueryHandler(IUnitOfWork unitOfWork)
             DeliveryPeriod = r.DeliveryPeriod,
             Status = r.Status,
             TotalAmount = r.TotalAmount,
-            ApplicantCount = bidCounts.GetValueOrDefault(r.Id, 0)
+            ApplicantCount = bidCounts.GetValueOrDefault(r.Id, 0),
+            Remarks = r.Remarks
         }).ToList();
 
         return new PaginatedApiResponse<RFQListItemDto>(items, page, pageSize, totalCount);
