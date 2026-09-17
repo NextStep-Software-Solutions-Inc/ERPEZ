@@ -207,7 +207,6 @@ public sealed class NoticeOfAwardPdfRenderer : BasePdfRenderer, IDocumentRendere
                upper.Contains("SYSTEM") ||
                upper.Contains("TEST") ||
                upper.Contains("USER") ||
-               upper.Contains("CULTURA") ||
                upper.Contains("HEAD OF THE PROCURING ENTITY");
     }
 }
