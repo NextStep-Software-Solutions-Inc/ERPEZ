@@ -24,11 +24,22 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
         var baseQuery = query ?? context.Set<RFQ>();
 
         return baseQuery
+            .Include(r => r.ConsolidatedPR)
+                .ThenInclude(c => c!.ConsolidatedPRItems
+                    .Where(ci => !ci.IsDeleted))
+                    .ThenInclude(ci => ci.PurchaseRequest)
+                        .ThenInclude(pr => pr.Office)
             .Include(r => r.ModeOfProcurement)
             .Include(r => r.RFQItems
                 .Where(item => !item.IsDeleted))
                 .ThenInclude(item => item.CPRItem)
+                    .ThenInclude(ci => ci.PurchaseRequest)
+                        .ThenInclude(pr => pr.Office)
+            .Include(r => r.RFQItems
+                .Where(item => !item.IsDeleted))
+                .ThenInclude(item => item.CPRItem)
                     .ThenInclude(ci => ci.PRItem)
+                        .ThenInclude(pi => pi.PPMPItem)
             .Include(r => r.RFQSuppliers
                 .Where(s => !s.IsDeleted))
                 .ThenInclude(s => s.Supplier)
@@ -151,5 +162,38 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
             .ToListAsync(cancellationToken);
 
         return results.ToDictionary(r => r.CPRItemId, r => r.TotalQuantity);
+    }
+
+    public async Task<string?> GetLastRFQNumberAsync(int year, CancellationToken cancellationToken = default)
+    {
+        var yearPrefix = $"RFQ-{year}-";
+        var rfqNumbers = await context.Set<RFQ>()
+            .AsNoTracking()
+            .Where(r => !r.IsDeleted && (r.RFQNumber.StartsWith(yearPrefix) || r.Date.Year == year))
+            .Select(r => r.RFQNumber)
+            .ToListAsync(cancellationToken);
+
+        return rfqNumbers
+            .OrderByDescending(num =>
+            {
+                var parts = num.Split('-');
+                if (parts.Length >= 3 && int.TryParse(parts[^1], out var seq))
+                {
+                    return seq;
+                }
+                return 0;
+            })
+            .FirstOrDefault();
+    }
+
+    public async Task<List<RFQItem>> GetItemsByRfqAndCprItemIdsAsync(
+        Guid rfqId,
+        List<Guid> cprItemIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.Set<RFQItem>()
+            .IgnoreQueryFilters()
+            .Where(i => i.RFQId == rfqId && cprItemIds.Contains(i.CPRItemId))
+            .ToListAsync(cancellationToken);
     }
 }

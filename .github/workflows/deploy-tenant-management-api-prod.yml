@@ -109,20 +109,20 @@ jobs:
     - name: Transfer files to VPS via SCP
       uses: appleboy/scp-action@v0.1.7
       with:
-        host: ${{ secrets.PROD_SSH_HOST || secrets.SSH_HOST }}
-        username: ${{ secrets.PROD_SSH_USERNAME || secrets.SSH_USERNAME }}
-        key: ${{ secrets.PROD_SSH_KEY || secrets.SSH_KEY }}
-        passphrase: ${{ secrets.PROD_SSH_PASSPHRASE || secrets.SSH_PASSPHRASE }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         source: "${{ env.CONTAINER_NAME }}.tar.gz,apps/backend/TenantManagement/docker-compose.yml"
         target: "/tmp"
 
     - name: Deploy on Production VPS
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.PROD_SSH_HOST || secrets.SSH_HOST }}
-        username: ${{ secrets.PROD_SSH_USERNAME || secrets.SSH_USERNAME }}
-        key: ${{ secrets.PROD_SSH_KEY || secrets.SSH_KEY }}
-        passphrase: ${{ secrets.PROD_SSH_PASSPHRASE || secrets.SSH_PASSPHRASE }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
           # Move the transferred docker-compose.yml to the production stack folder
           mkdir -p /opt/docker-stack/tenant-management-api-prod
@@ -134,7 +134,7 @@ jobs:
           rm -f /tmp/${{ env.CONTAINER_NAME }}.tar.gz
 
           # Deploy via docker compose
-          export DB_CONNECTION_STRING="${{ secrets.ERPEZ_MANAGEMENT_DB_CONNECTION_STRING_PROD || secrets.ERPEZ_MANAGEMENT_DB_CONNECTION_STRING }}"
+          export DB_CONNECTION_STRING="${{ secrets.ERPEZ_MANAGEMENT_DB_CONNECTION_STRING }}"
           cd /opt/docker-stack/tenant-management-api-prod
           docker compose down
           docker compose up -d

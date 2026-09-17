@@ -187,7 +187,7 @@ export function CreatePRModal({
             isHighlyTechnicalGoodsServices:
               selectedCategory?.isHighlyTechnicalGoodsServices,
             isIndependent,
-            sourceType: isIndependent ? 'INDEPENDENT' : 'PPMP',
+            sourceType: isIndependent ? 'INDEPENDENT' : 'APP_ITEM',
           },
           items: [],
           totalAmount: 0,
@@ -387,7 +387,7 @@ export function CreatePRModal({
                     }`}
                   >
                     <div className="mt-0.5">
-                      <RadioGroupItem value="independent" id="src-independent" />
+                      <RadioGroupItem value="independent" id="src-independent" color="warning" />
                     </div>
                     <div className="space-y-0.5">
                       <div className="text-xs font-bold text-default-900 dark:text-slate-100 flex items-center gap-1.5">

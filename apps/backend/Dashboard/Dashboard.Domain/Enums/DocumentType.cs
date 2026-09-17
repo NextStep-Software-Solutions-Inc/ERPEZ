@@ -14,5 +14,6 @@ public enum DocumentType
     BacResolution,
     PurchaseRequest,
     Apr,
-    NoticeOfAward
+    NoticeOfAward,
+    Rfq
 }

@@ -184,6 +184,9 @@ public static class DependencyInjection
         // Notice of Award — PDF (RA 12009 NGPA Compliant)
         services.AddScoped<IDocumentRenderer<NoticeOfAwardDataDto>, NoticeOfAwardPdfRenderer>();
 
+        // RFQ — PDF
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos.RfqDataDto>, RfqPdfRenderer>();
+
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()

@@ -33,10 +33,12 @@ public class RemoveRFQItemCommandHandler(IUnitOfWork unitOfWork)
             .Where(i => i.Id != request.RFQItemId)
             .Sum(i => i.Quantity * i.UnitPriceSnapshot);
  
-        // If this was the last item, release the mode lock so a new mode can be chosen on next add.
-        if (rfq.RFQItems.Count(i => i.Id != request.RFQItemId) == 0)
+        // If this was the last item, release the mode and CPR lock so a new mode/CPR can be chosen on next add.
+        if (rfq.RFQItems.Count(i => i.Id != request.RFQItemId && !i.IsDeleted) == 0)
         {
             rfq.ModeOfProcurementId = null;
+            rfq.ConsolidatedPRId = null;
+            rfq.Purpose = null;
         }
  
         unitOfWork.RFQRepository.Update(rfq);
