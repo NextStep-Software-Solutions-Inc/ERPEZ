@@ -1,5 +1,6 @@
 using ERPEZ.Shared.Common;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +24,16 @@ public class GetRFQsQueryHandler(IUnitOfWork unitOfWork)
             Sorts = request.Sorts
         };
 
-        var (entities, totalCount) = await unitOfWork.RFQRepository.GetAllWithDetailsAsync(sieveModel, request.Status, cancellationToken);
+        var (allEntities, totalCount) = await unitOfWork.RFQRepository.GetAllWithDetailsAsync(sieveModel, request.Status, cancellationToken);
+
+        // Approved RFQs with no line items are incomplete and must be hidden from the manage portal.
+        var entities = (request.Status == StatusEnum.Approved || request.Filters?.Contains("Approved", StringComparison.OrdinalIgnoreCase) == true)
+            ? allEntities.Where(r => r.RFQItems.Any(i => !i.IsDeleted)).ToList()
+            : allEntities.ToList();
+
+        // Recalculate totalCount when the item filter has been applied
+        if (entities.Count != allEntities.Count)
+            totalCount = entities.Count;
 
         var rfqIds = entities.Select(r => r.Id).ToList();
         var bids = await unitOfWork.SupplierBidRepository.Query()
@@ -53,6 +63,7 @@ public class GetRFQsQueryHandler(IUnitOfWork unitOfWork)
                 Status = r.Status,
                 TotalAmount = r.TotalAmount,
                 ApplicantCount = applicantCount,
+                ItemCount = r.RFQItems?.Count(i => !i.IsDeleted) ?? 0,
                 Remarks = r.Remarks
             };
         }).ToList();

@@ -27,6 +27,10 @@ public record RFQSupplierBidDto
     public DateTime? SubmittedAt { get; init; }
     public decimal TotalBidAmount { get; init; }
     public string? Remarks { get; init; }
+    public string? DeliveryPeriod { get; init; }
+    public string? PaymentTerms { get; init; }
+    public string? WarrantyTerms { get; init; }
+    public int? ValidityPeriodDays { get; init; }
     public string? EvaluatedBy { get; init; }
     public DateTime? EvaluatedAt { get; init; }
     public List<RFQBidDocumentDto> Documents { get; init; } = [];
@@ -222,6 +226,10 @@ public class GetRFQSupplierBidsQueryHandler(IUnitOfWork unitOfWork)
                 SubmittedAt = b.SubmittedAt ?? b.CreatedAt,
                 TotalBidAmount = b.TotalAmount,
                 Remarks = b.Remarks,
+                DeliveryPeriod = b.DeliveryPeriod,
+                PaymentTerms = b.PaymentTerms,
+                WarrantyTerms = b.WarrantyTerms,
+                ValidityPeriodDays = b.ValidityPeriodDays,
                 EvaluatedBy = b.UpdatedBy,
                 EvaluatedAt = b.UpdatedAt,
                 Documents = documents,

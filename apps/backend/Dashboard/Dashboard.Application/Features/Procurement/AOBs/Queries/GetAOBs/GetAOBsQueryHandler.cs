@@ -17,6 +17,8 @@ public class GetAOBsQueryHandler(IUnitOfWork unitOfWork, ISieveProcessor sievePr
     {
         var dbQuery = unitOfWork.AOBRepository.Query()
             .Where(a => !a.IsDeleted)
+            // Approved AOBs with no awarded items are incomplete — hide them from listings.
+            .Where(a => a.Status != ERPEZ.Domain.Enums.StatusEnum.Approved || a.AOBAwardedItems.Any())
             .AsQueryable();
 
         var page = query.PageNumber > 0 ? query.PageNumber : 1;

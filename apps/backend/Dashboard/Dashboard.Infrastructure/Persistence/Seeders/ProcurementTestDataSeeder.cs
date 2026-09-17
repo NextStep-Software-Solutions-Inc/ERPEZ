@@ -1116,6 +1116,67 @@ public static class ProcurementTestDataSeeder
             await context.SaveChangesAsync();
         }
 
+        var prDisplay = await context.PurchaseRequests!.Include(p => p.PRItems).FirstOrDefaultAsync(p => p.PRNumber == "PR-2026-GSPD-003");
+        if (prDisplay == null)
+        {
+            var displayPPMPItem = await context.PPMPItems!.FirstOrDefaultAsync(i => i.Name.Contains("Interactive Touchscreen Display") || i.Name.Contains("Interactive Display"));
+            var standPPMPItem = await context.PPMPItems!.FirstOrDefaultAsync(i => i.Name.Contains("Floor Stand"));
+
+            prDisplay = new PurchaseRequest
+            {
+                Id = Guid.NewGuid(),
+                PRNumber = "PR-2026-GSPD-003",
+                Description = "Supply and Delivery of 86-inch Interactive Smart Displays and Wall Mounts for Engineering Lecture Halls",
+                Purpose = "Equip lecture halls with interactive displays and mobile stands.",
+                PRType = PRType.NonCSE,
+                OfficeId = itOffice.Id,
+                FundSourceId = fundSource.Id,
+                PPMPId = ppmp.Id,
+                RequestedDate = new DateOnly(2026, 8, 12),
+                TotalAmount = 950000m,
+                Status = StatusEnum.Approved,
+                CreatedAt = DateTime.UtcNow.AddDays(-10),
+                CreatedBy = "System"
+            };
+
+            if (displayPPMPItem != null)
+            {
+                prDisplay.PRItems.Add(new PRItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseRequestId = prDisplay.Id,
+                    PPMPItemId = displayPPMPItem.Id,
+                    Name = "86-Inch 4K UHD Interactive Touchscreen Display With Dual OS (Android 13 / Windows 11 Pro OPS)",
+                    Description = displayPPMPItem.Description,
+                    UnitCost = 150000m,
+                    RequestedQuantity = 5,
+                    Amount = 750000m,
+                    IsNonCSE = true,
+                    RequestedMonth = AllocationMonthEnum.January
+                });
+            }
+
+            if (standPPMPItem != null)
+            {
+                prDisplay.PRItems.Add(new PRItem
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseRequestId = prDisplay.Id,
+                    PPMPItemId = standPPMPItem.Id,
+                    Name = "Heavy-Duty Mobile Floor Stand & Wall Bracket Assembly With Cable Management",
+                    Description = standPPMPItem.Description,
+                    UnitCost = 40000m,
+                    RequestedQuantity = 5,
+                    Amount = 200000m,
+                    IsNonCSE = true,
+                    RequestedMonth = AllocationMonthEnum.January
+                });
+            }
+
+            await context.PurchaseRequests!.AddAsync(prDisplay);
+            await context.SaveChangesAsync();
+        }
+
         // 12. Public Bidding Portal & Public Opportunities
         await SeedPublicBiddingPortalAsync(context, unitOfWork);
 
@@ -1399,7 +1460,14 @@ public static class ProcurementTestDataSeeder
         foreach (var def in projectDefinitions)
         {
             var cprNumber = $"CPR-{def.ContractNo}";
-            var cpr = await context.ConsolidatedPRs!.FirstOrDefaultAsync(c => c.CPRNumber == cprNumber);
+            var cpr = await context.ConsolidatedPRs!
+                .Include(c => c.ConsolidatedPRItems)
+                .FirstOrDefaultAsync(c => c.CPRNumber == cprNumber);
+
+            var prDisp = await context.PurchaseRequests!
+                .Include(p => p.PRItems)
+                .FirstOrDefaultAsync(p => p.PRNumber == "PR-2026-GSPD-003");
+
             if (cpr == null)
             {
                 cpr = new ConsolidatedPR
@@ -1414,12 +1482,48 @@ public static class ProcurementTestDataSeeder
                     CreatedAt = DateTime.UtcNow.AddDays(-def.DaysPostedAgo),
                     CreatedBy = "System"
                 };
+
+                if (def.ContractNo == "SVP-2026-GSPD-003" && prDisp != null)
+                {
+                    foreach (var pi in prDisp.PRItems)
+                    {
+                        cpr.ConsolidatedPRItems.Add(new ConsolidatedPRItem
+                        {
+                            Id = Guid.NewGuid(),
+                            ConsolidatedPRId = cpr.Id,
+                            PurchaseRequestId = prDisp.Id,
+                            PRItemId = pi.Id,
+                            ProcurementModeId = svpMode.Id,
+                            AllowPartial = true
+                        });
+                    }
+                }
+
                 await context.ConsolidatedPRs!.AddAsync(cpr);
+                await context.SaveChangesAsync();
+            }
+            else if (!cpr.ConsolidatedPRItems.Any() && def.ContractNo == "SVP-2026-GSPD-003" && prDisp != null)
+            {
+                foreach (var pi in prDisp.PRItems)
+                {
+                    cpr.ConsolidatedPRItems.Add(new ConsolidatedPRItem
+                    {
+                        Id = Guid.NewGuid(),
+                        ConsolidatedPRId = cpr.Id,
+                        PurchaseRequestId = prDisp.Id,
+                        PRItemId = pi.Id,
+                        ProcurementModeId = svpMode.Id,
+                        AllowPartial = true
+                    });
+                }
                 await context.SaveChangesAsync();
             }
 
             var rfqNumber = $"RFQ-{def.ContractNo}";
-            var rfq = await context.RFQs!.FirstOrDefaultAsync(r => r.RFQNumber == rfqNumber);
+            var rfq = await context.RFQs!
+                .Include(r => r.RFQItems)
+                .FirstOrDefaultAsync(r => r.RFQNumber == rfqNumber);
+
             if (rfq == null)
             {
                 rfq = new RFQ
@@ -1439,13 +1543,58 @@ public static class ProcurementTestDataSeeder
                     CreatedAt = DateTime.UtcNow.AddDays(-def.DaysPostedAgo),
                     CreatedBy = "System"
                 };
+
+                if (def.ContractNo == "SVP-2026-GSPD-003" && cpr.ConsolidatedPRItems.Any())
+                {
+                    foreach (var cprItem in cpr.ConsolidatedPRItems)
+                    {
+                        var pi = prDisp?.PRItems.FirstOrDefault(p => p.Id == cprItem.PRItemId);
+                        rfq.RFQItems.Add(new RFQItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQId = rfq.Id,
+                            CPRItemId = cprItem.Id,
+                            Quantity = pi?.RequestedQuantity ?? 5,
+                            UnitPriceSnapshot = pi?.UnitCost ?? (rfq.RFQItems.Count == 0 ? 150000m : 40000m),
+                            ItemNameSnapshot = pi?.Name ?? (rfq.RFQItems.Count == 0 ? "86-Inch 4K UHD Interactive Touchscreen Display With Dual OS (Android 13 / Windows 11 Pro OPS)" : "Heavy-Duty Mobile Floor Stand & Wall Bracket Assembly With Cable Management"),
+                            CategorySnapshot = "Goods",
+                            FundSnapshot = "Regular Agency Fund",
+                            IsBrochureRequired = true
+                        });
+                    }
+                }
+
                 await context.RFQs!.AddAsync(rfq);
                 await context.SaveChangesAsync();
             }
-            else if (rfq.Status != StatusEnum.Approved)
+            else
             {
-                rfq.Status = StatusEnum.Approved;
-                context.RFQs!.Update(rfq);
+                if (rfq.Status != StatusEnum.Approved)
+                {
+                    rfq.Status = StatusEnum.Approved;
+                    context.RFQs!.Update(rfq);
+                }
+
+                if (!rfq.RFQItems.Any() && def.ContractNo == "SVP-2026-GSPD-003" && cpr.ConsolidatedPRItems.Any())
+                {
+                    foreach (var cprItem in cpr.ConsolidatedPRItems)
+                    {
+                        var pi = prDisp?.PRItems.FirstOrDefault(p => p.Id == cprItem.PRItemId);
+                        rfq.RFQItems.Add(new RFQItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQId = rfq.Id,
+                            CPRItemId = cprItem.Id,
+                            Quantity = pi?.RequestedQuantity ?? 5,
+                            UnitPriceSnapshot = pi?.UnitCost ?? (rfq.RFQItems.Count == 0 ? 150000m : 40000m),
+                            ItemNameSnapshot = pi?.Name ?? (rfq.RFQItems.Count == 0 ? "86-Inch 4K UHD Interactive Touchscreen Display With Dual OS (Android 13 / Windows 11 Pro OPS)" : "Heavy-Duty Mobile Floor Stand & Wall Bracket Assembly With Cable Management"),
+                            CategorySnapshot = "Goods",
+                            FundSnapshot = "Regular Agency Fund",
+                            IsBrochureRequired = true
+                        });
+                    }
+                }
+
                 await context.SaveChangesAsync();
             }
 
@@ -1791,10 +1940,14 @@ public static class ProcurementTestDataSeeder
                     CreatedBy = "System"
                 };
 
+                var cprItem1 = cprSvp.ConsolidatedPRItems.ElementAtOrDefault(0);
+                var cprItem2 = cprSvp.ConsolidatedPRItems.ElementAtOrDefault(1);
+
                 var item1 = new RFQItem
                 {
                     Id = Guid.NewGuid(),
                     RFQId = rfqDisplays.Id,
+                    CPRItemId = cprItem1?.Id ?? Guid.NewGuid(),
                     Quantity = 5,
                     UnitPriceSnapshot = 40000m,
                     ItemNameSnapshot = "Heavy-Duty Mobile Floor Stand & Wall Bracket Assembly With Cable Management",
@@ -1807,6 +1960,7 @@ public static class ProcurementTestDataSeeder
                 {
                     Id = Guid.NewGuid(),
                     RFQId = rfqDisplays.Id,
+                    CPRItemId = cprItem2?.Id ?? Guid.NewGuid(),
                     Quantity = 5,
                     UnitPriceSnapshot = 150000m,
                     ItemNameSnapshot = "86-Inch 4K UHD Interactive Touchscreen Display With Dual OS (Android 13 / Windows 11 Pro OPS)",

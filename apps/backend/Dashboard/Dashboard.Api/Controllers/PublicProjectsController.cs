@@ -208,7 +208,18 @@ public class PublicProjectsController(ISender mediator) : ControllerBase
             request.ContactNumber,
             request.TinNumber,
             request.BusinessAddress,
-            request.Documents.Select(d => new ApplicationDocumentUploadItem(d.ChecklistItemId, d.FileId)).ToList()
+            request.Documents.Select(d => new ApplicationDocumentUploadItem(d.ChecklistItemId, d.FileId)).ToList(),
+            request.ProposedBidAmount,
+            request.DeliveryPeriod,
+            request.PaymentTerms,
+            request.WarrantyTerms,
+            request.ValidityPeriodDays,
+            request.Remarks,
+            request.BidSecurityType,
+            request.BidSecurityAmount,
+            request.BidSecurityNumber,
+            request.BidSecurityValidityDays,
+            request.ItemBids
         );
 
         var result = await mediator.Send(command);

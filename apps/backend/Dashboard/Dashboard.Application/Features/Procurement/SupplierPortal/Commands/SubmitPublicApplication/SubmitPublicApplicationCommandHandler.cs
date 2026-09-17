@@ -139,6 +139,61 @@ public class SubmitPublicApplicationCommandHandler(
             }
 
             // Create SupplierBid for the RFQ
+            var itemBidsDict = request.ItemBids?.ToDictionary(ib => ib.RFQItemId) ?? new Dictionary<Guid, PublicItemBidDto>();
+
+            // Calculate total quoted amount
+            decimal totalQuoted = 0m;
+            if (request.ProposedBidAmount.HasValue && request.ProposedBidAmount.Value > 0)
+            {
+                totalQuoted = request.ProposedBidAmount.Value;
+            }
+            else if (itemBidsDict.Count > 0)
+            {
+                totalQuoted = rfq.RFQItems
+                    .Where(item => !item.IsDeleted && itemBidsDict.ContainsKey(item.Id))
+                    .Sum(item => itemBidsDict[item.Id].UnitPrice * item.Quantity);
+            }
+
+            if (totalQuoted > 0 && rfq.TotalAmount > 0 && totalQuoted > rfq.TotalAmount)
+            {
+                throw new FluentValidation.ValidationException(
+                    $"Your total quoted bid (₱{totalQuoted:N2}) exceeds the Approved Budget for the Contract (₱{rfq.TotalAmount:N2}). Under RA 9184, bids exceeding the ABC cannot be accepted.");
+            }
+
+            var bidItems = new List<SupplierBidItem>();
+            foreach (var item in rfq.RFQItems.Where(item => !item.IsDeleted))
+            {
+                itemBidsDict.TryGetValue(item.Id, out var itemBid);
+                string? itemBrochureUrl = quotationUrl;
+
+                if (itemBid?.BrochureFileId != null)
+                {
+                    try
+                    {
+                        var promotedBrochure = await fileStorageService.PromoteFileAsync(itemBid.BrochureFileId.Value, cancellationToken);
+                        itemBrochureUrl = promotedBrochure.Url;
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        // Fall back to quotationUrl if brochure promotion fails
+                    }
+                }
+
+                var unitPrice = itemBid?.UnitPrice ?? 0m;
+                bidItems.Add(new SupplierBidItem
+                {
+                    Id = Guid.NewGuid(),
+                    RFQItemId = item.Id,
+                    UnitPrice = unitPrice,
+                    TotalPrice = unitPrice * item.Quantity,
+                    Brand = itemBid?.Brand,
+                    Model = itemBid?.Model,
+                    Color = itemBid?.Color,
+                    IsResponsive = true,
+                    BrochureFileUrl = itemBrochureUrl
+                });
+            }
+
             var newBid = new SupplierBid
             {
                 Id = Guid.NewGuid(),
@@ -147,17 +202,13 @@ public class SubmitPublicApplicationCommandHandler(
                 SubmissionType = "PublicPortal",
                 Status = "Submitted",
                 SubmittedAt = DateTime.UtcNow,
-                Remarks = $"Applied via BAC Public Portal ({request.CompanyName.Trim()})",
-                TotalAmount = 0m,
-                SupplierBidItems = rfq.RFQItems.Where(item => !item.IsDeleted).Select(item => new SupplierBidItem
-                {
-                    Id = Guid.NewGuid(),
-                    RFQItemId = item.Id,
-                    UnitPrice = 0m,
-                    TotalPrice = 0m,
-                    IsResponsive = true,
-                    BrochureFileUrl = quotationUrl
-                }).ToList()
+                Remarks = request.Remarks ?? $"Applied via BAC Public Portal ({request.CompanyName.Trim()})",
+                TotalAmount = totalQuoted,
+                DeliveryPeriod = request.DeliveryPeriod ?? rfq.DeliveryPeriod,
+                PaymentTerms = request.PaymentTerms,
+                WarrantyTerms = request.WarrantyTerms,
+                ValidityPeriodDays = request.ValidityPeriodDays,
+                SupplierBidItems = bidItems
             };
 
             await unitOfWork.SupplierBidRepository.AddAsync(newBid, cancellationToken);
@@ -279,6 +330,13 @@ public class SubmitPublicApplicationCommandHandler(
             });
         }
 
+        // ── 5b. ABC CEILING VALIDATION (RA 9184 Section 31) ──────────────────────
+        if (request.ProposedBidAmount.HasValue && project.ABC > 0 && request.ProposedBidAmount.Value > project.ABC)
+        {
+            throw new FluentValidation.ValidationException(
+                $"Your proposed bid amount (₱{request.ProposedBidAmount.Value:N2}) exceeds the Approved Budget for the Contract (₱{project.ABC:N2}). Under RA 9184, bids exceeding the ABC cannot be accepted.");
+        }
+
         // ── 6. CONDITIONAL BIDDING SUBMISSION (Competitive / Public Bidding Only) ──
         var modeName = project.ProcurementMode?.Name?.ToLowerInvariant() ?? string.Empty;
         var isCompetitiveBidding = (modeName.Contains("competitive") || modeName.Contains("public bidding") || modeName.Contains("bidding"))
@@ -303,14 +361,100 @@ public class SubmitPublicApplicationCommandHandler(
                 ProcurementProjectId        = request.ProjectId,
                 SupplierId                  = supplier.Id,
                 PublicSupplierApplicationId = application.Id,
-                OriginalProposedAmount      = 0m,
-                BidSecurityType             = "Bid Securing Declaration",
+                OriginalProposedAmount      = request.ProposedBidAmount ?? 0m,
+                BidSecurityType             = request.BidSecurityType ?? "Bid Securing Declaration",
+                BidSecurityAmount           = request.BidSecurityAmount,
+                BidSecurityNumber           = request.BidSecurityNumber,
+                BidSecurityValidityDays     = request.BidSecurityValidityDays,
                 SubmissionType              = "Electronic",
                 SubmittedAt                 = application.SubmittedAt,
+                Remarks                     = request.Remarks,
                 CreatedBy                   = "PublicPortal"
             };
 
             await unitOfWork.BiddingSubmissionRepository.AddAsync(biddingSubmission, cancellationToken);
+        }
+        else
+        {
+            // ── 6b. CONDITIONAL RFQ BID SUBMISSION (SVP / Alternative Methods with Associated RFQ) ──
+            var associatedRfq = await unitOfWork.RFQRepository.Query()
+                .Include(r => r.RFQSuppliers)
+                .Include(r => r.RFQItems)
+                .FirstOrDefaultAsync(r =>
+                    (project.ConsolidatedPRId.HasValue && r.ConsolidatedPRId == project.ConsolidatedPRId.Value)
+                    || (project.ContractNo != null && r.RFQNumber.Contains(project.ContractNo))
+                    || (project.ContractNo != null && r.TracingNumber.Contains(project.ContractNo)),
+                    cancellationToken);
+
+            if (associatedRfq != null)
+            {
+                if (!associatedRfq.RFQSuppliers.Any(s => s.SupplierId == supplier.Id))
+                {
+                    associatedRfq.RFQSuppliers.Add(new RFQSupplier
+                    {
+                        SupplierId = supplier.Id,
+                        InvitedAt = DateTime.UtcNow
+                    });
+                }
+
+                var itemBidsDict = request.ItemBids?.ToDictionary(ib => ib.RFQItemId) ?? new Dictionary<Guid, PublicItemBidDto>();
+                decimal totalQuoted = request.ProposedBidAmount ?? 0m;
+                if (totalQuoted == 0 && itemBidsDict.Count > 0)
+                {
+                    totalQuoted = associatedRfq.RFQItems
+                        .Where(item => !item.IsDeleted && itemBidsDict.ContainsKey(item.Id))
+                        .Sum(item => itemBidsDict[item.Id].UnitPrice * item.Quantity);
+                }
+
+                var bidItems = new List<SupplierBidItem>();
+                foreach (var item in associatedRfq.RFQItems.Where(item => !item.IsDeleted))
+                {
+                    itemBidsDict.TryGetValue(item.Id, out var itemBid);
+                    string? itemBrochureUrl = null;
+                    if (itemBid?.BrochureFileId != null)
+                    {
+                        try
+                        {
+                            var promotedBrochure = await fileStorageService.PromoteFileAsync(itemBid.BrochureFileId.Value, cancellationToken);
+                            itemBrochureUrl = promotedBrochure.Url;
+                        }
+                        catch (FileNotFoundException) { }
+                    }
+
+                    var unitPrice = itemBid?.UnitPrice ?? 0m;
+                    bidItems.Add(new SupplierBidItem
+                    {
+                        Id = Guid.NewGuid(),
+                        RFQItemId = item.Id,
+                        UnitPrice = unitPrice,
+                        TotalPrice = unitPrice * item.Quantity,
+                        Brand = itemBid?.Brand,
+                        Model = itemBid?.Model,
+                        Color = itemBid?.Color,
+                        IsResponsive = true,
+                        BrochureFileUrl = itemBrochureUrl
+                    });
+                }
+
+                var newBid = new SupplierBid
+                {
+                    Id = Guid.NewGuid(),
+                    RFQId = associatedRfq.Id,
+                    SupplierId = supplier.Id,
+                    SubmissionType = "PublicPortal",
+                    Status = "Submitted",
+                    SubmittedAt = application.SubmittedAt,
+                    Remarks = request.Remarks ?? $"Applied via BAC Public Portal ({request.CompanyName.Trim()})",
+                    TotalAmount = totalQuoted,
+                    DeliveryPeriod = request.DeliveryPeriod ?? associatedRfq.DeliveryPeriod,
+                    PaymentTerms = request.PaymentTerms,
+                    WarrantyTerms = request.WarrantyTerms,
+                    ValidityPeriodDays = request.ValidityPeriodDays,
+                    SupplierBidItems = bidItems
+                };
+
+                await unitOfWork.SupplierBidRepository.AddAsync(newBid, cancellationToken);
+            }
         }
 
         // ── 7. PERSIST ALL IN ONE TRANSACTION ────────────────────────────────────

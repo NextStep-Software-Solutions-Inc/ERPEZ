@@ -65,9 +65,11 @@ public class GetPublicProjectsQueryHandler(IUnitOfWork unitOfWork)
         }).ToList();
 
         // 2. Query Approved RFQs (Alternative Methods e.g. SVP, Shopping posted to BAC portal per RA 9184)
+        // Only include RFQs that have at least one line item — itemless RFQs are incomplete and must not appear publicly.
         var rfqsQuery = unitOfWork.RFQRepository.Query()
             .Include(r => r.ModeOfProcurement)
-            .Where(r => !r.IsDeleted && r.Status == StatusEnum.Approved);
+            .Include(r => r.RFQItems)
+            .Where(r => !r.IsDeleted && r.Status == StatusEnum.Approved && r.RFQItems.Any(i => !i.IsDeleted));
 
         if (!string.IsNullOrWhiteSpace(searchPattern))
         {

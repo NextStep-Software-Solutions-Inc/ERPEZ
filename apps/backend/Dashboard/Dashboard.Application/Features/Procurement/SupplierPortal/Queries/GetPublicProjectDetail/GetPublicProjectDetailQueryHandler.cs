@@ -137,6 +137,22 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
                 });
             }
 
+            var rfqItems = rfq.RFQItems
+                .Where(i => !i.IsDeleted)
+                .Select(item => new PublicProjectItemDto
+                {
+                    Id = item.Id,
+                    ItemName = !string.IsNullOrWhiteSpace(item.ItemNameSnapshot)
+                        ? item.ItemNameSnapshot
+                        : (item.CPRItem?.PRItem?.Name ?? "Item"),
+                    Description = item.CPRItem?.PRItem?.Description
+                        ?? item.CPRItem?.PRItem?.PPMPItem?.Description,
+                    Quantity = item.Quantity,
+                    Uom = item.CPRItem?.PRItem?.PPMPItem?.Unit ?? "Unit",
+                    ABCUnitPrice = item.UnitPriceSnapshot,
+                    ABCTotalPrice = item.Quantity * item.UnitPriceSnapshot
+                }).ToList();
+
             var rfqDto = new PublicProjectDetailDto
             {
                 Id                     = rfq.Id,
@@ -154,7 +170,8 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
                 PreBidConferenceDate   = null,
                 DatePosted             = datePostedDt,
                 RequiredSubmissions    = requiredSubmissions,
-                BidNotices             = bidNotices
+                BidNotices             = bidNotices,
+                Items                  = rfqItems
             };
 
             return ApiResponse<PublicProjectDetailDto>.Success(rfqDto);
@@ -205,6 +222,63 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
                 PostedOn        = c.CreatedAt
             }).ToList();
 
+        // ── 4. RESOLVE PROJECT ITEMS (From Associated RFQ or Consolidated PR) ──
+        List<PublicProjectItemDto> projectItems = [];
+
+        var associatedRfq = await unitOfWork.RFQRepository.Query()
+            .Include(r => r.RFQItems)
+                .ThenInclude(i => i.CPRItem)
+                    .ThenInclude(ci => ci.PRItem)
+                        .ThenInclude(p => p.PPMPItem)
+            .FirstOrDefaultAsync(r =>
+                (project.ConsolidatedPRId.HasValue && r.ConsolidatedPRId == project.ConsolidatedPRId.Value)
+                || (project.ContractNo != null && r.RFQNumber.Contains(project.ContractNo))
+                || (project.ContractNo != null && r.TracingNumber.Contains(project.ContractNo)),
+                cancellationToken);
+
+        if (associatedRfq != null && associatedRfq.RFQItems.Any())
+        {
+            projectItems = associatedRfq.RFQItems
+                .Where(i => !i.IsDeleted)
+                .Select(item => new PublicProjectItemDto
+                {
+                    Id = item.Id,
+                    ItemName = !string.IsNullOrWhiteSpace(item.ItemNameSnapshot)
+                        ? item.ItemNameSnapshot
+                        : (item.CPRItem?.PRItem?.Name ?? "Item"),
+                    Description = item.CPRItem?.PRItem?.Description
+                        ?? item.CPRItem?.PRItem?.PPMPItem?.Description,
+                    Quantity = item.Quantity,
+                    Uom = item.CPRItem?.PRItem?.PPMPItem?.Unit ?? (item.Quantity > 1 ? "Units" : "Unit"),
+                    ABCUnitPrice = item.UnitPriceSnapshot,
+                    ABCTotalPrice = item.Quantity * item.UnitPriceSnapshot
+                }).ToList();
+        }
+        else if (project.ConsolidatedPRId.HasValue)
+        {
+            var cpr = await unitOfWork.ConsolidatedPRRepository.Query()
+                .Include(c => c.ConsolidatedPRItems)
+                    .ThenInclude(ci => ci.PRItem)
+                        .ThenInclude(pi => pi.PPMPItem)
+                .FirstOrDefaultAsync(c => c.Id == project.ConsolidatedPRId.Value, cancellationToken);
+
+            if (cpr?.ConsolidatedPRItems != null && cpr.ConsolidatedPRItems.Any())
+            {
+                projectItems = cpr.ConsolidatedPRItems
+                    .Where(ci => !ci.IsDeleted && ci.PRItem != null)
+                    .Select(ci => new PublicProjectItemDto
+                    {
+                        Id = ci.Id,
+                        ItemName = ci.PRItem.Name,
+                        Description = ci.PRItem.Description ?? ci.PRItem.PPMPItem?.Description,
+                        Quantity = ci.PRItem.RequestedQuantity,
+                        Uom = ci.PRItem.PPMPItem?.Unit ?? "Unit",
+                        ABCUnitPrice = ci.PRItem.UnitCost,
+                        ABCTotalPrice = ci.PRItem.Amount > 0 ? ci.PRItem.Amount : ci.PRItem.RequestedQuantity * ci.PRItem.UnitCost
+                    }).ToList();
+            }
+        }
+
         var dto = new PublicProjectDetailDto
         {
             Id                     = project.Id,
@@ -222,7 +296,8 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
             PreBidConferenceDate   = GetDate(ProcurementActivitySystemRole.PreBidConference),
             DatePosted             = GetDate(ProcurementActivitySystemRole.AdvertisementPosting) ?? project.UpdatedAt ?? project.CreatedAt,
             RequiredSubmissions    = projectSubmissions,
-            BidNotices             = projectBidNotices
+            BidNotices             = projectBidNotices,
+            Items                  = projectItems
         };
 
         return ApiResponse<PublicProjectDetailDto>.Success(dto);

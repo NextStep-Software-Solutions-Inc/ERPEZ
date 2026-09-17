@@ -14,6 +14,7 @@ public record RFQListItemDto
     public StatusEnum Status { get; init; }
     public decimal TotalAmount { get; init; }
     public int ApplicantCount { get; init; }
+    public int ItemCount { get; init; }
     public string? Remarks { get; init; }
 }
 

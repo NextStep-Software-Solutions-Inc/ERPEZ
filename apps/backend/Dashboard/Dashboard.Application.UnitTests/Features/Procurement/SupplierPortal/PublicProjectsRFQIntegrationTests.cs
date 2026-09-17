@@ -484,6 +484,7 @@ public class PublicProjectsRFQIntegrationTests
         {
             Id = Guid.NewGuid(),
             RFQId = rfqId,
+            CPRItemId = Guid.NewGuid(),
             Quantity = 5,
             ItemNameSnapshot = "Dell Latitude 5540"
         };
@@ -601,6 +602,7 @@ public class PublicProjectsRFQIntegrationTests
         {
             Id = Guid.NewGuid(),
             RFQId = rfqId,
+            CPRItemId = Guid.NewGuid(),
             ItemNameSnapshot = "Workstation Pro",
             Quantity = 2,
             UnitPriceSnapshot = 50000m
@@ -708,4 +710,155 @@ public class PublicProjectsRFQIntegrationTests
         result.Data.Should().HaveCount(1);
         result.Data.First().ApplicantCount.Should().Be(4);
     }
+
+    [Fact]
+    public async Task SubmitPublicApplication_WithItemBidsAndTerms_ShouldPersistItemizedPricesAndCommercialTerms()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var rfqId = Guid.NewGuid();
+        var item1Id = Guid.NewGuid();
+        var item2Id = Guid.NewGuid();
+
+        var rfq = new RFQ
+        {
+            Id = rfqId,
+            RFQNumber = "RFQ-2026-SVP-005",
+            Description = "IT Equipment Procurement",
+            Status = StatusEnum.Approved,
+            TotalAmount = 10000m,
+            RFQItems = new List<RFQItem>
+            {
+                new() { Id = item1Id, RFQId = rfqId, ItemNameSnapshot = "Laptop", Quantity = 2, UnitPriceSnapshot = 3000m },
+                new() { Id = item2Id, RFQId = rfqId, ItemNameSnapshot = "Monitor", Quantity = 4, UnitPriceSnapshot = 1000m }
+            }
+        };
+        context.RFQs?.Add(rfq);
+
+        var fileStorageMock = new Mock<IFileStorageService>();
+        fileStorageMock.Setup(f => f.PromoteFileAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid fileId, CancellationToken _) => ($"/storage/{fileId}.pdf", "test.pdf"));
+
+        await context.SaveChangesAsync();
+
+        var handler = new SubmitPublicApplicationCommandHandler(unitOfWork, fileStorageMock.Object);
+
+        var command = new SubmitPublicApplicationCommand(
+            rfqId,
+            "Tech Innovations Corp",
+            "John Doe",
+            "john@tech.com",
+            "+639123456789",
+            "123-456-789-000",
+            "123 Tech Park, Cagayan de Oro City",
+            new List<ApplicationDocumentUploadItem>(),
+            ProposedBidAmount: 8800m,
+            DeliveryPeriod: "15 Calendar Days",
+            PaymentTerms: "Net 30 Days",
+            WarrantyTerms: "1 Year Comprehensive",
+            ValidityPeriodDays: 90,
+            Remarks: "Complete proposal with warranty",
+            ItemBids: new List<PublicItemBidDto>
+            {
+                new(item1Id, 2800m, "Dell", "Latitude 5420"),
+                new(item2Id, 800m, "ViewSonic", "VA2432-h")
+            }
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeTrue();
+
+        var bid = await context.SupplierBids!
+            .Include(b => b.SupplierBidItems)
+            .FirstOrDefaultAsync(b => b.RFQId == rfqId);
+
+        bid.Should().NotBeNull();
+        bid!.TotalAmount.Should().Be(8800m);
+        bid.DeliveryPeriod.Should().Be("15 Calendar Days");
+        bid.PaymentTerms.Should().Be("Net 30 Days");
+        bid.WarrantyTerms.Should().Be("1 Year Comprehensive");
+        bid.ValidityPeriodDays.Should().Be(90);
+
+        bid.SupplierBidItems.Should().HaveCount(2);
+        var laptopBid = bid.SupplierBidItems.First(i => i.RFQItemId == item1Id);
+        laptopBid.UnitPrice.Should().Be(2800m);
+        laptopBid.TotalPrice.Should().Be(5600m);
+        laptopBid.Brand.Should().Be("Dell");
+        laptopBid.Model.Should().Be("Latitude 5420");
+
+        var monitorBid = bid.SupplierBidItems.First(i => i.RFQItemId == item2Id);
+        monitorBid.UnitPrice.Should().Be(800m);
+        monitorBid.TotalPrice.Should().Be(3200m);
+        monitorBid.Brand.Should().Be("ViewSonic");
+        monitorBid.Model.Should().Be("VA2432-h");
+
+        // Verify GetRFQSupplierBids returns the commercial terms
+        var queryHandler = new GetRFQSupplierBidsQueryHandler(unitOfWork);
+        var queryResult = await queryHandler.Handle(new GetRFQSupplierBidsQuery(rfqId), CancellationToken.None);
+
+        queryResult.Succeeded.Should().BeTrue();
+        var returnedBid = queryResult.Data.First(b => b.Id == bid.Id);
+        returnedBid.DeliveryPeriod.Should().Be("15 Calendar Days");
+        returnedBid.PaymentTerms.Should().Be("Net 30 Days");
+        returnedBid.WarrantyTerms.Should().Be("1 Year Comprehensive");
+        returnedBid.ValidityPeriodDays.Should().Be(90);
+    }
+
+    [Fact]
+    public async Task SubmitPublicApplication_WhenBidExceedsABC_ShouldThrowValidationException()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var rfqId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+
+        var rfq = new RFQ
+        {
+            Id = rfqId,
+            RFQNumber = "RFQ-2026-SVP-006",
+            Description = "Budget Enforced RFQ",
+            Status = StatusEnum.Approved,
+            TotalAmount = 5000m,
+            RFQItems = new List<RFQItem>
+            {
+                new() { Id = itemId, RFQId = rfqId, ItemNameSnapshot = "Printer", Quantity = 1, UnitPriceSnapshot = 5000m }
+            }
+        };
+        context.RFQs?.Add(rfq);
+        await context.SaveChangesAsync();
+
+        var fileStorageMock = new Mock<IFileStorageService>();
+        var handler = new SubmitPublicApplicationCommandHandler(unitOfWork, fileStorageMock.Object);
+
+        // Unit price = 6000, Total = 6000 > ABC (5000)
+        var command = new SubmitPublicApplicationCommand(
+            rfqId,
+            "Expensive Supplier",
+            "Jane Smith",
+            "jane@expensive.com",
+            "+639999999999",
+            "999-999-999-000",
+            "Manila",
+            new List<ApplicationDocumentUploadItem>(),
+            ItemBids: new List<PublicItemBidDto>
+            {
+                new(itemId, 6000m, "Epson", "L3210")
+            }
+        );
+
+        // Act
+        Func<Task> act = async () => await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>()
+            .WithMessage("*exceeds the Approved Budget for the Contract*");
+    }
 }
+

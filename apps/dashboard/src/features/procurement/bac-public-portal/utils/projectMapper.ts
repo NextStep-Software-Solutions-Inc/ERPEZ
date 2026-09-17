@@ -78,5 +78,16 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
     bidOpening: p.bidOpeningDate || p.bidOpening || undefined,
     scope: p.scopeOfWork || p.scope || '',
     requiredDocuments,
+    items: Array.isArray(p.items)
+      ? p.items.map((i: any) => ({
+          id: i.id,
+          itemName: i.itemName,
+          description: i.description,
+          quantity: i.quantity,
+          uom: i.uom,
+          abcUnitPrice: Number(i.abcUnitPrice || 0),
+          abcTotalPrice: Number(i.abcTotalPrice || 0),
+        }))
+      : [],
   }
 }

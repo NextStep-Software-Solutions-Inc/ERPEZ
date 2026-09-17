@@ -114,7 +114,9 @@ export default function ManageSupplierPortalPage() {
         r.status === 'Approved' ||
         r.status === 3 ||
         (typeof r.status === 'string' && r.status.toLowerCase() === 'approved')
-      return !isLinkedToProject && isApproved
+      // Approved RFQs with no line items are incomplete — exclude them
+      const hasItems = (r.itemCount ?? 0) > 0
+      return !isLinkedToProject && isApproved && hasItems
     })
 
     const mappedRfqs: Project[] = standaloneRfqs.map((r: any) => {

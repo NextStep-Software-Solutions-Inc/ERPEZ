@@ -30,6 +30,18 @@ public record PublicProjectDetailDto
     public DateTime? DatePosted { get; init; }
     public List<RequiredSubmissionDto> RequiredSubmissions { get; init; } = [];
     public List<BidNoticeDto> BidNotices { get; init; } = [];
+    public List<PublicProjectItemDto> Items { get; init; } = [];
+}
+
+public record PublicProjectItemDto
+{
+    public Guid Id { get; init; }
+    public string ItemName { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public int Quantity { get; init; }
+    public string? Uom { get; init; }
+    public decimal ABCUnitPrice { get; init; }
+    public decimal ABCTotalPrice { get; init; }
 }
 
 public record RequiredSubmissionDto
