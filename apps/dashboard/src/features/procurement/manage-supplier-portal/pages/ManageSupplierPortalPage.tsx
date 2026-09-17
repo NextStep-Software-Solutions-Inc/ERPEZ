@@ -288,6 +288,7 @@ export default function ManageSupplierPortalPage() {
               columns={columns}
               data={filteredProjects}
               actions={['read', 'write']}
+              fixedPageSize={10}
               toolbar={() => (
                 <ManageSupplierPortalTableToolbar
                   searchTerm={globalFilter}
