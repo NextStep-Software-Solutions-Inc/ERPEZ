@@ -10,6 +10,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Application.Interfaces.Services;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.GenerateRFQDocument;
+using ERPEZ.Domain.Enums;
+using ERPEZ.Domain.Interfaces;
 using System.IO;
 
 namespace ERPEZ.Api.Controllers;
@@ -110,6 +114,60 @@ public class PublicProjectsController(ISender mediator) : ControllerBase
         }
 
         return NotFound(ApiResponse<object>.Fail("File could not be retrieved from storage."));
+    }
+
+    /// <summary>
+    /// Download official RFQ document (PDF) for an approved RFQ opportunity on the public portal.
+    /// </summary>
+    [HttpGet("projects/{id:guid}/rfq-document")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadPublicRfqDocument(
+        Guid id,
+        [FromServices] IUnitOfWork unitOfWork,
+        [FromServices] IDocumentStorageService storageService,
+        CancellationToken cancellationToken)
+    {
+        var rfq = await unitOfWork.RFQRepository.GetByIdAsync(id, cancellationToken);
+        if (rfq == null || rfq.Status != StatusEnum.Approved)
+        {
+            return NotFound(ApiResponse<object>.Fail("Approved RFQ not found."));
+        }
+
+        // Check if already generated
+        var existingDoc = await unitOfWork.GeneratedDocumentRepository.FindAsync(
+            d => d.SourceDocumentId == id && d.DocumentType == DocumentType.Rfq && !d.IsDeleted,
+            cancellationToken);
+
+        Guid documentId;
+        if (existingDoc != null)
+        {
+            documentId = existingDoc.Id;
+        }
+        else
+        {
+            var genResult = await mediator.Send(new GenerateRFQDocumentCommand
+            {
+                RFQId = id,
+                Format = ExportFormat.Pdf,
+                GeneratedBy = "PublicPortal"
+            }, cancellationToken);
+
+            if (!genResult.Succeeded)
+            {
+                return NotFound(ApiResponse<object>.Fail(genResult.Message ?? "Failed to generate RFQ document."));
+            }
+            documentId = genResult.Data;
+        }
+
+        var doc = await unitOfWork.GeneratedDocumentRepository.FindAsync(d => d.Id == documentId, cancellationToken);
+        if (doc == null)
+            return NotFound(ApiResponse<object>.Fail("Document record not found."));
+
+        var bytes = await storageService.GetAsync(doc.StoragePath, cancellationToken);
+        var fileName = doc.FileName ?? $"RFQ_{rfq.RFQNumber}.pdf";
+        Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+        return File(bytes, "application/pdf", fileName);
     }
 
     private static string GetContentType(string fileName)

@@ -23,6 +23,7 @@ public record PublicProjectDetailDto
     public string? ScopeOfWork { get; init; }
     public decimal? NonRefundableBidderFee { get; init; }
     public int? DeliveryPeriodDays { get; init; }
+    public string? DeliveryPeriod { get; init; }
     public DateTime? SubmissionDeadline { get; init; }
     public DateTime? BidOpeningDate { get; init; }
     public DateTime? PreBidConferenceDate { get; init; }

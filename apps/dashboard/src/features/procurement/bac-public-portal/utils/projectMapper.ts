@@ -32,7 +32,25 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
   let mop: ModeOfProcurement = 'public-bidding'
   const modeStr = (p.modeOfProcurement || '').toLowerCase()
   const contractNo = (p.contractNo || '').toLowerCase()
-  if (modeStr.includes('small value') || modeStr.includes('svp') || modeStr.includes('53.9') || contractNo.startsWith('svp') || contractNo.includes('svp')) {
+
+  const isPb =
+    modeStr.includes('public bidding') ||
+    modeStr.includes('competitive') ||
+    (modeStr.includes('bidding') && !modeStr.includes('small value')) ||
+    contractNo.includes('itb') ||
+    contractNo.includes('pb')
+
+  if (
+    !isPb &&
+    (modeStr.includes('small value') ||
+      modeStr.includes('svp') ||
+      modeStr.includes('53.9') ||
+      modeStr.includes('shopping') ||
+      modeStr.includes('52') ||
+      contractNo.startsWith('svp') ||
+      contractNo.includes('svp') ||
+      contractNo.startsWith('rfq'))
+  ) {
     mop = 'svp'
   }
 

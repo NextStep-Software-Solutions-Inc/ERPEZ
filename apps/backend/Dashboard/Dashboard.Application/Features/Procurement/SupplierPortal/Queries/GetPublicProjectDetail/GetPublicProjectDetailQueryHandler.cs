@@ -1,9 +1,12 @@
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Dtos;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicProjectDetail;
 
@@ -16,8 +19,146 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
         GetPublicProjectDetailQuery request, CancellationToken cancellationToken)
     {
         var project = await unitOfWork.ProcurementProjectRepository
-            .GetWithPublicDetailsByIdAsync(request.Id, cancellationToken)
-            ?? throw new NotFoundException("Project not found.");
+            .GetWithPublicDetailsByIdAsync(request.Id, cancellationToken);
+
+        if (project == null)
+        {
+            // Check if ID belongs to an RFQ
+            var rfq = await unitOfWork.RFQRepository.Query()
+                .Include(r => r.ModeOfProcurement)
+                .Include(r => r.ConsolidatedPR)
+                .Include(r => r.RFQItems)
+                    .ThenInclude(i => i.CPRItem)
+                        .ThenInclude(ci => ci.PRItem)
+                .FirstOrDefaultAsync(r => r.Id == request.Id && !r.IsDeleted, cancellationToken);
+
+            if (rfq == null)
+            {
+                throw new NotFoundException("Project not found.");
+            }
+
+            if (rfq.Status != StatusEnum.Approved)
+            {
+                throw new NotFoundException("This RFQ is not currently available on the public portal.");
+            }
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var isClosed = rfq.Deadline.HasValue && rfq.Deadline.Value < today;
+            var isClosingSoon = rfq.Deadline.HasValue && !isClosed && rfq.Deadline.Value <= today.AddDays(3);
+            var status = isClosed ? "Closed" : (isClosingSoon ? "ClosingSoon" : "Open");
+
+            var deadlineDt = rfq.Deadline.HasValue ? rfq.Deadline.Value.ToDateTime(new TimeOnly(12, 0)) : (DateTime?)null;
+            var datePostedDt = rfq.Date != default ? rfq.Date.ToDateTime(TimeOnly.MinValue) : (rfq.UpdatedAt ?? rfq.CreatedAt);
+
+            int? deliveryDays = null;
+            if (!string.IsNullOrWhiteSpace(rfq.DeliveryPeriod))
+            {
+                var match = Regex.Match(rfq.DeliveryPeriod, @"\d+");
+                if (match.Success && int.TryParse(match.Value, out var parsedDays))
+                {
+                    deliveryDays = parsedDays;
+                }
+            }
+
+            var title = !string.IsNullOrWhiteSpace(rfq.Description)
+                ? rfq.Description
+                : (!string.IsNullOrWhiteSpace(rfq.Purpose) ? rfq.Purpose : rfq.RFQNumber);
+
+            var requiredSubmissions = new List<RequiredSubmissionDto>
+            {
+                new()
+                {
+                    ChecklistItemId = Guid.Parse("00000000-0000-0000-0000-000000000001"),
+                    DocumentName    = "Valid Mayor's / Business Permit",
+                    Description     = "Issued by the city or municipality where the principal place of business is located",
+                    IsRequired      = true,
+                    OrderIndex      = 1,
+                    EnvelopeType    = 1
+                },
+                new()
+                {
+                    ChecklistItemId = Guid.Parse("00000000-0000-0000-0000-000000000002"),
+                    DocumentName    = "PhilGEPS Registration Number / Certificate",
+                    Description     = "Proof of active PhilGEPS registration",
+                    IsRequired      = true,
+                    OrderIndex      = 2,
+                    EnvelopeType    = 1
+                }
+            };
+
+            if (rfq.TotalAmount > 50000m)
+            {
+                requiredSubmissions.Add(new RequiredSubmissionDto
+                {
+                    ChecklistItemId = Guid.Parse("00000000-0000-0000-0000-000000000003"),
+                    DocumentName    = "Omnibus Sworn Statement (GPPB Prescribed Form)",
+                    Description     = "Original notarized Omnibus Sworn Statement with Secretary's Certificate or SPA",
+                    IsRequired      = true,
+                    OrderIndex      = 3,
+                    EnvelopeType    = 1,
+                    DownloadUrl     = "/documents/templates/omnibus_sworn_statement.pdf"
+                });
+            }
+
+            requiredSubmissions.Add(new RequiredSubmissionDto
+            {
+                ChecklistItemId = rfq.Id,
+                DocumentName    = $"Price Quotation Form - {rfq.RFQNumber}",
+                Description     = "Duly signed and completed official Request for Quotation proposal sheet",
+                IsRequired      = true,
+                OrderIndex      = 4,
+                EnvelopeType    = 2,
+                DownloadUrl     = $"/api/public/projects/{rfq.Id}/rfq-document"
+            });
+
+            var bidNotices = new List<BidNoticeDto>
+            {
+                new()
+                {
+                    ChecklistItemId = rfq.Id,
+                    DocumentName    = $"Request for Quotation Notice - {rfq.RFQNumber}",
+                    Description     = $"Official BAC Request for Quotation Document for {rfq.RFQNumber}",
+                    DownloadUrl     = $"/api/public/projects/{rfq.Id}/rfq-document",
+                    OrderIndex      = 1,
+                    PostedOn        = datePostedDt
+                }
+            };
+
+            if (rfq.TotalAmount > 50000m)
+            {
+                bidNotices.Add(new BidNoticeDto
+                {
+                    ChecklistItemId = Guid.Parse("00000000-0000-0000-0000-000000000003"),
+                    DocumentName    = "Omnibus Sworn Statement Template",
+                    Description     = "Standard GPPB Prescribed Omnibus Sworn Statement template",
+                    DownloadUrl     = "/documents/templates/omnibus_sworn_statement.pdf",
+                    OrderIndex      = 2,
+                    PostedOn        = datePostedDt
+                });
+            }
+
+            var rfqDto = new PublicProjectDetailDto
+            {
+                Id                     = rfq.Id,
+                Title                  = title,
+                ContractNo             = rfq.RFQNumber,
+                ABC                    = rfq.TotalAmount,
+                ModeOfProcurement      = rfq.ModeOfProcurement?.Name ?? "Small Value Procurement (SVP)",
+                Status                 = status,
+                ScopeOfWork            = rfq.Purpose ?? rfq.Description,
+                NonRefundableBidderFee = null,
+                DeliveryPeriodDays     = deliveryDays,
+                DeliveryPeriod         = rfq.DeliveryPeriod,
+                SubmissionDeadline     = deadlineDt,
+                BidOpeningDate         = deadlineDt,
+                PreBidConferenceDate   = null,
+                DatePosted             = datePostedDt,
+                RequiredSubmissions    = requiredSubmissions,
+                BidNotices             = bidNotices
+            };
+
+            return ApiResponse<PublicProjectDetailDto>.Success(rfqDto);
+        }
 
         // Visibility gate: prefer BiddingDocument.Status once TC-02 has created one
         // for this project. Fall back to ProcurementProject.Status until the PBD
@@ -35,7 +176,7 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
                 .FirstOrDefault(s => s.ProcurementActivityType?.SystemRole == role)
                 ?.StartDate;
 
-        var requiredSubmissions = project.ProjectDocumentChecklists
+        var projectSubmissions = project.ProjectDocumentChecklists
             .Where(c => c.IsRequired)
             .OrderBy(c => c.OrderIndex)
             .Select(c => new RequiredSubmissionDto
@@ -51,7 +192,7 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
                                     : null
             }).ToList();
 
-        var bidNotices = project.ProjectDocumentChecklists
+        var projectBidNotices = project.ProjectDocumentChecklists
             .Where(c => c.IsRequired && (c.CustomTemplateFileUrl != null || c.MasterDocumentType?.TemplateFileUrl != null))
             .OrderBy(c => c.OrderIndex)
             .Select(c => new BidNoticeDto
@@ -75,12 +216,13 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
             ScopeOfWork            = project.ScopeOfWork,
             NonRefundableBidderFee = project.NonRefundableBidderFee,
             DeliveryPeriodDays     = project.DeliveryPeriodDays,
+            DeliveryPeriod         = project.DeliveryPeriodDays.HasValue ? $"{project.DeliveryPeriodDays} Day/s" : null,
             SubmissionDeadline     = GetDate(ProcurementActivitySystemRole.SubmissionOpeningOfBids),
             BidOpeningDate         = GetDate(ProcurementActivitySystemRole.SubmissionOpeningOfBids),
             PreBidConferenceDate   = GetDate(ProcurementActivitySystemRole.PreBidConference),
             DatePosted             = GetDate(ProcurementActivitySystemRole.AdvertisementPosting) ?? project.UpdatedAt ?? project.CreatedAt,
-            RequiredSubmissions    = requiredSubmissions,
-            BidNotices             = bidNotices
+            RequiredSubmissions    = projectSubmissions,
+            BidNotices             = projectBidNotices
         };
 
         return ApiResponse<PublicProjectDetailDto>.Success(dto);
