@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Procurement.AOBs.Common;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -24,7 +25,10 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
 
         // 1. Load Linked RFQs with their items
         var rfqs = await unitOfWork.RFQRepository.Query()
+            .Include(r => r.ConsolidatedPR)
             .Include(r => r.RFQItems)
+                .ThenInclude(i => i.CPRItem)
+                    .ThenInclude(ci => ci!.ConsolidatedPR)
             .Where(r => rfqIds.Contains(r.Id))
             .ToListAsync(cancellationToken);
 
@@ -47,6 +51,9 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
             .Select(g => g.First())
             .ToList();
 
+        var metadata = await AOBReferenceResolver.ResolveAsync(
+            unitOfWork, aob.Id, aob.ApprovedBy, rfqs, cancellationToken);
+
         var response = new AOBMatrixResponse
         {
             AOBId = aob.Id,
@@ -59,6 +66,11 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
             IsBidsOpened = isBidsOpened,
             HasMinimumCanvassWarning = distinctSuppliers.Count < 3,
             Remarks = aob.Remarks,
+            BacResolutionNumber = metadata.BacResolutionNumber,
+            PRNumber = metadata.PRNumber,
+            PAPCode = metadata.PAPCode,
+            ApproverName = metadata.ApproverName,
+            ApproverTitle = metadata.ApproverTitle,
             LinkedRFQs = rfqs.Select(r => new AOBMatrixRFQDto
             {
                 Id = r.Id,

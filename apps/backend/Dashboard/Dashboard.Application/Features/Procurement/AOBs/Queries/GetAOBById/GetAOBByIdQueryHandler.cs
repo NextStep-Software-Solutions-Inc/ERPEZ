@@ -1,3 +1,5 @@
+using System.Linq;
+using ERPEZ.Application.Features.Procurement.AOBs.Common;
 using ERPEZ.Application.Features.Procurement.AOBs.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -12,56 +14,76 @@ public class GetAOBByIdQueryHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<AOBDetailResponse>> Handle(GetAOBByIdQuery request, CancellationToken cancellationToken)
     {
         var aob = await unitOfWork.AOBRepository.Query()
-            .Where(a => a.Id == request.Id && !a.IsDeleted)
-            .Select(a => new AOBDetailResponse
-            {
-                Id = a.Id,
-                AOBNumber = a.AOBNumber,
-                Description = a.Description,
-                AwardCriterion = a.AwardCriterion,
-                AOBDate = a.AOBDate,
-                OpeningDate = a.OpeningDate,
-                Status = a.Status,
-                SubmittedBy = a.SubmittedBy,
-                SubmittedAt = a.SubmittedAt,
-                ApprovedBy = a.ApprovedBy,
-                ApprovedAt = a.ApprovedAt,
-                SignedDocumentUrl = a.SignedDocumentUrl,
-                Remarks = a.Remarks,
-                RFQs = a.AOBRFQMappings
-                    .Where(m => m.RFQ != null)
-                    .Select(m => new AOBRFQDetailResponse
-                    {
-                        Id = m.RFQId,
-                        RFQNumber = m.RFQ.RFQNumber,
-                        TracingNumber = m.RFQ.TracingNumber,
-                        TotalAmount = m.RFQ.TotalAmount,
-                        Status = m.RFQ.Status,
-                        Date = m.RFQ.Date,
-                        Deadline = m.RFQ.Deadline
-                    }).ToList(),
-                AwardedItems = a.AOBAwardedItems.Select(ai => new AOBAwardedItemResponse
-                {
-                    Id = ai.Id,
-                    RFQItemId = ai.RFQItemId,
-                    ItemName = ai.RFQItem != null ? ai.RFQItem.ItemNameSnapshot : string.Empty,
-                    WinningSupplierId = ai.WinningSupplierId,
-                    WinningSupplierName = ai.WinningSupplier != null ? ai.WinningSupplier.Name : string.Empty,
-                    AwardedUnitPrice = ai.AwardedUnitPrice,
-                    AwardedQuantity = ai.AwardedQuantity,
-                    TotalAwardedAmount = ai.TotalAwardedAmount,
-                    Score = ai.Score,
-                    AwardReason = ai.AwardReason,
-                    PurchaseOrderId = ai.PurchaseOrderId
-                }).ToList()
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+            .Include(a => a.AOBRFQMappings)
+            .Include(a => a.AOBAwardedItems)
+                .ThenInclude(ai => ai.WinningSupplier)
+            .Include(a => a.AOBAwardedItems)
+                .ThenInclude(ai => ai.RFQItem)
+            .FirstOrDefaultAsync(a => a.Id == request.Id && !a.IsDeleted, cancellationToken);
 
         if (aob == null)
         {
             return ApiResponse<AOBDetailResponse>.Fail("Abstract of Bids (AOB) not found.");
         }
 
-        return ApiResponse<AOBDetailResponse>.Success(aob);
+        var rfqIds = aob.AOBRFQMappings.Select(m => m.RFQId).Distinct().ToList();
+        var rfqs = await unitOfWork.RFQRepository.Query()
+            .Include(r => r.ConsolidatedPR)
+            .Include(r => r.RFQItems)
+                .ThenInclude(i => i.CPRItem)
+                    .ThenInclude(ci => ci!.ConsolidatedPR)
+            .Where(r => rfqIds.Contains(r.Id))
+            .ToListAsync(cancellationToken);
+
+        var metadata = await AOBReferenceResolver.ResolveAsync(
+            unitOfWork, aob.Id, aob.ApprovedBy, rfqs, cancellationToken);
+
+        var response = new AOBDetailResponse
+        {
+            Id = aob.Id,
+            AOBNumber = aob.AOBNumber,
+            Description = aob.Description,
+            AwardCriterion = aob.AwardCriterion,
+            AOBDate = aob.AOBDate,
+            OpeningDate = aob.OpeningDate,
+            Status = aob.Status,
+            SubmittedBy = aob.SubmittedBy,
+            SubmittedAt = aob.SubmittedAt,
+            ApprovedBy = aob.ApprovedBy,
+            ApprovedAt = aob.ApprovedAt,
+            SignedDocumentUrl = aob.SignedDocumentUrl,
+            Remarks = aob.Remarks,
+            BacResolutionNumber = metadata.BacResolutionNumber,
+            PRNumber = metadata.PRNumber,
+            PAPCode = metadata.PAPCode,
+            ApproverName = metadata.ApproverName,
+            ApproverTitle = metadata.ApproverTitle,
+            RFQs = rfqs.Select(r => new AOBRFQDetailResponse
+            {
+                Id = r.Id,
+                RFQNumber = r.RFQNumber,
+                TracingNumber = r.TracingNumber,
+                TotalAmount = r.TotalAmount,
+                Status = r.Status,
+                Date = r.Date,
+                Deadline = r.Deadline
+            }).ToList(),
+            AwardedItems = aob.AOBAwardedItems.Select(ai => new AOBAwardedItemResponse
+            {
+                Id = ai.Id,
+                RFQItemId = ai.RFQItemId,
+                ItemName = ai.RFQItem != null ? ai.RFQItem.ItemNameSnapshot : string.Empty,
+                WinningSupplierId = ai.WinningSupplierId,
+                WinningSupplierName = ai.WinningSupplier != null ? ai.WinningSupplier.Name : string.Empty,
+                AwardedUnitPrice = ai.AwardedUnitPrice,
+                AwardedQuantity = ai.AwardedQuantity,
+                TotalAwardedAmount = ai.TotalAwardedAmount,
+                Score = ai.Score,
+                AwardReason = ai.AwardReason,
+                PurchaseOrderId = ai.PurchaseOrderId
+            }).ToList()
+        };
+
+        return ApiResponse<AOBDetailResponse>.Success(response);
     }
 }

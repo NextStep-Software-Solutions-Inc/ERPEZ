@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ERPEZ.Application.Features.Procurement.AOBs.Common;
 using ERPEZ.Application.Features.Procurement.AOBs.Dtos;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.Planning;
@@ -45,6 +46,8 @@ public class GenerateAOBDocumentCommandHandler(
         // 1. Load Linked RFQs with their items and mode of procurement
         var rfqs = await unitOfWork.RFQRepository.Query()
             .Include(r => r.RFQItems)
+                .ThenInclude(i => i.CPRItem)
+                    .ThenInclude(ci => ci!.ConsolidatedPR)
             .Include(r => r.ModeOfProcurement)
             .Include(r => r.ConsolidatedPR)
                 .ThenInclude(cpr => cpr!.ConsolidatedPRItems)
@@ -255,9 +258,16 @@ public class GenerateAOBDocumentCommandHandler(
             }
         };
 
-        // Reference numbers
-        var rfqNumber = primaryRfq?.RFQNumber ?? "[RFQ NUMBER]";
-        var prNumber = primaryRfq?.ConsolidatedPR?.CPRNumber ?? "[PR NUMBER]";
+        // Reference numbers & approvers
+        var metadata = await AOBReferenceResolver.ResolveAsync(
+            unitOfWork, aob.Id, aob.ApprovedBy, rfqs, cancellationToken);
+
+        var rfqNumber = !string.IsNullOrWhiteSpace(metadata.RFQNumber) ? metadata.RFQNumber : (primaryRfq?.RFQNumber ?? "[RFQ NUMBER]");
+        var prNumber = !string.IsNullOrWhiteSpace(metadata.PRNumber) ? metadata.PRNumber : (primaryRfq?.ConsolidatedPR?.CPRNumber ?? "[PR NUMBER]");
+        var bacResolutionNumber = !string.IsNullOrWhiteSpace(metadata.BacResolutionNumber) ? metadata.BacResolutionNumber : "[BAC RES. NO.]";
+        var papCode = !string.IsNullOrWhiteSpace(metadata.PAPCode) ? metadata.PAPCode : "[PAP CODE]";
+        var approverName = !string.IsNullOrWhiteSpace(metadata.ApproverName) ? metadata.ApproverName : "[HEAD OF PROCURING ENTITY / APPROVING AUTHORITY]";
+        var approverTitle = !string.IsNullOrWhiteSpace(metadata.ApproverTitle) ? metadata.ApproverTitle : "[POSITION / DESIGNATION]";
 
         var aobData = new AobDataDto
         {
@@ -271,12 +281,12 @@ public class GenerateAOBDocumentCommandHandler(
             Items = aobItems,
             Suppliers = aobSuppliers,
             Signatories = signatories,
-            ApprovedByName = "[HEAD OF PROCURING ENTITY / APPROVING AUTHORITY]",
-            ApproverTitle = "[POSITION / DESIGNATION]",
+            ApprovedByName = approverName,
+            ApproverTitle = approverTitle,
             RFQNumber = rfqNumber,
-            BacResolutionNumber = "[BAC RES. NO.]",
+            BacResolutionNumber = bacResolutionNumber,
             PRNumber = prNumber,
-            PAPCode = "[PAP CODE]"
+            PAPCode = papCode
         };
 
         // 9. Render document via QuestPDF service

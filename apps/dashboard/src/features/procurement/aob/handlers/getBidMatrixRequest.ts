@@ -25,6 +25,11 @@ interface RawBackendMatrixResponse {
   isBidsOpened: boolean
   hasMinimumCanvassWarning: boolean
   remarks?: string
+  bacResolutionNumber?: string
+  prNumber?: string
+  papCode?: string
+  approverName?: string
+  approverTitle?: string
   linkedRFQs: Array<{
     id: string
     rfqNumber: string
@@ -172,6 +177,11 @@ export const getBidMatrixRequest: QueryBlueprintFromTemplate<
       isBidsOpened: data.isBidsOpened,
       hasMinimumCanvassWarning: data.hasMinimumCanvassWarning,
       remarks: data.remarks,
+      bacResolutionNumber: data.bacResolutionNumber,
+      prNumber: data.prNumber,
+      papCode: data.papCode,
+      approverName: data.approverName,
+      approverTitle: data.approverTitle,
       linkedRFQs: data.linkedRFQs || (data as any).linkedRfQs || [],
       suppliers,
       items: lineItems,

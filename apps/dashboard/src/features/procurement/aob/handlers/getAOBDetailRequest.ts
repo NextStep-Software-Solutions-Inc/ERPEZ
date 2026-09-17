@@ -23,6 +23,11 @@ interface RawBackendAOBDetailResponse {
   approvedAt?: string
   signedDocumentUrl?: string
   remarks?: string
+  bacResolutionNumber?: string
+  prNumber?: string
+  papCode?: string
+  approverName?: string
+  approverTitle?: string
   rfqs?: Array<{
     id: string
     rfqNumber: string
@@ -76,8 +81,13 @@ export const getAOBDetailRequest: QueryBlueprintFromTemplate<
       submittedAt: d.submittedAt,
       approvedBy: d.approvedBy,
       approvedAt: d.approvedAt,
+      approverName: d.approverName,
+      approverTitle: d.approverTitle,
       signedDocumentUrl: d.signedDocumentUrl,
       remarks: d.remarks,
+      bacResolutionNumber: d.bacResolutionNumber,
+      prNumber: d.prNumber,
+      papCode: d.papCode,
       awardedItems: d.awardedItems || [],
       createdAt: d.aobDate || d.submittedAt || '',
     }

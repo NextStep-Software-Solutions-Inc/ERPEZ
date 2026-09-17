@@ -375,26 +375,26 @@ export function ExportAOBDialog({
             <div className="mt-6 ml-6">
               <div className="text-[9.5px] font-bold mb-4">APPROVED BY:</div>
               <div className="font-bold underline text-[10.5px]">
-                {aob.approvedBy || '[HEAD OF PROCURING ENTITY / APPROVING AUTHORITY]'}
+                {aob.approverName || (aob.approvedBy && typeof aob.approvedBy === 'string' ? aob.approvedBy : null) || bidMatrix?.approverName || '[HEAD OF PROCURING ENTITY / APPROVING AUTHORITY]'}
               </div>
               <div className="text-[9px] text-gray-800">
-                {aob.approverTitle || '[POSITION / DESIGNATION]'}
+                {aob.approverTitle || bidMatrix?.approverTitle || '[POSITION / DESIGNATION]'}
               </div>
             </div>
 
             {/* Reference Codes (Bottom Left) */}
             <div className="mt-6 text-[8px] leading-normal text-gray-800 space-y-0.5">
               <div>
-                <span className="font-bold">RFQ No.:</span> {aob.rfqNumber || bidMatrix?.rfqNumber || aob.rfqs?.[0]?.rfqNumber || '[RFQ NUMBER]'}
+                <span className="font-bold">RFQ No.:</span> {aob.rfqNumber || (bidMatrix as any)?.rfqNumber || aob.rfqs?.[0]?.rfqNumber || '[RFQ NUMBER]'}
               </div>
               <div>
-                <span className="font-bold">BAC RES. NO.:</span> {aob.bacResolutionNumber || '[BAC RES. NO.]'}
+                <span className="font-bold">BAC RES. NO.:</span> {aob.bacResolutionNumber || bidMatrix?.bacResolutionNumber || '[BAC RES. NO.]'}
               </div>
               <div>
-                <span className="font-bold">PR No.:</span> {aob.prNumber || '[PR NUMBER]'}
+                <span className="font-bold">PR No.:</span> {aob.prNumber || bidMatrix?.prNumber || '[PR NUMBER]'}
               </div>
               <div>
-                <span className="font-bold">Code (PAP):</span> {aob.papCode || '[PAP CODE]'}
+                <span className="font-bold">Code (PAP):</span> {aob.papCode || bidMatrix?.papCode || '[PAP CODE]'}
               </div>
             </div>
 

@@ -409,15 +409,15 @@ export function generateAOBPrintHTML(aob: AOB, bidMatrix: BidMatrix | null | und
 
         <div class="approval-container">
           <div class="approval-label">APPROVED BY:</div>
-          <div class="approval-name">${escapeHtml(aob.approvedBy || '[HEAD OF PROCURING ENTITY / APPROVING AUTHORITY]')}</div>
-          <div class="approval-title">${escapeHtml(aob.approverTitle || '[POSITION / DESIGNATION]')}</div>
+          <div class="approval-name">${escapeHtml(aob.approverName || (aob.approvedBy && typeof aob.approvedBy === 'string' ? aob.approvedBy : '') || bidMatrix?.approverName || '[HEAD OF PROCURING ENTITY / APPROVING AUTHORITY]')}</div>
+          <div class="approval-title">${escapeHtml(aob.approverTitle || bidMatrix?.approverTitle || '[POSITION / DESIGNATION]')}</div>
         </div>
 
         <div class="footer-references">
-          <div><b>RFQ No.:</b> ${escapeHtml(aob.rfqNumber || bidMatrix?.rfqNumber || aob.rfqs?.[0]?.rfqNumber || '[RFQ NUMBER]')}</div>
-          <div><b>BAC RES. NO.:</b> ${escapeHtml(aob.bacResolutionNumber || '[BAC RES. NO.]')}</div>
-          <div><b>PR No.:</b> ${escapeHtml(aob.prNumber || '[PR NUMBER]')}</div>
-          <div><b>Code (PAP):</b> ${escapeHtml(aob.papCode || '[PAP CODE]')}</div>
+          <div><b>RFQ No.:</b> ${escapeHtml(aob.rfqNumber || (bidMatrix as any)?.rfqNumber || aob.rfqs?.[0]?.rfqNumber || '[RFQ NUMBER]')}</div>
+          <div><b>BAC RES. NO.:</b> ${escapeHtml(aob.bacResolutionNumber || bidMatrix?.bacResolutionNumber || '[BAC RES. NO.]')}</div>
+          <div><b>PR No.:</b> ${escapeHtml(aob.prNumber || bidMatrix?.prNumber || '[PR NUMBER]')}</div>
+          <div><b>Code (PAP):</b> ${escapeHtml(aob.papCode || bidMatrix?.papCode || '[PAP CODE]')}</div>
         </div>
 
         <div class="document-footer">
@@ -546,10 +546,10 @@ export function exportAOBCSV(aob: AOB, bidMatrix: BidMatrix | null | undefined):
   rows.push([])
   rows.push(['RECOMMENDATION:', 'The Bids and Awards Committee recommends the award to the supplier with the lowest complying proposal that is boxed/marked [WINNER]'])
   rows.push([])
-  rows.push(['RFQ No.:', aob.rfqNumber || bidMatrix?.rfqNumber || '[RFQ NUMBER]'])
-  rows.push(['BAC RES. NO.:', aob.bacResolutionNumber || '[BAC RES. NO.]'])
-  rows.push(['PR No.:', aob.prNumber || '[PR NUMBER]'])
-  rows.push(['Code (PAP):', aob.papCode || '[PAP CODE]'])
+  rows.push(['RFQ No.:', aob.rfqNumber || (bidMatrix as any)?.rfqNumber || aob.rfqs?.[0]?.rfqNumber || '[RFQ NUMBER]'])
+  rows.push(['BAC RES. NO.:', aob.bacResolutionNumber || bidMatrix?.bacResolutionNumber || '[BAC RES. NO.]'])
+  rows.push(['PR No.:', aob.prNumber || bidMatrix?.prNumber || '[PR NUMBER]'])
+  rows.push(['Code (PAP):', aob.papCode || bidMatrix?.papCode || '[PAP CODE]'])
 
   // Convert to CSV string and download
   const csvContent = rows
