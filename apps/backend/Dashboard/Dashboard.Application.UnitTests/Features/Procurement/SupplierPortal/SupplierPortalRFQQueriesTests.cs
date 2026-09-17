@@ -1,4 +1,7 @@
 using Dashboard.Application.UnitTests.Features.Procurement.AOB;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.EvaluateRFQSupplierBid;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQs;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQSupplierBids;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetSupplierRFQDetails;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetSupplierRFQInvitations;
 using ERPEZ.Domain.Entities.Planning;
@@ -208,5 +211,117 @@ public class SupplierPortalRFQQueriesTests
         // Assert
         result.Succeeded.Should().BeFalse();
         result.Message.Should().Contain("not been invited");
+    }
+
+    [Theory]
+    [InlineData(StatusEnum.Draft)]
+    [InlineData(StatusEnum.Submitted)]
+    [InlineData(StatusEnum.Returned)]
+    public async Task GetRFQSupplierBids_WhenRFQIsNotApproved_ShouldReturnFailure(StatusEnum status)
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var rfqId = Guid.NewGuid();
+        var rfq = new RFQ
+        {
+            Id = rfqId,
+            RFQNumber = "RFQ-UNAPPROVED-001",
+            Status = status
+        };
+        context.RFQs?.Add(rfq);
+        await context.SaveChangesAsync();
+
+        var handler = new GetRFQSupplierBidsQueryHandler(unitOfWork);
+
+        // Act
+        var result = await handler.Handle(new GetRFQSupplierBidsQuery(rfqId), CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("not approved");
+    }
+
+    [Fact]
+    public async Task GetRFQs_WhenFilteredByApprovedStatus_ShouldOnlyReturnApprovedRFQs()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var approvedRfq = new RFQ
+        {
+            Id = Guid.NewGuid(),
+            RFQNumber = "RFQ-APPROVED-001",
+            Status = StatusEnum.Approved
+        };
+        var draftRfq = new RFQ
+        {
+            Id = Guid.NewGuid(),
+            RFQNumber = "RFQ-DRAFT-001",
+            Status = StatusEnum.Draft
+        };
+        var submittedRfq = new RFQ
+        {
+            Id = Guid.NewGuid(),
+            RFQNumber = "RFQ-SUBMITTED-001",
+            Status = StatusEnum.Submitted
+        };
+
+        context.RFQs?.AddRange(approvedRfq, draftRfq, submittedRfq);
+        await context.SaveChangesAsync();
+
+        var handler = new GetRFQsQueryHandler(unitOfWork);
+
+        // Act
+        var result = await handler.Handle(new GetRFQsQuery(Status: StatusEnum.Approved), CancellationToken.None);
+
+        // Assert
+        result.Data.Should().HaveCount(1);
+        result.Data.First().RFQNumber.Should().Be("RFQ-APPROVED-001");
+    }
+
+    [Theory]
+    [InlineData(StatusEnum.Draft)]
+    [InlineData(StatusEnum.Submitted)]
+    public async Task EvaluateRFQSupplierBid_WhenRFQIsNotApproved_ShouldReturnFailure(StatusEnum status)
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var rfqId = Guid.NewGuid();
+        var bidId = Guid.NewGuid();
+        var rfq = new RFQ
+        {
+            Id = rfqId,
+            RFQNumber = "RFQ-UNAPPROVED-002",
+            Status = status
+        };
+        var bid = new SupplierBid
+        {
+            Id = bidId,
+            RFQId = rfqId,
+            SupplierId = Guid.NewGuid(),
+            Status = "Pending"
+        };
+        context.RFQs?.Add(rfq);
+        context.SupplierBids?.Add(bid);
+        await context.SaveChangesAsync();
+
+        var handler = new EvaluateRFQSupplierBidCommandHandler(unitOfWork);
+
+        // Act
+        var result = await handler.Handle(new EvaluateRFQSupplierBidCommand
+        {
+            RFQId = rfqId,
+            BidId = bidId,
+            Request = new EvaluateRFQSupplierBidRequest { EvaluationStatus = "Passed" }
+        }, CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("not approved");
     }
 }

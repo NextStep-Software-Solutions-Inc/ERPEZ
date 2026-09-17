@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQSupplierBids;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -27,6 +28,15 @@ public class EvaluateRFQSupplierBidCommandHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<RFQSupplierBidDto>> Handle(
         EvaluateRFQSupplierBidCommand command, CancellationToken cancellationToken)
     {
+        var rfq = await unitOfWork.RFQRepository.Query()
+            .FirstOrDefaultAsync(r => r.Id == command.RFQId && !r.IsDeleted, cancellationToken)
+            ?? throw new NotFoundException("RFQ not found.");
+
+        if (rfq.Status != StatusEnum.Approved)
+        {
+            return ApiResponse<RFQSupplierBidDto>.Fail("RFQ is not approved. Supplier submissions can only be evaluated for approved RFQs.");
+        }
+
         var bid = await unitOfWork.SupplierBidRepository.Query()
             .Include(b => b.Supplier)
                 .ThenInclude(s => s.SupplierCategory)

@@ -23,7 +23,7 @@ public class GetRFQsQueryHandler(IUnitOfWork unitOfWork)
             Sorts = request.Sorts
         };
 
-        var (entities, totalCount) = await unitOfWork.RFQRepository.GetAllWithDetailsAsync(sieveModel, cancellationToken);
+        var (entities, totalCount) = await unitOfWork.RFQRepository.GetAllWithDetailsAsync(sieveModel, request.Status, cancellationToken);
 
         var rfqIds = entities.Select(r => r.Id).ToList();
         var bids = await unitOfWork.SupplierBidRepository.Query()

@@ -28,11 +28,12 @@ export default function ManageSupplierPortalPage() {
     },
   })
 
-  // 2. Fetch RFQs (Internal / Alternative Methods)
+  // 2. Fetch RFQs (Internal / Alternative Methods) - only Approved RFQs for BAC evaluator
   const { data: rfqsResponse, isLoading: isLoadingRFQs } = useRFQs({
     pathParams: {},
     queryParams: {
       pageSize: 100,
+      status: 'Approved',
     },
   })
 
@@ -45,8 +46,12 @@ export default function ManageSupplierPortalPage() {
     // 1. Map BAC Projects (Authoritative Opportunities)
     const mappedProjects: Project[] = rawProjects
       .filter((p: any) => {
-        const isDraft = p.status && p.status.toLowerCase() === 'draft' && (p.applicantCount ?? 0) === 0
-        if (isDraft) return false
+        const isDraftOrSubmitted =
+          p.status &&
+          (p.status.toLowerCase() === 'draft' ||
+            p.status.toLowerCase() === 'submitted' ||
+            p.status.toLowerCase() === 'forapproval')
+        if (isDraftOrSubmitted) return false
 
         const mopName = (p.consolidatedPR?.modeOfProcurementName || p.type || '').toLowerCase()
         const isSvp =
@@ -105,21 +110,18 @@ export default function ManageSupplierPortalPage() {
     
     const standaloneRfqs = rawRfqs.filter((r: any) => {
       const isLinkedToProject = (r.consolidatedPRId && projectCprIds.has(r.consolidatedPRId)) || projectIds.has(r.id)
-      const isApproved = r.status === 'Approved' || r.status === 3 || (typeof r.status === 'string' && r.status.toLowerCase() === 'approved')
-      const hasApplicants = (r.applicantCount ?? 0) > 0
-      return !isLinkedToProject && (isApproved || hasApplicants)
+      const isApproved =
+        r.status === 'Approved' ||
+        r.status === 3 ||
+        (typeof r.status === 'string' && r.status.toLowerCase() === 'approved')
+      return !isLinkedToProject && isApproved
     })
 
     const mappedRfqs: Project[] = standaloneRfqs.map((r: any) => {
       const mopName = r.modeOfProcurementName || 'SVP'
-      let status = r.status || 'Draft'
-      if (typeof status === 'number') {
-        if (status === 1) status = 'ForApproval'
-        else if (status === 3) status = 'Approved'
-        else if (status === 2) status = 'Returned'
-        else status = 'Draft'
-      } else if (typeof status === 'string' && status.toLowerCase() === 'submitted') {
-        status = 'ForApproval'
+      let status = 'Approved'
+      if (typeof r.status === 'string' && r.status.trim()) {
+        status = r.status
       }
 
       return {
@@ -127,7 +129,7 @@ export default function ManageSupplierPortalPage() {
         source: 'rfq' as const,
         sourceNumber: r.rfqNumber,
         title: r.description || r.rfqNumber || 'Untitled RFQ',
-        status,
+        status: status as any,
         type: mopName,
         datePosted: r.deadline || new Date().toISOString(),
         deadline: r.deadline || '',

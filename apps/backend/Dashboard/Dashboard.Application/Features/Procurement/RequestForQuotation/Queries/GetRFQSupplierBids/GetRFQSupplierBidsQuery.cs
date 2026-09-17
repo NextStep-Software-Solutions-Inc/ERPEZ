@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -76,61 +77,83 @@ public class GetRFQSupplierBidsQueryHandler(IUnitOfWork unitOfWork)
             .Include(r => r.RFQItems)
             .FirstOrDefaultAsync(r => r.Id == request.RFQId && !r.IsDeleted, cancellationToken);
 
-        if (rfq != null)
+        if (rfq == null)
         {
-            var existingBidSupplierIds = await unitOfWork.SupplierBidRepository.Query()
-                .Where(b => b.RFQId == request.RFQId && !b.IsDeleted)
-                .Select(b => b.SupplierId)
-                .ToListAsync(cancellationToken);
+            return ApiResponse<List<RFQSupplierBidDto>>.Fail("RFQ not found.");
+        }
 
-            var unbiddedSuppliers = rfq.RFQSuppliers
-                .Where(rs => !rs.IsDeleted && rs.Supplier != null && !existingBidSupplierIds.Contains(rs.SupplierId))
-                .ToList();
+        if (rfq.Status != StatusEnum.Approved)
+        {
+            return ApiResponse<List<RFQSupplierBidDto>>.Fail("RFQ is not approved. Supplier submissions can only be accessed for approved RFQs.");
+        }
 
-            if (unbiddedSuppliers.Any())
+        var existingBidSupplierIds = await unitOfWork.SupplierBidRepository.Query()
+            .Where(b => b.RFQId == request.RFQId && !b.IsDeleted)
+            .Select(b => b.SupplierId)
+            .ToListAsync(cancellationToken);
+
+        var unbiddedSuppliers = rfq.RFQSuppliers
+            .Where(rs => !rs.IsDeleted && rs.Supplier != null && !existingBidSupplierIds.Contains(rs.SupplierId))
+            .ToList();
+
+        if (unbiddedSuppliers.Any())
+        {
+            foreach (var unbidded in unbiddedSuppliers)
             {
-                foreach (var unbidded in unbiddedSuppliers)
-                {
-                    var isPublic = unbidded.Supplier?.CreatedBy == "PublicPortal";
-                    var quotationDoc = unbidded.Supplier?.SupplierRequirements
-                        ?.FirstOrDefault(r => r.RequirementName.Contains("Price Quotation", StringComparison.OrdinalIgnoreCase));
+                var isPublic = unbidded.Supplier?.CreatedBy == "PublicPortal";
+                var quotationDoc = unbidded.Supplier?.SupplierRequirements
+                    ?.FirstOrDefault(r => r.RequirementName.Contains("Price Quotation", StringComparison.OrdinalIgnoreCase));
 
-                    var autoBid = new ERPEZ.Domain.Entities.Procurement.SupplierBid
+                var bidId = Guid.NewGuid();
+                var autoBid = new ERPEZ.Domain.Entities.Procurement.SupplierBid
+                {
+                    Id = bidId,
+                    RFQId = request.RFQId,
+                    SupplierId = unbidded.SupplierId,
+                    Supplier = unbidded.Supplier!,
+                    SubmissionType = isPublic ? "PublicPortal" : "Electronic",
+                    Status = "Submitted",
+                    SubmittedAt = unbidded.InvitedAt != default ? unbidded.InvitedAt : unbidded.CreatedAt,
+                    Remarks = isPublic ? $"Applied via BAC Public Portal ({unbidded.Supplier?.Name})" : "Invited RFQ Submission",
+                    TotalAmount = 0m,
+                    SupplierBidItems = rfq.RFQItems.Where(i => !i.IsDeleted).Select(item => new ERPEZ.Domain.Entities.Procurement.SupplierBidItem
                     {
                         Id = Guid.NewGuid(),
-                        RFQId = request.RFQId,
-                        SupplierId = unbidded.SupplierId,
-                        SubmissionType = isPublic ? "PublicPortal" : "Electronic",
-                        Status = "Submitted",
-                        SubmittedAt = unbidded.InvitedAt != default ? unbidded.InvitedAt : unbidded.CreatedAt,
-                        Remarks = isPublic ? $"Applied via BAC Public Portal ({unbidded.Supplier?.Name})" : "Invited RFQ Submission",
-                        TotalAmount = 0m,
-                        SupplierBidItems = rfq.RFQItems.Where(i => !i.IsDeleted).Select(item => new ERPEZ.Domain.Entities.Procurement.SupplierBidItem
-                        {
-                            Id = Guid.NewGuid(),
-                            RFQItemId = item.Id,
-                            UnitPrice = 0m,
-                            TotalPrice = 0m,
-                            IsResponsive = true,
-                            BrochureFileUrl = quotationDoc?.Url
-                        }).ToList()
-                    };
-                    await unitOfWork.SupplierBidRepository.AddAsync(autoBid, cancellationToken);
-                }
-                await unitOfWork.SaveChangesAsync(cancellationToken);
+                        SupplierBidId = bidId,
+                        RFQItemId = item.Id,
+                        RFQItem = item,
+                        UnitPrice = 0m,
+                        TotalPrice = 0m,
+                        IsResponsive = true,
+                        BrochureFileUrl = quotationDoc?.Url
+                    }).ToList()
+                };
+                await unitOfWork.SupplierBidRepository.AddAsync(autoBid, cancellationToken);
             }
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         var bids = await unitOfWork.SupplierBidRepository.Query()
             .Include(b => b.Supplier)
-                .ThenInclude(s => s.SupplierCategory)
-            .Include(b => b.Supplier)
-                .ThenInclude(s => s.SupplierRequirements)
+                .ThenInclude(s => s!.SupplierRequirements)
             .Include(b => b.SupplierBidItems)
-                .ThenInclude(i => i.RFQItem)
             .Where(b => b.RFQId == request.RFQId && !b.IsDeleted)
             .OrderByDescending(b => b.SubmittedAt ?? b.CreatedAt)
             .ToListAsync(cancellationToken);
+
+        var rfqItemMap = rfq?.RFQItems?.ToDictionary(item => item.Id) ?? [];
+
+        var categoryIds = bids
+            .Where(b => b.Supplier != null && b.Supplier.SupplierCategoryId != Guid.Empty)
+            .Select(b => b.Supplier!.SupplierCategoryId)
+            .Distinct()
+            .ToList();
+
+        var categoriesMap = categoryIds.Count > 0
+            ? await unitOfWork.SupplierCategoryRepository.Query()
+                .Where(c => categoryIds.Contains(c.Id) && !c.IsDeleted)
+                .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken)
+            : new Dictionary<Guid, string>();
 
         var result = bids.Select(b =>
         {
@@ -162,10 +185,14 @@ public class GetRFQSupplierBidsQueryHandler(IUnitOfWork unitOfWork)
             {
                 if (seenUrls.Add(item.BrochureFileUrl!))
                 {
+                    var itemName = rfqItemMap.TryGetValue(item.RFQItemId, out var foundItem)
+                        ? foundItem.ItemNameSnapshot
+                        : (item.RFQItem?.ItemNameSnapshot ?? "Item");
+
                     documents.Add(new RFQBidDocumentDto
                     {
                         Id = item.BrochureFileId ?? item.Id,
-                        Name = $"{item.RFQItem?.ItemNameSnapshot ?? "Item"} Brochure / Form",
+                        Name = $"{itemName} Brochure / Form",
                         Type = "PDF",
                         Size = 0,
                         UploadedAt = b.SubmittedAt ?? b.CreatedAt,
@@ -180,7 +207,9 @@ public class GetRFQSupplierBidsQueryHandler(IUnitOfWork unitOfWork)
                 RFQId = b.RFQId,
                 SupplierId = b.SupplierId,
                 SupplierName = b.Supplier?.Name ?? "Unnamed Supplier",
-                SupplierCategory = b.Supplier?.SupplierCategory?.Name,
+                SupplierCategory = b.Supplier != null && categoriesMap.TryGetValue(b.Supplier.SupplierCategoryId, out var catName)
+                    ? catName
+                    : b.Supplier?.SupplierCategory?.Name,
                 ContactPerson = b.Supplier?.ContactPerson,
                 ContactNumber = b.Supplier?.ContactNumber,
                 Email = b.Supplier?.Email,
@@ -196,22 +225,26 @@ public class GetRFQSupplierBidsQueryHandler(IUnitOfWork unitOfWork)
                 EvaluatedBy = b.UpdatedBy,
                 EvaluatedAt = b.UpdatedAt,
                 Documents = documents,
-                Items = b.SupplierBidItems.Select(i => new RFQBidItemDetailDto
+                Items = b.SupplierBidItems.Select(i =>
                 {
-                    Id = i.Id,
-                    RFQItemId = i.RFQItemId,
-                    ItemName = i.RFQItem?.ItemNameSnapshot ?? "Unknown Item",
-                    Quantity = i.RFQItem?.Quantity ?? 1,
-                    ABCUnitPrice = i.RFQItem?.UnitPriceSnapshot ?? 0,
-                    UnitPrice = i.UnitPrice,
-                    TotalPrice = i.TotalPrice,
-                    Brand = i.Brand,
-                    Model = i.Model,
-                    Color = i.Color,
-                    BrochureFileUrl = i.BrochureFileUrl,
-                    IsResponsive = i.IsResponsive,
-                    DisqualificationReason = i.DisqualificationReason,
-                    QualityScore = i.QualityScore
+                    var rItem = rfqItemMap.GetValueOrDefault(i.RFQItemId);
+                    return new RFQBidItemDetailDto
+                    {
+                        Id = i.Id,
+                        RFQItemId = i.RFQItemId,
+                        ItemName = rItem?.ItemNameSnapshot ?? i.RFQItem?.ItemNameSnapshot ?? "Unknown Item",
+                        Quantity = rItem?.Quantity ?? i.RFQItem?.Quantity ?? 1,
+                        ABCUnitPrice = rItem?.UnitPriceSnapshot ?? i.RFQItem?.UnitPriceSnapshot ?? 0,
+                        UnitPrice = i.UnitPrice,
+                        TotalPrice = i.TotalPrice,
+                        Brand = i.Brand,
+                        Model = i.Model,
+                        Color = i.Color,
+                        BrochureFileUrl = i.BrochureFileUrl,
+                        IsResponsive = i.IsResponsive,
+                        DisqualificationReason = i.DisqualificationReason,
+                        QualityScore = i.QualityScore
+                    };
                 }).ToList()
             };
         }).ToList();
