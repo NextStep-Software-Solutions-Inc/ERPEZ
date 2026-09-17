@@ -203,7 +203,7 @@ export default function ManageRFQApprovalPage() {
               <TableCell>
                {r.status === 'approved' ? (
                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">APPROVED</Badge>
-               ) : r.status === 'draft' && r.remarks ? (
+               ) : r.status === 'returned' || (r.status === 'draft' && r.remarks) ? (
                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">RETURNED</Badge>
                ) : (
                  <Badge variant="outline">FOR APPROVAL</Badge>
@@ -242,7 +242,7 @@ export default function ManageRFQApprovalPage() {
 
         <div className="flex items-center justify-between px-6 py-4">
         <div className="text-sm text-muted-foreground">
-          {displayRFQs.length} RFQ(s) total ({displayRFQs.filter(r => r.status === 'submitted').length} pending approval, {displayRFQs.filter(r => r.status === 'approved').length} approved, {displayRFQs.filter(r => r.status === 'draft' && r.remarks).length} returned)
+          {displayRFQs.length} RFQ(s) total ({displayRFQs.filter(r => r.status === 'submitted').length} pending approval, {displayRFQs.filter(r => r.status === 'approved').length} approved, {displayRFQs.filter(r => r.status === 'returned' || (r.status === 'draft' && r.remarks)).length} returned)
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage(Math.max(1, page - 1))}>Previous</Button>
