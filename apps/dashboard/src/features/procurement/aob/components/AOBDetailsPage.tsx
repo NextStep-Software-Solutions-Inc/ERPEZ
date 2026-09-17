@@ -907,10 +907,17 @@ export function AOBDetailsPage({
       <AlertDialog open={Boolean(rfqToUnlink)} onOpenChange={(open) => !open && setRfqToUnlink(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unlink RFQ</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to unlink <span className="font-semibold text-gray-900">{rfqToUnlink?.rfqNumber}</span> from this AOB?
-              This will remove all its items, associated supplier bids, and any awarded winners from the evaluation matrix.
+            <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              Unlink RFQ
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-1 text-sm text-muted-foreground">
+              <div>
+                Are you sure you want to unlink <span className="font-semibold text-foreground">{rfqToUnlink?.rfqNumber}</span> from this AOB?
+              </div>
+              <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-2.5 text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                <span className="font-bold">⚠️ Impact Notice:</span> Removing this RFQ will permanently clean up all of its line items, associated supplier quotation bids, and any awarded winners from the evaluation matrix.
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
