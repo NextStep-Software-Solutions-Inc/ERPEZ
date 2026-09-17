@@ -113,7 +113,7 @@ function getStatusIcon(status: string) {
  */
 function areAllItemsAwarded(bidMatrix: BidMatrix | undefined | null): boolean {
   if (!bidMatrix?.lineItems || bidMatrix.lineItems.length === 0) return false
-  return bidMatrix.lineItems.every((item) => item.selectedWinnerId)
+  return bidMatrix.lineItems.every((item) => Boolean(item.selectedWinnerId || item.lineItems?.some((b) => b.isWinner)))
 }
 
 /**
@@ -166,7 +166,17 @@ export function AOBDetailsPage({
     return []
   }, [aob.rfqs, bidMatrix?.linkedRFQs])
 
-  const allItemsAwarded = useMemo(() => areAllItemsAwarded(bidMatrix), [bidMatrix])
+  const allItemsAwarded = useMemo(() => {
+    if (areAllItemsAwarded(bidMatrix)) return true
+    if (
+      aob.awardedItems &&
+      aob.awardedItems.length > 0 &&
+      (!bidMatrix?.lineItems || bidMatrix.lineItems.length === 0)
+    ) {
+      return true
+    }
+    return false
+  }, [bidMatrix, aob.awardedItems])
 
   const handleConfirmUnlinkRFQ = useCallback(async () => {
     if (!rfqToUnlink || !aob.id) return
@@ -264,10 +274,16 @@ export function AOBDetailsPage({
   )
 
   const winnerCount = useMemo(
-    () => bidMatrix?.lineItems?.filter((item) => item.selectedWinnerId).length ?? 0,
-    [bidMatrix]
+    () =>
+      bidMatrix?.lineItems?.filter(
+        (item) => item.selectedWinnerId || item.lineItems?.some((b) => b.isWinner)
+      ).length ?? (aob.awardedItems?.length || 0),
+    [bidMatrix, aob.awardedItems]
   )
-  const totalItems = useMemo(() => bidMatrix?.lineItems?.length ?? 0, [bidMatrix])
+  const totalItems = useMemo(
+    () => bidMatrix?.lineItems?.length ?? (aob.awardedItems?.length || 0),
+    [bidMatrix, aob.awardedItems]
+  )
 
   // Calculate bid statistics
   const bidStatistics = useMemo(() => {
@@ -527,7 +543,7 @@ export function AOBDetailsPage({
             <>
               <Button
                 variant="outline"
-                onClick={() => setShowReturnDialog(true)}
+                onClick={() => (onReturn ? onReturn() : setShowReturnDialog(true))}
                 disabled={isProcessing}
                 className="gap-2"
               >
@@ -535,7 +551,7 @@ export function AOBDetailsPage({
                 Return
               </Button>
               <Button
-                onClick={() => setShowApproveDialog(true)}
+                onClick={() => (onApprove ? onApprove() : setShowApproveDialog(true))}
                 disabled={isProcessing || !allItemsAwarded}
                 className="gap-2"
               >
@@ -837,29 +853,31 @@ export function AOBDetailsPage({
         />
       )}
 
-      {/* Approve AOB Dialog */}
-      <ApproveAOBDialog
-        open={showApproveDialog}
-        onOpenChange={setShowApproveDialog}
-        aob={aob}
-        winnerCount={winnerCount}
-        totalItems={totalItems}
-        onApprove={async () => {
-          onApprove?.()
-          setShowApproveDialog(false)
-        }}
-      />
+      {/* Approve AOB Dialog - only rendered when not handled by parent route */}
+      {!onApprove && (
+        <ApproveAOBDialog
+          open={showApproveDialog}
+          onOpenChange={setShowApproveDialog}
+          aob={aob}
+          winnerCount={winnerCount}
+          totalItems={totalItems}
+          onApprove={async () => {
+            setShowApproveDialog(false)
+          }}
+        />
+      )}
 
-      {/* Return AOB Dialog */}
-      <ReturnAOBDialog
-        open={showReturnDialog}
-        onOpenChange={setShowReturnDialog}
-        aob={aob}
-        onReturn={async () => {
-          onReturn?.()
-          setShowReturnDialog(false)
-        }}
-      />
+      {/* Return AOB Dialog - only rendered when not handled by parent route */}
+      {!onReturn && (
+        <ReturnAOBDialog
+          open={showReturnDialog}
+          onOpenChange={setShowReturnDialog}
+          aob={aob}
+          onReturn={async () => {
+            setShowReturnDialog(false)
+          }}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>

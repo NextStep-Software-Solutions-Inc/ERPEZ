@@ -217,9 +217,24 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasPermission(Permissions.Procurement.aobManage)]
-    public async Task<IActionResult> ApproveAOB(Guid id, [FromBody] ApproveAOBCommand command)
+    public async Task<IActionResult> ApproveAOB(Guid id, [FromBody] ApproveAOBRequest? request = null)
     {
-        var result = await mediator.Send(command with { AOBId = id });
+        Guid? approverGuid = null;
+        if (!string.IsNullOrWhiteSpace(request?.ApprovedBy) && Guid.TryParse(request.ApprovedBy, out var parsed))
+        {
+            approverGuid = parsed;
+        }
+
+        var command = new ApproveAOBCommand
+        {
+            AOBId = id,
+            ApprovedBy = approverGuid,
+            ApprovedByName = request?.ApprovedBy,
+            SignedDocumentUrl = request?.SignedDocumentUrl,
+            Remarks = request?.Remarks
+        };
+
+        var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
@@ -231,9 +246,10 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasPermission(Permissions.Procurement.aobManage)]
-    public async Task<IActionResult> ReturnAOB(Guid id, [FromBody] ReturnAOBCommand command)
+    public async Task<IActionResult> ReturnAOB(Guid id, [FromBody] ReturnAOBRequest? request = null)
     {
-        var result = await mediator.Send(command with { AOBId = id });
+        var command = new ReturnAOBCommand(id, request?.Remarks ?? string.Empty);
+        var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

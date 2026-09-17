@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AOBDetailsPage } from '@/features/procurement/aob/components'
 import { ApproveAOBDialog } from '@/features/procurement/aob/dialogs/ApproveAOBDialog'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
 import { PERMISSIONS } from '@/constants/permissions'
@@ -53,6 +53,20 @@ function RouteComponent() {
   } = useBidMatrix({
     pathParams: { aobId },
   })
+
+  // Item and Winner counts for approval validation
+  const totalItems = useMemo(() => {
+    return bidMatrix?.lineItems?.length || aob?.awardedItems?.length || 0
+  }, [bidMatrix?.lineItems, aob?.awardedItems])
+
+  const winnerCount = useMemo(() => {
+    if (bidMatrix?.lineItems && bidMatrix.lineItems.length > 0) {
+      return bidMatrix.lineItems.filter(
+        (item) => item.selectedWinnerId || item.lineItems?.some((b) => b.isWinner)
+      ).length
+    }
+    return aob?.awardedItems?.length || 0
+  }, [bidMatrix?.lineItems, aob?.awardedItems])
 
   // Mutations
   const { mutateAsync: deleteAOB } = useDeleteAOB()
@@ -121,7 +135,7 @@ function RouteComponent() {
   }
 
   const handleApproveSubmit = async (data: {
-    approvalDocument: File
+    approvalDocument?: File | null
     approvalRemarks?: string
     approvedBy: string
   }) => {
@@ -218,6 +232,8 @@ function RouteComponent() {
           open={isApproveDialogOpen}
           onOpenChange={setIsApproveDialogOpen}
           aob={aob}
+          winnerCount={winnerCount}
+          totalItems={totalItems}
           onApprove={handleApproveSubmit}
         />
       </div>
