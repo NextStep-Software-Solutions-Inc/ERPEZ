@@ -66,9 +66,66 @@ public class GetRFQSupplierBidsQueryHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<List<RFQSupplierBidDto>>> Handle(
         GetRFQSupplierBidsQuery request, CancellationToken cancellationToken)
     {
+        // Self-healing reconciliation: ensure any suppliers registered under RFQSuppliers
+        // (such as external public portal applicants who applied prior to SupplierBid generation)
+        // have an active SupplierBid and line items created.
+        var rfq = await unitOfWork.RFQRepository.Query()
+            .Include(r => r.RFQSuppliers)
+                .ThenInclude(rs => rs.Supplier)
+                    .ThenInclude(s => s.SupplierRequirements)
+            .Include(r => r.RFQItems)
+            .FirstOrDefaultAsync(r => r.Id == request.RFQId && !r.IsDeleted, cancellationToken);
+
+        if (rfq != null)
+        {
+            var existingBidSupplierIds = await unitOfWork.SupplierBidRepository.Query()
+                .Where(b => b.RFQId == request.RFQId && !b.IsDeleted)
+                .Select(b => b.SupplierId)
+                .ToListAsync(cancellationToken);
+
+            var unbiddedSuppliers = rfq.RFQSuppliers
+                .Where(rs => !rs.IsDeleted && rs.Supplier != null && !existingBidSupplierIds.Contains(rs.SupplierId))
+                .ToList();
+
+            if (unbiddedSuppliers.Any())
+            {
+                foreach (var unbidded in unbiddedSuppliers)
+                {
+                    var isPublic = unbidded.Supplier?.CreatedBy == "PublicPortal";
+                    var quotationDoc = unbidded.Supplier?.SupplierRequirements
+                        ?.FirstOrDefault(r => r.RequirementName.Contains("Price Quotation", StringComparison.OrdinalIgnoreCase));
+
+                    var autoBid = new ERPEZ.Domain.Entities.Procurement.SupplierBid
+                    {
+                        Id = Guid.NewGuid(),
+                        RFQId = request.RFQId,
+                        SupplierId = unbidded.SupplierId,
+                        SubmissionType = isPublic ? "PublicPortal" : "Electronic",
+                        Status = "Submitted",
+                        SubmittedAt = unbidded.InvitedAt != default ? unbidded.InvitedAt : unbidded.CreatedAt,
+                        Remarks = isPublic ? $"Applied via BAC Public Portal ({unbidded.Supplier?.Name})" : "Invited RFQ Submission",
+                        TotalAmount = 0m,
+                        SupplierBidItems = rfq.RFQItems.Where(i => !i.IsDeleted).Select(item => new ERPEZ.Domain.Entities.Procurement.SupplierBidItem
+                        {
+                            Id = Guid.NewGuid(),
+                            RFQItemId = item.Id,
+                            UnitPrice = 0m,
+                            TotalPrice = 0m,
+                            IsResponsive = true,
+                            BrochureFileUrl = quotationDoc?.Url
+                        }).ToList()
+                    };
+                    await unitOfWork.SupplierBidRepository.AddAsync(autoBid, cancellationToken);
+                }
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+        }
+
         var bids = await unitOfWork.SupplierBidRepository.Query()
             .Include(b => b.Supplier)
                 .ThenInclude(s => s.SupplierCategory)
+            .Include(b => b.Supplier)
+                .ThenInclude(s => s.SupplierRequirements)
             .Include(b => b.SupplierBidItems)
                 .ThenInclude(i => i.RFQItem)
             .Where(b => b.RFQId == request.RFQId && !b.IsDeleted)
@@ -77,20 +134,44 @@ public class GetRFQSupplierBidsQueryHandler(IUnitOfWork unitOfWork)
 
         var result = bids.Select(b =>
         {
+            var seenUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var documents = new List<RFQBidDocumentDto>();
 
-            // Collect brochures from line items
+            // Collect compliance documents and public portal attachments
+            if (b.Supplier?.SupplierRequirements != null)
+            {
+                foreach (var req in b.Supplier.SupplierRequirements.Where(r => !string.IsNullOrEmpty(r.Url) && !r.IsDeleted))
+                {
+                    if (seenUrls.Add(req.Url!))
+                    {
+                        documents.Add(new RFQBidDocumentDto
+                        {
+                            Id = req.Id,
+                            Name = req.RequirementName,
+                            Type = "PDF",
+                            Size = 0,
+                            UploadedAt = req.CreatedAt,
+                            Url = req.Url
+                        });
+                    }
+                }
+            }
+
+            // Collect brochures and forms from line items
             foreach (var item in b.SupplierBidItems.Where(i => !string.IsNullOrEmpty(i.BrochureFileUrl)))
             {
-                documents.Add(new RFQBidDocumentDto
+                if (seenUrls.Add(item.BrochureFileUrl!))
                 {
-                    Id = item.BrochureFileId ?? item.Id,
-                    Name = $"{item.RFQItem?.ItemNameSnapshot ?? "Item"} Brochure",
-                    Type = "PDF",
-                    Size = 0,
-                    UploadedAt = b.SubmittedAt ?? b.CreatedAt,
-                    Url = item.BrochureFileUrl
-                });
+                    documents.Add(new RFQBidDocumentDto
+                    {
+                        Id = item.BrochureFileId ?? item.Id,
+                        Name = $"{item.RFQItem?.ItemNameSnapshot ?? "Item"} Brochure / Form",
+                        Type = "PDF",
+                        Size = 0,
+                        UploadedAt = b.SubmittedAt ?? b.CreatedAt,
+                        Url = item.BrochureFileUrl
+                    });
+                }
             }
 
             return new RFQSupplierBidDto

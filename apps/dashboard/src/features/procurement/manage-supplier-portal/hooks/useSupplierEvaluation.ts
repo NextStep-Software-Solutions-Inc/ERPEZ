@@ -48,7 +48,7 @@ export function useSupplierEvaluation(projectId: string, source: 'rfq' | 'bac' =
       return rawBids.map((b: any) => ({
         id: b.id,
         projectId: b.rfqId || projectId,
-        source: 'rfq' as const,
+        source: (b.submissionType === 'PublicPortal' ? 'bac' : 'rfq') as 'rfq' | 'bac',
         supplierName: b.supplierName || 'Unnamed Supplier',
         supplierCategory: b.supplierCategory,
         contactPerson: b.contactPerson,

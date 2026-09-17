@@ -1,4 +1,6 @@
 using Dashboard.Application.UnitTests.Features.Procurement.AOB;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQs;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQSupplierBids;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Commands.SubmitPublicApplication;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicProjectDetail;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicProjects;
@@ -460,7 +462,7 @@ public class PublicProjectsRFQIntegrationTests
     }
 
     [Fact]
-    public async Task SubmitPublicApplication_WhenApprovedRFQ_ShouldRegisterSupplierInRFQSuppliers()
+    public async Task SubmitPublicApplication_WhenApprovedRFQ_ShouldRegisterSupplierAndCreateSupplierBid()
     {
         // Arrange
         using var context = CreateInMemoryDbContext();
@@ -469,6 +471,82 @@ public class PublicProjectsRFQIntegrationTests
 
         var category = new SupplierCategory { Id = Guid.NewGuid(), Name = "IT Goods" };
         context.SupplierCategories?.Add(category);
+
+        var rfqId = Guid.NewGuid();
+        var approvedRfq = new RFQ
+        {
+            Id = rfqId,
+            RFQNumber = "RFQ-2026-SVP-003",
+            Status = StatusEnum.Approved,
+            Deadline = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7))
+        };
+        var rfqItem = new RFQItem
+        {
+            Id = Guid.NewGuid(),
+            RFQId = rfqId,
+            Quantity = 5,
+            ItemNameSnapshot = "Dell Latitude 5540"
+        };
+        approvedRfq.RFQItems.Add(rfqItem);
+        context.RFQs?.Add(approvedRfq);
+        await context.SaveChangesAsync();
+
+        var testFileId = Guid.NewGuid();
+        fileStorageMock.Setup(f => f.PromoteFileAsync(testFileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(("https://storage.example.com/quotation.pdf", "Apex_Quotation.pdf"));
+
+        var handler = new SubmitPublicApplicationCommandHandler(unitOfWork, fileStorageMock.Object);
+
+        var command = new SubmitPublicApplicationCommand(
+            rfqId,
+            "Apex Technologies Corp",
+            "Carlos Mendoza",
+            "carlos@apextech.ph",
+            "+63 917 123 4567",
+            "123-456-789-000",
+            "Makati City",
+            [new ApplicationDocumentUploadItem(rfqId, testFileId)]
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeTrue();
+
+        // 1. Supplier master created
+        var supplier = await context.Suppliers!
+            .Include(s => s.SupplierRequirements)
+            .FirstOrDefaultAsync(s => s.TINNumber == "123-456-789-000");
+        supplier.Should().NotBeNull();
+        supplier!.Name.Should().Be("Apex Technologies Corp");
+        supplier.CreatedBy.Should().Be("PublicPortal");
+        supplier.SupplierRequirements.Should().HaveCount(1);
+        supplier.SupplierRequirements.First().RequirementName.Should().Contain("Price Quotation Form");
+
+        // 2. Added to RFQSuppliers
+        var rfqAfter = await context.RFQs!.Include(r => r.RFQSuppliers).FirstAsync(r => r.Id == rfqId);
+        rfqAfter.RFQSuppliers.Should().HaveCount(1);
+        rfqAfter.RFQSuppliers.First().SupplierId.Should().Be(supplier.Id);
+
+        // 3. SupplierBid created with PublicPortal submission type and line item
+        var bid = await context.SupplierBids!
+            .Include(b => b.SupplierBidItems)
+            .FirstOrDefaultAsync(b => b.RFQId == rfqId && b.SupplierId == supplier.Id);
+        bid.Should().NotBeNull();
+        bid!.SubmissionType.Should().Be("PublicPortal");
+        bid.Status.Should().Be("Submitted");
+        bid.SupplierBidItems.Should().HaveCount(1);
+        bid.SupplierBidItems.First().BrochureFileUrl.Should().Be("https://storage.example.com/quotation.pdf");
+    }
+
+    [Fact]
+    public async Task SubmitPublicApplication_WhenDuplicateTINForSameRFQ_ShouldThrowValidationException()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+        var fileStorageMock = new Mock<IFileStorageService>();
 
         var rfqId = Guid.NewGuid();
         var approvedRfq = new RFQ
@@ -494,18 +572,140 @@ public class PublicProjectsRFQIntegrationTests
             []
         );
 
+        // First submission succeeds
+        await handler.Handle(command, CancellationToken.None);
+
+        // Act: second submission with same TIN
+        var act = () => handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>()
+            .WithMessage("*already been submitted for this RFQ*");
+    }
+
+    [Fact]
+    public async Task GetRFQSupplierBids_WhenUnbiddedPublicSupplierExists_ShouldSelfHealAndReturnBid()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var rfqId = Guid.NewGuid();
+        var rfq = new RFQ
+        {
+            Id = rfqId,
+            RFQNumber = "RFQ-2026-SVP-003",
+            Status = StatusEnum.Approved
+        };
+        var rfqItem = new RFQItem
+        {
+            Id = Guid.NewGuid(),
+            RFQId = rfqId,
+            ItemNameSnapshot = "Workstation Pro",
+            Quantity = 2,
+            UnitPriceSnapshot = 50000m
+        };
+        rfq.RFQItems.Add(rfqItem);
+
+        // Public applicant registered in RFQSuppliers without a SupplierBid (pre-fix state)
+        var publicSupplier = new Supplier
+        {
+            Id = Guid.NewGuid(),
+            Name = "External Public Bidder Co",
+            TINNumber = "999-888-777-000",
+            CreatedBy = "PublicPortal"
+        };
+        publicSupplier.SupplierRequirements.Add(new SupplierRequirement
+        {
+            Id = Guid.NewGuid(),
+            SupplierId = publicSupplier.Id,
+            RequirementName = "Valid Mayor's / Business Permit",
+            Url = "https://storage.example.com/mayors-permit.pdf"
+        });
+        context.Suppliers?.Add(publicSupplier);
+
+        rfq.RFQSuppliers.Add(new RFQSupplier
+        {
+            RFQId = rfqId,
+            SupplierId = publicSupplier.Id,
+            Supplier = publicSupplier,
+            InvitedAt = DateTime.UtcNow
+        });
+        context.RFQs?.Add(rfq);
+        await context.SaveChangesAsync();
+
+        var handler = new GetRFQSupplierBidsQueryHandler(unitOfWork);
+
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        var result = await handler.Handle(new GetRFQSupplierBidsQuery(rfqId), CancellationToken.None);
 
         // Assert
         result.Succeeded.Should().BeTrue();
+        result.Data.Should().HaveCount(1);
 
-        var rfqAfter = await context.RFQs!.Include(r => r.RFQSuppliers).FirstAsync(r => r.Id == rfqId);
-        rfqAfter.RFQSuppliers.Should().HaveCount(1);
+        var bid = result.Data.First();
+        bid.SupplierName.Should().Be("External Public Bidder Co");
+        bid.SubmissionType.Should().Be("PublicPortal");
+        bid.Status.Should().Be("Pending");
+        bid.Documents.Should().Contain(d => d.Name.Contains("Mayor's"));
+        bid.Items.Should().HaveCount(1);
 
-        var supplier = await context.Suppliers!.FirstOrDefaultAsync(s => s.TINNumber == "123-456-789-000");
-        supplier.Should().NotBeNull();
-        supplier!.Name.Should().Be("Apex Technologies Corp");
-        rfqAfter.RFQSuppliers.First().SupplierId.Should().Be(supplier.Id);
+        // Verify the reconciled bid was actually persisted to DB
+        var persistedBid = await context.SupplierBids!.FirstOrDefaultAsync(b => b.RFQId == rfqId && b.SupplierId == publicSupplier.Id);
+        persistedBid.Should().NotBeNull();
+        persistedBid!.SubmissionType.Should().Be("PublicPortal");
+    }
+
+    [Fact]
+    public async Task GetRFQs_WhenPublicApplicantRegistered_ShouldConsolidateApplicantCount()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var rfqId = Guid.NewGuid();
+        var rfq = new RFQ
+        {
+            Id = rfqId,
+            RFQNumber = "RFQ-2026-SVP-003",
+            Description = "Office Supplies Procurement",
+            Status = StatusEnum.Approved
+        };
+
+        // 3 internal suppliers with bids
+        for (int i = 1; i <= 3; i++)
+        {
+            var supplierId = Guid.NewGuid();
+            var supplier = new Supplier { Id = supplierId, Name = $"Supplier {i}", TINNumber = $"TIN-{i}" };
+            context.Suppliers?.Add(supplier);
+
+            rfq.RFQSuppliers.Add(new RFQSupplier { RFQId = rfqId, SupplierId = supplierId, Supplier = supplier });
+            context.SupplierBids?.Add(new SupplierBid
+            {
+                Id = Guid.NewGuid(),
+                RFQId = rfqId,
+                SupplierId = supplierId,
+                SubmissionType = "Electronic",
+                Status = "Submitted"
+            });
+        }
+
+        // 4th supplier applied from public portal (in RFQSuppliers, not yet in SupplierBid)
+        var publicSupplierId = Guid.NewGuid();
+        var publicSupplier = new Supplier { Id = publicSupplierId, Name = "Public Applicant", TINNumber = "TIN-4", CreatedBy = "PublicPortal" };
+        context.Suppliers?.Add(publicSupplier);
+        rfq.RFQSuppliers.Add(new RFQSupplier { RFQId = rfqId, SupplierId = publicSupplierId, Supplier = publicSupplier });
+
+        context.RFQs?.Add(rfq);
+        await context.SaveChangesAsync();
+
+        var handler = new GetRFQsQueryHandler(unitOfWork);
+
+        // Act
+        var result = await handler.Handle(new GetRFQsQuery(), CancellationToken.None);
+
+        // Assert
+        result.Data.Should().HaveCount(1);
+        result.Data.First().ApplicantCount.Should().Be(4);
     }
 }

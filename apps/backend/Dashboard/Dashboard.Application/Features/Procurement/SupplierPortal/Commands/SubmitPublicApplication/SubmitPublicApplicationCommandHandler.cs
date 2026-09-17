@@ -25,6 +25,7 @@ public class SubmitPublicApplicationCommandHandler(
         {
             var rfq = await unitOfWork.RFQRepository.Query()
                 .Include(r => r.RFQSuppliers)
+                .Include(r => r.RFQItems)
                 .FirstOrDefaultAsync(r => r.Id == request.ProjectId && !r.IsDeleted, cancellationToken);
 
             if (rfq == null)
@@ -39,8 +40,9 @@ public class SubmitPublicApplicationCommandHandler(
 
             // Find or create supplier
             var trimmedTinRfq = request.TinNumber.Trim();
-            var rfqSupplierRecord = await unitOfWork.SupplierRepository.FindAsync(
-                s => s.TINNumber == trimmedTinRfq && !s.IsDeleted, cancellationToken);
+            var rfqSupplierRecord = await unitOfWork.SupplierRepository.Query()
+                .Include(s => s.SupplierRequirements)
+                .FirstOrDefaultAsync(s => s.TINNumber == trimmedTinRfq && !s.IsDeleted, cancellationToken);
 
             if (rfqSupplierRecord == null)
             {
@@ -64,6 +66,67 @@ public class SubmitPublicApplicationCommandHandler(
                 };
                 await unitOfWork.SupplierRepository.AddAsync(rfqSupplierRecord, cancellationToken);
             }
+            else
+            {
+                // Guard against duplicate submission for the same RFQ
+                var existingBid = await unitOfWork.SupplierBidRepository.FindAsync(
+                    b => b.RFQId == rfq.Id && b.SupplierId == rfqSupplierRecord.Id && !b.IsDeleted,
+                    cancellationToken);
+
+                if (existingBid != null)
+                {
+                    throw new FluentValidation.ValidationException(
+                        "An application/quotation with this TIN number has already been submitted for this RFQ.");
+                }
+            }
+
+            // Promote uploaded documents (temp -> permanent storage) and attach as SupplierRequirements
+            string? quotationUrl = null;
+            if (request.Documents != null && request.Documents.Count > 0)
+            {
+                foreach (var doc in request.Documents)
+                {
+                    (string Url, string OriginalFileName) promoted;
+                    try
+                    {
+                        promoted = await fileStorageService.PromoteFileAsync(doc.FileId, cancellationToken);
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        throw new FluentValidation.ValidationException(
+                            $"Uploaded file with ID '{doc.FileId}' was not found or has expired. Please re-upload and try again.");
+                    }
+
+                    string docName;
+                    if (doc.ChecklistItemId == Guid.Parse("00000000-0000-0000-0000-000000000001"))
+                        docName = "Valid Mayor's / Business Permit";
+                    else if (doc.ChecklistItemId == Guid.Parse("00000000-0000-0000-0000-000000000002"))
+                        docName = "PhilGEPS Registration Certificate";
+                    else if (doc.ChecklistItemId == Guid.Parse("00000000-0000-0000-0000-000000000003"))
+                        docName = "Omnibus Sworn Statement (GPPB Prescribed Form)";
+                    else if (doc.ChecklistItemId == rfq.Id)
+                    {
+                        docName = $"Price Quotation Form - {rfq.RFQNumber}";
+                        quotationUrl = promoted.Url;
+                    }
+                    else
+                    {
+                        docName = !string.IsNullOrWhiteSpace(promoted.OriginalFileName)
+                            ? promoted.OriginalFileName
+                            : "Quotation Attachment";
+                    }
+
+                    rfqSupplierRecord.SupplierRequirements.Add(new ERPEZ.Domain.Entities.Planning.SupplierRequirement
+                    {
+                        Id = Guid.NewGuid(),
+                        SupplierId = rfqSupplierRecord.Id,
+                        RequirementName = docName,
+                        Url = promoted.Url,
+                        IsVerified = false,
+                        CreatedBy = "PublicPortal"
+                    });
+                }
+            }
 
             // Register supplier under RFQ invited/participating suppliers if not already present
             if (!rfq.RFQSuppliers.Any(s => s.SupplierId == rfqSupplierRecord.Id))
@@ -75,9 +138,32 @@ public class SubmitPublicApplicationCommandHandler(
                 });
             }
 
+            // Create SupplierBid for the RFQ
+            var newBid = new SupplierBid
+            {
+                Id = Guid.NewGuid(),
+                RFQId = rfq.Id,
+                SupplierId = rfqSupplierRecord.Id,
+                SubmissionType = "PublicPortal",
+                Status = "Submitted",
+                SubmittedAt = DateTime.UtcNow,
+                Remarks = $"Applied via BAC Public Portal ({request.CompanyName.Trim()})",
+                TotalAmount = 0m,
+                SupplierBidItems = rfq.RFQItems.Where(item => !item.IsDeleted).Select(item => new SupplierBidItem
+                {
+                    Id = Guid.NewGuid(),
+                    RFQItemId = item.Id,
+                    UnitPrice = 0m,
+                    TotalPrice = 0m,
+                    IsResponsive = true,
+                    BrochureFileUrl = quotationUrl
+                }).ToList()
+            };
+
+            await unitOfWork.SupplierBidRepository.AddAsync(newBid, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return ApiResponse<Guid>.Success(Guid.NewGuid(), "Your application/quotation has been submitted successfully.");
+            return ApiResponse<Guid>.Success(newBid.Id, "Your application/quotation has been submitted successfully.");
         }
 
         var allowedFallbackStatuses = new[] { "Open", "ClosingSoon", "Published", "ROUTED_TO_PORTAL", "Active", "Posted" };

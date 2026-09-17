@@ -80,12 +80,17 @@ export default function ManageSupplierPortalPage() {
         const datePosted = schedules[0]?.startDate || new Date().toISOString()
         const deadline = latestSchedule?.endDate || latestSchedule?.startDate || ''
 
+        let status = p.status || 'Active'
+        if (typeof status === 'string' && status.toLowerCase() === 'submitted') {
+          status = 'ForApproval'
+        }
+
         return {
           id: p.id,
           source: 'bac' as const,
           sourceNumber: p.consolidatedPR?.cprNumber || (p.id ? p.id.substring(0, 8) : ''),
           title: p.title || 'Untitled Project',
-          status: (p.status || 'Active') as any,
+          status: status as any,
           type: mopName,
           datePosted,
           deadline,
@@ -107,12 +112,22 @@ export default function ManageSupplierPortalPage() {
 
     const mappedRfqs: Project[] = standaloneRfqs.map((r: any) => {
       const mopName = r.modeOfProcurementName || 'SVP'
+      let status = r.status || 'Draft'
+      if (typeof status === 'number') {
+        if (status === 1) status = 'ForApproval'
+        else if (status === 3) status = 'Approved'
+        else if (status === 2) status = 'Returned'
+        else status = 'Draft'
+      } else if (typeof status === 'string' && status.toLowerCase() === 'submitted') {
+        status = 'ForApproval'
+      }
+
       return {
         id: r.id,
         source: 'rfq' as const,
         sourceNumber: r.rfqNumber,
         title: r.description || r.rfqNumber || 'Untitled RFQ',
-        status: r.status || 'Draft',
+        status,
         type: mopName,
         datePosted: r.deadline || new Date().toISOString(),
         deadline: r.deadline || '',
