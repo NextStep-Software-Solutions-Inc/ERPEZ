@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -24,6 +25,11 @@ public class GetSupplierRFQDetailsQueryHandler(IUnitOfWork unitOfWork)
         if (rfq == null)
         {
             return ApiResponse<SupplierRFQDto>.Fail("Request for Quotation (RFQ) not found.");
+        }
+
+        if (rfq.Status != StatusEnum.Approved)
+        {
+            return ApiResponse<SupplierRFQDto>.Fail("This RFQ is not approved or open for quotations.");
         }
 
         var invitation = rfq.RFQSuppliers.FirstOrDefault(s => s.SupplierId == request.SupplierId);

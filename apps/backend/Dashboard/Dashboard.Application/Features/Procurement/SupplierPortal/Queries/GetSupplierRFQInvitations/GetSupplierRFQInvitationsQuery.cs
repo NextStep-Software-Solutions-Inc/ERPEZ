@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -13,11 +14,11 @@ public class GetSupplierRFQInvitationsQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<List<SupplierRFQDto>>> Handle(GetSupplierRFQInvitationsQuery request, CancellationToken cancellationToken)
     {
-        // Fetch RFQs where this supplier is invited
+        // Fetch RFQs where this supplier is invited and the RFQ has been approved by the BAC
         var invitedRfqs = await unitOfWork.RFQRepository.Query()
             .Include(r => r.RFQItems)
             .Include(r => r.RFQSuppliers)
-            .Where(r => !r.IsDeleted && r.RFQSuppliers.Any(s => s.SupplierId == request.SupplierId))
+            .Where(r => !r.IsDeleted && r.Status == StatusEnum.Approved && r.RFQSuppliers.Any(s => s.SupplierId == request.SupplierId))
             .ToListAsync(cancellationToken);
 
         var rfqIds = invitedRfqs.Select(r => r.Id).ToList();
