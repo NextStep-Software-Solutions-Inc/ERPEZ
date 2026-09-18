@@ -17,6 +17,7 @@ export type OrgUnit = {
   administrativeLevelId?: string
   clusterId?: string
   procurementWorkflowId?: string
+  organizationId?: string
   // New optional fields mapped from enhanced API responses
   organizationName?: string
   parentOfficeName?: string

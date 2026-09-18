@@ -17,16 +17,21 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { UpdateOfficeForm } from '../form/UpdateOfficeForm'
+import { useOrgUnit } from '@/pages/planning/organization/hooks/useOrgUnits'
 import type { OrgUnit } from '@/services/mock/orgUnits'
 
 interface UpdateOfficeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  unit: OrgUnit | null
+  unit?: OrgUnit | null
+  unitId?: string | null
   parentUnits?: OrgUnit[]
 }
 
-function UpdateOfficeDialog({ open, onOpenChange, unit, parentUnits }: UpdateOfficeDialogProps) {
+function UpdateOfficeDialog({ open, onOpenChange, unit: propUnit, unitId, parentUnits }: UpdateOfficeDialogProps) {
+  const { data: fetchedUnit } = useOrgUnit(propUnit ? null : (unitId ?? null))
+  const unit = propUnit || fetchedUnit || null
+
   const [isDirty, setIsDirty] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
 

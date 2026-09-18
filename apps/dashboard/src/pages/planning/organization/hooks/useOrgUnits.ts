@@ -41,9 +41,14 @@ import type { Person } from '@/services/mock/personnel'
 import {
   fetchPersonnel,
   fetchPersonnelByPosition,
-  // createPerson, updatePerson, deletePerson no longer used
+  updatePerson as updatePersonMock,
+  deletePerson as deletePersonMock,
 } from '@/services/mock/personnel'
-import { createPersonnelPosition } from '@/services/api/personnelPositions'
+import {
+  createPersonnelPosition,
+  updatePersonnelPosition,
+  deletePersonnelPosition,
+} from '@/services/api/personnelPositions'
 
 /**
  * Wrapper functions to use real API with fallback to mock data
@@ -172,7 +177,15 @@ export function useCreateOrgUnit() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (payload: Omit<OrgUnit, 'id'>) => createOrgUnit(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['orgUnits'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['orgUnits'] })
+      qc.invalidateQueries({ queryKey: ['orgUnit'] })
+      qc.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === 'string' && q.queryKey[0].startsWith('/offices'),
+      })
+      qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+    },
   })
 }
 
@@ -190,6 +203,11 @@ export function useUpdateOrgUnit() {
       if (variables?.id) {
         qc.invalidateQueries({ queryKey: ['orgUnit', variables.id] })
       }
+      qc.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === 'string' && q.queryKey[0].startsWith('/offices'),
+      })
+      qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
     },
   })
 }
@@ -198,7 +216,19 @@ export function useDeleteOrgUnit() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteOrgUnit(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['orgUnits'] }),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ['orgUnits'] })
+      qc.invalidateQueries({ queryKey: ['orgUnit'] })
+      if (id) {
+        qc.invalidateQueries({ queryKey: ['orgUnit', id] })
+      }
+      qc.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === 'string' && q.queryKey[0].startsWith('/offices'),
+      })
+      qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+      qc.invalidateQueries({ queryKey: ['personnelPositions'] })
+    },
   })
 }
 
@@ -250,7 +280,13 @@ export function useCreatePosition() {
     mutationFn: (payload: Omit<Position, 'id'>) => createPosition(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['position'] })
       qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+      qc.invalidateQueries({ queryKey: ['orgUnits'] })
+      qc.invalidateQueries({ queryKey: ['personnelPositions'] })
+      qc.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === 'string' && q.queryKey[0].startsWith('/positions'),
+      })
     },
   })
 }
@@ -259,9 +295,18 @@ export function useUpdatePosition() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Position> }) => updatePosition(id, updates),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['position'] })
+      if (variables?.id) {
+        qc.invalidateQueries({ queryKey: ['position', variables.id] })
+      }
       qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+      qc.invalidateQueries({ queryKey: ['orgUnits'] })
+      qc.invalidateQueries({ queryKey: ['personnelPositions'] })
+      qc.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === 'string' && q.queryKey[0].startsWith('/positions'),
+      })
     },
   })
 }
@@ -270,9 +315,18 @@ export function useDeletePosition() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deletePosition(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['position'] })
+      if (id) {
+        qc.invalidateQueries({ queryKey: ['position', id] })
+      }
       qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+      qc.invalidateQueries({ queryKey: ['orgUnits'] })
+      qc.invalidateQueries({ queryKey: ['personnelPositions'] })
+      qc.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === 'string' && q.queryKey[0].startsWith('/positions'),
+      })
     },
   })
 }
@@ -381,6 +435,29 @@ export function useAllPersonnel() {
   })
 }
 
+async function updatePerson(id: string, updates: Partial<Person>): Promise<Person | null> {
+  try {
+    await updatePersonnelPosition(id, {
+      positionId: updates.positionId ?? undefined,
+      isActive: updates.status ? updates.status === 'active' : undefined,
+      startDate: updates.startDate ?? undefined,
+      endDate: updates.endDate,
+    })
+  } catch (error) {
+    console.warn('API update personnel failed, falling back to mock:', error)
+  }
+  return updatePersonMock(id, updates)
+}
+
+async function deletePerson(id: string): Promise<boolean> {
+  try {
+    return await deletePersonnelPosition(id)
+  } catch (error) {
+    console.warn('API delete personnel failed, falling back to mock:', error)
+    return deletePersonMock(id)
+  }
+}
+
 export function useCreatePerson() {
   const qc = useQueryClient()
   return useMutation({
@@ -392,7 +469,18 @@ export function useCreatePerson() {
       startDate?: string
       endDate?: string | null
     }) => createPersonnelPosition(payload as Record<string, unknown>),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['personnel'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['personnel'] })
+      qc.invalidateQueries({ queryKey: ['personnelPositions'] })
+      qc.invalidateQueries({ queryKey: ['personnelPosition'] })
+      qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+      qc.invalidateQueries({
+        predicate: (q) =>
+          typeof q.queryKey[0] === 'string' &&
+          (q.queryKey[0].startsWith('/personnel') || q.queryKey[0].startsWith('/personnel-positions')),
+      })
+    },
   })
 }
 
@@ -400,7 +488,21 @@ export function useUpdatePerson() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Person> }) => updatePerson(id, updates),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['personnel'] }),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['personnel'] })
+      qc.invalidateQueries({ queryKey: ['personnelPositions'] })
+      qc.invalidateQueries({ queryKey: ['personnelPosition'] })
+      if (variables?.id) {
+        qc.invalidateQueries({ queryKey: ['personnelPosition', variables.id] })
+      }
+      qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+      qc.invalidateQueries({
+        predicate: (q) =>
+          typeof q.queryKey[0] === 'string' &&
+          (q.queryKey[0].startsWith('/personnel') || q.queryKey[0].startsWith('/personnel-positions')),
+      })
+    },
   })
 }
 
@@ -408,7 +510,21 @@ export function useDeletePerson() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deletePerson(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['personnel'] }),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ['personnel'] })
+      qc.invalidateQueries({ queryKey: ['personnelPositions'] })
+      qc.invalidateQueries({ queryKey: ['personnelPosition'] })
+      if (id) {
+        qc.invalidateQueries({ queryKey: ['personnelPosition', id] })
+      }
+      qc.invalidateQueries({ queryKey: ['positions'] })
+      qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
+      qc.invalidateQueries({
+        predicate: (q) =>
+          typeof q.queryKey[0] === 'string' &&
+          (q.queryKey[0].startsWith('/personnel') || q.queryKey[0].startsWith('/personnel-positions')),
+      })
+    },
   })
 }
 
