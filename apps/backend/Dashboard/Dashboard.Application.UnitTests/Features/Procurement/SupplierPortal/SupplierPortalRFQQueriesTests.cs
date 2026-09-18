@@ -104,8 +104,8 @@ public class SupplierPortalRFQQueriesTests
         // Assert
         result.Succeeded.Should().BeTrue();
         result.Data.Should().HaveCount(1);
-        result.Data.First().RFQNumber.Should().Be("RFQ-APPROVED-001");
-        result.Data.First().Status.Should().Be(StatusEnum.Approved);
+        result.Data!.First().RFQNumber.Should().Be("RFQ-APPROVED-001");
+        result.Data!.First().Status.Should().Be(StatusEnum.Approved);
     }
 
     [Fact]
@@ -139,8 +139,8 @@ public class SupplierPortalRFQQueriesTests
         // Assert
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeNull();
-        result.Data.RFQNumber.Should().Be("RFQ-APP-001");
-        result.Data.Status.Should().Be(StatusEnum.Approved);
+        result.Data!.RFQNumber.Should().Be("RFQ-APP-001");
+        result.Data!.Status.Should().Be(StatusEnum.Approved);
     }
 
     [Theory]
@@ -279,7 +279,7 @@ public class SupplierPortalRFQQueriesTests
 
         // Assert
         result.Data.Should().HaveCount(1);
-        result.Data.First().RFQNumber.Should().Be("RFQ-APPROVED-001");
+        result.Data!.First().RFQNumber.Should().Be("RFQ-APPROVED-001");
     }
 
     [Theory]

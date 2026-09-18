@@ -135,7 +135,7 @@ public class PublicProjectsRFQIntegrationTests
         // Assert
         result.Succeeded.Should().BeTrue();
         result.Data.Should().HaveCount(1);
-        result.Data.First().ContractNo.Should().Be("RFQ-2026-SVP-001");
+        result.Data!.First().ContractNo.Should().Be("RFQ-2026-SVP-001");
     }
 
     [Fact]
@@ -183,7 +183,7 @@ public class PublicProjectsRFQIntegrationTests
         // Assert
         result.Succeeded.Should().BeTrue();
         result.Data.Should().HaveCount(1);
-        result.Data.First().ContractNo.Should().Be("ITB-2026-PB-005");
+        result.Data!.First().ContractNo.Should().Be("ITB-2026-PB-005");
     }
 
     [Fact]
@@ -232,7 +232,7 @@ public class PublicProjectsRFQIntegrationTests
         // Assert 1: Only the SVP RFQ should be returned, NOT the Public Bidding project
         svpResult.Succeeded.Should().BeTrue();
         svpResult.Data.Should().HaveCount(1);
-        svpResult.Data.First().ContractNo.Should().Be("RFQ-2026-SVP-003");
+        svpResult.Data!.First().ContractNo.Should().Be("RFQ-2026-SVP-003");
         svpResult.Data.Should().NotContain(p => p.ContractNo == "RFQ-ITB-2026-BAC-001");
 
         // Act 2: Filter by Public Bidding
@@ -241,7 +241,7 @@ public class PublicProjectsRFQIntegrationTests
         // Assert 2: The RFQ-ITB project MUST be returned under Public Bidding
         pbResult.Succeeded.Should().BeTrue();
         pbResult.Data.Should().HaveCount(1);
-        pbResult.Data.First().ContractNo.Should().Be("RFQ-ITB-2026-BAC-001");
+        pbResult.Data!.First().ContractNo.Should().Be("RFQ-ITB-2026-BAC-001");
     }
 
     [Fact]
@@ -286,9 +286,9 @@ public class PublicProjectsRFQIntegrationTests
         var statsResult = await statsHandler.Handle(new GetPublicProjectStatsQuery(), CancellationToken.None);
 
         statsResult.Succeeded.Should().BeTrue();
-        statsResult.Data.ActiveProjects.Should().Be(2);
-        statsResult.Data.PublicBidding.Should().Be(1);
-        statsResult.Data.SmallValueProcurement.Should().Be(1);
+        statsResult.Data!.ActiveProjects.Should().Be(2);
+        statsResult.Data!.PublicBidding.Should().Be(1);
+        statsResult.Data!.SmallValueProcurement.Should().Be(1);
     }
 
     [Fact]
@@ -379,11 +379,11 @@ public class PublicProjectsRFQIntegrationTests
 
         // Assert
         result.Succeeded.Should().BeTrue();
-        result.Data.PublicBidding.Should().Be(1);
-        result.Data.SmallValueProcurement.Should().Be(2); // activeRfq + closingSoonRfq
-        result.Data.ActiveProjects.Should().Be(3); // 1 PB + 2 active SVP RFQs
-        result.Data.ClosingSoon.Should().Be(1);
-        result.Data.Closed.Should().Be(1);
+        result.Data!.PublicBidding.Should().Be(1);
+        result.Data!.SmallValueProcurement.Should().Be(2); // activeRfq + closingSoonRfq
+        result.Data!.ActiveProjects.Should().Be(3); // 1 PB + 2 active SVP RFQs
+        result.Data!.ClosingSoon.Should().Be(1);
+        result.Data!.Closed.Should().Be(1);
     }
 
     [Fact]
@@ -421,18 +421,18 @@ public class PublicProjectsRFQIntegrationTests
 
         // Assert
         result.Succeeded.Should().BeTrue();
-        result.Data.Id.Should().Be(rfqId);
-        result.Data.ContractNo.Should().Be("RFQ-2026-SVP-003");
-        result.Data.Title.Should().Be("Procurement of IT Workstations");
-        result.Data.ABC.Should().Be(850000m);
-        result.Data.DeliveryPeriodDays.Should().Be(15);
-        result.Data.DeliveryPeriod.Should().Be("15 calendar days");
-        result.Data.Status.Should().Be("Open");
-        result.Data.RequiredSubmissions.Should().NotBeEmpty();
-        result.Data.RequiredSubmissions.Should().Contain(d => d.DocumentName.Contains("Mayor's"));
-        result.Data.RequiredSubmissions.Should().Contain(d => d.DocumentName.Contains("PhilGEPS"));
-        result.Data.RequiredSubmissions.Should().Contain(d => d.DocumentName.Contains("Omnibus Sworn Statement"));
-        result.Data.BidNotices.Should().Contain(n => n.DownloadUrl.Contains("rfq-document"));
+        result.Data!.Id.Should().Be(rfqId);
+        result.Data!.ContractNo.Should().Be("RFQ-2026-SVP-003");
+        result.Data!.Title.Should().Be("Procurement of IT Workstations");
+        result.Data!.ABC.Should().Be(850000m);
+        result.Data!.DeliveryPeriodDays.Should().Be(15);
+        result.Data!.DeliveryPeriod.Should().Be("15 calendar days");
+        result.Data!.Status.Should().Be("Open");
+        result.Data!.RequiredSubmissions.Should().NotBeEmpty();
+        result.Data!.RequiredSubmissions.Should().Contain(d => d.DocumentName.Contains("Mayor's"));
+        result.Data!.RequiredSubmissions.Should().Contain(d => d.DocumentName.Contains("PhilGEPS"));
+        result.Data!.RequiredSubmissions.Should().Contain(d => d.DocumentName.Contains("Omnibus Sworn Statement"));
+        result.Data!.BidNotices.Should().Contain(n => n.DownloadUrl.Contains("rfq-document"));
     }
 
     [Fact]
@@ -646,7 +646,7 @@ public class PublicProjectsRFQIntegrationTests
         result.Succeeded.Should().BeTrue();
         result.Data.Should().HaveCount(1);
 
-        var bid = result.Data.First();
+        var bid = result.Data!.First();
         bid.SupplierName.Should().Be("External Public Bidder Co");
         bid.SubmissionType.Should().Be("PublicPortal");
         bid.Status.Should().Be("Pending");
@@ -709,7 +709,7 @@ public class PublicProjectsRFQIntegrationTests
 
         // Assert
         result.Data.Should().HaveCount(1);
-        result.Data.First().ApplicantCount.Should().Be(4);
+        result.Data!.First().ApplicantCount.Should().Be(4);
     }
 
     [Fact]
@@ -803,7 +803,7 @@ public class PublicProjectsRFQIntegrationTests
         var queryResult = await queryHandler.Handle(new GetRFQSupplierBidsQuery(rfqId), CancellationToken.None);
 
         queryResult.Succeeded.Should().BeTrue();
-        var returnedBid = queryResult.Data.First(b => b.Id == bid.Id);
+        var returnedBid = queryResult.Data!.First(b => b.Id == bid.Id);
         returnedBid.DeliveryPeriod.Should().Be("15 Calendar Days");
         returnedBid.PaymentTerms.Should().Be("Net 30 Days");
         returnedBid.WarrantyTerms.Should().Be("1 Year Comprehensive");
@@ -913,7 +913,7 @@ public class PublicProjectsRFQIntegrationTests
 
         // Assert
         result.Succeeded.Should().BeTrue();
-        var item = result.Data.First(p => p.Id == projectId);
+        var item = result.Data!.First(p => p.Id == projectId);
         item.Status.Should().Be("Closed");
     }
 
