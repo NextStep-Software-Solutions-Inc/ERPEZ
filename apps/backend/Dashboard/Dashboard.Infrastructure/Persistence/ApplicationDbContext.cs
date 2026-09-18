@@ -2426,6 +2426,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(o => o.OPCRConsolidationId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<ProcurementProject>(e =>
+        {
+            e.HasIndex(p => p.ConsolidatedPRId)
+                .IsUnique()
+                .HasFilter("\"IsDeleted\" = false");
+        });
+
         modelBuilder.Entity<BACResolution>(e =>
         {
             e.HasOne(r => r.ProcurementProject)
@@ -2441,6 +2448,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasIndex(r => r.BiddingAwardRecommendationId)
                 .IsUnique()
                 .HasFilter("\"BiddingAwardRecommendationId\" IS NOT NULL");
+
+            e.HasIndex(r => r.ResolutionNumber)
+                .IsUnique()
+                .HasFilter("\"IsDeleted\" = false");
         });
 
         modelBuilder.Entity<BiddingActivitySchedule>(e =>

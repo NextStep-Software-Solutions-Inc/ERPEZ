@@ -178,15 +178,27 @@ export function BiddingScheduleGanttStrip({
       enabled: Boolean(bacResolutionId),
     })
 
-  // Fallback query for calendar events
+  const hasOfficialSchedule = Boolean(
+    scheduleResponse?.data &&
+      Array.isArray((scheduleResponse.data as BiddingSchedule).milestones) &&
+      (scheduleResponse.data as BiddingSchedule).milestones.length > 0,
+  )
+
+  // Fallback query for calendar events only if no dedicated schedule was returned
   const { data: calendarEventsResponse, isPending: isEventsLoading } =
     useBacCalendarEvents({
       pathParams: {},
       queryParams: {},
-      enabled: Boolean(bacResolutionId) && !scheduleResponse?.data,
+      enabled:
+        Boolean(bacResolutionId) &&
+        !hasOfficialSchedule &&
+        !isScheduleLoading,
     })
 
-  const isLoading = isScheduleLoading || isEventsLoading
+  const isLoading =
+    isScheduleLoading ||
+    (Boolean(bacResolutionId) && !hasOfficialSchedule && isEventsLoading)
+
 
   // Normalize data from either the dedicated schedule or calendar events
   const milestones = useMemo<UnifiedMilestone[]>(() => {
@@ -242,18 +254,22 @@ export function BiddingScheduleGanttStrip({
       })
     }
 
-    // Fallback: extract from calendar events
+    // Fallback: extract from calendar events only if they explicitly match this resolution
     const rawEvents = calendarEventsResponse?.data?.events || []
     if (!Array.isArray(rawEvents) || rawEvents.length === 0) return []
 
     const filtered = rawEvents.filter(
       (e: CalendarEvent) =>
-        e.bacResolutionId === bacResolutionId ||
-        e.projectId === bacResolutionId ||
-        (bacResolutionNumber && e.projectTitle?.includes(bacResolutionNumber)),
+        (Boolean(e.bacResolutionId) && e.bacResolutionId === bacResolutionId) ||
+        (Boolean(e.projectId) && e.projectId === bacResolutionId) ||
+        (Boolean(bacResolutionNumber) &&
+          Boolean(e.projectTitle) &&
+          e.projectTitle.toLowerCase().includes(bacResolutionNumber!.toLowerCase())),
     )
 
-    const listToUse = filtered.length > 0 ? filtered : rawEvents.slice(0, 8)
+    if (filtered.length === 0) return []
+
+    const listToUse = filtered
 
     // Sort strictly by start date ascending
     const sorted = [...listToUse].sort((a, b) => {
@@ -469,6 +485,8 @@ export function BiddingScheduleGanttStrip({
     return null
   }
 
+  const hasMilestones = Boolean(boundaryData && boundaryData.items.length > 0)
+
   return (
     <Card className={cn('border border-default-200 shadow-sm overflow-hidden bg-white dark:bg-card', className)}>
       {/* Header with Title, Badges & View Switcher */}
@@ -479,9 +497,15 @@ export function BiddingScheduleGanttStrip({
             <CardTitle className="text-sm font-semibold text-foreground">
               Bidding Activity Timeline & Milestones
             </CardTitle>
-            <Badge variant="outline" className="text-[10px] py-0 px-2 font-normal border-primary/20 text-primary bg-primary/5">
-              RA 9184 Standard Schedule
-            </Badge>
+            {hasMilestones ? (
+              <Badge variant="outline" className="text-[10px] py-0 px-2 font-normal border-primary/20 text-primary bg-primary/5">
+                RA 9184 Standard Schedule
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] py-0 px-2 font-normal border-default-200 text-muted-foreground bg-muted/40">
+                Not Scheduled
+              </Badge>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">
             {description ||
@@ -490,35 +514,37 @@ export function BiddingScheduleGanttStrip({
         </div>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          {/* View mode toggle */}
-          <div className="inline-flex items-center rounded-lg border border-default-200 bg-muted/40 p-0.5 text-xs">
-            <Button
-              type="button"
-              variant={viewMode === 'pipeline' ? 'default' : 'ghost'}
-              size="sm"
-              className={cn(
-                'h-7 px-2.5 text-xs font-medium gap-1.5 shadow-none rounded-md',
-                viewMode === 'pipeline' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
-              )}
-              onClick={() => setViewMode('pipeline')}
-            >
-              <ListOrdered className="h-3.5 w-3.5" />
-              Milestone Pipeline
-            </Button>
-            <Button
-              type="button"
-              variant={viewMode === 'gantt' ? 'default' : 'ghost'}
-              size="sm"
-              className={cn(
-                'h-7 px-2.5 text-xs font-medium gap-1.5 shadow-none rounded-md',
-                viewMode === 'gantt' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
-              )}
-              onClick={() => setViewMode('gantt')}
-            >
-              <GanttChart className="h-3.5 w-3.5" />
-              Phase Timeline
-            </Button>
-          </div>
+          {/* View mode toggle - only displayed when milestones exist */}
+          {hasMilestones && (
+            <div className="inline-flex items-center rounded-lg border border-default-200 bg-muted/40 p-0.5 text-xs">
+              <Button
+                type="button"
+                variant={viewMode === 'pipeline' ? 'default' : 'ghost'}
+                size="sm"
+                className={cn(
+                  'h-7 px-2.5 text-xs font-medium gap-1.5 shadow-none rounded-md',
+                  viewMode === 'pipeline' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                )}
+                onClick={() => setViewMode('pipeline')}
+              >
+                <ListOrdered className="h-3.5 w-3.5" />
+                Milestone Pipeline
+              </Button>
+              <Button
+                type="button"
+                variant={viewMode === 'gantt' ? 'default' : 'ghost'}
+                size="sm"
+                className={cn(
+                  'h-7 px-2.5 text-xs font-medium gap-1.5 shadow-none rounded-md',
+                  viewMode === 'gantt' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                )}
+                onClick={() => setViewMode('gantt')}
+              >
+                <GanttChart className="h-3.5 w-3.5" />
+                Phase Timeline
+              </Button>
+            </div>
+          )}
 
           {action}
         </div>
@@ -530,13 +556,22 @@ export function BiddingScheduleGanttStrip({
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
             <span>Loading bidding milestones and timeline...</span>
           </div>
-        ) : !boundaryData || boundaryData.items.length === 0 ? (
-          <div className="text-center py-10 px-4 text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/5 space-y-2">
-            <Calendar className="h-8 w-8 text-muted-foreground/40 mx-auto" />
-            <p className="font-medium text-foreground">No bidding schedule milestones generated yet</p>
-            <p className="text-[11px] max-w-sm mx-auto">
-              Open the schedule workspace above to generate standard RA 9184 milestones from the IB posting date.
-            </p>
+        ) : !hasMilestones ? (
+          <div className="text-center py-10 px-4 text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/5 space-y-3">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <CalendarRange className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-semibold text-sm text-foreground">No bidding schedule milestones generated yet</p>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                This BAC resolution does not have an active bidding timeline. Open the schedule workspace to generate standard RA 9184 milestones from the Invitation to Bid (IB) posting date.
+              </p>
+            </div>
+            {action && (
+              <div className="pt-1 flex justify-center">
+                {action}
+              </div>
+            )}
           </div>
         ) : (
           <TooltipProvider>
