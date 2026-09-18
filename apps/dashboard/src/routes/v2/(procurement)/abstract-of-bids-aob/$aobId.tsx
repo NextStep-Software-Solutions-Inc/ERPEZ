@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AOBDetailsPage } from '@/features/procurement/aob/components'
 import { ApproveAOBDialog } from '@/features/procurement/aob/dialogs/ApproveAOBDialog'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
 import { PERMISSIONS } from '@/constants/permissions'
@@ -18,6 +18,7 @@ import { approveAOBRequest } from '@/features/procurement/aob/handlers/approveAO
 import { getAOBListRequest } from '@/features/procurement/aob/handlers/getAOBListRequest'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, Loader2 } from 'lucide-react'
+import { printAOB } from '@/features/procurement/aob/utils/printAOB'
 
 const useAOBDetail = createQueryHookFromTemplate(getAOBDetailRequest)
 const useBidMatrix = createQueryHookFromTemplate(getBidMatrixRequest)
@@ -52,6 +53,20 @@ function RouteComponent() {
   } = useBidMatrix({
     pathParams: { aobId },
   })
+
+  // Item and Winner counts for approval validation
+  const totalItems = useMemo(() => {
+    return bidMatrix?.lineItems?.length || aob?.awardedItems?.length || 0
+  }, [bidMatrix?.lineItems, aob?.awardedItems])
+
+  const winnerCount = useMemo(() => {
+    if (bidMatrix?.lineItems && bidMatrix.lineItems.length > 0) {
+      return bidMatrix.lineItems.filter(
+        (item) => item.selectedWinnerId || item.lineItems?.some((b) => b.isWinner)
+      ).length
+    }
+    return aob?.awardedItems?.length || 0
+  }, [bidMatrix?.lineItems, aob?.awardedItems])
 
   // Mutations
   const { mutateAsync: deleteAOB } = useDeleteAOB()
@@ -92,11 +107,17 @@ function RouteComponent() {
         payload: {},
       })
 
-      void queryClient.invalidateQueries({
-        queryKey: [getAOBDetailRequest.endpoint, aobId],
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (k) => typeof k === 'string' && k.includes(aobId)
+          ),
       })
       void queryClient.invalidateQueries({
-        queryKey: [getBidMatrixRequest.endpoint, aobId],
+        queryKey: [`/aobs/${aobId}`],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aobId}/matrix`],
       })
       void queryClient.invalidateQueries({
         queryKey: [getAOBListRequest.endpoint],
@@ -114,7 +135,7 @@ function RouteComponent() {
   }
 
   const handleApproveSubmit = async (data: {
-    approvalDocument: File
+    approvalDocument?: File | null
     approvalRemarks?: string
     approvedBy: string
   }) => {
@@ -128,11 +149,17 @@ function RouteComponent() {
         },
       })
 
-      void queryClient.invalidateQueries({
-        queryKey: [getAOBDetailRequest.endpoint, aobId],
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (k) => typeof k === 'string' && k.includes(aobId)
+          ),
       })
       void queryClient.invalidateQueries({
-        queryKey: [getBidMatrixRequest.endpoint, aobId],
+        queryKey: [`/aobs/${aobId}`],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aobId}/matrix`],
       })
       void queryClient.invalidateQueries({
         queryKey: [getAOBListRequest.endpoint],
@@ -151,7 +178,11 @@ function RouteComponent() {
   }
 
   const handleExport = () => {
-    toast.info('Export functionality triggered')
+    if (aob && bidMatrix) {
+      printAOB(aob, bidMatrix)
+    } else {
+      toast.info('Bid matrix not loaded yet')
+    }
   }
 
   if (isAobLoading || isMatrixLoading) {
@@ -201,6 +232,8 @@ function RouteComponent() {
           open={isApproveDialogOpen}
           onOpenChange={setIsApproveDialogOpen}
           aob={aob}
+          winnerCount={winnerCount}
+          totalItems={totalItems}
           onApprove={handleApproveSubmit}
         />
       </div>

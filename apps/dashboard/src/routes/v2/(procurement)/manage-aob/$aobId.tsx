@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AOBDetailsPage } from '@/features/procurement/aob/components'
 import { ApproveAOBDialog } from '@/features/procurement/aob/dialogs/ApproveAOBDialog'
 import { ReturnAOBDialog, type ReturnReason } from '@/features/procurement/aob/dialogs/ReturnAOBDialog'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
 import { PERMISSIONS } from '@/constants/permissions'
@@ -53,6 +53,20 @@ function RouteComponent() {
     pathParams: { aobId },
   })
 
+  // Item and Winner counts for approval validation
+  const totalItems = useMemo(() => {
+    return bidMatrix?.lineItems?.length || aob?.awardedItems?.length || 0
+  }, [bidMatrix?.lineItems, aob?.awardedItems])
+
+  const winnerCount = useMemo(() => {
+    if (bidMatrix?.lineItems && bidMatrix.lineItems.length > 0) {
+      return bidMatrix.lineItems.filter(
+        (item) => item.selectedWinnerId || item.lineItems?.some((b) => b.isWinner)
+      ).length
+    }
+    return aob?.awardedItems?.length || 0
+  }, [bidMatrix?.lineItems, aob?.awardedItems])
+
   // Mutations
   const { mutateAsync: approveAOB } = useApproveAOB()
   const { mutateAsync: returnAOB } = useReturnAOB()
@@ -70,7 +84,7 @@ function RouteComponent() {
   }
 
   const handleApproveSubmit = async (data: {
-    approvalDocument: File
+    approvalDocument?: File | null
     approvalRemarks?: string
     approvedBy: string
   }) => {
@@ -84,6 +98,18 @@ function RouteComponent() {
         },
       })
 
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (k) => typeof k === 'string' && k.includes(aobId)
+          ),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aobId}`],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aobId}/matrix`],
+      })
       void queryClient.invalidateQueries({
         queryKey: [getAOBDetailRequest.endpoint, aobId],
       })
@@ -188,6 +214,8 @@ function RouteComponent() {
           open={isApproveDialogOpen}
           onOpenChange={setIsApproveDialogOpen}
           aob={aob}
+          winnerCount={winnerCount}
+          totalItems={totalItems}
           onApprove={handleApproveSubmit}
         />
 

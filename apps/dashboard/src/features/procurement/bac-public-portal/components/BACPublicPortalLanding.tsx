@@ -192,6 +192,9 @@ export function BACPublicPortalLanding({ onViewProject }: BACPublicPortalLanding
             {filtered.map((project) => {
               const statusCfg = STATUS_CONFIG[project.status]
               const days = daysUntil(project.deadline)
+              const isClosed = project.status === 'closed' || days < 0
+              const isToday = !isClosed && days === 0
+              const isUrgent = !isClosed && days <= 7
               return (
                 <div
                   key={project.id}
@@ -254,10 +257,10 @@ export function BACPublicPortalLanding({ onViewProject }: BACPublicPortalLanding
 
                     {/* Right side: Deadline */}
                     <div className="shrink-0 text-right space-y-2">
-                      <div className={`px-3 py-2 rounded-xl text-center ${project.status === 'closed' ? 'bg-slate-50 border border-slate-200' : days <= 7 ? 'bg-red-50 border border-red-200' : 'bg-slate-50 border border-slate-200'}`}>
-                        <p className={`text-xs font-medium ${project.status === 'closed' ? 'text-slate-400' : days <= 7 ? 'text-red-500' : 'text-slate-500'}`}>Deadline</p>
-                        <p className={`text-sm font-bold ${project.status === 'closed' ? 'text-slate-400' : days <= 7 ? 'text-red-600' : 'text-slate-700'}`}>
-                          {project.status === 'closed' ? 'Closed' : days > 0 ? `${days}d left` : 'Today'}
+                      <div className={`px-3 py-2 rounded-xl text-center ${isClosed ? 'bg-slate-50 border border-slate-200' : isUrgent ? 'bg-red-50 border border-red-200' : 'bg-slate-50 border border-slate-200'}`}>
+                        <p className={`text-xs font-medium ${isClosed ? 'text-slate-400' : isUrgent ? 'text-red-500' : 'text-slate-500'}`}>Deadline</p>
+                        <p className={`text-sm font-bold ${isClosed ? 'text-slate-400' : isUrgent ? 'text-red-600' : 'text-slate-700'}`}>
+                          {isClosed ? 'Closed' : isToday ? 'Today' : `${days}d left`}
                         </p>
                         <p className="text-xs text-slate-400">{formatDate(project.deadline)}</p>
                       </div>

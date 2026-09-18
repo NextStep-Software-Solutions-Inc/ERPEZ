@@ -48,6 +48,7 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
 
     public async Task<(IReadOnlyList<RFQ> Entities, int TotalCount)> GetAllWithDetailsAsync(
         SieveModel sieveModel,
+        StatusEnum? status = null,
         CancellationToken cancellationToken = default)
     {
         var validatedPage = sieveModel.Page.GetValueOrDefault(1);
@@ -66,9 +67,16 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
             PageSize = validatedPageSize
         };
 
-        var query = BuildDetailedQuery(context.Set<RFQ>()
+        var baseQuery = context.Set<RFQ>()
             .AsNoTracking()
-            .Where(r => !r.IsDeleted));
+            .Where(r => !r.IsDeleted);
+
+        if (status.HasValue)
+        {
+            baseQuery = baseQuery.Where(r => r.Status == status.Value);
+        }
+
+        var query = BuildDetailedQuery(baseQuery);
 
         var filteredQuery = sieveProcessor.Apply(normalizedSieveModel, query, applyPagination: false);
         var totalCount = await filteredQuery.CountAsync(cancellationToken);

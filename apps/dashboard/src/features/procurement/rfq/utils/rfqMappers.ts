@@ -132,6 +132,7 @@ export function mapBackendRFQListItemToFrontend(dto: any): RFQ {
     deliveryPeriod: dto.deliveryPeriod || '',
     modeOfProcurement: dto.modeOfProcurementName || '',
     status: mapStatusEnumToString(dto.status),
+    remarks: dto.remarks || '',
     createdAt: dto.deadline ? new Date(dto.deadline).toISOString() : new Date().toISOString(),
     items: [],
     suppliers: [],

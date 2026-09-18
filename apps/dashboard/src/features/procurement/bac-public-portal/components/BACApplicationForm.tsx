@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import {
   ArrowLeft,
   Upload,
@@ -15,15 +15,27 @@ import {
   Hash,
   Loader2,
   Download,
+  AlertTriangle,
+  Calendar,
+  Banknote,
+  ShieldCheck,
+  Paperclip,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { PublicProject, SubmissionResult, RequiredDocument } from '../types/portalTypes'
 import { printDocument } from '../utils/printDocument'
 import api from '@/services/api'
-
-// Local BACSubmissionSuccess component is defined later in this file to avoid external module resolution errors.
 
 interface BACApplicationFormProps {
   project: PublicProject
@@ -45,6 +57,12 @@ interface ContactInfo {
   tinNumber: string
 }
 
+interface ItemBidState {
+  unitPrice: number | ''
+  brand: string
+  model: string
+}
+
 const ACCEPTED_TYPES = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png'
 const MAX_SIZE_MB = 10
 
@@ -54,13 +72,12 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function generateRefNo() {
-  const ts = Date.now().toString(36).toUpperCase()
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase()
-  return `APP-${ts}-${rand}`
-}
-
 export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }: BACApplicationFormProps) {
+  const hasItemizedItems = Boolean(project.items && project.items.length > 0)
+  const isCompetitiveBidding = project.mop === 'public-bidding'
+  const isItemizedSvp = !isCompetitiveBidding && hasItemizedItems
+  const isRfq = isItemizedSvp || project.mop === 'svp'
+
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
     supplierName: '',
     email: '',
@@ -68,6 +85,37 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
     address: '',
     tinNumber: '',
   })
+
+  // State for RFQ line items
+  const [itemBids, setItemBids] = useState<Record<string, ItemBidState>>(() => {
+    const initial: Record<string, ItemBidState> = {}
+    if (project.items) {
+      project.items.forEach((item) => {
+        initial[item.id] = { unitPrice: '', brand: '', model: '' }
+      })
+    }
+    return initial
+  })
+
+  // State for per-item brochure / technical spec sheets
+  const [itemBrochures, setItemBrochures] = useState<Record<string, File>>({})
+  const itemBrochureInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  // Commercial terms
+  const [deliveryPeriod, setDeliveryPeriod] = useState(project.deliveryPeriod || '')
+  const [paymentTerms, setPaymentTerms] = useState('')
+  const [warrantyTerms, setWarrantyTerms] = useState('')
+  const [validityPeriodDays, setValidityPeriodDays] = useState<number | ''>(60)
+  const [remarks, setRemarks] = useState('')
+
+  // State for Public Bidding lump-sum bids
+  const [proposedBidAmount, setProposedBidAmount] = useState<number | ''>('')
+  const [bidSecurityType, setBidSecurityType] = useState('Bid Securing Declaration')
+  const [bidSecurityAmount, setBidSecurityAmount] = useState<number | ''>('')
+  const [bidSecurityNumber, setBidSecurityNumber] = useState('')
+  const [bidSecurityValidityDays, setBidSecurityValidityDays] = useState<number | ''>(120)
+
+  // Checklist document uploads
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -77,9 +125,62 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
 
   const requiredUploads = project.requiredDocuments
 
+  // Calculate live total quoted bid
+  const totalQuotedBid = useMemo(() => {
+    if (isItemizedSvp && project.items) {
+      return project.items.reduce((sum, item) => {
+        const price = Number(itemBids[item.id]?.unitPrice || 0)
+        return sum + price * item.quantity
+      }, 0)
+    }
+    return Number(proposedBidAmount || 0)
+  }, [isItemizedSvp, project.items, itemBids, proposedBidAmount])
+
+  // RA 9184 ABC compliance check
+  const numericAbc = Number(project.approvedBudget || 0)
+  const isOverAbc = numericAbc > 0 && totalQuotedBid > numericAbc
+  const varianceFromAbc = numericAbc > 0 ? numericAbc - totalQuotedBid : 0
+
+  const isPastDeadline = project.deadline && !isNaN(Date.parse(project.deadline))
+    ? new Date(project.deadline).getTime() < Date.now()
+    : false
+  const isClosedOrExpired = project.status === 'closed' || isPastDeadline
+
   const handleContactChange = (field: keyof ContactInfo, value: string) => {
     setContactInfo((prev) => ({ ...prev, [field]: value }))
     setErrors((prev) => ({ ...prev, [field]: '' }))
+  }
+
+  const handleItemBidChange = (itemId: string, field: keyof ItemBidState, value: any) => {
+    setItemBids((prev) => ({
+      ...prev,
+      [itemId]: {
+        ...(prev[itemId] || { unitPrice: '', brand: '', model: '' }),
+        [field]: value,
+      },
+    }))
+    setErrors((prev) => ({ ...prev, [`item_${itemId}`]: '', generalBid: '' }))
+  }
+
+  const handleItemBrochureSelect = (itemId: string, file: File | null) => {
+    if (!file) return
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, [`brochure_${itemId}`]: `File exceeds ${MAX_SIZE_MB}MB limit` }))
+      return
+    }
+    setErrors((prev) => ({ ...prev, [`brochure_${itemId}`]: '' }))
+    setItemBrochures((prev) => ({ ...prev, [itemId]: file }))
+  }
+
+  const removeItemBrochure = (itemId: string) => {
+    setItemBrochures((prev) => {
+      const next = { ...prev }
+      delete next[itemId]
+      return next
+    })
+    if (itemBrochureInputRefs.current[itemId]) {
+      itemBrochureInputRefs.current[itemId]!.value = ''
+    }
   }
 
   const handleFileDrop = useCallback(
@@ -87,7 +188,6 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
       if (!files || files.length === 0) return
       const file = files[0]
 
-      // Validate file type (extensions + common MIME fallbacks) because drag-and-drop bypasses input accept
       const acceptedExtensions = ACCEPTED_TYPES.split(',').map((s) => s.trim().replace(/^\./, '').toLowerCase())
       const fileExt = (file.name.split('.').pop() || '').toLowerCase()
       const mime = file.type || ''
@@ -133,17 +233,65 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
+
+    // Deadline & status check
+    if (isClosedOrExpired) {
+      newErrors.submit = 'The submission deadline for this opportunity has passed. Applications are no longer being accepted.'
+      setErrors(newErrors)
+      return false
+    }
+
+    // Contact info validation
     if (!contactInfo.supplierName.trim()) newErrors.supplierName = 'Supplier name is required'
     if (!contactInfo.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactInfo.email))
       newErrors.email = 'Valid email is required'
     if (!contactInfo.contactNumber.trim()) newErrors.contactNumber = 'Contact number is required'
     if (!contactInfo.address.trim()) newErrors.address = 'Address is required'
     if (!contactInfo.tinNumber.trim()) newErrors.tinNumber = 'TIN number is required'
+
+    // Financial bid validation
+    if (isItemizedSvp && project.items) {
+      let hasMissingPrice = false
+      project.items.forEach((item) => {
+        const price = itemBids[item.id]?.unitPrice
+        if (price === '' || price === undefined || Number(price) <= 0) {
+          newErrors[`item_${item.id}`] = 'Unit price is required (> ₱0.00)'
+          hasMissingPrice = true
+        }
+      })
+      if (hasMissingPrice) {
+        newErrors.generalBid = 'Please enter a valid quoted unit price for all line items.'
+      }
+      if (!deliveryPeriod.trim()) newErrors.deliveryPeriod = 'Delivery period is required'
+      if (!paymentTerms.trim()) newErrors.paymentTerms = 'Payment terms are required'
+    } else {
+      if (proposedBidAmount === '' || Number(proposedBidAmount) <= 0) {
+        newErrors.proposedBidAmount = 'Proposed bid amount is required and must be greater than ₱0.00'
+      }
+      if (isCompetitiveBidding && bidSecurityType !== 'Bid Securing Declaration' && (!bidSecurityAmount || Number(bidSecurityAmount) <= 0)) {
+        newErrors.bidSecurityAmount = 'Bid security amount is required for the selected guarantee type'
+      }
+      if (!deliveryPeriod.trim()) newErrors.deliveryPeriod = 'Delivery period is required'
+      if (!paymentTerms.trim()) newErrors.paymentTerms = 'Payment terms are required'
+    }
+
+    // RA 9184 ABC limit enforcement
+    if (isOverAbc) {
+      if (isItemizedSvp) {
+        newErrors.generalBid = `Total quoted bid (₱${totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })}) exceeds the ABC (₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Under RA 9184, bids exceeding the ABC cannot be submitted.`
+      } else {
+        newErrors.proposedBidAmount = `Proposed bid cannot exceed the ABC of ₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      }
+      newErrors.abcExceeded = `Your bid exceeds the Approved Budget for the Contract (₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Under Section 31 of RA 9184, bids exceeding the ABC cannot be accepted.`
+    }
+
+    // Required checklist documents
     requiredUploads.forEach((doc) => {
       if (!uploadedFiles.find((f) => f.documentId === doc.id)) {
         newErrors[doc.id] = 'This document is required'
       }
     })
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -151,38 +299,118 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
   const uploadFile = async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append('file', file)
-    const response = await api.post<{ succeeded: boolean; data: string }>('/files/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-    if (!response.data.succeeded || !response.data.data) {
-      throw new Error('File upload failed')
+
+    try {
+      // Try dedicated public upload endpoint for unauthenticated suppliers
+      const response = await api.post<{ succeeded: boolean; data: string }>('/files/public/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      if (response.data?.succeeded && response.data.data) {
+        return response.data.data
+      }
+    } catch {
+      // Fallback to /files/upload
+      const response = await api.post<{ succeeded: boolean; data: string }>('/files/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      if (response.data?.succeeded && response.data.data) {
+        return response.data.data
+      }
     }
-    return response.data.data
+
+    throw new Error('File upload failed')
   }
 
   const handleSubmit = async () => {
     if (!validate()) return
     setIsSubmitting(true)
+    setErrors((prev) => ({ ...prev, submit: '' }))
+
     try {
-      // Upload each required document
+      // 0. Pre-flight check: validate on server BEFORE uploading any files to prevent storage exhaustion
+      const preFlightPayload = {
+        companyName: contactInfo.supplierName.trim(),
+        contactPerson: contactInfo.supplierName.trim(),
+        emailAddress: contactInfo.email.trim(),
+        contactNumber: contactInfo.contactNumber.trim(),
+        tinNumber: contactInfo.tinNumber.trim(),
+        businessAddress: contactInfo.address.trim(),
+        checklistItemIds: uploadedFiles.map((uf) => uf.documentId),
+        proposedBidAmount: totalQuotedBid > 0 ? totalQuotedBid : undefined,
+        deliveryPeriod: deliveryPeriod.trim() || undefined,
+        paymentTerms: paymentTerms.trim() || undefined,
+        warrantyTerms: warrantyTerms.trim() || undefined,
+        validityPeriodDays: validityPeriodDays ? Number(validityPeriodDays) : undefined,
+        remarks: remarks.trim() || undefined,
+        bidSecurityType: isCompetitiveBidding ? bidSecurityType : undefined,
+        bidSecurityAmount: isCompetitiveBidding && bidSecurityAmount ? Number(bidSecurityAmount) : undefined,
+        bidSecurityNumber: isCompetitiveBidding && bidSecurityNumber ? bidSecurityNumber.trim() : undefined,
+        bidSecurityValidityDays: isCompetitiveBidding && bidSecurityValidityDays ? Number(bidSecurityValidityDays) : undefined,
+        itemBids: isItemizedSvp && project.items
+          ? project.items.map((item) => {
+              const state = itemBids[item.id]
+              return {
+                rfqItemId: item.id,
+                unitPrice: Number(state?.unitPrice || 0),
+                brand: state?.brand?.trim() || null,
+                model: state?.model?.trim() || null,
+              }
+            })
+          : undefined,
+      }
+
+      await api.post(`/api/public/projects/${project.id}/validate-application`, preFlightPayload)
+
+      // 1. Upload required checklist documents (executed ONLY after pre-flight validation succeeds)
       const uploadPromises = uploadedFiles.map(async (uf) => {
         const fileId = await uploadFile(uf.file)
         return { checklistItemId: uf.documentId, fileId }
       })
-
       const uploadedDocs = await Promise.all(uploadPromises)
 
-      // Submit application
+      // 2. Upload per-item brochures if attached
+      const itemBrochureFileIds: Record<string, string> = {}
+      for (const [itemId, file] of Object.entries(itemBrochures)) {
+        if (file) {
+          const fileId = await uploadFile(file)
+          itemBrochureFileIds[itemId] = fileId
+        }
+      }
+
+      // 3. Prepare itemized bids if SVP with line items
+      const formattedItemBids = isItemizedSvp && project.items
+        ? project.items.map((item) => {
+            const state = itemBids[item.id]
+            return {
+              rfqItemId: item.id,
+              unitPrice: Number(state?.unitPrice || 0),
+              brand: state?.brand?.trim() || null,
+              model: state?.model?.trim() || null,
+              brochureFileId: itemBrochureFileIds[item.id] || null,
+            }
+          })
+        : undefined
+
+      // 4. Build application payload
       const payload = {
-        companyName: contactInfo.supplierName,
-        contactPerson: contactInfo.supplierName,
-        emailAddress: contactInfo.email,
-        contactNumber: contactInfo.contactNumber,
-        tinNumber: contactInfo.tinNumber,
-        businessAddress: contactInfo.address,
+        companyName: contactInfo.supplierName.trim(),
+        contactPerson: contactInfo.supplierName.trim(),
+        emailAddress: contactInfo.email.trim(),
+        contactNumber: contactInfo.contactNumber.trim(),
+        tinNumber: contactInfo.tinNumber.trim(),
+        businessAddress: contactInfo.address.trim(),
         documents: uploadedDocs,
+        proposedBidAmount: totalQuotedBid > 0 ? totalQuotedBid : undefined,
+        deliveryPeriod: deliveryPeriod.trim() || undefined,
+        paymentTerms: paymentTerms.trim() || undefined,
+        warrantyTerms: warrantyTerms.trim() || undefined,
+        validityPeriodDays: validityPeriodDays ? Number(validityPeriodDays) : undefined,
+        remarks: remarks.trim() || undefined,
+        bidSecurityType: isCompetitiveBidding ? bidSecurityType : undefined,
+        bidSecurityAmount: isCompetitiveBidding && bidSecurityAmount ? Number(bidSecurityAmount) : undefined,
+        bidSecurityNumber: isCompetitiveBidding && bidSecurityNumber ? bidSecurityNumber.trim() : undefined,
+        bidSecurityValidityDays: isCompetitiveBidding && bidSecurityValidityDays ? Number(bidSecurityValidityDays) : undefined,
+        itemBids: formattedItemBids,
       }
 
       const response = await api.post<{ succeeded: boolean; data: string }>(
@@ -195,11 +423,13 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
           referenceNumber: response.data.data,
           submittedAt: new Date().toISOString(),
           projectTitle: project.title,
+          totalBidAmount: totalQuotedBid,
         })
       }
     } catch (err: any) {
       console.error(err)
-      // Note: error toast is already shown by axios response interceptor
+      const errorMsg = err?.response?.data?.message || err?.message || 'Submission failed. Please check your inputs.'
+      setErrors((prev) => ({ ...prev, submit: errorMsg }))
     } finally {
       setIsSubmitting(false)
     }
@@ -212,254 +442,836 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
         <BACSubmissionSuccess result={result} project={project} onDone={onBack} />
       ) : (
         <>
+          {/* Header Banner */}
           <div className="bg-gradient-to-r from-[#1a2a5e] via-[#1e3a8a] to-[#1a2a5e] text-white">
-        <div className="max-w-4xl mx-auto px-6 py-6">
-          <button onClick={onBack} className="flex items-center gap-2 text-blue-200 hover:text-white text-sm mb-4 transition-colors">
-            <ArrowLeft className="h-4 w-4" /> Back to Project Details
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="bg-white/10 rounded-xl p-2.5">
-              <Send className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Submit Application</h1>
-              <p className="text-blue-200 text-sm truncate max-w-lg">{project.title}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-        {/* Contact Info */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
-            <User className="h-4 w-4 text-slate-600" />
-            <h2 className="font-semibold text-slate-800">Supplier Information</h2>
-          </div>
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {[
-              { field: 'supplierName' as const, label: 'Company / Supplier Name', placeholder: 'Enter company name', icon: User },
-              { field: 'email' as const, label: 'Email Address', placeholder: 'contact@company.com', icon: Mail },
-              { field: 'contactNumber' as const, label: 'Contact Number', placeholder: '+63 9XX XXX XXXX', icon: Phone },
-              { field: 'tinNumber' as const, label: 'TIN Number', placeholder: '000-000-000-000', icon: Hash },
-            ].map(({ field, label, placeholder, icon: Icon }) => (
-              <div key={field} className="space-y-1.5">
-                <Label htmlFor={field} className="text-sm font-medium text-slate-700">
-                  {label} <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    id={field}
-                    placeholder={placeholder}
-                    value={contactInfo[field]}
-                    onChange={(e) => handleContactChange(field, e.target.value)}
-                    className={`pl-9 ${errors[field] ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
-                  />
+            <div className="max-w-4xl mx-auto px-6 py-6">
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 text-blue-200 hover:text-white text-sm mb-4 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back to Project Details
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="bg-white/10 rounded-xl p-2.5">
+                  <Send className="h-6 w-6" />
                 </div>
-                {errors[field] && (
-                  <p className="text-xs text-red-500 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" /> {errors[field]}
-                  </p>
-                )}
+                <div>
+                  <h1 className="text-xl font-bold">
+                    {isRfq ? 'Submit Price Quotation' : 'Submit Bid Proposal'}
+                  </h1>
+                  <p className="text-blue-200 text-sm truncate max-w-lg">{project.title}</p>
+                </div>
               </div>
-            ))}
-
-            {/* Address spans full width */}
-            <div className="sm:col-span-2 space-y-1.5">
-              <Label htmlFor="address" className="text-sm font-medium text-slate-700">
-                Business Address <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  id="address"
-                  placeholder="Full business address"
-                  value={contactInfo.address}
-                  onChange={(e) => handleContactChange('address', e.target.value)}
-                  className={`pl-9 ${errors.address ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
-                />
-              </div>
-              {errors.address && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" /> {errors.address}
-                </p>
-              )}
             </div>
           </div>
-        </div>
 
-        {/* Required Documents Uploads */}
-        {requiredUploads.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
-              <Upload className="h-4 w-4 text-slate-600" />
-              <h2 className="font-semibold text-slate-800">Required Documents</h2>
-              <span className="ml-auto text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
-                {uploadedFiles.length}/{requiredUploads.length} uploaded
-              </span>
+          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+            {/* 1. Supplier Contact Information */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+                <User className="h-4 w-4 text-slate-600" />
+                <h2 className="font-semibold text-slate-800">Supplier Information</h2>
+              </div>
+              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {[
+                  { field: 'supplierName' as const, label: 'Company / Supplier Name', placeholder: 'Enter company name', icon: User },
+                  { field: 'email' as const, label: 'Email Address', placeholder: 'contact@company.com', icon: Mail },
+                  { field: 'contactNumber' as const, label: 'Contact Number', placeholder: '+63 9XX XXX XXXX', icon: Phone },
+                  { field: 'tinNumber' as const, label: 'TIN Number', placeholder: '000-000-000-000', icon: Hash },
+                ].map(({ field, label, placeholder, icon: Icon }) => (
+                  <div key={field} className="space-y-1.5">
+                    <Label htmlFor={field} className="text-sm font-medium text-slate-700">
+                      {label} <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id={field}
+                        placeholder={placeholder}
+                        value={contactInfo[field]}
+                        onChange={(e) => handleContactChange(field, e.target.value)}
+                        className={`pl-9 ${errors[field] ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
+                      />
+                    </div>
+                    {errors[field] && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" /> {errors[field]}
+                      </p>
+                    )}
+                  </div>
+                ))}
+
+                {/* Business Address */}
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label htmlFor="address" className="text-sm font-medium text-slate-700">
+                    Business Address <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="address"
+                      placeholder="Full business address"
+                      value={contactInfo.address}
+                      onChange={(e) => handleContactChange('address', e.target.value)}
+                      className={`pl-9 ${errors.address ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
+                    />
+                  </div>
+                  {errors.address && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {errors.address}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="p-6 space-y-4">
-              <p className="text-xs text-slate-500">
-                Accepted: PDF, Word, Excel, or image files. Max {MAX_SIZE_MB}MB per file.
-              </p>
-              {requiredUploads.map((doc) => {
-                const uploaded = uploadedFiles.find((f) => f.documentId === doc.id)
-                const isDragOver = dragOverId === doc.id
-                return (
-                  <div key={doc.id} className="space-y-2 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
-                    <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                        {uploaded ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                        ) : (
-                          <div className="h-4 w-4 rounded-full border-2 border-slate-300 shrink-0 mt-0.5" />
-                        )}
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-semibold text-slate-800">{doc.name}</span>
-                            {project.mop === 'public-bidding' && (
-                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                                doc.envelopeType === 2
-                                  ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                  : 'bg-blue-50 text-blue-700 border-blue-200'
-                              }`}>
-                                {doc.envelopeType === 2 ? 'Second Envelope — Financial' : 'First Envelope — Eligibility & Technical'}
+
+            {/* 2. Financial Bid Proposal */}
+            {isItemizedSvp && project.items ? (
+              /* Itemized Quotation Table for SVP / RFQs */
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Banknote className="h-4 w-4 text-slate-600" />
+                    <h2 className="font-semibold text-slate-800">Financial Quotation Proposal (Itemized)</h2>
+                  </div>
+                  <span className="text-xs text-slate-500 font-medium">
+                    {project.items.length} {project.items.length === 1 ? 'Item' : 'Items'}
+                  </span>
+                </div>
+
+                <div className="p-6 space-y-6">
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Please provide your offered unit price in Philippine Pesos (PHP) and specify the offered brand/model for each item.
+                    You may also attach a technical brochure or specification sheet per item to prove technical compliance.
+                  </p>
+
+                  <div className="space-y-4">
+                    {project.items.map((item, idx) => {
+                      const state = itemBids[item.id] || { unitPrice: '', brand: '', model: '' }
+                      const unitPriceNum = Number(state.unitPrice || 0)
+                      const itemTotal = unitPriceNum * item.quantity
+                      const itemBrochure = itemBrochures[item.id]
+                      const itemError = errors[`item_${item.id}`]
+                      const brochureError = errors[`brochure_${item.id}`]
+
+                      return (
+                        <div
+                          key={item.id}
+                          className={`rounded-xl border p-4.5 transition-colors ${
+                            itemError ? 'border-red-300 bg-red-50/30' : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
+                          }`}
+                        >
+                          {/* Item Header */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/80">
+                            <div className="flex items-start gap-2.5">
+                              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-[#1e3a8a] text-white text-xs font-bold shrink-0 mt-0.5">
+                                {idx + 1}
                               </span>
-                            )}
+                              <div>
+                                <h3 className="text-sm font-semibold text-slate-900">{item.itemName}</h3>
+                                {item.description && (
+                                  <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs font-medium text-slate-600 sm:self-center pl-8 sm:pl-0">
+                              <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                                Quantity: <strong className="text-slate-800">{item.quantity} {item.uom || 'Unit'}</strong>
+                              </span>
+                              <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                                ABC Unit: <strong className="text-slate-800">₱{item.abcUnitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                              </span>
+                            </div>
                           </div>
-                          {doc.description && (
-                            <p className="text-xs text-slate-500 mt-0.5">{doc.description}</p>
+
+                          {/* Inputs Grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5 pt-3.5">
+                            {/* Offered Unit Price */}
+                            <div className="sm:col-span-4 space-y-1.5">
+                              <Label className="text-xs font-medium text-slate-700">
+                                Offered Unit Price (₱) <span className="text-red-500">*</span>
+                              </Label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">₱</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="0.00"
+                                  value={state.unitPrice}
+                                  onChange={(e) =>
+                                    handleItemBidChange(
+                                      item.id,
+                                      'unitPrice',
+                                      e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0),
+                                    )
+                                  }
+                                  className={`pl-8 ${itemError ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
+                                />
+                              </div>
+                              {itemError && (
+                                <p className="text-[11px] text-red-500 flex items-center gap-1">
+                                  <AlertCircle className="h-3 w-3" /> {itemError}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Line Subtotal */}
+                            <div className="sm:col-span-3 space-y-1.5">
+                              <Label className="text-xs font-medium text-slate-700">Line Total Quoted</Label>
+                              <div className="h-10 px-3 bg-white border border-slate-200 rounded-md flex items-center justify-between text-sm font-semibold text-slate-800">
+                                <span>₱{itemTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                              </div>
+                            </div>
+
+                            {/* Brand / Model / Spec */}
+                            <div className="sm:col-span-5 space-y-1.5">
+                              <Label className="text-xs font-medium text-slate-700">Offered Brand / Model</Label>
+                              <Input
+                                placeholder="e.g., Brand X, Model Y"
+                                value={state.brand || ''}
+                                onChange={(e) => handleItemBidChange(item.id, 'brand', e.target.value)}
+                              />
+                            </div>
+
+                            {/* Item Brochure / Spec Sheet Upload */}
+                            <div className="sm:col-span-12 pt-1">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                                  <Paperclip className="h-3.5 w-3.5" /> Technical Brochure / Spec Sheet (Optional)
+                                </span>
+                                {itemBrochure ? (
+                                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
+                                    <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                                    <span className="truncate max-w-xs">{itemBrochure.name}</span>
+                                    <span className="text-emerald-500 text-[10px]">({formatFileSize(itemBrochure.size)})</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeItemBrochure(item.id)}
+                                      className="text-emerald-500 hover:text-red-500 ml-1"
+                                      title="Remove brochure"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => itemBrochureInputRefs.current[item.id]?.click()}
+                                      className="h-8 text-xs font-medium gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-100"
+                                    >
+                                      <Upload className="h-3 w-3" /> Attach Spec Sheet
+                                    </Button>
+                                    <input
+                                      ref={(el) => {
+                                        itemBrochureInputRefs.current[item.id] = el
+                                      }}
+                                      type="file"
+                                      accept={ACCEPTED_TYPES}
+                                      className="hidden"
+                                      onChange={(e) =>
+                                        handleItemBrochureSelect(item.id, e.target.files?.[0] || null)
+                                      }
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                              {brochureError && (
+                                <p className="text-[11px] text-red-500 mt-1 flex items-center gap-1">
+                                  <AlertCircle className="h-3 w-3" /> {brochureError}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {errors.generalBid && (
+                    <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
+                      <AlertCircle className="h-4 w-4" /> {errors.generalBid}
+                    </p>
+                  )}
+
+                  {/* Live Total Bid & ABC Summary Banner */}
+                  <div className={`p-5 rounded-xl border ${
+                    isOverAbc
+                      ? 'bg-red-50 border-red-300 text-red-900'
+                      : 'bg-blue-50/60 border-blue-200 text-blue-950'
+                  }`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wider opacity-80">
+                          Total Quoted Price Proposal
+                        </div>
+                        <div className="text-2xl font-black mt-0.5">
+                          ₱{totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-xs mt-1 flex items-center gap-2">
+                          <span>ABC: <strong>₱{project.approvedBudget.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></span>
+                          <span>•</span>
+                          {isOverAbc ? (
+                            <span className="font-bold text-red-600">
+                              Exceeds ABC by ₱{(totalQuotedBid - project.approvedBudget).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </span>
+                          ) : (
+                            <span className="font-semibold text-emerald-700">
+                              Savings / Variance: ₱{varianceFromAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Download Template button if template is attached */}
-                      {(doc.downloadUrl || doc.viewerDocId) && (
-                        doc.viewerDocId ? (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); printDocument(doc.viewerDocId!) }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0"
-                          >
-                            <Download className="h-3.5 w-3.5" />
-                            Download Template
-                          </button>
-                        ) : (
-                          <a
-                            href={doc.downloadUrl ?? '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-sm"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Download className="h-3.5 w-3.5" />
-                            Download Template
-                          </a>
-                        )
+                      {isOverAbc ? (
+                        <div className="flex items-center gap-2 bg-red-100/80 border border-red-300 px-3 py-2 rounded-lg text-xs font-bold text-red-700">
+                          <AlertTriangle className="h-4 w-4 shrink-0" />
+                          <span>RA 9184 ABC Non-Compliant</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 bg-emerald-100 border border-emerald-300 px-3 py-2 rounded-lg text-xs font-bold text-emerald-800">
+                          <Check className="h-4 w-4 shrink-0" />
+                          <span>Within Approved Budget</span>
+                        </div>
                       )}
                     </div>
 
-                    {/* Single Upload slot */}
-                    {uploaded ? (
-                      <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="h-4 w-4 text-emerald-600 shrink-0" />
-                          <span className="text-sm text-emerald-700 font-medium truncate">{uploaded.file.name}</span>
-                          <span className="text-xs text-emerald-500 shrink-0">({formatFileSize(uploaded.file.size)})</span>
-                        </div>
-                        <button
-                          onClick={() => removeFile(doc.id)}
-                          className="text-emerald-400 hover:text-red-500 transition-colors shrink-0"
-                          title="Remove file"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
+                    {isOverAbc && (
+                      <div className="mt-3.5 pt-3 border-t border-red-200 text-xs text-red-700 flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Republic Act 9184 Non-Compliance Alert:</strong> Under Philippine Public Procurement Law,
+                          any bid that exceeds the Approved Budget for the Contract (ABC) shall be disqualified and cannot be submitted.
+                          Please lower your quoted unit prices to remain within the ABC.
+                        </span>
                       </div>
-                    ) : (
-                      <div
-                        onDragOver={(e) => { e.preventDefault(); setDragOverId(doc.id) }}
-                        onDragLeave={() => setDragOverId(null)}
-                        onDrop={(e) => {
-                          e.preventDefault()
-                          setDragOverId(null)
-                          handleFileDrop(doc.id, doc.name, e.dataTransfer.files)
-                        }}
-                        onClick={() => fileInputRefs.current[doc.id]?.click()}
-                        className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
-                          isDragOver
-                            ? 'border-blue-400 bg-blue-50'
-                            : errors[doc.id]
-                            ? 'border-red-300 bg-red-50 hover:border-red-400'
-                            : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50'
-                        }`}
-                      >
-                        <CloudUpload className={`h-7 w-7 mx-auto mb-2 ${isDragOver ? 'text-blue-500' : 'text-slate-400'}`} />
-                        <p className="text-sm font-medium text-slate-600">
-                          {isDragOver ? 'Drop file here' : 'Drag & drop or click to upload'}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-0.5">PDF, Word, Excel, Images up to {MAX_SIZE_MB}MB</p>
-                        <input
-                          ref={(el) => { fileInputRefs.current[doc.id] = el }}
-                          type="file"
-                          accept={ACCEPTED_TYPES}
-                          className="hidden"
-                          onChange={(e) => handleFileDrop(doc.id, doc.name, e.target.files)}
-                        />
-                      </div>
-                    )}
-
-                    {errors[doc.id] && (
-                      <p className="text-xs text-red-500 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" /> {errors[doc.id]}
-                      </p>
                     )}
                   </div>
-                )
-              })}
+                </div>
+              </div>
+            ) : (
+              /* Public Bidding or Non-itemized Quotation Proposal */
+              <div className="space-y-6">
+                {/* For Public Bidding with items: Show Schedule of Requirements table overview */}
+                {isCompetitiveBidding && project.items && project.items.length > 0 && (
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-slate-600" />
+                        <h2 className="font-semibold text-slate-800">Schedule of Requirements / Scope of Items</h2>
+                      </div>
+                      <span className="text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
+                        {project.items.length} {project.items.length === 1 ? 'item' : 'items'}
+                      </span>
+                    </div>
+                    <div className="p-6 space-y-3">
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        The items listed below comprise the approved Schedule of Requirements for this contract. Under Philippine Bidding Documents (PBDs) for Public Bidding, your detailed itemized breakdown (unit prices, taxes, and delivery/freight) must be completed using the official Price Schedule form and uploaded in the <strong>Second Envelope (Financial Component)</strong> below.
+                      </p>
+                      <div className="overflow-x-auto rounded-xl border border-slate-200">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                            <tr>
+                              <th className="px-3.5 py-2.5 w-10 text-center">#</th>
+                              <th className="px-3.5 py-2.5">Item & Technical Description</th>
+                              <th className="px-3.5 py-2.5 w-24 text-center">Qty</th>
+                              <th className="px-3.5 py-2.5 w-32 text-right">ABC Unit Price</th>
+                              <th className="px-3.5 py-2.5 w-32 text-right">ABC Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {project.items.map((item, idx) => (
+                              <tr key={item.id} className="hover:bg-slate-50/50">
+                                <td className="px-3.5 py-2.5 text-center text-slate-400 font-medium">{idx + 1}</td>
+                                <td className="px-3.5 py-2.5">
+                                  <span className="font-semibold text-slate-800">{item.itemName}</span>
+                                  {item.description && (
+                                    <span className="block text-[11px] text-slate-500 mt-0.5">{item.description}</span>
+                                  )}
+                                </td>
+                                <td className="px-3.5 py-2.5 text-center font-medium text-slate-700">
+                                  {item.quantity} {item.uom || 'Unit'}
+                                </td>
+                                <td className="px-3.5 py-2.5 text-right text-slate-600">
+                                  ₱{item.abcUnitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="px-3.5 py-2.5 text-right font-semibold text-slate-900">
+                                  ₱{(item.abcTotalPrice || item.quantity * item.abcUnitPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lump-Sum Bid Proposal for Public Bidding & Non-itemized Opportunities */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Banknote className="h-4 w-4 text-slate-600" />
+                    <h2 className="font-semibold text-slate-800">
+                      {isCompetitiveBidding ? 'Financial Bid Proposal' : 'Financial Quotation Proposal'}
+                    </h2>
+                  </div>
+                  {isOverAbc ? (
+                    <span className="text-xs font-bold text-red-700 bg-red-100 border border-red-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                      <AlertTriangle className="h-3.5 w-3.5" /> Exceeds ABC (RA 9184 Non-Compliant)
+                    </span>
+                  ) : totalQuotedBid > 0 ? (
+                    <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                      <Check className="h-3.5 w-3.5" /> Within Approved Budget
+                    </span>
+                  ) : null}
+                </div>
+                <div className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="proposedBidAmount" className="text-sm font-medium text-slate-700">
+                        {isCompetitiveBidding ? 'Proposed Bid Amount (₱)' : 'Proposed Quotation / Bid Amount (₱)'}{' '}
+                        <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">₱</span>
+                        <Input
+                          id="proposedBidAmount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={proposedBidAmount}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0)
+                            setProposedBidAmount(val)
+                            setErrors((prev) => ({ ...prev, proposedBidAmount: '', abcExceeded: '' }))
+                          }}
+                          className={`pl-8 ${
+                            isOverAbc
+                              ? 'border-red-500 bg-red-50/20 text-red-950 focus-visible:ring-red-500'
+                              : errors.proposedBidAmount
+                              ? 'border-red-400 focus-visible:ring-red-400'
+                              : ''
+                          }`}
+                        />
+                      </div>
+                      {isOverAbc ? (
+                        <p className="text-xs text-red-600 font-semibold flex items-center gap-1 mt-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          Exceeds ABC by ₱{(totalQuotedBid - numericAbc).toLocaleString(undefined, { minimumFractionDigits: 2 })} (RA 9184 Non-Compliant)
+                        </p>
+                      ) : errors.proposedBidAmount ? (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" /> {errors.proposedBidAmount}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium text-slate-700">Approved Budget for Contract (ABC)</Label>
+                      <div className="h-10 px-3 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-between text-sm font-semibold text-slate-800">
+                        <span>₱{numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <span className="text-[11px] text-slate-500 font-normal">Maximum Ceiling</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isOverAbc && (
+                    <div className="p-4 rounded-xl bg-red-50 border-2 border-red-300 text-red-900 flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold uppercase tracking-wider text-red-800">
+                          Republic Act 9184 ABC Non-Compliance Alert
+                        </p>
+                        <p className="text-xs text-red-700 leading-relaxed">
+                          Your proposed bid amount of <strong>₱{totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong> exceeds the Approved Budget for the Contract (ABC) of <strong>₱{numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong> by <strong className="text-red-800">₱{(totalQuotedBid - numericAbc).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>.
+                        </p>
+                        <p className="text-[11px] text-red-600 font-medium">
+                          Under Section 31 of RA 9184 and its 2016 Revised IRR, all bids that exceed the ABC are automatically rejected and cannot be submitted. Form submission is disabled until the bid is within the ABC.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bid Security Information (Competitive / Public Bidding Only — RA 9184 Section 27; Not Required for SVP/Shopping per Annex H) */}
+                  {isCompetitiveBidding && (
+                    <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-4">
+                      <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                        <ShieldCheck className="h-4 w-4 text-blue-700" />
+                        <h3 className="text-sm font-semibold text-slate-800">Bid Security Details</h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-slate-700">Bid Security Form / Type</Label>
+                          <Select value={bidSecurityType} onValueChange={setBidSecurityType}>
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select Bid Security" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Bid Securing Declaration">Bid Securing Declaration (GPPB Prescribed)</SelectItem>
+                              <SelectItem value="Cash or Manager's Check">Cash or Cashier's / Manager's Check (2% of ABC)</SelectItem>
+                              <SelectItem value="Bank Guarantee">Bank Guarantee / Irrevocable LC (2% of ABC)</SelectItem>
+                              <SelectItem value="Surety Bond">Surety Bond Callable on Demand (5% of ABC)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {bidSecurityType !== 'Bid Securing Declaration' && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-slate-700">
+                              Bid Security Amount (₱) <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              value={bidSecurityAmount}
+                              onChange={(e) =>
+                                setBidSecurityAmount(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)
+                              }
+                              className={errors.bidSecurityAmount ? 'border-red-400' : ''}
+                            />
+                          </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-slate-700">Security Number / Reference (Optional)</Label>
+                          <Input
+                            placeholder="e.g., BSD-2026-001 or Guarantee No."
+                            value={bidSecurityNumber}
+                            onChange={(e) => setBidSecurityNumber(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-slate-700">Validity Period (Calendar Days)</Label>
+                          <Input
+                            type="number"
+                            placeholder="120"
+                            value={bidSecurityValidityDays}
+                            onChange={(e) =>
+                              setBidSecurityValidityDays(e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0)
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+            {/* 3. Commercial & Delivery Terms */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-slate-600" />
+                <h2 className="font-semibold text-slate-800">Commercial Terms & Warranty</h2>
+              </div>
+              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <Label htmlFor="deliveryPeriod" className="text-sm font-medium text-slate-700">
+                    Delivery Period <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="deliveryPeriod"
+                    placeholder="e.g., 15-30 Calendar Days upon receipt of PO/NTP"
+                    value={deliveryPeriod}
+                    onChange={(e) => {
+                      setDeliveryPeriod(e.target.value)
+                      setErrors((prev) => ({ ...prev, deliveryPeriod: '' }))
+                    }}
+                    className={errors.deliveryPeriod ? 'border-red-400 focus-visible:ring-red-400' : ''}
+                  />
+                  {errors.deliveryPeriod && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {errors.deliveryPeriod}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="paymentTerms" className="text-sm font-medium text-slate-700">
+                    Payment Terms <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="paymentTerms"
+                    placeholder="e.g., Net 30 Days / Upon Complete Delivery & Acceptance"
+                    value={paymentTerms}
+                    onChange={(e) => {
+                      setPaymentTerms(e.target.value)
+                      setErrors((prev) => ({ ...prev, paymentTerms: '' }))
+                    }}
+                    className={errors.paymentTerms ? 'border-red-400 focus-visible:ring-red-400' : ''}
+                  />
+                  {errors.paymentTerms && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {errors.paymentTerms}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="warrantyTerms" className="text-sm font-medium text-slate-700">
+                    Warranty Terms (Optional)
+                  </Label>
+                  <Input
+                    id="warrantyTerms"
+                    placeholder="e.g., 1 Year Comprehensive Warranty on Parts & Labor"
+                    value={warrantyTerms}
+                    onChange={(e) => setWarrantyTerms(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="validityPeriodDays" className="text-sm font-medium text-slate-700">
+                    Price Validity (Calendar Days)
+                  </Label>
+                  <Input
+                    id="validityPeriodDays"
+                    type="number"
+                    placeholder="60"
+                    value={validityPeriodDays}
+                    onChange={(e) =>
+                      setValidityPeriodDays(e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0)
+                    }
+                  />
+                </div>
+
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label htmlFor="remarks" className="text-sm font-medium text-slate-700">
+                    Additional Remarks / Compliance Statement (Optional)
+                  </Label>
+                  <Textarea
+                    id="remarks"
+                    placeholder="Provide any additional specifications, clarifications, or remarks for the Bids and Awards Committee"
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Required Documents Checklist */}
+            {requiredUploads.length > 0 && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-slate-600" />
+                  <h2 className="font-semibold text-slate-800">Required Eligibility & Compliance Documents</h2>
+                  <span className="ml-auto text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
+                    {uploadedFiles.length}/{requiredUploads.length} uploaded
+                  </span>
+                </div>
+                <div className="p-6 space-y-4">
+                  <p className="text-xs text-slate-500">
+                    Accepted formats: PDF, Word, Excel, or image files. Maximum {MAX_SIZE_MB}MB per file.
+                  </p>
+                  {requiredUploads.map((doc) => {
+                    const uploaded = uploadedFiles.find((f) => f.documentId === doc.id)
+                    const isDragOver = dragOverId === doc.id
+                    return (
+                      <div key={doc.id} className="space-y-2 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                            {uploaded ? (
+                              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                            ) : (
+                              <div className="h-4 w-4 rounded-full border-2 border-slate-300 shrink-0 mt-0.5" />
+                            )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-semibold text-slate-800">{doc.name}</span>
+                                {project.mop === 'public-bidding' && (
+                                  <span
+                                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                      doc.envelopeType === 2
+                                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                        : 'bg-blue-50 text-blue-700 border-blue-200'
+                                    }`}
+                                  >
+                                    {doc.envelopeType === 2
+                                      ? 'Second Envelope — Financial'
+                                      : 'First Envelope — Eligibility & Technical'}
+                                  </span>
+                                )}
+                              </div>
+                              {doc.description && (
+                                <p className="text-xs text-slate-500 mt-0.5">{doc.description}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Download Template Button */}
+                          {(doc.downloadUrl || doc.viewerDocId) && (
+                            doc.viewerDocId ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  printDocument(doc.viewerDocId!)
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                                Download Template
+                              </button>
+                            ) : (
+                              <a
+                                href={doc.downloadUrl ?? '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-sm"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                                Download Template
+                              </a>
+                            )
+                          )}
+                        </div>
+
+                        {/* Upload Slot */}
+                        {uploaded ? (
+                          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <FileText className="h-4 w-4 text-emerald-600 shrink-0" />
+                              <span className="text-sm text-emerald-700 font-medium truncate">
+                                {uploaded.file.name}
+                              </span>
+                              <span className="text-xs text-emerald-500 shrink-0">
+                                ({formatFileSize(uploaded.file.size)})
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(doc.id)}
+                              className="text-emerald-400 hover:text-red-500 transition-colors shrink-0"
+                              title="Remove file"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            onDragOver={(e) => {
+                              e.preventDefault()
+                              setDragOverId(doc.id)
+                            }}
+                            onDragLeave={() => setDragOverId(null)}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              setDragOverId(null)
+                              handleFileDrop(doc.id, doc.name, e.dataTransfer.files)
+                            }}
+                            onClick={() => fileInputRefs.current[doc.id]?.click()}
+                            className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
+                              isDragOver
+                                ? 'border-blue-400 bg-blue-50'
+                                : errors[doc.id]
+                                ? 'border-red-300 bg-red-50 hover:border-red-400'
+                                : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50'
+                            }`}
+                          >
+                            <CloudUpload
+                              className={`h-7 w-7 mx-auto mb-2 ${isDragOver ? 'text-blue-500' : 'text-slate-400'}`}
+                            />
+                            <p className="text-sm font-medium text-slate-600">
+                              {isDragOver ? 'Drop file here' : 'Drag & drop or click to upload'}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              PDF, Word, Excel, Images up to {MAX_SIZE_MB}MB
+                            </p>
+                            <input
+                              ref={(el) => {
+                                fileInputRefs.current[doc.id] = el
+                              }}
+                              type="file"
+                              accept={ACCEPTED_TYPES}
+                              className="hidden"
+                              onChange={(e) => handleFileDrop(doc.id, doc.name, e.target.files)}
+                            />
+                          </div>
+                        )}
+
+                        {errors[doc.id] && (
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> {errors[doc.id]}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Error banner if submission failed */}
+            {errors.submit && (
+              <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{errors.submit}</span>
+              </div>
+            )}
+
+            {/* Submit Action Bar */}
+            <div className={`flex items-center justify-between gap-4 rounded-2xl border shadow-sm p-6 flex-wrap transition-colors ${
+              isClosedOrExpired || isOverAbc ? 'bg-red-50/60 border-red-300' : 'bg-white border-slate-200'
+            }`}>
+              <div className="space-y-1 max-w-lg">
+                <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                  {(isClosedOrExpired || isOverAbc) && <AlertTriangle className="h-4 w-4 text-red-600" />}
+                  {isClosedOrExpired
+                    ? 'Submissions Closed'
+                    : isOverAbc
+                    ? 'Submission Blocked (RA 9184 Non-Compliant)'
+                    : 'Ready to submit?'}
+                </p>
+                <p className={`text-xs ${isClosedOrExpired || isOverAbc ? 'text-red-700 font-medium leading-relaxed' : 'text-slate-500'}`}>
+                  {isClosedOrExpired
+                    ? 'The submission deadline for this project has passed. Applications are no longer being accepted.'
+                    : isOverAbc
+                    ? `Your quoted bid of ₱${totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })} exceeds the ABC of ₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}. Under Section 31 of RA 9184, bids exceeding the ABC cannot be accepted. Please adjust your bid before submitting.`
+                    : 'Ensure all item prices and required documents are complete. Submissions cannot be modified after sending.'}
+                </p>
+              </div>
+              <Button
+                size="lg"
+                onClick={handleSubmit}
+                disabled={isSubmitting || isOverAbc || isClosedOrExpired}
+                className="bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white font-semibold gap-2 min-w-[170px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" /> {isRfq ? 'Submit Quotation' : 'Submit Application'}
+                  </>
+                )}
+              </Button>
             </div>
           </div>
-        )}
 
-        {/* Submit */}
-        <div className="flex items-center justify-between gap-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex-wrap">
-          <div>
-            <p className="text-sm font-semibold text-slate-800">Ready to submit?</p>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Ensure all required documents are uploaded. Submissions cannot be modified after sending.
-            </p>
+          {/* Footer */}
+          <div className="border-t border-slate-200 mt-12 py-6 text-center text-sm text-slate-400">
+            <p>© {new Date().getFullYear()} University of Science and Technology of Southern Philippines — BAC Secretariat</p>
           </div>
-          <Button
-            size="lg"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white font-semibold gap-2 min-w-[160px]"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Submitting...
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4" /> Submit Application
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="border-t border-slate-200 mt-12 py-6 text-center text-sm text-slate-400">
-        <p>© {new Date().getFullYear()} University of Science and Technology of Southern Philippines — BAC Secretariat</p>
-      </div>
         </>
       )}
     </div>
   )
 }
 
-/* Local BACSubmissionSuccess component added to avoid external module resolution errors */
+/* Local BACSubmissionSuccess component */
 function BACSubmissionSuccess({
   result,
   project,
@@ -478,18 +1290,31 @@ function BACSubmissionSuccess({
           <CheckCircle2 className="h-8 w-8 text-emerald-600" />
         </div>
         <h3 className="text-lg font-semibold text-slate-800 mb-1">Application Submitted</h3>
-        <p className="text-sm text-slate-500 mb-4">Your application has been received by the BAC Secretariat.</p>
+        <p className="text-sm text-slate-500 mb-4">
+          Your proposal has been successfully registered with the BAC Secretariat.
+        </p>
 
-        <div className="text-left bg-slate-50 p-4 rounded-lg border border-slate-100 mb-4">
-          <p className="text-xs text-slate-500">Reference Number</p>
-          <p className="font-medium text-slate-800 truncate">{result.referenceNumber}</p>
+        <div className="text-left bg-slate-50 p-4 rounded-lg border border-slate-100 mb-4 space-y-3">
+          <div>
+            <p className="text-xs text-slate-500">Reference Number</p>
+            <p className="font-semibold text-slate-800 font-mono text-sm truncate">{result.referenceNumber}</p>
+          </div>
 
-          <div className="mt-3">
-            <p className="text-xs text-slate-500">Project</p>
+          <div>
+            <p className="text-xs text-slate-500">Project Title</p>
             <p className="text-sm text-slate-700 truncate">{project.title}</p>
           </div>
 
-          <div className="mt-3">
+          {result.totalBidAmount !== undefined && result.totalBidAmount > 0 && (
+            <div>
+              <p className="text-xs text-slate-500">Total Quoted Bid</p>
+              <p className="text-sm font-bold text-emerald-700">
+                ₱{result.totalBidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+          )}
+
+          <div>
             <p className="text-xs text-slate-500">Submitted At</p>
             <p className="text-sm text-slate-700">{submittedAt}</p>
           </div>

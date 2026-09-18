@@ -23,12 +23,25 @@ public record PublicProjectDetailDto
     public string? ScopeOfWork { get; init; }
     public decimal? NonRefundableBidderFee { get; init; }
     public int? DeliveryPeriodDays { get; init; }
+    public string? DeliveryPeriod { get; init; }
     public DateTime? SubmissionDeadline { get; init; }
     public DateTime? BidOpeningDate { get; init; }
     public DateTime? PreBidConferenceDate { get; init; }
     public DateTime? DatePosted { get; init; }
     public List<RequiredSubmissionDto> RequiredSubmissions { get; init; } = [];
     public List<BidNoticeDto> BidNotices { get; init; } = [];
+    public List<PublicProjectItemDto> Items { get; init; } = [];
+}
+
+public record PublicProjectItemDto
+{
+    public Guid Id { get; init; }
+    public string ItemName { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public int Quantity { get; init; }
+    public string? Uom { get; init; }
+    public decimal ABCUnitPrice { get; init; }
+    public decimal ABCTotalPrice { get; init; }
 }
 
 public record RequiredSubmissionDto
