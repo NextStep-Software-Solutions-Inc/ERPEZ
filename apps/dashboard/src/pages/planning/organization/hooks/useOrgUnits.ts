@@ -179,8 +179,18 @@ export function useCreateOrgUnit() {
 export function useUpdateOrgUnit() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<OrgUnit> }) => updateOrgUnit(id, updates),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['orgUnits'] }),
+    mutationFn: (params: { id: string; updates?: Partial<OrgUnit> } & Partial<OrgUnit>) => {
+      const { id, updates, ...rest } = params
+      const actualUpdates = updates ?? (rest as Partial<OrgUnit>)
+      return updateOrgUnit(id, actualUpdates)
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['orgUnits'] })
+      qc.invalidateQueries({ queryKey: ['orgUnit'] })
+      if (variables?.id) {
+        qc.invalidateQueries({ queryKey: ['orgUnit', variables.id] })
+      }
+    },
   })
 }
 

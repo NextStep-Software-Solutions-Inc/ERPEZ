@@ -592,7 +592,7 @@ export function DetailsPanel({
           <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
           <span className="font-medium">
             Link exactly one Consolidated PR to keep this BAC Resolution in the
-            Public Bidding scheduling flow.
+            Competitive Bidding scheduling flow.
           </span>
         </div>
       )}

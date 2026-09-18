@@ -47,7 +47,7 @@ export function BacResolutionDocumentPreviewModal({
     return [
       {
         office: context?.officeName || resolution.linkedConsolidatedPrs[0]?.endUser || 'ICT Office',
-        mode: context?.modeOfProcurement || resolution.linkedConsolidatedPrs[0]?.modeOfProcurement || 'Public Bidding',
+        mode: context?.modeOfProcurement || resolution.linkedConsolidatedPrs[0]?.modeOfProcurement || 'Competitive Bidding',
         fund: context?.sourceOfFund || 'General Appropriations Act (GAA)',
         totalAbc: context?.abc || resolution.totalAmount,
       },

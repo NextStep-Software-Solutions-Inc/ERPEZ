@@ -2,20 +2,27 @@ export type OrgUnit = {
   id: string
   name: string
   code: string
-  type: 'office' | 'division' | 'section' | 'unit' | 'department' | 'bureau' | 'service' | 'center'
-  category?: 'executive' | 'administrative' | 'technical' | 'support' | 'oversight' | 'delivery' | 'regulatory'
-  level?: 'central' | 'regional' | 'provincial' | 'municipal' | 'barangay' | 'satellite'
+  type: 'office' | 'division' | 'section' | 'unit' | 'department' | 'bureau' | 'service' | 'center' | (string & {})
+  category?: 'executive' | 'administrative' | 'technical' | 'support' | 'oversight' | 'delivery' | 'regulatory' | (string & {})
+  level?: 'central' | 'regional' | 'provincial' | 'municipal' | 'barangay' | 'satellite' | (string & {})
   cluster?: string
   procurementWorkflow?: string
   budgetingCostCenter?: string
   parentId: string | null
   address?: string
   responsibilityCenter?: string
+  // IDs from backend
+  officeTypeId?: string
+  categoryId?: string
+  administrativeLevelId?: string
+  clusterId?: string
+  procurementWorkflowId?: string
   // New optional fields mapped from enhanced API responses
   organizationName?: string
   parentOfficeName?: string
   administrativeLevelName?: string
   categoryName?: string
+  officeTypeName?: string
   createdAt?: string
   createdBy?: string
   // Government Schema Fields

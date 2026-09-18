@@ -28,10 +28,10 @@ const getErrorMessage = (error: unknown): string => {
 
 export const officeSchema = z.object({
   name: z.string().trim().min(1, 'Office name is required'),
-  code: z.string().min(1, 'Office code is required'),
-  type: z.enum(['office', 'division', 'section', 'unit', 'department', 'bureau', 'service', 'center']),
-  category: z.enum(['executive', 'administrative', 'technical', 'support', 'oversight', 'delivery', 'regulatory']),
-  level: z.enum(['central', 'regional', 'provincial', 'municipal', 'barangay', 'satellite']),
+  code: z.string().trim().min(1, 'Office code is required'),
+  type: z.string().min(1, 'Office type is required'),
+  category: z.string().min(1, 'Category is required'),
+  level: z.string().min(1, 'Administrative level is required'),
   parentId: z.string().optional(),
   uacsCode: z.string().optional(),
   responsibilityCenter: z.string().optional(),
@@ -40,7 +40,7 @@ export const officeSchema = z.object({
   municipality: z.string().optional(),
   barangay: z.string().optional(),
   cluster: z.string().optional(),
-  procurementWorkflow: z.enum(['centralized', 'decentralized', 'mixed', 'none']).optional(),
+  procurementWorkflow: z.string().optional(),
   budgetingCostCenter: z.string().optional(),
   description: z.string().optional(),
 })
@@ -55,7 +55,7 @@ interface UpdateOfficeFormProps {
   isDirtyCallback?: (isDirty: boolean) => void
 }
 
-export function UpdateOfficeForm({ unit, onUpdated, onClose, parentUnits, isDirtyCallback }: UpdateOfficeFormProps) {
+export function UpdateOfficeForm({ unit, onUpdated, onClose, parentUnits: _parentUnits, isDirtyCallback }: UpdateOfficeFormProps) {
   const updateMutation = useUpdateOrgUnit()
   const { data: officeCategoriesResp } = useOfficeCategories({ pathParams: {}, queryParams: {} })
   const officeCategories = officeCategoriesResp?.data ?? []
@@ -72,22 +72,28 @@ export function UpdateOfficeForm({ unit, onUpdated, onClose, parentUnits, isDirt
   const { data: procurementWorkflowsResp } = useProcurementWorkflows({ pathParams: {}, queryParams: {} })
   const procurementWorkflows = procurementWorkflowsResp?.data ?? []
 
+  const initialType = unit.type?.toLowerCase() || unit.officeTypeName?.toLowerCase() || 'office'
+  const initialCategory = unit.category?.toLowerCase() || unit.categoryName?.toLowerCase() || 'administrative'
+  const initialLevel = unit.level?.toLowerCase() || unit.administrativeLevelName?.toLowerCase() || 'central'
+  const initialWorkflow = unit.procurementWorkflow?.toLowerCase() || 'centralized'
+  const initialCluster = unit.clusterId || unit.cluster || ''
+
   const form = useForm({
     defaultValues: {
-      name: unit.name,
-      code: unit.code,
-      type: (unit.type || 'division') as 'office' | 'division' | 'section' | 'unit' | 'department' | 'bureau' | 'service' | 'center',
-      // category: (unit.category || 'administrative') as 'executive' | 'administrative' | 'technical' | 'support' | 'oversight' | 'delivery' | 'regulatory', 
-      level: (unit.level || 'central') as 'central' | 'regional' | 'provincial' | 'municipal' | 'barangay' | 'satellite',
+      name: unit.name || '',
+      code: unit.code || '',
+      type: initialType,
+      category: initialCategory,
+      level: initialLevel,
       parentId: unit.parentId || 'root',
       uacsCode: unit.uacsCode || '',
-      responsibilityCenter: unit.responsibilityCenter || unit.code,
+      responsibilityCenter: unit.responsibilityCenter || unit.code || '',
       region: unit.region || '',
       province: unit.province || '',
       municipality: unit.municipality || '',
       barangay: unit.barangay || '',
-      cluster: unit.cluster || '',
-      procurementWorkflow: (unit.procurementWorkflow || 'centralized') as 'centralized' | 'decentralized' | 'mixed' | 'none',
+      cluster: initialCluster,
+      procurementWorkflow: initialWorkflow,
       budgetingCostCenter: unit.budgetingCostCenter || '',
       description: unit.description || '',
     },
@@ -97,12 +103,43 @@ export function UpdateOfficeForm({ unit, onUpdated, onClose, parentUnits, isDirt
     },
     onSubmit: async ({ value }) => {
       try {
+        const findIdByName = <T extends { id: string; name: string }>(items: T[], displayName?: string): string | undefined => {
+          if (!displayName) return undefined
+          const match = items.find(
+            item => item.name.toLowerCase() === displayName.toLowerCase() || item.id === displayName
+          )
+          return match?.id
+        }
+
+        const officeTypeId = findIdByName(officeTypes, value.type) || unit.officeTypeId
+        const categoryId = findIdByName(officeCategories, value.category) || unit.categoryId
+        const administrativeLevelId = findIdByName(administrativeLevels, value.level) || unit.administrativeLevelId
+        const procurementWorkflowId = findIdByName(procurementWorkflows, value.procurementWorkflow) || unit.procurementWorkflowId
+        const clusterId = value.cluster
+          ? (satelliteClusters.find(c => c.id === value.cluster || c.name.toLowerCase() === value.cluster?.toLowerCase())?.id || value.cluster)
+          : (unit.clusterId || undefined)
+        const parentOfficeId: string | null = value.parentId === 'root' ? null : (value.parentId || null)
+
+        const payload = {
+          name: value.name?.trim() ?? '',
+          code: value.code?.trim() ?? '',
+          description: value.description || undefined,
+          responsibilityCenterCode: value.responsibilityCenter || undefined,
+          budgetCostCenter: value.budgetingCostCenter || undefined,
+          officeTypeId,
+          categoryId,
+          administrativeLevelId,
+          clusterId,
+          procurementWorkflowId,
+          parentId: parentOfficeId,
+          address: [value.barangay, value.municipality, value.province, value.region].filter(Boolean).join(', ') || unit.address || undefined,
+        }
+
         await updateMutation.mutateAsync({
           id: unit.id,
-          ...value,
-          name: value.name?.trim(),
-          parentId: value.parentId === 'root' ? undefined : value.parentId,
-        })
+          updates: payload as Partial<OrgUnit>,
+          ...payload,
+        } as any)
         onUpdated()
       } catch (error) {
         console.error('Failed to update office:', error)
@@ -110,8 +147,66 @@ export function UpdateOfficeForm({ unit, onUpdated, onClose, parentUnits, isDirt
     },
   })
 
+  // Sync select fields when dynamic settings load
+  useEffect(() => {
+    if (officeCategories.length > 0 && !form.getFieldMeta('category')?.isDirty) {
+      const match = unit.categoryId
+        ? officeCategories.find(c => c.id === unit.categoryId)
+        : officeCategories.find(c => c.name.toLowerCase() === (unit.categoryName || unit.category || '').toLowerCase())
+          || officeCategories.find(c => c.name.toLowerCase().startsWith((unit.category || '').toLowerCase()))
+      if (match && form.getFieldValue('category') !== match.name.toLowerCase()) {
+        form.setFieldValue('category', match.name.toLowerCase())
+      }
+    }
+  }, [officeCategories, unit, form])
+
+  useEffect(() => {
+    if (administrativeLevels.length > 0 && !form.getFieldMeta('level')?.isDirty) {
+      const match = unit.administrativeLevelId
+        ? administrativeLevels.find(l => l.id === unit.administrativeLevelId)
+        : administrativeLevels.find(l => l.name.toLowerCase() === (unit.administrativeLevelName || unit.level || '').toLowerCase())
+          || administrativeLevels.find(l => l.name.toLowerCase().startsWith((unit.level || '').toLowerCase()))
+      if (match && form.getFieldValue('level') !== match.name.toLowerCase()) {
+        form.setFieldValue('level', match.name.toLowerCase())
+      }
+    }
+  }, [administrativeLevels, unit, form])
+
+  useEffect(() => {
+    if (officeTypes.length > 0 && !form.getFieldMeta('type')?.isDirty) {
+      const match = unit.officeTypeId
+        ? officeTypes.find(t => t.id === unit.officeTypeId)
+        : officeTypes.find(t => t.name.toLowerCase() === (unit.officeTypeName || unit.type || '').toLowerCase())
+      if (match && form.getFieldValue('type') !== match.name.toLowerCase()) {
+        form.setFieldValue('type', match.name.toLowerCase())
+      }
+    }
+  }, [officeTypes, unit, form])
+
+  useEffect(() => {
+    if (procurementWorkflows.length > 0 && !form.getFieldMeta('procurementWorkflow')?.isDirty) {
+      const match = unit.procurementWorkflowId
+        ? procurementWorkflows.find(w => w.id === unit.procurementWorkflowId)
+        : procurementWorkflows.find(w => w.name.toLowerCase() === (unit.procurementWorkflow || '').toLowerCase())
+      if (match && form.getFieldValue('procurementWorkflow') !== match.name.toLowerCase()) {
+        form.setFieldValue('procurementWorkflow', match.name.toLowerCase())
+      }
+    }
+  }, [procurementWorkflows, unit, form])
+
+  useEffect(() => {
+    if (satelliteClusters.length > 0 && !form.getFieldMeta('cluster')?.isDirty) {
+      const match = unit.clusterId
+        ? satelliteClusters.find(c => c.id === unit.clusterId)
+        : satelliteClusters.find(c => c.id === unit.cluster || c.name.toLowerCase() === (unit.cluster || '').toLowerCase())
+      if (match && form.getFieldValue('cluster') !== match.id) {
+        form.setFieldValue('cluster', match.id)
+      }
+    }
+  }, [satelliteClusters, unit, form])
+
   // Notify parent when form dirty state changes
-  React.useEffect(() => {
+  useEffect(() => {
     isDirtyCallback?.(form.state.isDirty)
   }, [form.state.isDirty, isDirtyCallback])
 
@@ -213,6 +308,11 @@ export function UpdateOfficeForm({ unit, onUpdated, onClose, parentUnits, isDirt
                       <SelectItem value="center">Center</SelectItem>
                     </>
                   )}
+                  {field.state.value && !officeTypes.some(t => t.name.toLowerCase() === field.state.value.toLowerCase()) && !['office', 'division', 'section', 'unit', 'department', 'bureau', 'service', 'center'].includes(field.state.value.toLowerCase()) && (
+                    <SelectItem value={field.state.value.toLowerCase()}>
+                      {unit.officeTypeName || field.state.value}
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               {(field.state.meta.errors?.length ?? 0) > 0 && (
@@ -253,6 +353,11 @@ export function UpdateOfficeForm({ unit, onUpdated, onClose, parentUnits, isDirt
                       <SelectItem value="regulatory">Regulatory</SelectItem>
                     </>
                   )}
+                  {field.state.value && !officeCategories.some(c => c.name.toLowerCase() === field.state.value.toLowerCase()) && !['executive', 'administrative', 'technical', 'support', 'oversight', 'delivery', 'regulatory'].includes(field.state.value.toLowerCase()) && (
+                    <SelectItem value={field.state.value.toLowerCase()}>
+                      {unit.categoryName || field.state.value}
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               {(field.state.meta.errors?.length ?? 0) > 0 && (
@@ -291,6 +396,11 @@ export function UpdateOfficeForm({ unit, onUpdated, onClose, parentUnits, isDirt
                       <SelectItem value="barangay">Barangay</SelectItem>
                       <SelectItem value="satellite">Satellite</SelectItem>
                     </>
+                  )}
+                  {field.state.value && !administrativeLevels.some(l => l.name.toLowerCase() === field.state.value.toLowerCase()) && !['central', 'regional', 'provincial', 'municipal', 'barangay', 'satellite'].includes(field.state.value.toLowerCase()) && (
+                    <SelectItem value={field.state.value.toLowerCase()}>
+                      {unit.administrativeLevelName || field.state.value}
+                    </SelectItem>
                   )}
                 </SelectContent>
               </Select>
@@ -352,6 +462,11 @@ export function UpdateOfficeForm({ unit, onUpdated, onClose, parentUnits, isDirt
                         <SelectItem value="mixed">Mixed</SelectItem>
                         <SelectItem value="none">None</SelectItem>
                       </>
+                    )}
+                    {field.state.value && !procurementWorkflows.some(w => w.name.toLowerCase() === field.state.value.toLowerCase()) && !['centralized', 'decentralized', 'mixed', 'none'].includes(field.state.value.toLowerCase()) && (
+                      <SelectItem value={field.state.value.toLowerCase()}>
+                        {field.state.value}
+                      </SelectItem>
                     )}
                   </SelectContent>
                 </Select>
@@ -448,6 +563,11 @@ export function UpdateOfficeForm({ unit, onUpdated, onClose, parentUnits, isDirt
                     ) : (
                       <SelectItem value="no-clusters" disabled>
                         No clusters available
+                      </SelectItem>
+                    )}
+                    {field.state.value && !satelliteClusters.some(c => c.id === field.state.value) && (
+                      <SelectItem value={field.state.value}>
+                        {unit.cluster || field.state.value}
                       </SelectItem>
                     )}
                   </SelectContent>
