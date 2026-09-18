@@ -8057,6 +8057,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ProcurementProjectId");
 
+                    b.HasIndex("ResolutionNumber")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
+
                     b.ToTable("BACResolutions", "procurement");
                 });
 
@@ -10537,6 +10541,12 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -10577,6 +10587,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("ProcurementMode")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReturnReason")
                         .HasColumnType("text");
 
                     b.Property<Guid>("SourceDocumentId")
