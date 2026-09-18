@@ -78,7 +78,7 @@ export function CreateAOBForm({ onSubmit, onCancel, isLoading = false }: CreateA
       aobNumber: '',
       description: '',
       date: new Date().toISOString().split('T')[0],
-      openingDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      openingDate: new Date().toISOString().split('T')[0],
       awardCriterion: AwardCriterion.LCRB,
     },
   })
@@ -86,12 +86,12 @@ export function CreateAOBForm({ onSubmit, onCancel, isLoading = false }: CreateA
   const handleFormSubmit = async (data: CreateAOBFormValues) => {
     setSubmitError('')
     try {
-      // Validate opening date is after AOB date
+      // Validate opening date is on or after AOB date
       const aobDate = new Date(data.date)
       const openDate = new Date(data.openingDate)
 
-      if (openDate <= aobDate) {
-        setSubmitError('Opening Date must be after AOB Date')
+      if (openDate < aobDate) {
+        setSubmitError('Opening Date cannot be before AOB Date')
         return
       }
 

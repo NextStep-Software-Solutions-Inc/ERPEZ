@@ -152,7 +152,7 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
             <div className="space-y-2 flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusCfg.className}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${project.status === 'open' ? 'bg-emerald-500' : 'bg-amber-500'} inline-block`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${project.status === 'open' ? 'bg-emerald-500' : project.status === 'closing-soon' ? 'bg-amber-500' : 'bg-slate-400'} inline-block`} />
                   {statusCfg.label}
                 </span>
                 <Badge
@@ -212,6 +212,65 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
             )}
           </div>
         </div>
+
+        {/* Schedule of Requirements / Items to be Quoted */}
+        {project.items && project.items.length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-slate-600" />
+                <h2 className="font-semibold text-slate-800">
+                  {project.mop === 'svp' ? 'Items for Price Quotation' : 'Schedule of Requirements / Bill of Quantities'}
+                </h2>
+              </div>
+              <span className="text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
+                {project.items.length} {project.items.length === 1 ? 'item' : 'items'}
+              </span>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-500">
+                {project.mop === 'svp'
+                  ? 'Suppliers will submit unit price quotations for each of the following line items in the online quotation form.'
+                  : 'The following items comprise the scope of requirements. Detailed line-item pricing must be provided via the official Price Schedule / BOQ uploaded under the Second Envelope (Financial Component).'}
+              </p>
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-2.5 w-12 text-center">#</th>
+                      <th className="px-4 py-2.5">Item Description & Specifications</th>
+                      <th className="px-4 py-2.5 w-28 text-center">Quantity</th>
+                      <th className="px-4 py-2.5 w-36 text-right">ABC Unit Price</th>
+                      <th className="px-4 py-2.5 w-36 text-right">ABC Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {project.items.map((item, idx) => (
+                      <tr key={item.id} className="hover:bg-slate-50/60">
+                        <td className="px-4 py-3 text-center font-medium text-slate-400">{idx + 1}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-semibold text-slate-800">{item.itemName}</p>
+                          {item.description && (
+                            <p className="text-[11px] text-slate-500 mt-0.5">{item.description}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center font-medium text-slate-700">
+                          {item.quantity} {item.uom || 'Unit'}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-slate-600">
+                          {formatCurrency(item.abcUnitPrice)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                          {formatCurrency(item.abcTotalPrice || item.quantity * item.abcUnitPrice)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Required Submissions — full width, same size as Project Details */}
         {uploads.length > 0 && (
@@ -327,7 +386,7 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
         )}
 
         {/* CTA */}
-        {project.status !== 'closed' && (
+        {project.status !== 'closed' ? (
           <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1d4ed8] rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h3 className="text-white font-semibold text-lg">Ready to submit your bid?</h3>
@@ -341,6 +400,22 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
               className="bg-white text-[#1e3a8a] hover:bg-blue-50 font-semibold gap-2 shrink-0 shadow-sm"
             >
               Submit Now <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="bg-slate-100 border border-slate-200 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h3 className="text-slate-700 font-semibold text-lg">Submissions are Closed</h3>
+              <p className="text-slate-500 text-sm mt-1">
+                The submission deadline for this procurement opportunity has passed. Applications are no longer being accepted.
+              </p>
+            </div>
+            <Button
+              size="lg"
+              disabled
+              className="bg-slate-200 text-slate-400 font-semibold gap-2 shrink-0 cursor-not-allowed border border-slate-300"
+            >
+              Closed
             </Button>
           </div>
         )}

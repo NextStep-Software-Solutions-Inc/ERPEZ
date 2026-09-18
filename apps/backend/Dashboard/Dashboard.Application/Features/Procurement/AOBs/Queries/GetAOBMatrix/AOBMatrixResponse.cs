@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Queries.GetAOBMatrix;
@@ -14,7 +15,13 @@ public class AOBMatrixResponse
     public bool IsBidsOpened { get; set; }
     public bool HasMinimumCanvassWarning { get; set; }
     public string? Remarks { get; set; }
+    public string? BacResolutionNumber { get; set; }
+    public string? PRNumber { get; set; }
+    public string? PAPCode { get; set; }
+    public string? ApproverName { get; set; }
+    public string? ApproverTitle { get; set; }
 
+    [JsonPropertyName("linkedRFQs")]
     public List<AOBMatrixRFQDto> LinkedRFQs { get; set; } = [];
     public List<AOBMatrixSupplierDto> Suppliers { get; set; } = [];
     public List<AOBMatrixItemDto> Items { get; set; } = [];

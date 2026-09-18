@@ -187,6 +187,9 @@ public static class DependencyInjection
         // RFQ — PDF
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos.RfqDataDto>, RfqPdfRenderer>();
 
+        // AOB / Abstract of Quotation — PDF
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.AOBs.Dtos.AobDataDto>, AobPdfRenderer>();
+
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()

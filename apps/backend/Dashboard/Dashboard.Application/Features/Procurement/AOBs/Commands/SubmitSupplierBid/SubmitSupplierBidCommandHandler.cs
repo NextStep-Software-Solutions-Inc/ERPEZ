@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -22,11 +23,24 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Guid>.Fail("Request for Quotation (RFQ) not found.");
         }
 
-        // 2. Verify supplier exists
+        // 2. Verify RFQ is approved
+        if (rfq.Status != StatusEnum.Approved)
+        {
+            return ApiResponse<Guid>.Fail("Cannot submit bids for an RFQ that has not been approved by the BAC.");
+        }
+
+        // 3. Verify supplier exists
         var supplier = await unitOfWork.SupplierRepository.GetByIdAsync(request.SupplierId, cancellationToken);
         if (supplier == null)
         {
             return ApiResponse<Guid>.Fail("Supplier not found.");
+        }
+
+        // 4. Verify supplier was invited to this RFQ
+        var isInvited = rfq.RFQSuppliers.Any(s => s.SupplierId == request.SupplierId);
+        if (!isInvited)
+        {
+            return ApiResponse<Guid>.Fail("Supplier is not invited to this RFQ.");
         }
 
         // 3. Validate Status

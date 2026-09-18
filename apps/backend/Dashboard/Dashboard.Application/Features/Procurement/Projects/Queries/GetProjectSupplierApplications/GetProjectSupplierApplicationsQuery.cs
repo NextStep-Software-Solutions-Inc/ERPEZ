@@ -24,6 +24,10 @@ public record ProjectSupplierApplicationDto
     public DateTime SubmittedAt { get; init; }
     public decimal TotalBidAmount { get; init; }
     public string? Remarks { get; init; }
+    public string? DeliveryPeriod { get; init; }
+    public string? PaymentTerms { get; init; }
+    public string? WarrantyTerms { get; init; }
+    public int? ValidityPeriodDays { get; init; }
     public string? EvaluatedBy { get; init; }
     public DateTime? EvaluatedAt { get; init; }
     public List<ApplicationDocumentDto> Documents { get; init; } = [];
@@ -79,36 +83,48 @@ public class GetProjectSupplierApplicationsQueryHandler(IUnitOfWork unitOfWork)
             .OrderByDescending(a => a.SubmittedAt)
             .ToListAsync(cancellationToken);
 
-        var result = publicApplications.Select(a => new ProjectSupplierApplicationDto
+        var biddingSubmissions = await unitOfWork.BiddingSubmissionRepository.Query()
+            .Where(bs => bs.ProcurementProjectId == request.ProjectId && !bs.IsDeleted)
+            .ToListAsync(cancellationToken);
+        var biddingSubmissionsMap = biddingSubmissions
+            .Where(bs => bs.PublicSupplierApplicationId.HasValue)
+            .ToDictionary(bs => bs.PublicSupplierApplicationId!.Value);
+
+        var result = publicApplications.Select(a =>
         {
-            Id = a.Id,
-            ProjectId = a.ProcurementProjectId,
-            Source = "PublicPortal",
-            SupplierName = a.CompanyName,
-            ContactPerson = a.ContactPerson,
-            ContactNumber = a.ContactNumber,
-            Email = a.EmailAddress,
-            TinNumber = a.TinNumber,
-            BusinessAddress = a.BusinessAddress,
-            EvaluationStatus = NormalizeStatus(a.Status),
-            SubmittedAt = a.SubmittedAt,
-            TotalBidAmount = 0,
-            Remarks = a.Remarks,
-            EvaluatedBy = a.EvaluatedBy,
-            EvaluatedAt = a.EvaluatedAt,
-            Documents = a.UploadedDocuments.Select(d => new ApplicationDocumentDto
+            biddingSubmissionsMap.TryGetValue(a.Id, out var bs);
+            return new ProjectSupplierApplicationDto
             {
-                Id = d.Id,
-                ChecklistItemId = d.ChecklistItemId,
-                Name = d.ChecklistItem?.MasterDocumentType?.Name ?? d.ChecklistItem?.CustomDocumentName ?? d.OriginalFileName,
-                Type = System.IO.Path.GetExtension(d.OriginalFileName).TrimStart('.').ToUpperInvariant(),
-                Size = 0,
-                UploadedAt = d.UploadedAt,
-                Url = d.BlobStorageUrl,
-                EnvelopeType = d.ChecklistItem != null && d.ChecklistItem.EnvelopeType != 0
-                    ? d.ChecklistItem.EnvelopeType
-                    : (d.ChecklistItem?.MasterDocumentType?.EnvelopeType ?? 1)
-            }).ToList()
+                Id = a.Id,
+                ProjectId = a.ProcurementProjectId,
+                Source = "PublicPortal",
+                SupplierName = a.CompanyName,
+                ContactPerson = a.ContactPerson,
+                ContactNumber = a.ContactNumber,
+                Email = a.EmailAddress,
+                TinNumber = a.TinNumber,
+                BusinessAddress = a.BusinessAddress,
+                EvaluationStatus = NormalizeStatus(a.Status),
+                SubmittedAt = a.SubmittedAt,
+                TotalBidAmount = bs?.OriginalProposedAmount ?? 0,
+                Remarks = bs?.Remarks ?? a.Remarks,
+                ValidityPeriodDays = bs?.BidSecurityValidityDays,
+                EvaluatedBy = a.EvaluatedBy,
+                EvaluatedAt = a.EvaluatedAt,
+                Documents = a.UploadedDocuments.Select(d => new ApplicationDocumentDto
+                {
+                    Id = d.Id,
+                    ChecklistItemId = d.ChecklistItemId,
+                    Name = d.ChecklistItem?.MasterDocumentType?.Name ?? d.ChecklistItem?.CustomDocumentName ?? d.OriginalFileName,
+                    Type = System.IO.Path.GetExtension(d.OriginalFileName).TrimStart('.').ToUpperInvariant(),
+                    Size = 0,
+                    UploadedAt = d.UploadedAt,
+                    Url = d.BlobStorageUrl,
+                    EnvelopeType = d.ChecklistItem != null && d.ChecklistItem.EnvelopeType != 0
+                        ? d.ChecklistItem.EnvelopeType
+                        : (d.ChecklistItem?.MasterDocumentType?.EnvelopeType ?? 1)
+                }).ToList()
+            };
         }).ToList();
 
         // 2. Fetch Internal RFQ Supplier Bids if project has an associated ConsolidatedPR with RFQs
@@ -137,6 +153,10 @@ public class GetProjectSupplierApplicationsQueryHandler(IUnitOfWork unitOfWork)
                 SubmittedAt = b.SubmittedAt ?? b.CreatedAt,
                 TotalBidAmount = b.TotalAmount,
                 Remarks = b.Remarks,
+                DeliveryPeriod = b.DeliveryPeriod,
+                PaymentTerms = b.PaymentTerms,
+                WarrantyTerms = b.WarrantyTerms,
+                ValidityPeriodDays = b.ValidityPeriodDays,
                 EvaluatedBy = null,
                 EvaluatedAt = null,
                 Items = b.SupplierBidItems.Select(it => new SupplierBidItemDto

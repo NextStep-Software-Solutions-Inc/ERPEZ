@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Commands.SubmitPublicApplication;
+using ERPEZ.Application.Features.Procurement.SupplierPortal.Commands.ValidatePublicApplication;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Dtos;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetBidNoticeDownloadUrl;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicApplicationStatus;
@@ -10,6 +11,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Application.Interfaces.Services;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.GenerateRFQDocument;
+using ERPEZ.Domain.Enums;
+using ERPEZ.Domain.Interfaces;
 using System.IO;
 
 namespace ERPEZ.Api.Controllers;
@@ -112,6 +117,60 @@ public class PublicProjectsController(ISender mediator) : ControllerBase
         return NotFound(ApiResponse<object>.Fail("File could not be retrieved from storage."));
     }
 
+    /// <summary>
+    /// Download official RFQ document (PDF) for an approved RFQ opportunity on the public portal.
+    /// </summary>
+    [HttpGet("projects/{id:guid}/rfq-document")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadPublicRfqDocument(
+        Guid id,
+        [FromServices] IUnitOfWork unitOfWork,
+        [FromServices] IDocumentStorageService storageService,
+        CancellationToken cancellationToken)
+    {
+        var rfq = await unitOfWork.RFQRepository.GetByIdAsync(id, cancellationToken);
+        if (rfq == null || rfq.Status != StatusEnum.Approved)
+        {
+            return NotFound(ApiResponse<object>.Fail("Approved RFQ not found."));
+        }
+
+        // Check if already generated
+        var existingDoc = await unitOfWork.GeneratedDocumentRepository.FindAsync(
+            d => d.SourceDocumentId == id && d.DocumentType == DocumentType.Rfq && !d.IsDeleted,
+            cancellationToken);
+
+        Guid documentId;
+        if (existingDoc != null)
+        {
+            documentId = existingDoc.Id;
+        }
+        else
+        {
+            var genResult = await mediator.Send(new GenerateRFQDocumentCommand
+            {
+                RFQId = id,
+                Format = ExportFormat.Pdf,
+                GeneratedBy = "PublicPortal"
+            }, cancellationToken);
+
+            if (!genResult.Succeeded)
+            {
+                return NotFound(ApiResponse<object>.Fail(genResult.Message ?? "Failed to generate RFQ document."));
+            }
+            documentId = genResult.Data;
+        }
+
+        var doc = await unitOfWork.GeneratedDocumentRepository.FindAsync(d => d.Id == documentId, cancellationToken);
+        if (doc == null)
+            return NotFound(ApiResponse<object>.Fail("Document record not found."));
+
+        var bytes = await storageService.GetAsync(doc.StoragePath, cancellationToken);
+        var fileName = doc.FileName ?? $"RFQ_{rfq.RFQNumber}.pdf";
+        Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+        return File(bytes, "application/pdf", fileName);
+    }
+
     private static string GetContentType(string fileName)
     {
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
@@ -135,6 +194,41 @@ public class PublicProjectsController(ISender mediator) : ControllerBase
     }
 
     /// <summary>
+    /// Pre-flight validation for public supplier application prior to file uploading.
+    /// Prevents storage exhaustion if the project is closed, deadline passed, duplicate TIN, or over ABC.
+    /// </summary>
+    [HttpPost("projects/{id:guid}/validate-application")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ValidateApplication(Guid id, [FromBody] ValidatePublicApplicationRequest request)
+    {
+        var command = new ValidatePublicApplicationCommand(
+            id,
+            request.CompanyName,
+            request.ContactPerson,
+            request.EmailAddress,
+            request.ContactNumber,
+            request.TinNumber,
+            request.BusinessAddress,
+            request.ChecklistItemIds,
+            request.ProposedBidAmount,
+            request.DeliveryPeriod,
+            request.PaymentTerms,
+            request.WarrantyTerms,
+            request.ValidityPeriodDays,
+            request.Remarks,
+            request.BidSecurityType,
+            request.BidSecurityAmount,
+            request.BidSecurityNumber,
+            request.BidSecurityValidityDays,
+            request.ItemBids
+        );
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
     /// Submit a public supplier application with required documents for a procurement project.
     /// </summary>
     [HttpPost("projects/{id:guid}/apply")]
@@ -150,7 +244,18 @@ public class PublicProjectsController(ISender mediator) : ControllerBase
             request.ContactNumber,
             request.TinNumber,
             request.BusinessAddress,
-            request.Documents.Select(d => new ApplicationDocumentUploadItem(d.ChecklistItemId, d.FileId)).ToList()
+            request.Documents.Select(d => new ApplicationDocumentUploadItem(d.ChecklistItemId, d.FileId)).ToList(),
+            request.ProposedBidAmount,
+            request.DeliveryPeriod,
+            request.PaymentTerms,
+            request.WarrantyTerms,
+            request.ValidityPeriodDays,
+            request.Remarks,
+            request.BidSecurityType,
+            request.BidSecurityAmount,
+            request.BidSecurityNumber,
+            request.BidSecurityValidityDays,
+            request.ItemBids
         );
 
         var result = await mediator.Send(command);

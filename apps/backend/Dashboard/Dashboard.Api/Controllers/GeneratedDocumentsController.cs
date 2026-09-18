@@ -293,6 +293,23 @@ public class DocumentController(IMediator mediator,
         return Ok(result);
     }
 
+    [HttpPost("aob/{aobId:guid}/generate")]
+    [HasPermission(Permissions.Procurement.aobManage)]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateAob(
+        Guid aobId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.AOBs.Commands.GenerateAOBDocument.GenerateAOBDocumentCommand
+        {
+            AOBId = aobId,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{documentId:guid}/download")]
     [Authorize]
     public async Task<IActionResult> Download(

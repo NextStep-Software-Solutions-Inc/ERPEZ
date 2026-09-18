@@ -32,17 +32,40 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
   let mop: ModeOfProcurement = 'public-bidding'
   const modeStr = (p.modeOfProcurement || '').toLowerCase()
   const contractNo = (p.contractNo || '').toLowerCase()
-  if (modeStr.includes('small value') || modeStr.includes('svp') || modeStr.includes('53.9') || contractNo.startsWith('svp') || contractNo.includes('svp')) {
+
+  const isPb =
+    modeStr.includes('public bidding') ||
+    modeStr.includes('competitive') ||
+    (modeStr.includes('bidding') && !modeStr.includes('small value')) ||
+    contractNo.includes('itb') ||
+    contractNo.includes('pb')
+
+  if (
+    !isPb &&
+    (modeStr.includes('small value') ||
+      modeStr.includes('svp') ||
+      modeStr.includes('53.9') ||
+      modeStr.includes('shopping') ||
+      modeStr.includes('52') ||
+      contractNo.startsWith('svp') ||
+      contractNo.includes('svp') ||
+      contractNo.startsWith('rfq'))
+  ) {
     mop = 'svp'
   }
 
   // Handle status mapping
   let status: ProjectStatus = 'open'
   const backendStatus = (p.status || '').toLowerCase()
-  if (backendStatus === 'closingsoon' || backendStatus === 'closing soon' || backendStatus === 'closing-soon') {
-    status = 'closing-soon'
-  } else if (backendStatus === 'closed') {
+  const deadlineStr = p.submissionDeadline || p.deadline || ''
+  const isPastDeadline = deadlineStr && !isNaN(Date.parse(deadlineStr))
+    ? new Date(deadlineStr).getTime() < Date.now()
+    : false
+
+  if (backendStatus === 'closed' || isPastDeadline) {
     status = 'closed'
+  } else if (backendStatus === 'closingsoon' || backendStatus === 'closing soon' || backendStatus === 'closing-soon') {
+    status = 'closing-soon'
   }
 
   return {
@@ -60,5 +83,16 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
     bidOpening: p.bidOpeningDate || p.bidOpening || undefined,
     scope: p.scopeOfWork || p.scope || '',
     requiredDocuments,
+    items: Array.isArray(p.items)
+      ? p.items.map((i: any) => ({
+          id: i.id,
+          itemName: i.itemName,
+          description: i.description,
+          quantity: i.quantity,
+          uom: i.uom,
+          abcUnitPrice: Number(i.abcUnitPrice || 0),
+          abcTotalPrice: Number(i.abcTotalPrice || 0),
+        }))
+      : [],
   }
 }

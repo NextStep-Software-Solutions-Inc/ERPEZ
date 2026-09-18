@@ -28,11 +28,12 @@ export default function ManageSupplierPortalPage() {
     },
   })
 
-  // 2. Fetch RFQs (Internal / Alternative Methods)
+  // 2. Fetch RFQs (Internal / Alternative Methods) - only Approved RFQs for BAC evaluator
   const { data: rfqsResponse, isLoading: isLoadingRFQs } = useRFQs({
     pathParams: {},
     queryParams: {
       pageSize: 100,
+      status: 'Approved',
     },
   })
 
@@ -45,8 +46,12 @@ export default function ManageSupplierPortalPage() {
     // 1. Map BAC Projects (Authoritative Opportunities)
     const mappedProjects: Project[] = rawProjects
       .filter((p: any) => {
-        const isDraft = p.status && p.status.toLowerCase() === 'draft' && (p.applicantCount ?? 0) === 0
-        if (isDraft) return false
+        const isDraftOrSubmitted =
+          p.status &&
+          (p.status.toLowerCase() === 'draft' ||
+            p.status.toLowerCase() === 'submitted' ||
+            p.status.toLowerCase() === 'forapproval')
+        if (isDraftOrSubmitted) return false
 
         const mopName = (p.consolidatedPR?.modeOfProcurementName || p.type || '').toLowerCase()
         const isSvp =
@@ -80,12 +85,17 @@ export default function ManageSupplierPortalPage() {
         const datePosted = schedules[0]?.startDate || new Date().toISOString()
         const deadline = latestSchedule?.endDate || latestSchedule?.startDate || ''
 
+        let status = p.status || 'Active'
+        if (typeof status === 'string' && status.toLowerCase() === 'submitted') {
+          status = 'ForApproval'
+        }
+
         return {
           id: p.id,
           source: 'bac' as const,
           sourceNumber: p.consolidatedPR?.cprNumber || (p.id ? p.id.substring(0, 8) : ''),
           title: p.title || 'Untitled Project',
-          status: (p.status || 'Active') as any,
+          status: status as any,
           type: mopName,
           datePosted,
           deadline,
@@ -100,19 +110,26 @@ export default function ManageSupplierPortalPage() {
     
     const standaloneRfqs = rawRfqs.filter((r: any) => {
       const isLinkedToProject = (r.consolidatedPRId && projectCprIds.has(r.consolidatedPRId)) || projectIds.has(r.id)
-      const isApproved = r.status === 'Approved' || r.status === 3 || (typeof r.status === 'string' && r.status.toLowerCase() === 'approved')
-      const hasApplicants = (r.applicantCount ?? 0) > 0
-      return !isLinkedToProject && (isApproved || hasApplicants)
+      const isApproved =
+        r.status === 'Approved' ||
+        r.status === 3 ||
+        (typeof r.status === 'string' && r.status.toLowerCase() === 'approved')
+      return !isLinkedToProject && isApproved
     })
 
     const mappedRfqs: Project[] = standaloneRfqs.map((r: any) => {
       const mopName = r.modeOfProcurementName || 'SVP'
+      let status = 'Approved'
+      if (typeof r.status === 'string' && r.status.trim()) {
+        status = r.status
+      }
+
       return {
         id: r.id,
         source: 'rfq' as const,
         sourceNumber: r.rfqNumber,
         title: r.description || r.rfqNumber || 'Untitled RFQ',
-        status: r.status || 'Draft',
+        status: status as any,
         type: mopName,
         datePosted: r.deadline || new Date().toISOString(),
         deadline: r.deadline || '',
@@ -271,6 +288,7 @@ export default function ManageSupplierPortalPage() {
               columns={columns}
               data={filteredProjects}
               actions={['read', 'write']}
+              fixedPageSize={10}
               toolbar={() => (
                 <ManageSupplierPortalTableToolbar
                   searchTerm={globalFilter}

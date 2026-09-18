@@ -172,6 +172,39 @@ export function ReviewWorkspace({
           )}
         </div>
 
+        {/* Commercial Terms Section */}
+        {(selectedBid.deliveryPeriod || selectedBid.paymentTerms || selectedBid.warrantyTerms || selectedBid.validityPeriodDays) && (
+          <div className="bg-muted/30 p-4 rounded-lg border space-y-3">
+            <h3 className="text-sm font-semibold">Commercial & Delivery Terms</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {selectedBid.deliveryPeriod && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Delivery Period</p>
+                  <p className="text-sm font-medium">{selectedBid.deliveryPeriod}</p>
+                </div>
+              )}
+              {selectedBid.paymentTerms && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Payment Terms</p>
+                  <p className="text-sm font-medium">{selectedBid.paymentTerms}</p>
+                </div>
+              )}
+              {selectedBid.warrantyTerms && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Warranty Terms</p>
+                  <p className="text-sm font-medium">{selectedBid.warrantyTerms}</p>
+                </div>
+              )}
+              {selectedBid.validityPeriodDays && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Price Validity</p>
+                  <p className="text-sm font-medium">{selectedBid.validityPeriodDays} Calendar Days</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Quoted Line Items Section (For RFQ Submissions) */}
         {selectedBid.items && selectedBid.items.length > 0 && (
           <div className="space-y-3">
@@ -186,6 +219,7 @@ export function ReviewWorkspace({
                     <TableHead className="text-right">Quoted Price</TableHead>
                     <TableHead className="text-right">Total Price</TableHead>
                     <TableHead>Brand / Spec</TableHead>
+                    <TableHead className="text-center">Brochure</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -204,6 +238,28 @@ export function ReviewWorkspace({
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {[item.brand, item.model, item.color].filter(Boolean).join(' / ') || '—'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {item.brochureFileUrl ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs px-2 gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() =>
+                              handlePreviewDocument({
+                                id: item.id,
+                                name: `${item.itemName} Specification Sheet`,
+                                url: item.brochureFileUrl!,
+                                type: 'PDF',
+                              })
+                            }
+                          >
+                            <FileText className="h-3 w-3" />
+                            View
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

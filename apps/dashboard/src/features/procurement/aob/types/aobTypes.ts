@@ -64,9 +64,16 @@ export interface AOB {
   submittedAt?: string
   approvedBy?: string
   approvedAt?: string
+  approverName?: string
+  approverTitle?: string
   signedDocumentUrl?: string // Signed AOB resolution PDF URL
   remarks?: string
   awardedItems?: AOBAwardedItemResponse[]
+
+  // References
+  bacResolutionNumber?: string
+  prNumber?: string
+  papCode?: string
 }
 
 export interface AOBAwardedItemResponse {
@@ -215,6 +222,11 @@ export interface BidMatrix {
   isBidsOpened?: boolean
   hasMinimumCanvassWarning?: boolean
   remarks?: string
+  bacResolutionNumber?: string
+  prNumber?: string
+  papCode?: string
+  approverName?: string
+  approverTitle?: string
   linkedRFQs?: AOBMatrixRFQ[]
   suppliers: Supplier[] // All suppliers who submitted bids
   items?: LineItem[]
@@ -351,7 +363,7 @@ export interface SelectWinnerPayload {
   aobId: string
   lineItemId?: string
   rfqItemId?: string
-  winningSupplierId: string
+  winningSupplierId?: string
   awardedUnitPrice?: number
   awardedQuantity?: number
   totalAwardedAmount?: number
