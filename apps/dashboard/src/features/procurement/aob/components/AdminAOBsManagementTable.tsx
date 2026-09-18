@@ -72,8 +72,10 @@ export function AdminAOBsManagementTable({
       }
 
       // Status filter
-      if (statusFilter !== 'ALL' && aob.status !== statusFilter) {
-        return false
+      if (statusFilter !== 'ALL') {
+        const normStatus = (aob.status === 'ForApproval' || aob.status === 'Submitted') ? 'For Approval' : aob.status
+        const normFilter = (statusFilter === 'ForApproval' || statusFilter === 'Submitted') ? 'For Approval' : statusFilter
+        if (normStatus !== normFilter) return false
       }
 
       return true

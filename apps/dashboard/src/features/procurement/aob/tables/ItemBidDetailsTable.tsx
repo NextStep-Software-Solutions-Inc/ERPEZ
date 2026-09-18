@@ -16,7 +16,7 @@ import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRo
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trophy, AlertCircle, TrendingDown, Eye, CheckCircle2 } from 'lucide-react'
+import { Trophy, AlertCircle, TrendingDown, Eye } from 'lucide-react'
 import type { SupplierBid, LineItem, AOB } from '../types/aobTypes'
 import { ItemBidDetailsDialog, type ItemSummaryData } from '../dialogs/ItemBidDetailsDialog'
 
@@ -25,6 +25,8 @@ interface ItemBidDetailsTableProps {
   bids?: SupplierBid[]
   aob?: AOB
   variant?: 'compact' | 'detailed'
+  onSelectWinners?: () => void
+  isApproved?: boolean
 }
 
 export type ItemSummary = ItemSummaryData
@@ -132,7 +134,7 @@ function createItemBidColumns(
       size: 220,
       cell: (info) => (
         <div>
-          <div className="font-semibold text-sm text-gray-900 line-clamp-1">{info.row.original.itemName || info.getValue() as string}</div>
+          <div className="font-semibold text-sm text-gray-900 line-clamp-1">{info.row.original.itemName || (info.getValue() as string)}</div>
           <div className="text-xs text-muted-foreground line-clamp-2">{info.getValue() as string}</div>
         </div>
       ),
@@ -308,6 +310,8 @@ export function ItemBidDetailsTable({
   bids = [],
   aob,
   variant = 'detailed',
+  onSelectWinners,
+  isApproved,
 }: ItemBidDetailsTableProps) {
   const [viewingItem, setViewingItem] = useState<ItemSummary | null>(null)
 
@@ -442,10 +446,33 @@ export function ItemBidDetailsTable({
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Award Summary</CardTitle>
-          <CardDescription>
-            Final bid evaluation and award decisions by line item
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <CardTitle>Award Summary & Recommendation</CardTitle>
+              <CardDescription>
+                Consolidated winning suppliers, contract amounts, and savings per line item
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {totalSavings > 0 && (
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-300 py-1 px-3 text-xs gap-1.5 font-semibold">
+                  <TrendingDown className="w-3.5 h-3.5" />
+                  Overall Savings: {formatPHP(totalSavings)} ({totalSavingsPercent.toFixed(1)}%)
+                </Badge>
+              )}
+              {onSelectWinners && (
+                <Button
+                  variant={isApproved ? 'outline' : (allAwarded ? 'outline' : 'default')}
+                  size="sm"
+                  onClick={onSelectWinners}
+                  className="gap-1.5 ml-2"
+                >
+                  <Trophy className={`w-4 h-4 ${isApproved ? 'text-amber-500' : ''}`} />
+                  {isApproved ? 'Review Award Decisions' : (allAwarded ? 'Edit Winners' : 'Select Winners')}
+                </Button>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Summary Stats Cards */}
@@ -517,6 +544,26 @@ export function ItemBidDetailsTable({
               )}
             </div>
           </div>
+
+          {/* Winning Supplier Clarification Callout */}
+          {allAwarded && uniqueWinningSuppliers.size === 1 && (
+            <div className="flex items-center gap-2.5 p-3 bg-blue-50/70 rounded-lg border border-blue-200 text-xs text-blue-950 dark:bg-blue-950/30 dark:border-blue-800 dark:text-blue-200">
+              <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>
+                All <strong>{totalItems} line items</strong> are awarded to a single winning supplier:{' '}
+                <strong className="font-semibold text-blue-900 dark:text-blue-100">{Array.from(uniqueWinningSuppliers)[0]}</strong> (lowest responsive quotation across all items).
+              </span>
+            </div>
+          )}
+
+          {allAwarded && uniqueWinningSuppliers.size > 1 && (
+            <div className="flex items-center gap-2.5 p-3 bg-purple-50/70 rounded-lg border border-purple-200 text-xs text-purple-950 dark:bg-purple-950/30 dark:border-purple-800 dark:text-purple-200">
+              <Trophy className="w-4 h-4 text-purple-500 shrink-0" />
+              <span>
+                Line-item procurement awarded across <strong>{uniqueWinningSuppliers.size} different winning suppliers</strong> ({Array.from(uniqueWinningSuppliers).join(', ')}).
+              </span>
+            </div>
+          )}
 
           {/* Status Alert */}
           {!allAwarded && totalItems > 0 && (

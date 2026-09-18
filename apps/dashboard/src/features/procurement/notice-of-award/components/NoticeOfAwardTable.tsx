@@ -45,6 +45,7 @@ type NoticeOfAwardTableProps = {
   rows: NoticeOfAward[]
   detailsTo: string
   onCreateClick?: () => void
+  onGenerateNoa?: (row: NoticeOfAward) => void
   activeStatus?: NoticeOfAwardInboxFilter
   onStatusChange?: (status: NoticeOfAwardInboxFilter) => void
   statusCounts?: {
@@ -61,6 +62,7 @@ export function NoticeOfAwardTable({
   rows,
   detailsTo,
   onCreateClick,
+  onGenerateNoa,
   activeStatus = 'all',
   onStatusChange,
   statusCounts,
@@ -269,19 +271,28 @@ export function NoticeOfAwardTable({
                   <span className="sr-only">Open actions</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem asChild>
-                  <Link to={detailsTo} params={{ noaId: row.original.id }}>
+                  <Link to={detailsTo} params={{ noaId: row.original.id }} className="cursor-pointer">
                     View details
                   </Link>
                 </DropdownMenuItem>
+                {onGenerateNoa ? (
+                  <DropdownMenuItem
+                    onClick={() => onGenerateNoa(row.original)}
+                    className="cursor-pointer text-primary font-medium flex items-center gap-1.5"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    <span>Generate NOA (PDF)</span>
+                  </DropdownMenuItem>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         ),
       },
     ],
-    [detailsTo, activeStatus, onStatusChange, filterOptions],
+    [detailsTo, activeStatus, onStatusChange, filterOptions, onGenerateNoa],
   )
 
   const table = useReactTable({

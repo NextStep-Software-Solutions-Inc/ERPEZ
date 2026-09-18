@@ -343,6 +343,12 @@ export function CreatePRModal({
                 >
                   <label
                     htmlFor="src-ppmp"
+                    onClick={() => {
+                      setIsIndependent(false)
+                      if (form.getFieldValue('prNumber')?.startsWith('PR-IND-')) {
+                        form.setFieldValue('prNumber', '')
+                      }
+                    }}
                     className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
                       !isIndependent
                         ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary'
@@ -365,6 +371,15 @@ export function CreatePRModal({
 
                   <label
                     htmlFor="src-independent"
+                    onClick={() => {
+                      setIsIndependent(true)
+                      if (!form.getFieldValue('prNumber')) {
+                        form.setFieldValue(
+                          'prNumber',
+                          `PR-IND-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+                        )
+                      }
+                    }}
                     className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
                       isIndependent
                         ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/20 shadow-sm ring-1 ring-amber-500'
