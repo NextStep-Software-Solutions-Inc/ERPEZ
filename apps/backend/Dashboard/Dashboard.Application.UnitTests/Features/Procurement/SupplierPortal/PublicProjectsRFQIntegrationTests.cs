@@ -2,6 +2,7 @@ using Dashboard.Application.UnitTests.Features.Procurement.AOB;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQs;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQSupplierBids;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Commands.SubmitPublicApplication;
+using ERPEZ.Application.Features.Procurement.SupplierPortal.Commands.ValidatePublicApplication;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicProjectDetail;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicProjects;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicProjectStats;
@@ -859,6 +860,405 @@ public class PublicProjectsRFQIntegrationTests
         // Assert
         await act.Should().ThrowAsync<FluentValidation.ValidationException>()
             .WithMessage("*exceeds the Approved Budget for the Contract*");
+    }
+
+    [Fact]
+    public async Task GetPublicProjects_ProcurementProject_WithPastDeadline_ShouldReturnClosedStatus()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var mode = new ProcurementMode { Id = Guid.NewGuid(), Name = "Competitive Bidding" };
+        context.ProcurementModes?.Add(mode);
+
+        var activityType = new ProcurementActivityType
+        {
+            Id = Guid.NewGuid(),
+            Name = "Submission and Opening of Bids",
+            SystemRole = ProcurementActivitySystemRole.SubmissionOpeningOfBids
+        };
+        context.ProcurementActivityTypes?.Add(activityType);
+
+        var projectId = Guid.NewGuid();
+        var project = new ProcurementProject
+        {
+            Id = projectId,
+            Title = "Expired Public Project",
+            ContractNo = "ITB-2026-EXPIRED",
+            Status = "Posted",
+            ProcurementModeId = mode.Id,
+            ABC = 1000000m,
+            BiddingActivitySchedules = new List<BiddingActivitySchedule>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    ProcurementProjectId = projectId,
+                    ProcurementActivityTypeId = activityType.Id,
+                    ProcurementActivityType = activityType,
+                    StartDate = DateTime.UtcNow.AddDays(-10),
+                    EndDate = DateTime.UtcNow.AddDays(-5) // 5 days ago
+                }
+            }
+        };
+        context.ProcurementProjects?.Add(project);
+        await context.SaveChangesAsync();
+
+        var handler = new GetPublicProjectsQueryHandler(unitOfWork);
+        var query = new GetPublicProjectsQuery();
+
+        // Act
+        var result = await handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeTrue();
+        var item = result.Data.First(p => p.Id == projectId);
+        item.Status.Should().Be("Closed");
+    }
+
+    [Fact]
+    public async Task ValidatePublicApplication_WhenDeadlinePassed_ShouldThrowForbiddenException()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var activityType = new ProcurementActivityType
+        {
+            Id = Guid.NewGuid(),
+            Name = "Submission and Opening of Bids",
+            SystemRole = ProcurementActivitySystemRole.SubmissionOpeningOfBids
+        };
+        context.ProcurementActivityTypes?.Add(activityType);
+
+        var projectId = Guid.NewGuid();
+        var project = new ProcurementProject
+        {
+            Id = projectId,
+            Title = "Past Deadline Project",
+            ContractNo = "ITB-2026-PAST",
+            Status = "Posted",
+            ABC = 500000m,
+            BiddingActivitySchedules = new List<BiddingActivitySchedule>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    ProcurementProjectId = projectId,
+                    ProcurementActivityTypeId = activityType.Id,
+                    ProcurementActivityType = activityType,
+                    StartDate = DateTime.UtcNow.AddDays(-5),
+                    EndDate = DateTime.UtcNow.AddDays(-2)
+                }
+            }
+        };
+        context.ProcurementProjects?.Add(project);
+        await context.SaveChangesAsync();
+
+        var handler = new ValidatePublicApplicationCommandHandler(unitOfWork);
+        var command = new ValidatePublicApplicationCommand(
+            projectId,
+            "Acme Corp",
+            "John Doe",
+            "john@acme.com",
+            "+639123456789",
+            "123-456-789-000",
+            "Cagayan de Oro",
+            new List<Guid>()
+        );
+
+        // Act
+        Func<Task> act = async () => await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ForbiddenException>()
+            .WithMessage("*submission deadline*This project is no longer accepting applications*");
+    }
+
+    [Fact]
+    public async Task ValidatePublicApplication_WhenValid_ShouldReturnSuccess()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var activityType = new ProcurementActivityType
+        {
+            Id = Guid.NewGuid(),
+            Name = "Submission and Opening of Bids",
+            SystemRole = ProcurementActivitySystemRole.SubmissionOpeningOfBids
+        };
+        context.ProcurementActivityTypes?.Add(activityType);
+
+        var checklistId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var project = new ProcurementProject
+        {
+            Id = projectId,
+            Title = "Active Public Project",
+            ContractNo = "ITB-2026-ACTIVE",
+            Status = "Posted",
+            ABC = 500000m,
+            BiddingActivitySchedules = new List<BiddingActivitySchedule>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    ProcurementProjectId = projectId,
+                    ProcurementActivityTypeId = activityType.Id,
+                    ProcurementActivityType = activityType,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddDays(7) // 7 days in future
+                }
+            },
+            ProjectDocumentChecklists = new List<ProjectDocumentChecklist>
+            {
+                new()
+                {
+                    Id = checklistId,
+                    ProcurementProjectId = projectId,
+                    IsRequired = true,
+                    OrderIndex = 1
+                }
+            }
+        };
+        context.ProcurementProjects?.Add(project);
+        await context.SaveChangesAsync();
+
+        var handler = new ValidatePublicApplicationCommandHandler(unitOfWork);
+        var command = new ValidatePublicApplicationCommand(
+            projectId,
+            "Acme Corp",
+            "John Doe",
+            "john@acme.com",
+            "+639123456789",
+            "123-456-789-000",
+            "Cagayan de Oro",
+            new List<Guid> { checklistId },
+            ProposedBidAmount: 450000m
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeTrue();
+        result.Data.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SubmitPublicApplication_WhenSVPProcurementProjectWithAssociatedRFQ_ShouldSucceed()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+        var fileStorageMock = new Mock<IFileStorageService>();
+
+        var svpMode = new ProcurementMode { Id = Guid.NewGuid(), Name = "Small Value Procurement" };
+        context.ProcurementModes?.Add(svpMode);
+
+        var activityType = new ProcurementActivityType
+        {
+            Id = Guid.NewGuid(),
+            Name = "Submission and Opening of Bids",
+            SystemRole = ProcurementActivitySystemRole.SubmissionOpeningOfBids
+        };
+        context.ProcurementActivityTypes?.Add(activityType);
+
+        var cprId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var checklistId = Guid.NewGuid();
+
+        var project = new ProcurementProject
+        {
+            Id = projectId,
+            Title = "SVP Project with RFQ",
+            ContractNo = "SVP-2026-TEST-001",
+            Status = "Posted",
+            ABC = 950000m,
+            ConsolidatedPRId = cprId,
+            ProcurementModeId = svpMode.Id,
+            ProcurementMode = svpMode,
+            BiddingActivitySchedules = new List<BiddingActivitySchedule>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    ProcurementProjectId = projectId,
+                    ProcurementActivityTypeId = activityType.Id,
+                    ProcurementActivityType = activityType,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddDays(7)
+                }
+            },
+            ProjectDocumentChecklists = new List<ProjectDocumentChecklist>
+            {
+                new()
+                {
+                    Id = checklistId,
+                    ProcurementProjectId = projectId,
+                    IsRequired = true,
+                    OrderIndex = 1
+                }
+            }
+        };
+        context.ProcurementProjects?.Add(project);
+
+        var rfqId = Guid.NewGuid();
+        var rfqItemId = Guid.NewGuid();
+        var associatedRfq = new RFQ
+        {
+            Id = rfqId,
+            RFQNumber = "RFQ-SVP-2026-TEST-001",
+            ConsolidatedPRId = cprId,
+            Status = StatusEnum.Approved,
+            TotalAmount = 950000m,
+            RFQItems = new List<RFQItem>
+            {
+                new()
+                {
+                    Id = rfqItemId,
+                    RFQId = rfqId,
+                    ItemNameSnapshot = "Smart Display",
+                    Quantity = 5,
+                    UnitPriceSnapshot = 150000m
+                }
+            }
+        };
+        context.RFQs?.Add(associatedRfq);
+        await context.SaveChangesAsync();
+
+        var testFileId = Guid.NewGuid();
+        fileStorageMock.Setup(f => f.PromoteFileAsync(testFileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(("https://storage.example.com/doc.pdf", "Proposal.pdf"));
+
+        var handler = new SubmitPublicApplicationCommandHandler(unitOfWork, fileStorageMock.Object);
+        var command = new SubmitPublicApplicationCommand(
+            projectId,
+            "Mega Display Corp",
+            "Maria Santos",
+            "maria@megadisplay.ph",
+            "+63 918 111 2222",
+            "888-777-666-000",
+            "Davao City",
+            new List<ApplicationDocumentUploadItem>
+            {
+                new(checklistId, testFileId)
+            },
+            ProposedBidAmount: 750000m,
+            ItemBids: new List<PublicItemBidDto>
+            {
+                new(rfqItemId, 150000m, "Samsung", "QB85R")
+            }
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeTrue();
+
+        var app = await context.PublicSupplierApplications!
+            .Include(a => a.UploadedDocuments)
+            .FirstOrDefaultAsync(a => a.Id == result.Data);
+        app.Should().NotBeNull();
+        app!.CompanyName.Should().Be("Mega Display Corp");
+        app.UploadedDocuments.Should().HaveCount(1);
+
+        var bid = await context.SupplierBids!
+            .Include(b => b.SupplierBidItems)
+            .FirstOrDefaultAsync(b => b.RFQId == rfqId);
+        bid.Should().NotBeNull();
+        bid!.TotalAmount.Should().Be(750000m);
+        bid.SupplierBidItems.Should().HaveCount(1);
+
+        var rfqAfter = await context.RFQs!.Include(r => r.RFQSuppliers).FirstAsync(r => r.Id == rfqId);
+        rfqAfter.RFQSuppliers.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task SubmitPublicApplication_WhenCompetitiveBiddingProject_ShouldCreateBiddingSubmissionAndSucceed()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+        var fileStorageMock = new Mock<IFileStorageService>();
+
+        var pbMode = new ProcurementMode { Id = Guid.NewGuid(), Name = "Competitive Bidding" };
+        context.ProcurementModes?.Add(pbMode);
+
+        var projectId = Guid.NewGuid();
+        var project = new ProcurementProject
+        {
+            Id = projectId,
+            Title = "Construction of Regional Office Building",
+            ContractNo = "ITB-2026-PB-099",
+            Status = "Posted",
+            ProcurementModeId = pbMode.Id,
+            ProcurementMode = pbMode,
+            ABC = 50000000m
+        };
+        context.ProcurementProjects?.Add(project);
+
+        var checklistId = Guid.NewGuid();
+        var checklist = new ProjectDocumentChecklist
+        {
+            Id = checklistId,
+            ProcurementProjectId = projectId,
+            CustomDocumentName = "Technical Document",
+            EnvelopeType = 1,
+            IsRequired = true
+        };
+        context.ProjectDocumentChecklists?.Add(checklist);
+        await context.SaveChangesAsync();
+
+        var testFileId = Guid.NewGuid();
+        fileStorageMock.Setup(f => f.PromoteFileAsync(testFileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(("https://storage.example.com/bidding_doc.pdf", "Technical_Bid.pdf"));
+
+        var handler = new SubmitPublicApplicationCommandHandler(unitOfWork, fileStorageMock.Object);
+        var command = new SubmitPublicApplicationCommand(
+            projectId,
+            "Prime Infrastructure Corp",
+            "Engr. Juan Dela Cruz",
+            "juan@primeinfra.ph",
+            "+63 917 555 6677",
+            "999-888-777-000",
+            "Quezon City",
+            new List<ApplicationDocumentUploadItem>
+            {
+                new(checklistId, testFileId)
+            },
+            ProposedBidAmount: 48500000m,
+            BidSecurityType: "Bid Securing Declaration"
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeTrue();
+
+        var app = await context.PublicSupplierApplications!
+            .Include(a => a.UploadedDocuments)
+            .FirstOrDefaultAsync(a => a.Id == result.Data);
+        app.Should().NotBeNull();
+        app!.CompanyName.Should().Be("Prime Infrastructure Corp");
+        app.UploadedDocuments.Should().HaveCount(1);
+        app.CreatedBy.Should().Be("PublicPortal");
+
+        var submission = await context.BiddingSubmissions!
+            .FirstOrDefaultAsync(bs => bs.ProcurementProjectId == projectId);
+        submission.Should().NotBeNull();
+        submission!.OriginalProposedAmount.Should().Be(48500000m);
+        submission.BidSecurityType.Should().Be("Bid Securing Declaration");
+        submission.CreatedBy.Should().Be("PublicPortal");
+
+        var supplier = await context.Suppliers!
+            .FirstOrDefaultAsync(s => s.TINNumber == "999-888-777-000");
+        supplier.Should().NotBeNull();
+        supplier!.CreatedBy.Should().Be("PublicPortal");
     }
 }
 

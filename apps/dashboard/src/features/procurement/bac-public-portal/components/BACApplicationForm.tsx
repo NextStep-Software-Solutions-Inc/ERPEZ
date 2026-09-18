@@ -141,6 +141,11 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
   const isOverAbc = numericAbc > 0 && totalQuotedBid > numericAbc
   const varianceFromAbc = numericAbc > 0 ? numericAbc - totalQuotedBid : 0
 
+  const isPastDeadline = project.deadline && !isNaN(Date.parse(project.deadline))
+    ? new Date(project.deadline).getTime() < Date.now()
+    : false
+  const isClosedOrExpired = project.status === 'closed' || isPastDeadline
+
   const handleContactChange = (field: keyof ContactInfo, value: string) => {
     setContactInfo((prev) => ({ ...prev, [field]: value }))
     setErrors((prev) => ({ ...prev, [field]: '' }))
@@ -229,6 +234,13 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
   const validate = () => {
     const newErrors: Record<string, string> = {}
 
+    // Deadline & status check
+    if (isClosedOrExpired) {
+      newErrors.submit = 'The submission deadline for this opportunity has passed. Applications are no longer being accepted.'
+      setErrors(newErrors)
+      return false
+    }
+
     // Contact info validation
     if (!contactInfo.supplierName.trim()) newErrors.supplierName = 'Supplier name is required'
     if (!contactInfo.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactInfo.email))
@@ -312,9 +324,44 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
   const handleSubmit = async () => {
     if (!validate()) return
     setIsSubmitting(true)
+    setErrors((prev) => ({ ...prev, submit: '' }))
 
     try {
-      // 1. Upload required checklist documents
+      // 0. Pre-flight check: validate on server BEFORE uploading any files to prevent storage exhaustion
+      const preFlightPayload = {
+        companyName: contactInfo.supplierName.trim(),
+        contactPerson: contactInfo.supplierName.trim(),
+        emailAddress: contactInfo.email.trim(),
+        contactNumber: contactInfo.contactNumber.trim(),
+        tinNumber: contactInfo.tinNumber.trim(),
+        businessAddress: contactInfo.address.trim(),
+        checklistItemIds: uploadedFiles.map((uf) => uf.documentId),
+        proposedBidAmount: totalQuotedBid > 0 ? totalQuotedBid : undefined,
+        deliveryPeriod: deliveryPeriod.trim() || undefined,
+        paymentTerms: paymentTerms.trim() || undefined,
+        warrantyTerms: warrantyTerms.trim() || undefined,
+        validityPeriodDays: validityPeriodDays ? Number(validityPeriodDays) : undefined,
+        remarks: remarks.trim() || undefined,
+        bidSecurityType: isCompetitiveBidding ? bidSecurityType : undefined,
+        bidSecurityAmount: isCompetitiveBidding && bidSecurityAmount ? Number(bidSecurityAmount) : undefined,
+        bidSecurityNumber: isCompetitiveBidding && bidSecurityNumber ? bidSecurityNumber.trim() : undefined,
+        bidSecurityValidityDays: isCompetitiveBidding && bidSecurityValidityDays ? Number(bidSecurityValidityDays) : undefined,
+        itemBids: isItemizedSvp && project.items
+          ? project.items.map((item) => {
+              const state = itemBids[item.id]
+              return {
+                rfqItemId: item.id,
+                unitPrice: Number(state?.unitPrice || 0),
+                brand: state?.brand?.trim() || null,
+                model: state?.model?.trim() || null,
+              }
+            })
+          : undefined,
+      }
+
+      await api.post(`/api/public/projects/${project.id}/validate-application`, preFlightPayload)
+
+      // 1. Upload required checklist documents (executed ONLY after pre-flight validation succeeds)
       const uploadPromises = uploadedFiles.map(async (uf) => {
         const fileId = await uploadFile(uf.file)
         return { checklistItemId: uf.documentId, fileId }
@@ -1176,15 +1223,21 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
 
             {/* Submit Action Bar */}
             <div className={`flex items-center justify-between gap-4 rounded-2xl border shadow-sm p-6 flex-wrap transition-colors ${
-              isOverAbc ? 'bg-red-50/60 border-red-300' : 'bg-white border-slate-200'
+              isClosedOrExpired || isOverAbc ? 'bg-red-50/60 border-red-300' : 'bg-white border-slate-200'
             }`}>
               <div className="space-y-1 max-w-lg">
                 <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                  {isOverAbc && <AlertTriangle className="h-4 w-4 text-red-600" />}
-                  {isOverAbc ? 'Submission Blocked (RA 9184 Non-Compliant)' : 'Ready to submit?'}
+                  {(isClosedOrExpired || isOverAbc) && <AlertTriangle className="h-4 w-4 text-red-600" />}
+                  {isClosedOrExpired
+                    ? 'Submissions Closed'
+                    : isOverAbc
+                    ? 'Submission Blocked (RA 9184 Non-Compliant)'
+                    : 'Ready to submit?'}
                 </p>
-                <p className={`text-xs ${isOverAbc ? 'text-red-700 font-medium leading-relaxed' : 'text-slate-500'}`}>
-                  {isOverAbc
+                <p className={`text-xs ${isClosedOrExpired || isOverAbc ? 'text-red-700 font-medium leading-relaxed' : 'text-slate-500'}`}>
+                  {isClosedOrExpired
+                    ? 'The submission deadline for this project has passed. Applications are no longer being accepted.'
+                    : isOverAbc
                     ? `Your quoted bid of ₱${totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })} exceeds the ABC of ₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}. Under Section 31 of RA 9184, bids exceeding the ABC cannot be accepted. Please adjust your bid before submitting.`
                     : 'Ensure all item prices and required documents are complete. Submissions cannot be modified after sending.'}
                 </p>
@@ -1192,7 +1245,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
               <Button
                 size="lg"
                 onClick={handleSubmit}
-                disabled={isSubmitting || isOverAbc}
+                disabled={isSubmitting || isOverAbc || isClosedOrExpired}
                 className="bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white font-semibold gap-2 min-w-[170px]"
               >
                 {isSubmitting ? (

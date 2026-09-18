@@ -19,6 +19,8 @@ public class GetPublicProjectStatsQueryHandler(IUnitOfWork unitOfWork)
             .Include(p => p.BiddingDocument)
             .Include(p => p.ProcurementMode)
             .Include(p => p.ConsolidatedPR)
+            .Include(p => p.BiddingActivitySchedules)
+                .ThenInclude(s => s.ProcurementActivityType)
             .Where(p => !p.IsDeleted && (
                 (p.BiddingDocument != null && p.BiddingDocument.Status == "Posted")
                 || p.Status == "Posted"
@@ -30,13 +32,38 @@ public class GetPublicProjectStatsQueryHandler(IUnitOfWork unitOfWork)
                 || p.Status == "Closed"))
             .ToListAsync(cancellationToken);
 
-        var isClosed = (string status) => status?.Equals("Closed", StringComparison.OrdinalIgnoreCase) ?? false;
-        var isClosingSoon = (string status) => status?.Equals("ClosingSoon", StringComparison.OrdinalIgnoreCase) ?? false;
+        var nowUtc = DateTime.UtcNow;
 
-        var activeProjects = projects.Where(p => !isClosed(p.Status)).ToList();
+        DateTime? GetProjectDeadline(ProcurementProject p)
+        {
+            var schedule = p.BiddingActivitySchedules
+                .FirstOrDefault(s => s.ProcurementActivityType?.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids);
+            return schedule != null
+                ? (schedule.EndDate != default ? (DateTime?)schedule.EndDate : schedule.StartDate)
+                : null;
+        }
+
+        bool IsProjectClosed(ProcurementProject p)
+        {
+            if (string.Equals(p.Status, "Closed", StringComparison.OrdinalIgnoreCase)) return true;
+            var dl = GetProjectDeadline(p);
+            return dl.HasValue && dl.Value < nowUtc;
+        }
+
+        bool IsProjectClosingSoon(ProcurementProject p)
+        {
+            if (IsProjectClosed(p)) return false;
+            if (string.Equals(p.Status, "ClosingSoon", StringComparison.OrdinalIgnoreCase)) return true;
+            var dl = GetProjectDeadline(p);
+            return dl.HasValue && dl.Value <= nowUtc.AddDays(3);
+        }
+
+        var activeProjects = projects.Where(p => !IsProjectClosed(p)).ToList();
 
         var svpCount = activeProjects.Count(p => GetPublicProjectsQueryHandler.IsSvp(p.ProcurementMode?.Name, p.ContractNo));
         var publicBiddingCount = activeProjects.Count(p => GetPublicProjectsQueryHandler.IsPublicBidding(p.ProcurementMode?.Name, p.ContractNo));
+        var closedProjectCount = projects.Count(IsProjectClosed);
+        var closingSoonProjectCount = projects.Count(IsProjectClosingSoon);
 
         // Include Approved RFQs (posted to public portal under Alternative Methods)
         var approvedRfqs = await unitOfWork.RFQRepository.Query()
@@ -59,8 +86,8 @@ public class GetPublicProjectStatsQueryHandler(IUnitOfWork unitOfWork)
             ActiveProjects        = activeProjects.Count + activeRfqs.Count,
             PublicBidding         = publicBiddingCount,
             SmallValueProcurement = svpCount + svpRfqCount,
-            ClosingSoon           = projects.Count(p => isClosingSoon(p.Status)) + closingSoonRfqCount,
-            Closed                = projects.Count(p => isClosed(p.Status)) + closedRfqCount
+            ClosingSoon           = closingSoonProjectCount + closingSoonRfqCount,
+            Closed                = closedProjectCount + closedRfqCount
         });
     }
 }

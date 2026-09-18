@@ -62,6 +62,7 @@ public class SubmitPublicApplicationCommandHandler(
                     Address = request.BusinessAddress.Trim(),
                     Status = "Pending",
                     IsBlocked = false,
+                    CreatedAt = DateTime.UtcNow,
                     CreatedBy = "PublicPortal"
                 };
                 await unitOfWork.SupplierRepository.AddAsync(rfqSupplierRecord, cancellationToken);
@@ -116,26 +117,35 @@ public class SubmitPublicApplicationCommandHandler(
                             : "Quotation Attachment";
                     }
 
-                    rfqSupplierRecord.SupplierRequirements.Add(new ERPEZ.Domain.Entities.Planning.SupplierRequirement
+                    var req = new ERPEZ.Domain.Entities.Planning.SupplierRequirement
                     {
                         Id = Guid.NewGuid(),
                         SupplierId = rfqSupplierRecord.Id,
                         RequirementName = docName,
                         Url = promoted.Url,
                         IsVerified = false,
+                        CreatedAt = DateTime.UtcNow,
                         CreatedBy = "PublicPortal"
-                    });
+                    };
+                    rfqSupplierRecord.SupplierRequirements.Add(req);
+                    await unitOfWork.SupplierRequirementRepository.AddAsync(req, cancellationToken);
                 }
             }
 
             // Register supplier under RFQ invited/participating suppliers if not already present
             if (!rfq.RFQSuppliers.Any(s => s.SupplierId == rfqSupplierRecord.Id))
             {
-                rfq.RFQSuppliers.Add(new RFQSupplier
+                var rfqSupplier = new RFQSupplier
                 {
+                    Id = Guid.NewGuid(),
+                    RFQId = rfq.Id,
                     SupplierId = rfqSupplierRecord.Id,
-                    InvitedAt = DateTime.UtcNow
-                });
+                    InvitedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "PublicPortal"
+                };
+                rfq.RFQSuppliers.Add(rfqSupplier);
+                await unitOfWork.RFQSupplierRepository.AddAsync(rfqSupplier, cancellationToken);
             }
 
             // Create SupplierBid for the RFQ
@@ -190,7 +200,9 @@ public class SubmitPublicApplicationCommandHandler(
                     Model = itemBid?.Model,
                     Color = itemBid?.Color,
                     IsResponsive = true,
-                    BrochureFileUrl = itemBrochureUrl
+                    BrochureFileUrl = itemBrochureUrl,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "PublicPortal"
                 });
             }
 
@@ -208,8 +220,15 @@ public class SubmitPublicApplicationCommandHandler(
                 PaymentTerms = request.PaymentTerms,
                 WarrantyTerms = request.WarrantyTerms,
                 ValidityPeriodDays = request.ValidityPeriodDays,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = "PublicPortal",
                 SupplierBidItems = bidItems
             };
+
+            foreach (var bi in bidItems)
+            {
+                bi.SupplierBidId = newBid.Id;
+            }
 
             await unitOfWork.SupplierBidRepository.AddAsync(newBid, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -230,9 +249,13 @@ public class SubmitPublicApplicationCommandHandler(
         var submissionSchedule = project.BiddingActivitySchedules
             .FirstOrDefault(s => s.ProcurementActivityType?.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids);
 
-        if (submissionSchedule != null && submissionSchedule.EndDate != default && DateTime.UtcNow > submissionSchedule.EndDate)
+        var submissionDeadline = submissionSchedule != null
+            ? (submissionSchedule.EndDate != default ? submissionSchedule.EndDate : submissionSchedule.StartDate)
+            : (DateTime?)null;
+
+        if (submissionDeadline.HasValue && DateTime.UtcNow > submissionDeadline.Value)
             throw new ForbiddenException(
-                $"The submission deadline was {submissionSchedule.EndDate:MMMM dd, yyyy 'at' hh:mm tt} UTC. " +
+                $"The submission deadline was {submissionDeadline.Value:MMMM dd, yyyy 'at' hh:mm tt} UTC. " +
                 "This project is no longer accepting applications.");
 
         if (project.Status == "Closed")
@@ -284,6 +307,7 @@ public class SubmitPublicApplicationCommandHandler(
                 Address = request.BusinessAddress.Trim(),
                 Status = "Pending",
                 IsBlocked = false,
+                CreatedAt = DateTime.UtcNow,
                 CreatedBy = "PublicPortal"
             };
             await unitOfWork.SupplierRepository.AddAsync(supplier, cancellationToken);
@@ -301,7 +325,9 @@ public class SubmitPublicApplicationCommandHandler(
             TinNumber            = trimmedTin,
             BusinessAddress      = request.BusinessAddress.Trim(),
             Status               = "Submitted",
-            SubmittedAt          = DateTime.UtcNow
+            SubmittedAt          = DateTime.UtcNow,
+            CreatedAt            = DateTime.UtcNow,
+            CreatedBy            = "PublicPortal"
         };
 
         // ── 5. PROMOTE EACH FILE: temp → permanent ────────────────────────────────
@@ -326,6 +352,7 @@ public class SubmitPublicApplicationCommandHandler(
                 BlobStorageUrl   = promoted.Url,
                 OriginalFileName = promoted.OriginalFileName,
                 UploadedAt       = DateTime.UtcNow,
+                CreatedAt        = DateTime.UtcNow,
                 CreatedBy        = "PublicPortal"
             });
         }
@@ -369,6 +396,7 @@ public class SubmitPublicApplicationCommandHandler(
                 SubmissionType              = "Electronic",
                 SubmittedAt                 = application.SubmittedAt,
                 Remarks                     = request.Remarks,
+                CreatedAt                   = DateTime.UtcNow,
                 CreatedBy                   = "PublicPortal"
             };
 
@@ -390,11 +418,28 @@ public class SubmitPublicApplicationCommandHandler(
             {
                 if (!associatedRfq.RFQSuppliers.Any(s => s.SupplierId == supplier.Id))
                 {
-                    associatedRfq.RFQSuppliers.Add(new RFQSupplier
+                    var rfqSupplier = new RFQSupplier
                     {
+                        Id = Guid.NewGuid(),
+                        RFQId = associatedRfq.Id,
                         SupplierId = supplier.Id,
-                        InvitedAt = DateTime.UtcNow
-                    });
+                        InvitedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = "PublicPortal"
+                    };
+                    associatedRfq.RFQSuppliers.Add(rfqSupplier);
+                    await unitOfWork.RFQSupplierRepository.AddAsync(rfqSupplier, cancellationToken);
+                }
+
+                // Guard against duplicate bid for the same associated RFQ
+                var existingRfqBid = await unitOfWork.SupplierBidRepository.FindAsync(
+                    b => b.RFQId == associatedRfq.Id && b.SupplierId == supplier.Id && !b.IsDeleted,
+                    cancellationToken);
+
+                if (existingRfqBid != null)
+                {
+                    throw new FluentValidation.ValidationException(
+                        "An application/quotation has already been submitted for the RFQ associated with this project.");
                 }
 
                 var itemBidsDict = request.ItemBids?.ToDictionary(ib => ib.RFQItemId) ?? new Dictionary<Guid, PublicItemBidDto>();
@@ -432,7 +477,9 @@ public class SubmitPublicApplicationCommandHandler(
                         Model = itemBid?.Model,
                         Color = itemBid?.Color,
                         IsResponsive = true,
-                        BrochureFileUrl = itemBrochureUrl
+                        BrochureFileUrl = itemBrochureUrl,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = "PublicPortal"
                     });
                 }
 
@@ -450,8 +497,15 @@ public class SubmitPublicApplicationCommandHandler(
                     PaymentTerms = request.PaymentTerms,
                     WarrantyTerms = request.WarrantyTerms,
                     ValidityPeriodDays = request.ValidityPeriodDays,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "PublicPortal",
                     SupplierBidItems = bidItems
                 };
+
+                foreach (var bi in bidItems)
+                {
+                    bi.SupplierBidId = newBid.Id;
+                }
 
                 await unitOfWork.SupplierBidRepository.AddAsync(newBid, cancellationToken);
             }

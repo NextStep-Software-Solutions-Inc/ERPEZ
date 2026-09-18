@@ -24,16 +24,7 @@ public class GetRFQsQueryHandler(IUnitOfWork unitOfWork)
             Sorts = request.Sorts
         };
 
-        var (allEntities, totalCount) = await unitOfWork.RFQRepository.GetAllWithDetailsAsync(sieveModel, request.Status, cancellationToken);
-
-        // Approved RFQs with no line items are incomplete and must be hidden from the manage portal.
-        var entities = (request.Status == StatusEnum.Approved || request.Filters?.Contains("Approved", StringComparison.OrdinalIgnoreCase) == true)
-            ? allEntities.Where(r => r.RFQItems.Any(i => !i.IsDeleted)).ToList()
-            : allEntities.ToList();
-
-        // Recalculate totalCount when the item filter has been applied
-        if (entities.Count != allEntities.Count)
-            totalCount = entities.Count;
+        var (entities, totalCount) = await unitOfWork.RFQRepository.GetAllWithDetailsAsync(sieveModel, request.Status, cancellationToken);
 
         var rfqIds = entities.Select(r => r.Id).ToList();
         var bids = await unitOfWork.SupplierBidRepository.Query()

@@ -57,10 +57,15 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
   // Handle status mapping
   let status: ProjectStatus = 'open'
   const backendStatus = (p.status || '').toLowerCase()
-  if (backendStatus === 'closingsoon' || backendStatus === 'closing soon' || backendStatus === 'closing-soon') {
-    status = 'closing-soon'
-  } else if (backendStatus === 'closed') {
+  const deadlineStr = p.submissionDeadline || p.deadline || ''
+  const isPastDeadline = deadlineStr && !isNaN(Date.parse(deadlineStr))
+    ? new Date(deadlineStr).getTime() < Date.now()
+    : false
+
+  if (backendStatus === 'closed' || isPastDeadline) {
     status = 'closed'
+  } else if (backendStatus === 'closingsoon' || backendStatus === 'closing soon' || backendStatus === 'closing-soon') {
+    status = 'closing-soon'
   }
 
   return {

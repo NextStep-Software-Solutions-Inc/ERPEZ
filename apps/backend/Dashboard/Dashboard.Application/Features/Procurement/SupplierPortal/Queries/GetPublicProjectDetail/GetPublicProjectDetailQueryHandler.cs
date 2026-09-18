@@ -193,6 +193,14 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
                 .FirstOrDefault(s => s.ProcurementActivityType?.SystemRole == role)
                 ?.StartDate;
 
+        DateTime? GetDeadline(ProcurementActivitySystemRole role)
+        {
+            var schedule = project.BiddingActivitySchedules
+                .FirstOrDefault(s => s.ProcurementActivityType?.SystemRole == role);
+            if (schedule == null) return null;
+            return schedule.EndDate != default ? schedule.EndDate : schedule.StartDate;
+        }
+
         var projectSubmissions = project.ProjectDocumentChecklists
             .Where(c => c.IsRequired)
             .OrderBy(c => c.OrderIndex)
@@ -279,6 +287,17 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
             }
         }
 
+        var deadline = GetDeadline(ProcurementActivitySystemRole.SubmissionOpeningOfBids);
+        var nowUtc = DateTime.UtcNow;
+        var isProjectClosed = string.Equals(project.Status, "Closed", StringComparison.OrdinalIgnoreCase)
+            || (deadline.HasValue && deadline.Value < nowUtc);
+
+        var isProjectClosingSoon = !isProjectClosed && (
+            string.Equals(project.Status, "ClosingSoon", StringComparison.OrdinalIgnoreCase)
+            || (deadline.HasValue && deadline.Value <= nowUtc.AddDays(3)));
+
+        var effectiveStatus = isProjectClosed ? "Closed" : (isProjectClosingSoon ? "ClosingSoon" : "Open");
+
         var dto = new PublicProjectDetailDto
         {
             Id                     = project.Id,
@@ -286,12 +305,12 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
             ContractNo             = project.ContractNo ?? (project.ConsolidatedPR != null ? project.ConsolidatedPR.CPRNumber : string.Empty),
             ABC                    = project.ABC,
             ModeOfProcurement      = project.ProcurementMode?.Name ?? string.Empty,
-            Status                 = project.Status,
+            Status                 = effectiveStatus,
             ScopeOfWork            = project.ScopeOfWork,
             NonRefundableBidderFee = project.NonRefundableBidderFee,
             DeliveryPeriodDays     = project.DeliveryPeriodDays,
             DeliveryPeriod         = project.DeliveryPeriodDays.HasValue ? $"{project.DeliveryPeriodDays} Day/s" : null,
-            SubmissionDeadline     = GetDate(ProcurementActivitySystemRole.SubmissionOpeningOfBids),
+            SubmissionDeadline     = deadline,
             BidOpeningDate         = GetDate(ProcurementActivitySystemRole.SubmissionOpeningOfBids),
             PreBidConferenceDate   = GetDate(ProcurementActivitySystemRole.PreBidConference),
             DatePosted             = GetDate(ProcurementActivitySystemRole.AdvertisementPosting) ?? project.UpdatedAt ?? project.CreatedAt,

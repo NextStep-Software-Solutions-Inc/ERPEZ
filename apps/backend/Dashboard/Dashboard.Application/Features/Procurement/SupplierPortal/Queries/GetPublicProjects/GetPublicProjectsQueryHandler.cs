@@ -43,33 +43,46 @@ public class GetPublicProjectsQueryHandler(IUnitOfWork unitOfWork)
         }
 
         var rawProjects = await projectsQuery.ToListAsync(cancellationToken);
+        var nowUtc = DateTime.UtcNow;
 
-        var projectDtos = rawProjects.Select(p => new PublicProjectListItemDto
+        var projectDtos = rawProjects.Select(p =>
         {
-            Id                = p.Id,
-            Title             = p.Title,
-            ContractNo        = p.ContractNo ?? (p.ConsolidatedPR != null ? p.ConsolidatedPR.CPRNumber : string.Empty),
-            ABC               = p.ABC,
-            ModeOfProcurement = p.ProcurementMode != null ? p.ProcurementMode.Name : string.Empty,
-            Status            = p.Status,
+            var submissionSchedule = p.BiddingActivitySchedules
+                .FirstOrDefault(s => s.ProcurementActivityType != null && s.ProcurementActivityType.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids);
 
-            SubmissionDeadline = p.BiddingActivitySchedules
-                .Where(s => s.ProcurementActivityType != null && s.ProcurementActivityType.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids)
-                .Select(s => (DateTime?)s.StartDate)
-                .FirstOrDefault(),
+            var submissionDeadline = submissionSchedule != null
+                ? (submissionSchedule.EndDate != default ? (DateTime?)submissionSchedule.EndDate : submissionSchedule.StartDate)
+                : (DateTime?)null;
 
-            DatePosted = p.BiddingActivitySchedules
-                .Where(s => s.ProcurementActivityType != null && s.ProcurementActivityType.SystemRole == ProcurementActivitySystemRole.AdvertisementPosting)
-                .Select(s => (DateTime?)s.StartDate)
-                .FirstOrDefault() ?? p.UpdatedAt ?? p.CreatedAt
+            var isClosed = string.Equals(p.Status, "Closed", StringComparison.OrdinalIgnoreCase)
+                || (submissionDeadline.HasValue && submissionDeadline.Value < nowUtc);
+
+            var isClosingSoon = !isClosed && (
+                string.Equals(p.Status, "ClosingSoon", StringComparison.OrdinalIgnoreCase)
+                || (submissionDeadline.HasValue && submissionDeadline.Value <= nowUtc.AddDays(3)));
+
+            var status = isClosed ? "Closed" : (isClosingSoon ? "ClosingSoon" : "Open");
+
+            return new PublicProjectListItemDto
+            {
+                Id                = p.Id,
+                Title             = p.Title,
+                ContractNo        = p.ContractNo ?? (p.ConsolidatedPR != null ? p.ConsolidatedPR.CPRNumber : string.Empty),
+                ABC               = p.ABC,
+                ModeOfProcurement = p.ProcurementMode != null ? p.ProcurementMode.Name : string.Empty,
+                Status            = status,
+                SubmissionDeadline = submissionDeadline,
+                DatePosted = p.BiddingActivitySchedules
+                    .Where(s => s.ProcurementActivityType != null && s.ProcurementActivityType.SystemRole == ProcurementActivitySystemRole.AdvertisementPosting)
+                    .Select(s => (DateTime?)s.StartDate)
+                    .FirstOrDefault() ?? p.UpdatedAt ?? p.CreatedAt
+            };
         }).ToList();
 
         // 2. Query Approved RFQs (Alternative Methods e.g. SVP, Shopping posted to BAC portal per RA 9184)
-        // Only include RFQs that have at least one line item — itemless RFQs are incomplete and must not appear publicly.
         var rfqsQuery = unitOfWork.RFQRepository.Query()
             .Include(r => r.ModeOfProcurement)
-            .Include(r => r.RFQItems)
-            .Where(r => !r.IsDeleted && r.Status == StatusEnum.Approved && r.RFQItems.Any(i => !i.IsDeleted));
+            .Where(r => !r.IsDeleted && r.Status == StatusEnum.Approved);
 
         if (!string.IsNullOrWhiteSpace(searchPattern))
         {

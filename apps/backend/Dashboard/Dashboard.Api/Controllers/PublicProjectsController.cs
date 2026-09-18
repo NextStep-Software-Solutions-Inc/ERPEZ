@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Commands.SubmitPublicApplication;
+using ERPEZ.Application.Features.Procurement.SupplierPortal.Commands.ValidatePublicApplication;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Dtos;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetBidNoticeDownloadUrl;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicApplicationStatus;
@@ -190,6 +191,41 @@ public class PublicProjectsController(ISender mediator) : ControllerBase
             ".zip" => "application/zip",
             _ => "application/octet-stream"
         };
+    }
+
+    /// <summary>
+    /// Pre-flight validation for public supplier application prior to file uploading.
+    /// Prevents storage exhaustion if the project is closed, deadline passed, duplicate TIN, or over ABC.
+    /// </summary>
+    [HttpPost("projects/{id:guid}/validate-application")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ValidateApplication(Guid id, [FromBody] ValidatePublicApplicationRequest request)
+    {
+        var command = new ValidatePublicApplicationCommand(
+            id,
+            request.CompanyName,
+            request.ContactPerson,
+            request.EmailAddress,
+            request.ContactNumber,
+            request.TinNumber,
+            request.BusinessAddress,
+            request.ChecklistItemIds,
+            request.ProposedBidAmount,
+            request.DeliveryPeriod,
+            request.PaymentTerms,
+            request.WarrantyTerms,
+            request.ValidityPeriodDays,
+            request.Remarks,
+            request.BidSecurityType,
+            request.BidSecurityAmount,
+            request.BidSecurityNumber,
+            request.BidSecurityValidityDays,
+            request.ItemBids
+        );
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     /// <summary>
