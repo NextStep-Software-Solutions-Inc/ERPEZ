@@ -1,5 +1,6 @@
 using ERPEZ.Shared.Common;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -23,27 +24,39 @@ public class GetRFQsQueryHandler(IUnitOfWork unitOfWork)
             Sorts = request.Sorts
         };
 
-        var (entities, totalCount) = await unitOfWork.RFQRepository.GetAllWithDetailsAsync(sieveModel, cancellationToken);
+        var (entities, totalCount) = await unitOfWork.RFQRepository.GetAllWithDetailsAsync(sieveModel, request.Status, cancellationToken);
 
         var rfqIds = entities.Select(r => r.Id).ToList();
-        var bidCounts = await unitOfWork.SupplierBidRepository.Query()
+        var bids = await unitOfWork.SupplierBidRepository.Query()
             .Where(b => rfqIds.Contains(b.RFQId) && !b.IsDeleted)
-            .GroupBy(b => b.RFQId)
-            .Select(g => new { RFQId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(g => g.RFQId, g => g.Count, cancellationToken);
+            .Select(b => new { b.RFQId, b.SupplierId })
+            .ToListAsync(cancellationToken);
 
-        var items = entities.Select(r => new RFQListItemDto
+        var rfqSuppliersMap = entities.ToDictionary(
+            r => r.Id,
+            r => r.RFQSuppliers?.Where(s => !s.IsDeleted).Select(s => s.SupplierId).ToHashSet() ?? new HashSet<Guid>());
+
+        var items = entities.Select(r =>
         {
-            Id = r.Id,
-            RFQNumber = r.RFQNumber,
-            Description = r.Description,
-            TracingNumber = r.TracingNumber,
-            ModeOfProcurementName = r.ModeOfProcurement?.Name,
-            Deadline = r.Deadline,
-            DeliveryPeriod = r.DeliveryPeriod,
-            Status = r.Status,
-            TotalAmount = r.TotalAmount,
-            ApplicantCount = bidCounts.GetValueOrDefault(r.Id, 0)
+            var bidSupplierIds = bids.Where(b => b.RFQId == r.Id).Select(b => b.SupplierId);
+            var invitedOrApplied = rfqSuppliersMap.GetValueOrDefault(r.Id) ?? new HashSet<Guid>();
+            var applicantCount = bidSupplierIds.Union(invitedOrApplied).Count();
+
+            return new RFQListItemDto
+            {
+                Id = r.Id,
+                RFQNumber = r.RFQNumber,
+                Description = r.Description,
+                TracingNumber = r.TracingNumber,
+                ModeOfProcurementName = r.ModeOfProcurement?.Name,
+                Deadline = r.Deadline,
+                DeliveryPeriod = r.DeliveryPeriod,
+                Status = r.Status,
+                TotalAmount = r.TotalAmount,
+                ApplicantCount = applicantCount,
+                ItemCount = r.RFQItems?.Count(i => !i.IsDeleted) ?? 0,
+                Remarks = r.Remarks
+            };
         }).ToList();
 
         return new PaginatedApiResponse<RFQListItemDto>(items, page, pageSize, totalCount);

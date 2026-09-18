@@ -52,9 +52,18 @@ export function AddRFQDialog({ open, onOpenChange, aobId, onSuccess }: AddRFQDia
 
       toast.success('RFQ linked successfully!')
 
-      // Invalidate AOB detail to trigger refetch
+      // Invalidate AOB detail and matrix to trigger refetch
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (k) => typeof k === 'string' && k.includes(aobId)
+          ),
+      })
       void queryClient.invalidateQueries({
-        queryKey: [getAOBDetailRequest.endpoint, aobId],
+        queryKey: [`/aobs/${aobId}`],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aobId}/matrix`],
       })
 
       onOpenChange(false)

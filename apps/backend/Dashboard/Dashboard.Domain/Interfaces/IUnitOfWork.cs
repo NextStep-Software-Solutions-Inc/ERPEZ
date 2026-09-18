@@ -154,6 +154,7 @@ public interface IUnitOfWork
     IAPRItemRepository APRItemRepository { get; }
     IAPRItemMilestoneRepository APRItemMilestoneRepository { get; }
     IRFQRepository RFQRepository { get; }
+    IRepository<ERPEZ.Domain.Entities.Procurement.RFQSupplier> RFQSupplierRepository { get; }
     IPurchaseOrderRepository PurchaseOrderRepository { get; }
     IPurchaseOrderItemRepository PurchaseOrderItemRepository { get; }
     INoticeOfAwardRepository NoticeOfAwardRepository { get; }

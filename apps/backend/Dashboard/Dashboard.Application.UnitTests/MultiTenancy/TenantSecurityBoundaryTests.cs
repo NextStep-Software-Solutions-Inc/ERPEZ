@@ -669,4 +669,44 @@ public class TenantSecurityBoundaryTests
         isPlatformAdmin.Should().BeFalse(
             "Workspace Administrator role belongs strictly to the tenant plane and does not grant Platform Control Plane access.");
     }
+
+    [Fact]
+    public async Task TenantAccessValidationMiddleware_WhenClientAbortsRequest_ShouldTerminateGracefullyWithoutThrowing()
+    {
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-1", tenantId);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel(); // Simulate client aborting the HTTP request
+
+        var context = CreateHttpContext(user);
+        context.RequestAborted = cts.Token;
+        context.Request.Headers["X-Tenant-Id"] = tenantId.ToString();
+
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(
+                user,
+                tenantId,
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+        var resolutionMiddleware = new TenantResolutionMiddleware(c => Task.CompletedTask);
+        await resolutionMiddleware.InvokeAsync(context);
+
+        var reqCtx = new TenantRequestContext();
+        var nextInvoked = false;
+        var validationMiddleware = new TenantAccessValidationMiddleware(c =>
+        {
+            nextInvoked = true;
+            return Task.CompletedTask;
+        });
+
+        // Act - should NOT throw OperationCanceledException
+        var act = () => validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, reqCtx);
+        await act.Should().NotThrowAsync();
+
+        // Assert
+        nextInvoked.Should().BeFalse();
+        reqCtx.IsResolved.Should().BeFalse();
+    }
 }
+

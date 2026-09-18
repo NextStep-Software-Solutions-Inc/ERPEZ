@@ -36,6 +36,7 @@ interface AddRFQsAndBidsDialogProps {
   onOpenChange: (open: boolean) => void
   aobId?: string
   onBidMatrixGenerated?: (bidMatrix: BidMatrix) => void
+  currentlyLinkedRfqIds?: string[]
 }
 
 export function AddRFQsAndBidsDialog({
@@ -43,6 +44,7 @@ export function AddRFQsAndBidsDialog({
   onOpenChange,
   aobId,
   onBidMatrixGenerated,
+  currentlyLinkedRfqIds = [],
 }: AddRFQsAndBidsDialogProps) {
   const initialSelections: string[] = []
   const [selectedRFQs, setSelectedRFQs] = useState<string[]>(initialSelections)
@@ -93,11 +95,17 @@ export function AddRFQsAndBidsDialog({
         },
       })
 
-      void queryClient.invalidateQueries({
-        queryKey: [getAOBDetailRequest.endpoint, aobId],
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (k) => typeof k === 'string' && k.includes(aobId)
+          ),
       })
       void queryClient.invalidateQueries({
-        queryKey: [getBidMatrixRequest.endpoint, aobId],
+        queryKey: [`/aobs/${aobId}`],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aobId}/matrix`],
       })
 
       toast.success(
@@ -164,25 +172,40 @@ export function AddRFQsAndBidsDialog({
               ) : availableRfqs.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-4 text-center">No available RFQs found</p>
               ) : (
-                availableRfqs.map((rfq) => (
-                  <div key={rfq.id} className="flex items-start gap-3 p-3 rounded border">
-                    <Checkbox
-                      id={rfq.id}
-                      checked={selectedRFQs.includes(rfq.id)}
-                      onCheckedChange={() => handleRFQToggle(rfq.id)}
-                      disabled={isProcessing}
-                    />
-                    <div className="flex-1">
-                      <Label
-                        htmlFor={rfq.id}
-                        className="text-sm font-medium cursor-pointer block"
-                      >
-                        {rfq.rfqNumber}
-                      </Label>
-                      <p className="text-xs text-gray-600 mt-1">{rfq.description || rfq.tracingNumber || '-'}</p>
+                availableRfqs.map((rfq) => {
+                  const isAlreadyLinked = currentlyLinkedRfqIds.includes(rfq.id)
+                  return (
+                    <div
+                      key={rfq.id}
+                      className={`flex items-start gap-3 p-3 rounded border transition-colors ${
+                        isAlreadyLinked ? 'bg-gray-50 border-gray-200 opacity-75' : ''
+                      }`}
+                    >
+                      <Checkbox
+                        id={rfq.id}
+                        checked={isAlreadyLinked || selectedRFQs.includes(rfq.id)}
+                        onCheckedChange={() => !isAlreadyLinked && handleRFQToggle(rfq.id)}
+                        disabled={isProcessing || isAlreadyLinked}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Label
+                            htmlFor={rfq.id}
+                            className={`text-sm font-medium ${isAlreadyLinked ? 'cursor-not-allowed text-gray-500' : 'cursor-pointer'}`}
+                          >
+                            {rfq.rfqNumber}
+                          </Label>
+                          {isAlreadyLinked && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">
+                              Already Linked
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">{rfq.description || rfq.tracingNumber || '-'}</p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  )
+                })
               )}
             </CardContent>
           </Card>

@@ -200,11 +200,12 @@ public class RFQController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpGet("{id}/bids")]
     [ProducesResponseType(typeof(ApiResponse<List<RFQSupplierBidDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<IActionResult> GetRFQSupplierBids(Guid id)
     {
         var result = await mediator.Send(new GetRFQSupplierBidsQuery(id));
-        return Ok(result);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     /// <summary>

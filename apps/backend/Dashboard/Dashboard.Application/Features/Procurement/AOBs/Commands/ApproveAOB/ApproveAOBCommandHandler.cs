@@ -1,3 +1,4 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -6,7 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Commands.ApproveAOB;
 
-public class ApproveAOBCommandHandler(IUnitOfWork unitOfWork)
+public class ApproveAOBCommandHandler(
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUserService)
     : IRequestHandler<ApproveAOBCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(ApproveAOBCommand request, CancellationToken cancellationToken)
@@ -30,13 +33,25 @@ public class ApproveAOBCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("Cannot approve an AOB with no awarded winners.");
         }
 
+        Guid? approverId = request.ApprovedBy;
+        if (!approverId.HasValue && Guid.TryParse(currentUserService.UserId, out var parsedUserId))
+        {
+            approverId = parsedUserId;
+        }
+
+        var actorName = !string.IsNullOrWhiteSpace(request.ApprovedByName)
+            ? request.ApprovedByName
+            : (!string.IsNullOrWhiteSpace(currentUserService.Name)
+                ? currentUserService.Name
+                : (!string.IsNullOrWhiteSpace(currentUserService.Username) ? currentUserService.Username : "BAC Chairperson"));
+
         aob.Status = StatusEnum.Approved;
-        aob.ApprovedBy = request.ApprovedBy;
+        aob.ApprovedBy = approverId;
         aob.ApprovedAt = DateTime.UtcNow;
         aob.SignedDocumentUrl = request.SignedDocumentUrl ?? aob.SignedDocumentUrl;
         aob.Remarks = request.Remarks ?? aob.Remarks;
         aob.UpdatedAt = DateTime.UtcNow;
-        aob.UpdatedBy = "System";
+        aob.UpdatedBy = actorName;
 
         unitOfWork.AOBRepository.Update(aob);
         await unitOfWork.SaveChangesAsync(cancellationToken);

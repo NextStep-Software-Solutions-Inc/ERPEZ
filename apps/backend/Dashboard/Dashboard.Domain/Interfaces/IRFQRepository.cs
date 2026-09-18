@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using Sieve.Models;
 
 namespace ERPEZ.Domain.Interfaces;
@@ -11,6 +12,7 @@ public interface IRFQRepository : IRepository<RFQ>
 {
     Task<(IReadOnlyList<RFQ> Entities, int TotalCount)> GetAllWithDetailsAsync(
         SieveModel sieveModel,
+        StatusEnum? status = null,
         CancellationToken cancellationToken = default);
 
     Task<RFQ?> GetRFQWithDetailsAsync(Guid rfqId, CancellationToken cancellationToken = default);

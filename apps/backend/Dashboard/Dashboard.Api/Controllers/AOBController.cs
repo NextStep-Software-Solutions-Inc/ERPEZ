@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Constants;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.ApproveAOB;
@@ -6,6 +7,7 @@ using ERPEZ.Application.Features.Procurement.AOBs.Commands.CreateAOB;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.DeleteAOB;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.FinalizeRFQ;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.LinkRFQs;
+using ERPEZ.Application.Features.Procurement.AOBs.Commands.UnlinkRFQ;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.ReturnAOB;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.SubmitAOB;
 using ERPEZ.Application.Features.Procurement.AOBs.Commands.SubmitSupplierBid;
@@ -153,6 +155,20 @@ public class AOBController(ISender mediator) : ControllerBase
     }
 
     /// <summary>
+    /// Unlink an RFQ from an AOB and remove its items from the evaluation matrix
+    /// </summary>
+    [HttpDelete("{id}/rfqs/{rfqId}")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
+    public async Task<IActionResult> UnlinkRFQ(Guid id, Guid rfqId)
+    {
+        var result = await mediator.Send(new UnlinkRFQCommand(id, rfqId));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
     /// Get the complete bid evaluation matrix including ranked supplier bids per item
     /// </summary>
     [HttpGet("{id}/matrix")]
@@ -201,9 +217,24 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasPermission(Permissions.Procurement.aobManage)]
-    public async Task<IActionResult> ApproveAOB(Guid id, [FromBody] ApproveAOBCommand command)
+    public async Task<IActionResult> ApproveAOB(Guid id, [FromBody] ApproveAOBRequest? request = null)
     {
-        var result = await mediator.Send(command with { AOBId = id });
+        Guid? approverGuid = null;
+        if (!string.IsNullOrWhiteSpace(request?.ApprovedBy) && Guid.TryParse(request.ApprovedBy, out var parsed))
+        {
+            approverGuid = parsed;
+        }
+
+        var command = new ApproveAOBCommand
+        {
+            AOBId = id,
+            ApprovedBy = approverGuid,
+            ApprovedByName = request?.ApprovedBy,
+            SignedDocumentUrl = request?.SignedDocumentUrl,
+            Remarks = request?.Remarks
+        };
+
+        var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
@@ -215,9 +246,33 @@ public class AOBController(ISender mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasPermission(Permissions.Procurement.aobManage)]
-    public async Task<IActionResult> ReturnAOB(Guid id, [FromBody] ReturnAOBCommand command)
+    public async Task<IActionResult> ReturnAOB(Guid id, [FromBody] ReturnAOBRequest? request = null)
     {
-        var result = await mediator.Send(command with { AOBId = id });
+        var command = new ReturnAOBCommand(id, request?.Remarks ?? string.Empty);
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Generate official Abstract of Bids / Quotation PDF document
+    /// </summary>
+    [HttpPost("{id}/generate")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.aobManage)]
+    public async Task<IActionResult> GenerateAOBDocument(
+        Guid id,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.AOBs.Commands.GenerateAOBDocument.GenerateAOBDocumentCommand
+        {
+            AOBId = id,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

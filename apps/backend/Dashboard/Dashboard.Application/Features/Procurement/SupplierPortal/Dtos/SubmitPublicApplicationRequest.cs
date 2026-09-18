@@ -9,4 +9,15 @@ public record SubmitPublicApplicationRequest(
     string ContactNumber,
     string TinNumber,
     string BusinessAddress,
-    List<ApplicationDocumentUploadItem> Documents);
+    List<ApplicationDocumentUploadItem> Documents,
+    decimal? ProposedBidAmount = null,
+    string? DeliveryPeriod = null,
+    string? PaymentTerms = null,
+    string? WarrantyTerms = null,
+    int? ValidityPeriodDays = null,
+    string? Remarks = null,
+    string? BidSecurityType = null,
+    decimal? BidSecurityAmount = null,
+    string? BidSecurityNumber = null,
+    int? BidSecurityValidityDays = null,
+    List<PublicItemBidDto>? ItemBids = null);

@@ -8,6 +8,8 @@ on:
       - 'apps/dashboard/**'
       - 'packages/erpez-shared-lib/**'
       - 'packages/ui/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
       - .github/workflows/deploy-dashboard-fe-dev.yml
   pull_request:
     branches:
@@ -16,6 +18,8 @@ on:
       - 'apps/dashboard/**'
       - 'packages/erpez-shared-lib/**'
       - 'packages/ui/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
       - .github/workflows/deploy-dashboard-fe-dev.yml
   workflow_dispatch:
     inputs:

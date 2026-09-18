@@ -57,6 +57,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
         modeOfProcurementName: rfq.modeOfProcurementName || 'SVP',
         abc: rfq.totalAmount || 0,
         deadline: rfq.deadline,
+        status: rfq.status,
         source: 'rfq' as const,
       }
     }
@@ -70,9 +71,21 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
       modeOfProcurementName: bac.modeOfProcurementName || 'Public Bidding',
       abc: bac.abc || 0,
       deadline: '',
+      status: bac.status,
       source: 'bac' as const,
     }
   }, [source, rfqResponse, bacProjectResponse, projectId])
+
+  const isApproved = useMemo(() => {
+    if (source !== 'rfq') return true
+    const rfq = (rfqResponse as any)?.data ?? rfqResponse
+    if (!rfq) return false
+    return (
+      rfq.status === 'Approved' ||
+      rfq.status === 3 ||
+      (typeof rfq.status === 'string' && rfq.status.toLowerCase() === 'approved')
+    )
+  }, [source, rfqResponse])
 
   const isCompetitiveBidding = useMemo(() => {
     if (source !== 'bac') return false
@@ -93,7 +106,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
     handleSaveEvaluation,
     isLoading: isLoadingBids,
     isSaving,
-  } = useSupplierEvaluation(projectId, source)
+  } = useSupplierEvaluation(projectId, source, isApproved)
 
   const bidStats = {
     totalApplicants: bids.length,
@@ -207,6 +220,33 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
         <h2 className="text-2xl font-bold">Opportunity not found</h2>
         <Button className="mt-4" onClick={() => navigate({ to: '/v2/manage-supplier-portal' })}>
           Back to Portal
+        </Button>
+      </div>
+    )
+  }
+
+  if (source === 'rfq' && !isApproved) {
+    const rawStatus = projectInfo.status
+    const displayStatus =
+      typeof rawStatus === 'number'
+        ? rawStatus === 0
+          ? 'Draft'
+          : rawStatus === 1
+            ? 'Submitted / For Approval'
+            : rawStatus === 2
+              ? 'Returned'
+              : 'Pending'
+        : rawStatus || 'Draft'
+
+    return (
+      <div className="p-8 text-center space-y-3">
+        <h2 className="text-2xl font-bold">RFQ Not Approved</h2>
+        <p className="text-muted-foreground max-w-md mx-auto">
+          The RFQ <code className="bg-muted px-1.5 py-0.5 rounded text-sm">{projectInfo.number}</code> is currently in{' '}
+          <strong>{displayStatus}</strong> status. The BAC Evaluator can only manage supplier submissions for approved RFQs.
+        </p>
+        <Button className="mt-4" onClick={() => navigate({ to: '/v2/manage-supplier-portal' })}>
+          Back to Manage Supplier Portal
         </Button>
       </div>
     )

@@ -10,6 +10,8 @@ on:
       - 'apps/dashboard/**'
       - 'packages/erpez-shared-lib/**'
       - 'packages/ui/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
       - .github/workflows/deploy-dashboard-fe-prod.yml
   workflow_dispatch:
     inputs:
