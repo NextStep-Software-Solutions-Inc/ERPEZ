@@ -12,7 +12,7 @@ import type { ExpenseClass } from '../types/expenseClassTypes';
 
 const expenseClassSchema = z.object({
   code: z.string().min(1, 'Code is required'),
-  name: z.string().min(2, 'Name is required'),
+  name: z.string().min(3, 'Name must be at least 3 characters long'),
   description: z.string().optional(),
   type: z.number().int().min(1, 'Type is required'),
   isActive: z.boolean(),

@@ -16,6 +16,10 @@ interface ExpenseClassToolbarProps<TData = any> {
   searchPlaceholder?: string
   onAdd?: () => void
   addLabel?: string
+  /** When provided, overrides client-side column filtering with a server-side search callback */
+  onSearch?: (value: string) => void
+  /** Controlled search value (used together with onSearch for server-side search) */
+  searchValue?: string
 }
 
 export default function ExpenseClassToolbar<TData = any>({
@@ -24,13 +28,45 @@ export default function ExpenseClassToolbar<TData = any>({
   searchPlaceholder = 'Search Expense Class...',
   onAdd,
   addLabel = 'Add Expense Class',
+  onSearch,
+  searchValue,
 }: ExpenseClassToolbarProps<TData>) {
-  const [searchValue, setSearchValue] = React.useState('')
+  const [localSearchValue, setLocalSearchValue] = React.useState(searchValue ?? '')
+  const debounceRef = React.useRef<NodeJS.Timeout | null>(null)
 
-  // Handle search input change
+  React.useEffect(() => {
+    if (onSearch !== undefined && searchValue !== undefined && searchValue !== localSearchValue) {
+      setLocalSearchValue(searchValue)
+    }
+  }, [searchValue])
+
+  React.useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
+
   const handleSearchChange = (value: string) => {
-    setSearchValue(value)
-    table.getColumn('name')?.setFilterValue(value)
+    setLocalSearchValue(value)
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      if (onSearch) {
+        onSearch(value)
+      } else {
+        table.getColumn('name')?.setFilterValue(value)
+      }
+    }, 400)
+  }
+
+  const handleClear = () => {
+    setLocalSearchValue('')
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (onSearch) {
+      onSearch('')
+    } else {
+      table.getColumn('name')?.setFilterValue('')
+    }
   }
 
   return (
@@ -39,15 +75,15 @@ export default function ExpenseClassToolbar<TData = any>({
         <div className="flex flex-row space-x-2 flex-1 min-w-0">
           <Input
             placeholder={searchPlaceholder}
-            value={searchValue}
+            value={localSearchValue}
             onChange={(event) => handleSearchChange(event.target.value)}
             className="flex-1 min-w-0 max-w-sm"
           />
-          {searchValue && (
+          {localSearchValue && (
             <Button
               type="button"
               variant="ghost"
-              onClick={() => handleSearchChange('')}
+              onClick={handleClear}
               className="h-10 flex-shrink-0"
             >
               Clear
