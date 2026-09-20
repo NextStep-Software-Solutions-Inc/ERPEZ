@@ -54,7 +54,7 @@ export function AddObjectCodeDialog({
 
       const parentId = parentItem?.id || (data.parentId ? data.parentId : null)
 
-      await mutateAsync({
+      const response = await mutateAsync({
         pathParams: {},
         payload: {
           code: data.code,
@@ -75,6 +75,20 @@ export function AddObjectCodeDialog({
 
       onOpenChange(false)
       onSuccess?.()
+      if (onObjectCodeAdded) {
+        onObjectCodeAdded({
+          id: response,
+          code: data.code,
+          name: data.name,
+          isActive: data.isActive,
+          parentId: parentId || undefined,
+          expenseClass: targetClass,
+          isSubsidiary: Boolean(parentId),
+          fiscalYear: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create object code.'
       toast.error(errorMessage)

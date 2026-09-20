@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Combobox } from '@/components/ui/combobox'
+import { ObjectCodeCombobox } from '@/components/ui/object-code-combobox'
 import type { ItemMasterFormData } from '../../types'
 import { getObjectCodesRequest } from '../handlers/getObjectCodesRequest'
 import { getUnspscCodesRequest } from '../handlers/getUnspscCodesRequest'
@@ -81,17 +82,20 @@ export function ItemMasterWizardForm({
     queryParams: {},
   })
 
+  const activeObjectCodes = useMemo(
+    () => objectCodesResponse?.data?.filter((item) => item.isActive) ?? [],
+    [objectCodesResponse?.data],
+  )
+
   const objectCodeOptions = useMemo<Array<LookupOption>>(
     () =>
-      objectCodesResponse?.data
-        ?.filter((item) => item.isActive)
-        .map((item) => ({
-          id: item.id,
-          code: item.code,
-          name: item.name,
-          isActive: item.isActive,
-        })) ?? [],
-    [objectCodesResponse?.data],
+      activeObjectCodes.map((item) => ({
+        id: item.id,
+        code: item.code,
+        name: item.name,
+        isActive: item.isActive,
+      })),
+    [activeObjectCodes],
   )
 
   const unspscOptions = useMemo<Array<LookupOption>>(
@@ -118,11 +122,6 @@ export function ItemMasterWizardForm({
           isActive: item.isActive,
         })) ?? [],
     [uomsResponse?.data],
-  )
-
-  const objectCodeComboOptions = useMemo(
-    () => objectCodeOptions.map((item) => ({ value: item.id, label: `${item.code} - ${item.name}` })),
-    [objectCodeOptions],
   )
 
   const unspscComboOptions = useMemo(
@@ -516,28 +515,36 @@ export function ItemMasterWizardForm({
               <Label htmlFor="uacsCode" className="text-base font-medium">
                 Object Code (UACS) <span className="text-red-500">*</span>
               </Label>
-              <Combobox
-                options={objectCodeComboOptions}
+              <ObjectCodeCombobox
+                options={activeObjectCodes}
                 value={formData.objectCodeId || ''}
-                onValueChange={(value) => {
-                  const selectedObjectCode = objectCodeOptions.find(
-                    (item) => item.id === value,
-                  )
-                  if (!selectedObjectCode) return
-
-                  setFormData({
-                    ...formData,
-                    objectCodeId: selectedObjectCode.id,
-                    objectCodeName: selectedObjectCode.name,
-                    uacsCode: selectedObjectCode.code,
-                  })
+                onValueChange={(value, selectedItem) => {
+                  if (!value || !selectedItem) {
+                    setFormData((prev) => ({
+                      ...prev,
+                      objectCodeId: '',
+                      objectCodeName: '',
+                      uacsCode: '',
+                    }))
+                    return
+                  }
+                  setFormData((prev) => ({
+                    ...prev,
+                    objectCodeId: selectedItem.id,
+                    objectCodeName: selectedItem.name,
+                    uacsCode: selectedItem.code || '',
+                  }))
                 }}
-                placeholder={isObjectCodesLoading ? 'Loading object codes...' : 'Select Object Code'}
-                searchPlaceholder="Search by code or name..."
+                placeholder={
+                  isObjectCodesLoading
+                    ? 'Loading object codes...'
+                    : 'Select Object Code'
+                }
+                searchPlaceholder="Search by code, name, class (e.g. 50203, supplies)..."
                 emptyMessage="No object codes found."
                 disabled={isObjectCodesLoading}
-                className={errors.uacsCode ? 'ring-1 ring-red-500 ring-offset-1 focus-within:ring-2 focus-within:ring-red-500 rounded-md' : ''}
-                />
+                hasError={!!errors.uacsCode}
+              />
               {errors.uacsCode && (
                 <p className="text-sm text-red-500 font-medium">
                   {errors.uacsCode}

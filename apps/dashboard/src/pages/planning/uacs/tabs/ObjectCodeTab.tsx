@@ -178,10 +178,10 @@ export function ObjectCodeTab() {
                 actions={actions}
                 readonly={false}
                 manualPagination={true}
-                pageCount={apiResponse?.totalPages || 1}
+                pageCount={apiResponse?.totalPageNumber || 1}
                 pageIndex={page - 1}
                 pageSize={pageSize}
-                totalCount={apiResponse?.totalCount || 0}
+                totalCount={apiResponse?.totalRows || 0}
                 onPaginationChange={({ pageIndex, pageSize: newPageSize }) => {
                   setPage(pageIndex + 1)
                   if (newPageSize !== pageSize) {
