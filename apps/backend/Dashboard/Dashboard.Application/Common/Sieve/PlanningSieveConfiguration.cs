@@ -26,6 +26,26 @@ public class PlanningSieveConfiguration : ISieveConfiguration
             .CanSort()
             .CanFilter();
 
+        mapper.Property<Domain.Entities.Planning.Object>(p => p.Name)
+            .CanSort()
+            .CanFilter();
+
+        mapper.Property<Domain.Entities.Planning.Object>(p => p.Code)
+            .CanSort()
+            .CanFilter();
+
+        mapper.Property<Domain.Entities.Planning.Object>(p => p.FiscalYearId)
+            .CanSort()
+            .CanFilter();
+
+        mapper.Property<Domain.Entities.Planning.Object>(p => p.IsActive)
+            .CanSort()
+            .CanFilter();
+
+        mapper.Property<Domain.Entities.Planning.Object>(p => p.ParentId)
+            .CanSort()
+            .CanFilter();
+
         mapper.Property<WFP>(p => p.ProjectStartDate.Year)
             .CanSort()
             .CanFilter()

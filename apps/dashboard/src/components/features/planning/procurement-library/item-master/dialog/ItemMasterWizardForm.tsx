@@ -70,7 +70,7 @@ export function ItemMasterWizardForm({
   const { data: objectCodesResponse, isLoading: isObjectCodesLoading } =
     useObjectCodesQuery({
       pathParams: {},
-      queryParams: {},
+      queryParams: { pageSize: 5000 },
     })
   const { data: unspscCodesResponse, isLoading: isUnspscCodesLoading } =
     useUnspscCodesQuery({

@@ -31,8 +31,6 @@ interface ItemMasterFormProps {
   isLoading?: boolean
 }
 
-// Mock UACS data - in real app, would come from API
-
 export function ItemMasterForm({
   onSubmit,
   onCancel,
@@ -68,7 +66,7 @@ export function ItemMasterForm({
   const { data: objectCodesResponse, isLoading: isObjectCodesLoading } =
     useObjectCodesQuery({
       pathParams: {},
-      queryParams: {},
+      queryParams: { pageSize: 5000 },
     })
   const { data: unspscCodesResponse, isLoading: isUnspscCodesLoading } =
     useUnspscCodesQuery({

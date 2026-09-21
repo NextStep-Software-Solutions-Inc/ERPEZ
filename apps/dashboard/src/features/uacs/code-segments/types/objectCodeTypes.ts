@@ -45,3 +45,13 @@ export interface UpdateObjectPayload {
   expenseClassId?: string | null
 }
 
+export interface PaginatedObjectApiResponse {
+  succeeded: boolean
+  message: string | null
+  data: ObjectApiResponse[]
+  pageNumber: number
+  pageSize: number
+  totalPages: number
+  totalCount: number
+}
+

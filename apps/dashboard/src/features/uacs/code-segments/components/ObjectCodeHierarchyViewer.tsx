@@ -1,5 +1,16 @@
-import { useState, useMemo } from 'react'
-import { ChevronRight, ChevronDown, MoreHorizontal, Plus, Edit2, Trash2 } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import {
+  ChevronRight,
+  ChevronDown,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
+  MoreHorizontal,
+  Plus,
+  Edit2,
+  Trash2,
+  Layers,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -8,6 +19,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { ObjectCode } from '../types/objectCodeTypes'
 import { expenseClassColors } from '../utils/expenseClassColors'
 
@@ -26,10 +44,12 @@ interface ObjectCodeHierarchyViewerProps {
   onEdit?: (item: ObjectCode) => void
   onDelete?: (item: ObjectCode) => void
   onAddChild?: (parentItem: ObjectCode) => void
+  searchQuery?: string
 }
 
 /**
- * Builds hierarchical tree from flat ObjectCode array
+ * Builds hierarchical tree from flat ObjectCode array.
+ * Retains all nodes by treating any node whose parent is not in the array as a top-level node.
  */
 function buildHierarchy(codes: ObjectCode[]): HierarchyNode[] {
   const codeMap = new Map<string, ObjectCode>()
@@ -39,6 +59,7 @@ function buildHierarchy(codes: ObjectCode[]): HierarchyNode[] {
     const children = codes
       .filter((c) => c.parentId === code.id)
       .map((c) => buildNode(c, level + 1))
+      .sort((a, b) => a.code.localeCompare(b.code))
 
     return {
       id: code.id,
@@ -51,11 +72,31 @@ function buildHierarchy(codes: ObjectCode[]): HierarchyNode[] {
     }
   }
 
-  // Only top-level codes (no parent)
+  // Top-level codes: those without parent or whose parent is not in the dataset
   return codes
-    .filter((code) => !code.parentId)
+    .filter((code) => !code.parentId || !codeMap.has(code.parentId))
     .map((code) => buildNode(code, 0))
     .sort((a, b) => a.code.localeCompare(b.code))
+}
+
+/**
+ * Highlights matching query terms in text
+ */
+function highlightMatch(text: string, query?: string) {
+  if (!query?.trim() || !text) return text
+  const q = query.trim()
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = new RegExp(`(${escaped})`, 'gi')
+  const parts = text.split(regex)
+  return parts.map((part, index) =>
+    regex.test(part) ? (
+      <mark key={index} className="bg-amber-200 text-amber-950 font-bold px-0.5 rounded-xs">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  )
 }
 
 export function ObjectCodeHierarchyViewer({
@@ -63,18 +104,81 @@ export function ObjectCodeHierarchyViewer({
   onEdit,
   onDelete,
   onAddChild,
+  searchQuery,
 }: ObjectCodeHierarchyViewerProps) {
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
+  const [manualCollapsedNodes, setManualCollapsedNodes] = useState<Set<string>>(new Set())
+  const [manualExpandedNodes, setManualExpandedNodes] = useState<Set<string>>(new Set())
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
   const hierarchyData = useMemo(() => buildHierarchy(items), [items])
 
-  const toggleNode = (nodeId: string) => {
-    const newExpanded = new Set(expandedNodes)
-    if (newExpanded.has(nodeId)) {
-      newExpanded.delete(nodeId)
-    } else {
-      newExpanded.add(nodeId)
+  // Reset page and manual expand/collapse states when search or items change
+  useEffect(() => {
+    setPage(1)
+    setManualCollapsedNodes(new Set())
+    setManualExpandedNodes(new Set())
+  }, [items.length, searchQuery])
+
+  // Filter hierarchy tree to only matching nodes and their ancestor chains when searching
+  const filteredHierarchyData = useMemo(() => {
+    const query = searchQuery?.trim().toLowerCase()
+    if (!query) return hierarchyData
+
+    const filterTree = (nodes: HierarchyNode[]): HierarchyNode[] => {
+      const result: HierarchyNode[] = []
+      for (const node of nodes) {
+        const selfMatch =
+          node.code.toLowerCase().includes(query) ||
+          node.name.toLowerCase().includes(query)
+        const matchingChildren = node.children ? filterTree(node.children) : []
+
+        if (selfMatch || matchingChildren.length > 0) {
+          result.push({
+            ...node,
+            children: matchingChildren.length > 0 ? matchingChildren : (selfMatch ? node.children : undefined),
+          })
+        }
+      }
+      return result
     }
-    setExpandedNodes(newExpanded)
+
+    return filterTree(hierarchyData)
+  }, [hierarchyData, searchQuery])
+
+  const isNodeExpanded = (nodeId: string): boolean => {
+    const isSearching = Boolean(searchQuery?.trim())
+    if (isSearching) {
+      // Auto-expand all matching branches when searching, unless manually collapsed by user
+      return !manualCollapsedNodes.has(nodeId)
+    }
+    // Collapsed by default when not searching, unless manually expanded by user
+    return manualExpandedNodes.has(nodeId)
+  }
+
+  const toggleNode = (nodeId: string) => {
+    const isSearching = Boolean(searchQuery?.trim())
+    if (isSearching) {
+      setManualCollapsedNodes((prev) => {
+        const next = new Set(prev)
+        if (next.has(nodeId)) {
+          next.delete(nodeId)
+        } else {
+          next.add(nodeId)
+        }
+        return next
+      })
+    } else {
+      setManualExpandedNodes((prev) => {
+        const next = new Set(prev)
+        if (next.has(nodeId)) {
+          next.delete(nodeId)
+        } else {
+          next.add(nodeId)
+        }
+        return next
+      })
+    }
   }
 
   const getExpenseClassBadgeColor = (expenseClass: string) => {
@@ -84,17 +188,17 @@ export function ObjectCodeHierarchyViewer({
 
   const getRowBackgroundColor = (level: number) => {
     if (level === 0) return 'bg-white'
-    return level % 2 === 0 ? 'bg-blue-50/30' : 'bg-blue-50/50'
+    return level % 2 === 0 ? 'bg-blue-50/20' : 'bg-slate-50/50'
   }
 
   const renderNode = (node: HierarchyNode, codeItem: ObjectCode | undefined) => {
-    const hasChildren = node.children && node.children.length > 0
-    const isExpanded = expandedNodes.has(node.id)
+    const hasChildren = Boolean(node.children && node.children.length > 0)
+    const isExpanded = isNodeExpanded(node.id)
 
     return (
       <div key={node.id} className="select-none">
         <div
-          className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-100 transition border-b ${getRowBackgroundColor(node.level)}`}
+          className={`flex items-start gap-3 p-4 cursor-pointer hover:bg-gray-50/90 transition border-b ${getRowBackgroundColor(node.level)}`}
           style={{ paddingLeft: `${16 + node.level * 24}px` }}
           onClick={() => {
             if (hasChildren) {
@@ -109,12 +213,13 @@ export function ObjectCodeHierarchyViewer({
                 e.stopPropagation()
                 toggleNode(node.id)
               }}
-              className="flex items-center justify-center w-5 h-5 hover:bg-gray-300 rounded transition-colors flex-shrink-0"
+              className="flex items-center justify-center w-5 h-5 mt-0.5 hover:bg-gray-300 rounded transition-colors flex-shrink-0"
+              title={isExpanded ? 'Collapse' : 'Expand'}
             >
               {isExpanded ? (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 text-gray-600" />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 text-gray-600" />
               )}
             </button>
           ) : (
@@ -124,22 +229,59 @@ export function ObjectCodeHierarchyViewer({
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-sm font-semibold">{node.code}</span>
+              <span className="font-mono text-sm font-semibold text-gray-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                {highlightMatch(node.code, searchQuery)}
+              </span>
               <Badge
                 className={`text-white font-semibold ${getExpenseClassBadgeColor(node.expenseClass)}`}
               >
                 {node.expenseClass}
               </Badge>
               {hasChildren && (
-                <Badge variant="outline" className="text-xs">
-                  {node.children?.length || 0} children
+                <Badge variant="outline" className="text-xs font-semibold bg-indigo-50 text-indigo-700 border-indigo-200">
+                  {node.children!.length} {node.children!.length === 1 ? 'child' : 'children'}
                 </Badge>
               )}
               <Badge color={node.isActive ? 'success' : 'destructive'} variant="outline" className="text-xs">
                 {node.isActive ? 'Active' : 'Inactive'}
               </Badge>
             </div>
-            <div className="text-sm text-gray-700 mt-1">{node.name}</div>
+            <div className="text-sm font-medium text-gray-800 mt-1">
+              {highlightMatch(node.name, searchQuery)}
+            </div>
+
+            {/* Include codes of each children */}
+            {hasChildren && (
+              <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                  Child Codes:
+                </span>
+                {node.children!.slice(0, 8).map((child) => {
+                  const isMatch =
+                    Boolean(searchQuery?.trim()) &&
+                    (child.code.toLowerCase().includes(searchQuery!.trim().toLowerCase()) ||
+                      child.name.toLowerCase().includes(searchQuery!.trim().toLowerCase()))
+                  return (
+                    <span
+                      key={child.id}
+                      className={`font-mono text-[11px] font-medium px-1.5 py-0.5 rounded border transition-colors ${
+                        isMatch
+                          ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-blue-700 border-slate-200'
+                      }`}
+                      title={`${child.code} - ${child.name}`}
+                    >
+                      {highlightMatch(child.code, searchQuery)}
+                    </span>
+                  )
+                })}
+                {node.children!.length > 8 && (
+                  <span className="text-[11px] font-medium text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-dashed border-slate-200">
+                    +{node.children!.length - 8} more
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -181,7 +323,7 @@ export function ObjectCodeHierarchyViewer({
           </div>
         </div>
 
-        {/* Children */}
+        {/* Children rendering */}
         {hasChildren && isExpanded && (
           <div>
             {node.children!.map((child) => {
@@ -195,25 +337,109 @@ export function ObjectCodeHierarchyViewer({
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-white">
-      <div className="mb-0">
-        <div className="px-4 py-3 bg-gray-50 border-b">
-          <h3 className="text-base font-semibold">Hierarchy View</h3>
-          <p className="text-xs text-gray-600 mt-1">
-            Organized by parent-child relationships with expense class categorization
+    <div className="border rounded-lg overflow-hidden bg-white shadow-xs">
+      <div className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h3 className="text-base font-semibold text-gray-900">Hierarchy View</h3>
+          <p className="text-xs text-gray-600 mt-0.5">
+            Organized by parent-child relationships with expense class categorization and child code listings
           </p>
         </div>
+        <div className="text-xs text-muted-foreground">
+          Total root groups: <strong className="text-gray-900">{totalRootCount}</strong>
+        </div>
       </div>
+
       <div>
-        {hierarchyData.length === 0 ? (
-          <div className="px-4 py-8 text-center text-gray-500">No object codes found</div>
+        {paginatedNodes.length === 0 ? (
+          <div className="px-4 py-12 text-center text-gray-500">
+            <Layers className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm font-medium">No object codes found</p>
+          </div>
         ) : (
-          hierarchyData.map((node) => {
+          paginatedNodes.map((node) => {
             const codeItem = items.find((item) => item.id === node.id)
             return renderNode(node, codeItem)
           })
         )}
       </div>
+
+      {/* Pagination Footer */}
+      {totalRootCount > 0 && (
+        <div className="px-4 py-3 bg-gray-50 border-t flex items-center justify-between flex-wrap gap-4 text-xs text-gray-600">
+          <div className="flex items-center gap-2">
+            <span>Rows per page:</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(val) => {
+                setPageSize(Number(val))
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="h-8 w-18 text-xs bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-muted-foreground ml-2">
+              Showing {Math.min((page - 1) * pageSize + 1, totalRootCount)}–
+              {Math.min(page * pageSize, totalRootCount)} of {totalRootCount} root groups
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <span className="mr-2 text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0 bg-white"
+              onClick={() => setPage(1)}
+              disabled={page <= 1}
+              title="First Page"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0 bg-white"
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={page <= 1}
+              title="Previous Page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0 bg-white"
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={page >= totalPages}
+              title="Next Page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0 bg-white"
+              onClick={() => setPage(totalPages)}
+              disabled={page >= totalPages}
+              title="Last Page"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
