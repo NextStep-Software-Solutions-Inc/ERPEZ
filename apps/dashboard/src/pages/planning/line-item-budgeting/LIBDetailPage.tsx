@@ -341,8 +341,8 @@ export default function LIBDetailPage({
     (totalBudgetFromSource !== undefined && totalBudgetFromSource > 0
       ? proposedLibTotalBudget >= totalBudgetFromSource
       : proposedLibTotalBudget > 0 ||
-        (lib?.activities && lib.activities.length > 0) ||
-        (lib?.orphanDetails && lib.orphanDetails.length > 0))
+      (lib?.activities && lib.activities.length > 0) ||
+      (lib?.orphanDetails && lib.orphanDetails.length > 0))
 
   const activityCount = lib?.activities?.length ?? 0
   const opcrActivityCount = opcrData?.data?.activityCount
@@ -885,15 +885,15 @@ export default function LIBDetailPage({
                                 (activity.id && a.id === activity.id) ||
                                 (activity.wfpObjectiveActivityId &&
                                   a.wfpObjectiveActivityId ===
-                                    activity.wfpObjectiveActivityId) ||
+                                  activity.wfpObjectiveActivityId) ||
                                 (activity.opcrActivityId &&
                                   a.opcrActivityId ===
-                                    activity.opcrActivityId),
+                                  activity.opcrActivityId),
                             )
 
                             const details =
                               matchingLibActivity?.details &&
-                              matchingLibActivity.details.length > 0
+                                matchingLibActivity.details.length > 0
                                 ? matchingLibActivity.details
                                 : activity.details || []
 
@@ -930,7 +930,7 @@ export default function LIBDetailPage({
                                       void queryClient.invalidateQueries({
                                         predicate: (query) =>
                                           typeof query.queryKey[0] ===
-                                            'string' &&
+                                          'string' &&
                                           query.queryKey[0].startsWith(
                                             '/lib-activities',
                                           ),
@@ -949,10 +949,10 @@ export default function LIBDetailPage({
 
                             const subtitle =
                               lib.sourceType === 'OPCR' &&
-                              opcrActivity?.PAPDepartments
+                                opcrActivity?.PAPDepartments
                                 ? `Responsible Office: ${opcrActivity.PAPDepartments.map(
-                                    (dept) => dept.office.name,
-                                  ).join(', ')}`
+                                  (dept) => dept.office.name,
+                                ).join(', ')}`
                                 : lib.sourceType === 'WFP'
                                   ? 'WFP Activity'
                                   : 'LIB Activity'
@@ -981,9 +981,9 @@ export default function LIBDetailPage({
                                     onView={
                                       opcrActivity
                                         ? () =>
-                                            setSelectedActivity(
-                                              opcrActivity,
-                                            )
+                                          setSelectedActivity(
+                                            opcrActivity,
+                                          )
                                         : undefined
                                     }
                                     onEdit={undefined}
@@ -1192,22 +1192,20 @@ export function LIBActivityCard({
 
   return (
     <Card
-      className={`transition-all duration-200 hover:shadow-md ${
-        hasItems
+      className={`transition-all duration-200 hover:shadow-md ${hasItems
           ? 'border-l-4 border-l-emerald-500 bg-white hover:border-l-emerald-600'
           : 'border-l-4 border-l-amber-400 bg-amber-50/10 hover:border-l-amber-500'
-      }`}
+        }`}
     >
       <CardContent className="p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           {/* Left */}
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                hasItems
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${hasItems
                   ? 'bg-emerald-100 text-emerald-700'
                   : 'bg-amber-100 text-amber-700'
-              }`}
+                }`}
             >
               {icon ?? <span className="text-base">📄</span>}
             </div>
@@ -1251,9 +1249,8 @@ export function LIBActivityCard({
                 Total Expenditures
               </span>
               <span
-                className={`text-base sm:text-lg font-bold tracking-tight font-mono ${
-                  budget > 0 ? 'text-emerald-700' : 'text-gray-400'
-                }`}
+                className={`text-base sm:text-lg font-bold tracking-tight  ${budget > 0 ? 'text-emerald-700' : 'text-gray-400'
+                  }`}
               >
                 {formatCurrencyPHP(budget)}
               </span>
