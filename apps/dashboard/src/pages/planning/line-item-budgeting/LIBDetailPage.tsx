@@ -11,7 +11,6 @@ import {
   Calendar,
   Wallet,
   Coins,
-  Send,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -58,9 +57,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LIBSummaryDialog } from './dialogs/LIBSummaryDialog'
 import { LIBHistoryDialog } from './dialogs/LIBHistoryDialog'
-import { LayoutDashboard, History, Check, X, RotateCcw } from 'lucide-react'
-import { LIBApprovalDialog, LIBReadinessCard } from '@/features/planning/line-item-budgeting/line-item-budget/components'
-
+import { LayoutDashboard, History } from 'lucide-react'
+import {
+  LIBApprovalDialog,
+  LIBReadinessCard,
+} from '@/features/planning/line-item-budgeting/line-item-budget/components'
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -116,8 +117,8 @@ const useDownloadLIBDocument = createMutationHookFromTemplate(
 )
 
 export default function LIBDetailPage({
-  onBack = () => { },
-  onEdit = () => { },
+  onBack = () => {},
+  onEdit = () => {},
 }: {
   onBack?: () => void
   onEdit?: () => void
@@ -144,7 +145,7 @@ export default function LIBDetailPage({
   const isSubmitting = isLibSubmitting
   const [isExporting, setIsExporting] = useState<boolean>(false)
   const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState<boolean>(false)
-  const [isApprovalLoading, setIsApprovalLoading] = useState<boolean>(false)
+  const [isApprovalLoading] = useState<boolean>(false)
   const [showSummary, setShowSummary] = useState<boolean>(false)
   const [showHistory, setShowHistory] = useState<boolean>(false)
   const [approvalDialogState, setApprovalDialogState] = useState<{
@@ -169,7 +170,7 @@ export default function LIBDetailPage({
     const exportPromise = (async () => {
       const genResponse = await generateLIBDocument({
         pathParams: { libId },
-        queryParams: { format }
+        queryParams: { format },
       })
 
       const documentId = genResponse.data
@@ -178,7 +179,7 @@ export default function LIBDetailPage({
       }
 
       const downloadResponse = await downloadLIBDocument({
-        pathParams: { documentId }
+        pathParams: { documentId },
       })
 
       const blob = downloadResponse.blob
@@ -200,7 +201,8 @@ export default function LIBDetailPage({
     toast.promise(exportPromise, {
       loading: `Generating and downloading ${format} document...`,
       success: `${format} document downloaded successfully!`,
-      error: (err) => err instanceof Error ? err.message : `Failed to export document.`,
+      error: (err) =>
+        err instanceof Error ? err.message : `Failed to export document.`,
     })
 
     try {
@@ -282,29 +284,37 @@ export default function LIBDetailPage({
         : lib?.totalAmount
 
   //Calculate total amount from all activities added from each activities's expenditures
-  const activityDetailsBudget = lib?.activities?.reduce(
-    (total, activity) =>
-      total +
-      (activity?.details || [])?.reduce(
-        (detailTotal, detail) => detailTotal + (detail.budget ?? 0),
-        0,
-      ),
-    0,
-  ) ?? 0
+  const activityDetailsBudget =
+    lib?.activities?.reduce(
+      (total, activity) =>
+        total +
+        (activity?.details || [])?.reduce(
+          (detailTotal, detail) => detailTotal + (detail.budget ?? 0),
+          0,
+        ),
+      0,
+    ) ?? 0
 
-  const orphanDetailsBudget = (lib?.orphanDetails as OrphanLineItemDetail[] | undefined)?.reduce(
-    (total, detail) => total + (detail.budget ?? 0),
-    0,
-  ) ?? 0
+  const orphanDetailsBudget =
+    (lib?.orphanDetails as OrphanLineItemDetail[] | undefined)?.reduce(
+      (total, detail) => total + (detail.budget ?? 0),
+      0,
+    ) ?? 0
 
-  const totalActivitiesDetailBudget = activityDetailsBudget + orphanDetailsBudget
-  const proposedLibTotalBudget = Math.max(totalActivitiesDetailBudget, lib?.totalAmount ?? 0)
+  const totalActivitiesDetailBudget =
+    activityDetailsBudget + orphanDetailsBudget
+  const proposedLibTotalBudget = Math.max(
+    totalActivitiesDetailBudget,
+    lib?.totalAmount ?? 0,
+  )
 
   // Fetch office ceilings to validate against department ceiling
   const ceilingFilters = [
     lib?.officeId ? `officeId==${lib.officeId}` : '',
     lib?.fiscalYearId ? `fiscalYearId==${lib.fiscalYearId}` : '',
-  ].filter(Boolean).join(',')
+  ]
+    .filter(Boolean)
+    .join(',')
 
   const { data: officeCeilingsData } = useOfficeCeilings({
     pathParams: {},
@@ -316,14 +326,21 @@ export default function LIBDetailPage({
 
   const departmentCeiling = useMemo(() => {
     if (lib?.departmentCeiling) return Number(lib.departmentCeiling)
-    if (lib?.officeCeiling?.totalAmount) return Number(lib.officeCeiling.totalAmount)
-    if (lib?.agencyMasterBudget?.totalAmount) return Number(lib.agencyMasterBudget.totalAmount)
+    if (lib?.officeCeiling?.totalAmount)
+      return Number(lib.officeCeiling.totalAmount)
+    if (lib?.agencyMasterBudget?.totalAmount)
+      return Number(lib.agencyMasterBudget.totalAmount)
     const ceilings = officeCeilingsData?.data || []
     if (ceilings.length > 0) {
       const ambId = lib?.agencyMasterBudgetId
       if (ambId) {
-        const match = ceilings.find((c) => c.agencyMasterBudgetId === ambId || c.agencyMasterBudget?.id === ambId)
-        if (match?.agencyMasterBudget?.totalAmount) return Number(match.agencyMasterBudget.totalAmount)
+        const match = ceilings.find(
+          (c) =>
+            c.agencyMasterBudgetId === ambId ||
+            c.agencyMasterBudget?.id === ambId,
+        )
+        if (match?.agencyMasterBudget?.totalAmount)
+          return Number(match.agencyMasterBudget.totalAmount)
       }
       return Number(ceilings[0]?.agencyMasterBudget?.totalAmount || 0)
     }
@@ -331,7 +348,9 @@ export default function LIBDetailPage({
   }, [lib, officeCeilingsData])
 
   const isCeilingExceeded =
-    departmentCeiling != null && departmentCeiling > 0 && proposedLibTotalBudget > departmentCeiling
+    departmentCeiling != null &&
+    departmentCeiling > 0 &&
+    proposedLibTotalBudget > departmentCeiling
 
   // Check if LIB is ready for submission (proposed totalBudget >= OPCR/Source totalBudget)
   const isReadyForSubmission =
@@ -339,8 +358,8 @@ export default function LIBDetailPage({
     (totalBudgetFromSource !== undefined && totalBudgetFromSource > 0
       ? proposedLibTotalBudget >= totalBudgetFromSource
       : proposedLibTotalBudget > 0 ||
-      (lib?.activities && lib.activities.length > 0) ||
-      (lib?.orphanDetails && lib.orphanDetails.length > 0))
+        (lib?.activities && lib.activities.length > 0) ||
+        (lib?.orphanDetails && lib.orphanDetails.length > 0))
 
   const activityCount = lib?.activities?.length ?? 0
   const opcrActivityCount = opcrData?.data?.activityCount
@@ -486,7 +505,9 @@ export default function LIBDetailPage({
               approvalDialogState.action === 'approve'
                 ? 'approved'
                 : 'returned for revision'
-            toast.success(`LIB "${approvalDialogState.libName}" has been ${actionLabel}!`)
+            toast.success(
+              `LIB "${approvalDialogState.libName}" has been ${actionLabel}!`,
+            )
             setApprovalDialogState({
               open: false,
               action: 'approve',
@@ -508,7 +529,6 @@ export default function LIBDetailPage({
       toast.error(message)
     }
   }
-
 
   const stats = [
     {
@@ -533,7 +553,9 @@ export default function LIBDetailPage({
             : wfpData?.data?.projectStartDate && wfpData?.data?.projectEndDate
               ? new Date(wfpData.data.projectStartDate).getFullYear() ===
                 new Date(wfpData.data.projectEndDate).getFullYear()
-                ? new Date(wfpData.data.projectStartDate).getFullYear().toString()
+                ? new Date(wfpData.data.projectStartDate)
+                    .getFullYear()
+                    .toString()
                 : `${new Date(wfpData.data.projectStartDate).getFullYear()} – ${new Date(wfpData.data.projectEndDate).getFullYear()}`
               : 'N/A',
       icon: <Calendar className="h-5 w-5" />,
@@ -551,7 +573,8 @@ export default function LIBDetailPage({
       icon: <Coins className="h-5 w-5" />,
       gradientClass: 'from-emerald-50/40 to-white hover:from-emerald-50/70',
       borderClass: 'from-emerald-400 to-emerald-600',
-      iconColorClass: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
+      iconColorClass:
+        'bg-emerald-50 text-emerald-600 border border-emerald-100',
     },
   ]
   return (
@@ -604,10 +627,11 @@ export default function LIBDetailPage({
               <Button
                 variant="outline"
                 size="sm"
-                className={`gap-2 ${showHistory
-                  ? 'bg-slate-100 text-slate-800 border-slate-300'
-                  : 'text-slate-650 hover:bg-slate-50'
-                  }`}
+                className={`gap-2 ${
+                  showHistory
+                    ? 'bg-slate-100 text-slate-800 border-slate-300'
+                    : 'text-slate-650 hover:bg-slate-50'
+                }`}
                 onClick={() => setShowHistory(!showHistory)}
               >
                 <History className="w-4 h-4" />
@@ -626,7 +650,12 @@ export default function LIBDetailPage({
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2" disabled={isExporting}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    disabled={isExporting}
+                  >
                     {isExporting ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
@@ -649,7 +678,7 @@ export default function LIBDetailPage({
                 variant="outline"
                 size="sm"
                 className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-              // onClick={() => setShowDeleteDialog(true)}
+                // onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="w-4 h-4" />
                 Delete
@@ -684,10 +713,14 @@ export default function LIBDetailPage({
             setIsSubmitConfirmOpen(true)
           }}
           onOpenApprove={
-            lib?.status === 'Submitted' ? () => handleApproveLIB(lib.id, lib.name) : undefined
+            lib?.status === 'Submitted'
+              ? () => handleApproveLIB(lib.id, lib.name)
+              : undefined
           }
           onOpenReject={
-            lib?.status === 'Submitted' ? () => handleRejectLIB(lib.id, lib.name) : undefined
+            lib?.status === 'Submitted'
+              ? () => handleRejectLIB(lib.id, lib.name)
+              : undefined
           }
           isSubmitting={isSubmitting}
         />
@@ -702,7 +735,12 @@ export default function LIBDetailPage({
                   Department Ceiling Exceeded
                 </h3>
                 <p className="text-rose-700 text-sm mt-0.5">
-                  The current Line-Item Budget total ({formatCurrencyPHP(proposedLibTotalBudget)}) exceeds the authorized department ceiling ({formatCurrencyPHP(departmentCeiling!)}). Submission is blocked until line-item expenditures are adjusted within the ceiling.
+                  The current Line-Item Budget total (
+                  {formatCurrencyPHP(proposedLibTotalBudget)}) exceeds the
+                  authorized department ceiling (
+                  {formatCurrencyPHP(departmentCeiling!)}). Submission is
+                  blocked until line-item expenditures are adjusted within the
+                  ceiling.
                 </p>
               </div>
             </div>
@@ -719,7 +757,9 @@ export default function LIBDetailPage({
                   Returned for Revision
                 </h3>
                 <p className="text-amber-700 text-sm mt-0.5">
-                  This Line-Item Budget was returned for revision. Update the activity details or line items to match the budget ceiling, then resubmit.
+                  This Line-Item Budget was returned for revision. Update the
+                  activity details or line items to match the budget ceiling,
+                  then resubmit.
                 </p>
               </div>
             </div>
@@ -790,7 +830,9 @@ export default function LIBDetailPage({
                         )
                       } catch (err) {
                         const message =
-                          err instanceof Error ? err.message : 'Failed to delete line item'
+                          err instanceof Error
+                            ? err.message
+                            : 'Failed to delete line item'
                         toast.error(message)
                       } finally {
                         setDeletingOrphanItemId(null)
@@ -829,11 +871,9 @@ export default function LIBDetailPage({
                       }}
                       type="OPCR"
                       opcrData={opcrData?.data}
-                      existingOPCRActivityIds={
-                        (displayActivities || [])
-                          .map((a) => a.opcrActivityId)
-                          .filter((id): id is string => Boolean(id))
-                      }
+                      existingOPCRActivityIds={(displayActivities || [])
+                        .map((a) => a.opcrActivityId)
+                        .filter((id): id is string => Boolean(id))}
                       isOPCRLoading={isOPCRLoading}
                       isWFPLoading={isWFPLoading}
                     />
@@ -871,8 +911,7 @@ export default function LIBDetailPage({
                           (activity: LIBActivity, index) => {
                             // Check if this LIB activity has a linked OPCR activity or WFP activity
                             const opcrActivity = activity.opcrActivity as
-                              | OPCRActivity
-                              | undefined
+                              OPCRActivity | undefined
                             const wfpActivity = activity?.wfpObjectiveActivity
 
                             // Match the activity in libData to get all details / line items added
@@ -883,15 +922,14 @@ export default function LIBDetailPage({
                                 (activity.id && a.id === activity.id) ||
                                 (activity.wfpObjectiveActivityId &&
                                   a.wfpObjectiveActivityId ===
-                                  activity.wfpObjectiveActivityId) ||
+                                    activity.wfpObjectiveActivityId) ||
                                 (activity.opcrActivityId &&
-                                  a.opcrActivityId ===
-                                  activity.opcrActivityId),
+                                  a.opcrActivityId === activity.opcrActivityId),
                             )
 
                             const details =
                               matchingLibActivity?.details &&
-                                matchingLibActivity.details.length > 0
+                              matchingLibActivity.details.length > 0
                                 ? matchingLibActivity.details
                                 : activity.details || []
 
@@ -911,7 +949,9 @@ export default function LIBDetailPage({
                               lib.sourceType === 'OPCR'
                                 ? opcrActivity?.budget
                                 : lib.sourceType === 'WFP'
-                                  ? calculateWFPBudget(wfpActivity)
+                                  ? calculateWFPBudget(
+                                      wfpActivity as WFPObjectiveActivity,
+                                    )
                                   : undefined
 
                             const handleDeleteActivity = async () => {
@@ -928,7 +968,7 @@ export default function LIBDetailPage({
                                       void queryClient.invalidateQueries({
                                         predicate: (query) =>
                                           typeof query.queryKey[0] ===
-                                          'string' &&
+                                            'string' &&
                                           query.queryKey[0].startsWith(
                                             '/lib-activities',
                                           ),
@@ -947,10 +987,10 @@ export default function LIBDetailPage({
 
                             const subtitle =
                               lib.sourceType === 'OPCR' &&
-                                opcrActivity?.PAPDepartments
+                              opcrActivity?.PAPDepartments
                                 ? `Responsible Office: ${opcrActivity.PAPDepartments.map(
-                                  (dept) => dept.office.name,
-                                ).join(', ')}`
+                                    (dept) => dept.office.name,
+                                  ).join(', ')}`
                                 : lib.sourceType === 'WFP'
                                   ? 'WFP Activity'
                                   : 'LIB Activity'
@@ -969,8 +1009,7 @@ export default function LIBDetailPage({
                                       ...prev,
                                       libActivityId: activity.id || '',
                                       wfpObjectiveActivityId:
-                                        activity.wfpObjectiveActivity?.id ||
-                                        '',
+                                        activity.wfpObjectiveActivity?.id || '',
                                     }),
                                   })
                                 }
@@ -979,9 +1018,7 @@ export default function LIBDetailPage({
                                     onView={
                                       opcrActivity
                                         ? () =>
-                                          setSelectedActivity(
-                                            opcrActivity,
-                                          )
+                                            setSelectedActivity(opcrActivity)
                                         : undefined
                                     }
                                     onEdit={undefined}
@@ -1117,8 +1154,8 @@ export default function LIBDetailPage({
                       Submit LIB for Review?
                     </h3>
                     <p className="text-sm text-gray-600 mt-2">
-                      Once submitted, this LIB will be sent for review and approval
-                      by the Budget Office.
+                      Once submitted, this LIB will be sent for review and
+                      approval by the Budget Office.
                     </p>
                   </div>
                 </div>
@@ -1190,20 +1227,22 @@ export function LIBActivityCard({
 
   return (
     <Card
-      className={`transition-all duration-200 hover:shadow-md ${hasItems
-        ? 'border-l-4 border-l-emerald-500 bg-white hover:border-l-emerald-600'
-        : 'border-l-4 border-l-amber-400 bg-amber-50/10 hover:border-l-amber-500'
-        }`}
+      className={`transition-all duration-200 hover:shadow-md ${
+        hasItems
+          ? 'border-l-4 border-l-emerald-500 bg-white hover:border-l-emerald-600'
+          : 'border-l-4 border-l-amber-400 bg-amber-50/10 hover:border-l-amber-500'
+      }`}
     >
       <CardContent className="p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           {/* Left */}
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${hasItems
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-amber-100 text-amber-700'
-                }`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                hasItems
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-amber-100 text-amber-700'
+              }`}
             >
               {icon ?? <span className="text-base">📄</span>}
             </div>
@@ -1234,9 +1273,7 @@ export function LIBActivityCard({
                 )}
               </div>
 
-              {subtitle && (
-                <p className="text-xs text-gray-500">{subtitle}</p>
-              )}
+              {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
             </div>
           </div>
 
@@ -1247,8 +1284,9 @@ export function LIBActivityCard({
                 Total Expenditures
               </span>
               <span
-                className={`text-base sm:text-lg font-bold tracking-tight  ${budget > 0 ? 'text-emerald-700' : 'text-gray-400'
-                  }`}
+                className={`text-base sm:text-lg font-bold tracking-tight  ${
+                  budget > 0 ? 'text-emerald-700' : 'text-gray-400'
+                }`}
               >
                 {formatCurrencyPHP(budget)}
               </span>
@@ -1282,8 +1320,10 @@ export function LIBActivityCard({
               {hasItems ? (
                 <span className="flex items-center gap-1.5 text-emerald-700 font-medium bg-emerald-50/60 px-2.5 py-1 rounded-md border border-emerald-100">
                   <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
-                  Allocated: <strong>{formatCurrencyPHP(budget)}</strong> across{' '}
-                  {itemCount} {itemCount === 1 ? 'line item' : 'line items'}
+                  Allocated: <strong>
+                    {formatCurrencyPHP(budget)}
+                  </strong> across {itemCount}{' '}
+                  {itemCount === 1 ? 'line item' : 'line items'}
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5 text-amber-600 font-medium bg-amber-50/60 px-2.5 py-1 rounded-md border border-amber-100">
@@ -1318,9 +1358,13 @@ function StatsCard({
   iconColorClass,
 }: StatsCardProps) {
   return (
-    <Card className={`relative overflow-hidden border border-gray-100 rounded-xl shadow-xs transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br ${gradientClass}`}>
+    <Card
+      className={`relative overflow-hidden border border-gray-100 rounded-xl shadow-xs transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br ${gradientClass}`}
+    >
       {/* Visual Accent Top Bar */}
-      <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${borderClass}`} />
+      <div
+        className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${borderClass}`}
+      />
 
       <CardContent className="pt-6 pb-5 px-6">
         <div className="flex items-center justify-between">
@@ -1333,7 +1377,9 @@ function StatsCard({
             </div>
           </div>
 
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-transform duration-300 hover:scale-105 ${iconColorClass}`}>
+          <div
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-transform duration-300 hover:scale-105 ${iconColorClass}`}
+          >
             {icon}
           </div>
         </div>
