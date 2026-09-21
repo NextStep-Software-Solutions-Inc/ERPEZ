@@ -166,19 +166,19 @@ export function DirectContractingForm({
           <div className="flex justify-between">
             <span className="text-muted-foreground">Linked PR:</span>
             <span className="font-medium">
-              {selectedRes.prNumbers.join(', ')}
+              {selectedRes.prNumbers?.length ? selectedRes.prNumbers.join(', ') : 'N/A'}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Office:</span>
-            <span className="font-medium">{selectedRes.endUser}</span>
+            <span className="font-medium">{selectedRes.endUser || 'N/A'}</span>
           </div>
           <div className="flex justify-between border-t mt-1 pt-1">
             <span className="text-muted-foreground font-semibold">
               Total ABC:
             </span>
             <span className="font-bold text-primary">
-              ₱{selectedRes.amount.toLocaleString()}
+              ₱{(selectedRes.amount ?? 0).toLocaleString()}
             </span>
           </div>
         </div>

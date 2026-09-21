@@ -21,10 +21,25 @@ interface Props {
 export function UpdateDirectContractingModal({ open, onOpenChange, editEntryId }: Props) {
   const { toast } = useToast()
   const { fetchEntries } = useDirectContractingStore()
-  const { data: resolutions = [] } = useBacResolutions({})
+  const { data: resolutionsResponse } = useBacResolutions({
+    pathParams: {},
+    queryParams: { pageSize: 100 },
+    enabled: open,
+  })
   const [suppliersList, setSuppliersList] = useState<{ id: string; name: string }[]>([])
   const [editEntry, setEditEntry] = useState<BackendDirectContractingItem | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  const rawResolutions = useMemo<any[]>(() => {
+    if (!resolutionsResponse) return []
+    if (Array.isArray(resolutionsResponse)) return resolutionsResponse
+    if (typeof resolutionsResponse === 'object' && resolutionsResponse !== null) {
+      const record = resolutionsResponse as Record<string, unknown>
+      if (Array.isArray(record.data)) return record.data
+      if (Array.isArray(record.items)) return record.items
+    }
+    return []
+  }, [resolutionsResponse])
 
   const [dcNumber, setDcNumber] = useState('')
   const [dcName, setDcName] = useState('')
@@ -91,16 +106,62 @@ export function UpdateDirectContractingModal({ open, onOpenChange, editEntryId }
 
   // Include current resolution option
   const resolutionOptions = useMemo(() => {
-    const list = resolutions
-      .filter(res => res.status === 'approved' || (editEntry && res.id === editEntry.bacProjectId))
-      .map(res => ({
-        id: res.id,
-        number: res.bacResolutionNumber,
-        label: `${res.bacResolutionNumber} - ${res.description.substring(0, 40)}...`,
-        prNumbers: res.linkedConsolidatedPrs.map(pr => pr.prNumber),
-        endUser: res.linkedConsolidatedPrs[0]?.endUser ?? 'N/A',
-        amount: res.linkedConsolidatedPrs[0]?.amount ?? 0,
-      }))
+    const list = rawResolutions
+      .filter((res: any) => 
+        (res?.status || '').toLowerCase() === 'approved' || 
+        (editEntry && res.id === editEntry.bacProjectId)
+      )
+      .map((res: any) => {
+        const resolutionNumber =
+          res.bacResolutionNumber ||
+          res.resolutionNumber ||
+          res.title ||
+          (res.id ? `RES-${res.id.slice(0, 8)}` : 'N/A')
+
+        const description = res.description || res.title || ''
+        const shortDesc = description
+          ? description.length > 40
+            ? `${description.substring(0, 40)}...`
+            : description
+          : ''
+
+        let prNumbers: string[] = []
+        if (Array.isArray(res.linkedConsolidatedPrs) && res.linkedConsolidatedPrs.length > 0) {
+          prNumbers = res.linkedConsolidatedPrs
+            .map((pr: any) => pr?.prNumber || pr?.cprNumber)
+            .filter(Boolean)
+        } else if (res.consolidatedPR?.cprNumber || res.consolidatedPR?.prNumber) {
+          const pr = res.consolidatedPR.cprNumber || res.consolidatedPR.prNumber
+          if (pr) prNumbers = [pr]
+        } else if (res.appItem?.itemNumber) {
+          prNumbers = [res.appItem.itemNumber]
+        }
+        prNumbers = Array.from(new Set(prNumbers))
+
+        const endUser =
+          res.linkedConsolidatedPrs?.[0]?.endUser ||
+          res.consolidatedPR?.endUser ||
+          res.consolidatedPR?.officeName ||
+          res.appItem?.officeName ||
+          'N/A'
+
+        const amount =
+          res.linkedConsolidatedPrs?.[0]?.amount ??
+          res.consolidatedPR?.totalAmount ??
+          res.abc ??
+          res.sumABC ??
+          res.appItem?.effectiveABC ??
+          0
+
+        return {
+          id: res.id,
+          number: resolutionNumber,
+          label: shortDesc ? `${resolutionNumber} - ${shortDesc}` : resolutionNumber,
+          prNumbers,
+          endUser,
+          amount,
+        }
+      })
     
     if (editEntry && !list.some(r => r.id === editEntry.bacProjectId)) {
       list.push({
@@ -113,7 +174,7 @@ export function UpdateDirectContractingModal({ open, onOpenChange, editEntryId }
       })
     }
     return list
-  }, [resolutions, editEntry])
+  }, [rawResolutions, editEntry])
 
   const updateMutation = useUpdateDirectContracting()
 
@@ -250,15 +311,15 @@ export function UpdateDirectContractingModal({ open, onOpenChange, editEntryId }
               <div className="text-xs space-y-1 p-3 bg-muted rounded">
                   <div className="flex justify-between">
                       <span className="text-muted-foreground">Linked PR:</span>
-                      <span className="font-medium">{resolutionOptions.find(r => r.id === resolutionId)?.prNumbers.join(', ')}</span>
+                      <span className="font-medium">{resolutionOptions.find(r => r.id === resolutionId)?.prNumbers?.length ? resolutionOptions.find(r => r.id === resolutionId)?.prNumbers.join(', ') : 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
                       <span className="text-muted-foreground">Office:</span>
-                      <span className="font-medium">{resolutionOptions.find(r => r.id === resolutionId)?.endUser}</span>
+                      <span className="font-medium">{resolutionOptions.find(r => r.id === resolutionId)?.endUser || 'N/A'}</span>
                   </div>
                   <div className="flex justify-between border-t mt-1 pt-1">
                       <span className="text-muted-foreground font-semibold">Total ABC:</span>
-                      <span className="font-bold text-primary">₱{resolutionOptions.find(r => r.id === resolutionId)?.amount.toLocaleString()}</span>
+                      <span className="font-bold text-primary">₱{(resolutionOptions.find(r => r.id === resolutionId)?.amount ?? 0).toLocaleString()}</span>
                   </div>
               </div>
             )}
