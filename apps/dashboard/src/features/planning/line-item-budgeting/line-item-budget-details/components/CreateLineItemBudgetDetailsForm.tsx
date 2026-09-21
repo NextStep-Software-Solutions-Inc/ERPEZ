@@ -33,6 +33,10 @@ import {
   ConcurrentSubmissionOutcome,
 } from '../handlers/concurrentSubmissionHandler'
 import { PeriodAllocationPayload } from '../types/wfp-line-item'
+import {
+  resolveExpenditureTypes,
+  getDescendantExpenditureItems,
+} from '../utils/expenditureHierarchyHelpers'
 
 const TIMELINE_TYPES = [
   { id: 'quarterly', label: 'Quarterly' },
@@ -43,17 +47,6 @@ const PERIOD_TIMELINE_TYPES = ['monthly', 'quarterly']
 
 const useGetObjects = createQueryHookFromTemplate(getObjectsRequest)
 
-// Hook for fetching child objects based on parent selection
-const useGetChildObjects = (parentId: string | null) => {
-  return useGetObjects({
-    pathParams: {},
-    queryParams: {
-      filters: parentId ? `parentId==${parentId}` : 'parentId==null',
-      pageSize: 1000,
-    },
-    enabled: !!parentId,
-  })
-}
 
 // Conditional validation: Budget is required only for non-period timeline types
 const createLineItemBudgetDetailsSchema = z
@@ -160,46 +153,23 @@ export default function CreateLineItemBudgetDetailsForm({
   const queryClient = useQueryClient()
   const { mutateAsync, isPending } = useCreateLineItemBudgetDetails()
 
-  // Fetch root objects (parentId==null) to locate the Expenses root object
-  const { data: rootObjectsResponse, isLoading: isLoadingRootObjects } = useGetObjects({
+  // Fetch all objects (up to 5000) to build the complete UACS hierarchy without missing descendant relationships
+  const { data: allObjectsResponse, isLoading: isLoadingObjects } = useGetObjects({
     pathParams: {},
     queryParams: {
-      filters: `parentId==null`,
-      pageSize: 1000,
+      pageSize: 5000,
     },
   })
 
-  // Locate the Expenses root container object if one exists
-  const expensesRootObject = useMemo(() => {
-    return rootObjectsResponse?.data?.find(
-      (item) =>
-        item.code === 'CLS:Expenses' ||
-        item.name?.toLowerCase() === 'expenses' ||
-        item.code === '50000000' ||
-        item.code === '5000000000',
-    )
-  }, [rootObjectsResponse?.data])
+  const allObjects = useMemo(
+    () => allObjectsResponse?.data ?? [],
+    [allObjectsResponse?.data],
+  )
 
-  // Fetch expenditure types (children of Expenses, if an Expenses container exists)
-  const { data: expenditureTypesResponse, isLoading: isLoadingExpenditureTypes } = useGetObjects({
-    pathParams: {},
-    queryParams: {
-      filters: expensesRootObject ? `parentId==${expensesRootObject.id}` : undefined,
-      pageSize: 1000,
-    },
-    enabled: !!expensesRootObject,
-  })
-
-  const expenditureTypes = useMemo(() => {
-    // If an Expenses root container exists and has children, use those children (PS, MOOE, CO, etc.)
-    if (expensesRootObject && expenditureTypesResponse?.data && expenditureTypesResponse.data.length > 0) {
-      return expenditureTypesResponse.data
-    }
-    // Otherwise, the root objects themselves (parentId==null) are the expenditure types (e.g. PS, MOOE, CO)
-    return (rootObjectsResponse?.data ?? []).filter(
-      (item) => item.id !== expensesRootObject?.id,
-    )
-  }, [expensesRootObject, expenditureTypesResponse?.data, rootObjectsResponse?.data])
+  const { expenditureTypes } = useMemo(
+    () => resolveExpenditureTypes(allObjects),
+    [allObjects],
+  )
 
   // Period allocation state
   const [periodAllocation, setPeriodAllocation] = useState<
@@ -236,6 +206,12 @@ export default function CreateLineItemBudgetDetailsForm({
     [],
   )
 
+  // Compute ALL descendants of the selected sub-class upfront so validation inside handleLineItemSubmit can reference it
+  const descendantExpenditureItems = useMemo(
+    () => getDescendantExpenditureItems(allObjects, selectedParentId),
+    [allObjects, selectedParentId],
+  )
+
   // Handle form submission with concurrent period allocation logic
   const handleLineItemSubmit = useCallback(
     async (value: CreateLineItemBudgetDetailsFormValues) => {
@@ -252,7 +228,7 @@ export default function CreateLineItemBudgetDetailsForm({
 
         // Validate that if parent has children, child must be selected
         if (
-          (parentObject?.childObjectCount || 0) > 0 &&
+          (descendantExpenditureItems.length > 0 || (parentObject?.childObjectCount || 0) > 0) &&
           !value.itemOfExpenditureId
         ) {
           toast.error('Select Item of Expenditure is required')
@@ -403,6 +379,7 @@ export default function CreateLineItemBudgetDetailsForm({
       activityStartDate,
       activityEndDate,
       expenditureTypes,
+      descendantExpenditureItems,
     ],
   )
 
@@ -422,14 +399,11 @@ export default function CreateLineItemBudgetDetailsForm({
     return expenditureTypes.find((item) => item.id === selectedParentId)
   }, [selectedParentId, expenditureTypes])
 
-  // Fetch child objects only when parent is selected and has children
-  const { data: childObjectsResponse, isLoading: isLoadingChildObjects } =
-    useGetChildObjects(selectedParentId)
 
   const currentTimelineType = form.getFieldValue('timelineType')
   const isPeriodTimeline = PERIOD_TIMELINE_TYPES.includes(currentTimelineType)
   const isLoading = isPending || isSubmitting
-  const isLoadingTypes = isLoadingRootObjects || isLoadingExpenditureTypes
+  const isLoadingTypes = isLoadingObjects
 
   return (
     <form
@@ -496,14 +470,14 @@ export default function CreateLineItemBudgetDetailsForm({
         )}
       />
 
-      {/* Select Item of Expenditure - Conditionally shown when parent has children */}
-      {selectedParentObject && selectedParentObject.childObjectCount > 0 && (
+      {/* Select Item of Expenditure - Shown when parent sub-class has children; includes ALL descendant levels */}
+      {selectedParentObject && descendantExpenditureItems.length > 0 && (
         <form.Field
           name="itemOfExpenditureId"
           children={(field) => (
             <div className="space-y-1.5">
               <Label htmlFor={field.name} className="font-medium">
-                Select Item of Expenditure
+                Select Item of Expenditure <span className="text-red-500">*</span>
               </Label>
               <Select
                 value={field.state.value || ''}
@@ -511,41 +485,64 @@ export default function CreateLineItemBudgetDetailsForm({
                   field.handleChange(val)
 
                   // Smart Description Inheritance Logic
-                  const children = childObjectsResponse?.data || []
-                  const selectedChild = children.find((item) => item.id === val)
+                  const selectedDescendant = descendantExpenditureItems.find((item) => item.id === val)
 
-                  if (selectedChild) {
+                  if (selectedDescendant) {
                     const currentDesc = form.getFieldValue('description') as string | undefined
                     const isEmpty = !currentDesc || currentDesc.trim() === ''
                     const matchesPreviousAuto = autoInheritedName && currentDesc === autoInheritedName
-                    const matchesAnyObjName = children.some((i) => i.name === currentDesc)
+                    const matchesAnyObjName = descendantExpenditureItems.some((i) => i.name === currentDesc)
 
-                    // Rule A (Empty) or Rule B (Default Match): update Description
+                    // Rule A (Empty) or Rule B (Auto-inherited match): update Description
                     if (isEmpty || matchesPreviousAuto || matchesAnyObjName) {
-                      form.setFieldValue('description', selectedChild.name || '')
-                      setAutoInheritedName(selectedChild.name || null)
+                      form.setFieldValue('description', selectedDescendant.name || '')
+                      setAutoInheritedName(selectedDescendant.name || null)
                     }
                     // Rule C (Custom Edit): If user manually edited description, do NOT overwrite it!
                   }
                 }}
-                disabled={isLoading || isLoadingChildObjects}
+                disabled={isLoading || isLoadingTypes}
               >
                 <SelectTrigger id={field.name} className="w-full">
                   <SelectValue
                     placeholder={
-                      isLoadingChildObjects
+                      isLoadingTypes
                         ? 'Loading items...'
                         : 'Select item of expenditure'
                     }
                   />
                 </SelectTrigger>
-                <SelectContent>
-                  {childObjectsResponse?.data?.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name}
-                      {item.code ? ` (${item.code})` : ''}
-                    </SelectItem>
-                  )) || []}
+                <SelectContent className="max-h-72">
+                  {descendantExpenditureItems.map((item) => {
+                    // depth 0 = Group, depth 1 = Object Code, depth 2+ = Sub-Object/Specification
+                    const indent = item.depth * 16 // px per level
+                    const prefix = item.depth > 0 ? '↳ ' : ''
+                    const weightClass = item.depth === 0
+                      ? 'font-medium text-slate-800'
+                      : item.isLeaf
+                        ? 'text-slate-700'
+                        : 'text-slate-600'
+                    const dimClass = !item.isLeaf ? 'opacity-70' : ''
+                    return (
+                      <SelectItem
+                        key={item.id}
+                        value={item.id}
+                        disabled={!item.isLeaf}
+                        className={`cursor-pointer ${dimClass}`}
+                        style={{ paddingLeft: `${indent + 8}px` }}
+                      >
+                        <span className={weightClass}>
+                          {prefix}{item.name}
+                          {item.code ? ` (${item.code})` : ''}
+                        </span>
+                        {item.parentName && item.depth > 0 && (
+                          <span className="ml-1 text-[11px] text-slate-400">
+                            {item.parentName}
+                          </span>
+                        )}
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
               <FieldInfo field={field} />

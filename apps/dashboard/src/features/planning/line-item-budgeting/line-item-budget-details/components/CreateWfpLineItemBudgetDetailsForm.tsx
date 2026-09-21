@@ -29,23 +29,16 @@ import {
   generateProjectPeriods,
   formatDateToISO,
 } from '../utils/periodAllocationHelpers'
+import {
+  resolveExpenditureTypes,
+  getDescendantExpenditureItems,
+} from '../utils/expenditureHierarchyHelpers'
 import type { WFPDetails } from '@/components/features/planning/wfp/wfp/table/types'
 
 const useGetObjects = createQueryHookFromTemplate(getObjectsRequest)
 const useGetLIB = createQueryHookFromTemplate(getLIBRequest)
 const useGetWFP = createQueryHookFromTemplate(getWFPRequest)
 
-// Hook for fetching child objects based on parent selection
-const useGetChildObjects = (parentId: string | null) => {
-  return useGetObjects({
-    pathParams: {},
-    queryParams: {
-      filters: parentId ? `parentId==${parentId}` : 'parentId==null',
-      pageSize: 1000,
-    },
-    enabled: !!parentId,
-  })
-}
 
 // Validation schema aligned with API nullable fields
 const createLineItemBudgetDetailsSchema = z.object({
@@ -371,65 +364,30 @@ export default function CreateWfpLineItemBudgetDetailsForm({
     isSubmittingAll,
   ])
 
-  const { data: rootObjectsResponse, isLoading: isLoadingRootObjects } =
+  // Single query for all objects (avoids waterfall requests for hierarchy traversal)
+  const { data: allObjectsResponse, isLoading: isLoadingObjects } =
     useGetObjects({
       pathParams: {},
       queryParams: {
-        filters: `parentId==null`,
-        pageSize: 1000,
+        pageSize: 5000,
       },
     })
 
-  // Locate the Expenses root container object if one exists
-  const expensesRootObject = useMemo(() => {
-    return rootObjectsResponse?.data?.find(
-      (item) =>
-        item.code === 'CLS:Expenses' ||
-        item.name?.toLowerCase() === 'expenses' ||
-        item.code === '50000000' ||
-        item.code === '5000000000',
-    )
-  }, [rootObjectsResponse?.data])
+  const allObjects = allObjectsResponse?.data ?? []
 
-  // Fetch expenditure types (children of Expenses, if an Expenses container exists)
-  const {
-    data: expenditureTypesResponse,
-    isLoading: isLoadingExpenditureTypes,
-  } = useGetObjects({
-    pathParams: {},
-    queryParams: {
-      filters: expensesRootObject
-        ? `parentId==${expensesRootObject.id}`
-        : undefined,
-      pageSize: 1000,
-    },
-    enabled: !!expensesRootObject,
-  })
-
-  const expenditureTypes = useMemo(() => {
-    // If an Expenses root container exists and has children, use those children (PS, MOOE, CO, etc.)
-    if (
-      expensesRootObject &&
-      expenditureTypesResponse?.data &&
-      expenditureTypesResponse.data.length > 0
-    ) {
-      return expenditureTypesResponse.data
-    }
-    // Otherwise, the root objects themselves (parentId==null) are the expenditure types (e.g. PS, MOOE, CO)
-    return (rootObjectsResponse?.data ?? []).filter(
-      (item) => item.id !== expensesRootObject?.id,
-    )
-  }, [
-    expensesRootObject,
-    expenditureTypesResponse?.data,
-    rootObjectsResponse?.data,
-  ])
+  // Resolve expenditure types (sub-classes under Expenses root) via helper
+  const expenditureTypes = useMemo(
+    () => resolveExpenditureTypes(allObjects).expenditureTypes,
+    [allObjects],
+  )
 
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null)
 
-  // Fetch child objects based on parent selection
-  const { data: childObjectsResponse, isLoading: isLoadingChildObjects } =
-    useGetChildObjects(selectedParentId)
+  // Compute ALL descendants of the selected sub-class (groups, object codes, sub-objects / specification level)
+  const descendantExpenditureItems = useMemo(
+    () => getDescendantExpenditureItems(allObjects, selectedParentId),
+    [allObjects, selectedParentId],
+  )
 
   const lineItemDefaults: LineItemBudgetDetailsDefaults = {
     objectId: '',
@@ -446,14 +404,9 @@ export default function CreateWfpLineItemBudgetDetailsForm({
       try {
         const finalObjectId = value.itemOfExpenditureId || value.objectId
 
-        // Get the selected parent object to check if it has children
-        const parentObject = expenditureTypes?.find(
-          (item) => item.id === value.objectId,
-        )
-
-        // Validate that if parent has children, child must be selected
+        // Validate that if parent has descendants, an item must be selected
         if (
-          (parentObject?.childObjectCount || 0) > 0 &&
+          descendantExpenditureItems.length > 0 &&
           !value.itemOfExpenditureId
         ) {
           toast.error('Select Item of Expenditure is required')
@@ -496,9 +449,8 @@ export default function CreateWfpLineItemBudgetDetailsForm({
         }
 
         const resolvedObj =
-          childObjectsResponse?.data?.find((o) => o.id === finalObjectId) ||
-          expenditureTypesResponse?.data?.find((o) => o.id === finalObjectId) ||
-          rootObjectsResponse?.data?.find((o) => o.id === finalObjectId)
+          descendantExpenditureItems.find((o) => o.id === finalObjectId) ||
+          allObjects.find((o) => o.id === finalObjectId)
 
         const resolvedName =
           resolvedObj?.name ||
@@ -549,9 +501,8 @@ export default function CreateWfpLineItemBudgetDetailsForm({
       expenditureTypes,
       projectPeriods,
       periodAllocations,
-      childObjectsResponse?.data,
-      expenditureTypesResponse?.data,
-      rootObjectsResponse?.data,
+      descendantExpenditureItems,
+      allObjects,
       autoInheritedName,
       selectedTimelineType,
     ],
@@ -575,6 +526,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
     form.setFieldValue('objectId', parentId)
     form.setFieldValue('itemOfExpenditureId', undefined)
 
+    // Auto-inherit name only if the selected parent has no deeper children to drill into
     const selectedParent = expenditureTypes?.find((item) => item.id === parentId)
     if (selectedParent && (!selectedParent.childObjectCount || selectedParent.childObjectCount === 0)) {
       setAutoInheritedName(selectedParent.name || null)
@@ -599,9 +551,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
   }
 
   const isLoading =
-    isLoadingRootObjects ||
-    isLoadingExpenditureTypes ||
-    isLoadingChildObjects ||
+    isLoadingObjects ||
     isPending
 
   return (
@@ -683,34 +633,33 @@ export default function CreateWfpLineItemBudgetDetailsForm({
           )}
         />
 
-        {/* Item of Expenditure (Child Object) */}
+        {/* Item of Expenditure — shows ALL descendants of the selected sub-class */}
         <form.Field
           name="itemOfExpenditureId"
           children={(field) => {
-            const hasChildren =
-              (childObjectsResponse?.data?.length ?? 0) > 0
+            const hasDescendants = descendantExpenditureItems.length > 0
 
             return (
               <div className="space-y-2">
                 <Label htmlFor={field.name} className="font-medium">
                   Item of Expenditure
-                  {hasChildren && <span className="text-red-500">*</span>}
+                  {hasDescendants && <span className="text-red-500">*</span>}
                 </Label>
                 <Select
                   value={field.state.value || ''}
                   onValueChange={(val) => {
                     field.handleChange(val)
-                    const child = childObjectsResponse?.data?.find(
+                    const selectedDescendant = descendantExpenditureItems.find(
                       (item) => item.id === val,
                     )
-                    if (child) {
-                      setAutoInheritedName(child.name || null)
+                    if (selectedDescendant) {
+                      setAutoInheritedName(selectedDescendant.name || null)
                     }
                   }}
                   disabled={
                     !selectedParentId ||
-                    isLoadingChildObjects ||
-                    !hasChildren ||
+                    isLoadingObjects ||
+                    !hasDescendants ||
                     isLoading
                   }
                 >
@@ -719,20 +668,39 @@ export default function CreateWfpLineItemBudgetDetailsForm({
                       placeholder={
                         !selectedParentId
                           ? 'Select Type of Expenditure first'
-                          : isLoadingChildObjects
+                          : isLoadingObjects
                             ? 'Loading items...'
-                            : hasChildren
+                            : hasDescendants
                               ? 'Select item of expenditure'
                               : 'No sub-items available'
                       }
                     />
                   </SelectTrigger>
-                  <SelectContent>
-                    {childObjectsResponse?.data?.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name} {item.code ? `(${item.code})` : ''}
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="max-h-72">
+                    {descendantExpenditureItems.map((item) => {
+                      const indent = item.depth * 16
+                      const prefix = item.depth > 0 ? '↳ ' : ''
+                      const weightClass = item.depth === 0
+                        ? 'font-medium text-slate-800'
+                        : item.isLeaf
+                          ? 'text-slate-700'
+                          : 'text-slate-600'
+                      const dimClass = !item.isLeaf ? 'opacity-70' : ''
+                      return (
+                        <SelectItem
+                          key={item.id}
+                          value={item.id}
+                          disabled={!item.isLeaf}
+                          className={`cursor-pointer ${dimClass}`}
+                          style={{ paddingLeft: `${indent + 8}px` }}
+                        >
+                          <span className={`text-xs ${weightClass}`}>
+                            {prefix}{item.name}
+                            {item.code ? ` (${item.code})` : ''}
+                          </span>
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
                 <FieldInfo field={field} />
@@ -1012,13 +980,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
               <tbody className="divide-y divide-slate-100">
                 {lineItems.map((item) => {
                   const itemObject =
-                    childObjectsResponse?.data?.find(
-                      (obj) => obj.id === item.objectId,
-                    ) ||
-                    expenditureTypesResponse?.data?.find(
-                      (obj) => obj.id === item.objectId,
-                    ) ||
-                    rootObjectsResponse?.data?.find(
+                    allObjects.find(
                       (obj) => obj.id === item.objectId,
                     )
 
@@ -1107,13 +1069,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
                 {submissionResults.map((result) => {
                   const item = lineItems.find((i) => i._tempId === result.tempId)
                   const itemObject =
-                    childObjectsResponse?.data?.find(
-                      (obj) => obj.id === item?.objectId,
-                    ) ||
-                    expenditureTypesResponse?.data?.find(
-                      (obj) => obj.id === item?.objectId,
-                    ) ||
-                    rootObjectsResponse?.data?.find(
+                    allObjects.find(
                       (obj) => obj.id === item?.objectId,
                     )
                   return (
