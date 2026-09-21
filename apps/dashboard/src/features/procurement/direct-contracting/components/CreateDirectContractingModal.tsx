@@ -8,6 +8,7 @@ import { useBacResolutions } from '@/features/procurement/bac-resolution/handler
 import { ShoppingCart } from 'lucide-react'
 import { useCreateDirectContracting } from '../handlers'
 import api from '@/services/api'
+import type { BacProject } from '@/features/procurement/bac-resolution/types'
 
 function genDCNumber(entries: DirectContracting[]): string {
   const year = new Date().getFullYear()
@@ -31,8 +32,23 @@ interface Props {
 export function CreateDirectContractingModal({ open, onOpenChange }: Props) {
   const { toast } = useToast()
   const { entries, fetchEntries } = useDirectContractingStore()
-  const { data: resolutions = [] } = useBacResolutions({})
+  const { data: resolutionsResponse } = useBacResolutions({
+    pathParams: {},
+    queryParams: { pageSize: 100 },
+    enabled: open,
+  })
   const [suppliersList, setSuppliersList] = useState<{ id: string; name: string }[]>([])
+
+  const rawResolutions = useMemo<BacProject[]>(() => {
+    if (!resolutionsResponse) return []
+    if (Array.isArray(resolutionsResponse)) return resolutionsResponse
+    if (typeof resolutionsResponse === 'object' && resolutionsResponse !== null) {
+      const record = resolutionsResponse as Record<string, unknown>
+      if (Array.isArray(record.data)) return record.data
+      if (Array.isArray(record.items)) return record.items
+    }
+    return []
+  }, [resolutionsResponse])
 
   useEffect(() => {
     const fetchSuppliers = async () => {
@@ -54,7 +70,7 @@ export function CreateDirectContractingModal({ open, onOpenChange }: Props) {
   }, [open])
 
   const autoDCNumber = useMemo(() => genDCNumber(entries), [entries])
-  
+
   const [dcNumber, setDcNumber] = useState('')
   const [dcName, setDcName] = useState('')
   const [resolutionId, setResolutionId] = useState('')
@@ -77,18 +93,61 @@ export function CreateDirectContractingModal({ open, onOpenChange }: Props) {
   }, [open])
 
   // Filter approved resolutions linked to Direct Contracting
-  const resolutionOptions = useMemo(() => 
-    resolutions
-      .filter(res => res.status === 'approved') // Only approved can proceed to request
-      .map(res => ({
-        id: res.id,
-        number: res.bacResolutionNumber,
-        label: `${res.bacResolutionNumber} - ${res.description.substring(0, 40)}...`,
-        prNumbers: res.linkedConsolidatedPrs.map(pr => pr.prNumber),
-        endUser: res.linkedConsolidatedPrs[0]?.endUser ?? 'N/A',
-        amount: res.linkedConsolidatedPrs[0]?.amount ?? 0,
-      })),
-    [resolutions]
+  const resolutionOptions = useMemo(() =>
+    rawResolutions
+      .filter((res: any) => (res?.status || '').toLowerCase() === 'approved') // Only approved can proceed to request
+      .map((res: any) => {
+        const resolutionNumber =
+          res.bacResolutionNumber ||
+          res.resolutionNumber ||
+          res.title ||
+          (res.id ? `RES-${res.id.slice(0, 8)}` : 'N/A')
+
+        const description = res.description || res.title || ''
+        const shortDesc = description
+          ? description.length > 40
+            ? `${description.substring(0, 40)}...`
+            : description
+          : ''
+
+        let prNumbers: string[] = []
+        if (Array.isArray(res.linkedConsolidatedPrs) && res.linkedConsolidatedPrs.length > 0) {
+          prNumbers = res.linkedConsolidatedPrs
+            .map((pr: any) => pr?.prNumber || pr?.cprNumber)
+            .filter(Boolean)
+        } else if (res.consolidatedPR?.cprNumber || res.consolidatedPR?.prNumber) {
+          const pr = res.consolidatedPR.cprNumber || res.consolidatedPR.prNumber
+          if (pr) prNumbers = [pr]
+        } else if (res.appItem?.itemNumber) {
+          prNumbers = [res.appItem.itemNumber]
+        }
+        prNumbers = Array.from(new Set(prNumbers))
+
+        const endUser =
+          res.linkedConsolidatedPrs?.[0]?.endUser ||
+          res.consolidatedPR?.endUser ||
+          res.consolidatedPR?.officeName ||
+          res.appItem?.officeName ||
+          'N/A'
+
+        const amount =
+          res.linkedConsolidatedPrs?.[0]?.amount ??
+          res.consolidatedPR?.totalAmount ??
+          res.abc ??
+          res.sumABC ??
+          res.appItem?.effectiveABC ??
+          0
+
+        return {
+          id: res.id,
+          number: resolutionNumber,
+          label: shortDesc ? `${resolutionNumber} - ${shortDesc}` : resolutionNumber,
+          prNumbers,
+          endUser,
+          amount,
+        }
+      }),
+    [rawResolutions]
   )
 
   const createMutation = useCreateDirectContracting()
@@ -116,13 +175,13 @@ export function CreateDirectContractingModal({ open, onOpenChange }: Props) {
         payload
       })
 
-      toast({ 
-        title: '✅ Direct Contracting Request Initialized', 
-        description: `Request ${finalDcNumber} created for ${sup?.name}. Ready to send.` 
+      toast({
+        title: '✅ Direct Contracting Request Initialized',
+        description: `Request ${finalDcNumber} created for ${sup?.name}. Ready to send.`
       })
-      
+
       await fetchEntries()
-      
+
       reset()
       onOpenChange(false)
     } catch (err) {
