@@ -144,8 +144,6 @@ export default function LIBDetailPage({
   const isSubmitting = isLibSubmitting
   const [isExporting, setIsExporting] = useState<boolean>(false)
   const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState<boolean>(false)
-  const [approvalDialogOpen, setApprovalDialogOpen] = useState<boolean>(false)
-  const [approvalAction, setApprovalAction] = useState<'approve' | 'return' | 'reject'>('approve')
   const [isApprovalLoading, setIsApprovalLoading] = useState<boolean>(false)
   const [showSummary, setShowSummary] = useState<boolean>(false)
   const [showHistory, setShowHistory] = useState<boolean>(false)
@@ -1193,8 +1191,8 @@ export function LIBActivityCard({
   return (
     <Card
       className={`transition-all duration-200 hover:shadow-md ${hasItems
-          ? 'border-l-4 border-l-emerald-500 bg-white hover:border-l-emerald-600'
-          : 'border-l-4 border-l-amber-400 bg-amber-50/10 hover:border-l-amber-500'
+        ? 'border-l-4 border-l-emerald-500 bg-white hover:border-l-emerald-600'
+        : 'border-l-4 border-l-amber-400 bg-amber-50/10 hover:border-l-amber-500'
         }`}
     >
       <CardContent className="p-5 sm:p-6">
@@ -1203,8 +1201,8 @@ export function LIBActivityCard({
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${hasItems
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-amber-100 text-amber-700'
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-amber-100 text-amber-700'
                 }`}
             >
               {icon ?? <span className="text-base">📄</span>}
