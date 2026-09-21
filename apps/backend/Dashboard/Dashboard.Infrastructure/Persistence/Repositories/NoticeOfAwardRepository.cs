@@ -21,6 +21,8 @@ public class NoticeOfAwardRepository : Repository<NoticeOfAward>, INoticeOfAward
             .Include(n => n.Supplier)
             .Include(n => n.BACResolution)
             .Include(n => n.ProcurementProject)
+                .ThenInclude(p => p.ProcurementMode)
+            .Include(n => n.ProcurementProject)
                 .ThenInclude(p => p.ConsolidatedPR)
             .Include(n => n.ProcurementProject)
                 .ThenInclude(p => p.APPItem)
