@@ -31,13 +31,58 @@ export function DirectContractingRequestPage() {
   const searchParams = useSearch({
     from: '/v2/(procurement)/direct-contracting-request/',
   })
+  const navigate = useNavigate({
+    from: '/v2/direct-contracting-request',
+  })
 
   const { pageNumber, pageSize, status, searchQuery } = searchParams
 
-  // API Query
+  const updateSearch = React.useCallback(
+    (updates: Partial<typeof searchParams>) => {
+      navigate({
+        search: (prev) => ({
+          ...prev,
+          ...updates,
+        }),
+        replace: true,
+      })
+    },
+    [navigate],
+  )
+
+  // Build Sieve filter string only when filters are active
+  const sieveFilters = React.useMemo(() => {
+    const filterParts: string[] = []
+
+    if (status && status !== 'all') {
+      const statusMap: Record<string, string> = {
+        draft: 'DRAFT',
+        'for-review': 'FOR_REVIEW',
+        'submitted-to-supplier': 'SUBMITTED_TO_SUPPLIER',
+        approved: 'APPROVED',
+        rejected: 'RETURNED',
+        returned: 'RETURNED',
+      }
+      const backendStatus = statusMap[status.toLowerCase()] || status.toUpperCase()
+      filterParts.push(`status==${backendStatus}`)
+    }
+
+    if (searchQuery && searchQuery.trim()) {
+      const term = searchQuery.trim()
+      filterParts.push(`name@=*${term}*|dcNumber@=*${term}*`)
+    }
+
+    return filterParts.length > 0 ? filterParts.join(',') : undefined
+  }, [status, searchQuery])
+
+  // API Query listening to URL params
   const { data: directContractings, isLoading } = useDirectContractings({
     pathParams: {},
-    queryParams: { pageSize: pageSize, pageNumber: pageNumber, filters: `status=${status},name=${searchQuery}` },
+    queryParams: {
+      pageSize: pageSize ?? 10,
+      pageNumber: pageNumber ?? 1,
+      ...(sieveFilters ? { filters: sieveFilters } : {}),
+    },
   })
 
 
@@ -132,10 +177,10 @@ export function DirectContractingRequestPage() {
         onBulkSubmit={() => { }}
         onBulkDelete={(rows) => setBulkDeleteRows(rows)}
         onExportCSV={handleExportCSV}
-        pageNumber={search.pageNumber}
-        pageSize={search.pageSize}
-        status={search.status}
-        searchQuery={search.searchQuery}
+        pageNumber={pageNumber}
+        pageSize={pageSize}
+        status={status}
+        searchQuery={searchQuery}
         onPageChange={(page) => updateSearch({ pageNumber: page })}
         onPageSizeChange={(size) => updateSearch({ pageSize: size, pageNumber: 1 })}
         onStatusChange={(status) => updateSearch({ status, pageNumber: 1 })}

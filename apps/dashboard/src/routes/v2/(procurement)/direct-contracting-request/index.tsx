@@ -9,9 +9,9 @@ import { PERMISSIONS } from '@/constants/permissions'
  * Validates and provides type-safe access to query parameters
  */
 export const directContractingRequestSearchSchema = z.object({
-  pageSize: z.number().optional().default(10),
-  pageNumber: z.number().optional().default(1),
-  searchQuery: z.string().optional(),
+  pageSize: z.coerce.number().min(1).catch(10).default(10),
+  pageNumber: z.coerce.number().min(1).catch(1).default(1),
+  searchQuery: z.string().optional().default(''),
   status: z.string().optional().default('all'),
 })
 

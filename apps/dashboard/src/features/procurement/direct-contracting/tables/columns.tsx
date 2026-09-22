@@ -319,8 +319,26 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
       header: 'Status',
       filterFn: (row, _columnId, filterValue: string) => {
         if (!filterValue || filterValue === 'all') return true
-        const status = (row.original.status || '').toLowerCase()
-        return status === filterValue.toLowerCase()
+        const s = (row.original.status || '').toLowerCase()
+        const f = filterValue.toLowerCase()
+        if (f === 'draft') return s === 'draft'
+        if (f === 'for-review') {
+          return (
+            s === 'for-review' ||
+            s === 'for_review' ||
+            s === 'submitted' ||
+            s === 'pending_for_approval' ||
+            s === 'pending-for-approval'
+          )
+        }
+        if (f === 'submitted-to-supplier') {
+          return s === 'submitted-to-supplier' || s === 'submitted_to_supplier'
+        }
+        if (f === 'approved') return s === 'approved'
+        if (f === 'rejected' || f === 'returned') {
+          return s === 'rejected' || s === 'returned'
+        }
+        return s === f
       },
       cell: ({ row }) => {
         const status = (row.original.status || 'draft').toLowerCase()
@@ -353,7 +371,7 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
                 <DropdownMenuItem onClick={() => handlers.onEdit(dc.id)}>
                   <Edit className="mr-2 h-4 w-4 text-muted-foreground" /> Edit Request
                 </DropdownMenuItem>
-                {dc.status === 'draft' && (
+                {dc.status === 'DRAFT' && (
                   <DropdownMenuItem onClick={() => handlers.onPromptSubmit(dc.id)}>
                     <Send className="mr-2 h-4 w-4 text-sky-600" /> Submit for Review
                   </DropdownMenuItem>

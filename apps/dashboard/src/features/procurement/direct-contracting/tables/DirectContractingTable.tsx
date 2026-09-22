@@ -70,6 +70,15 @@ export interface DirectContractingTableProps {
   onBulkSubmit?: (selectedRows: DirectContracting[]) => void
   onBulkDelete?: (selectedRows: DirectContracting[]) => void
   onExportCSV?: (records: DirectContracting[]) => void
+  // URL-based query controls
+  pageNumber?: number
+  pageSize?: number
+  status?: string
+  searchQuery?: string
+  onPageChange?: (pageNumber: number) => void
+  onPageSizeChange?: (pageSize: number) => void
+  onStatusChange?: (status: string) => void
+  onSearchChange?: (searchQuery: string) => void
 }
 
 export function DirectContractingTable({
@@ -79,10 +88,22 @@ export function DirectContractingTable({
   onBulkSubmit,
   onBulkDelete,
   onExportCSV,
+  pageNumber,
+  pageSize,
+  status,
+  searchQuery,
+  onPageChange,
+  onPageSizeChange,
+  onStatusChange,
+  onSearchChange,
 }: DirectContractingTableProps) {
 
-  // Active status tab filter ('all', 'draft', 'for-review', 'submitted-to-supplier', 'approved', 'rejected')
-  const [activeStatusTab, setActiveStatusTab] = React.useState<string>('all')
+  // Active status tab: prioritize controlled status prop, fallback to internal state
+  const [internalStatusTab, setInternalStatusTab] = React.useState<string>(status || 'all')
+  const activeStatusTab = status !== undefined ? status : internalStatusTab
+
+  // Search input local state for debouncing
+  const [localSearch, setLocalSearch] = React.useState<string>(searchQuery ?? '')
 
   // TanStack Table v9 States
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -90,23 +111,44 @@ export function DirectContractingTable({
   const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [pagination, setPagination] = React.useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
+    pageIndex: Math.max(0, (pageNumber ?? 1) - 1),
+    pageSize: pageSize ?? 10,
   })
 
   // Columns using TanStack Table ColumnHelper
   const columns = React.useMemo(() => getDirectContractingColumns(handlers), [handlers])
+
+  const totalRows =
+    directContractings?.totalRows ??
+    (directContractings as any)?.totalCount ??
+    directContractings?.data?.length ??
+    0
+
+  const pageCount = Math.max(1, Math.ceil(totalRows / (pagination.pageSize || 10)))
 
   // Initialize TanStack Table v9
   const table = useTable({
     features,
     data: directContractings?.data || [],
     columns,
+    manualPagination: true,
+    pageCount,
+    rowCount: totalRows,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
+    onPaginationChange: (updater) => {
+      const newPagination = typeof updater === 'function' ? updater(pagination) : updater
+      setPagination(newPagination)
+      if (newPagination.pageIndex !== pagination.pageIndex) {
+        onPageChange?.(newPagination.pageIndex + 1)
+      }
+      if (newPagination.pageSize !== pagination.pageSize) {
+        onPageSizeChange?.(newPagination.pageSize)
+        onPageChange?.(1)
+      }
+    },
     state: {
       sorting,
       columnFilters,
@@ -115,6 +157,47 @@ export function DirectContractingTable({
       pagination,
     },
   })
+
+  // Sync pagination state when controlled props change
+  React.useEffect(() => {
+    if (pageNumber !== undefined || pageSize !== undefined) {
+      setPagination((prev) => ({
+        pageIndex: pageNumber !== undefined ? Math.max(0, pageNumber - 1) : prev.pageIndex,
+        pageSize: pageSize !== undefined ? pageSize : prev.pageSize,
+      }))
+    }
+  }, [pageNumber, pageSize])
+
+  // Sync status filter when controlled status prop changes
+  React.useEffect(() => {
+    if (status !== undefined) {
+      if (status === 'all') {
+        table.getColumn('status')?.setFilterValue(undefined)
+      } else {
+        table.getColumn('status')?.setFilterValue(status)
+      }
+    }
+  }, [status, table])
+
+  // Keep localSearch in sync if searchQuery prop changes from outside (e.g. back/forward navigation)
+  React.useEffect(() => {
+    if (searchQuery !== undefined && searchQuery !== localSearch) {
+      setLocalSearch(searchQuery)
+      table.getColumn('dcNumber')?.setFilterValue(searchQuery.trim() || undefined)
+    }
+  }, [searchQuery])
+
+  // Debounce search input changes to parent onSearchChange and table column filter
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      table.getColumn('dcNumber')?.setFilterValue(localSearch.trim() || undefined)
+      if (onSearchChange && localSearch !== (searchQuery ?? '')) {
+        onSearchChange(localSearch.trim())
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [localSearch, onSearchChange, searchQuery, table])
 
   // Selected rows calculation
   const selectedRowList = React.useMemo(() => {
@@ -146,12 +229,30 @@ export function DirectContractingTable({
 
   // Change status tab
   const handleSelectStatusTab = (tabValue: string) => {
-    setActiveStatusTab(tabValue)
-    if (tabValue === 'all') {
-      table.getColumn('status')?.setFilterValue(undefined)
+    if (onStatusChange) {
+      onStatusChange(tabValue)
+      onPageChange?.(1)
     } else {
-      table.getColumn('status')?.setFilterValue(tabValue)
+      setInternalStatusTab(tabValue)
+      if (tabValue === 'all') {
+        table.getColumn('status')?.setFilterValue(undefined)
+      } else {
+        table.getColumn('status')?.setFilterValue(tabValue)
+      }
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }))
     }
+  }
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setLocalSearch('')
+    table.getColumn('dcNumber')?.setFilterValue(undefined)
+    table.getColumn('status')?.setFilterValue(undefined)
+    setColumnFilters([])
+    if (onSearchChange) onSearchChange('')
+    if (onStatusChange) onStatusChange('all')
+    if (onPageChange) onPageChange(1)
+    setInternalStatusTab('all')
     setPagination((prev) => ({ ...prev, pageIndex: 0 }))
   }
 
@@ -253,15 +354,20 @@ export function DirectContractingTable({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by DC#, project title, or supplier..."
-                value={searchValue}
-                onChange={(e) => table.getColumn('dcNumber')?.setFilterValue(e.target.value)}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
                 className="pl-9 h-9 text-sm"
               />
-              {searchValue && (
+              {localSearch && (
                 <button
-                  onClick={() => table.getColumn('dcNumber')?.setFilterValue('')}
+                  onClick={() => {
+                    setLocalSearch('')
+                    table.getColumn('dcNumber')?.setFilterValue(undefined)
+                    onSearchChange?.('')
+                    onPageChange?.(1)
+                  }}
                   type="button"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -304,12 +410,9 @@ export function DirectContractingTable({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setColumnFilters([])
-                setActiveStatusTab('all')
-              }}
+              onClick={handleResetFilters}
               className="h-9 text-xs"
-              disabled={!searchValue && activeStatusTab === 'all'}
+              disabled={!localSearch && activeStatusTab === 'all' && columnFilters.length === 0}
             >
               Reset Filters
             </Button>
@@ -425,19 +528,16 @@ export function DirectContractingTable({
                         No Direct Contracting requests found
                       </div>
                       <p className="text-xs text-muted-foreground max-w-sm">
-                        {searchValue || activeStatusTab !== 'all'
+                        {localSearch || activeStatusTab !== 'all'
                           ? 'No requests match your current search and filter criteria. Try adjusting or clearing your filters.'
                           : 'There are currently no Direct Contracting requests registered. Create your first request to get started.'}
                       </p>
-                      {(searchValue || activeStatusTab !== 'all') && (
+                      {(localSearch || activeStatusTab !== 'all') && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="mt-2 text-xs"
-                          onClick={() => {
-                            setColumnFilters([])
-                            setActiveStatusTab('all')
-                          }}
+                          onClick={handleResetFilters}
                         >
                           Clear Filters
                         </Button>
@@ -457,7 +557,7 @@ export function DirectContractingTable({
             <span>
               Showing{' '}
               <span className="font-semibold text-foreground">
-                {table.getRowModel().rows.length === 0
+                {totalRows === 0
                   ? 0
                   : pagination.pageIndex * pagination.pageSize + 1}
               </span>{' '}
@@ -465,12 +565,12 @@ export function DirectContractingTable({
               <span className="font-semibold text-foreground">
                 {Math.min(
                   (pagination.pageIndex + 1) * pagination.pageSize,
-                  table.getFilteredRowModel().rows.length,
+                  totalRows,
                 )}
               </span>{' '}
               of{' '}
               <span className="font-semibold text-foreground">
-                {table.getFilteredRowModel().rows.length}
+                {totalRows}
               </span>{' '}
               entries
             </span>
@@ -489,7 +589,12 @@ export function DirectContractingTable({
                 value={String(pagination.pageSize)}
                 onValueChange={(val) => {
                   const newSize = Number(val)
-                  setPagination((prev) => ({ ...prev, pageSize: newSize, pageIndex: 0 }))
+                  if (onPageSizeChange) {
+                    onPageSizeChange(newSize)
+                    onPageChange?.(1)
+                  } else {
+                    setPagination((prev) => ({ ...prev, pageSize: newSize, pageIndex: 0 }))
+                  }
                 }}
               >
                 <SelectTrigger className="h-8 w-18 text-xs">
@@ -507,16 +612,22 @@ export function DirectContractingTable({
 
             <div className="flex items-center gap-1">
               <div className="text-xs font-medium text-foreground px-2 tabular-nums">
-                Page {table.getPageCount() === 0 ? 0 : pagination.pageIndex + 1} of{' '}
-                {table.getPageCount()}
+                Page {pageCount === 0 ? 0 : pagination.pageIndex + 1} of{' '}
+                {pageCount}
               </div>
 
               <Button
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => setPagination((prev) => ({ ...prev, pageIndex: 0 }))}
-                disabled={!table.getCanPreviousPage()}
+                onClick={() => {
+                  if (onPageChange) {
+                    onPageChange(1)
+                  } else {
+                    table.setPageIndex(0)
+                  }
+                }}
+                disabled={pagination.pageIndex === 0}
                 title="First Page"
               >
                 <ChevronsLeft className="h-4 w-4" />
@@ -525,8 +636,14 @@ export function DirectContractingTable({
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                onClick={() => {
+                  if (onPageChange) {
+                    onPageChange(Math.max(1, pagination.pageIndex))
+                  } else {
+                    table.previousPage()
+                  }
+                }}
+                disabled={pagination.pageIndex === 0}
                 title="Previous Page"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -535,8 +652,14 @@ export function DirectContractingTable({
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                onClick={() => {
+                  if (onPageChange) {
+                    onPageChange(pagination.pageIndex + 2)
+                  } else {
+                    table.nextPage()
+                  }
+                }}
+                disabled={pagination.pageIndex >= pageCount - 1}
                 title="Next Page"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -545,13 +668,14 @@ export function DirectContractingTable({
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() =>
-                  setPagination((prev) => ({
-                    ...prev,
-                    pageIndex: Math.max(0, table.getPageCount() - 1),
-                  }))
-                }
-                disabled={!table.getCanNextPage()}
+                onClick={() => {
+                  if (onPageChange) {
+                    onPageChange(pageCount)
+                  } else {
+                    table.setPageIndex(pageCount - 1)
+                  }
+                }}
+                disabled={pagination.pageIndex >= pageCount - 1}
                 title="Last Page"
               >
                 <ChevronsRight className="h-4 w-4" />
