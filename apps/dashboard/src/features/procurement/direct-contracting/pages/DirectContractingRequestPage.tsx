@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,22 +7,20 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { MoreVertical, Eye, Trash2, ShoppingCart, Plus, Search, Send, CheckCircle2, Building } from 'lucide-react'
+import { MoreVertical, Eye, Trash2, ShoppingCart, Plus, Search, Send, CheckCircle2, Building, Loader2 } from 'lucide-react'
 import { CreateDirectContractingModal } from '../components/CreateDirectContractingModal'
 import { UpdateDirectContractingModal } from '../components/UpdateDirectContractingModal'
 import { ViewProposalDetailsModal } from '../components/ViewProposalDetailsModal'
 import { DirectContractingDetailsPage } from '../components/DirectContractingDetailsPage'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import type { DirectContracting } from '../store/directContractingStore'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { getDirectContractingsRequest } from '../handlers/getDirectContractingsRequest'
+import type { DirectContracting } from '../types/direct-contracting-types'
 import type { DirectContractingRequestSearch } from '@/routes/v2/(procurement)/direct-contracting-request/index'
+import { getStatusConfig, DIRECT_CONTRACTING_STATUS_OPTIONS } from '@/utils/statusConfig'
 import { cn } from '@/lib/utils'
 
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  draft: { label: 'DRAFT', className: 'bg-gray-100 text-gray-700 border-gray-300' },
-  submitted: { label: 'SUBMITTED', className: 'bg-blue-50 text-blue-800 border-blue-300' },
-  'for-review': { label: 'FOR REVIEW', className: 'bg-amber-100 text-amber-700 border-amber-300' },
-  'submitted-to-supplier': { label: 'SUBMITTED TO SUPPLIER', className: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
-}
+const useDirectContractings = createQueryHookFromTemplate(getDirectContractingsRequest)
 
 export function DirectContractingRequestPage() {
   const searchParams = useSearch({ strict: false }) as DirectContractingRequestSearch
@@ -72,17 +70,44 @@ export function DirectContractingRequestPage() {
     })
   }
 
-  // Placeholder data for requests until query hooks are wired
-  const entries: DirectContracting[] = []
+  // Build Sieve filter string combining status and search query
+  const filters = useMemo(() => {
+    const parts: string[] = []
+    if (statusFilter && statusFilter !== 'all') {
+      parts.push(`status==${statusFilter.toUpperCase()}`)
+    }
+    if (search.trim()) {
+      parts.push(`name@=*${search.trim()}*|dcNumber@=*${search.trim()}*`)
+    }
+    return parts.length > 0 ? parts.join(',') : undefined
+  }, [statusFilter, search])
 
-  // Empty KPI counts placeholder
-  const counts = {
-    total: 0,
-    draft: 0,
-    submitted: 0,
-  }
+  // Fetch direct contracting requests using the conventional TanStack Query hook
+  const { data: response, isLoading } = useDirectContractings({
+    pathParams: {},
+    queryParams: {
+      pageNumber: page,
+      pageSize,
+      ...(filters ? { filters } : {}),
+    },
+  })
 
-  const totalPages = Math.max(1, Math.ceil(entries.length / pageSize))
+  const entries: DirectContracting[] = response?.data ?? []
+  const totalCount = response?.totalRows ?? 0
+  const totalPages = response?.totalPageNumber ?? 0
+
+  // KPI counts
+  const counts = useMemo(() => {
+    return {
+      total: totalCount,
+      draft: entries.filter((e) => (e.status || '').toLowerCase() === 'draft').length,
+      submitted: entries.filter((e) => {
+        const s = (e.status || '').toLowerCase()
+        return s === 'submitted' || s.includes('review') || s.includes('supplier')
+      }).length,
+    }
+  }, [entries, totalCount])
+
   const selectedEntry = entries.find((e) => e.id === selectedEntryId) || null
 
   const handleOpenView = (entry: DirectContracting) => {
@@ -92,7 +117,7 @@ export function DirectContractingRequestPage() {
   if (selectedEntry) {
     return (
       <DirectContractingDetailsPage
-        entry={selectedEntry}
+        entry={selectedEntry as any}
         onBack={() => setSelectedEntryId(null)}
       />
     )
@@ -180,8 +205,8 @@ export function DirectContractingRequestPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
-                  <SelectItem key={val} value={val}>{cfg.label}</SelectItem>
+                {DIRECT_CONTRACTING_STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -205,7 +230,18 @@ export function DirectContractingRequestPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {entries.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-14 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary mb-1" />
+                        <p className="text-sm font-medium text-muted-foreground">
+                          Loading Direct Contracting requests...
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : entries.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="py-14 text-center">
                       <div className="flex flex-col items-center justify-center space-y-2">
@@ -221,21 +257,25 @@ export function DirectContractingRequestPage() {
                   </TableRow>
                 ) : (
                   entries.map((entry) => {
-                    const cfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.draft
+                    const cfg = getStatusConfig(entry.status)
+                    const displayName = entry.name || entry.dcName || 'Untitled'
+                    const displaySupplier = entry.exclusiveSupplierName || entry.supplierName || 'Not Assigned'
+                    const displayProject = entry.bacProjectTitle || ''
+
                     return (
                       <TableRow key={entry.id} className="hover:bg-muted/40">
                         <TableCell onClick={(e) => e.stopPropagation()}><Checkbox /></TableCell>
-                        <TableCell className="font-semibold">{entry.dcName}</TableCell>
+                        <TableCell className="font-semibold">{displayName}</TableCell>
                         <TableCell className="font-semibold text-primary">{entry.dcNumber}</TableCell>
                         <TableCell>
-                          <div className="text-sm font-medium">{entry.prNumber}</div>
-                          <div className="text-xs text-muted-foreground">{entry.bacResolutionNumber}</div>
+                          <div className="text-sm font-medium">{displayProject}</div>
+                          <div className="text-xs text-muted-foreground">{entry.bacProjectStatus || ''}</div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm font-semibold">{entry.supplierName || 'Not Assigned'}</div>
-                          <div className="text-xs text-muted-foreground">{entry.office}</div>
+                          <div className="text-sm font-semibold">{displaySupplier}</div>
+                          <div className="text-xs text-muted-foreground">{entry.exclusiveSupplierEmail || ''}</div>
                         </TableCell>
-                        <TableCell className="font-mono text-sm">₱{entry.totalABC.toLocaleString()}</TableCell>
+                        <TableCell className="font-mono text-sm">₱{Number(entry.totalABC ?? 0).toLocaleString()}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={cn("rounded-full px-3 py-0.5 text-[10px] font-bold", cfg.className)}>
                             {cfg.label}
@@ -253,7 +293,7 @@ export function DirectContractingRequestPage() {
                                 <Eye className="h-4 w-4" /> View Details
                               </DropdownMenuItem>
 
-                              {entry.status === 'draft' && (
+                              {(entry.status || '').toLowerCase() === 'draft' && (
                                 <DropdownMenuItem
                                   className="gap-2 text-blue-600 font-semibold"
                                   onClick={() => setConfirmSubmitId(entry.id)}
@@ -286,13 +326,13 @@ export function DirectContractingRequestPage() {
             <p className="text-sm text-muted-foreground">
               {entries.length === 0
                 ? 'Showing 0 to 0 of 0 entries'
-                : `Showing ${(page - 1) * pageSize + 1} to ${Math.min(page * pageSize, entries.length)} of ${entries.length} entries`}
+                : `Showing ${(page - 1) * pageSize + 1} to ${Math.min(page * pageSize, totalCount)} of ${totalCount} entries`}
             </p>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page <= 1}
+                disabled={page <= 1 || isLoading}
                 onClick={() => handlePageChange(page - 1)}
               >
                 Previous
@@ -304,7 +344,7 @@ export function DirectContractingRequestPage() {
                     variant={page === p ? 'default' : 'outline'}
                     size="sm"
                     className="w-8"
-                    disabled={entries.length === 0}
+                    disabled={isLoading}
                     onClick={() => handlePageChange(p)}
                   >
                     {p}
@@ -314,7 +354,7 @@ export function DirectContractingRequestPage() {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page >= totalPages}
+                disabled={page >= totalPages || isLoading}
                 onClick={() => handlePageChange(page + 1)}
               >
                 Next
@@ -337,7 +377,7 @@ export function DirectContractingRequestPage() {
       <ViewProposalDetailsModal
         open={viewOpen}
         onOpenChange={setViewOpen}
-        entry={selectedEntry}
+        entry={selectedEntry as any}
       />
 
       <ConfirmAlertDialog
@@ -359,4 +399,3 @@ export function DirectContractingRequestPage() {
     </div>
   )
 }
-
