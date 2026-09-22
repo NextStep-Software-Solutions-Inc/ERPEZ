@@ -53,99 +53,14 @@ const TIMELINE_OPTIONS = [
   { id: 'monthly', label: 'Monthly' },
 ] as const
 
-const QUARTERS = [
-  {
-    id: 'Q1',
-    label: 'Q1 (Jan – Mar)',
-    startMonth: 0,
-    startDay: 1,
-    endMonth: 2,
-    endDay: 31,
-  },
-  {
-    id: 'Q2',
-    label: 'Q2 (Apr – Jun)',
-    startMonth: 3,
-    startDay: 1,
-    endMonth: 5,
-    endDay: 30,
-  },
-  {
-    id: 'Q3',
-    label: 'Q3 (Jul – Sep)',
-    startMonth: 6,
-    startDay: 1,
-    endMonth: 8,
-    endDay: 30,
-  },
-  {
-    id: 'Q4',
-    label: 'Q4 (Oct – Dec)',
-    startMonth: 9,
-    startDay: 1,
-    endMonth: 11,
-    endDay: 31,
-  },
-] as const
+import {
+  STANDARD_QUARTERS,
+  getCoveredQuarters,
+  type CoveredQuarter,
+} from '../utils/periodAllocationHelpers'
 
-export interface CoveredQuarter {
-  id: string
-  key: string
-  label: string
-  year: number
-  startMonth: number
-  startDay: number
-  endMonth: number
-  endDay: number
-  startDate: string
-  endDate: string
-}
-
-export function getCoveredQuarters(
-  startDateStr: string,
-  endDateStr: string,
-): CoveredQuarter[] {
-  if (!startDateStr) return []
-  const start = new Date(startDateStr)
-  const end = endDateStr ? new Date(endDateStr) : start
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return []
-
-  const startYear = start.getFullYear()
-  const endYear = end.getFullYear()
-  const startQ = Math.floor(start.getMonth() / 3) + 1
-  const endQ = Math.floor(end.getMonth() / 3) + 1
-
-  const result: CoveredQuarter[] = []
-
-  for (let y = startYear; y <= endYear; y++) {
-    const qFrom = y === startYear ? startQ : 1
-    const qTo = y === endYear ? endQ : 4
-    for (let q = qFrom; q <= qTo; q++) {
-      const def = QUARTERS[q - 1]
-      const s = new Date(Date.UTC(y, def.startMonth, def.startDay))
-        .toISOString()
-        .split('T')[0]
-      const e = new Date(Date.UTC(y, def.endMonth, def.endDay))
-        .toISOString()
-        .split('T')[0]
-
-      result.push({
-        id: `Q${q}`,
-        key: `${y}-Q${q}`,
-        label: `Q${q} (${def.label.replace(/^Q\d\s*\(?/, '').replace(/\)$/, '')})`,
-        year: y,
-        startMonth: def.startMonth,
-        startDay: def.startDay,
-        endMonth: def.endMonth,
-        endDay: def.endDay,
-        startDate: s,
-        endDate: e,
-      })
-    }
-  }
-
-  return result
-}
+const QUARTERS = STANDARD_QUARTERS
+export { QUARTERS, getCoveredQuarters, type CoveredQuarter }
 
 export function EditLineItemBudgetDetailsDialog({
   item,
