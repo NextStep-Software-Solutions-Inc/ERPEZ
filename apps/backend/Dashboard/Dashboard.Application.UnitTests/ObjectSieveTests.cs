@@ -66,7 +66,7 @@ public class ObjectSieveTests
             IsActive = true
         };
 
-        await context.Objects.AddRangeAsync(obj1, obj2, obj3);
+        await context.Objects!.AddRangeAsync(obj1, obj2, obj3);
         await context.SaveChangesAsync();
 
         var handler = new GetObjectsQueryHandler(unitOfWork);
