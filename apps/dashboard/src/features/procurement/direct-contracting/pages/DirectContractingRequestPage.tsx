@@ -28,34 +28,15 @@ export function DirectContractingRequestPage() {
   const { toast } = useToast()
 
   // Hybrid Data State: Initialized with rich mock items, seamlessly incorporates API items if returned
-  const [data, setData] = React.useState<DirectContractingRecord[]>(INITIAL_MOCK_DATA)
+  // const [data, setData] = React.useState<DirectContractingRecord[]>(INITIAL_MOCK_DATA)
 
   // API Query
-  const { data: apiResponse } = useDirectContractings({
+  const { data: directContractings } = useDirectContractings({
     pathParams: {},
+    // queryParams: { pageSize: pageSizeAtom(from footer table), pageNumber: pageNumber(from footer table), filters: `status==${status},status${d}` },
     queryParams: { pageSize: 100 },
   })
 
-  // Synchronize with API response if present
-  React.useEffect(() => {
-    if (apiResponse?.data && Array.isArray(apiResponse.data) && apiResponse.data.length > 0) {
-      setData((prev) => {
-        const apiIds = new Set(apiResponse.data.map((item: any) => item.id))
-        const preservedMocks = prev.filter((p) => !apiIds.has(p.id))
-        const formattedApi = apiResponse.data.map((item: any) => ({
-          ...item,
-          name: item.name || item.dcName,
-          dcName: item.name || item.dcName,
-          supplierName: item.exclusiveSupplierName || item.supplierName,
-          exclusiveSupplierName: item.exclusiveSupplierName || item.supplierName,
-          submissionDeadline: item.submissionDeadline || item.deadline,
-          deadline: item.submissionDeadline || item.deadline,
-          totalABC: item.totalABC || 0,
-        }))
-        return [...formattedApi, ...preservedMocks]
-      })
-    }
-  }, [apiResponse])
 
   // Modals & Action States
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
@@ -94,120 +75,15 @@ export function DirectContractingRequestPage() {
   )
 
   // Single submit execution
-  const handleExecuteSubmit = React.useCallback(() => {
-    if (!confirmSubmitId) return
-    setData((prev) =>
-      prev.map((item) =>
-        item.id === confirmSubmitId
-          ? { ...item, status: 'for-review' as const }
-          : item,
-      ),
-    )
-    toast({
-      title: 'Request Submitted',
-      description: 'The Direct Contracting request has been submitted for BAC review.',
-    })
-    setConfirmSubmitId(null)
-  }, [confirmSubmitId, toast])
+  const handleExecuteSubmit = () => { }
 
   // Single delete execution
-  const handleExecuteDelete = React.useCallback(() => {
-    if (!confirmDeleteId) return
-    setData((prev) => prev.filter((item) => item.id !== confirmDeleteId))
-    toast({
-      title: 'Request Deleted',
-      description: 'The Direct Contracting request has been removed.',
-    })
-    setConfirmDeleteId(null)
-  }, [confirmDeleteId, toast])
-
-  // Bulk submit execution
-  const handleBulkSubmit = React.useCallback(
-    (selectedRows: DirectContractingRecord[]) => {
-      const selectedIds = new Set(selectedRows.map((r) => r.id))
-      setData((prev) =>
-        prev.map((item) =>
-          selectedIds.has(item.id) && item.status === 'draft'
-            ? { ...item, status: 'for-review' as const }
-            : item,
-        ),
-      )
-      toast({
-        title: 'Bulk Action Successful',
-        description: `Submitted ${selectedRows.length} request(s) for review.`,
-      })
-    },
-    [toast],
-  )
-
+  const handleExecuteDelete = () => { }
   // Bulk delete execution
-  const handleExecuteBulkDelete = React.useCallback(() => {
-    if (!bulkDeleteRows) return
-    const idsToDelete = new Set(bulkDeleteRows.map((r) => r.id))
-    setData((prev) => prev.filter((item) => !idsToDelete.has(item.id)))
-    toast({
-      title: 'Bulk Action Successful',
-      description: `Deleted ${bulkDeleteRows.length} request(s).`,
-    })
-    setBulkDeleteRows(null)
-  }, [bulkDeleteRows, toast])
+  const handleExecuteBulkDelete = () => { }
 
   // CSV Export
-  const handleExportCSV = React.useCallback(
-    (recordsToExport: DirectContractingRecord[]) => {
-      if (recordsToExport.length === 0) {
-        toast({
-          title: 'No Data to Export',
-          description: 'There are no records available for CSV export.',
-        })
-        return
-      }
-      const headers = [
-        'DC Number',
-        'Project Name',
-        'BAC Project Reference',
-        'Office',
-        'Exclusive Supplier',
-        'PhilGEPS Reg',
-        'Total ABC (PHP)',
-        'Proposal Amount (PHP)',
-        'Submission Deadline',
-        'Status',
-        'Created By',
-      ]
-      const rows = recordsToExport.map((r) => [
-        `"${r.dcNumber}"`,
-        `"${(r.name || r.dcName || '').replace(/"/g, '""')}"`,
-        `"${(r.bacProjectTitle || r.bacResolutionNumber || '').replace(/"/g, '""')}"`,
-        `"${(r.office || '').replace(/"/g, '""')}"`,
-        `"${(r.supplierName || r.exclusiveSupplierName || '').replace(/"/g, '""')}"`,
-        `"${(r.exclusiveSupplierPhilGEPS || '').replace(/"/g, '""')}"`,
-        r.totalABC || 0,
-        r.proposalAmount || 0,
-        `"${r.submissionDeadline || r.deadline || ''}"`,
-        `"${r.status}"`,
-        `"${r.createdBy || ''}"`,
-      ])
-      const csvString = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n')
-      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.setAttribute('href', url)
-      link.setAttribute(
-        'download',
-        `Direct_Contracting_Requests_${new Date().toISOString().slice(0, 10)}.csv`,
-      )
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-
-      toast({
-        title: 'Export Successful',
-        description: `Exported ${recordsToExport.length} Direct Contracting record(s) to CSV.`,
-      })
-    },
-    [toast],
-  )
+  const handleExportCSV = () => { }
 
   return (
     <div className="space-y-6 pb-12">
@@ -246,9 +122,9 @@ export function DirectContractingRequestPage() {
 
       {/* Modular TanStack Table Component */}
       <DirectContractingTable
-        data={data}
+        data={directContractings}
         handlers={handlers}
-        onBulkSubmit={handleBulkSubmit}
+        onBulkSubmit={() => { }}
         onBulkDelete={(rows) => setBulkDeleteRows(rows)}
         onExportCSV={handleExportCSV}
       />
