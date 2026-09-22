@@ -45,7 +45,7 @@ public class NoticeToProceedQueriesTests
         result.Succeeded.Should().BeTrue();
         result.Data.Should().NotBeNull();
         result.Data.Should().HaveCount(1);
-        result.Data[0].NTPNumber.Should().Be("NTP-2026-QUERY-1");
+        result.Data![0].NTPNumber.Should().Be("NTP-2026-QUERY-1");
     }
 
     [Fact]
@@ -76,7 +76,8 @@ public class NoticeToProceedQueriesTests
 
         // Assert
         summaryResult.Succeeded.Should().BeTrue();
-        summaryResult.Data.TotalCount.Should().Be(1);
+        summaryResult.Data.Should().NotBeNull();
+        summaryResult.Data!.TotalCount.Should().Be(1);
         summaryResult.Data.IssuedCount.Should().Be(1);
         summaryResult.Data.DraftCount.Should().Be(0);
     }
