@@ -24,7 +24,7 @@ import {
   ChevronsRight,
 } from 'lucide-react'
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -393,7 +393,7 @@ export function DirectContractingTable({
               {isLoading ? (
                 Array.from({ length: Math.min(pagination.pageSize, 5) }).map((_, i) => (
                   <TableRow key={`skeleton-row-${i}`} className="hover:bg-transparent">
-                    {columns.map((col, colIdx) => (
+                    {columns.map((_col, colIdx) => (
                       <TableCell key={`skeleton-cell-${colIdx}`} className="py-3.5">
                         <Skeleton className="h-5 w-full max-w-[140px]" />
                       </TableCell>

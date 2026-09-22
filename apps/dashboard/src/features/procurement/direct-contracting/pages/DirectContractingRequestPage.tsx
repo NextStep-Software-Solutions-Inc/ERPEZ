@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { Building, Plus } from 'lucide-react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,12 +27,19 @@ const useDirectContractings = createQueryHookFromTemplate(getDirectContractingsR
 export function DirectContractingRequestPage() {
   const { toast } = useToast()
 
+  // URL-based Search Parameters & Navigation
+  const searchParams = useSearch({
+    from: '/v2/(procurement)/direct-contracting-request/',
+  })
+
+  const { pageNumber, pageSize, status, searchQuery } = searchParams
+
   // API Query
   const { data: directContractings, isLoading } = useDirectContractings({
     pathParams: {},
-    // queryParams: { pageSize: pageSizeAtom(from footer table), pageNumber: pageNumber(from footer table), filters: `status==${status},status${d}` },
-    queryParams: { pageSize: 100 },
+    queryParams: { pageSize: pageSize, pageNumber: pageNumber, filters: `status=${status},name=${searchQuery}` },
   })
+
 
 
   // Modals & Action States
@@ -124,6 +132,16 @@ export function DirectContractingRequestPage() {
         onBulkSubmit={() => { }}
         onBulkDelete={(rows) => setBulkDeleteRows(rows)}
         onExportCSV={handleExportCSV}
+        pageNumber={search.pageNumber}
+        pageSize={search.pageSize}
+        status={search.status}
+        searchQuery={search.searchQuery}
+        onPageChange={(page) => updateSearch({ pageNumber: page })}
+        onPageSizeChange={(size) => updateSearch({ pageSize: size, pageNumber: 1 })}
+        onStatusChange={(status) => updateSearch({ status, pageNumber: 1 })}
+        onSearchChange={(query) =>
+          updateSearch({ searchQuery: query || undefined, pageNumber: 1 })
+        }
       />
 
       {/* Modals & Confirmation Dialogs */}
