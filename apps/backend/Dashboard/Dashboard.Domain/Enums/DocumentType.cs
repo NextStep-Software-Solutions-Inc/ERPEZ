@@ -17,5 +17,6 @@ public enum DocumentType
     NoticeOfAward,
     Rfq,
     Aob,
-    Contract
+    Contract,
+    NoticeToProceed
 }

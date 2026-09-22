@@ -49,6 +49,7 @@ import {
   Link2,
   List,
   RefreshCw,
+  PlayCircle,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { Textarea } from '@/components/ui/textarea'
@@ -75,6 +76,7 @@ import {
 import { printContractRequest } from '../handlers/printContractRequest'
 import { getContractPdfRequest } from '../handlers/getContractPdfRequest'
 import { CreateContractModal } from './CreateContractModal'
+import { useGetNoticeToProceedByContractId, CreateNTPDialog } from '../../ntp'
 import type { ContractDetail, ContractLineItem } from '../types'
 
 interface ContractDetailsPageProps {
@@ -198,6 +200,10 @@ export function ContractDetailsPage({
   const generateDocMutation = useGenerateContractDocument()
   const approveMutation = useApproveContract()
   const returnMutation = useReturnContract()
+
+  // NTP query for this contract
+  const { data: ntp, refetch: refetchNtp } = useGetNoticeToProceedByContractId(contract?.id)
+  const [isCreateNtpOpen, setIsCreateNtpOpen] = useState(false)
 
   const [approvalDialogState, setApprovalDialogState] = useState<{
     open: boolean
@@ -335,6 +341,7 @@ export function ContractDetailsPage({
   const isForApproval = normalStatus === 'forapproval' || normalStatus === 'submitted'
   const isDraft = normalStatus === 'draft'
   const isReturned = normalStatus === 'returned' || normalStatus === 'rejected'
+  const isApprovedOrExecuted = normalStatus === 'approved' || normalStatus === 'executed'
 
   const modeOfProcurement = contract.modeOfProcurement ?? 'Public Bidding - Goods'
 
@@ -575,6 +582,36 @@ export function ContractDetailsPage({
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Submit for Approval</span>
+                  </Button>
+                )}
+              </>
+            )}
+
+            {isApprovedOrExecuted && (
+              <>
+                {ntp ? (
+                  <Link
+                    to="/v2/notice-to-proceed-ntp/$ntpId"
+                    params={{ ntpId: ntp.id }}
+                    className="inline-flex"
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 h-9 px-3.5 text-xs font-semibold border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 bg-indigo-50/80 dark:bg-indigo-950/50 hover:bg-indigo-100 shadow-2xs"
+                    >
+                      <PlayCircle className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>NTP: {ntp.ntpNumber} ({ntp.status})</span>
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={() => setIsCreateNtpOpen(true)}
+                    className="gap-1.5 h-9 px-4 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs"
+                  >
+                    <PlayCircle className="w-4 h-4" />
+                    <span>Issue Notice to Proceed</span>
                   </Button>
                 )}
               </>
@@ -1300,6 +1337,61 @@ export function ContractDetailsPage({
                     </div>
                   </div>
                 )}
+
+                {/* Milestone 8: Notice to Proceed */}
+                {ntp ? (
+                  <div className="relative">
+                    <div className="absolute -left-6 top-0.5 h-3.5 w-3.5 rounded-full bg-indigo-600 border-2 border-white dark:border-slate-900 shadow-2xs" />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Notice to Proceed (NTP)</h4>
+                        <Badge variant="outline" className="text-[10px] py-0 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">
+                          {ntp.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Official NTP {ntp.ntpNumber} issued under RA 12009 Sec. 66.
+                      </p>
+                      <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-slate-500">
+                        <span>Issued: {formatDate(ntp.ntpDate)}</span>
+                        {ntp.conformeDate && <span>• Conforme: {formatDate(ntp.conformeDate)}</span>}
+                        <Link
+                          to="/v2/notice-to-proceed-ntp/$ntpId"
+                          params={{ ntpId: ntp.id }}
+                          className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium ml-1"
+                        >
+                          View NTP Details →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ) : isApprovedOrExecuted ? (
+                  <div className="relative">
+                    <div className="absolute -left-6 top-0.5 h-3.5 w-3.5 rounded-full bg-amber-500 border-2 border-white dark:border-slate-900 shadow-2xs" />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Notice to Proceed (Pending)</h4>
+                        <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700">
+                          Pending Issuance
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Mandated within 3 calendar days from contract approval under RA 12009 Sec. 66.
+                      </p>
+                      <div className="pt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsCreateNtpOpen(true)}
+                          className="h-7 px-2.5 text-xs text-indigo-700 border-indigo-300 bg-indigo-50/50 hover:bg-indigo-100"
+                        >
+                          <PlayCircle className="w-3.5 h-3.5 mr-1" />
+                          Issue Notice to Proceed
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </CardContent>
           </Card>
@@ -1462,6 +1554,18 @@ export function ContractDetailsPage({
           initialContract={contract}
           onSuccess={() => {
             void refetch()
+          }}
+        />
+      )}
+
+      {/* Create Notice to Proceed Dialog */}
+      {contract && (
+        <CreateNTPDialog
+          open={isCreateNtpOpen}
+          onOpenChange={setIsCreateNtpOpen}
+          contractId={contract.id}
+          onSuccess={() => {
+            void refetchNtp()
           }}
         />
       )}
