@@ -1,11 +1,12 @@
 import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
 import type { BackendDirectContractingItem } from '../store/directContractingStore'
+import type { DirectContractingStatusEnum } from '../types'
 import api from '@/services/api'
 
 const endpoint = '/direct-contracting/:id/status'
 
 export interface ChangeDirectContractingStatusPayload {
-  status: string
+  status: DirectContractingStatusEnum | string
 }
 
 export const changeDirectContractingStatusRequest: MutationBlueprintFromTemplate<

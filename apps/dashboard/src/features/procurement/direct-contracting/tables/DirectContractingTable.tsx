@@ -136,7 +136,7 @@ export function DirectContractingTable({
     directContractings?.data?.forEach((item) => {
       const s = (item.status || '').toLowerCase()
       if (s === 'draft') counts.draft += 1
-      else if (s === 'for-review' || s === 'for_review' || s === 'submitted') counts['for-review'] += 1
+      else if (s === 'for-review' || s === 'for_review' || s === 'submitted' || s === 'pending_for_approval' || s === 'pending-for-approval') counts['for-review'] += 1
       else if (s === 'submitted-to-supplier' || s === 'submitted_to_supplier') counts['submitted-to-supplier'] += 1
       else if (s === 'approved') counts.approved += 1
       else if (s === 'rejected' || s === 'returned') counts.rejected += 1

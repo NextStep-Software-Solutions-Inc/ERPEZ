@@ -3,6 +3,35 @@
  * Matches the backend DirectContractingResponse schema with frontend-friendly conventions.
  */
 
+/**
+ * Aligned with backend DirectContractingStatusEnum (ERPEZ.Domain.Enums.DirectContractingStatusEnum)
+ */
+export enum DirectContractingStatusEnum {
+  DRAFT = 'DRAFT',
+  FOR_REVIEW = 'FOR_REVIEW',
+  SUBMITTED_TO_SUPPLIER = 'SUBMITTED_TO_SUPPLIER',
+  PENDING_FOR_APPROVAL = 'PENDING_FOR_APPROVAL',
+  APPROVED = 'APPROVED',
+  RETURNED = 'RETURNED',
+}
+
+/**
+ * Aligned with backend ReviewAction (ERPEZ.Application.Features.Procurement.DirectContractings.Commands.ReviewDirectContractingProposal.ReviewAction)
+ */
+export enum ReviewAction {
+  Approved = 'Approved',
+  Returned = 'Returned',
+}
+
+export const DIRECT_CONTRACTING_STATUS_LABELS: Record<DirectContractingStatusEnum, string> = {
+  [DirectContractingStatusEnum.DRAFT]: 'Draft',
+  [DirectContractingStatusEnum.FOR_REVIEW]: 'For Review',
+  [DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER]: 'Submitted to Supplier',
+  [DirectContractingStatusEnum.PENDING_FOR_APPROVAL]: 'Pending for Approval',
+  [DirectContractingStatusEnum.APPROVED]: 'Approved',
+  [DirectContractingStatusEnum.RETURNED]: 'Returned',
+}
+
 export interface DirectContracting {
   id: string
   dcNumber: string
@@ -20,7 +49,7 @@ export interface DirectContracting {
   exclusiveSupplierPhilGEPS: string
   submissionDeadline: string
   deadline?: string // Frontend convenience alias for submissionDeadline
-  status: string
+  status: DirectContractingStatusEnum
   totalABC: number
   reviewRemarks?: string
   createdByUserId?: string
