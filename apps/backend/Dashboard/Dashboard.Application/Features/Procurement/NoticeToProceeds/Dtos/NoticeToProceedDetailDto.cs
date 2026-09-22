@@ -69,7 +69,12 @@ public record NoticeToProceedDetailDto
     public string? ReceivedByName { get; init; }
     public DateOnly? ReceivedDate => ReceivedAt;
     public DateOnly? ConformeDate => ReceivedAt;
-    public string? ConformeName => ReceivedByName;
+    public string? ConformeName => !string.IsNullOrWhiteSpace(ReceivedByName) && ReceivedByName.Contains('(') && ReceivedByName.Contains(')')
+        ? ReceivedByName.Split('(')[0].Trim()
+        : ReceivedByName;
+    public string? ConformeDesignation => !string.IsNullOrWhiteSpace(ReceivedByName) && ReceivedByName.Contains('(') && ReceivedByName.Contains(')')
+        ? ReceivedByName.Split('(')[1].Replace(")", string.Empty).Trim()
+        : null;
     public Guid? SignedDocumentFileId { get; init; }
     public string? SignedDocumentFileName { get; init; }
 

@@ -544,36 +544,51 @@ export function NTPDetailsPage({ ntpId, ntp: propNtp, isAdmin = false }: NTPDeta
       </div>
 
       {/* ── 4. Conforme / Receipt Section (If Received) ───────────────────── */}
-      {isReceived && (
-        <Card className="p-5 border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20">
-          <div className="flex items-center gap-2 mb-3">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-200">
-              Contractor Conforme / Official Receipt
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-            <div>
-              <span className="text-muted-foreground block text-[11px]">Authorized Representative:</span>
-              <span className="font-bold text-slate-900 dark:text-slate-100">
-                {ntp.conformeName || (ntp.receivedByName?.includes('(') ? ntp.receivedByName.split('(')[0]?.trim() : ntp.receivedByName) || '—'}
-              </span>
+      {isReceived && (() => {
+        const rawReceiver = ntp.conformeName || ntp.receivedByName || ''
+        const hasParentheses = rawReceiver.includes('(') && rawReceiver.includes(')')
+        const cleanRepName = (
+          hasParentheses
+            ? rawReceiver.split('(')[0]?.trim()
+            : rawReceiver.trim()
+        ) || '—'
+        const cleanDesignation = (
+          ntp.conformeDesignation
+          || (hasParentheses ? rawReceiver.split('(')[1]?.replace(')', '').trim() : undefined)
+          || 'Authorized Representative'
+        )
+
+        return (
+          <Card className="p-5 border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20">
+            <div className="flex items-center gap-2 mb-3">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-200">
+                Contractor Conforme / Official Receipt
+              </h3>
             </div>
-            <div>
-              <span className="text-muted-foreground block text-[11px]">Designation / Capacity:</span>
-              <span className="font-medium text-slate-800 dark:text-slate-200">
-                {ntp.conformeDesignation || (ntp.receivedByName?.includes('(') ? ntp.receivedByName.split('(')[1]?.replace(')', '').trim() : undefined) || 'Authorized Representative'}
-              </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              <div>
+                <span className="text-muted-foreground block text-[11px]">Authorized Representative:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">
+                  {cleanRepName}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-[11px]">Designation / Capacity:</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">
+                  {cleanDesignation}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-[11px]">Date Received / Conforme:</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">
+                  {formatDate(ntp.conformeDate || ntp.receivedDate || ntp.receivedAt)}
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-muted-foreground block text-[11px]">Date Received / Conforme:</span>
-              <span className="font-medium text-slate-800 dark:text-slate-200">
-                {formatDate(ntp.conformeDate || ntp.receivedDate || ntp.receivedAt)}
-              </span>
-            </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )
+      })()}
 
       {/* ── 5. Cancellation Banner (If Cancelled) ─────────────────────────── */}
       {isCancelled && (
