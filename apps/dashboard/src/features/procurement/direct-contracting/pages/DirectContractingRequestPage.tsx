@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -7,15 +8,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { MoreVertical, Eye, Trash2, ShoppingCart, Plus, Search, Send, CheckCircle2, Building } from 'lucide-react'
-import { useDirectContractingStore } from '../store/directContractingStore'
 import { CreateDirectContractingModal } from '../components/CreateDirectContractingModal'
 import { UpdateDirectContractingModal } from '../components/UpdateDirectContractingModal'
 import { ViewProposalDetailsModal } from '../components/ViewProposalDetailsModal'
 import { DirectContractingDetailsPage } from '../components/DirectContractingDetailsPage'
-import { useToast } from '@/components/ui/use-toast'
-import { useChangeDirectContractingStatus } from '../handlers'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type { DirectContracting } from '../store/directContractingStore'
+import type { DirectContractingRequestSearch } from '@/routes/v2/(procurement)/direct-contracting-request/index'
 import { cn } from '@/lib/utils'
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -26,77 +25,65 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 }
 
 export function DirectContractingRequestPage() {
+  const searchParams = useSearch({ strict: false }) as DirectContractingRequestSearch
+  const navigate = useNavigate({
+    from: "/v2/direct-contracting-request"
+  })
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null)
   const [editEntryId, setEditEntryId] = useState<string | null>(null)
-  
-  const { entries, removeEntry, fetchEntries } = useDirectContractingStore()
-
-  useEffect(() => {
-    fetchEntries()
-  }, [fetchEntries])
-
-  const { toast } = useToast()
   const [viewOpen, setViewOpen] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [confirmSubmitId, setConfirmSubmitId] = useState<string | null>(null)
-  
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [page, setPage] = useState(1)
-  const pageSize = 8
 
-  const selectedEntry = entries.find(e => e.id === selectedEntryId) || null
+  // Search and filter parameters from route search schema
+  const search = searchParams?.searchQuery ?? ''
+  const statusFilter = searchParams?.status ?? 'all'
+  const page = searchParams?.pageNumber ?? 1
+  const pageSize = searchParams?.pageSize ?? 8
 
-  const filtered = entries.filter((e) => {
-    if (statusFilter !== 'all' && e.status !== statusFilter) return false
-    if (!search) return true
-    const q = search.toLowerCase()
-    return (
-      e.dcNumber.toLowerCase().includes(q) ||
-      e.dcName.toLowerCase().includes(q) ||
-      e.prNumber.toLowerCase().includes(q) ||
-      e.office.toLowerCase().includes(q) ||
-      e.supplierName?.toLowerCase().includes(q)
-    )
-  })
+  const handleSearchChange = (q: string) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        searchQuery: q || undefined,
+        pageNumber: 1,
+      }),
+    })
+  }
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
-  const pagedItems = filtered.slice((page - 1) * pageSize, page * pageSize)
+  const handleStatusChange = (val: string) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        status: val === 'all' ? undefined : val,
+        pageNumber: 1,
+      }),
+    })
+  }
 
-  // KPI Counts
+  const handlePageChange = (newPage: number) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        pageNumber: newPage,
+      }),
+    })
+  }
+
+  // Placeholder data for requests until query hooks are wired
+  const entries: DirectContracting[] = []
+
+  // Empty KPI counts placeholder
   const counts = {
-    total: entries.length,
-    draft: entries.filter(e => e.status === 'draft').length,
-    submitted: entries.filter(e => e.status === 'submitted').length,
+    total: 0,
+    draft: 0,
+    submitted: 0,
   }
 
-  const handleRemove = () => {
-    if (confirmDeleteId) {
-      removeEntry(confirmDeleteId)
-      toast({ title: 'Removed', description: 'Request deleted.' })
-      setConfirmDeleteId(null)
-    }
-  }
-
-  const statusMutation = useChangeDirectContractingStatus()
-
-  const handleSendRequest = async (id: string) => {
-    try {
-      await statusMutation.mutateAsync({
-        pathParams: { id },
-        payload: { status: "FOR_REVIEW" }
-      })
-      toast({ title: 'Request Submitted', description: 'Direct Contracting request has been submitted for review.' })
-      await fetchEntries()
-    } catch (err) {
-      console.error(err)
-      toast({
-        title: 'Error',
-        description: 'Failed to submit request.'
-      })
-    }
-  }
+  const totalPages = Math.max(1, Math.ceil(entries.length / pageSize))
+  const selectedEntry = entries.find((e) => e.id === selectedEntryId) || null
 
   const handleOpenView = (entry: DirectContracting) => {
     setSelectedEntryId(entry.id)
@@ -104,9 +91,9 @@ export function DirectContractingRequestPage() {
 
   if (selectedEntry) {
     return (
-      <DirectContractingDetailsPage 
-        entry={selectedEntry} 
-        onBack={() => setSelectedEntryId(null)} 
+      <DirectContractingDetailsPage
+        entry={selectedEntry}
+        onBack={() => setSelectedEntryId(null)}
       />
     )
   }
@@ -183,11 +170,11 @@ export function DirectContractingRequestPage() {
               <input
                 placeholder="Search Direct Contracting number, PR#, Supplier..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full border rounded-md pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={handleStatusChange}>
               <SelectTrigger className="w-48" variant="bordered" radius="md">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
@@ -218,77 +205,95 @@ export function DirectContractingRequestPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pagedItems.map((entry) => {
-                  const cfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.draft
-                  return (
-                    <TableRow key={entry.id} className="hover:bg-muted/40">
-                      <TableCell onClick={(e) => e.stopPropagation()}><Checkbox /></TableCell>
-                      <TableCell className="font-semibold">{entry.dcName}</TableCell>
-                      <TableCell className="font-semibold text-primary">{entry.dcNumber}</TableCell>
-                      <TableCell>
-                        <div className="text-sm font-medium">{entry.prNumber}</div>
-                        <div className="text-xs text-muted-foreground">{entry.bacResolutionNumber}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm font-semibold">{entry.supplierName || 'Not Assigned'}</div>
-                        <div className="text-xs text-muted-foreground">{entry.office}</div>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">₱{entry.totalABC.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("rounded-full px-3 py-0.5 text-[10px] font-bold", cfg.className)}>
-                          {cfg.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2" onClick={() => handleOpenView(entry)}>
-                              <Eye className="h-4 w-4" /> View Details
-                            </DropdownMenuItem>
-                            
-                            {entry.status === 'draft' && (
-                              <DropdownMenuItem 
-                                className="gap-2 text-blue-600 font-semibold"
-                                onClick={() => setConfirmSubmitId(entry.id)}
-                              >
-                                <Send className="h-4 w-4" /> Submit
+                {entries.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-14 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <ShoppingCart className="h-8 w-8 text-muted-foreground/40 mb-1" />
+                        <p className="text-sm font-medium text-muted-foreground">
+                          No direct contracting requests found
+                        </p>
+                        <p className="text-xs text-muted-foreground/60">
+                          Click &quot;+ Create Request&quot; to initialize a new request.
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  entries.map((entry) => {
+                    const cfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.draft
+                    return (
+                      <TableRow key={entry.id} className="hover:bg-muted/40">
+                        <TableCell onClick={(e) => e.stopPropagation()}><Checkbox /></TableCell>
+                        <TableCell className="font-semibold">{entry.dcName}</TableCell>
+                        <TableCell className="font-semibold text-primary">{entry.dcNumber}</TableCell>
+                        <TableCell>
+                          <div className="text-sm font-medium">{entry.prNumber}</div>
+                          <div className="text-xs text-muted-foreground">{entry.bacResolutionNumber}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm font-semibold">{entry.supplierName || 'Not Assigned'}</div>
+                          <div className="text-xs text-muted-foreground">{entry.office}</div>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">₱{entry.totalABC.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={cn("rounded-full px-3 py-0.5 text-[10px] font-bold", cfg.className)}>
+                            {cfg.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem className="gap-2" onClick={() => handleOpenView(entry)}>
+                                <Eye className="h-4 w-4" /> View Details
                               </DropdownMenuItem>
-                            )}
 
-                            <DropdownMenuItem 
-                              className="gap-2 text-destructive" 
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setConfirmDeleteId(entry.id)
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+                              {entry.status === 'draft' && (
+                                <DropdownMenuItem
+                                  className="gap-2 text-blue-600 font-semibold"
+                                  onClick={() => setConfirmSubmitId(entry.id)}
+                                >
+                                  <Send className="h-4 w-4" /> Submit
+                                </DropdownMenuItem>
+                              )}
+
+                              <DropdownMenuItem
+                                className="gap-2 text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setConfirmDeleteId(entry.id)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
 
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-muted-foreground">
-              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, filtered.length)} of {filtered.length} entries
+              {entries.length === 0
+                ? 'Showing 0 to 0 of 0 entries'
+                : `Showing ${(page - 1) * pageSize + 1} to ${Math.min(page * pageSize, entries.length)} of ${entries.length} entries`}
             </p>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
+                disabled={page <= 1}
+                onClick={() => handlePageChange(page - 1)}
               >
                 Previous
               </Button>
@@ -299,7 +304,8 @@ export function DirectContractingRequestPage() {
                     variant={page === p ? 'default' : 'outline'}
                     size="sm"
                     className="w-8"
-                    onClick={() => setPage(p)}
+                    disabled={entries.length === 0}
+                    onClick={() => handlePageChange(p)}
                   >
                     {p}
                   </Button>
@@ -308,8 +314,8 @@ export function DirectContractingRequestPage() {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= totalPages}
+                onClick={() => handlePageChange(page + 1)}
               >
                 Next
               </Button>
@@ -328,10 +334,10 @@ export function DirectContractingRequestPage() {
           editEntryId={editEntryId}
         />
       )}
-      <ViewProposalDetailsModal 
-        open={viewOpen} 
-        onOpenChange={setViewOpen} 
-        entry={selectedEntry} 
+      <ViewProposalDetailsModal
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        entry={selectedEntry}
       />
 
       <ConfirmAlertDialog
@@ -340,7 +346,7 @@ export function DirectContractingRequestPage() {
         title="Delete Request?"
         description="Are you sure you want to delete this Direct Contracting request? This action cannot be undone."
         confirmLabel="Delete"
-        onConfirm={handleRemove}
+        onConfirm={() => setConfirmDeleteId(null)}
       />
       <ConfirmAlertDialog
         open={!!confirmSubmitId}
@@ -348,13 +354,9 @@ export function DirectContractingRequestPage() {
         title="Submit Request for Review?"
         description="Are you sure you want to submit this Direct Contracting request for review?"
         confirmLabel="Submit"
-        onConfirm={async () => {
-          if (confirmSubmitId) {
-            await handleSendRequest(confirmSubmitId)
-            setConfirmSubmitId(null)
-          }
-        }}
+        onConfirm={() => setConfirmSubmitId(null)}
       />
     </div>
   )
 }
+
