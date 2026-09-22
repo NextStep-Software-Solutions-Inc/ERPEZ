@@ -31,8 +31,20 @@ interface Props {
 export function CreateDirectContractingModal({ open, onOpenChange }: Props) {
   const { toast } = useToast()
   const { entries, fetchEntries } = useDirectContractingStore()
-  const { data: resolutions = [] } = useBacResolutions({})
+  const { data: resolutionsResponse } = useBacResolutions({
+    pathParams: {},
+    queryParams: { pageSize: 100 },
+  })
   const [suppliersList, setSuppliersList] = useState<{ id: string; name: string }[]>([])
+
+  const resolutions = useMemo<any[]>(() => {
+    if (!resolutionsResponse) return []
+    if (Array.isArray(resolutionsResponse)) return resolutionsResponse
+    const record = resolutionsResponse as Record<string, unknown>
+    if (Array.isArray(record.data)) return record.data as any[]
+    if (Array.isArray(record.items)) return record.items as any[]
+    return []
+  }, [resolutionsResponse])
 
   useEffect(() => {
     const fetchSuppliers = async () => {
@@ -79,15 +91,28 @@ export function CreateDirectContractingModal({ open, onOpenChange }: Props) {
   // Filter approved resolutions linked to Direct Contracting
   const resolutionOptions = useMemo(() => 
     resolutions
-      .filter(res => res.status === 'approved') // Only approved can proceed to request
-      .map(res => ({
-        id: res.id,
-        number: res.bacResolutionNumber,
-        label: `${res.bacResolutionNumber} - ${res.description.substring(0, 40)}...`,
-        prNumbers: res.linkedConsolidatedPrs.map(pr => pr.prNumber),
-        endUser: res.linkedConsolidatedPrs[0]?.endUser ?? 'N/A',
-        amount: res.linkedConsolidatedPrs[0]?.amount ?? 0,
-      })),
+      .filter((res: any) => (res.status || '').toLowerCase() === 'approved') // Only approved can proceed to request
+      .map((res: any) => {
+        const resNum = res.resolutionNumber || res.bacResolutionNumber || res.title || 'N/A'
+        const desc = res.title || res.description || res.consolidatedPR?.description || ''
+        const cprList: any[] = Array.isArray(res.linkedConsolidatedPrs)
+          ? res.linkedConsolidatedPrs
+          : res.consolidatedPR
+            ? [res.consolidatedPR]
+            : []
+        const prNumbers = cprList.map((pr: any) => pr.prNumber || pr.cprNumber || 'N/A').filter(Boolean)
+        const endUser = cprList[0]?.endUser || res.appItem?.officeName || 'N/A'
+        const amount = res.abc ?? res.sumABC ?? cprList[0]?.amount ?? cprList[0]?.totalAmount ?? 0
+
+        return {
+          id: res.id,
+          number: resNum,
+          label: `${resNum} - ${desc ? (desc.length > 40 ? desc.substring(0, 40) + '...' : desc) : 'Resolution'}`,
+          prNumbers,
+          endUser,
+          amount,
+        }
+      }),
     [resolutions]
   )
 

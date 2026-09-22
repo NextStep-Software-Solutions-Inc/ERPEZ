@@ -135,7 +135,7 @@ export function BidEvaluationTab({
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertTitle className="text-xs font-bold">Authoritative Evaluation Criterion Required</AlertTitle>
           <AlertDescription className="text-xs mt-1">
-            No bid evaluation criterion has been established for this project. Under RA 12009 (NGPA) / RA 9184, an authoritative criterion (such as LCRB for Goods/Civil Works or MEARB) must be selected before bid evaluation can proceed.
+            No bid evaluation criterion has been established for this project. Under RA 12009 (NGPA), an authoritative criterion (such as LCRB for Goods/Civil Works or MEARB) must be selected before bid evaluation can proceed.
           </AlertDescription>
         </Alert>
       )}

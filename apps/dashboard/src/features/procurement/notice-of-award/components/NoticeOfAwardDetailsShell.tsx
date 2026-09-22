@@ -36,6 +36,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -94,6 +95,48 @@ export function NoticeOfAwardDetailsShell({
   const isForApproval = noticeOfAward.status === 'for-approval'
   const canLogContractExecution = noticeOfAward.status === 'approved'
 
+  const totalLineItemsAmount = noticeOfAward.lineItems.reduce(
+    (sum, item) => sum + (item.amount || 0),
+    0,
+  )
+
+  const hasAnyLongDescription = noticeOfAward.lineItems.some(
+    (item) => (item.description?.trim().length ?? 0) > 90,
+  )
+
+  const [expandedItemIds, setExpandedItemIds] = useState<Set<string>>(new Set())
+
+  const isAllExpanded =
+    hasAnyLongDescription &&
+    noticeOfAward.lineItems
+      .filter((item) => (item.description?.trim().length ?? 0) > 90)
+      .every((item) => expandedItemIds.has(item.id))
+
+  const toggleItemExpanded = (id: string) => {
+    setExpandedItemIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const toggleExpandAll = () => {
+    if (isAllExpanded) {
+      setExpandedItemIds(new Set())
+    } else {
+      const allIds = new Set(
+        noticeOfAward.lineItems
+          .filter((item) => (item.description?.trim().length ?? 0) > 90)
+          .map((item) => item.id),
+      )
+      setExpandedItemIds(allIds)
+    }
+  }
+
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
       <div className="space-y-4">
@@ -121,12 +164,13 @@ export function NoticeOfAwardDetailsShell({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 h-9 font-medium shadow-sm hover:bg-default-50 transition-all duration-200"
+                  className="gap-1.5 h-9 font-semibold border-primary/30 text-primary hover:bg-primary/5 shadow-sm transition-all duration-200"
                   onClick={onPrint}
                   disabled={isLoading}
+                  title="Generate official NGPA-compliant Notice of Award PDF"
                 >
-                  <FileDown className="h-4 w-4" />
-                  Print NOA
+                  <FileText className="h-4 w-4" />
+                  Generate NOA
                 </Button>
               ) : null}
 
@@ -265,65 +309,157 @@ export function NoticeOfAwardDetailsShell({
           </div>
 
           <div className="rounded-2xl border border-default-200 bg-background shadow-sm overflow-hidden mt-6">
-            <div className="px-5 py-4 border-b border-default-100 bg-default-50/50 flex items-center justify-between">
-              <div className="text-sm font-bold text-default-900">
-                Awarded Line Items
+            <div className="px-5 py-4 border-b border-default-100 bg-default-50/50 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-sm font-bold text-default-900">
+                  Awarded Line Items
+                </span>
+                <Badge variant="outline" className="font-semibold text-[11px] border-primary/20 text-primary bg-primary/5">
+                  {noticeOfAward.lineItems.length} {noticeOfAward.lineItems.length === 1 ? 'item' : 'items'}
+                </Badge>
               </div>
-              <Badge variant="outline" className="font-semibold text-[11px] border-primary/20 text-primary bg-primary/5">
-                {noticeOfAward.lineItems.length} items
-              </Badge>
+
+              {hasAnyLongDescription && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleExpandAll}
+                  className="h-7 text-xs text-default-600 hover:text-default-900 gap-1 px-2.5 hover:bg-default-100"
+                >
+                  {isAllExpanded ? (
+                    <>
+                      <ChevronUp className="h-3.5 w-3.5" />
+                      <span>Collapse All Specs</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                      <span>Expand All Specs</span>
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-default-50/70">
-                  <TableRow>
-                    <TableHead className="font-bold text-default-900 py-3">Category</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Item Name</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3 min-w-[280px] max-w-md">Description</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Qty</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Unit</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3">Unit Price</TableHead>
-                    <TableHead className="font-bold text-default-900 py-3 text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {noticeOfAward.lineItems.length ? (
-                    noticeOfAward.lineItems.map((lineItem) => (
-                      <TableRow key={lineItem.id} className="transition-colors duration-150 hover:bg-default-50/50">
-                        <TableCell className="font-medium text-default-800 align-top">{lineItem.category}</TableCell>
-                        <TableCell className="font-semibold text-default-950 align-top">{lineItem.itemName}</TableCell>
-                        <TableCell className="text-default-600 min-w-[280px] max-w-md align-top">
-                          <ExpandableItemDescription description={lineItem.description} />
+
+            <Table>
+              <TableHeader className="bg-default-50/70 border-b border-default-200">
+                <TableRow>
+                  <TableHead className="font-bold text-default-900 py-3 pl-4">
+                    Item Details & Specifications
+                  </TableHead>
+                  <TableHead className="font-bold text-default-900 py-3 px-3 w-28">
+                    Qty & Unit
+                  </TableHead>
+                  <TableHead className="font-bold text-default-900 py-3 px-3 text-right w-32">
+                    Unit Price
+                  </TableHead>
+                  <TableHead className="font-bold text-default-900 py-3 pr-4 text-right w-36">
+                    Total Amount
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {noticeOfAward.lineItems.length ? (
+                  noticeOfAward.lineItems.map((lineItem, index) => {
+                    const isExpanded = expandedItemIds.has(lineItem.id)
+                    return (
+                      <TableRow
+                        key={lineItem.id}
+                        className="transition-colors duration-150 hover:bg-default-50/50"
+                      >
+                        {/* Column 1: Item Details & Specifications */}
+                        <TableCell className="align-top py-3.5 pl-4 pr-3">
+                          <div className="flex items-start gap-2.5">
+                            <span className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-default-100 text-[11px] font-semibold text-default-600 mt-0.5 select-none">
+                              {index + 1}
+                            </span>
+                            <div className="space-y-1.5 flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-default-950 text-sm leading-snug break-words">
+                                  {lineItem.itemName}
+                                </span>
+                                {lineItem.category && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] font-medium text-default-600 bg-default-50 border-default-200 px-1.5 py-0 h-4.5 shrink-0"
+                                  >
+                                    {lineItem.category}
+                                  </Badge>
+                                )}
+                              </div>
+                              <ExpandableItemDescription
+                                description={lineItem.description}
+                                isExpanded={isExpanded}
+                                onToggle={() => toggleItemExpanded(lineItem.id)}
+                              />
+                            </div>
+                          </div>
                         </TableCell>
-                        <TableCell className="font-semibold text-default-900 align-top">{lineItem.quantity}</TableCell>
-                        <TableCell className="text-default-500 align-top">{lineItem.unit}</TableCell>
-                        <TableCell className="text-default-700 align-top">
-                          {lineItem.unitPrice.toLocaleString('en-PH', {
+
+                        {/* Column 2: Qty & Unit */}
+                        <TableCell className="align-top py-3.5 px-3 whitespace-nowrap">
+                          <div className="font-semibold text-default-900 text-sm">
+                            {lineItem.quantity.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-default-500 font-normal">
+                            {lineItem.unit}
+                          </div>
+                        </TableCell>
+
+                        {/* Column 3: Unit Price */}
+                        <TableCell className="align-top py-3.5 px-3 text-right tabular-nums whitespace-nowrap text-default-700 text-sm">
+                          ₱{lineItem.unitPrice.toLocaleString('en-PH', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
                         </TableCell>
-                        <TableCell className="font-bold text-default-900 text-right align-top">
-                          {lineItem.amount.toLocaleString('en-PH', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+
+                        {/* Column 4: Total Amount */}
+                        <TableCell className="align-top py-3.5 pl-3 pr-4 text-right tabular-nums whitespace-nowrap">
+                          <span className="font-bold text-default-950 text-sm">
+                            ₱{lineItem.amount.toLocaleString('en-PH', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="py-10 text-center text-sm text-default-500"
-                      >
-                        No awarded line items are available yet.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    )
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-10 text-center text-sm text-default-500"
+                    >
+                      No awarded line items are available yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+              {noticeOfAward.lineItems.length > 0 && (
+                <TableFooter className="bg-default-50/60 border-t border-default-200">
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="py-3 pl-4 text-right text-xs font-bold text-default-600 uppercase tracking-wider"
+                    >
+                      Total Awarded Amount ({noticeOfAward.lineItems.length}{' '}
+                      {noticeOfAward.lineItems.length === 1 ? 'item' : 'items'}):
+                    </TableCell>
+                    <TableCell className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">
+                      <span className="font-extrabold text-default-950 text-sm text-primary">
+                        ₱{totalLineItemsAmount.toLocaleString('en-PH', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                </TableFooter>
+              )}
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -884,23 +1020,41 @@ function InfoBlock({
 }
 
 function parseDescriptionSections(description: string) {
-  const specKey = 'Specifications:'
-  const justKey = 'Justification:'
+  const specMatch = /(?:technical\s+)?specifications?\s*:/i.exec(description)
+  const justMatch = /justification\s*:/i.exec(description)
 
-  const specIdx = description.indexOf(specKey)
-  const justIdx = description.indexOf(justKey)
-
-  if (specIdx !== -1 && justIdx !== -1 && specIdx < justIdx) {
-    const specs = description.slice(specIdx + specKey.length, justIdx).trim()
-    const justification = description.slice(justIdx + justKey.length).trim()
+  if (specMatch && justMatch && specMatch.index < justMatch.index) {
+    const specStart = specMatch.index + specMatch[0].length
+    const specs = description.slice(specStart, justMatch.index).trim()
+    const justification = description.slice(justMatch.index + justMatch[0].length).trim()
     return { specs, justification }
   }
 
   return null
 }
 
-function ExpandableItemDescription({ description }: { description?: string | null }) {
-  const [isExpanded, setIsExpanded] = useState(false)
+type ExpandableItemDescriptionProps = {
+  description?: string | null
+  isExpanded?: boolean
+  onToggle?: () => void
+}
+
+function ExpandableItemDescription({
+  description,
+  isExpanded: controlledExpanded,
+  onToggle,
+}: ExpandableItemDescriptionProps) {
+  const [internalExpanded, setInternalExpanded] = useState(false)
+  const isExpanded =
+    controlledExpanded !== undefined ? controlledExpanded : internalExpanded
+
+  const handleToggle = () => {
+    if (onToggle) {
+      onToggle()
+    } else {
+      setInternalExpanded((prev) => !prev)
+    }
+  }
 
   if (!description || !description.trim()) {
     return <span className="text-default-400 text-xs italic">-</span>
@@ -922,24 +1076,26 @@ function ExpandableItemDescription({ description }: { description?: string | nul
     <div className="space-y-1.5">
       {isExpanded ? (
         parsed ? (
-          <div className="space-y-2 text-xs leading-relaxed">
+          <div className="space-y-2 text-xs leading-relaxed mt-1.5">
             <div className="rounded-lg bg-default-50/80 p-2.5 border border-default-200/60 shadow-xs">
               <div className="text-[10px] font-bold uppercase tracking-wider text-default-600 mb-1">
                 Specifications
               </div>
-              <p className="text-default-800 break-words">{parsed.specs}</p>
+              <p className="text-default-800 break-words leading-relaxed">{parsed.specs}</p>
             </div>
             <div className="rounded-lg bg-default-50/80 p-2.5 border border-default-200/60 shadow-xs">
               <div className="text-[10px] font-bold uppercase tracking-wider text-default-600 mb-1">
                 Justification
               </div>
-              <p className="text-default-800 break-words">{parsed.justification}</p>
+              <p className="text-default-800 break-words leading-relaxed">{parsed.justification}</p>
             </div>
           </div>
         ) : (
-          <p className="text-xs text-default-700 whitespace-pre-line leading-relaxed break-words">
-            {trimmed}
-          </p>
+          <div className="rounded-lg bg-default-50/60 p-2.5 border border-default-200/50 mt-1.5">
+            <p className="text-xs text-default-700 whitespace-pre-line leading-relaxed break-words">
+              {trimmed}
+            </p>
+          </div>
         )
       ) : (
         <p className="text-xs text-default-600 line-clamp-2 leading-relaxed break-words">
@@ -949,7 +1105,7 @@ function ExpandableItemDescription({ description }: { description?: string | nul
 
       <button
         type="button"
-        onClick={() => setIsExpanded((prev) => !prev)}
+        onClick={handleToggle}
         className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary-600 hover:underline transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded cursor-pointer"
       >
         <span>{isExpanded ? 'Show less' : 'Show more'}</span>

@@ -260,6 +260,22 @@ public class DocumentController(IMediator mediator,
         return Ok(result);
     }
 
+    [HttpPost("notice-of-award/{noaId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateNoticeOfAward(
+        Guid noaId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.NoticeOfAwards.Commands.GenerateNoticeOfAwardDocument.GenerateNoticeOfAwardDocumentCommand
+        {
+            NoticeOfAwardId = noaId,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpPost("rfq/{rfqId:guid}/generate")]
     [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateRfq(

@@ -19,12 +19,15 @@ import { AOBStatus } from '../types/aobTypes'
 
 type BadgeVariant = 'outline' | 'soft'
 
-const statusConfig: Record<string, { label: string; variant: BadgeVariant }> = {
-  Draft: { label: 'Draft', variant: 'soft' },
-  'For Approval': { label: 'For Approval', variant: 'outline' },
-  Approved: { label: 'Approved', variant: 'soft' },
-  Rejected: { label: 'Rejected', variant: 'soft' },
-  Cancelled: { label: 'Cancelled', variant: 'outline' },
+const statusConfig: Record<string, { label: string; variant: BadgeVariant; className?: string }> = {
+  Draft: { label: 'Draft', variant: 'outline', className: 'bg-slate-100 text-slate-700 border-slate-300' },
+  ForApproval: { label: 'For Approval', variant: 'outline', className: 'bg-amber-50 text-amber-800 border-amber-300' },
+  'For Approval': { label: 'For Approval', variant: 'outline', className: 'bg-amber-50 text-amber-800 border-amber-300' },
+  Submitted: { label: 'For Approval', variant: 'outline', className: 'bg-amber-50 text-amber-800 border-amber-300' },
+  Approved: { label: 'Approved', variant: 'outline', className: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
+  Rejected: { label: 'Returned', variant: 'outline', className: 'bg-rose-50 text-rose-800 border-rose-300' },
+  Returned: { label: 'Returned', variant: 'outline', className: 'bg-rose-50 text-rose-800 border-rose-300' },
+  Cancelled: { label: 'Cancelled', variant: 'outline', className: 'bg-gray-100 text-gray-700 border-gray-300' },
 }
 
 export function getAdminAOBsTableColumns({
@@ -40,7 +43,11 @@ export function getAdminAOBsTableColumns({
     {
       accessorKey: 'aobNumber',
       header: 'AOB Number',
-      cell: ({ row }) => <span className="font-medium">{row.getValue('aobNumber')}</span>,
+      cell: ({ row }) => (
+        <span className="font-semibold text-sm text-blue-600 cursor-pointer hover:underline">
+          {row.getValue('aobNumber')}
+        </span>
+      ),
     },
     {
       accessorKey: 'rfqNumber',
@@ -59,9 +66,17 @@ export function getAdminAOBsTableColumns({
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => {
-        const status = row.getValue('status') as string
-        const config = statusConfig[status] || { label: status, variant: 'default' }
-        return <Badge variant={config.variant}>{config.label}</Badge>
+        const rawStatus = row.getValue('status') as string
+        const config = statusConfig[rawStatus] || {
+          label: rawStatus === 'ForApproval' ? 'For Approval' : rawStatus,
+          variant: 'outline' as BadgeVariant,
+          className: 'bg-amber-50 text-amber-800 border-amber-300',
+        }
+        return (
+          <Badge variant={config.variant} className={config.className || ''}>
+            {config.label}
+          </Badge>
+        )
       },
     },
     {

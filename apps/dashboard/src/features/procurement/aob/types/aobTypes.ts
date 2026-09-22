@@ -363,7 +363,7 @@ export interface SelectWinnerPayload {
   aobId: string
   lineItemId?: string
   rfqItemId?: string
-  winningSupplierId: string
+  winningSupplierId?: string
   awardedUnitPrice?: number
   awardedQuantity?: number
   totalAwardedAmount?: number

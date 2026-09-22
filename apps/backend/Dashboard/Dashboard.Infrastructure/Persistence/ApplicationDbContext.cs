@@ -1,5 +1,6 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Infrastructure.Persistence.Configurations;
 using ERPEZ.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
@@ -204,6 +205,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<NoticeOfAward>? NoticeOfAwards { get; set; }
     public DbSet<NoticeOfAwardMilestone>? NoticeOfAwardMilestones { get; set; }
     public DbSet<NoticeOfAwardActivity>? NoticeOfAwardActivities { get; set; }
+
+    // Contract (RA 12009)
+    public DbSet<Contract>? Contracts { get; set; }
 
     // Public Bidding Evaluation & Award Ecosystem
     public DbSet<BiddingSubmission>? BiddingSubmissions { get; set; }
@@ -2426,6 +2430,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(o => o.OPCRConsolidationId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<ProcurementProject>(e =>
+        {
+            e.HasIndex(p => p.ConsolidatedPRId)
+                .IsUnique()
+                .HasFilter("\"IsDeleted\" = false");
+        });
+
         modelBuilder.Entity<BACResolution>(e =>
         {
             e.HasOne(r => r.ProcurementProject)
@@ -2441,6 +2452,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasIndex(r => r.BiddingAwardRecommendationId)
                 .IsUnique()
                 .HasFilter("\"BiddingAwardRecommendationId\" IS NOT NULL");
+
+            e.HasIndex(r => r.ResolutionNumber)
+                .IsUnique()
+                .HasFilter("\"IsDeleted\" = false");
         });
 
         modelBuilder.Entity<BiddingActivitySchedule>(e =>
@@ -3599,6 +3614,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(s => s.BACResolutionId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
+
+        // Contract (RA 12009 Section 66)
+        modelBuilder.ApplyConfiguration(new ContractConfiguration());
     }
 
     private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)

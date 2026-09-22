@@ -49,6 +49,8 @@ export function BidEvaluationMatrix({
     itemCode: string
     itemDescription: string
     itemABC: number
+    unitABC?: number
+    quantity?: number
     supplierName: string
     bid: SupplierBid | null
   }>({
@@ -56,6 +58,8 @@ export function BidEvaluationMatrix({
     itemCode: '',
     itemDescription: '',
     itemABC: 0,
+    unitABC: 0,
+    quantity: 0,
     supplierName: '',
     bid: null,
   })
@@ -187,11 +191,16 @@ export function BidEvaluationMatrix({
   }, [lineItems, suppliers])
 
   const handleViewBidDetails = (supplier: Supplier, item: LineItem, bid: SupplierBid) => {
+    const abcUnitPrice = item.abcUnitPrice || item.approvedBudgetForContract || 0
+    const totalABC = item.totalABC || (abcUnitPrice * (item.quantity || 1))
+
     setViewingBidDetails({
       open: true,
       itemCode: item.itemCode || `Item #${lineItems.indexOf(item) + 1}`,
       itemDescription: item.description || item.name || '',
-      itemABC: item.abcUnitPrice || item.approvedBudgetForContract || 0,
+      itemABC: totalABC,
+      unitABC: abcUnitPrice,
+      quantity: item.quantity,
       supplierName: supplier.supplierName || supplier.name || '',
       bid,
     })
@@ -239,7 +248,7 @@ export function BidEvaluationMatrix({
               <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
               <AlertTitle className="font-semibold text-amber-800">Minimum Canvass Notice</AlertTitle>
               <AlertDescription className="text-sm text-amber-700">
-                Fewer than three (3) suppliers have submitted quotations. Under Philippine Procurement Law (RA 9184 & RA 12009) guidelines for Alternative Procurement (Shopping & Small Value Procurement), please ensure at least three suppliers are canvassed where possible.
+                Fewer than three (3) suppliers have submitted quotations. Under Philippine Procurement Law (RA 12009) guidelines for Alternative Procurement (Shopping & Small Value Procurement), please ensure at least three suppliers are canvassed where possible.
               </AlertDescription>
             </Alert>
           )}
@@ -375,14 +384,22 @@ export function BidEvaluationMatrix({
           itemCode={viewingBidDetails.itemCode}
           itemDescription={viewingBidDetails.itemDescription}
           itemABC={viewingBidDetails.itemABC}
+          unitABC={viewingBidDetails.unitABC}
+          quantity={viewingBidDetails.quantity}
           supplierName={viewingBidDetails.supplierName}
           bidDetails={{
-            unitBid: viewingBidDetails.bid.unitBid,
-            totalBid: viewingBidDetails.bid.totalBid,
-            qualityScore: viewingBidDetails.bid.qualityScore,
+            unitBid: viewingBidDetails.bid.unitBid ?? null,
+            totalBid: viewingBidDetails.bid.totalBid ?? null,
+            brand: viewingBidDetails.bid.brand,
+            model: viewingBidDetails.bid.model,
+            color: viewingBidDetails.bid.color,
+            rank: viewingBidDetails.bid.rank,
+            score: viewingBidDetails.bid.score,
+            qualityScore: viewingBidDetails.bid.qualityScore ?? undefined,
             calculatedQualityPriceRatio: viewingBidDetails.bid.calculatedQualityPriceRatio,
             remarks: viewingBidDetails.bid.remarks,
             offerDocumentUrl: viewingBidDetails.bid.brochureFileUrl || viewingBidDetails.bid.offerDocumentUrl,
+            brochureFileUrl: viewingBidDetails.bid.brochureFileUrl,
             isWinner: viewingBidDetails.bid.isWinner,
           }}
         />
