@@ -52,26 +52,35 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 
 import { features } from '@/components/ui/table-features'
 import { getDirectContractingColumns } from './columns'
-import { COLUMN_LABELS, type DirectContractingRecord, type TableActionHandlers } from './types'
+import {
+  COLUMN_LABELS,
+  type TableActionHandlers,
+} from './types'
+import type { PaginationResponse } from 'erpez-shared-lib'
+import type { DirectContracting } from '../types'
 
-interface DirectContractingTableProps {
-  data: DirectContractingRecord[]
+export interface DirectContractingTableProps {
+  directContractings?: PaginationResponse<DirectContracting>
+  isLoading?: boolean
   handlers: TableActionHandlers
-  onBulkSubmit: (selectedRows: DirectContractingRecord[]) => void
-  onBulkDelete: (selectedRows: DirectContractingRecord[]) => void
-  onExportCSV: (records: DirectContractingRecord[]) => void
+  onBulkSubmit?: (selectedRows: DirectContracting[]) => void
+  onBulkDelete?: (selectedRows: DirectContracting[]) => void
+  onExportCSV?: (records: DirectContracting[]) => void
 }
 
 export function DirectContractingTable({
-  data,
+  directContractings,
+  isLoading = false,
   handlers,
   onBulkSubmit,
   onBulkDelete,
   onExportCSV,
 }: DirectContractingTableProps) {
+
   // Active status tab filter ('all', 'draft', 'for-review', 'submitted-to-supplier', 'approved', 'rejected')
   const [activeStatusTab, setActiveStatusTab] = React.useState<string>('all')
 
@@ -91,7 +100,7 @@ export function DirectContractingTable({
   // Initialize TanStack Table v9
   const table = useTable({
     features,
-    data,
+    data: directContractings?.data || [],
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -117,14 +126,14 @@ export function DirectContractingTable({
   // Tab counts calculation
   const statusCounts = React.useMemo(() => {
     const counts = {
-      all: data.length,
+      all: directContractings?.data?.length || 0,
       draft: 0,
       'for-review': 0,
       'submitted-to-supplier': 0,
       approved: 0,
       rejected: 0,
     }
-    data.forEach((item) => {
+    directContractings?.data?.forEach((item) => {
       const s = (item.status || '').toLowerCase()
       if (s === 'draft') counts.draft += 1
       else if (s === 'for-review' || s === 'for_review' || s === 'submitted') counts['for-review'] += 1
@@ -133,7 +142,7 @@ export function DirectContractingTable({
       else if (s === 'rejected' || s === 'returned') counts.rejected += 1
     })
     return counts
-  }, [data])
+  }, [directContractings?.data])
 
   // Change status tab
   const handleSelectStatusTab = (tabValue: string) => {
@@ -147,6 +156,33 @@ export function DirectContractingTable({
   }
 
   const searchValue = (table.getColumn('dcNumber')?.getFilterValue() as string) ?? ''
+
+  // Fallback export if not provided
+  const handleExport = (records: DirectContracting[]) => {
+    if (onExportCSV) {
+      onExportCSV(records)
+      return
+    }
+    if (records.length === 0) return
+    const headers = ['DC Number', 'Project Name', 'Exclusive Supplier', 'Total ABC', 'Deadline', 'Status']
+    const rows = records.map((r) => [
+      `"${r.dcNumber}"`,
+      `"${(r.name || r.dcName || '').replace(/"/g, '""')}"`,
+      `"${(r.supplierName || r.exclusiveSupplierName || '').replace(/"/g, '""')}"`,
+      r.totalABC || 0,
+      `"${r.submissionDeadline || r.deadline || ''}"`,
+      `"${r.status}"`,
+    ])
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `Direct_Contracting_Requests_${new Date().toISOString().slice(0, 10)}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   return (
     <Card className="border-border/60 shadow-xs">
@@ -164,7 +200,7 @@ export function DirectContractingTable({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onExportCSV(data)}
+              onClick={() => handleExport(directContractings?.data || [])}
               className="h-8 gap-1.5 text-xs"
             >
               <Download className="h-3.5 w-3.5" /> Export All CSV
@@ -304,7 +340,7 @@ export function DirectContractingTable({
                 variant="outline"
                 className="h-8 text-xs gap-1.5 bg-background shadow-xs hover:bg-muted"
                 onClick={() => {
-                  onBulkSubmit(selectedRowList)
+                  onBulkSubmit?.(selectedRowList)
                   setRowSelection({})
                 }}
               >
@@ -315,7 +351,7 @@ export function DirectContractingTable({
                 size="sm"
                 variant="outline"
                 className="h-8 text-xs gap-1.5 bg-background shadow-xs hover:bg-muted"
-                onClick={() => onExportCSV(selectedRowList)}
+                onClick={() => handleExport(selectedRowList)}
               >
                 <Download className="h-3.5 w-3.5" />
                 Export Selected
@@ -325,7 +361,7 @@ export function DirectContractingTable({
                 variant="destructive"
                 className="h-8 text-xs gap-1.5 shadow-xs"
                 onClick={() => {
-                  onBulkDelete(selectedRowList)
+                  onBulkDelete?.(selectedRowList)
                   setRowSelection({})
                 }}
               >
@@ -361,7 +397,17 @@ export function DirectContractingTable({
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {isLoading ? (
+                Array.from({ length: Math.min(pagination.pageSize, 5) }).map((_, i) => (
+                  <TableRow key={`skeleton-row-${i}`} className="hover:bg-transparent">
+                    {columns.map((col, colIdx) => (
+                      <TableCell key={`skeleton-cell-${colIdx}`} className="py-3.5">
+                        <Skeleton className="h-5 w-full max-w-[140px]" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}

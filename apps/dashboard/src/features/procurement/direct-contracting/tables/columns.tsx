@@ -33,9 +33,9 @@ import { formatCurrencyPHP, formatDateV2 } from '@/utils/formatters'
 import { cn } from '@/lib/utils'
 
 import type { DataTableFeatures } from '@/components/ui/table-features'
-import type { DirectContractingRecord, TableActionHandlers } from './types'
+import type { DirectContracting, TableActionHandlers } from './types'
 
-const columnHelper = createColumnHelper<DataTableFeatures, DirectContractingRecord>()
+const columnHelper = createColumnHelper<DataTableFeatures, DirectContracting>()
 
 export function renderStatusBadge(status: string) {
   const normalized = (status || '').toLowerCase()
@@ -172,11 +172,7 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
           row.original.exclusiveSupplierName ||
           ''
         ).toLowerCase()
-        const bac = (
-          row.original.bacProjectTitle ||
-          row.original.bacResolutionNumber ||
-          ''
-        ).toLowerCase()
+        const bac = (row.original.bacProjectTitle || '').toLowerCase()
         return (
           dcNumber.includes(term) ||
           name.includes(term) ||
@@ -193,7 +189,7 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
                 {dc.dcNumber}
               </span>
               <span className="text-[11px] text-muted-foreground font-medium truncate">
-                {dc.category || 'Direct Contracting'}
+                Direct Contracting
               </span>
             </div>
             <div
@@ -206,7 +202,7 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <FileText className="h-3 w-3 text-muted-foreground/70 shrink-0" />
               <span className="truncate">
-                {dc.bacProjectTitle || dc.bacResolutionNumber || 'BAC Project Ref'}
+                {dc.bacProjectTitle || 'BAC Project Ref'}
               </span>
             </div>
           </div>

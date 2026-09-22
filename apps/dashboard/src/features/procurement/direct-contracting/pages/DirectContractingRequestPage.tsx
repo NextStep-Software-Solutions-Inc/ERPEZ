@@ -17,21 +17,17 @@ import { getDirectContractingsRequest } from '../handlers/getDirectContractingsR
 
 import {
   DirectContractingTable,
-  INITIAL_MOCK_DATA,
-  type DirectContractingRecord,
   type TableActionHandlers,
 } from '../tables'
+import type { DirectContracting } from '../types'
 
 const useDirectContractings = createQueryHookFromTemplate(getDirectContractingsRequest)
 
 export function DirectContractingRequestPage() {
   const { toast } = useToast()
 
-  // Hybrid Data State: Initialized with rich mock items, seamlessly incorporates API items if returned
-  // const [data, setData] = React.useState<DirectContractingRecord[]>(INITIAL_MOCK_DATA)
-
   // API Query
-  const { data: directContractings } = useDirectContractings({
+  const { data: directContractings, isLoading } = useDirectContractings({
     pathParams: {},
     // queryParams: { pageSize: pageSizeAtom(from footer table), pageNumber: pageNumber(from footer table), filters: `status==${status},status${d}` },
     queryParams: { pageSize: 100 },
@@ -41,11 +37,11 @@ export function DirectContractingRequestPage() {
   // Modals & Action States
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
   const [editEntryId, setEditEntryId] = React.useState<string | null>(null)
-  const [viewEntry, setViewEntry] = React.useState<DirectContractingRecord | null>(null)
+  const [viewEntry, setViewEntry] = React.useState<DirectContracting | null>(null)
   const [viewOpen, setViewOpen] = React.useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null)
   const [confirmSubmitId, setConfirmSubmitId] = React.useState<string | null>(null)
-  const [bulkDeleteRows, setBulkDeleteRows] = React.useState<DirectContractingRecord[] | null>(null)
+  const [bulkDeleteRows, setBulkDeleteRows] = React.useState<DirectContracting[] | null>(null)
 
   // Row Action Handlers
   const handlers: TableActionHandlers = React.useMemo(
@@ -57,7 +53,7 @@ export function DirectContractingRequestPage() {
           description: `Reference number ${dcNumber} copied successfully.`,
         })
       },
-      onViewProposal: (entry: DirectContractingRecord) => {
+      onViewProposal: (entry: DirectContracting) => {
         setViewEntry(entry)
         setViewOpen(true)
       },
@@ -122,7 +118,8 @@ export function DirectContractingRequestPage() {
 
       {/* Modular TanStack Table Component */}
       <DirectContractingTable
-        data={directContractings}
+        directContractings={directContractings}
+        isLoading={isLoading}
         handlers={handlers}
         onBulkSubmit={() => { }}
         onBulkDelete={(rows) => setBulkDeleteRows(rows)}
@@ -152,7 +149,7 @@ export function DirectContractingRequestPage() {
             setViewOpen(v)
             if (!v) setViewEntry(null)
           }}
-          entry={viewEntry}
+          entry={viewEntry as any}
         />
       )}
 
