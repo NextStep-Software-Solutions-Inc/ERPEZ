@@ -161,6 +161,7 @@ public interface IUnitOfWork
     INoticeOfAwardMilestoneRepository NoticeOfAwardMilestoneRepository { get; }
     INoticeOfAwardActivityRepository NoticeOfAwardActivityRepository { get; }
     IContractRepository ContractRepository { get; }
+    INoticeToProceedRepository NoticeToProceedRepository { get; }
     IBiddingSubmissionRepository BiddingSubmissionRepository { get; }
     IBiddingEvaluationRepository BiddingEvaluationRepository { get; }
     IBiddingAwardRecommendationRepository BiddingAwardRecommendationRepository { get; }

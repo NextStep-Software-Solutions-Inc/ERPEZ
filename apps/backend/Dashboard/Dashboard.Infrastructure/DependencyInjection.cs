@@ -193,6 +193,9 @@ public static class DependencyInjection
         // Contract Agreement — PDF (RA 12009 NGPA Compliant)
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.Contracts.Dtos.ContractDataDto>, ContractPdfRenderer>();
 
+        // Notice to Proceed — PDF (RA 12009 Sec. 66 / GPPB Res. 03-2025)
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.NoticeToProceeds.Dtos.NoticeToProceedDataDto>, NoticeToProceedPdfRenderer>();
+
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()

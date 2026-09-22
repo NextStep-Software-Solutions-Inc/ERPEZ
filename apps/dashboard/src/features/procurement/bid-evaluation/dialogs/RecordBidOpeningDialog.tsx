@@ -8,7 +8,6 @@ import {
   FileCheck2,
   FileText,
   FolderOpen,
-  Loader2,
   Lock,
   ShieldCheck,
   Unlock,

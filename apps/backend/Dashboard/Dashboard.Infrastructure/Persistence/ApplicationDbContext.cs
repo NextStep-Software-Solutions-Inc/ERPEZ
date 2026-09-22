@@ -208,6 +208,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     // Contract (RA 12009)
     public DbSet<Contract>? Contracts { get; set; }
+    public DbSet<NoticeToProceed>? NoticeToProceeds { get; set; }
 
     // Public Bidding Evaluation & Award Ecosystem
     public DbSet<BiddingSubmission>? BiddingSubmissions { get; set; }
@@ -2430,13 +2431,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(o => o.OPCRConsolidationId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<ProcurementProject>(e =>
-        {
-            e.HasIndex(p => p.ConsolidatedPRId)
-                .IsUnique()
-                .HasFilter("\"IsDeleted\" = false");
-        });
-
         modelBuilder.Entity<BACResolution>(e =>
         {
             e.HasOne(r => r.ProcurementProject)
@@ -3617,6 +3611,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // Contract (RA 12009 Section 66)
         modelBuilder.ApplyConfiguration(new ContractConfiguration());
+
+        // Notice to Proceed (RA 12009 Section 66)
+        modelBuilder.ApplyConfiguration(new NoticeToProceedConfiguration());
     }
 
     private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)
