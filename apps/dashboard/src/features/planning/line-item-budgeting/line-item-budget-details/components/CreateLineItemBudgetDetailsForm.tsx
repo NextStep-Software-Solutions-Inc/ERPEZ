@@ -314,7 +314,8 @@ export default function CreateLineItemBudgetDetailsForm({
             void queryClient.invalidateQueries({
               predicate: (query) =>
                 typeof query.queryKey[0] === 'string' &&
-                (query.queryKey[0].includes('/lib-activities') ||
+                (query.queryKey[0].includes('/line-item-budget-details') ||
+                  query.queryKey[0].includes('/lib-activities') ||
                   query.queryKey[0].includes('/libs')),
             })
             onCreated?.()
@@ -325,7 +326,8 @@ export default function CreateLineItemBudgetDetailsForm({
             void queryClient.invalidateQueries({
               predicate: (query) =>
                 typeof query.queryKey[0] === 'string' &&
-                (query.queryKey[0].includes('/lib-activities') ||
+                (query.queryKey[0].includes('/line-item-budget-details') ||
+                  query.queryKey[0].includes('/lib-activities') ||
                   query.queryKey[0].includes('/libs')),
             })
             // Keep form open to show failures
@@ -356,7 +358,8 @@ export default function CreateLineItemBudgetDetailsForm({
           void queryClient.invalidateQueries({
             predicate: (query) =>
               typeof query.queryKey[0] === 'string' &&
-              (query.queryKey[0].includes('/lib-activities') ||
+              (query.queryKey[0].includes('/line-item-budget-details') ||
+                query.queryKey[0].includes('/lib-activities') ||
                 query.queryKey[0].includes('/libs')),
           })
           onCreated?.()

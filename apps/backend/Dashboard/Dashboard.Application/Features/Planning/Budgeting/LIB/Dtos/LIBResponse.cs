@@ -27,6 +27,8 @@ public record LIBResponse
     public LIBSummaryResponse? ParentLIB { get; init; }
     public LIBSummaryResponse? ConsolidatedIntoLIB { get; init; }
     public LIBSummaryResponse? PreviousVersion { get; init; }
+    public DateTime? CreatedAt { get; init; }
+    public int ActivityCount { get; init; }
     public List<LIBNestedActivityResponse> Activities { get; init; } = [];
     public List<LIBNestedDetailResponse> OrphanDetails { get; init; } = [];
 }

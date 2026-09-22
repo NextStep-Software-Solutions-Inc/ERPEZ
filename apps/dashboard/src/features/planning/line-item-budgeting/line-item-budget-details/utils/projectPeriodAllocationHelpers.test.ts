@@ -3,6 +3,7 @@ import {
   generateProjectPeriods,
   generateProjectPeriodDetails,
 } from './periodAllocationHelpers'
+import { getCoveredQuarters } from '../components/EditLineItemBudgetDetailsDialog'
 
 describe('generateProjectPeriods', () => {
   it('generates multi-year quarterly periods with first/last clamping (Sep 15, 2026 to Feb 10, 2027)', () => {
@@ -157,5 +158,37 @@ describe('generateProjectPeriods', () => {
     const details = generateProjectPeriodDetails(quarters, allocations)
     expect(details).toHaveLength(2)
     expect(details.map((d) => d.period)).toEqual(['Q1 2026', 'Q4 2026'])
+  })
+})
+
+describe('getCoveredQuarters (Option 2 Quarter Preset Reconciliation)', () => {
+  it('correctly detects Q1 & Q2 for allocation spanning Jan 1 to June 30', () => {
+    // Allocation from 2026-01-01 to 2026-06-30
+    const covered = getCoveredQuarters('2026-01-01', '2026-06-30')
+    expect(covered).toHaveLength(2)
+    expect(covered[0].id).toBe('Q1')
+    expect(covered[0].startDate).toBe('2026-01-01')
+    expect(covered[0].endDate).toBe('2026-03-31')
+
+    expect(covered[1].id).toBe('Q2')
+    expect(covered[1].startDate).toBe('2026-04-01')
+    expect(covered[1].endDate).toBe('2026-06-30')
+  })
+
+  it('correctly detects single quarter for Jan 1 to Mar 31', () => {
+    const covered = getCoveredQuarters('2026-01-01', '2026-03-31')
+    expect(covered).toHaveLength(1)
+    expect(covered[0].id).toBe('Q1')
+  })
+
+  it('correctly detects Q2 through Q4', () => {
+    const covered = getCoveredQuarters('2026-04-01', '2026-12-31')
+    expect(covered).toHaveLength(3)
+    expect(covered.map((q) => q.id)).toEqual(['Q2', 'Q3', 'Q4'])
+  })
+
+  it('returns empty array for invalid or empty dates', () => {
+    expect(getCoveredQuarters('', '')).toEqual([])
+    expect(getCoveredQuarters('invalid-date', '2026-06-30')).toEqual([])
   })
 })
