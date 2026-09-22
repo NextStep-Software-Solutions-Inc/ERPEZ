@@ -9,6 +9,7 @@ export interface ExpenditureItemOption {
   parentName?: string
   parentCode?: string
   isLeaf: boolean
+  isSelectable: boolean
 }
 
 /**
@@ -63,9 +64,11 @@ export function resolveExpenditureTypes(allObjects: PlanningObject[]): {
  * Traverses all objects and extracts all descendants under a given root parent (e.g. Sub-Class),
  * preserving depth, parent context, and hierarchical order.
  *
- * Level 0 = Direct children of the Sub-Class (Groups, e.g. Property, Plant and Equipment Outlay)
- * Level 1 = Children of the Groups (Object codes, e.g. Machinery and Equipment)
- * Level 2+ = Sub-Objects / specifications (e.g. Office Equipment, ICT Equipment)
+ * Supports multi-pass parent resolution:
+ * 1. Explicit foreign key parentId / parent.id
+ * 2. Parent code matching (parent.code)
+ * 3. UACS 8-digit code prefix matching for sub-objects (e.g. "50604050 00" -> parent "50604050")
+ * 4. Expense class prefix matching for unparented items
  */
 export function getDescendantExpenditureItems(
   allObjects: PlanningObject[],
@@ -73,14 +76,106 @@ export function getDescendantExpenditureItems(
 ): ExpenditureItemOption[] {
   if (!rootParentId || !allObjects || allObjects.length === 0) return []
 
-  // Adjacency map: parentId -> children
+  // 1. Index objects by ID and clean normalized code
+  const objectById = new Map<string, PlanningObject>()
+  const objectByCleanCode = new Map<string, PlanningObject>()
+
+  for (const item of allObjects) {
+    if (item.id) objectById.set(item.id, item)
+    const clean = (item.code || '').replace(/[\s-]+/g, '')
+    if (clean) objectByCleanCode.set(clean, item)
+  }
+
+  const rootParent = objectById.get(rootParentId)
+
+  // 2. Build adjacency map (parentId -> children)
   const childrenMap = new Map<string, PlanningObject[]>()
+  const assignedChildIds = new Set<string>()
+
+  // Pass 1: Explicit parentId or parent.id
   for (const item of allObjects) {
     const pId = (item.parent as any)?.id || (item as any).parentId
-    if (pId) {
+    if (pId && objectById.has(pId)) {
       const list = childrenMap.get(pId) || []
       list.push(item)
       childrenMap.set(pId, list)
+      assignedChildIds.add(item.id)
+    }
+  }
+
+  // Pass 2: Explicit parent.code matching
+  for (const item of allObjects) {
+    if (assignedChildIds.has(item.id)) continue
+    const parentCode = (item.parent as any)?.code || (item as any).parentCode
+    if (parentCode) {
+      const cleanParentCode = parentCode.replace(/[\s-]+/g, '')
+      const parentCandidate = objectByCleanCode.get(cleanParentCode)
+      if (parentCandidate && parentCandidate.id !== item.id) {
+        const list = childrenMap.get(parentCandidate.id) || []
+        list.push(item)
+        childrenMap.set(parentCandidate.id, list)
+        assignedChildIds.add(item.id)
+      }
+    }
+  }
+
+  // Pass 3: UACS code prefix matching for sub-objects (e.g. "50604050 00" or "5060405001" -> parent "50604050")
+  for (const item of allObjects) {
+    if (assignedChildIds.has(item.id)) continue
+    const cleanCode = (item.code || '').replace(/[\s-]+/g, '')
+    if (cleanCode.length > 8 && /^\d+$/.test(cleanCode)) {
+      const parentPrefix = cleanCode.slice(0, 8)
+      const parentCandidate = objectByCleanCode.get(parentPrefix)
+      if (parentCandidate && parentCandidate.id !== item.id) {
+        const list = childrenMap.get(parentCandidate.id) || []
+        list.push(item)
+        childrenMap.set(parentCandidate.id, list)
+        assignedChildIds.add(item.id)
+      }
+    }
+  }
+
+  // Pass 4: If an item belongs to the selected expense class prefix and has no parent, link to root
+  if (rootParent) {
+    const rootName = (rootParent.name || '').toLowerCase()
+    const rootCode = (rootParent.code || '').toLowerCase()
+    const isCO = rootName.includes('capital') || rootCode.includes('co') || rootCode.startsWith('506') || rootCode.startsWith('106')
+    const isPS = rootName.includes('personal') || rootCode.includes('ps') || rootCode.startsWith('501')
+    const isMOOE = rootName.includes('operating') || rootCode.includes('mooe') || rootCode.startsWith('502')
+    const isFE = rootName.includes('financial') || rootCode.includes('fe') || rootCode.startsWith('503')
+
+    for (const item of allObjects) {
+      if (assignedChildIds.has(item.id) || item.id === rootParentId) continue
+      const cleanCode = (item.code || '').replace(/[\s-]+/g, '')
+      const matchesClass =
+        (isCO && (cleanCode.startsWith('506') || cleanCode.startsWith('106'))) ||
+        (isPS && cleanCode.startsWith('501')) ||
+        (isMOOE && cleanCode.startsWith('502')) ||
+        (isFE && cleanCode.startsWith('503'))
+
+      if (matchesClass) {
+        // Try finding a 4-to-6 digit group candidate first
+        let linked = false
+        if (cleanCode.length >= 6) {
+          const groupPrefix = cleanCode.slice(0, 5)
+          for (const [code, cand] of objectByCleanCode.entries()) {
+            if (cand.id !== item.id && code.startsWith(groupPrefix) && code.length < cleanCode.length) {
+              const list = childrenMap.get(cand.id) || []
+              list.push(item)
+              childrenMap.set(cand.id, list)
+              assignedChildIds.add(item.id)
+              linked = true
+              break
+            }
+          }
+        }
+        if (!linked) {
+          const list = childrenMap.get(rootParentId) || []
+          list.push(item)
+          childrenMap.set(rootParentId, list)
+          assignedChildIds.add(item.id)
+        }
+      }
     }
   }
 
@@ -108,6 +203,7 @@ export function getDescendantExpenditureItems(
         parentName: parentObj?.name,
         parentCode: parentObj?.code,
         isLeaf: !hasKids,
+        isSelectable: depth > 0 || !hasKids,
       })
       // Recursively traverse to include deeper descendant levels (children of groups, sub-objects)
       traverse(child.id, depth + 1, child)

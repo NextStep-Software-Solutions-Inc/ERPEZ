@@ -53,11 +53,34 @@ interface ObjectCodeHierarchyViewerProps {
  */
 function buildHierarchy(codes: ObjectCode[]): HierarchyNode[] {
   const codeMap = new Map<string, ObjectCode>()
-  codes.forEach((code) => codeMap.set(code.id, code))
+  const codeByCleanCode = new Map<string, ObjectCode>()
+
+  codes.forEach((code) => {
+    codeMap.set(code.id, code)
+    const clean = code.code.replace(/[\s-]+/g, '')
+    if (clean) codeByCleanCode.set(clean, code)
+  })
+
+  // Precompute parentId for codes that have no parentId but match a parent code prefix (e.g. 50604050 00 -> 50604050)
+  const resolvedParentIdMap = new Map<string, string>()
+  codes.forEach((c) => {
+    if (c.parentId && codeMap.has(c.parentId)) {
+      resolvedParentIdMap.set(c.id, c.parentId)
+      return
+    }
+    const cleanCode = c.code.replace(/[\s-]+/g, '')
+    if (cleanCode.length > 8) {
+      const parentPrefix = cleanCode.slice(0, 8)
+      const parentCandidate = codeByCleanCode.get(parentPrefix)
+      if (parentCandidate && parentCandidate.id !== c.id) {
+        resolvedParentIdMap.set(c.id, parentCandidate.id)
+      }
+    }
+  })
 
   const buildNode = (code: ObjectCode, level: number): HierarchyNode => {
     const children = codes
-      .filter((c) => c.parentId === code.id)
+      .filter((c) => (resolvedParentIdMap.get(c.id) || c.parentId) === code.id)
       .map((c) => buildNode(c, level + 1))
       .sort((a, b) => a.code.localeCompare(b.code))
 
@@ -74,7 +97,10 @@ function buildHierarchy(codes: ObjectCode[]): HierarchyNode[] {
 
   // Top-level codes: those without parent or whose parent is not in the dataset
   return codes
-    .filter((code) => !code.parentId || !codeMap.has(code.parentId))
+    .filter((code) => {
+      const pId = resolvedParentIdMap.get(code.id) || code.parentId
+      return !pId || !codeMap.has(pId)
+    })
     .map((code) => buildNode(code, 0))
     .sort((a, b) => a.code.localeCompare(b.code))
 }
@@ -145,6 +171,13 @@ export function ObjectCodeHierarchyViewer({
 
     return filterTree(hierarchyData)
   }, [hierarchyData, searchQuery])
+
+  const totalRootCount = filteredHierarchyData.length
+  const totalPages = Math.max(1, Math.ceil(totalRootCount / pageSize))
+  const paginatedNodes = useMemo(() => {
+    const startIndex = (page - 1) * pageSize
+    return filteredHierarchyData.slice(startIndex, startIndex + pageSize)
+  }, [filteredHierarchyData, page, pageSize])
 
   const isNodeExpanded = (nodeId: string): boolean => {
     const isSearching = Boolean(searchQuery?.trim())

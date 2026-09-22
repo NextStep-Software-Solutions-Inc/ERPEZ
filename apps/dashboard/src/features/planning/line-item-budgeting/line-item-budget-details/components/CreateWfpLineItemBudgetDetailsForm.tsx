@@ -33,6 +33,7 @@ import {
   resolveExpenditureTypes,
   getDescendantExpenditureItems,
 } from '../utils/expenditureHierarchyHelpers'
+import { ExpenditureItemCombobox } from './ExpenditureItemCombobox'
 import type { WFPDetails } from '@/components/features/planning/wfp/wfp/table/types'
 
 const useGetObjects = createQueryHookFromTemplate(getObjectsRequest)
@@ -645,15 +646,16 @@ export default function CreateWfpLineItemBudgetDetailsForm({
                   Item of Expenditure
                   {hasDescendants && <span className="text-red-500">*</span>}
                 </Label>
-                <Select
+                <ExpenditureItemCombobox
+                  id={field.name}
+                  items={descendantExpenditureItems}
                   value={field.state.value || ''}
-                  onValueChange={(val) => {
+                  onValueChange={(val, selectedDescendant) => {
                     field.handleChange(val)
-                    const selectedDescendant = descendantExpenditureItems.find(
-                      (item) => item.id === val,
-                    )
                     if (selectedDescendant) {
                       setAutoInheritedName(selectedDescendant.name || null)
+                    } else {
+                      setAutoInheritedName(null)
                     }
                   }}
                   disabled={
@@ -662,47 +664,18 @@ export default function CreateWfpLineItemBudgetDetailsForm({
                     !hasDescendants ||
                     isLoading
                   }
-                >
-                  <SelectTrigger id={field.name} className="w-full text-xs">
-                    <SelectValue
-                      placeholder={
-                        !selectedParentId
-                          ? 'Select Type of Expenditure first'
-                          : isLoadingObjects
-                            ? 'Loading items...'
-                            : hasDescendants
-                              ? 'Select item of expenditure'
-                              : 'No sub-items available'
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {descendantExpenditureItems.map((item) => {
-                      const indent = item.depth * 16
-                      const prefix = item.depth > 0 ? '↳ ' : ''
-                      const weightClass = item.depth === 0
-                        ? 'font-medium text-slate-800'
-                        : item.isLeaf
-                          ? 'text-slate-700'
-                          : 'text-slate-600'
-                      const dimClass = !item.isLeaf ? 'opacity-70' : ''
-                      return (
-                        <SelectItem
-                          key={item.id}
-                          value={item.id}
-                          disabled={!item.isLeaf}
-                          className={`cursor-pointer ${dimClass}`}
-                          style={{ paddingLeft: `${indent + 8}px` }}
-                        >
-                          <span className={`text-xs ${weightClass}`}>
-                            {prefix}{item.name}
-                            {item.code ? ` (${item.code})` : ''}
-                          </span>
-                        </SelectItem>
-                      )
-                    })}
-                  </SelectContent>
-                </Select>
+                  isLoading={isLoadingObjects}
+                  placeholder={
+                    !selectedParentId
+                      ? 'Select Type of Expenditure first'
+                      : isLoadingObjects
+                        ? 'Loading items...'
+                        : hasDescendants
+                          ? 'Select item of expenditure'
+                          : 'No sub-items available'
+                  }
+                  hasError={Boolean(field.state.meta.errors.length)}
+                />
                 <FieldInfo field={field} />
               </div>
             )

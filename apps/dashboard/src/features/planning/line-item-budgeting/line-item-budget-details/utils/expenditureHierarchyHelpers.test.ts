@@ -186,5 +186,30 @@ describe('expenditureHierarchyHelpers', () => {
       const emptyDescendants = getDescendantExpenditureItems(mockObjects, null)
       expect(emptyDescendants).toEqual([])
     })
+
+    it('resolves unparented sub-objects via code prefix matching (e.g. 50604050 00 -> parent 50604050)', () => {
+      const objectsWithOrphanSubObject = [
+        ...mockObjects,
+        {
+          id: 'sub-orphan-ict',
+          code: '50604050 00',
+          name: 'Information and Communication Technology Equipment (Custom)',
+          // No parent field or parentId
+          isActive: true,
+          childObjectCount: 0,
+          wfpObjectiveActivityExpenditureCount: 0,
+          transactionCount: 0,
+        },
+      ]
+
+      const descendants = getDescendantExpenditureItems(objectsWithOrphanSubObject, 'sc-co')
+      const ict = descendants.find((d) => d.id === 'sub-orphan-ict')
+      expect(ict).toBeDefined()
+      expect(ict?.depth).toBe(2)
+      expect(ict?.parentName).toBe('Machinery and Equipment')
+      expect(ict?.parentCode).toBe('50604050')
+      expect(ict?.isLeaf).toBe(true)
+      expect(ict?.isSelectable).toBe(true)
+    })
   })
 })

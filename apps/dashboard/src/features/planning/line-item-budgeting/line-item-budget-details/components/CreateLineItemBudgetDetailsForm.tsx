@@ -37,6 +37,7 @@ import {
   resolveExpenditureTypes,
   getDescendantExpenditureItems,
 } from '../utils/expenditureHierarchyHelpers'
+import { ExpenditureItemCombobox } from './ExpenditureItemCombobox'
 
 const TIMELINE_TYPES = [
   { id: 'quarterly', label: 'Quarterly' },
@@ -479,13 +480,12 @@ export default function CreateLineItemBudgetDetailsForm({
               <Label htmlFor={field.name} className="font-medium">
                 Select Item of Expenditure <span className="text-red-500">*</span>
               </Label>
-              <Select
+              <ExpenditureItemCombobox
+                id={field.name}
+                items={descendantExpenditureItems}
                 value={field.state.value || ''}
-                onValueChange={(val) => {
+                onValueChange={(val, selectedDescendant) => {
                   field.handleChange(val)
-
-                  // Smart Description Inheritance Logic
-                  const selectedDescendant = descendantExpenditureItems.find((item) => item.id === val)
 
                   if (selectedDescendant) {
                     const currentDesc = form.getFieldValue('description') as string | undefined
@@ -498,53 +498,15 @@ export default function CreateLineItemBudgetDetailsForm({
                       form.setFieldValue('description', selectedDescendant.name || '')
                       setAutoInheritedName(selectedDescendant.name || null)
                     }
-                    // Rule C (Custom Edit): If user manually edited description, do NOT overwrite it!
+                  } else {
+                    setAutoInheritedName(null)
                   }
                 }}
                 disabled={isLoading || isLoadingTypes}
-              >
-                <SelectTrigger id={field.name} className="w-full">
-                  <SelectValue
-                    placeholder={
-                      isLoadingTypes
-                        ? 'Loading items...'
-                        : 'Select item of expenditure'
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  {descendantExpenditureItems.map((item) => {
-                    // depth 0 = Group, depth 1 = Object Code, depth 2+ = Sub-Object/Specification
-                    const indent = item.depth * 16 // px per level
-                    const prefix = item.depth > 0 ? '↳ ' : ''
-                    const weightClass = item.depth === 0
-                      ? 'font-medium text-slate-800'
-                      : item.isLeaf
-                        ? 'text-slate-700'
-                        : 'text-slate-600'
-                    const dimClass = !item.isLeaf ? 'opacity-70' : ''
-                    return (
-                      <SelectItem
-                        key={item.id}
-                        value={item.id}
-                        disabled={!item.isLeaf}
-                        className={`cursor-pointer ${dimClass}`}
-                        style={{ paddingLeft: `${indent + 8}px` }}
-                      >
-                        <span className={weightClass}>
-                          {prefix}{item.name}
-                          {item.code ? ` (${item.code})` : ''}
-                        </span>
-                        {item.parentName && item.depth > 0 && (
-                          <span className="ml-1 text-[11px] text-slate-400">
-                            {item.parentName}
-                          </span>
-                        )}
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
+                isLoading={isLoadingTypes}
+                placeholder="Select item of expenditure"
+                hasError={Boolean(field.state.meta.errors.length)}
+              />
               <FieldInfo field={field} />
             </div>
           )}
