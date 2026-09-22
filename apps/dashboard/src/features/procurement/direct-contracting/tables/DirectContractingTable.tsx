@@ -53,7 +53,7 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
-import { features } from './table-features'
+import { features } from '@/components/ui/table-features'
 import { getDirectContractingColumns } from './columns'
 import { COLUMN_LABELS, type DirectContractingRecord, type TableActionHandlers } from './types'
 

@@ -32,10 +32,10 @@ import {
 import { formatCurrencyPHP, formatDateV2 } from '@/utils/formatters'
 import { cn } from '@/lib/utils'
 
-import type { DirectContractingTableFeatures } from './table-features'
+import type { DataTableFeatures } from '@/components/ui/table-features'
 import type { DirectContractingRecord, TableActionHandlers } from './types'
 
-const columnHelper = createColumnHelper<DirectContractingTableFeatures, DirectContractingRecord>()
+const columnHelper = createColumnHelper<DataTableFeatures, DirectContractingRecord>()
 
 export function renderStatusBadge(status: string) {
   const normalized = (status || '').toLowerCase()

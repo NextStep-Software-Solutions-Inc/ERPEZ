@@ -13,7 +13,7 @@ import {
   tableFeatures,
 } from '@tanstack/react-table'
 
-// TanStack Table v9 Feature registration
+// Standard TanStack Table v9 Feature registration for shared data tables
 export const features = tableFeatures({
   columnFilteringFeature,
   columnVisibilityFeature,
@@ -27,4 +27,5 @@ export const features = tableFeatures({
   sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text },
 })
 
-export type DirectContractingTableFeatures = typeof features
+export type DataTableFeatures = typeof features
+export type TableFeatures = typeof features
