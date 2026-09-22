@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using ERPEZ.Application.Interfaces;
@@ -6,12 +6,14 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.Application.Features.Procurement.NoticeToProceeds.Commands.IssueNoticeToProceed;
 
 public class IssueNoticeToProceedCommandHandler(
     IUnitOfWork unitOfWork,
-    ICurrentUserService currentUserService)
+    ICurrentUserService currentUserService,
+    ILogger<IssueNoticeToProceedCommandHandler>? logger = null)
     : IRequestHandler<IssueNoticeToProceedCommand, ApiResponse<bool>>
 {
     public async Task<ApiResponse<bool>> Handle(IssueNoticeToProceedCommand request, CancellationToken cancellationToken)
@@ -83,6 +85,26 @@ public class IssueNoticeToProceedCommandHandler(
 
         unitOfWork.NoticeToProceedRepository.Update(ntp);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Check RA 12009 Section 66 Statutory 3-calendar-day issuance timeline
+        var contractApprovedDate = contract.ContractApprovedAt
+            ?? (contract.ApprovedAt.HasValue ? DateOnly.FromDateTime(contract.ApprovedAt.Value) : null);
+
+        if (contractApprovedDate.HasValue)
+        {
+            var issuedDate = DateOnly.FromDateTime(now);
+            var daysElapsed = issuedDate.DayNumber - contractApprovedDate.Value.DayNumber;
+            if (daysElapsed > 3)
+            {
+                logger?.LogWarning(
+                    "Procurement Compliance Warning: NTP {NtpNumber} ({NtpId}) was issued {DaysElapsed} calendar days after Contract approval date ({ApprovedDate}). This exceeds the 3-calendar-day statutory deadline prescribed under RA 12009 Section 66.",
+                    ntp.NTPNumber, ntp.Id, daysElapsed, contractApprovedDate.Value);
+            }
+        }
+
+        logger?.LogInformation(
+            "Notice to Proceed {NtpNumber} ({NtpId}) officially issued by {ActorName}. Audit snapshots frozen: Contract={ContractNumber}, Supplier={SupplierName}, AwardedAmount={AwardedAmount:C}.",
+            ntp.NTPNumber, ntp.Id, actorName, ntp.ContractNumberSnapshot, ntp.SupplierNameSnapshot, ntp.AwardedAmountSnapshot);
 
         return ApiResponse<bool>.Success(true, "Notice to Proceed issued successfully.");
     }
