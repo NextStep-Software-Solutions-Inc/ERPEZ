@@ -188,13 +188,6 @@ export function DirectContractingTable({
     <Card className="border-border/60 shadow-xs">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <CardTitle className="text-xl font-bold">Direct Contracting Requests</CardTitle>
-            <CardDescription>
-              Manage, filter, and track exclusive supplier submissions and compliance documents
-            </CardDescription>
-          </div>
-
           {/* Quick Export Actions */}
           <div className="flex items-center gap-2">
             <Button
