@@ -252,7 +252,7 @@ export function DirectContractingTable({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 pt-0">
+      <CardContent className="space-y-4">
         {/* Table Toolbar: Search, Filters, Column Visibility */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2 flex-1 min-w-[280px] max-w-md">
