@@ -59,12 +59,12 @@ import type {
 } from '../types'
 import {
   createQueryHookFromTemplate,
-  createMutationHookFromTemplate,
+  useQueryClient,
 } from 'erpez-shared-lib'
 import { getEligibleAppsForProcurementRequest } from '../handlers/getEligibleAppsForProcurementRequest'
 import { getEligibleConsolidatedPRsRequest } from '../handlers/getEligibleConsolidatedPRsRequest'
 import { getResolutionClausesRequest } from '../handlers/getResolutionClausesRequest'
-import { createResolutionClauseRequest } from '../handlers/createResolutionClauseRequest'
+import { useCreateResolutionClause } from '../handlers/hooks'
 import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
 
 const useEligibleAppsForProcurement = createQueryHookFromTemplate(
@@ -75,9 +75,6 @@ const useEligibleConsolidatedPRs = createQueryHookFromTemplate(
 )
 const useResolutionClauses = createQueryHookFromTemplate(
   getResolutionClausesRequest,
-)
-const useCreateResolutionClause = createMutationHookFromTemplate(
-  createResolutionClauseRequest,
 )
 const useUsers = createQueryHookFromTemplate(getUsersRequest)
 
@@ -248,13 +245,15 @@ export const CreateBacResolutionForm = forwardRef<
     const [isResolvedExpanded, setIsResolvedExpanded] = useState(false)
     const [showClauseErrors, setShowClauseErrors] = useState(false)
 
+    const queryClient = useQueryClient()
+
     // Fetch clauses for the picker modal based on active type
     const { data: resolutionClausesData, isPending: isClausesPending } =
       useResolutionClauses({
         pathParams: {},
         queryParams: {
           pageSize: 200,
-          filters: pickerModalType || undefined,
+          clauseType: pickerModalType || undefined,
         },
         enabled: pickerModalType !== null,
       })
@@ -267,19 +266,29 @@ export const CreateBacResolutionForm = forwardRef<
 
     const allClausesMap = useMemo(() => {
       const map = new Map<string, ResolutionClause>()
-      const list = Array.isArray(allClausesData?.data)
-        ? allClausesData.data
-        : Array.isArray(allClausesData)
-          ? allClausesData
-          : []
-      for (const item of list) {
-        map.set(item.id, item)
+      const addItems = (data: unknown) => {
+        if (!data) return
+        const list = Array.isArray((data as { data?: unknown })?.data)
+          ? (data as { data: ResolutionClause[] }).data
+          : Array.isArray(data)
+            ? (data as ResolutionClause[])
+            : []
+        for (const item of list) {
+          if (item && item.id) {
+            map.set(item.id, item)
+          }
+        }
       }
+
+      addItems(allClausesData)
+      addItems(resolutionClausesData)
       for (const item of createdClauses) {
-        map.set(item.id, item)
+        if (item && item.id) {
+          map.set(item.id, item)
+        }
       }
       return map
-    }, [allClausesData, createdClauses])
+    }, [allClausesData, resolutionClausesData, createdClauses])
 
     const clauseTemplates = useMemo<ResolutionClause[]>(() => {
       const map = new Map<string, ResolutionClause>()
@@ -291,7 +300,7 @@ export const CreateBacResolutionForm = forwardRef<
             ? (data as ResolutionClause[])
             : []
         for (const item of list) {
-          if (item?.id) {
+          if (item && item.id) {
             map.set(item.id, item)
           }
         }
@@ -300,7 +309,9 @@ export const CreateBacResolutionForm = forwardRef<
       addItems(allClausesData)
       addItems(resolutionClausesData)
       for (const item of createdClauses) {
-        map.set(item.id, item)
+        if (item && item.id) {
+          map.set(item.id, item)
+        }
       }
 
       const allList = Array.from(map.values())
@@ -435,24 +446,42 @@ export const CreateBacResolutionForm = forwardRef<
         payload: { name, body, clauseType: type },
       })
 
-      setCreatedClauses((prev) => [...prev, created])
+      const newClause: ResolutionClause = {
+        id: (created as any)?.id || (typeof created === 'string' ? created : ''),
+        name: (created as any)?.name || name,
+        body: (created as any)?.body || body,
+        clauseType: (created as any)?.clauseType || type,
+      }
+
+      if (!newClause.id) {
+        toast.error('Failed to create custom clause: missing clause ID from server.')
+        return
+      }
+
+      setCreatedClauses((prev) => [...prev, newClause])
 
       if (type === 'Whereas') {
         setWhereasClauses((prev) => [
           ...prev,
-          { resolutionClauseId: created.id, order: prev.length },
+          { resolutionClauseId: newClause.id, order: prev.length },
         ])
       } else if (type === 'NowTherefore') {
         setNowThereforeClauses((prev) => [
           ...prev,
-          { resolutionClauseId: created.id, order: prev.length },
+          { resolutionClauseId: newClause.id, order: prev.length },
         ])
       } else if (type === 'Resolved') {
         setResolvedClauses((prev) => [
           ...prev,
-          { resolutionClauseId: created.id, order: prev.length },
+          { resolutionClauseId: newClause.id, order: prev.length },
         ])
       }
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/resolution-clauses'),
+      })
 
       toast.success(`Custom ${type} Clause created and added to resolution.`)
     }
@@ -2899,7 +2928,7 @@ function ClauseSection({
                 const clauseObj = clausesMap.get(item.resolutionClauseId)
                 return (
                   <div
-                    key={item.resolutionClauseId}
+                    key={item.resolutionClauseId || index}
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={handleDragOver}
@@ -2922,7 +2951,7 @@ function ClauseSection({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-xs text-default-900">
-                          {clauseObj?.name || 'Clause'}
+                          {clauseObj?.name || (clauseObj?.body ? 'Clause' : 'Loading clause...')}
                         </span>
                         <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                           <Button
@@ -2957,9 +2986,15 @@ function ClauseSection({
                         </div>
                       </div>
 
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
-                        {clauseObj?.body || ''}
-                      </p>
+                      {clauseObj?.body ? (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                          {clauseObj.body}
+                        </p>
+                      ) : !clauseObj ? (
+                        <p className="text-xs text-muted-foreground/60 italic mt-1 flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin text-primary" /> Fetching clause content...
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 )

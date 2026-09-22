@@ -106,7 +106,11 @@ function calculateRelevanceScore(
     if (lowerAuth.includes(token)) score += 50
   }
 
-  // 5. Cluster and financing matches (LOW weight so background cluster metadata does NOT bury actual fund name/code matches)
+  // 5. Cluster, financing, and fiscal year matches
+  const fyStr = String(item.raw?.fiscalYear?.year || item.raw?.fiscalYear || '')
+  if (fyStr && (fyStr === lowerQuery || lowerQuery.includes(fyStr))) {
+    score += 150
+  }
   if (lowerCluster.includes(lowerQuery)) score += 30
   if (lowerFinancing.includes(lowerQuery)) score += 25
 
@@ -308,6 +312,11 @@ export function FundSourceCombobox({
                 title={selectedParsed.name}
               >
                 {selectedParsed.name}
+                {selectedParsed.raw?.fiscalYear?.year && (
+                  <span className="text-slate-500 font-normal ml-1">
+                    (FY {selectedParsed.raw.fiscalYear.year})
+                  </span>
+                )}
               </span>
             </div>
           ) : (
@@ -512,9 +521,20 @@ export function FundSourceCombobox({
                         {item.name}
                       </div>
 
-                      {/* Bottom row: Cluster & Financing Source Details */}
-                      {(item.parsed.clusterName || item.parsed.financingName) && (
+                      {/* Bottom row: Cluster & Financing Source Details & Fiscal Year */}
+                      {(item.parsed.clusterName ||
+                        item.parsed.financingName ||
+                        item.raw?.fiscalYear?.year ||
+                        item.raw?.fiscalYear) && (
                         <div className="text-[11px] text-gray-500 flex items-center gap-1">
+                          {item.raw?.fiscalYear?.year && (
+                            <>
+                              <span className="font-semibold text-slate-700 bg-slate-100 px-1 py-0.2 rounded text-[10px]">
+                                FY {item.raw.fiscalYear.year}
+                              </span>
+                              <span>•</span>
+                            </>
+                          )}
                           <span>{item.parsed.clusterName || 'Standard Cluster'}</span>
                           {item.parsed.financingName && (
                             <>

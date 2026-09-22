@@ -90,6 +90,12 @@ function makeWhereasClauseMutationWithRefresh<TData, TVariables>(
           queryClient.invalidateQueries({ queryKey }),
         ),
       )
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          (query.queryKey[0].startsWith('/resolution-clauses') ||
+            query.queryKey[0].startsWith('/bac-resolution-whereas-clauses')),
+      })
     }
 
     return {
