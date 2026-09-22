@@ -45,7 +45,10 @@ import { downloadBacResolutionDocumentRequest } from '../handlers/downloadBacRes
 import { ApproveBacResolutionDialog } from '../dialogs/ApproveBacResolutionDialog'
 import { ReturnBacResolutionDialog } from '../dialogs/ReturnBacResolutionDialog'
 import type { ApproveBacResolutionFormValues } from '../forms/ApproveBacResolutionForm'
-import { isBacProjectReadyForScheduling } from '../utils/bacResolutionWorkflow'
+import {
+  isBacProjectReadyForScheduling,
+  isBacProjectPublicBidding,
+} from '../utils/bacResolutionWorkflow'
 import { useApproveBacResolution, useReturnBacResolution } from '../handlers'
 import { Badge } from '@/components/ui/badge'
 
@@ -386,6 +389,13 @@ export function DetailsPanel({
   }))
 
   const isReadyForScheduling = isBacProjectReadyForScheduling(selectedProject)
+  const isPublicBidding = isBacProjectPublicBidding(selectedProject)
+  const hasConsolidatedPr = Boolean(
+    cprNumber ||
+      selectedProject.consolidatedPR ||
+      selectedProject.consolidatedPRId,
+  )
+  const showSchedulingWarning = isPublicBidding && !hasConsolidatedPr
 
   return (
     <div className="space-y-4">
@@ -587,7 +597,7 @@ export function DetailsPanel({
       </Card>
 
       {/* Amber Alert Banner */}
-      {isAppItemSource && (
+      {showSchedulingWarning && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 flex items-center gap-3 text-xs text-amber-900 shadow-2xs">
           <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
           <span className="font-medium">
