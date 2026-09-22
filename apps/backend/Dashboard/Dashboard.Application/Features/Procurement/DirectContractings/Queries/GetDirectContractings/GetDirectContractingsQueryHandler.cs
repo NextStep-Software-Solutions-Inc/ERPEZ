@@ -30,7 +30,7 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
         var sieveModel = new Sieve.Models.SieveModel
         {
             PageSize = query.PageSize,
-            Page = query.Page,
+            Page = query.PageNumber,
             Filters = query.Filters,
             Sorts = query.Sorts
         };
@@ -97,8 +97,8 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
 
         return new PaginatedApiResponse<DirectContractingResponse>(
             [.. entities],
-            query.Page ?? 1,
-            query.PageSize ?? 10,
+            query.PageNumber,
+            query.PageSize,
             totalCount);
     }
 }
