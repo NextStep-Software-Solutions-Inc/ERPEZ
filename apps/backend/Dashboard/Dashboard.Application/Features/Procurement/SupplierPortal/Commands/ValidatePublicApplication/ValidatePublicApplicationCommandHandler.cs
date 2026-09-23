@@ -85,7 +85,7 @@ public class ValidatePublicApplicationCommandHandler(IUnitOfWork unitOfWork)
             if (totalQuoted > 0 && rfq.TotalAmount > 0 && totalQuoted > rfq.TotalAmount)
             {
                 throw new FluentValidation.ValidationException(
-                    $"Your total quoted bid (₱{totalQuoted:N2}) exceeds the Approved Budget for the Contract (₱{rfq.TotalAmount:N2}). Under RA 9184, bids exceeding the ABC cannot be accepted.");
+                    $"Your total quoted bid (₱{totalQuoted:N2}) exceeds the Approved Budget for the Contract (₱{rfq.TotalAmount:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
             }
 
             // Checklist verification
@@ -165,7 +165,7 @@ public class ValidatePublicApplicationCommandHandler(IUnitOfWork unitOfWork)
         if (request.ProposedBidAmount.HasValue && project.ABC > 0 && request.ProposedBidAmount.Value > project.ABC)
         {
             throw new FluentValidation.ValidationException(
-                $"Your proposed bid (₱{request.ProposedBidAmount.Value:N2}) exceeds the Approved Budget for the Contract (₱{project.ABC:N2}). Under RA 9184, bids exceeding the ABC cannot be accepted.");
+                $"Your proposed bid (₱{request.ProposedBidAmount.Value:N2}) exceeds the Approved Budget for the Contract (₱{project.ABC:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
         }
 
         return ApiResponse<bool>.Success(true, "Application is valid for submission.");

@@ -72,11 +72,11 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }: BACApplicationFormProps) {
+export function BACApplicationForm({ project, onBack, selectedBidNotices: _selectedBidNotices = [] }: BACApplicationFormProps) {
   const hasItemizedItems = Boolean(project.items && project.items.length > 0)
   const isCompetitiveBidding = project.mop === 'public-bidding'
-  const isItemizedSvp = !isCompetitiveBidding && hasItemizedItems
-  const isRfq = isItemizedSvp || project.mop === 'svp'
+  const isItemized = project.pricingStructure === 'Itemized' || (!project.pricingStructure && hasItemizedItems)
+  const isRfq = project.mop === 'svp'
 
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
     supplierName: '',
@@ -127,14 +127,14 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
 
   // Calculate live total quoted bid
   const totalQuotedBid = useMemo(() => {
-    if (isItemizedSvp && project.items) {
+    if (isItemized && project.items) {
       return project.items.reduce((sum, item) => {
         const price = Number(itemBids[item.id]?.unitPrice || 0)
         return sum + price * item.quantity
       }, 0)
     }
     return Number(proposedBidAmount || 0)
-  }, [isItemizedSvp, project.items, itemBids, proposedBidAmount])
+  }, [isItemized, project.items, itemBids, proposedBidAmount])
 
   // RA 9184 ABC compliance check
   const numericAbc = Number(project.approvedBudget || 0)
@@ -250,7 +250,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
     if (!contactInfo.tinNumber.trim()) newErrors.tinNumber = 'TIN number is required'
 
     // Financial bid validation
-    if (isItemizedSvp && project.items) {
+    if (isItemized && project.items) {
       let hasMissingPrice = false
       project.items.forEach((item) => {
         const price = itemBids[item.id]?.unitPrice
@@ -268,21 +268,22 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
       if (proposedBidAmount === '' || Number(proposedBidAmount) <= 0) {
         newErrors.proposedBidAmount = 'Proposed bid amount is required and must be greater than ₱0.00'
       }
-      if (isCompetitiveBidding && bidSecurityType !== 'Bid Securing Declaration' && (!bidSecurityAmount || Number(bidSecurityAmount) <= 0)) {
-        newErrors.bidSecurityAmount = 'Bid security amount is required for the selected guarantee type'
-      }
       if (!deliveryPeriod.trim()) newErrors.deliveryPeriod = 'Delivery period is required'
       if (!paymentTerms.trim()) newErrors.paymentTerms = 'Payment terms are required'
     }
 
-    // RA 9184 ABC limit enforcement
+    if (isCompetitiveBidding && bidSecurityType !== 'Bid Securing Declaration' && (!bidSecurityAmount || Number(bidSecurityAmount) <= 0)) {
+      newErrors.bidSecurityAmount = 'Bid security amount is required for the selected guarantee type'
+    }
+
+    // NGPA / statutory ABC limit enforcement
     if (isOverAbc) {
-      if (isItemizedSvp) {
-        newErrors.generalBid = `Total quoted bid (₱${totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })}) exceeds the ABC (₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Under RA 9184, bids exceeding the ABC cannot be submitted.`
+      if (isItemized) {
+        newErrors.generalBid = `Total quoted bid (₱${totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })}) exceeds the ABC (₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable procurement rules, bids exceeding the ABC cannot be submitted.`
       } else {
         newErrors.proposedBidAmount = `Proposed bid cannot exceed the ABC of ₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
       }
-      newErrors.abcExceeded = `Your bid exceeds the Approved Budget for the Contract (₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Under Section 31 of RA 9184, bids exceeding the ABC cannot be accepted.`
+      newErrors.abcExceeded = `Your bid exceeds the Approved Budget for the Contract (₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable procurement rules, bids exceeding the ABC cannot be accepted.`
     }
 
     // Required checklist documents
@@ -346,7 +347,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
         bidSecurityAmount: isCompetitiveBidding && bidSecurityAmount ? Number(bidSecurityAmount) : undefined,
         bidSecurityNumber: isCompetitiveBidding && bidSecurityNumber ? bidSecurityNumber.trim() : undefined,
         bidSecurityValidityDays: isCompetitiveBidding && bidSecurityValidityDays ? Number(bidSecurityValidityDays) : undefined,
-        itemBids: isItemizedSvp && project.items
+        itemBids: isItemized && project.items
           ? project.items.map((item) => {
               const state = itemBids[item.id]
               return {
@@ -377,8 +378,8 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
         }
       }
 
-      // 3. Prepare itemized bids if SVP with line items
-      const formattedItemBids = isItemizedSvp && project.items
+      // 3. Prepare itemized bids if opportunity has line items
+      const formattedItemBids = isItemized && project.items
         ? project.items.map((item) => {
             const state = itemBids[item.id]
             return {
@@ -526,13 +527,15 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
             </div>
 
             {/* 2. Financial Bid Proposal */}
-            {isItemizedSvp && project.items ? (
-              /* Itemized Quotation Table for SVP / RFQs */
+            {isItemized && project.items ? (
+              /* Itemized Proposal Table (Price Schedule / BOQ / RFQ Items) */
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Banknote className="h-4 w-4 text-slate-600" />
-                    <h2 className="font-semibold text-slate-800">Financial Quotation Proposal (Itemized)</h2>
+                    <h2 className="font-semibold text-slate-800">
+                      {isCompetitiveBidding ? 'Financial Bid Proposal (Itemized Price Schedule / BOQ)' : 'Financial Quotation Proposal (Itemized)'}
+                    </h2>
                   </div>
                   <span className="text-xs text-slate-500 font-medium">
                     {project.items.length} {project.items.length === 1 ? 'Item' : 'Items'}
@@ -729,7 +732,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
                       {isOverAbc ? (
                         <div className="flex items-center gap-2 bg-red-100/80 border border-red-300 px-3 py-2 rounded-lg text-xs font-bold text-red-700">
                           <AlertTriangle className="h-4 w-4 shrink-0" />
-                          <span>RA 9184 ABC Non-Compliant</span>
+                          <span>Statutory Ceiling Non-Compliant</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 bg-emerald-100 border border-emerald-300 px-3 py-2 rounded-lg text-xs font-bold text-emerald-800">
@@ -743,7 +746,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
                       <div className="mt-3.5 pt-3 border-t border-red-200 text-xs text-red-700 flex items-start gap-2">
                         <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                         <span>
-                          <strong>Republic Act 9184 Non-Compliance Alert:</strong> Under Philippine Public Procurement Law,
+                          <strong>Statutory Ceiling Non-Compliance Alert:</strong> Under the New Government Procurement Act (NGPA / RA 12009) and applicable procurement rules,
                           any bid that exceeds the Approved Budget for the Contract (ABC) shall be disqualified and cannot be submitted.
                           Please lower your quoted unit prices to remain within the ABC.
                         </span>
@@ -821,7 +824,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
                   </div>
                   {isOverAbc ? (
                     <span className="text-xs font-bold text-red-700 bg-red-100 border border-red-300 px-2.5 py-1 rounded-full flex items-center gap-1">
-                      <AlertTriangle className="h-3.5 w-3.5" /> Exceeds ABC (RA 9184 Non-Compliant)
+                      <AlertTriangle className="h-3.5 w-3.5" /> Exceeds ABC (Statutory Ceiling Non-Compliant)
                     </span>
                   ) : totalQuotedBid > 0 ? (
                     <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full flex items-center gap-1">
@@ -862,7 +865,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
                       {isOverAbc ? (
                         <p className="text-xs text-red-600 font-semibold flex items-center gap-1 mt-1">
                           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                          Exceeds ABC by ₱{(totalQuotedBid - numericAbc).toLocaleString(undefined, { minimumFractionDigits: 2 })} (RA 9184 Non-Compliant)
+                          Exceeds ABC by ₱{(totalQuotedBid - numericAbc).toLocaleString(undefined, { minimumFractionDigits: 2 })} (Statutory Ceiling Non-Compliant)
                         </p>
                       ) : errors.proposedBidAmount ? (
                         <p className="text-xs text-red-500 flex items-center gap-1">
@@ -885,88 +888,90 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
                       <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                       <div className="space-y-1">
                         <p className="text-xs font-bold uppercase tracking-wider text-red-800">
-                          Republic Act 9184 ABC Non-Compliance Alert
+                          Approved Budget for the Contract (ABC) Ceiling Alert
                         </p>
                         <p className="text-xs text-red-700 leading-relaxed">
                           Your proposed bid amount of <strong>₱{totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong> exceeds the Approved Budget for the Contract (ABC) of <strong>₱{numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong> by <strong className="text-red-800">₱{(totalQuotedBid - numericAbc).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>.
                         </p>
                         <p className="text-[11px] text-red-600 font-medium">
-                          Under Section 31 of RA 9184 and its 2016 Revised IRR, all bids that exceed the ABC are automatically rejected and cannot be submitted. Form submission is disabled until the bid is within the ABC.
+                          Under the New Government Procurement Act (NGPA / RA 12009) and applicable procurement rules, all bids that exceed the ABC are automatically rejected and cannot be submitted. Form submission is disabled until the bid is within the ABC.
                         </p>
                       </div>
                     </div>
                   )}
 
-                  {/* Bid Security Information (Competitive / Public Bidding Only — RA 9184 Section 27; Not Required for SVP/Shopping per Annex H) */}
-                  {isCompetitiveBidding && (
-                    <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                        <ShieldCheck className="h-4 w-4 text-blue-700" />
-                        <h3 className="text-sm font-semibold text-slate-800">Bid Security Details</h3>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-slate-700">Bid Security Form / Type</Label>
-                          <Select value={bidSecurityType} onValueChange={setBidSecurityType}>
-                            <SelectTrigger className="bg-white">
-                              <SelectValue placeholder="Select Bid Security" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Bid Securing Declaration">Bid Securing Declaration (GPPB Prescribed)</SelectItem>
-                              <SelectItem value="Cash or Manager's Check">Cash or Cashier's / Manager's Check (2% of ABC)</SelectItem>
-                              <SelectItem value="Bank Guarantee">Bank Guarantee / Irrevocable LC (2% of ABC)</SelectItem>
-                              <SelectItem value="Surety Bond">Surety Bond Callable on Demand (5% of ABC)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {bidSecurityType !== 'Bid Securing Declaration' && (
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-slate-700">
-                              Bid Security Amount (₱) <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="0.00"
-                              value={bidSecurityAmount}
-                              onChange={(e) =>
-                                setBidSecurityAmount(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)
-                              }
-                              className={errors.bidSecurityAmount ? 'border-red-400' : ''}
-                            />
-                          </div>
-                        )}
-
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-slate-700">Security Number / Reference (Optional)</Label>
-                          <Input
-                            placeholder="e.g., BSD-2026-001 or Guarantee No."
-                            value={bidSecurityNumber}
-                            onChange={(e) => setBidSecurityNumber(e.target.value)}
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-slate-700">Validity Period (Calendar Days)</Label>
-                          <Input
-                            type="number"
-                            placeholder="120"
-                            value={bidSecurityValidityDays}
-                            onChange={(e) =>
-                              setBidSecurityValidityDays(e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0)
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* 2b. Bid Security Information (Competitive / Public Bidding Only — NGPA / Applicable Procurement Rules) */}
+            {isCompetitiveBidding && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-blue-700" />
+                  <h2 className="font-semibold text-slate-800">Bid Security Details</h2>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-700">Bid Security Form / Type</Label>
+                      <Select value={bidSecurityType} onValueChange={setBidSecurityType}>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Select Bid Security" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Bid Securing Declaration">Bid Securing Declaration (GPPB Prescribed)</SelectItem>
+                          <SelectItem value="Cash or Manager's Check">Cash or Cashier's / Manager's Check (2% of ABC)</SelectItem>
+                          <SelectItem value="Bank Guarantee">Bank Guarantee / Irrevocable LC (2% of ABC)</SelectItem>
+                          <SelectItem value="Surety Bond">Surety Bond Callable on Demand (5% of ABC)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {bidSecurityType !== 'Bid Securing Declaration' && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium text-slate-700">
+                          Bid Security Amount (₱) <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={bidSecurityAmount}
+                          onChange={(e) =>
+                            setBidSecurityAmount(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)
+                          }
+                          className={errors.bidSecurityAmount ? 'border-red-400' : ''}
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-700">Security Number / Reference (Optional)</Label>
+                      <Input
+                        placeholder="e.g., BSD-2026-001 or Guarantee No."
+                        value={bidSecurityNumber}
+                        onChange={(e) => setBidSecurityNumber(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-700">Validity Period (Calendar Days)</Label>
+                      <Input
+                        type="number"
+                        placeholder="120"
+                        value={bidSecurityValidityDays}
+                        onChange={(e) =>
+                          setBidSecurityValidityDays(e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0)
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 3. Commercial & Delivery Terms */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1231,14 +1236,14 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices = [] }:
                   {isClosedOrExpired
                     ? 'Submissions Closed'
                     : isOverAbc
-                    ? 'Submission Blocked (RA 9184 Non-Compliant)'
+                    ? 'Submission Blocked (Exceeds ABC Ceiling)'
                     : 'Ready to submit?'}
                 </p>
                 <p className={`text-xs ${isClosedOrExpired || isOverAbc ? 'text-red-700 font-medium leading-relaxed' : 'text-slate-500'}`}>
                   {isClosedOrExpired
                     ? 'The submission deadline for this project has passed. Applications are no longer being accepted.'
                     : isOverAbc
-                    ? `Your quoted bid of ₱${totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })} exceeds the ABC of ₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}. Under Section 31 of RA 9184, bids exceeding the ABC cannot be accepted. Please adjust your bid before submitting.`
+                    ? `Your quoted bid of ₱${totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })} exceeds the ABC of ₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}. Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted. Please adjust your bid before submitting.`
                     : 'Ensure all item prices and required documents are complete. Submissions cannot be modified after sending.'}
                 </p>
               </div>

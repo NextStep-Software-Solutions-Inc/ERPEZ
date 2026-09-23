@@ -41,6 +41,8 @@ export interface PublicProject {
   scope: string
   requiredDocuments: RequiredDocument[]
   items?: PublicProjectItem[]
+  pricingStructure?: 'Itemized' | 'LumpSum' | 'Consulting'
+  procurementCategory?: string
 }
 
 export interface ApplicationFormData {

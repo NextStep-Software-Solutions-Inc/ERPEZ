@@ -167,7 +167,7 @@ public class SubmitPublicApplicationCommandHandler(
             if (totalQuoted > 0 && rfq.TotalAmount > 0 && totalQuoted > rfq.TotalAmount)
             {
                 throw new FluentValidation.ValidationException(
-                    $"Your total quoted bid (₱{totalQuoted:N2}) exceeds the Approved Budget for the Contract (₱{rfq.TotalAmount:N2}). Under RA 9184, bids exceeding the ABC cannot be accepted.");
+                    $"Your total quoted bid (₱{totalQuoted:N2}) exceeds the Approved Budget for the Contract (₱{rfq.TotalAmount:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
             }
 
             var bidItems = new List<SupplierBidItem>();
@@ -357,11 +357,11 @@ public class SubmitPublicApplicationCommandHandler(
             });
         }
 
-        // ── 5b. ABC CEILING VALIDATION (RA 9184 Section 31) ──────────────────────
+        // ── 5b. ABC CEILING VALIDATION (NGPA / RA 12009 Statutory Ceiling) ──────────────────────
         if (request.ProposedBidAmount.HasValue && project.ABC > 0 && request.ProposedBidAmount.Value > project.ABC)
         {
             throw new FluentValidation.ValidationException(
-                $"Your proposed bid amount (₱{request.ProposedBidAmount.Value:N2}) exceeds the Approved Budget for the Contract (₱{project.ABC:N2}). Under RA 9184, bids exceeding the ABC cannot be accepted.");
+                $"Your proposed bid amount (₱{request.ProposedBidAmount.Value:N2}) exceeds the Approved Budget for the Contract (₱{project.ABC:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
         }
 
         // ── 6. CONDITIONAL BIDDING SUBMISSION (Competitive / Public Bidding Only) ──
@@ -399,6 +399,64 @@ public class SubmitPublicApplicationCommandHandler(
                 CreatedAt                   = DateTime.UtcNow,
                 CreatedBy                   = "PublicPortal"
             };
+
+            var itemBidsList = request.ItemBids ?? new List<PublicItemBidDto>();
+            var itemBidsDict = itemBidsList.ToDictionary(ib => ib.RFQItemId);
+
+            if (project.ConsolidatedPRId.HasValue && itemBidsDict.Count > 0)
+            {
+                var cpr = await unitOfWork.ConsolidatedPRRepository
+                    .GetCPRWithDetailsAsync(project.ConsolidatedPRId.Value, cancellationToken);
+
+                if (cpr?.ConsolidatedPRItems != null && cpr.ConsolidatedPRItems.Any())
+                {
+                    decimal totalCalculatedAmount = 0m;
+                    var submissionItems = new List<BiddingSubmissionItem>();
+
+                    foreach (var cprItem in cpr.ConsolidatedPRItems.Where(ci => !ci.IsDeleted && ci.PRItem != null))
+                    {
+                        if (itemBidsDict.TryGetValue(cprItem.Id, out var itemBid))
+                        {
+                            if (itemBid.UnitPrice < 0)
+                            {
+                                throw new FluentValidation.ValidationException($"Unit price for item '{cprItem.PRItem.Name}' cannot be negative.");
+                            }
+
+                            var qty = cprItem.PRItem.RequestedQuantity;
+                            var uom = cprItem.PRItem.PPMPItem?.Unit ?? "Unit";
+                            var lineTotal = itemBid.UnitPrice * qty;
+                            totalCalculatedAmount += lineTotal;
+
+                            submissionItems.Add(new BiddingSubmissionItem
+                            {
+                                Id = Guid.NewGuid(),
+                                BiddingSubmissionId = biddingSubmission.Id,
+                                ProcurementProjectItemId = cprItem.Id,
+                                Quantity = qty,
+                                Uom = uom,
+                                UnitPrice = itemBid.UnitPrice,
+                                TotalPrice = lineTotal,
+                                Brand = itemBid.Brand,
+                                Model = itemBid.Model,
+                                CreatedAt = DateTime.UtcNow,
+                                CreatedBy = "PublicPortal"
+                            });
+                        }
+                    }
+
+                    if (submissionItems.Count > 0)
+                    {
+                        biddingSubmission.OriginalProposedAmount = totalCalculatedAmount;
+                        biddingSubmission.BiddingSubmissionItems = submissionItems;
+                    }
+                }
+            }
+
+            if (project.ABC > 0 && biddingSubmission.OriginalProposedAmount > project.ABC)
+            {
+                throw new FluentValidation.ValidationException(
+                    $"Your total bid amount (₱{biddingSubmission.OriginalProposedAmount:N2}) exceeds the Approved Budget for the Contract (₱{project.ABC:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
+            }
 
             await unitOfWork.BiddingSubmissionRepository.AddAsync(biddingSubmission, cancellationToken);
         }

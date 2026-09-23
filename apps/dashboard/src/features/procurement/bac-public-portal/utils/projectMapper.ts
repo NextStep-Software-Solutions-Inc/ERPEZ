@@ -83,6 +83,8 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
     bidOpening: p.bidOpeningDate || p.bidOpening || undefined,
     scope: p.scopeOfWork || p.scope || '',
     requiredDocuments,
+    pricingStructure: p.pricingStructure || (mop === 'svp' && Array.isArray(p.items) && p.items.length > 0 ? 'Itemized' : 'LumpSum'),
+    procurementCategory: p.procurementCategory || 'Goods',
     items: Array.isArray(p.items)
       ? p.items.map((i: any) => ({
           id: i.id,

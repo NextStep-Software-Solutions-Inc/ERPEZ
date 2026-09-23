@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowDown,
   Building2,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   FileText,
   FolderOpen,
   Lock,
+  Package,
   ShieldCheck,
   Unlock,
   XCircle,
@@ -155,6 +157,20 @@ export function RecordBidOpeningDialog({
         setValidationError('Please enter a valid positive As-Read Bid Amount for Envelope 2.')
         return
       }
+
+      if (
+        submission.originalProposedAmount !== null &&
+        submission.originalProposedAmount !== undefined &&
+        submission.originalProposedAmount > 0 &&
+        Math.abs(submission.originalProposedAmount - parsedAmount) > 0.009
+      ) {
+        if (!remarks.trim()) {
+          setValidationError(
+            `A variance exists between the supplier-submitted amount (₱${submission.originalProposedAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}) and the recorded As-Read amount (₱${parsedAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}). Explanatory BAC remarks are required.`
+          )
+          return
+        }
+      }
     }
 
     try {
@@ -227,13 +243,20 @@ export function RecordBidOpeningDialog({
                 <span className="text-muted-foreground uppercase text-[10px] tracking-wider font-semibold block">
                   Supplier Submitted Amount
                 </span>
-                <span className="font-bold text-default-900 text-sm flex items-center gap-1 mt-0.5">
-                  <DollarSign className="h-4 w-4 text-success shrink-0" />
-                  ₱ {submission.originalProposedAmount.toLocaleString('en-PH', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
+                {(submission.isFinancialOpened || envelope2Opened) && submission.originalProposedAmount !== null && submission.originalProposedAmount !== undefined ? (
+                  <span className="font-bold text-default-900 text-sm flex items-center gap-1 mt-0.5">
+                    <DollarSign className="h-4 w-4 text-success shrink-0" />
+                    ₱ {submission.originalProposedAmount.toLocaleString('en-PH', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                ) : (
+                  <span className="font-semibold text-muted-foreground text-xs flex items-center gap-1 mt-0.5">
+                    <Lock className="h-3.5 w-3.5 text-amber-500" />
+                    Sealed in Envelope 2
+                  </span>
+                )}
                 <span className="text-muted-foreground block text-[11px] mt-0.5">
                   Type: {submission.submissionType}
                 </span>
@@ -516,90 +539,168 @@ export function RecordBidOpeningDialog({
               )}
 
               {/* State D: Envelope 2 is Officially Opened */}
-              {envelope1Result === 'Passed' && envelope2Opened && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="as-read-amount" className="text-xs font-bold text-default-900">
-                      As-Read Bid Amount (₱) <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs text-muted-foreground font-semibold">
-                        ₱
-                      </span>
-                      <Input
-                        id="as-read-amount"
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        value={asReadBidAmount}
-                        onChange={(e) => setAsReadBidAmount(e.target.value)}
-                        placeholder="0.00"
-                        className="pl-7 text-xs font-mono font-bold"
-                        required
-                        autoFocus
-                      />
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      Original Submitted: ₱{' '}
-                      {submission.originalProposedAmount.toLocaleString('en-PH', {
-                        minimumFractionDigits: 2,
-                      })}
-                      . Enter the actual financial bid read publicly during opening.
-                    </p>
-                  </div>
+              {envelope1Result === 'Passed' && envelope2Opened && (() => {
+                const numAsRead = parseFloat(asReadBidAmount) || 0
+                const hasDiscrepancy =
+                  submission.originalProposedAmount !== null &&
+                  submission.originalProposedAmount !== undefined &&
+                  submission.originalProposedAmount > 0 &&
+                  numAsRead > 0 &&
+                  Math.abs(submission.originalProposedAmount - numAsRead) > 0.009
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="remarks" className="text-xs font-semibold text-default-800">
-                      BAC Opening Remarks (Optional)
-                    </Label>
-                    <Input
-                      id="remarks"
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                      placeholder="e.g. As-read matches financial bid letter."
-                      className="text-xs"
-                    />
-                  </div>
-
-                  {/* Envelope 2 Documents List */}
-                  {secondEnvelopeDocs.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t border-default-100 col-span-1 md:col-span-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wider">
-                          Submitted Financial Documents ({secondEnvelopeDocs.length})
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">Envelope 2 Requirements</span>
+                return (
+                  <div className="space-y-4 pt-2">
+                    {/* Submitted Item Bids (if Itemized) */}
+                    {submission.items && submission.items.length > 0 && (
+                      <div className="space-y-2 p-3 rounded-lg border border-default-200 bg-default-50/60">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-default-900 flex items-center gap-1.5">
+                            <Package className="h-4 w-4 text-primary" /> Submitted Item Bids (Price Schedule / BOQ)
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-medium">
+                            {submission.items.length} {submission.items.length === 1 ? 'item' : 'items'}
+                          </span>
+                        </div>
+                        <div className="overflow-x-auto max-h-48 border border-default-200 rounded bg-white">
+                          <table className="w-full text-xs">
+                            <thead className="bg-default-50 sticky top-0 border-b border-default-100">
+                              <tr className="text-left text-muted-foreground font-semibold">
+                                <th className="py-1.5 px-2">#</th>
+                                <th className="py-1.5 px-2">Item Description</th>
+                                <th className="py-1.5 px-2 text-right">Qty</th>
+                                <th className="py-1.5 px-2 text-right">Offered Unit</th>
+                                <th className="py-1.5 px-2 text-right">Offered Total</th>
+                                <th className="py-1.5 px-2">Brand / Model</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {submission.items.map((it, idx) => (
+                                <tr key={it.id || idx} className="border-b border-default-50">
+                                  <td className="py-1 px-2 text-muted-foreground">{idx + 1}</td>
+                                  <td className="py-1 px-2 font-medium">{it.itemName || 'Item'}</td>
+                                  <td className="py-1 px-2 text-right">{it.quantity} {it.uom}</td>
+                                  <td className="py-1 px-2 text-right">₱{(it.unitPrice || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                                  <td className="py-1 px-2 text-right font-semibold">₱{(it.totalPrice || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+                                  <td className="py-1 px-2 text-muted-foreground">{[it.brand, it.model].filter(Boolean).join(' ') || '-'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {secondEnvelopeDocs.map((doc) => (
-                          <div
-                            key={doc.id}
-                            className="flex items-center justify-between p-2 rounded-md border border-purple-200 bg-purple-50/30 hover:border-purple-400 transition-colors"
-                          >
-                            <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                              <FileText className="h-3.5 w-3.5 text-purple-600 shrink-0" />
-                              <span className="text-xs font-medium truncate text-default-800" title={doc.name}>
-                                {doc.name}
-                              </span>
+                    )}
+
+                    {/* Variance Warning Banner */}
+                    {hasDiscrepancy && (
+                      <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900 flex items-start gap-2.5">
+                        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="space-y-0.5">
+                          <span className="font-bold block">Bid Variance Detected</span>
+                          <p className="text-[11px] leading-relaxed">
+                            The As-Read Bid Amount (₱{numAsRead.toLocaleString('en-PH', { minimumFractionDigits: 2 })}) differs from the supplier-submitted proposal (₱{submission.originalProposedAmount?.toLocaleString('en-PH', { minimumFractionDigits: 2 })}). Explanatory BAC remarks must be documented below.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="as-read-amount" className="text-xs font-bold text-default-900">
+                            As-Read Bid Amount (₱) <span className="text-destructive">*</span>
+                          </Label>
+                          {submission.originalProposedAmount !== null && submission.originalProposedAmount !== undefined && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAsReadBidAmount(String(submission.originalProposedAmount || ''))
+                                setValidationError(null)
+                              }}
+                              className="text-[10px] text-primary hover:underline font-semibold"
+                            >
+                              Populate from Submitted Total
+                            </button>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-3 top-2.5 text-xs text-muted-foreground font-semibold">
+                            ₱
+                          </span>
+                          <Input
+                            id="as-read-amount"
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            value={asReadBidAmount}
+                            onChange={(e) => setAsReadBidAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="pl-7 text-xs font-mono font-bold"
+                            required
+                            autoFocus
+                          />
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          {submission.originalProposedAmount !== null && submission.originalProposedAmount !== undefined
+                            ? `Original Submitted: ₱ ${submission.originalProposedAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}.`
+                            : ''}{' '}
+                          Enter the actual financial bid read publicly during opening.
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="remarks" className="text-xs font-semibold text-default-800">
+                          BAC Opening Remarks {hasDiscrepancy ? <span className="text-destructive font-bold">* (Required due to variance)</span> : '(Optional)'}
+                        </Label>
+                        <Input
+                          id="remarks"
+                          value={remarks}
+                          onChange={(e) => setRemarks(e.target.value)}
+                          placeholder={hasDiscrepancy ? "Explain variance (e.g. As-read from Bid Form Page 1)..." : "e.g. As-read matches financial bid letter."}
+                          className={`text-xs ${hasDiscrepancy && !remarks.trim() ? 'border-amber-400 focus-visible:ring-amber-400' : ''}`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Envelope 2 Documents List */}
+                    {secondEnvelopeDocs.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t border-default-100 col-span-1 md:col-span-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wider">
+                            Submitted Financial Documents ({secondEnvelopeDocs.length})
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">Envelope 2 Requirements</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {secondEnvelopeDocs.map((doc) => (
+                            <div
+                              key={doc.id}
+                              className="flex items-center justify-between p-2 rounded-md border border-purple-200 bg-purple-50/30 hover:border-purple-400 transition-colors"
+                            >
+                              <div className="flex items-center gap-2 overflow-hidden min-w-0">
+                                <FileText className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                                <span className="text-xs font-medium truncate text-default-800" title={doc.name}>
+                                  {doc.name}
+                                </span>
+                              </div>
+                              {doc.url && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 text-[11px] px-2 text-purple-700 hover:text-purple-800 hover:bg-purple-100 gap-1 shrink-0 font-semibold"
+                                  onClick={() => handlePreview(doc)}
+                                >
+                                  Preview
+                                </Button>
+                              )}
                             </div>
-                            {doc.url && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 text-[11px] px-2 text-purple-700 hover:text-purple-800 hover:bg-purple-100 gap-1 shrink-0 font-semibold"
-                                onClick={() => handlePreview(doc)}
-                              >
-                                Preview
-                              </Button>
-                            )}
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           </div>
 

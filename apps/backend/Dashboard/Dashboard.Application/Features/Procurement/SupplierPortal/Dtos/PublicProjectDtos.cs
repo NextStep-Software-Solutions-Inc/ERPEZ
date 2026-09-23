@@ -20,6 +20,8 @@ public record PublicProjectDetailDto
     public decimal ABC { get; init; }
     public string ModeOfProcurement { get; init; } = string.Empty;
     public string Status { get; init; } = string.Empty;
+    public string? PricingStructure { get; init; } // "Itemized" | "LumpSum" | "Consulting"
+    public string? ProcurementCategory { get; init; } // "Goods" | "Infrastructure" | "Consulting"
     public string? ScopeOfWork { get; init; }
     public decimal? NonRefundableBidderFee { get; init; }
     public int? DeliveryPeriodDays { get; init; }
