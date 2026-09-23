@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 
-import { CreateDirectContractingModal } from '../components/CreateDirectContractingModal'
+import { CreateDirectContractingDialog } from '../components/CreateDirectContractingDialog'
 import { UpdateDirectContractingModal } from '../components/UpdateDirectContractingModal'
 import { ViewProposalDetailsModal } from '../components/ViewProposalDetailsModal'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
@@ -196,7 +196,7 @@ export function DirectContractingRequestPage() {
       />
 
       {/* Modals & Confirmation Dialogs */}
-      <CreateDirectContractingModal
+      <CreateDirectContractingDialog
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
       />

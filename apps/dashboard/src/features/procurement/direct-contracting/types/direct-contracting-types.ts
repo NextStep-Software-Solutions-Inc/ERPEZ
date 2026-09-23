@@ -32,7 +32,7 @@ export const DIRECT_CONTRACTING_STATUS_LABELS: Record<DirectContractingStatusEnu
   [DirectContractingStatusEnum.RETURNED]: 'Returned',
 }
 
-export interface DirectContracting {
+export type DirectContracting = {
   id: string
   dcNumber: string
   name: string
