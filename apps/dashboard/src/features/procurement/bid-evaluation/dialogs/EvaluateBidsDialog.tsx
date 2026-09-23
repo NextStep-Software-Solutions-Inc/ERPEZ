@@ -7,7 +7,6 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useEvaluateProjectBids } from '../hooks/useBidEvaluationApi'
-import { extractErrorMessage } from '@/services/utils/messages'
 import type {
   BidderEvaluationInputPayload,
   BiddingSubmissionResponse,
@@ -78,8 +77,8 @@ export function EvaluateBidsDialog({
           .map((s) => ({
             bidOpeningRecordId: s.openingRecord!.id,
             supplierName: s.supplierName,
-            asReadBidAmount: s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount,
-            evaluatedBidPrice: String(s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount),
+            asReadBidAmount: s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount ?? 0,
+            evaluatedBidPrice: String(s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount ?? 0),
             technicalScore: '',
             isResponsive: true,
             nonResponsiveReason: '',

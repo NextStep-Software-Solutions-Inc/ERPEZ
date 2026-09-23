@@ -106,10 +106,10 @@ export function DocumentPreviewDialog({
 
         setResolvedType(contentType)
         setBlobUrl(createdUrl)
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!active) return
         console.error('Failed to load document preview:', err)
-        setError(err.message || 'Unable to retrieve the file from storage.')
+        setError(err instanceof Error ? err.message : 'Unable to retrieve the file from storage.')
       } finally {
         if (active) {
           setIsLoading(false)

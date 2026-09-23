@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from 'react'
+import { useForm, useStore } from '@tanstack/react-form'
 import {
   ArrowLeft,
   Upload,
@@ -35,7 +36,11 @@ import {
 } from '@/components/ui/select'
 import type { PublicProject, SubmissionResult, RequiredDocument } from '../types/portalTypes'
 import { printDocument } from '../utils/printDocument'
-import api from '@/services/api'
+import {
+  useSubmitPublicApplication,
+  useUploadPublicFile,
+  useValidatePublicApplication,
+} from '../hooks/usePublicPortalApi'
 
 interface BACApplicationFormProps {
   project: PublicProject
@@ -47,14 +52,6 @@ interface UploadedFile {
   documentId: string
   documentName: string
   file: File
-}
-
-interface ContactInfo {
-  supplierName: string
-  email: string
-  contactNumber: string
-  address: string
-  tinNumber: string
 }
 
 interface ItemBidState {
@@ -72,48 +69,57 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function BACApplicationForm({ project, onBack, selectedBidNotices: _selectedBidNotices = [] }: BACApplicationFormProps) {
+export function BACApplicationForm({
+  project,
+  onBack,
+  selectedBidNotices: _selectedBidNotices = [],
+}: BACApplicationFormProps) {
   const hasItemizedItems = Boolean(project.items && project.items.length > 0)
   const isCompetitiveBidding = project.mop === 'public-bidding'
   const isItemized = project.pricingStructure === 'Itemized' || (!project.pricingStructure && hasItemizedItems)
   const isRfq = project.mop === 'svp'
 
-  const [contactInfo, setContactInfo] = useState<ContactInfo>({
-    supplierName: '',
-    email: '',
-    contactNumber: '',
-    address: '',
-    tinNumber: '',
+  const validateMutation = useValidatePublicApplication()
+  const uploadMutation = useUploadPublicFile()
+  const submitMutation = useSubmitPublicApplication()
+
+  const initialItemBids: Record<string, ItemBidState> = {}
+  if (project.items) {
+    project.items.forEach((item) => {
+      initialItemBids[item.id] = { unitPrice: '', brand: '', model: '' }
+    })
+  }
+
+  // TanStack Form setup
+  const form = useForm({
+    defaultValues: {
+      supplierName: '',
+      email: '',
+      contactNumber: '',
+      address: '',
+      tinNumber: '',
+      deliveryPeriod: project.deliveryPeriod || '',
+      paymentTerms: '',
+      warrantyTerms: '',
+      validityPeriodDays: 60 as number | '',
+      remarks: '',
+      proposedBidAmount: '' as number | '',
+      bidSecurityType: 'Bid Securing Declaration',
+      bidSecurityAmount: '' as number | '',
+      bidSecurityNumber: '',
+      bidSecurityValidityDays: 120 as number | '',
+      itemBids: initialItemBids,
+    },
+    onSubmit: async () => {
+      // Submission handled via handleFormSubmit
+    },
   })
 
-  // State for RFQ line items
-  const [itemBids, setItemBids] = useState<Record<string, ItemBidState>>(() => {
-    const initial: Record<string, ItemBidState> = {}
-    if (project.items) {
-      project.items.forEach((item) => {
-        initial[item.id] = { unitPrice: '', brand: '', model: '' }
-      })
-    }
-    return initial
-  })
+  const formValues = useStore(form.store, (s) => s.values)
 
-  // State for per-item brochure / technical spec sheets
+  // Per-item brochure / technical spec sheets
   const [itemBrochures, setItemBrochures] = useState<Record<string, File>>({})
   const itemBrochureInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
-
-  // Commercial terms
-  const [deliveryPeriod, setDeliveryPeriod] = useState(project.deliveryPeriod || '')
-  const [paymentTerms, setPaymentTerms] = useState('')
-  const [warrantyTerms, setWarrantyTerms] = useState('')
-  const [validityPeriodDays, setValidityPeriodDays] = useState<number | ''>(60)
-  const [remarks, setRemarks] = useState('')
-
-  // State for Public Bidding lump-sum bids
-  const [proposedBidAmount, setProposedBidAmount] = useState<number | ''>('')
-  const [bidSecurityType, setBidSecurityType] = useState('Bid Securing Declaration')
-  const [bidSecurityAmount, setBidSecurityAmount] = useState<number | ''>('')
-  const [bidSecurityNumber, setBidSecurityNumber] = useState('')
-  const [bidSecurityValidityDays, setBidSecurityValidityDays] = useState<number | ''>(120)
 
   // Checklist document uploads
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
@@ -129,36 +135,40 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
   const totalQuotedBid = useMemo(() => {
     if (isItemized && project.items) {
       return project.items.reduce((sum, item) => {
-        const price = Number(itemBids[item.id]?.unitPrice || 0)
+        const price = Number(formValues.itemBids[item.id]?.unitPrice || 0)
         return sum + price * item.quantity
       }, 0)
     }
-    return Number(proposedBidAmount || 0)
-  }, [isItemized, project.items, itemBids, proposedBidAmount])
+    return Number(formValues.proposedBidAmount || 0)
+  }, [isItemized, project.items, formValues.itemBids, formValues.proposedBidAmount])
 
-  // RA 9184 ABC compliance check
+  // NGPA / statutory ABC compliance check
   const numericAbc = Number(project.approvedBudget || 0)
   const isOverAbc = numericAbc > 0 && totalQuotedBid > numericAbc
   const varianceFromAbc = numericAbc > 0 ? numericAbc - totalQuotedBid : 0
 
-  const isPastDeadline = project.deadline && !isNaN(Date.parse(project.deadline))
-    ? new Date(project.deadline).getTime() < Date.now()
-    : false
+  const isPastDeadline =
+    project.deadline && !isNaN(Date.parse(project.deadline))
+      ? new Date(project.deadline).getTime() < Date.now()
+      : false
   const isClosedOrExpired = project.status === 'closed' || isPastDeadline
 
-  const handleContactChange = (field: keyof ContactInfo, value: string) => {
-    setContactInfo((prev) => ({ ...prev, [field]: value }))
+  const handleContactChange = (
+    field: 'supplierName' | 'email' | 'contactNumber' | 'address' | 'tinNumber',
+    value: string
+  ) => {
+    form.setFieldValue(field, value)
     setErrors((prev) => ({ ...prev, [field]: '' }))
   }
 
-  const handleItemBidChange = (itemId: string, field: keyof ItemBidState, value: any) => {
-    setItemBids((prev) => ({
-      ...prev,
+  const handleItemBidChange = (itemId: string, field: keyof ItemBidState, value: string | number) => {
+    form.setFieldValue('itemBids', {
+      ...formValues.itemBids,
       [itemId]: {
-        ...(prev[itemId] || { unitPrice: '', brand: '', model: '' }),
+        ...(formValues.itemBids[itemId] || { unitPrice: '', brand: '', model: '' }),
         [field]: value,
       },
-    }))
+    })
     setErrors((prev) => ({ ...prev, [`item_${itemId}`]: '', generalBid: '' }))
   }
 
@@ -183,49 +193,46 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
     }
   }
 
-  const handleFileDrop = useCallback(
-    (documentId: string, documentName: string, files: FileList | null) => {
-      if (!files || files.length === 0) return
-      const file = files[0]
+  const handleFileDrop = useCallback((documentId: string, documentName: string, files: FileList | null) => {
+    if (!files || files.length === 0) return
+    const file = files[0]
 
-      const acceptedExtensions = ACCEPTED_TYPES.split(',').map((s) => s.trim().replace(/^\./, '').toLowerCase())
-      const fileExt = (file.name.split('.').pop() || '').toLowerCase()
-      const mime = file.type || ''
+    const acceptedExtensions = ACCEPTED_TYPES.split(',').map((s) => s.trim().replace(/^\./, '').toLowerCase())
+    const fileExt = (file.name.split('.').pop() || '').toLowerCase()
+    const mime = file.type || ''
 
-      const mimeAllowed = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      ]
+    const mimeAllowed = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ]
 
-      const isAccepted =
-        (fileExt && acceptedExtensions.includes(fileExt)) ||
-        mimeAllowed.includes(mime) ||
-        mime.startsWith('image/')
+    const isAccepted =
+      (fileExt && acceptedExtensions.includes(fileExt)) ||
+      mimeAllowed.includes(mime) ||
+      mime.startsWith('image/')
 
-      if (!isAccepted) {
-        setErrors((prev) => ({
-          ...prev,
-          [documentId]: `Unsupported file type. Accepted: ${ACCEPTED_TYPES.replace(/\./g, '')}`,
-        }))
-        return
-      }
+    if (!isAccepted) {
+      setErrors((prev) => ({
+        ...prev,
+        [documentId]: `Unsupported file type. Accepted: ${ACCEPTED_TYPES.replace(/\./g, '')}`,
+      }))
+      return
+    }
 
-      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-        setErrors((prev) => ({ ...prev, [documentId]: `File exceeds ${MAX_SIZE_MB}MB limit` }))
-        return
-      }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, [documentId]: `File exceeds ${MAX_SIZE_MB}MB limit` }))
+      return
+    }
 
-      setErrors((prev) => ({ ...prev, [documentId]: '' }))
-      setUploadedFiles((prev) => {
-        const filtered = prev.filter((f) => f.documentId !== documentId)
-        return [...filtered, { documentId, documentName, file }]
-      })
-    },
-    [],
-  )
+    setErrors((prev) => ({ ...prev, [documentId]: '' }))
+    setUploadedFiles((prev) => {
+      const filtered = prev.filter((f) => f.documentId !== documentId)
+      return [...filtered, { documentId, documentName, file }]
+    })
+  }, [])
 
   const removeFile = (documentId: string) => {
     setUploadedFiles((prev) => prev.filter((f) => f.documentId !== documentId))
@@ -236,24 +243,25 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
 
     // Deadline & status check
     if (isClosedOrExpired) {
-      newErrors.submit = 'The submission deadline for this opportunity has passed. Applications are no longer being accepted.'
+      newErrors.submit =
+        'The submission deadline for this opportunity has passed. Applications are no longer being accepted.'
       setErrors(newErrors)
       return false
     }
 
     // Contact info validation
-    if (!contactInfo.supplierName.trim()) newErrors.supplierName = 'Supplier name is required'
-    if (!contactInfo.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactInfo.email))
+    if (!formValues.supplierName.trim()) newErrors.supplierName = 'Supplier name is required'
+    if (!formValues.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formValues.email))
       newErrors.email = 'Valid email is required'
-    if (!contactInfo.contactNumber.trim()) newErrors.contactNumber = 'Contact number is required'
-    if (!contactInfo.address.trim()) newErrors.address = 'Address is required'
-    if (!contactInfo.tinNumber.trim()) newErrors.tinNumber = 'TIN number is required'
+    if (!formValues.contactNumber.trim()) newErrors.contactNumber = 'Contact number is required'
+    if (!formValues.address.trim()) newErrors.address = 'Address is required'
+    if (!formValues.tinNumber.trim()) newErrors.tinNumber = 'TIN number is required'
 
     // Financial bid validation
     if (isItemized && project.items) {
       let hasMissingPrice = false
       project.items.forEach((item) => {
-        const price = itemBids[item.id]?.unitPrice
+        const price = formValues.itemBids[item.id]?.unitPrice
         if (price === '' || price === undefined || Number(price) <= 0) {
           newErrors[`item_${item.id}`] = 'Unit price is required (> ₱0.00)'
           hasMissingPrice = true
@@ -262,17 +270,21 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
       if (hasMissingPrice) {
         newErrors.generalBid = 'Please enter a valid quoted unit price for all line items.'
       }
-      if (!deliveryPeriod.trim()) newErrors.deliveryPeriod = 'Delivery period is required'
-      if (!paymentTerms.trim()) newErrors.paymentTerms = 'Payment terms are required'
+      if (!formValues.deliveryPeriod.trim()) newErrors.deliveryPeriod = 'Delivery period is required'
+      if (!formValues.paymentTerms.trim()) newErrors.paymentTerms = 'Payment terms are required'
     } else {
-      if (proposedBidAmount === '' || Number(proposedBidAmount) <= 0) {
+      if (formValues.proposedBidAmount === '' || Number(formValues.proposedBidAmount) <= 0) {
         newErrors.proposedBidAmount = 'Proposed bid amount is required and must be greater than ₱0.00'
       }
-      if (!deliveryPeriod.trim()) newErrors.deliveryPeriod = 'Delivery period is required'
-      if (!paymentTerms.trim()) newErrors.paymentTerms = 'Payment terms are required'
+      if (!formValues.deliveryPeriod.trim()) newErrors.deliveryPeriod = 'Delivery period is required'
+      if (!formValues.paymentTerms.trim()) newErrors.paymentTerms = 'Payment terms are required'
     }
 
-    if (isCompetitiveBidding && bidSecurityType !== 'Bid Securing Declaration' && (!bidSecurityAmount || Number(bidSecurityAmount) <= 0)) {
+    if (
+      isCompetitiveBidding &&
+      formValues.bidSecurityType !== 'Bid Securing Declaration' &&
+      (!formValues.bidSecurityAmount || Number(formValues.bidSecurityAmount) <= 0)
+    ) {
       newErrors.bidSecurityAmount = 'Bid security amount is required for the selected guarantee type'
     }
 
@@ -297,32 +309,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
     return Object.keys(newErrors).length === 0
   }
 
-  const uploadFile = async (file: File): Promise<string> => {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    try {
-      // Try dedicated public upload endpoint for unauthenticated suppliers
-      const response = await api.post<{ succeeded: boolean; data: string }>('/files/public/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      if (response.data?.succeeded && response.data.data) {
-        return response.data.data
-      }
-    } catch {
-      // Fallback to /files/upload
-      const response = await api.post<{ succeeded: boolean; data: string }>('/files/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      if (response.data?.succeeded && response.data.data) {
-        return response.data.data
-      }
-    }
-
-    throw new Error('File upload failed')
-  }
-
-  const handleSubmit = async () => {
+  const handleFormSubmit = async () => {
     if (!validate()) return
     setIsSubmitting(true)
     setErrors((prev) => ({ ...prev, submit: '' }))
@@ -330,41 +317,54 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
     try {
       // 0. Pre-flight check: validate on server BEFORE uploading any files to prevent storage exhaustion
       const preFlightPayload = {
-        companyName: contactInfo.supplierName.trim(),
-        contactPerson: contactInfo.supplierName.trim(),
-        emailAddress: contactInfo.email.trim(),
-        contactNumber: contactInfo.contactNumber.trim(),
-        tinNumber: contactInfo.tinNumber.trim(),
-        businessAddress: contactInfo.address.trim(),
+        companyName: formValues.supplierName.trim(),
+        contactPerson: formValues.supplierName.trim(),
+        emailAddress: formValues.email.trim(),
+        contactNumber: formValues.contactNumber.trim(),
+        tinNumber: formValues.tinNumber.trim(),
+        businessAddress: formValues.address.trim(),
         checklistItemIds: uploadedFiles.map((uf) => uf.documentId),
         proposedBidAmount: totalQuotedBid > 0 ? totalQuotedBid : undefined,
-        deliveryPeriod: deliveryPeriod.trim() || undefined,
-        paymentTerms: paymentTerms.trim() || undefined,
-        warrantyTerms: warrantyTerms.trim() || undefined,
-        validityPeriodDays: validityPeriodDays ? Number(validityPeriodDays) : undefined,
-        remarks: remarks.trim() || undefined,
-        bidSecurityType: isCompetitiveBidding ? bidSecurityType : undefined,
-        bidSecurityAmount: isCompetitiveBidding && bidSecurityAmount ? Number(bidSecurityAmount) : undefined,
-        bidSecurityNumber: isCompetitiveBidding && bidSecurityNumber ? bidSecurityNumber.trim() : undefined,
-        bidSecurityValidityDays: isCompetitiveBidding && bidSecurityValidityDays ? Number(bidSecurityValidityDays) : undefined,
-        itemBids: isItemized && project.items
-          ? project.items.map((item) => {
-              const state = itemBids[item.id]
-              return {
-                rfqItemId: item.id,
-                unitPrice: Number(state?.unitPrice || 0),
-                brand: state?.brand?.trim() || null,
-                model: state?.model?.trim() || null,
-              }
-            })
-          : undefined,
+        deliveryPeriod: formValues.deliveryPeriod.trim() || undefined,
+        paymentTerms: formValues.paymentTerms.trim() || undefined,
+        warrantyTerms: formValues.warrantyTerms.trim() || undefined,
+        validityPeriodDays: formValues.validityPeriodDays ? Number(formValues.validityPeriodDays) : undefined,
+        remarks: formValues.remarks.trim() || undefined,
+        bidSecurityType: isCompetitiveBidding ? formValues.bidSecurityType : undefined,
+        bidSecurityAmount:
+          isCompetitiveBidding && formValues.bidSecurityAmount
+            ? Number(formValues.bidSecurityAmount)
+            : undefined,
+        bidSecurityNumber:
+          isCompetitiveBidding && formValues.bidSecurityNumber
+            ? formValues.bidSecurityNumber.trim()
+            : undefined,
+        bidSecurityValidityDays:
+          isCompetitiveBidding && formValues.bidSecurityValidityDays
+            ? Number(formValues.bidSecurityValidityDays)
+            : undefined,
+        itemBids:
+          isItemized && project.items
+            ? project.items.map((item) => {
+                const state = formValues.itemBids[item.id]
+                return {
+                  rfqItemId: item.id,
+                  unitPrice: Number(state?.unitPrice || 0),
+                  brand: state?.brand?.trim() || null,
+                  model: state?.model?.trim() || null,
+                }
+              })
+            : undefined,
       }
 
-      await api.post(`/api/public/projects/${project.id}/validate-application`, preFlightPayload)
+      await validateMutation.mutateAsync({
+        projectId: project.id,
+        payload: preFlightPayload,
+      })
 
       // 1. Upload required checklist documents (executed ONLY after pre-flight validation succeeds)
       const uploadPromises = uploadedFiles.map(async (uf) => {
-        const fileId = await uploadFile(uf.file)
+        const fileId = await uploadMutation.mutateAsync(uf.file)
         return { checklistItemId: uf.documentId, fileId }
       })
       const uploadedDocs = await Promise.all(uploadPromises)
@@ -373,63 +373,73 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
       const itemBrochureFileIds: Record<string, string> = {}
       for (const [itemId, file] of Object.entries(itemBrochures)) {
         if (file) {
-          const fileId = await uploadFile(file)
+          const fileId = await uploadMutation.mutateAsync(file)
           itemBrochureFileIds[itemId] = fileId
         }
       }
 
       // 3. Prepare itemized bids if opportunity has line items
-      const formattedItemBids = isItemized && project.items
-        ? project.items.map((item) => {
-            const state = itemBids[item.id]
-            return {
-              rfqItemId: item.id,
-              unitPrice: Number(state?.unitPrice || 0),
-              brand: state?.brand?.trim() || null,
-              model: state?.model?.trim() || null,
-              brochureFileId: itemBrochureFileIds[item.id] || null,
-            }
-          })
-        : undefined
+      const formattedItemBids =
+        isItemized && project.items
+          ? project.items.map((item) => {
+              const state = formValues.itemBids[item.id]
+              return {
+                rfqItemId: item.id,
+                unitPrice: Number(state?.unitPrice || 0),
+                brand: state?.brand?.trim() || null,
+                model: state?.model?.trim() || null,
+                brochureFileId: itemBrochureFileIds[item.id] || null,
+              }
+            })
+          : undefined
 
       // 4. Build application payload
       const payload = {
-        companyName: contactInfo.supplierName.trim(),
-        contactPerson: contactInfo.supplierName.trim(),
-        emailAddress: contactInfo.email.trim(),
-        contactNumber: contactInfo.contactNumber.trim(),
-        tinNumber: contactInfo.tinNumber.trim(),
-        businessAddress: contactInfo.address.trim(),
+        companyName: formValues.supplierName.trim(),
+        contactPerson: formValues.supplierName.trim(),
+        emailAddress: formValues.email.trim(),
+        contactNumber: formValues.contactNumber.trim(),
+        tinNumber: formValues.tinNumber.trim(),
+        businessAddress: formValues.address.trim(),
         documents: uploadedDocs,
         proposedBidAmount: totalQuotedBid > 0 ? totalQuotedBid : undefined,
-        deliveryPeriod: deliveryPeriod.trim() || undefined,
-        paymentTerms: paymentTerms.trim() || undefined,
-        warrantyTerms: warrantyTerms.trim() || undefined,
-        validityPeriodDays: validityPeriodDays ? Number(validityPeriodDays) : undefined,
-        remarks: remarks.trim() || undefined,
-        bidSecurityType: isCompetitiveBidding ? bidSecurityType : undefined,
-        bidSecurityAmount: isCompetitiveBidding && bidSecurityAmount ? Number(bidSecurityAmount) : undefined,
-        bidSecurityNumber: isCompetitiveBidding && bidSecurityNumber ? bidSecurityNumber.trim() : undefined,
-        bidSecurityValidityDays: isCompetitiveBidding && bidSecurityValidityDays ? Number(bidSecurityValidityDays) : undefined,
+        deliveryPeriod: formValues.deliveryPeriod.trim() || undefined,
+        paymentTerms: formValues.paymentTerms.trim() || undefined,
+        warrantyTerms: formValues.warrantyTerms.trim() || undefined,
+        validityPeriodDays: formValues.validityPeriodDays ? Number(formValues.validityPeriodDays) : undefined,
+        remarks: formValues.remarks.trim() || undefined,
+        bidSecurityType: isCompetitiveBidding ? formValues.bidSecurityType : undefined,
+        bidSecurityAmount:
+          isCompetitiveBidding && formValues.bidSecurityAmount
+            ? Number(formValues.bidSecurityAmount)
+            : undefined,
+        bidSecurityNumber:
+          isCompetitiveBidding && formValues.bidSecurityNumber
+            ? formValues.bidSecurityNumber.trim()
+            : undefined,
+        bidSecurityValidityDays:
+          isCompetitiveBidding && formValues.bidSecurityValidityDays
+            ? Number(formValues.bidSecurityValidityDays)
+            : undefined,
         itemBids: formattedItemBids,
       }
 
-      const response = await api.post<{ succeeded: boolean; data: string }>(
-        `/api/public/projects/${project.id}/apply`,
+      const res = await submitMutation.mutateAsync({
+        projectId: project.id,
         payload,
-      )
+      })
 
-      if (response.data && response.data.succeeded) {
-        setResult({
-          referenceNumber: response.data.data,
-          submittedAt: new Date().toISOString(),
-          projectTitle: project.title,
-          totalBidAmount: totalQuotedBid,
-        })
-      }
-    } catch (err: any) {
+      setResult({
+        referenceNumber: res.referenceNumber,
+        submittedAt: new Date().toISOString(),
+        projectTitle: project.title,
+        totalBidAmount: totalQuotedBid,
+      })
+    } catch (err: unknown) {
       console.error(err)
-      const errorMsg = err?.response?.data?.message || err?.message || 'Submission failed. Please check your inputs.'
+      const errorMsg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (err instanceof Error ? err.message : 'Submission failed. Please check your inputs.')
       setErrors((prev) => ({ ...prev, submit: errorMsg }))
     } finally {
       setIsSubmitting(false)
@@ -475,10 +485,30 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
               </div>
               <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {[
-                  { field: 'supplierName' as const, label: 'Company / Supplier Name', placeholder: 'Enter company name', icon: User },
-                  { field: 'email' as const, label: 'Email Address', placeholder: 'contact@company.com', icon: Mail },
-                  { field: 'contactNumber' as const, label: 'Contact Number', placeholder: '+63 9XX XXX XXXX', icon: Phone },
-                  { field: 'tinNumber' as const, label: 'TIN Number', placeholder: '000-000-000-000', icon: Hash },
+                  {
+                    field: 'supplierName' as const,
+                    label: 'Company / Supplier Name',
+                    placeholder: 'Enter company name',
+                    icon: User,
+                  },
+                  {
+                    field: 'email' as const,
+                    label: 'Email Address',
+                    placeholder: 'contact@company.com',
+                    icon: Mail,
+                  },
+                  {
+                    field: 'contactNumber' as const,
+                    label: 'Contact Number',
+                    placeholder: '+63 9XX XXX XXXX',
+                    icon: Phone,
+                  },
+                  {
+                    field: 'tinNumber' as const,
+                    label: 'TIN Number',
+                    placeholder: '000-000-000-000',
+                    icon: Hash,
+                  },
                 ].map(({ field, label, placeholder, icon: Icon }) => (
                   <div key={field} className="space-y-1.5">
                     <Label htmlFor={field} className="text-sm font-medium text-slate-700">
@@ -489,7 +519,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                       <Input
                         id={field}
                         placeholder={placeholder}
-                        value={contactInfo[field]}
+                        value={formValues[field]}
                         onChange={(e) => handleContactChange(field, e.target.value)}
                         className={`pl-9 ${errors[field] ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
                       />
@@ -512,7 +542,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                     <Input
                       id="address"
                       placeholder="Full business address"
-                      value={contactInfo.address}
+                      value={formValues.address}
                       onChange={(e) => handleContactChange('address', e.target.value)}
                       className={`pl-9 ${errors.address ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
                     />
@@ -534,7 +564,9 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                   <div className="flex items-center gap-2">
                     <Banknote className="h-4 w-4 text-slate-600" />
                     <h2 className="font-semibold text-slate-800">
-                      {isCompetitiveBidding ? 'Financial Bid Proposal (Itemized Price Schedule / BOQ)' : 'Financial Quotation Proposal (Itemized)'}
+                      {isCompetitiveBidding
+                        ? 'Financial Bid Proposal (Itemized Price Schedule / BOQ)'
+                        : 'Financial Quotation Proposal (Itemized)'}
                     </h2>
                   </div>
                   <span className="text-xs text-slate-500 font-medium">
@@ -550,7 +582,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
 
                   <div className="space-y-4">
                     {project.items.map((item, idx) => {
-                      const state = itemBids[item.id] || { unitPrice: '', brand: '', model: '' }
+                      const state = formValues.itemBids[item.id] || { unitPrice: '', brand: '', model: '' }
                       const unitPriceNum = Number(state.unitPrice || 0)
                       const itemTotal = unitPriceNum * item.quantity
                       const itemBrochure = itemBrochures[item.id]
@@ -561,7 +593,9 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                         <div
                           key={item.id}
                           className={`rounded-xl border p-4.5 transition-colors ${
-                            itemError ? 'border-red-300 bg-red-50/30' : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
+                            itemError
+                              ? 'border-red-300 bg-red-50/30'
+                              : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
                           }`}
                         >
                           {/* Item Header */}
@@ -579,10 +613,16 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                             </div>
                             <div className="flex items-center gap-4 text-xs font-medium text-slate-600 sm:self-center pl-8 sm:pl-0">
                               <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200">
-                                Quantity: <strong className="text-slate-800">{item.quantity} {item.uom || 'Unit'}</strong>
+                                Quantity:{' '}
+                                <strong className="text-slate-800">
+                                  {item.quantity} {item.uom || 'Unit'}
+                                </strong>
                               </span>
                               <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200">
-                                ABC Unit: <strong className="text-slate-800">₱{item.abcUnitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                                ABC Unit:{' '}
+                                <strong className="text-slate-800">
+                                  ₱{item.abcUnitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </strong>
                               </span>
                             </div>
                           </div>
@@ -595,7 +635,9 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                                 Offered Unit Price (₱) <span className="text-red-500">*</span>
                               </Label>
                               <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">₱</span>
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">
+                                  ₱
+                                </span>
                                 <Input
                                   type="number"
                                   step="0.01"
@@ -606,7 +648,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                                     handleItemBidChange(
                                       item.id,
                                       'unitPrice',
-                                      e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0),
+                                      e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0)
                                     )
                                   }
                                   className={`pl-8 ${itemError ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
@@ -647,7 +689,9 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
                                     <FileText className="h-3.5 w-3.5 text-emerald-600" />
                                     <span className="truncate max-w-xs">{itemBrochure.name}</span>
-                                    <span className="text-emerald-500 text-[10px]">({formatFileSize(itemBrochure.size)})</span>
+                                    <span className="text-emerald-500 text-[10px]">
+                                      ({formatFileSize(itemBrochure.size)})
+                                    </span>
                                     <button
                                       type="button"
                                       onClick={() => removeItemBrochure(item.id)}
@@ -701,11 +745,13 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                   )}
 
                   {/* Live Total Bid & ABC Summary Banner */}
-                  <div className={`p-5 rounded-xl border ${
-                    isOverAbc
-                      ? 'bg-red-50 border-red-300 text-red-900'
-                      : 'bg-blue-50/60 border-blue-200 text-blue-950'
-                  }`}>
+                  <div
+                    className={`p-5 rounded-xl border ${
+                      isOverAbc
+                        ? 'bg-red-50 border-red-300 text-red-900'
+                        : 'bg-blue-50/60 border-blue-200 text-blue-950'
+                    }`}
+                  >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-wider opacity-80">
@@ -715,15 +761,24 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                           ₱{totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </div>
                         <div className="text-xs mt-1 flex items-center gap-2">
-                          <span>ABC: <strong>₱{project.approvedBudget.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></span>
+                          <span>
+                            ABC:{' '}
+                            <strong>
+                              ₱{project.approvedBudget.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </strong>
+                          </span>
                           <span>•</span>
                           {isOverAbc ? (
                             <span className="font-bold text-red-600">
-                              Exceeds ABC by ₱{(totalQuotedBid - project.approvedBudget).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              Exceeds ABC by ₱
+                              {(totalQuotedBid - project.approvedBudget).toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                              })}
                             </span>
                           ) : (
                             <span className="font-semibold text-emerald-700">
-                              Savings / Variance: ₱{varianceFromAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              Savings / Variance: ₱
+                              {varianceFromAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </span>
                           )}
                         </div>
@@ -746,9 +801,10 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                       <div className="mt-3.5 pt-3 border-t border-red-200 text-xs text-red-700 flex items-start gap-2">
                         <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                         <span>
-                          <strong>Statutory Ceiling Non-Compliance Alert:</strong> Under the New Government Procurement Act (NGPA / RA 12009) and applicable procurement rules,
-                          any bid that exceeds the Approved Budget for the Contract (ABC) shall be disqualified and cannot be submitted.
-                          Please lower your quoted unit prices to remain within the ABC.
+                          <strong>Statutory Ceiling Non-Compliance Alert:</strong> Under the New Government
+                          Procurement Act (NGPA / RA 12009) and applicable procurement rules, any bid that
+                          exceeds the Approved Budget for the Contract (ABC) shall be disqualified and cannot be
+                          submitted. Please lower your quoted unit prices to remain within the ABC.
                         </span>
                       </div>
                     )}
@@ -764,7 +820,9 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                     <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-slate-600" />
-                        <h2 className="font-semibold text-slate-800">Schedule of Requirements / Scope of Items</h2>
+                        <h2 className="font-semibold text-slate-800">
+                          Schedule of Requirements / Scope of Items
+                        </h2>
                       </div>
                       <span className="text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
                         {project.items.length} {project.items.length === 1 ? 'item' : 'items'}
@@ -772,7 +830,11 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                     </div>
                     <div className="p-6 space-y-3">
                       <p className="text-xs text-slate-500 leading-relaxed">
-                        The items listed below comprise the approved Schedule of Requirements for this contract. Under Philippine Bidding Documents (PBDs) for Public Bidding, your detailed itemized breakdown (unit prices, taxes, and delivery/freight) must be completed using the official Price Schedule form and uploaded in the <strong>Second Envelope (Financial Component)</strong> below.
+                        The items listed below comprise the approved Schedule of Requirements for this
+                        contract. Under Philippine Bidding Documents (PBDs) for Public Bidding, your detailed
+                        itemized breakdown (unit prices, taxes, and delivery/freight) must be completed using
+                        the official Price Schedule form and uploaded in the{' '}
+                        <strong>Second Envelope (Financial Component)</strong> below.
                       </p>
                       <div className="overflow-x-auto rounded-xl border border-slate-200">
                         <table className="w-full text-xs text-left">
@@ -788,11 +850,15 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                           <tbody className="divide-y divide-slate-100">
                             {project.items.map((item, idx) => (
                               <tr key={item.id} className="hover:bg-slate-50/50">
-                                <td className="px-3.5 py-2.5 text-center text-slate-400 font-medium">{idx + 1}</td>
+                                <td className="px-3.5 py-2.5 text-center text-slate-400 font-medium">
+                                  {idx + 1}
+                                </td>
                                 <td className="px-3.5 py-2.5">
                                   <span className="font-semibold text-slate-800">{item.itemName}</span>
                                   {item.description && (
-                                    <span className="block text-[11px] text-slate-500 mt-0.5">{item.description}</span>
+                                    <span className="block text-[11px] text-slate-500 mt-0.5">
+                                      {item.description}
+                                    </span>
                                   )}
                                 </td>
                                 <td className="px-3.5 py-2.5 text-center font-medium text-slate-700">
@@ -802,7 +868,11 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                                   ₱{item.abcUnitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                 </td>
                                 <td className="px-3.5 py-2.5 text-right font-semibold text-slate-900">
-                                  ₱{(item.abcTotalPrice || item.quantity * item.abcUnitPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                  ₱
+                                  {(item.abcTotalPrice || item.quantity * item.abcUnitPrice).toLocaleString(
+                                    undefined,
+                                    { minimumFractionDigits: 2 }
+                                  )}
                                 </td>
                               </tr>
                             ))}
@@ -815,91 +885,118 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
 
                 {/* Lump-Sum Bid Proposal for Public Bidding & Non-itemized Opportunities */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Banknote className="h-4 w-4 text-slate-600" />
-                    <h2 className="font-semibold text-slate-800">
-                      {isCompetitiveBidding ? 'Financial Bid Proposal' : 'Financial Quotation Proposal'}
-                    </h2>
+                  <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Banknote className="h-4 w-4 text-slate-600" />
+                      <h2 className="font-semibold text-slate-800">
+                        {isCompetitiveBidding ? 'Financial Bid Proposal' : 'Financial Quotation Proposal'}
+                      </h2>
+                    </div>
+                    {isOverAbc ? (
+                      <span className="text-xs font-bold text-red-700 bg-red-100 border border-red-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <AlertTriangle className="h-3.5 w-3.5" /> Exceeds ABC (Statutory Ceiling Non-Compliant)
+                      </span>
+                    ) : totalQuotedBid > 0 ? (
+                      <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <Check className="h-3.5 w-3.5" /> Within Approved Budget
+                      </span>
+                    ) : null}
                   </div>
-                  {isOverAbc ? (
-                    <span className="text-xs font-bold text-red-700 bg-red-100 border border-red-300 px-2.5 py-1 rounded-full flex items-center gap-1">
-                      <AlertTriangle className="h-3.5 w-3.5" /> Exceeds ABC (Statutory Ceiling Non-Compliant)
-                    </span>
-                  ) : totalQuotedBid > 0 ? (
-                    <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full flex items-center gap-1">
-                      <Check className="h-3.5 w-3.5" /> Within Approved Budget
-                    </span>
-                  ) : null}
-                </div>
-                <div className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="proposedBidAmount" className="text-sm font-medium text-slate-700">
-                        {isCompetitiveBidding ? 'Proposed Bid Amount (₱)' : 'Proposed Quotation / Bid Amount (₱)'}{' '}
-                        <span className="text-red-500">*</span>
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">₱</span>
-                        <Input
-                          id="proposedBidAmount"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          value={proposedBidAmount}
-                          onChange={(e) => {
-                            const val = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0)
-                            setProposedBidAmount(val)
-                            setErrors((prev) => ({ ...prev, proposedBidAmount: '', abcExceeded: '' }))
-                          }}
-                          className={`pl-8 ${
-                            isOverAbc
-                              ? 'border-red-500 bg-red-50/20 text-red-950 focus-visible:ring-red-500'
-                              : errors.proposedBidAmount
-                              ? 'border-red-400 focus-visible:ring-red-400'
-                              : ''
-                          }`}
-                        />
+                  <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="proposedBidAmount" className="text-sm font-medium text-slate-700">
+                          {isCompetitiveBidding
+                            ? 'Proposed Bid Amount (₱)'
+                            : 'Proposed Quotation / Bid Amount (₱)'}{' '}
+                          <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">
+                            ₱
+                          </span>
+                          <Input
+                            id="proposedBidAmount"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={formValues.proposedBidAmount}
+                            onChange={(e) => {
+                              const val =
+                                e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0)
+                              form.setFieldValue('proposedBidAmount', val)
+                              setErrors((prev) => ({ ...prev, proposedBidAmount: '', abcExceeded: '' }))
+                            }}
+                            className={`pl-8 ${
+                              isOverAbc
+                                ? 'border-red-500 bg-red-50/20 text-red-950 focus-visible:ring-red-500'
+                                : errors.proposedBidAmount
+                                ? 'border-red-400 focus-visible:ring-red-400'
+                                : ''
+                            }`}
+                          />
+                        </div>
+                        {isOverAbc ? (
+                          <p className="text-xs text-red-600 font-semibold flex items-center gap-1 mt-1">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            Exceeds ABC by ₱
+                            {(totalQuotedBid - numericAbc).toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                            })}{' '}
+                            (Statutory Ceiling Non-Compliant)
+                          </p>
+                        ) : errors.proposedBidAmount ? (
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> {errors.proposedBidAmount}
+                          </p>
+                        ) : null}
                       </div>
-                      {isOverAbc ? (
-                        <p className="text-xs text-red-600 font-semibold flex items-center gap-1 mt-1">
-                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                          Exceeds ABC by ₱{(totalQuotedBid - numericAbc).toLocaleString(undefined, { minimumFractionDigits: 2 })} (Statutory Ceiling Non-Compliant)
-                        </p>
-                      ) : errors.proposedBidAmount ? (
-                        <p className="text-xs text-red-500 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" /> {errors.proposedBidAmount}
-                        </p>
-                      ) : null}
-                    </div>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-sm font-medium text-slate-700">Approved Budget for Contract (ABC)</Label>
-                      <div className="h-10 px-3 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-between text-sm font-semibold text-slate-800">
-                        <span>₱{numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                        <span className="text-[11px] text-slate-500 font-normal">Maximum Ceiling</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {isOverAbc && (
-                    <div className="p-4 rounded-xl bg-red-50 border-2 border-red-300 text-red-900 flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-wider text-red-800">
-                          Approved Budget for the Contract (ABC) Ceiling Alert
-                        </p>
-                        <p className="text-xs text-red-700 leading-relaxed">
-                          Your proposed bid amount of <strong>₱{totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong> exceeds the Approved Budget for the Contract (ABC) of <strong>₱{numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong> by <strong className="text-red-800">₱{(totalQuotedBid - numericAbc).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>.
-                        </p>
-                        <p className="text-[11px] text-red-600 font-medium">
-                          Under the New Government Procurement Act (NGPA / RA 12009) and applicable procurement rules, all bids that exceed the ABC are automatically rejected and cannot be submitted. Form submission is disabled until the bid is within the ABC.
-                        </p>
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Approved Budget for Contract (ABC)
+                        </Label>
+                        <div className="h-10 px-3 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-between text-sm font-semibold text-slate-800">
+                          <span>₱{numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          <span className="text-[11px] text-slate-500 font-normal">Maximum Ceiling</span>
+                        </div>
                       </div>
                     </div>
-                  )}
 
+                    {isOverAbc && (
+                      <div className="p-4 rounded-xl bg-red-50 border-2 border-red-300 text-red-900 flex items-start gap-3">
+                        <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold uppercase tracking-wider text-red-800">
+                            Approved Budget for the Contract (ABC) Ceiling Alert
+                          </p>
+                          <p className="text-xs text-red-700 leading-relaxed">
+                            Your proposed bid amount of{' '}
+                            <strong>
+                              ₱{totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </strong>{' '}
+                            exceeds the Approved Budget for the Contract (ABC) of{' '}
+                            <strong>
+                              ₱{numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </strong>{' '}
+                            by{' '}
+                            <strong className="text-red-800">
+                              ₱
+                              {(totalQuotedBid - numericAbc).toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                              })}
+                            </strong>
+                            .
+                          </p>
+                          <p className="text-[11px] text-red-600 font-medium">
+                            Under the New Government Procurement Act (NGPA / RA 12009) and applicable procurement
+                            rules, all bids that exceed the ABC are automatically rejected and cannot be submitted.
+                            Form submission is disabled until the bid is within the ABC.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -916,20 +1013,29 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium text-slate-700">Bid Security Form / Type</Label>
-                      <Select value={bidSecurityType} onValueChange={setBidSecurityType}>
+                      <Select
+                        value={formValues.bidSecurityType}
+                        onValueChange={(val) => form.setFieldValue('bidSecurityType', val)}
+                      >
                         <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Select Bid Security" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Bid Securing Declaration">Bid Securing Declaration (GPPB Prescribed)</SelectItem>
-                          <SelectItem value="Cash or Manager's Check">Cash or Cashier's / Manager's Check (2% of ABC)</SelectItem>
-                          <SelectItem value="Bank Guarantee">Bank Guarantee / Irrevocable LC (2% of ABC)</SelectItem>
+                          <SelectItem value="Bid Securing Declaration">
+                            Bid Securing Declaration (GPPB Prescribed)
+                          </SelectItem>
+                          <SelectItem value="Cash or Manager's Check">
+                            Cash or Cashier's / Manager's Check (2% of ABC)
+                          </SelectItem>
+                          <SelectItem value="Bank Guarantee">
+                            Bank Guarantee / Irrevocable LC (2% of ABC)
+                          </SelectItem>
                           <SelectItem value="Surety Bond">Surety Bond Callable on Demand (5% of ABC)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {bidSecurityType !== 'Bid Securing Declaration' && (
+                    {formValues.bidSecurityType !== 'Bid Securing Declaration' && (
                       <div className="space-y-1.5">
                         <Label className="text-xs font-medium text-slate-700">
                           Bid Security Amount (₱) <span className="text-red-500">*</span>
@@ -939,9 +1045,12 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                           step="0.01"
                           min="0"
                           placeholder="0.00"
-                          value={bidSecurityAmount}
+                          value={formValues.bidSecurityAmount}
                           onChange={(e) =>
-                            setBidSecurityAmount(e.target.value === '' ? '' : parseFloat(e.target.value) || 0)
+                            form.setFieldValue(
+                              'bidSecurityAmount',
+                              e.target.value === '' ? '' : parseFloat(e.target.value) || 0
+                            )
                           }
                           className={errors.bidSecurityAmount ? 'border-red-400' : ''}
                         />
@@ -949,11 +1058,13 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                     )}
 
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium text-slate-700">Security Number / Reference (Optional)</Label>
+                      <Label className="text-xs font-medium text-slate-700">
+                        Security Number / Reference (Optional)
+                      </Label>
                       <Input
                         placeholder="e.g., BSD-2026-001 or Guarantee No."
-                        value={bidSecurityNumber}
-                        onChange={(e) => setBidSecurityNumber(e.target.value)}
+                        value={formValues.bidSecurityNumber}
+                        onChange={(e) => form.setFieldValue('bidSecurityNumber', e.target.value)}
                       />
                     </div>
 
@@ -962,9 +1073,12 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                       <Input
                         type="number"
                         placeholder="120"
-                        value={bidSecurityValidityDays}
+                        value={formValues.bidSecurityValidityDays}
                         onChange={(e) =>
-                          setBidSecurityValidityDays(e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0)
+                          form.setFieldValue(
+                            'bidSecurityValidityDays',
+                            e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0
+                          )
                         }
                       />
                     </div>
@@ -987,9 +1101,9 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                   <Input
                     id="deliveryPeriod"
                     placeholder="e.g., 15-30 Calendar Days upon receipt of PO/NTP"
-                    value={deliveryPeriod}
+                    value={formValues.deliveryPeriod}
                     onChange={(e) => {
-                      setDeliveryPeriod(e.target.value)
+                      form.setFieldValue('deliveryPeriod', e.target.value)
                       setErrors((prev) => ({ ...prev, deliveryPeriod: '' }))
                     }}
                     className={errors.deliveryPeriod ? 'border-red-400 focus-visible:ring-red-400' : ''}
@@ -1008,9 +1122,9 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                   <Input
                     id="paymentTerms"
                     placeholder="e.g., Net 30 Days / Upon Complete Delivery & Acceptance"
-                    value={paymentTerms}
+                    value={formValues.paymentTerms}
                     onChange={(e) => {
-                      setPaymentTerms(e.target.value)
+                      form.setFieldValue('paymentTerms', e.target.value)
                       setErrors((prev) => ({ ...prev, paymentTerms: '' }))
                     }}
                     className={errors.paymentTerms ? 'border-red-400 focus-visible:ring-red-400' : ''}
@@ -1029,8 +1143,8 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                   <Input
                     id="warrantyTerms"
                     placeholder="e.g., 1 Year Comprehensive Warranty on Parts & Labor"
-                    value={warrantyTerms}
-                    onChange={(e) => setWarrantyTerms(e.target.value)}
+                    value={formValues.warrantyTerms}
+                    onChange={(e) => form.setFieldValue('warrantyTerms', e.target.value)}
                   />
                 </div>
 
@@ -1042,9 +1156,12 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                     id="validityPeriodDays"
                     type="number"
                     placeholder="60"
-                    value={validityPeriodDays}
+                    value={formValues.validityPeriodDays}
                     onChange={(e) =>
-                      setValidityPeriodDays(e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0)
+                      form.setFieldValue(
+                        'validityPeriodDays',
+                        e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0
+                      )
                     }
                   />
                 </div>
@@ -1056,8 +1173,8 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                   <Textarea
                     id="remarks"
                     placeholder="Provide any additional specifications, clarifications, or remarks for the Bids and Awards Committee"
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
+                    value={formValues.remarks}
+                    onChange={(e) => form.setFieldValue('remarks', e.target.value)}
                     rows={3}
                   />
                 </div>
@@ -1114,8 +1231,8 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                           </div>
 
                           {/* Download Template Button */}
-                          {(doc.downloadUrl || doc.viewerDocId) && (
-                            doc.viewerDocId ? (
+                          {(doc.downloadUrl || doc.viewerDocId) &&
+                            (doc.viewerDocId ? (
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -1139,8 +1256,7 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                                 <Download className="h-3.5 w-3.5" />
                                 Download Template
                               </a>
-                            )
-                          )}
+                            ))}
                         </div>
 
                         {/* Upload Slot */}
@@ -1227,9 +1343,11 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
             )}
 
             {/* Submit Action Bar */}
-            <div className={`flex items-center justify-between gap-4 rounded-2xl border shadow-sm p-6 flex-wrap transition-colors ${
-              isClosedOrExpired || isOverAbc ? 'bg-red-50/60 border-red-300' : 'bg-white border-slate-200'
-            }`}>
+            <div
+              className={`flex items-center justify-between gap-4 rounded-2xl border shadow-sm p-6 flex-wrap transition-colors ${
+                isClosedOrExpired || isOverAbc ? 'bg-red-50/60 border-red-300' : 'bg-white border-slate-200'
+              }`}
+            >
               <div className="space-y-1 max-w-lg">
                 <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                   {(isClosedOrExpired || isOverAbc) && <AlertTriangle className="h-4 w-4 text-red-600" />}
@@ -1239,17 +1357,25 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
                     ? 'Submission Blocked (Exceeds ABC Ceiling)'
                     : 'Ready to submit?'}
                 </p>
-                <p className={`text-xs ${isClosedOrExpired || isOverAbc ? 'text-red-700 font-medium leading-relaxed' : 'text-slate-500'}`}>
+                <p
+                  className={`text-xs ${
+                    isClosedOrExpired || isOverAbc ? 'text-red-700 font-medium leading-relaxed' : 'text-slate-500'
+                  }`}
+                >
                   {isClosedOrExpired
                     ? 'The submission deadline for this project has passed. Applications are no longer being accepted.'
                     : isOverAbc
-                    ? `Your quoted bid of ₱${totalQuotedBid.toLocaleString(undefined, { minimumFractionDigits: 2 })} exceeds the ABC of ₱${numericAbc.toLocaleString(undefined, { minimumFractionDigits: 2 })}. Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted. Please adjust your bid before submitting.`
+                    ? `Your quoted bid of ₱${totalQuotedBid.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                      })} exceeds the ABC of ₱${numericAbc.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                      })}. Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted. Please adjust your bid before submitting.`
                     : 'Ensure all item prices and required documents are complete. Submissions cannot be modified after sending.'}
                 </p>
               </div>
               <Button
                 size="lg"
-                onClick={handleSubmit}
+                onClick={handleFormSubmit}
                 disabled={isSubmitting || isOverAbc || isClosedOrExpired}
                 className="bg-[#1e3a8a] hover:bg-[#1d4ed8] text-white font-semibold gap-2 min-w-[170px]"
               >
@@ -1268,7 +1394,10 @@ export function BACApplicationForm({ project, onBack, selectedBidNotices: _selec
 
           {/* Footer */}
           <div className="border-t border-slate-200 mt-12 py-6 text-center text-sm text-slate-400">
-            <p>© {new Date().getFullYear()} University of Science and Technology of Southern Philippines — BAC Secretariat</p>
+            <p>
+              © {new Date().getFullYear()} University of Science and Technology of Southern Philippines — BAC
+              Secretariat
+            </p>
           </div>
         </>
       )}
