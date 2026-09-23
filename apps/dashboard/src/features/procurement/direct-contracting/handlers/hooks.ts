@@ -6,7 +6,6 @@ import {
 import { getDirectContractingsRequest } from './getDirectContractingsRequest'
 import { getDirectContractingRequest } from './getDirectContractingRequest'
 import { createDirectContractingRequest } from './createDirectContractingRequest'
-import { updateDirectContractingRequest } from './updateDirectContractingRequest'
 import { changeDirectContractingStatusRequest } from './changeDirectContractingStatusRequest'
 import { submitProposalRequest } from './submitProposalRequest'
 import { reviewProposalRequest } from './reviewProposalRequest'
@@ -76,12 +75,6 @@ export const useCreateDirectContracting = makeMutationWithRefresh(
   useCreateDirectContractingBase,
 )
 
-const useUpdateDirectContractingBase = createMutationHookFromTemplate(
-  updateDirectContractingRequest,
-)
-export const useUpdateDirectContracting = makeMutationWithRefresh(
-  useUpdateDirectContractingBase,
-)
 
 const useChangeDirectContractingStatusBase = createMutationHookFromTemplate(
   changeDirectContractingStatusRequest,
@@ -111,9 +104,7 @@ export const useApproveDirectContracting = makeMutationWithRefresh(
   useApproveDirectContractingBase,
 )
 
-const useDeleteDirectContractingBase = createMutationHookFromTemplate(
+export const useDeleteDirectContracting = createMutationHookFromTemplate(
   deleteDirectContractingRequest,
 )
-export const useDeleteDirectContracting = makeMutationWithRefresh(
-  useDeleteDirectContractingBase,
-)
+

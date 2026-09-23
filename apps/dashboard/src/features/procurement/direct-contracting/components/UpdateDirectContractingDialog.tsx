@@ -13,7 +13,6 @@ import {
   updateDirectContractingRequest,
   type UpdateDirectContractingPayload,
 } from '../handlers/updateDirectContractingRequest'
-import { deleteDirectContractingRequest } from '../handlers/deleteDirectContractingRequest'
 import {
   DirectContractingForm,
   type CreateDirectContractingFormValues,
@@ -22,11 +21,6 @@ import {
 const useUpdateDirectContracting = createMutationHookFromTemplate(
   updateDirectContractingRequest,
 )
-
-const useDeleteDirectContracting = createMutationHookFromTemplate(
-  deleteDirectContractingRequest,
-)
-
 export interface UpdateDirectContractingDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -42,11 +36,8 @@ export function UpdateDirectContractingDialog({
 }: UpdateDirectContractingDialogProps) {
   const queryClient = useQueryClient()
   const { mutateAsync: updateDirectContracting, isPending: isUpdating } = useUpdateDirectContracting()
-  const { mutateAsync: deleteDirectContracting, isPending: isDeletingMutation } = useDeleteDirectContracting()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
 
   // Query entry detail
   const { data: entryData, isLoading: isLoadingEntry } = useDirectContracting({
@@ -97,20 +88,20 @@ export function UpdateDirectContractingDialog({
         updateDirectContracting({
           pathParams: { id: editEntryId },
           payload,
-        }),
-        {
-          loading: 'Updating Direct Contracting Request...',
-          success: (res) =>
-            res?.message || 'Direct Contracting Request updated successfully!',
-          error: (err) => extractErrorMessage(err as AxiosError),
         },
+          {
+            onSuccess: () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].includes('direct-contracting'),
+              })
+            },
+          },
+        ),
       )
 
-      await queryClient.invalidateQueries({
-        predicate: (query) =>
-          typeof query.queryKey[0] === 'string' &&
-          query.queryKey[0].includes('direct-contracting'),
-      })
+
 
       onOpenChange(false)
     } catch {
@@ -120,38 +111,8 @@ export function UpdateDirectContractingDialog({
     }
   }
 
-  const handleDelete = async () => {
-    try {
-      setIsDeleting(true)
 
-      await toast.promise(
-        deleteDirectContracting({
-          pathParams: { id: editEntryId },
-        }),
-        {
-          loading: 'Deleting Direct Contracting Request...',
-          success: (res) =>
-            res?.message || 'Direct Contracting Request deleted successfully.',
-          error: (err) => extractErrorMessage(err as AxiosError),
-        },
-      )
-
-      await queryClient.invalidateQueries({
-        predicate: (query) =>
-          typeof query.queryKey[0] === 'string' &&
-          query.queryKey[0].includes('direct-contracting'),
-      })
-
-      setConfirmDeleteOpen(false)
-      onOpenChange(false)
-    } catch {
-      // toast.promise handles presentation
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const isBusy = isSubmitting || isUpdating || isDeleting || isDeletingMutation
+  const isBusy = isSubmitting || isUpdating
 
   return (
     <>
@@ -167,17 +128,6 @@ export function UpdateDirectContractingDialog({
         trigger={trigger}
         footer={
           <div className="flex justify-between items-center w-full">
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => setConfirmDeleteOpen(true)}
-              disabled={isBusy || isLoadingEntry}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete Request
-            </Button>
-
             <div className="flex items-center gap-3">
               <Button
                 type="button"
@@ -232,17 +182,6 @@ export function UpdateDirectContractingDialog({
         )}
       </ResponsiveDialogDashtail>
 
-      <ConfirmAlertDialog
-        open={confirmDeleteOpen}
-        onOpenChange={(next) => {
-          if (!isBusy) setConfirmDeleteOpen(next)
-        }}
-        title="Delete Direct Contracting Request?"
-        description="Are you sure you want to delete this Direct Contracting request? This action cannot be undone."
-        confirmLabel="Delete"
-        loading={isDeleting || isDeletingMutation}
-        onConfirm={handleDelete}
-      />
     </>
   )
 }
