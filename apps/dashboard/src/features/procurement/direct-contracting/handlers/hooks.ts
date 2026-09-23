@@ -11,8 +11,13 @@ import { changeDirectContractingStatusRequest } from './changeDirectContractingS
 import { submitProposalRequest } from './submitProposalRequest'
 import { reviewProposalRequest } from './reviewProposalRequest'
 import { approveDirectContractingRequest } from './approveDirectContractingRequest'
+import { deleteDirectContractingRequest } from './deleteDirectContractingRequest'
 
-const queryKeys = [['direct-contractings'], ['direct-contracting']] as const
+const queryKeys = [
+  ['direct-contractings'],
+  ['direct-contracting'],
+  ['/direct-contracting'],
+] as const
 
 type MutationResult<TData, TVariables> = UseMutationResult<
   TData,
@@ -104,4 +109,11 @@ const useApproveDirectContractingBase = createMutationHookFromTemplate(
 )
 export const useApproveDirectContracting = makeMutationWithRefresh(
   useApproveDirectContractingBase,
+)
+
+const useDeleteDirectContractingBase = createMutationHookFromTemplate(
+  deleteDirectContractingRequest,
+)
+export const useDeleteDirectContracting = makeMutationWithRefresh(
+  useDeleteDirectContractingBase,
 )

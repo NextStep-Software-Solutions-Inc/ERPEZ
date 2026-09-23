@@ -7,7 +7,10 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/components/ui/use-toast'
+import { toast } from 'sonner'
+import { extractErrorMessage } from '@/services/utils/messages'
+import type { AxiosError } from 'erpez-shared-lib'
+import { useDeleteDirectContracting } from '../handlers'
 
 import { CreateDirectContractingDialog } from '../components/CreateDirectContractingDialog'
 import { UpdateDirectContractingModal } from '../components/UpdateDirectContractingModal'
@@ -25,7 +28,8 @@ import type { DirectContracting } from '../types'
 const useDirectContractings = createQueryHookFromTemplate(getDirectContractingsRequest)
 
 export function DirectContractingRequestPage() {
-  const { toast } = useToast()
+  const deleteMutation = useDeleteDirectContracting()
+  const [isDeleting, setIsDeleting] = React.useState(false)
 
   // URL-based Search Parameters & Navigation
   const searchParams = useSearch({
@@ -107,10 +111,7 @@ export function DirectContractingRequestPage() {
     () => ({
       onCopyDCNumber: (dcNumber: string) => {
         navigator.clipboard.writeText(dcNumber)
-        toast({
-          title: 'Copied to Clipboard',
-          description: `Reference number ${dcNumber} copied successfully.`,
-        })
+        toast.success(`Reference number ${dcNumber} copied successfully.`)
       },
       onViewProposal: (entry: DirectContracting) => {
         setViewEntry(entry)
@@ -133,9 +134,57 @@ export function DirectContractingRequestPage() {
   const handleExecuteSubmit = () => { }
 
   // Single delete execution
-  const handleExecuteDelete = () => { }
+  const handleExecuteDelete = async () => {
+    if (!confirmDeleteId) return
+    const idToDelete = confirmDeleteId
+    try {
+      setIsDeleting(true)
+      await toast.promise(
+        deleteMutation.mutateAsync({
+          pathParams: { id: idToDelete },
+        }),
+        {
+          loading: 'Deleting Direct Contracting request...',
+          success: (res) =>
+            res?.message || 'Direct Contracting request deleted successfully.',
+          error: (err) => extractErrorMessage(err as AxiosError),
+        },
+      )
+      setConfirmDeleteId(null)
+    } catch {
+      // toast.promise handles presentation
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   // Bulk delete execution
-  const handleExecuteBulkDelete = () => { }
+  const handleExecuteBulkDelete = async () => {
+    if (!bulkDeleteRows || bulkDeleteRows.length === 0) return
+    const rowsToDelete = [...bulkDeleteRows]
+    try {
+      setIsDeleting(true)
+      await toast.promise(
+        Promise.all(
+          rowsToDelete.map((row) =>
+            deleteMutation.mutateAsync({
+              pathParams: { id: row.id },
+            }),
+          ),
+        ),
+        {
+          loading: `Deleting ${rowsToDelete.length} Direct Contracting request(s)...`,
+          success: `${rowsToDelete.length} Direct Contracting request(s) deleted successfully.`,
+          error: (err) => extractErrorMessage(err as AxiosError),
+        },
+      )
+      setBulkDeleteRows(null)
+    } catch {
+      // toast.promise handles presentation
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // CSV Export
   const handleExportCSV = () => { }
@@ -224,10 +273,11 @@ export function DirectContractingRequestPage() {
 
       <ConfirmAlertDialog
         open={!!confirmDeleteId}
-        onOpenChange={(v) => !v && setConfirmDeleteId(null)}
+        onOpenChange={(v) => !v && !isDeleting && setConfirmDeleteId(null)}
         title="Delete Direct Contracting Request?"
         description="Are you sure you want to delete this Direct Contracting request? This action cannot be undone."
         confirmLabel="Delete"
+        loading={isDeleting}
         onConfirm={handleExecuteDelete}
       />
 
@@ -242,10 +292,11 @@ export function DirectContractingRequestPage() {
 
       <ConfirmAlertDialog
         open={!!bulkDeleteRows}
-        onOpenChange={(v) => !v && setBulkDeleteRows(null)}
+        onOpenChange={(v) => !v && !isDeleting && setBulkDeleteRows(null)}
         title={`Delete ${bulkDeleteRows?.length || 0} Selected Requests?`}
         description={`Are you sure you want to delete ${bulkDeleteRows?.length || 0} selected Direct Contracting requests? This action cannot be undone.`}
         confirmLabel="Delete All Selected"
+        loading={isDeleting}
         onConfirm={handleExecuteBulkDelete}
       />
     </div>

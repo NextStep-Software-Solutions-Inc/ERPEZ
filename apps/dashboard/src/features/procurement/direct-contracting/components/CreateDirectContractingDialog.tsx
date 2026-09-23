@@ -1,9 +1,17 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
-import { ShoppingCart } from 'lucide-react'
+import { ShoppingCart, Loader2 } from 'lucide-react'
 import { useBacResolutions } from '@/features/procurement/bac-resolution/handlers/hooks'
 import { useSuppliers } from '@/components/features/planning/procurement-library'
+import { createMutationHookFromTemplate, useQueryClient, type AxiosError } from 'erpez-shared-lib'
+import { toast } from 'sonner'
+import { extractErrorMessage } from '@/services/utils/messages'
+import {
+  createDirectContractingRequest,
+  type CreateDirectContractingPayload,
+} from '../handlers/createDirectContractingRequest'
+import { useDirectContractings } from '../handlers/hooks'
 import {
   useDirectContractingStore,
   type DirectContracting,
@@ -13,12 +21,16 @@ import {
   type CreateDirectContractingFormValues,
 } from './DirectContractingForm'
 
-function genDCNumber(entries: DirectContracting[]): string {
+const useCreateDirectContracting = createMutationHookFromTemplate(
+  createDirectContractingRequest,
+)
+
+function genDCNumber(entries: { dcNumber?: string }[]): string {
   const year = new Date().getFullYear()
   let maxSeq = 0
   for (const ent of entries) {
     const dc = (ent?.dcNumber ?? '').toString()
-    const m = dc.match(new RegExp(`^DC-${year}-(\\d+)$`))
+    const m = dc.match(new RegExp(`^DC-${year}-(\\d+)$`, 'i'))
     if (m) {
       const seq = parseInt(m[1], 10)
       if (!Number.isNaN(seq) && seq > maxSeq) maxSeq = seq
@@ -38,7 +50,16 @@ export function CreateDirectContractingDialog({
   onOpenChange,
   trigger,
 }: CreateDirectContractingDialogProps) {
+  const queryClient = useQueryClient()
   const { entries } = useDirectContractingStore()
+  const { mutateAsync: createDirectContracting, isPending } = useCreateDirectContracting()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const { data: directContractingsResponse } = useDirectContractings({
+    pathParams: {},
+    queryParams: { pageSize: 200 },
+    enabled: open,
+  })
 
   const { data: bacResolutions } = useBacResolutions({
     pathParams: {},
@@ -55,18 +76,75 @@ export function CreateDirectContractingDialog({
     enabled: open,
   })
 
-  const autoDCNumber = useMemo(() => genDCNumber(entries), [entries])
+  const dcEntries = useMemo(() => {
+    if (directContractingsResponse?.data && Array.isArray(directContractingsResponse.data)) {
+      return directContractingsResponse.data
+    }
+    return entries
+  }, [directContractingsResponse, entries])
 
-  // Submission handler in the Dialog (anonymous placeholder function for now)
+  const autoDCNumber = useMemo(() => genDCNumber(dcEntries), [dcEntries])
+
   const handleSubmit = async (values: CreateDirectContractingFormValues) => {
-    // Placeholder function for future submission logic
-    console.log('Direct Contracting submit placeholder:', values)
+    try {
+      setIsSubmitting(true)
+
+      const finalDCNumber = values.dcNumber?.trim() || autoDCNumber
+      let formattedDeadline = values.submissionDeadline
+      if (formattedDeadline && !formattedDeadline.includes('T')) {
+        const [year, month, day] = formattedDeadline.split('-').map(Number)
+        if (year && month && day) {
+          formattedDeadline = new Date(Date.UTC(year, month - 1, day, 23, 59, 59)).toISOString()
+        } else {
+          formattedDeadline = new Date(formattedDeadline).toISOString()
+        }
+      } else if (formattedDeadline) {
+        formattedDeadline = new Date(formattedDeadline).toISOString()
+      }
+
+      const payload: CreateDirectContractingPayload = {
+        name: values.name.trim(),
+        dcNumber: finalDCNumber,
+        bacProjectId: values.bacProjectId,
+        exclusiveSupplierId: values.exclusiveSupplierId,
+        submissionDeadline: formattedDeadline,
+      }
+
+      await toast.promise(
+        createDirectContracting({
+          pathParams: {},
+          payload,
+        }),
+        {
+          loading: 'Creating Direct Contracting Request...',
+          success: (res) =>
+            res?.message || 'Direct Contracting Request created successfully!',
+          error: (err) => extractErrorMessage(err as AxiosError),
+        },
+      )
+
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].includes('direct-contracting'),
+      })
+
+      onOpenChange(false)
+    } catch {
+      // toast.promise handles presentation
+    } finally {
+      setIsSubmitting(false)
+    }
   }
+
+  const isBusy = isSubmitting || isPending
 
   return (
     <ResponsiveDialogDashtail
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(nextOpen) => {
+        if (!isBusy) onOpenChange(nextOpen)
+      }}
       title="Create Direct Contracting Request"
       description="Select an approved BAC Resolution and assign the single exclusive supplier for this proprietary procurement."
       size="lg"
@@ -78,6 +156,7 @@ export function CreateDirectContractingDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
+            disabled={isBusy}
           >
             Cancel
           </Button>
@@ -85,9 +164,14 @@ export function CreateDirectContractingDialog({
             type="submit"
             form="create-direct-contracting-form"
             className="gap-2"
+            disabled={isBusy}
           >
-            <ShoppingCart className="h-4 w-4" />
-            Initialize Request
+            {isBusy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ShoppingCart className="h-4 w-4" />
+            )}
+            {isBusy ? 'Initializing...' : 'Initialize Request'}
           </Button>
         </div>
       }
