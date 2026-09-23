@@ -11,6 +11,7 @@ import { submitProposalRequest } from './submitProposalRequest'
 import { reviewProposalRequest } from './reviewProposalRequest'
 import { approveDirectContractingRequest } from './approveDirectContractingRequest'
 import { deleteDirectContractingRequest } from './deleteDirectContractingRequest'
+import { getEligibleBacProjectsRequest } from './getEligibleBacProjectsRequest'
 
 const queryKeys = [
   ['direct-contractings'],
@@ -66,6 +67,10 @@ export const useDirectContractings = createQueryHookFromTemplate(
 
 export const useDirectContracting = createQueryHookFromTemplate(
   getDirectContractingRequest,
+)
+
+export const useEligibleBacProjects = createQueryHookFromTemplate(
+  getEligibleBacProjectsRequest,
 )
 
 const useCreateDirectContractingBase = createMutationHookFromTemplate(

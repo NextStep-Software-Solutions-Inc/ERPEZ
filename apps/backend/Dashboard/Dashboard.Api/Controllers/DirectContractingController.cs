@@ -8,6 +8,8 @@ using ERPEZ.Application.Features.Procurement.DirectContractings.Dtos;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingById;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingProposal;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractings;
+using ERPEZ.Application.Features.Procurement.Projects.Dtos;
+using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjects;
 using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Constants;
@@ -24,6 +26,14 @@ namespace ERPEZ.Api.Controllers;
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class DirectContractingController(ISender mediator) : ControllerBase
 {
+    [HttpGet("eligible-bac-projects")]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    [ProducesResponseType(typeof(PaginatedApiResponse<ProcurementProjectResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetEligibleBacProjects([FromQuery] GetProcurementProjectsQuery query)
+    {
+        var result = await mediator.Send(query with { UnlinkedDirectContracting = true });
+        return Ok(result);
+    }
     [HttpPost]
     [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]

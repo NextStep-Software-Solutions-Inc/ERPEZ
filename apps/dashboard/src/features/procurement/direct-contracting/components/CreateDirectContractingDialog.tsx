@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ShoppingCart, Loader2 } from 'lucide-react'
-import { useBacResolutions } from '@/features/procurement/bac-resolution/handlers/hooks'
 import { useSuppliers } from '@/components/features/planning/procurement-library'
 import { createMutationHookFromTemplate, useQueryClient, type AxiosError } from 'erpez-shared-lib'
 import { toast } from 'sonner'
@@ -11,7 +10,7 @@ import {
   createDirectContractingRequest,
   type CreateDirectContractingPayload,
 } from '../handlers/createDirectContractingRequest'
-import { useDirectContractings } from '../handlers/hooks'
+import { useDirectContractings, useEligibleBacProjects } from '../handlers/hooks'
 import {
   useDirectContractingStore,
   type DirectContracting,
@@ -61,7 +60,7 @@ export function CreateDirectContractingDialog({
     enabled: open,
   })
 
-  const { data: bacResolutions } = useBacResolutions({
+  const { data: bacResolutions } = useEligibleBacProjects({
     pathParams: {},
     queryParams: { pageSize: 200 },
     enabled: open,
