@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from 'react'
 import {
   useTable,
@@ -15,7 +13,6 @@ import {
   SlidersHorizontal,
   Send,
   Trash2,
-  Download,
   X,
   Inbox,
   ChevronLeft,
@@ -69,7 +66,6 @@ export interface DirectContractingTableProps {
   handlers: TableActionHandlers
   onBulkSubmit?: (selectedRows: DirectContracting[]) => void
   onBulkDelete?: (selectedRows: DirectContracting[]) => void
-  onExportCSV?: (records: DirectContracting[]) => void
   // URL-based query controls
   pageNumber?: number
   pageSize?: number
@@ -77,6 +73,7 @@ export interface DirectContractingTableProps {
   searchQuery?: string
   onPageChange?: (pageNumber: number) => void
   onPageSizeChange?: (pageSize: number) => void
+  onExportCSV?: () => void
   onStatusChange?: (status: string) => void
   onSearchChange?: (searchQuery: string) => void
 }
@@ -87,7 +84,7 @@ export function DirectContractingTable({
   handlers,
   onBulkSubmit,
   onBulkDelete,
-  onExportCSV,
+
   pageNumber,
   pageSize,
   status,
@@ -117,12 +114,9 @@ export function DirectContractingTable({
   const columns = React.useMemo(() => getDirectContractingColumns(handlers), [handlers])
 
   const totalRows =
-    directContractings?.totalRows ??
-    (directContractings as any)?.totalCount ??
-    directContractings?.data?.length ??
-    0
+    directContractings?.totalRows
 
-  const pageCount = Math.max(1, Math.ceil(totalRows / (pagination.pageSize || 10)))
+  const pageCount = Math.max(1, Math.ceil((totalRows ?? 0) / (pagination.pageSize || 10)))
 
   // Initialize TanStack Table v9
   const table = useTable({
@@ -223,50 +217,10 @@ export function DirectContractingTable({
   }
 
 
-  // Fallback export if not provided
-  const handleExport = (records: DirectContracting[]) => {
-    if (onExportCSV) {
-      onExportCSV(records)
-      return
-    }
-    if (records.length === 0) return
-    const headers = ['DC Number', 'Project Name', 'Exclusive Supplier', 'Total ABC', 'Deadline', 'Status']
-    const rows = records.map((r) => [
-      `"${r.dcNumber}"`,
-      `"${(r.name || r.dcName || '').replace(/"/g, '""')}"`,
-      `"${(r.supplierName || r.exclusiveSupplierName || '').replace(/"/g, '""')}"`,
-      r.totalABC || 0,
-      `"${r.submissionDeadline || r.deadline || ''}"`,
-      `"${r.status}"`,
-    ])
-    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.setAttribute('href', url)
-    link.setAttribute('download', `Direct_Contracting_Requests_${new Date().toISOString().slice(0, 10)}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
 
   return (
     <Card className="border-border/60 shadow-xs">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          {/* Quick Export Actions */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleExport(directContractings?.data || [])}
-              className="h-8 gap-1.5 text-xs"
-            >
-              <Download className="h-3.5 w-3.5" /> Export All CSV
-            </Button>
-          </div>
-        </div>
-
         {/* Status Tabs with Counters */}
         <div className="flex items-center gap-1.5 pt-4 overflow-x-auto pb-1 border-b border-border/40 scrollbar-none">
           {[
@@ -411,15 +365,6 @@ export function DirectContractingTable({
               </Button>
               <Button
                 size="sm"
-                variant="outline"
-                className="h-8 text-xs gap-1.5 bg-background shadow-xs hover:bg-muted"
-                onClick={() => handleExport(selectedRowList)}
-              >
-                <Download className="h-3.5 w-3.5" />
-                Export Selected
-              </Button>
-              <Button
-                size="sm"
                 variant="destructive"
                 className="h-8 text-xs gap-1.5 shadow-xs"
                 onClick={() => {
@@ -531,7 +476,7 @@ export function DirectContractingTable({
               <span className="font-semibold text-foreground">
                 {Math.min(
                   (pagination.pageIndex + 1) * pagination.pageSize,
-                  totalRows,
+                  (totalRows ?? 0),
                 )}
               </span>{' '}
               of{' '}
