@@ -211,12 +211,6 @@ export function DirectContractingRequestPage() {
                 <CardTitle className="text-3xl font-bold tracking-tight">
                   Direct Contracting
                 </CardTitle>
-                <Badge
-                  variant="outline"
-                  className="h-fit px-2.5 py-0.5 text-xs font-semibold bg-primary/5 text-primary border-primary/20"
-                >
-                  v9 Datagrid
-                </Badge>
               </div>
               <CardDescription className="text-base text-muted-foreground">
                 Single-source procurement for proprietary items under RA 12009 Rule XVI.

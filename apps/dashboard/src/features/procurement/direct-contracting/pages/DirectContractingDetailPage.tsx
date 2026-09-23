@@ -204,15 +204,12 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
       }
   const StatusIcon = statusConfig.icon
 
-  const isDraft = item?.status === DirectContractingStatusEnum.DRAFT
-
   return (
     <PageContainerDashtail
       title={item ? (item.name || item.dcName) : 'Loading Request...'}
       titleIcon={<Receipt className="h-6 w-6" />}
       description="Procurement through single proprietary supplier pursuant to Republic Act No. 12009 Rule XVI."
       headerVariant="branded"
-      actionButtonVariant="branded"
       badge={
         item && (
           <div className="flex flex-wrap items-center gap-2">
@@ -235,33 +232,29 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
       actions={
         item && (
           <div className="flex flex-wrap items-center gap-2">
-            {isDraft && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditDialogOpen(true)}
-                  className="gap-1.5"
-                >
-                  <Edit className="h-4 w-4" /> Edit Request
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setShowSubmitConfirm(true)}
-                  className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
-                >
-                  <Send className="h-4 w-4" /> Submit for Review
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" /> Delete Request
-                </Button>
-              </>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditDialogOpen(true)}
+              className="gap-1.5"
+            >
+              <Edit className="h-4 w-4" /> Edit Request
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setShowSubmitConfirm(true)}
+              className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
+            >
+              <Send className="h-4 w-4" /> Submit for Review
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" /> Delete Request
+            </Button>
           </div>
         )
       }
@@ -323,18 +316,16 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
       )}
 
       {/* Edit Request Dialog */}
-      {isDraft && (
-        <UpdateDirectContractingDialog
-          open={isEditDialogOpen}
-          onOpenChange={(open) => {
-            setIsEditDialogOpen(open)
-            if (!open) {
-              refetch()
-            }
-          }}
-          editEntryId={id}
-        />
-      )}
+      <UpdateDirectContractingDialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open)
+          if (!open) {
+            refetch()
+          }
+        }}
+        editEntryId={id}
+      />
 
       {/* Submit for Review Confirmation */}
       <ConfirmAlertDialog
