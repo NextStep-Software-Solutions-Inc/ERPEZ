@@ -139,16 +139,30 @@ export function getDescendantExpenditureItems(
   if (rootParent) {
     const rootName = (rootParent.name || '').toLowerCase()
     const rootCode = (rootParent.code || '').toLowerCase()
-    const isCO = rootName.includes('capital') || rootCode.includes('co') || rootCode.startsWith('506') || rootCode.startsWith('106')
-    const isPS = rootName.includes('personal') || rootCode.includes('ps') || rootCode.startsWith('501')
-    const isMOOE = rootName.includes('operating') || rootCode.includes('mooe') || rootCode.startsWith('502')
-    const isFE = rootName.includes('financial') || rootCode.includes('fe') || rootCode.startsWith('503')
+    const isCO =
+      rootName.includes('capital') ||
+      rootCode.includes('co') ||
+      rootCode.startsWith('506') ||
+      rootCode.startsWith('106')
+    const isPS =
+      rootName.includes('personal') ||
+      rootCode.includes('ps') ||
+      rootCode.startsWith('501')
+    const isMOOE =
+      rootName.includes('operating') ||
+      rootCode.includes('mooe') ||
+      rootCode.startsWith('502')
+    const isFE =
+      rootName.includes('financial') ||
+      rootCode.includes('fe') ||
+      rootCode.startsWith('503')
 
     for (const item of allObjects) {
       if (assignedChildIds.has(item.id) || item.id === rootParentId) continue
       const cleanCode = (item.code || '').replace(/[\s-]+/g, '')
       const matchesClass =
-        (isCO && (cleanCode.startsWith('506') || cleanCode.startsWith('106'))) ||
+        (isCO &&
+          (cleanCode.startsWith('506') || cleanCode.startsWith('106'))) ||
         (isPS && cleanCode.startsWith('501')) ||
         (isMOOE && cleanCode.startsWith('502')) ||
         (isFE && cleanCode.startsWith('503'))
@@ -159,7 +173,11 @@ export function getDescendantExpenditureItems(
         if (cleanCode.length >= 6) {
           const groupPrefix = cleanCode.slice(0, 5)
           for (const [code, cand] of objectByCleanCode.entries()) {
-            if (cand.id !== item.id && code.startsWith(groupPrefix) && code.length < cleanCode.length) {
+            if (
+              cand.id !== item.id &&
+              code.startsWith(groupPrefix) &&
+              code.length < cleanCode.length
+            ) {
               const list = childrenMap.get(cand.id) || []
               list.push(item)
               childrenMap.set(cand.id, list)
@@ -181,7 +199,11 @@ export function getDescendantExpenditureItems(
 
   const result: ExpenditureItemOption[] = []
 
-  function traverse(currentId: string, depth: number, parentObj?: PlanningObject) {
+  function traverse(
+    currentId: string,
+    depth: number,
+    parentObj?: PlanningObject,
+  ) {
     const children = childrenMap.get(currentId) || []
     // Sort children by code, then name
     children.sort((a, b) => {
@@ -193,7 +215,8 @@ export function getDescendantExpenditureItems(
 
     for (const child of children) {
       const grandchildren = childrenMap.get(child.id) || []
-      const hasKids = grandchildren.length > 0 || (child.childObjectCount || 0) > 0
+      const hasKids =
+        grandchildren.length > 0 || (child.childObjectCount || 0) > 0
       result.push({
         id: child.id,
         name: child.name || '',

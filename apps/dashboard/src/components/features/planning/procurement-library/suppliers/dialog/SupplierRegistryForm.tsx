@@ -283,8 +283,7 @@ export function SupplierRegistryForm({
 
         // A requirement must have either a newly selected File, an existing URL, or a fileId
         if (!requirement.file && !requirement.url && !requirement.fileId) {
-          nextErrors[`supplierRequirements.${index}.file`] =
-            'File is required'
+          nextErrors[`supplierRequirements.${index}.file`] = 'File is required'
         }
       })
     }
@@ -423,34 +422,42 @@ export function SupplierRegistryForm({
       onSaved?.()
       handleClose()
     } catch (error) {
-      // CLEANUP GUARD: Delete any newly uploaded temp files from storage so it is not exhausted
-      if (newlyUploadedFileIds.length > 0) {
-        const cleanupResults = await Promise.allSettled(
-          newlyUploadedFileIds.map((fileId) =>
-            deleteFile({
-              pathParams: { fileId },
-              payload: undefined,
-            }),
-          ),
+      // CLEANUP GUARD: Delete any newly uploaded temp files from storage so it is not exhausted.
+      // Wrapped in try-catch to ensure secondary cleanup errors never mask primary validation exceptions.
+      try {
+        if (newlyUploadedFileIds.length > 0) {
+          const cleanupResults = await Promise.allSettled(
+            newlyUploadedFileIds.map((fileId) =>
+              deleteFile({
+                pathParams: { fileId },
+                payload: undefined,
+              }),
+            ),
+          )
+
+          cleanupResults.forEach((result, idx) => {
+            if (result.status === 'rejected') {
+              console.warn(
+                `[SupplierRegistryForm] Secondary cleanup error: Failed to clean up temporary file ${newlyUploadedFileIds[idx]} on submit failure:`,
+                result.reason,
+              )
+            }
+          })
+
+          setFormData((current) => ({
+            ...current,
+            requirements: current.requirements.map((req) =>
+              req.fileId && newlyUploadedFileIds.includes(req.fileId)
+                ? { ...req, fileId: null }
+                : req,
+            ),
+          }))
+        }
+      } catch (cleanupError) {
+        console.warn(
+          '[SupplierRegistryForm] Secondary cleanup error occurred during failure rollback:',
+          cleanupError,
         )
-
-        cleanupResults.forEach((result, idx) => {
-          if (result.status === 'rejected') {
-            console.warn(
-              `[SupplierRegistryForm] Failed to clean up temporary file ${newlyUploadedFileIds[idx]} on submit failure:`,
-              result.reason,
-            )
-          }
-        })
-
-        setFormData((current) => ({
-          ...current,
-          requirements: current.requirements.map((req) =>
-            req.fileId && newlyUploadedFileIds.includes(req.fileId)
-              ? { ...req, fileId: null }
-              : req,
-          ),
-        }))
       }
 
       const message = getErrorMessage(
@@ -883,7 +890,8 @@ export function SupplierRegistryForm({
                     <div className="space-y-1">
                       {requirement.url && !requirement.file && (
                         <p className="text-xs text-muted-foreground">
-                          Upload a replacement file below to replace current document:
+                          Upload a replacement file below to replace current
+                          document:
                         </p>
                       )}
                       <FileUpload

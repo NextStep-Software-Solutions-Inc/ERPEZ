@@ -291,8 +291,7 @@ export function generateProjectPeriods(
         // Clamping to project boundaries
         const effectiveStart =
           calStart < pStart ? new Date(pStart.getTime()) : calStart
-        const effectiveEnd =
-          calEnd > pEnd ? new Date(pEnd.getTime()) : calEnd
+        const effectiveEnd = calEnd > pEnd ? new Date(pEnd.getTime()) : calEnd
 
         const qNumber = q + 1
         const key = `Q${qNumber}-${year}`
@@ -352,8 +351,7 @@ export function generateProjectPeriods(
         // Clamping to project boundaries
         const effectiveStart =
           calStart < pStart ? new Date(pStart.getTime()) : calStart
-        const effectiveEnd =
-          calEnd > pEnd ? new Date(pEnd.getTime()) : calEnd
+        const effectiveEnd = calEnd > pEnd ? new Date(pEnd.getTime()) : calEnd
 
         const monthPadded = String(m + 1).padStart(2, '0')
         const key = `${year}-${monthPadded}`
@@ -501,4 +499,3 @@ export function getCoveredQuarters(
 
   return result
 }
-

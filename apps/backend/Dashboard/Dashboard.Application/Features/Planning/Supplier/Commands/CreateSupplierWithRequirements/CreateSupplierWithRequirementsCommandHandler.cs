@@ -4,10 +4,14 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.Application.Features.Planning.Supplier.Commands.CreateSupplierWithRequirements;
 
-public class CreateSupplierWithRequirementsCommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService)
+public class CreateSupplierWithRequirementsCommandHandler(
+    IUnitOfWork unitOfWork, 
+    IFileStorageService fileStorageService,
+    ILogger<CreateSupplierWithRequirementsCommandHandler>? logger = null)
     : IRequestHandler<CreateSupplierWithRequirementsCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateSupplierWithRequirementsCommand request, CancellationToken cancellationToken)
@@ -77,7 +81,7 @@ public class CreateSupplierWithRequirementsCommandHandler(IUnitOfWork unitOfWork
 
             return ApiResponse<Guid>.Success(supplier.Id, "Supplier and requirements created successfully.");
         }
-        catch
+        catch (Exception ex)
         {
             // Clean up any promoted files if creation fails to prevent storage exhaustion
             foreach (var promotedId in promotedFileIds)
@@ -86,12 +90,16 @@ public class CreateSupplierWithRequirementsCommandHandler(IUnitOfWork unitOfWork
                 {
                     await fileStorageService.DeletePermanentAsync(promotedId, cancellationToken);
                 }
-                catch
+                catch (Exception cleanupEx)
                 {
-                    // Ignore secondary errors during cleanup
+                    logger?.LogWarning(
+                        cleanupEx, 
+                        "Secondary cleanup error: Failed to delete permanent file {FileId} during supplier creation rollback for primary error: {PrimaryError}", 
+                        promotedId, 
+                        ex.Message);
                 }
             }
-            throw;
+            throw; // Preserve and rethrow the primary exception so it is never masked
         }
     }
 }

@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronDown, Search, X, CornerDownRight, Layers } from 'lucide-react'
+import {
+  Check,
+  ChevronDown,
+  Search,
+  X,
+  CornerDownRight,
+  Layers,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,7 +17,7 @@ export interface ExpenditureItemComboboxProps {
   value?: string | null
   onValueChange: (
     value: string,
-    selectedItem?: ExpenditureItemOption | null
+    selectedItem?: ExpenditureItemOption | null,
   ) => void
   placeholder?: string
   searchPlaceholder?: string
@@ -122,7 +129,7 @@ export function ExpenditureItemCombobox({
         className={cn(
           'w-full max-w-full h-auto min-h-10 py-1.5 px-3 justify-between bg-white text-left font-normal border-gray-300 hover:bg-gray-50 focus:ring-1 focus:ring-blue-500',
           hasError && 'ring-1 ring-red-500 border-red-500 focus:ring-red-500',
-          disabled && 'opacity-60 cursor-not-allowed bg-gray-100'
+          disabled && 'opacity-60 cursor-not-allowed bg-gray-100',
         )}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden pr-1">
@@ -154,13 +161,18 @@ export function ExpenditureItemCombobox({
               </span>
               {selectedItem.parentName && (
                 <span className="text-[10px] text-gray-400 truncate">
-                  under {selectedItem.parentCode ? `[${selectedItem.parentCode}] ` : ''}
+                  under{' '}
+                  {selectedItem.parentCode
+                    ? `[${selectedItem.parentCode}] `
+                    : ''}
                   {selectedItem.parentName}
                 </span>
               )}
             </div>
           ) : (
-            <span className="text-sm text-gray-500 truncate">{placeholder}</span>
+            <span className="text-sm text-gray-500 truncate">
+              {placeholder}
+            </span>
           )}
         </div>
 
@@ -185,7 +197,7 @@ export function ExpenditureItemCombobox({
           <ChevronDown
             className={cn(
               'h-4 w-4 opacity-50 transition-transform duration-150',
-              open && 'transform rotate-180'
+              open && 'transform rotate-180',
             )}
           />
         </div>
@@ -266,7 +278,7 @@ export function ExpenditureItemCombobox({
                     style={{ paddingLeft: `${indentPx}px` }}
                     className={cn(
                       'w-full text-left p-2 rounded-md hover:bg-blue-50/70 transition-colors flex items-start justify-between gap-2 group',
-                      isSelected && 'bg-blue-50/90 ring-1 ring-blue-200'
+                      isSelected && 'bg-blue-50/90 ring-1 ring-blue-200',
                     )}
                   >
                     <div className="flex-1 min-w-0 space-y-0.5">

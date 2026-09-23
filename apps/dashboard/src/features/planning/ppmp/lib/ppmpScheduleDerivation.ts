@@ -69,7 +69,9 @@ export function deriveScheduleDates({
   const deliveryStart = `${targetYear}-${earliestMonthStr}-01`
 
   // Delivery End: Last day of latest month (UTC-safe YYYY-MM-DD string)
-  const lastDay = new Date(Date.UTC(targetYear, latestMonthIdx + 1, 0)).getUTCDate()
+  const lastDay = new Date(
+    Date.UTC(targetYear, latestMonthIdx + 1, 0),
+  ).getUTCDate()
   const latestMonthStr = String(latestMonthIdx + 1).padStart(2, '0')
   const deliveryEnd = `${targetYear}-${latestMonthStr}-${String(lastDay).padStart(2, '0')}`
 
@@ -127,7 +129,9 @@ export function deriveScheduleDates({
  * Default delivery window: Jan 16 to Dec 31 of fiscal year.
  * Guarantees valid timeline ordering without validation friction.
  */
-export function getFiscalYearDefaultDates(fiscalYear?: number | string): DerivedScheduleDates {
+export function getFiscalYearDefaultDates(
+  fiscalYear?: number | string,
+): DerivedScheduleDates {
   const year = Number(fiscalYear) || new Date().getFullYear()
   return {
     procurementStartDate: `${year}-01-01`,

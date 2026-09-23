@@ -33,12 +33,28 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import type { RFQItem } from '../store/rfqStore'
 import { useRFQStore } from '../store/rfqStore'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { ConsolidatedPRItem } from '../types'
 
 const ORDERED_MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ]
 
 function resolveMonthIndex(monthVal: any): number {
@@ -66,7 +82,20 @@ function resolveMonthIndex(monthVal: any): number {
   const fullIdx = ORDERED_MONTHS.findIndex((mm) => mm.toLowerCase() === str)
   if (fullIdx !== -1) return fullIdx
 
-  const shortMonthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+  const shortMonthNames = [
+    'jan',
+    'feb',
+    'mar',
+    'apr',
+    'may',
+    'jun',
+    'jul',
+    'aug',
+    'sep',
+    'oct',
+    'nov',
+    'dec',
+  ]
   const shortIdx = shortMonthNames.indexOf(str)
   if (shortIdx !== -1) return shortIdx
 
@@ -74,8 +103,13 @@ function resolveMonthIndex(monthVal: any): number {
 }
 
 function getItemQtyForMonth(item: any, monthIdx: number): number {
-  if (Array.isArray(item.monthlyAllocations) && item.monthlyAllocations.length > 0) {
-    const alloc = item.monthlyAllocations.find((a: any) => resolveMonthIndex(a.month) === monthIdx)
+  if (
+    Array.isArray(item.monthlyAllocations) &&
+    item.monthlyAllocations.length > 0
+  ) {
+    const alloc = item.monthlyAllocations.find(
+      (a: any) => resolveMonthIndex(a.month) === monthIdx,
+    )
     if (alloc) return alloc.quantity ?? alloc.qty ?? 0
   }
   const itemMonthIdx = resolveMonthIndex(item.month)
@@ -118,7 +152,9 @@ export function AddConsolidatedPRModal({
   }
 
   const [expandedPRs, setExpandedPRs] = useState<Set<string>>(new Set())
-  const [selectedItems, setSelectedItems] = useState<Map<string, SelectedPRItem>>(new Map())
+  const [selectedItems, setSelectedItems] = useState<
+    Map<string, SelectedPRItem>
+  >(new Map())
   const [monthFilter, setMonthFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [fundFilter, setFundFilter] = useState<string>('all')
@@ -179,13 +215,19 @@ export function AddConsolidatedPRModal({
   // Derive available categories, funds, and modes
   const availableCategories = useMemo(() => {
     const s = new Set<string>()
-    approvedPRs.forEach((pr) => pr.selectedPRItems.forEach((it: any) => it.category && s.add(it.category)))
+    approvedPRs.forEach((pr) =>
+      pr.selectedPRItems.forEach(
+        (it: any) => it.category && s.add(it.category),
+      ),
+    )
     return Array.from(s).sort()
   }, [approvedPRs])
 
   const availableFunds = useMemo(() => {
     const s = new Set<string>()
-    approvedPRs.forEach((pr) => pr.selectedPRItems.forEach((it: any) => it.fund && s.add(it.fund)))
+    approvedPRs.forEach((pr) =>
+      pr.selectedPRItems.forEach((it: any) => it.fund && s.add(it.fund)),
+    )
     return Array.from(s).sort()
   }, [approvedPRs])
 
@@ -193,23 +235,40 @@ export function AddConsolidatedPRModal({
     const s = new Set<string>()
     approvedPRs.forEach((pr) =>
       pr.selectedPRItems.forEach((it: any) => {
-        if (it.procurementModeName && it.procurementModeName !== 'Unassigned Mode') {
+        if (
+          it.procurementModeName &&
+          it.procurementModeName !== 'Unassigned Mode'
+        ) {
           s.add(it.procurementModeName)
         }
-      })
+      }),
     )
     return Array.from(s).sort()
   }, [approvedPRs])
 
   // Active lock states (RA 12009: 1 CPR & 1 MOP per RFQ)
-  const isRfqLocked = Boolean(currentConsolidatedPRId || currentModeOfProcurementId)
-  const selectedValues = useMemo(() => Array.from(selectedItems.values()), [selectedItems])
+  const isRfqLocked = Boolean(
+    currentConsolidatedPRId || currentModeOfProcurementId,
+  )
+  const selectedValues = useMemo(
+    () => Array.from(selectedItems.values()),
+    [selectedItems],
+  )
   const isSessionLocked = selectedValues.length > 0 && !isRfqLocked
 
-  const effectiveCPRId = currentConsolidatedPRId || (selectedValues[0]?.cprId || selectedValues[0]?.consolidatedPRId || null)
-  const effectiveCPRNumber = currentConsolidatedPRNumber || (selectedValues[0]?.cprNumber || null)
-  const effectiveModeId = currentModeOfProcurementId || (selectedValues[0]?.procurementModeId || null)
-  const effectiveModeName = currentModeOfProcurementName || (selectedValues[0]?.procurementModeName || null)
+  const effectiveCPRId =
+    currentConsolidatedPRId ||
+    selectedValues[0]?.cprId ||
+    selectedValues[0]?.consolidatedPRId ||
+    null
+  const effectiveCPRNumber =
+    currentConsolidatedPRNumber || selectedValues[0]?.cprNumber || null
+  const effectiveModeId =
+    currentModeOfProcurementId || selectedValues[0]?.procurementModeId || null
+  const effectiveModeName =
+    currentModeOfProcurementName ||
+    selectedValues[0]?.procurementModeName ||
+    null
 
   const checkItemEligibility = (item: any) => {
     const isAlreadyAdded = existingCPRItemIds.includes(item.id)
@@ -221,12 +280,26 @@ export function AddConsolidatedPRModal({
       return { eligible: false, reason: 'Different PR' }
     }
 
-    if (effectiveModeId && item.procurementModeId && item.procurementModeId !== effectiveModeId) {
-      return { eligible: false, reason: `Different Mode (${item.procurementModeName})` }
+    if (
+      effectiveModeId &&
+      item.procurementModeId &&
+      item.procurementModeId !== effectiveModeId
+    ) {
+      return {
+        eligible: false,
+        reason: `Different Mode (${item.procurementModeName})`,
+      }
     }
 
-    if (effectiveModeName && item.procurementModeName && item.procurementModeName !== effectiveModeName) {
-      return { eligible: false, reason: `Different Mode (${item.procurementModeName})` }
+    if (
+      effectiveModeName &&
+      item.procurementModeName &&
+      item.procurementModeName !== effectiveModeName
+    ) {
+      return {
+        eligible: false,
+        reason: `Different Mode (${item.procurementModeName})`,
+      }
     }
 
     return { eligible: true, reason: null }
@@ -247,11 +320,13 @@ export function AddConsolidatedPRModal({
 
         const matchingItems = prItems.filter((item: any) => {
           const itemMonthName = getMonthName(item.month)
-          const hasMonthMatch = monthFilter === 'all' || itemMonthName === monthFilter
+          const hasMonthMatch =
+            monthFilter === 'all' || itemMonthName === monthFilter
 
           const hasCategoryMatch =
             categoryFilter === 'all' ||
-            (item.category || '').toLowerCase() === String(categoryFilter).toLowerCase()
+            (item.category || '').toLowerCase() ===
+              String(categoryFilter).toLowerCase()
 
           const hasFundMatch =
             fundFilter === 'all' ||
@@ -259,7 +334,8 @@ export function AddConsolidatedPRModal({
 
           const hasModeMatch =
             modeFilter === 'all' ||
-            (item.procurementModeName || '').toLowerCase() === String(modeFilter).toLowerCase()
+            (item.procurementModeName || '').toLowerCase() ===
+              String(modeFilter).toLowerCase()
 
           const itemMatch =
             !term ||
@@ -268,7 +344,13 @@ export function AddConsolidatedPRModal({
             pr.prNumber?.toLowerCase().includes(term) ||
             pr.purpose?.toLowerCase().includes(term)
 
-          return hasMonthMatch && hasCategoryMatch && hasFundMatch && hasModeMatch && itemMatch
+          return (
+            hasMonthMatch &&
+            hasCategoryMatch &&
+            hasFundMatch &&
+            hasModeMatch &&
+            itemMatch
+          )
         })
 
         if (matchingItems.length === 0) return null
@@ -279,7 +361,14 @@ export function AddConsolidatedPRModal({
         }
       })
       .filter(Boolean) as any[]
-  }, [approvedPRs, searchTerm, monthFilter, categoryFilter, fundFilter, modeFilter])
+  }, [
+    approvedPRs,
+    searchTerm,
+    monthFilter,
+    categoryFilter,
+    fundFilter,
+    modeFilter,
+  ])
 
   const togglePRExpansion = (prId: string) => {
     const newExpanded = new Set(expandedPRs)
@@ -302,7 +391,11 @@ export function AddConsolidatedPRModal({
     setSelectedItems(newSelected)
   }
 
-  const toggleModeGroupSelection = (prId: string, items: any[], allSelected: boolean) => {
+  const toggleModeGroupSelection = (
+    prId: string,
+    items: any[],
+    allSelected: boolean,
+  ) => {
     const newSelected = new Map(selectedItems)
     items.forEach((item) => {
       const key = `${prId}-${item.id}`
@@ -318,7 +411,9 @@ export function AddConsolidatedPRModal({
   // Derive selected categories and funds from selectedItems map
   const selectedCategories = useMemo(() => {
     const vals = Array.from(selectedItems.values())
-    return Array.from(new Set(vals.map((v: any) => v.category || 'Uncategorized')))
+    return Array.from(
+      new Set(vals.map((v: any) => v.category || 'Uncategorized')),
+    )
   }, [selectedItems])
 
   const selectedFunds = useMemo(() => {
@@ -327,22 +422,26 @@ export function AddConsolidatedPRModal({
   }, [selectedItems])
 
   const handleAdd = () => {
-    const rfqItems: RFQItem[] = Array.from(selectedItems.values()).map((item, idx) => ({
-      id: `rfqitem-${item.prId}-${item.id}-${Date.now()}-${idx}`,
-      prId: item.prId,
-      itemId: item.id,
-      itemName: item.itemName || item.ItemName || '',
-      quantity: item.qty ?? 0,
-      unitOfMeasure: item.unit ?? item.unitOfMeasure ?? '',
-      unitPrice: item.unitPrice || item.unitCost || 0,
-      totalAmount: item.totalAmount || 0,
-      isRequiredBrochure: false,
-      requiresGreenSpecification: false,
-      category: item.category,
-      fund: item.fund,
-      month: item.month,
-      monthlyAllocations: item.month ? [{ month: String(item.month), quantity: item.qty ?? 0 }] : [],
-    }))
+    const rfqItems: RFQItem[] = Array.from(selectedItems.values()).map(
+      (item, idx) => ({
+        id: `rfqitem-${item.prId}-${item.id}-${Date.now()}-${idx}`,
+        prId: item.prId,
+        itemId: item.id,
+        itemName: item.itemName || item.ItemName || '',
+        quantity: item.qty ?? 0,
+        unitOfMeasure: item.unit ?? item.unitOfMeasure ?? '',
+        unitPrice: item.unitPrice || item.unitCost || 0,
+        totalAmount: item.totalAmount || 0,
+        isRequiredBrochure: false,
+        requiresGreenSpecification: false,
+        category: item.category,
+        fund: item.fund,
+        month: item.month,
+        monthlyAllocations: item.month
+          ? [{ month: String(item.month), quantity: item.qty ?? 0 }]
+          : [],
+      }),
+    )
 
     onAdd(rfqItems)
     setSelectedItems(new Map())
@@ -378,20 +477,28 @@ export function AddConsolidatedPRModal({
               <div className="flex items-center gap-2">
                 <Lock className="h-4 w-4 text-blue-600 flex-shrink-0" />
                 <div>
-                  <span className="font-semibold">Procurement Modality Lock (RA 12009):</span>{' '}
+                  <span className="font-semibold">
+                    Procurement Modality Lock (RA 12009):
+                  </span>{' '}
                   All items added to this RFQ must originate from{' '}
                   {effectiveCPRNumber ? (
-                    <span className="font-semibold underline decoration-blue-400">{effectiveCPRNumber}</span>
+                    <span className="font-semibold underline decoration-blue-400">
+                      {effectiveCPRNumber}
+                    </span>
                   ) : (
                     'the same Consolidated PR'
                   )}{' '}
                   and be assigned to Mode:{' '}
-                  <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 font-semibold ml-1">
+                  <Badge
+                    variant="outline"
+                    className="bg-blue-100 text-blue-800 border-blue-300 font-semibold ml-1"
+                  >
                     {effectiveModeName || 'Selected Mode'}
                   </Badge>
                   {isSessionLocked && (
                     <span className="text-xs text-blue-700 block mt-0.5">
-                      (Locked by your active selection. Items with a different mode or PR are disabled.)
+                      (Locked by your active selection. Items with a different
+                      mode or PR are disabled.)
                     </span>
                   )}
                   {isRfqLocked && (
@@ -448,7 +555,9 @@ export function AddConsolidatedPRModal({
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {availableCategories.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -460,7 +569,9 @@ export function AddConsolidatedPRModal({
               <SelectContent>
                 <SelectItem value="all">All Months</SelectItem>
                 {ORDERED_MONTHS.map((m) => (
-                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -472,7 +583,9 @@ export function AddConsolidatedPRModal({
               <SelectContent>
                 <SelectItem value="all">All Funds</SelectItem>
                 {availableFunds.map((f) => (
-                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                  <SelectItem key={f} value={f}>
+                    {f}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -487,7 +600,8 @@ export function AddConsolidatedPRModal({
             <div className="p-4 space-y-4">
               {filteredPRs.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No approved consolidated PRs found matching the filter criteria
+                  No approved consolidated PRs found matching the filter
+                  criteria
                 </div>
               ) : (
                 filteredPRs.map((pr) => {
@@ -496,16 +610,24 @@ export function AddConsolidatedPRModal({
                   const hasBacRes = Boolean(pr.hasBACResolution)
                   const bacResStatus = pr.bacResolutionStatus
                   const bacResNum = pr.bacResolutionNumber
-                  const isApproved = hasBacRes && (bacResStatus?.toLowerCase() === 'approved')
+                  const isApproved =
+                    hasBacRes && bacResStatus?.toLowerCase() === 'approved'
                   const isInProgress = hasBacRes && !isApproved
 
                   // Unique modes present in this CPR
                   const prModes = Array.from(
-                    new Set(pr.selectedPRItems.map((it: any) => it.procurementModeName).filter(Boolean))
+                    new Set(
+                      pr.selectedPRItems
+                        .map((it: any) => it.procurementModeName)
+                        .filter(Boolean),
+                    ),
                   )
 
                   // Group items inside this PR by Mode of Procurement
-                  const modeMap = new Map<string, { modeId: string; modeName: string; items: any[] }>()
+                  const modeMap = new Map<
+                    string,
+                    { modeId: string; modeName: string; items: any[] }
+                  >()
                   filteredItems.forEach((item: any) => {
                     const key = item.procurementModeName || 'Unassigned Mode'
                     if (!modeMap.has(key)) {
@@ -520,7 +642,10 @@ export function AddConsolidatedPRModal({
                   const modeGroups = Array.from(modeMap.values())
 
                   return (
-                    <div key={pr.id} className="border rounded-lg bg-white shadow-sm overflow-hidden">
+                    <div
+                      key={pr.id}
+                      className="border rounded-lg bg-white shadow-sm overflow-hidden"
+                    >
                       {/* PR Header */}
                       <div className="flex items-center gap-3 p-4 bg-muted/30">
                         <Button
@@ -537,19 +662,31 @@ export function AddConsolidatedPRModal({
                         </Button>
                         <div className="flex-1">
                           <div className="flex items-center gap-2.5 flex-wrap">
-                            <span className="font-semibold text-base">{pr.prNumber || pr.id}</span>
+                            <span className="font-semibold text-base">
+                              {pr.prNumber || pr.id}
+                            </span>
                             {isApproved ? (
-                              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 font-medium text-[11px] py-0.5 px-2">
+                              <Badge
+                                variant="outline"
+                                className="bg-emerald-50 text-emerald-700 border-emerald-300 font-medium text-[11px] py-0.5 px-2"
+                              >
                                 <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600 inline" />
                                 BAC Res: {bacResNum || 'Approved'} • Approved
                               </Badge>
                             ) : isInProgress ? (
-                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 font-medium text-[11px] py-0.5 px-2">
+                              <Badge
+                                variant="outline"
+                                className="bg-amber-50 text-amber-700 border-amber-300 font-medium text-[11px] py-0.5 px-2"
+                              >
                                 <Clock className="h-3 w-3 mr-1 text-amber-600 inline" />
-                                BAC Res: {bacResNum || 'In Progress'} • {bacResStatus || 'Draft / In Progress'}
+                                BAC Res: {bacResNum || 'In Progress'} •{' '}
+                                {bacResStatus || 'Draft / In Progress'}
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-300 font-normal text-[11px] py-0.5 px-2">
+                              <Badge
+                                variant="outline"
+                                className="bg-slate-100 text-slate-600 border-slate-300 font-normal text-[11px] py-0.5 px-2"
+                              >
                                 <AlertCircle className="h-3 w-3 mr-1 text-slate-500 inline" />
                                 No BAC Res Linked
                               </Badge>
@@ -558,7 +695,11 @@ export function AddConsolidatedPRModal({
                             {/* Mode tags on PR level */}
                             <div className="flex items-center gap-1 ml-1 flex-wrap">
                               {prModes.map((m: any) => (
-                                <Badge key={m} variant="secondary" className="text-[10px] px-2 py-0 text-slate-700 font-normal bg-slate-200/70">
+                                <Badge
+                                  key={m}
+                                  variant="secondary"
+                                  className="text-[10px] px-2 py-0 text-slate-700 font-normal bg-slate-200/70"
+                                >
                                   {m}
                                 </Badge>
                               ))}
@@ -571,7 +712,13 @@ export function AddConsolidatedPRModal({
                         <div className="text-sm text-muted-foreground text-right">
                           <div>
                             {filteredItems.length} item(s) • ₱
-                            {filteredItems.reduce((sum: number, item: any) => sum + item.totalAmount, 0).toLocaleString()}
+                            {filteredItems
+                              .reduce(
+                                (sum: number, item: any) =>
+                                  sum + item.totalAmount,
+                                0,
+                              )
+                              .toLocaleString()}
                           </div>
                         </div>
                       </div>
@@ -580,18 +727,29 @@ export function AddConsolidatedPRModal({
                       {isExpanded && (
                         <div className="divide-y border-t">
                           {modeGroups.map((group) => {
-                            const eligibleItemsInGroup = group.items.filter((it: any) => checkItemEligibility(it).eligible)
+                            const eligibleItemsInGroup = group.items.filter(
+                              (it: any) => checkItemEligibility(it).eligible,
+                            )
                             const allEligibleSelected =
                               eligibleItemsInGroup.length > 0 &&
-                              eligibleItemsInGroup.every((it: any) => selectedItems.has(`${pr.id}-${it.id}`))
+                              eligibleItemsInGroup.every((it: any) =>
+                                selectedItems.has(`${pr.id}-${it.id}`),
+                              )
 
                             const isGroupModeIncompatible =
-                              (effectiveModeId && group.modeId && group.modeId !== effectiveModeId) ||
-                              (effectiveModeName && group.modeName && group.modeName !== effectiveModeName) ||
+                              (effectiveModeId &&
+                                group.modeId &&
+                                group.modeId !== effectiveModeId) ||
+                              (effectiveModeName &&
+                                group.modeName &&
+                                group.modeName !== effectiveModeName) ||
                               (effectiveCPRId && pr.id !== effectiveCPRId)
 
                             return (
-                              <div key={group.modeName} className="bg-slate-50/50">
+                              <div
+                                key={group.modeName}
+                                className="bg-slate-50/50"
+                              >
                                 {/* Mode of Procurement Group Header */}
                                 <div className="flex items-center justify-between px-4 py-2 bg-slate-100/80 border-b text-xs">
                                   <div className="flex items-center gap-2">
@@ -599,25 +757,40 @@ export function AddConsolidatedPRModal({
                                     <span className="font-semibold text-slate-800 text-sm">
                                       Mode of Procurement: {group.modeName}
                                     </span>
-                                    <Badge variant="outline" className="text-[11px] font-normal bg-white">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[11px] font-normal bg-white"
+                                    >
                                       {group.items.length} item(s)
                                     </Badge>
                                     {isGroupModeIncompatible && (
-                                      <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-800 border-amber-300 font-medium">
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] bg-amber-50 text-amber-800 border-amber-300 font-medium"
+                                      >
                                         Different Mode / PR
                                       </Badge>
                                     )}
                                   </div>
-                                  {!isGroupModeIncompatible && eligibleItemsInGroup.length > 0 && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 text-xs text-primary font-medium hover:bg-primary/10"
-                                      onClick={() => toggleModeGroupSelection(pr.id, eligibleItemsInGroup, allEligibleSelected)}
-                                    >
-                                      {allEligibleSelected ? 'Deselect All in Mode' : 'Select All in Mode'}
-                                    </Button>
-                                  )}
+                                  {!isGroupModeIncompatible &&
+                                    eligibleItemsInGroup.length > 0 && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 text-xs text-primary font-medium hover:bg-primary/10"
+                                        onClick={() =>
+                                          toggleModeGroupSelection(
+                                            pr.id,
+                                            eligibleItemsInGroup,
+                                            allEligibleSelected,
+                                          )
+                                        }
+                                      >
+                                        {allEligibleSelected
+                                          ? 'Deselect All in Mode'
+                                          : 'Select All in Mode'}
+                                      </Button>
+                                    )}
                                 </div>
 
                                 {/* Table of items for this Mode */}
@@ -627,32 +800,79 @@ export function AddConsolidatedPRModal({
                                       <TableRow>
                                         <TableHead className="w-12"></TableHead>
                                         <TableHead>Item Name</TableHead>
-                                        <TableHead>Mode of Procurement</TableHead>
+                                        <TableHead>
+                                          Mode of Procurement
+                                        </TableHead>
                                         <TableHead>Category</TableHead>
                                         <TableHead>Fund</TableHead>
-                                        <TableHead className="text-center">Jan</TableHead>
-                                        <TableHead className="text-center">Feb</TableHead>
-                                        <TableHead className="text-center">Mar</TableHead>
-                                        <TableHead className="text-center">Apr</TableHead>
-                                        <TableHead className="text-center">May</TableHead>
-                                        <TableHead className="text-center">Jun</TableHead>
-                                        <TableHead className="text-center">Jul</TableHead>
-                                        <TableHead className="text-center">Aug</TableHead>
-                                        <TableHead className="text-center">Sep</TableHead>
-                                        <TableHead className="text-center">Oct</TableHead>
-                                        <TableHead className="text-center">Nov</TableHead>
-                                        <TableHead className="text-center">Dec</TableHead>
-                                        <TableHead className="text-center">Total Qty</TableHead>
+                                        <TableHead className="text-center">
+                                          Jan
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Feb
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Mar
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Apr
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          May
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Jun
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Jul
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Aug
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Sep
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Oct
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Nov
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Dec
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                          Total Qty
+                                        </TableHead>
                                         <TableHead>Unit Price</TableHead>
-                                        <TableHead className="text-right">Total</TableHead>
+                                        <TableHead className="text-right">
+                                          Total
+                                        </TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                       {group.items.map((item: any) => {
-                                        const { eligible, reason } = checkItemEligibility(item)
-                                        const isSelected = selectedItems.has(`${pr.id}-${item.id}`)
-                                        const isAlreadyAdded = existingCPRItemIds.includes(item.id)
-                                        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                                        const { eligible, reason } =
+                                          checkItemEligibility(item)
+                                        const isSelected = selectedItems.has(
+                                          `${pr.id}-${item.id}`,
+                                        )
+                                        const isAlreadyAdded =
+                                          existingCPRItemIds.includes(item.id)
+                                        const monthNames = [
+                                          'Jan',
+                                          'Feb',
+                                          'Mar',
+                                          'Apr',
+                                          'May',
+                                          'Jun',
+                                          'Jul',
+                                          'Aug',
+                                          'Sep',
+                                          'Oct',
+                                          'Nov',
+                                          'Dec',
+                                        ]
 
                                         return (
                                           <TableRow
@@ -661,50 +881,82 @@ export function AddConsolidatedPRModal({
                                               isSelected
                                                 ? 'bg-primary/5'
                                                 : !eligible
-                                                ? 'opacity-60 bg-muted/20'
-                                                : ''
+                                                  ? 'opacity-60 bg-muted/20'
+                                                  : ''
                                             }
                                           >
                                             <TableCell>
                                               <Checkbox
                                                 checked={isSelected}
-                                                disabled={!eligible && !isSelected}
-                                                onCheckedChange={() => toggleItemSelection(pr.id, item)}
+                                                disabled={
+                                                  !eligible && !isSelected
+                                                }
+                                                onCheckedChange={() =>
+                                                  toggleItemSelection(
+                                                    pr.id,
+                                                    item,
+                                                  )
+                                                }
                                               />
                                             </TableCell>
                                             <TableCell className="font-medium">
                                               <div className="flex items-center gap-2">
                                                 <span>{item.itemName}</span>
                                                 {isAlreadyAdded && (
-                                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                                                  <Badge
+                                                    variant="secondary"
+                                                    className="text-[10px] px-1.5 py-0 font-normal"
+                                                  >
                                                     In RFQ
                                                   </Badge>
                                                 )}
-                                                {!eligible && !isAlreadyAdded && reason && (
-                                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-700 bg-amber-50 border-amber-200">
-                                                    {reason}
-                                                  </Badge>
-                                                )}
+                                                {!eligible &&
+                                                  !isAlreadyAdded &&
+                                                  reason && (
+                                                    <Badge
+                                                      variant="outline"
+                                                      className="text-[10px] px-1.5 py-0 text-amber-700 bg-amber-50 border-amber-200"
+                                                    >
+                                                      {reason}
+                                                    </Badge>
+                                                  )}
                                               </div>
                                             </TableCell>
                                             <TableCell>
-                                              <Badge variant="outline" className="text-[11px] font-medium bg-slate-50 text-slate-700">
+                                              <Badge
+                                                variant="outline"
+                                                className="text-[11px] font-medium bg-slate-50 text-slate-700"
+                                              >
                                                 {item.procurementModeName}
                                               </Badge>
                                             </TableCell>
-                                            <TableCell className="text-sm text-muted-foreground">{item.category}</TableCell>
-                                            <TableCell className="text-sm">{item.fund}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                              {item.category}
+                                            </TableCell>
+                                            <TableCell className="text-sm">
+                                              {item.fund}
+                                            </TableCell>
                                             {monthNames.map((m, idx) => {
-                                              const monthQty = getItemQtyForMonth(item, idx)
+                                              const monthQty =
+                                                getItemQtyForMonth(item, idx)
                                               return (
-                                                <TableCell key={m} className="text-center">
+                                                <TableCell
+                                                  key={m}
+                                                  className="text-center"
+                                                >
                                                   {monthQty > 0 ? (
                                                     <div className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 font-medium">
-                                                      <span className="text-sm font-semibold">{monthQty}</span>
-                                                      <span className="text-xs text-muted-foreground ml-1">{item.unit}</span>
+                                                      <span className="text-sm font-semibold">
+                                                        {monthQty}
+                                                      </span>
+                                                      <span className="text-xs text-muted-foreground ml-1">
+                                                        {item.unit}
+                                                      </span>
                                                     </div>
                                                   ) : (
-                                                    <div className="text-sm text-muted-foreground">0 {item.unit}</div>
+                                                    <div className="text-sm text-muted-foreground">
+                                                      0 {item.unit}
+                                                    </div>
                                                   )}
                                                 </TableCell>
                                               )
@@ -714,8 +966,13 @@ export function AddConsolidatedPRModal({
                                                 {item.qty} {item.unit}
                                               </div>
                                             </TableCell>
-                                            <TableCell>₱{item.unitPrice.toLocaleString()}</TableCell>
-                                            <TableCell className="text-right">₱{item.totalAmount.toLocaleString()}</TableCell>
+                                            <TableCell>
+                                              ₱{item.unitPrice.toLocaleString()}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              ₱
+                                              {item.totalAmount.toLocaleString()}
+                                            </TableCell>
                                           </TableRow>
                                         )
                                       })}
@@ -740,7 +997,10 @@ export function AddConsolidatedPRModal({
           <div className="max-w-full mx-0 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
               <div>
-                <span className="font-semibold text-slate-900">{selectedItems.size}</span> item(s) selected
+                <span className="font-semibold text-slate-900">
+                  {selectedItems.size}
+                </span>{' '}
+                item(s) selected
                 {selectedItems.size > 0 && effectiveModeName && (
                   <span className="ml-2 font-medium text-primary">
                     • Mode: {effectiveModeName}
@@ -749,8 +1009,10 @@ export function AddConsolidatedPRModal({
               </div>
               {selectedItems.size > 0 && (
                 <div className="mt-1 text-xs text-muted-foreground">
-                  <span className="font-medium">Categories:</span> {selectedCategories.join(', ')}{' '}
-                  <span className="ml-2 font-medium">Funds:</span> {selectedFunds.join(', ')}
+                  <span className="font-medium">Categories:</span>{' '}
+                  {selectedCategories.join(', ')}{' '}
+                  <span className="ml-2 font-medium">Funds:</span>{' '}
+                  {selectedFunds.join(', ')}
                 </div>
               )}
             </div>
