@@ -234,7 +234,12 @@ export function SupplierRegistryForm({
         void deleteFile({
           pathParams: { fileId },
           payload: undefined,
-        }).catch(() => {})
+        }).catch((error) => {
+          console.warn(
+            `[SupplierRegistryForm] Failed to delete temporary file ${fileId} during dialog close:`,
+            error,
+          )
+        })
       })
     }
 
@@ -420,7 +425,7 @@ export function SupplierRegistryForm({
     } catch (error) {
       // CLEANUP GUARD: Delete any newly uploaded temp files from storage so it is not exhausted
       if (newlyUploadedFileIds.length > 0) {
-        await Promise.allSettled(
+        const cleanupResults = await Promise.allSettled(
           newlyUploadedFileIds.map((fileId) =>
             deleteFile({
               pathParams: { fileId },
@@ -428,6 +433,15 @@ export function SupplierRegistryForm({
             }),
           ),
         )
+
+        cleanupResults.forEach((result, idx) => {
+          if (result.status === 'rejected') {
+            console.warn(
+              `[SupplierRegistryForm] Failed to clean up temporary file ${newlyUploadedFileIds[idx]} on submit failure:`,
+              result.reason,
+            )
+          }
+        })
 
         setFormData((current) => ({
           ...current,
@@ -459,7 +473,12 @@ export function SupplierRegistryForm({
       void deleteFile({
         pathParams: { fileId: reqToRemove.fileId },
         payload: undefined,
-      }).catch(() => {})
+      }).catch((error) => {
+        console.warn(
+          `[SupplierRegistryForm] Failed to delete temporary file ${reqToRemove.fileId} during requirement removal:`,
+          error,
+        )
+      })
     }
 
     setFormData((current) => {
@@ -873,7 +892,12 @@ export function SupplierRegistryForm({
                             void deleteFile({
                               pathParams: { fileId: requirement.fileId },
                               payload: undefined,
-                            }).catch(() => {})
+                            }).catch((error) => {
+                              console.warn(
+                                `[SupplierRegistryForm] Failed to delete replaced temporary file ${requirement.fileId}:`,
+                                error,
+                              )
+                            })
                           }
                           updateRequirement(index, {
                             file,

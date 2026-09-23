@@ -19,6 +19,10 @@ public class ApplicationSieveProcessor(IOptions<SieveOptions> options) : SievePr
         return mapper;
     }
 
+    private static readonly System.Text.RegularExpressions.Regex propertyFilterRegex = new(
+        @"^([a-zA-Z0-9_\.]+?)(==\*|!=\*|@=\*|!@=\*|_=\*|!_=\*|==|!=|>=|<=|>|<|@=|!@=|_=|!_=)",
+        System.Text.RegularExpressions.RegexOptions.Compiled);
+
     protected override IQueryable<TEntity> ApplyFiltering<TEntity>(
         SieveModel model, 
         IQueryable<TEntity> result, 
@@ -36,10 +40,18 @@ public class ApplicationSieveProcessor(IOptions<SieveOptions> options) : SievePr
         var orSegment = filterSegments[orSegmentIndex];
         var orParts = orSegment.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        // Detect property names on each side of |
-        var regex = new System.Text.RegularExpressions.Regex(@"^([a-zA-Z0-9_\.]+?)(==\*|==|!=|>=|<=|>|<|@=\*|@=|!@=|_=)");
-        var propNames = orParts
-            .Select(p => regex.Match(p).Groups[1].Value)
+        // Filter down to valid filter parts containing property and valid Sieve operator
+        var validOrParts = orParts.Where(p => propertyFilterRegex.IsMatch(p)).ToList();
+
+        if (validOrParts.Count <= 1)
+        {
+            // 0 or 1 valid parts (e.g. malformed pipes or single property) — fallback to safe base filtering
+            return SafeBaseFiltering(model, result, dataForCustomMethods);
+        }
+
+        // Detect distinct property names on each side of |
+        var propNames = validOrParts
+            .Select(p => propertyFilterRegex.Match(p).Groups[1].Value)
             .Where(p => !string.IsNullOrEmpty(p))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -54,7 +66,7 @@ public class ApplicationSieveProcessor(IOptions<SieveOptions> options) : SievePr
         var otherSegments = filterSegments.Where((_, i) => i != orSegmentIndex).ToList();
         IQueryable<TEntity>? combined = null;
 
-        foreach (var part in orParts)
+        foreach (var part in validOrParts)
         {
             var branchFilter = otherSegments.Count > 0 
                 ? $"{part},{string.Join(",", otherSegments)}" 
@@ -74,8 +86,8 @@ public class ApplicationSieveProcessor(IOptions<SieveOptions> options) : SievePr
     }
 
     /// <summary>
-    /// Calls base.ApplyFiltering and silently swallows SieveMethodNotFoundException so that
-    /// unknown or unmapped filter properties don't crash the entire request.
+    /// Calls base.ApplyFiltering and catches SieveException so that
+    /// unknown, unmapped, or malformed filter properties don't crash the entire request.
     /// </summary>
     private IQueryable<TEntity> SafeBaseFiltering<TEntity>(
         SieveModel? model,
@@ -86,14 +98,15 @@ public class ApplicationSieveProcessor(IOptions<SieveOptions> options) : SievePr
         {
             return base.ApplyFiltering(model, result, dataForCustomMethods);
         }
-        catch (SieveMethodNotFoundException)
+        catch (SieveException)
         {
-            // A filter property was not found in Sieve configuration or entity attributes.
+            // A filter property was not found in Sieve configuration, incompatible, or malformed.
             // Return unfiltered result rather than crashing.
             return result;
         }
-        catch (SieveIncompatibleMethodException)
+        catch (Exception)
         {
+            // Extra safety guard against unexpected expression or parsing crashes on malformed filters
             return result;
         }
     }

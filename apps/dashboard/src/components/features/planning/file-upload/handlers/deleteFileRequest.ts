@@ -11,12 +11,20 @@ export const deleteFileRequest: MutationBlueprintFromTemplate<
   undefined
 > = {
   endpoint: '/files/temp/:fileId',
-  fetcher: async ({ finalUrl }) => {
-    const response = await api.delete<APIResponse<boolean>>(finalUrl, {
-      headers: {
-        'x-skip-toast': 'true',
-      },
-    })
-    return response.data
+  fetcher: async ({ finalUrl, pathParams }) => {
+    try {
+      const response = await api.delete<APIResponse<boolean>>(finalUrl, {
+        headers: {
+          'x-skip-toast': 'true',
+        },
+      })
+      return response.data
+    } catch (error) {
+      console.warn(
+        `[deleteFileRequest] Failed to delete temporary file ${pathParams?.fileId ?? finalUrl}:`,
+        error,
+      )
+      throw error
+    }
   },
 }
