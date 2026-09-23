@@ -1,7 +1,8 @@
 import React from 'react'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Lock, TrendingDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Trophy, Lock, TrendingDown, FileText } from 'lucide-react'
 import type { Supplier, LineItem, SupplierBid } from '../types/aobTypes'
 
 interface BidMatrixSupplierRowProps {
@@ -17,6 +18,7 @@ interface BidMatrixSupplierRowProps {
   suppliersCount: number
   formatPHP: (amount: number | null | undefined) => string
   onViewBidDetails: (supplier: Supplier, item: LineItem, bid: SupplierBid) => void
+  onPreviewSubmittedRFQ?: (supplier: Supplier) => void
 }
 
 export function BidMatrixSupplierRow({
@@ -32,9 +34,14 @@ export function BidMatrixSupplierRow({
   suppliersCount,
   formatPHP,
   onViewBidDetails,
+  onPreviewSubmittedRFQ,
 }: BidMatrixSupplierRowProps) {
   const supplierName = supplier.supplierName || supplier.name || 'Supplier'
   const isWinnerRow = totalData.wonCount > 0
+  const supplierBids = groupedBids[supplier.id] || []
+  const hasSubmitted =
+    supplier.hasSubmitted !== false &&
+    (Boolean(supplier.submittedAt) || Boolean(supplier.submissionType) || supplierBids.length > 0)
 
   return (
     <TableRow
@@ -44,7 +51,7 @@ export function BidMatrixSupplierRow({
       <TableCell
         className="sticky left-0 z-20 border-r text-center align-middle py-3 px-3 shadow-xs bg-card"
       >
-        <div className="flex flex-col items-center justify-center gap-1 min-w-[180px] max-w-[240px] mx-auto text-center">
+        <div className="flex flex-col items-center justify-center gap-1.5 min-w-[180px] max-w-[240px] mx-auto text-center">
           <div className="flex items-center justify-center gap-1.5">
             {isFullPackageWinner && (
               <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" aria-hidden="true" />
@@ -56,18 +63,44 @@ export function BidMatrixSupplierRow({
               {supplierName}
             </span>
           </div>
-          {isFullPackageWinner ? (
-            <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 leading-none">
-              Lowest Calculated Responsive Bid
-            </span>
-          ) : supplier.submissionType ? (
+
+          {!hasSubmitted ? (
             <Badge
               variant="outline"
-              className="text-[10px] py-0 px-2 font-normal text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-950/40 rounded-full"
+              className="text-[10px] py-0.5 px-2 font-normal text-muted-foreground border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800/80 rounded-full"
             >
-              {supplier.submissionType}
+              Did Not Submit
             </Badge>
-          ) : null}
+          ) : (
+            <>
+              {isFullPackageWinner ? (
+                <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 leading-none">
+                  Lowest Calculated Responsive Bid
+                </span>
+              ) : supplier.submissionType ? (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] py-0 px-2 font-normal text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-950/40 rounded-full"
+                >
+                  {supplier.submissionType}
+                </Badge>
+              ) : null}
+
+              {onPreviewSubmittedRFQ && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onPreviewSubmittedRFQ(supplier)}
+                  className="h-6 px-2 text-[10px] font-medium text-primary hover:text-primary/90 hover:bg-primary/10 gap-1 rounded-sm cursor-pointer"
+                  title={`Preview submitted RFQ for ${supplierName}`}
+                >
+                  <FileText className="w-3 h-3" />
+                  Preview RFQ
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </TableCell>
 

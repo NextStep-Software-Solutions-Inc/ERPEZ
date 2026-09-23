@@ -138,9 +138,9 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                         row.RelativeItem(5).Column(left =>
                         {
                             left.Item().Text("The Manager").Bold().FontSize(8.5f);
-                            left.Item().PaddingTop(2).Text(primarySupplier.SupplierName).Bold().FontSize(9);
+                            left.Item().PaddingTop(2).Text(request.IsBlankTemplate ? "" : primarySupplier.SupplierName).Bold().FontSize(9);
                             left.Item().Text("Business/Trade/Store Name").FontSize(7.5f).Italic();
-                            left.Item().PaddingTop(2).Text(primarySupplier.Address).FontSize(8);
+                            left.Item().PaddingTop(2).Text(request.IsBlankTemplate ? "" : primarySupplier.Address).FontSize(8);
                             left.Item().BorderBottom(0.5f).BorderColor(Colors.Black).Text("Address").FontSize(7.5f).Italic();
                         });
 
@@ -230,7 +230,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                             table.Cell().Element(TableDataCell).Column(oc =>
                             {
-                                if (!string.IsNullOrWhiteSpace(item.OfferedSpecifications))
+                                if (!request.IsBlankTemplate && !string.IsNullOrWhiteSpace(item.OfferedSpecifications))
                                 {
                                     oc.Item().Text(item.OfferedSpecifications).FontSize(8);
                                 }
@@ -239,7 +239,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                             table.Cell().Element(TableDataCell).Column(qc =>
                             {
-                                if (item.QuotedUnitPrice.HasValue && item.QuotedUnitPrice.Value > 0)
+                                if (!request.IsBlankTemplate && item.QuotedUnitPrice.HasValue && item.QuotedUnitPrice.Value > 0)
                                 {
                                     qc.Item().AlignRight().Text(item.QuotedUnitPrice.Value.ToString("N2", phCulture)).Bold().FontSize(8);
                                 }
@@ -254,6 +254,10 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                     col.Item().PaddingTop(16).AlignRight().Column(sigCol =>
                     {
+                        if (!request.IsBlankTemplate && !string.IsNullOrWhiteSpace(request.SignatoryName))
+                        {
+                            sigCol.Item().Width(220).AlignCenter().Text(request.SignatoryName).Bold().FontSize(8.5f);
+                        }
                         sigCol.Item().Width(220).BorderBottom(1).BorderColor(Colors.Black).Text("");
                         sigCol.Item().Width(220).AlignCenter().Text("Printed Name/Signature").FontSize(7.5f);
                     });

@@ -20,8 +20,9 @@ import {
 } from '@/components/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { useRFQStore, RFQItem } from '../store/rfqStore'
-import { Pencil, Save, Upload, FileText, X, Send, Loader2 } from 'lucide-react'
+import { Pencil, Save, Upload, FileText, X, Send, Loader2, Download, CheckCircle2, FileCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { generateAndDownloadRfqDocument } from '../utils/generateRfqDocumentRequest'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -148,6 +149,19 @@ export function SetQuotationModal({
   const [selectedItem, setSelectedItem] = useState<RFQItem | null>(null)
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({})
+  const manualDocInputRef = useRef<HTMLInputElement | null>(null)
+  const signatureInputRef = useRef<HTMLInputElement | null>(null)
+
+  const [submissionType, setSubmissionType] = useState<'Electronic' | 'Manual'>('Electronic')
+  const [signatoryName, setSignatoryName] = useState('')
+  const [signatureUrl, setSignatureUrl] = useState<string | undefined>()
+  const [quotationDocumentUrl, setQuotationDocumentUrl] = useState<string | undefined>()
+  const [quotationDocumentName, setQuotationDocumentName] = useState<string | undefined>()
+  const [deliveryPeriod, setDeliveryPeriod] = useState('')
+  const [paymentTerms, setPaymentTerms] = useState('')
+  const [warrantyTerms, setWarrantyTerms] = useState('')
+  const [remarks, setRemarks] = useState('')
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false)
 
   const { mutateAsync: submitBidMutation, isPending: isSubmitting } =
     useSubmitSupplierBid()
@@ -158,6 +172,21 @@ export function SetQuotationModal({
 
   useEffect(() => {
     if (rfq && open) {
+      if (rfq.quotationSubmissionType === 'Manual' || rfq.submissionType === 'Manual') {
+        setSubmissionType('Manual')
+      } else {
+        setSubmissionType('Electronic')
+      }
+
+      setSignatoryName(rfq.signatoryName || rfq.supplierSignatoryName || '')
+      setSignatureUrl(rfq.signatureUrl)
+      setQuotationDocumentUrl(rfq.quotationDocumentUrl)
+      setQuotationDocumentName(rfq.quotationDocumentName || (rfq.quotationDocumentUrl ? 'Uploaded_RFQ_Quotation.pdf' : undefined))
+      setDeliveryPeriod(rfq.deliveryPeriod || '')
+      setPaymentTerms(rfq.paymentTerms || '')
+      setWarrantyTerms(rfq.warrantyTerms || '')
+      setRemarks(rfq.remarks || '')
+
       setItems(
         (rfq.items || []).map((item: any) => ({
           ...item,
@@ -348,6 +377,50 @@ export function SetQuotationModal({
     })
   }
 
+  const handleDownloadTemplate = async () => {
+    if (!rfq?.id) return
+    setIsDownloadingTemplate(true)
+    try {
+      await generateAndDownloadRfqDocument({
+        rfqId: rfq.id,
+        format: 'Pdf',
+        blankTemplate: true,
+        filename: `RFQ_${rfq.rfqNumber || rfq.id}_Blank_Template.pdf`,
+      })
+      toast({
+        title: 'Template Downloaded',
+        description: 'Blank RFQ template is ready for offline routing/signing.',
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Download Failed',
+        description: err?.message || 'Could not generate RFQ template.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsDownloadingTemplate(false)
+    }
+  }
+
+  const handleManualDocumentUpload = (file: File) => {
+    const url = URL.createObjectURL(file)
+    setQuotationDocumentUrl(url)
+    setQuotationDocumentName(file.name)
+    toast({
+      title: 'Manual RFQ Document Attached',
+      description: `File "${file.name}" attached.`,
+    })
+  }
+
+  const handleSignatureUpload = (file: File) => {
+    const url = URL.createObjectURL(file)
+    setSignatureUrl(url)
+    toast({
+      title: 'E-Signature Attached',
+      description: `Signature image uploaded.`,
+    })
+  }
+
   const handleSaveDraft = async () => {
     try {
       const targetSupplierId =
@@ -357,8 +430,15 @@ export function SetQuotationModal({
         payload: {
           rfqId: rfq.id,
           supplierId: targetSupplierId,
-          submissionType: 'Electronic',
+          submissionType,
           status: 'DRAFT',
+          signatoryName: signatoryName.trim() || undefined,
+          signatureUrl,
+          quotationDocumentUrl,
+          deliveryPeriod: deliveryPeriod.trim() || undefined,
+          paymentTerms: paymentTerms.trim() || undefined,
+          warrantyTerms: warrantyTerms.trim() || undefined,
+          remarks: remarks.trim() || undefined,
           items: items.map((i) => ({
             rfqItemId: i.id,
             unitPrice: i.bidUnitPrice || 0,
@@ -387,16 +467,36 @@ export function SetQuotationModal({
   }
 
   const handleSubmitQuotation = () => {
-    const incomplete = items.filter(
-      (item) => !item.bidUnitPrice || item.bidUnitPrice <= 0,
-    )
-
-    if (incomplete.length > 0) {
+    if (submissionType === 'Manual' && !quotationDocumentUrl) {
       toast({
-        title: 'Incomplete quotation',
-        description: 'Please enter unit bid prices for all items.',
+        title: 'Manual RFQ Document Required',
+        description: 'Please upload the scanned/signed RFQ document before submitting.',
+        variant: 'destructive',
       })
       return
+    }
+
+    if (!signatoryName.trim()) {
+      toast({
+        title: 'Signatory Name Required',
+        description: 'Please enter the authorized representative / signatory name.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (submissionType === 'Electronic') {
+      const incomplete = items.filter(
+        (item) => !item.bidUnitPrice || item.bidUnitPrice <= 0,
+      )
+
+      if (incomplete.length > 0) {
+        toast({
+          title: 'Incomplete quotation',
+          description: 'Please enter unit bid prices for all items.',
+        })
+        return
+      }
     }
 
     setSubmitConfirmOpen(true)
@@ -411,8 +511,15 @@ export function SetQuotationModal({
         payload: {
           rfqId: rfq.id,
           supplierId: targetSupplierId,
-          submissionType: 'Electronic',
+          submissionType,
           status: 'SUBMITTED',
+          signatoryName: signatoryName.trim() || undefined,
+          signatureUrl,
+          quotationDocumentUrl,
+          deliveryPeriod: deliveryPeriod.trim() || undefined,
+          paymentTerms: paymentTerms.trim() || undefined,
+          warrantyTerms: warrantyTerms.trim() || undefined,
+          remarks: remarks.trim() || undefined,
           items: items.map((i) => ({
             rfqItemId: i.id,
             unitPrice: i.bidUnitPrice || 0,
@@ -458,12 +565,137 @@ export function SetQuotationModal({
         open={open}
         onOpenChange={onOpenChange}
         title={`Set Quotation - ${rfq.rfqNumber}`}
-        description="Enter your bid specifications and unit prices for each item"
+        description="Submit your quotation either electronically or by uploading a manually routed, signed RFQ document."
         size="5xl"
         className="w-full max-w-[1350px]"
         showCloseButton
       >
         <div className="space-y-6">
+          {/* Top Actions & Submission Mode Switcher */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-muted/30 border rounded-lg">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-1">
+                Submission Method:
+              </span>
+              <div className="inline-flex rounded-lg border bg-background p-0.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={submissionType === 'Electronic' ? 'default' : 'ghost'}
+                  className="text-xs h-7 px-3 gap-1.5"
+                  onClick={() => !isSubmitted && setSubmissionType('Electronic')}
+                  disabled={isSubmitted}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Electronic Bid Form
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={submissionType === 'Manual' ? 'default' : 'ghost'}
+                  className="text-xs h-7 px-3 gap-1.5"
+                  onClick={() => !isSubmitted && setSubmissionType('Manual')}
+                  disabled={isSubmitted}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Manually Routed RFQ (PDF)
+                </Button>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadTemplate}
+              disabled={isDownloadingTemplate}
+              className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+            >
+              {isDownloadingTemplate ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              Download Blank RFQ Template (PDF)
+            </Button>
+          </div>
+
+          {/* Manual Routed RFQ Document Upload Card */}
+          {submissionType === 'Manual' && (
+            <div className="border-2 border-dashed border-indigo-200 rounded-lg p-5 bg-indigo-50/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-indigo-950 font-semibold text-sm">
+                  <FileCheck className="w-4 h-4 text-indigo-600" />
+                  Upload Signed & Routed RFQ Document
+                </div>
+                <Badge variant="outline" className="border-indigo-300 text-indigo-700 text-xs">
+                  Physical / Scanned Submission
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Please attach the scanned copy of the official RFQ with your printed prices, authorized signature, and company stamp.
+              </p>
+
+              {quotationDocumentUrl ? (
+                <div className="flex items-center justify-between p-3 bg-white border border-indigo-100 rounded-md">
+                  <div className="flex items-center gap-2 text-xs font-medium text-indigo-900">
+                    <FileText className="w-4 h-4 text-indigo-600" />
+                    <a
+                      href={quotationDocumentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:underline max-w-[280px] truncate"
+                    >
+                      {quotationDocumentName || 'Attached_Signed_RFQ.pdf'}
+                    </a>
+                    <Badge variant="secondary" className="text-[10px] bg-indigo-100 text-indigo-800">
+                      Attached
+                    </Badge>
+                  </div>
+                  {!isSubmitted && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setQuotationDocumentUrl(undefined)
+                        setQuotationDocumentName(undefined)
+                      }}
+                      className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                !isSubmitted && (
+                  <div>
+                    <input
+                      type="file"
+                      ref={manualDocInputRef}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleManualDocumentUpload(file)
+                      }}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => manualDocInputRef.current?.click()}
+                      className="gap-2 text-xs h-8 border-indigo-300 text-indigo-800 hover:bg-indigo-100"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      Select Scanned RFQ File (PDF / Images)
+                    </Button>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
@@ -671,6 +903,143 @@ export function SetQuotationModal({
                     Exceeds Total ABC
                   </Badge>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Signatory & Verification Details Card */}
+          <div className="border rounded-lg p-5 bg-card space-y-4">
+            <div className="flex items-center gap-2 border-b pb-2.5">
+              <CheckCircle2 className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Signatory & Commercial Terms Verification
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-1.5">
+                <Label htmlFor="signatoryName" className="text-xs font-medium">
+                  Authorized Signatory / Bidder Representative Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="signatoryName"
+                  placeholder="e.g., Juan Dela Cruz (Managing Director)"
+                  value={signatoryName}
+                  onChange={(e) => setSignatoryName(e.target.value)}
+                  disabled={isSubmitted}
+                  className="h-8 text-xs"
+                />
+                <span className="text-[10px] text-muted-foreground">
+                  The person legally authorized to bind the supplier to this quotation.
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="signature" className="text-xs font-medium">
+                  E-Signature / Stamp Image
+                </Label>
+                {signatureUrl ? (
+                  <div className="flex items-center gap-3 p-2 border rounded-md bg-muted/20">
+                    <img
+                      src={signatureUrl}
+                      alt="Uploaded Signature"
+                      className="h-7 max-w-[120px] object-contain border bg-white p-0.5 rounded"
+                    />
+                    <span className="text-xs text-muted-foreground">Signature Attached</span>
+                    {!isSubmitted && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSignatureUrl(undefined)}
+                        className="h-6 px-2 text-[10px] text-destructive hover:bg-destructive/10 ml-auto"
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  !isSubmitted && (
+                    <div>
+                      <input
+                        type="file"
+                        ref={signatureInputRef}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleSignatureUpload(file)
+                        }}
+                        accept="image/png,image/jpeg"
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => signatureInputRef.current?.click()}
+                        className="gap-2 text-xs h-8 w-full border-dashed"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        Attach Signature Image (PNG/JPEG)
+                      </Button>
+                    </div>
+                  )
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="deliveryPeriod" className="text-xs font-medium">
+                  Delivery Period
+                </Label>
+                <Input
+                  id="deliveryPeriod"
+                  placeholder="e.g., 7-15 Calendar Days"
+                  value={deliveryPeriod}
+                  onChange={(e) => setDeliveryPeriod(e.target.value)}
+                  disabled={isSubmitted}
+                  className="h-8 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="paymentTerms" className="text-xs font-medium">
+                  Payment Terms
+                </Label>
+                <Input
+                  id="paymentTerms"
+                  placeholder="e.g., Net 30 days upon inspection"
+                  value={paymentTerms}
+                  onChange={(e) => setPaymentTerms(e.target.value)}
+                  disabled={isSubmitted}
+                  className="h-8 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="warrantyTerms" className="text-xs font-medium">
+                  Warranty Terms
+                </Label>
+                <Input
+                  id="warrantyTerms"
+                  placeholder="e.g., 1 Year Comprehensive Warranty"
+                  value={warrantyTerms}
+                  onChange={(e) => setWarrantyTerms(e.target.value)}
+                  disabled={isSubmitted}
+                  className="h-8 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="remarks" className="text-xs font-medium">
+                  Remarks / Special Instructions
+                </Label>
+                <Input
+                  id="remarks"
+                  placeholder="Additional commercial or technical notes"
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  disabled={isSubmitted}
+                  className="h-8 text-xs"
+                />
               </div>
             </div>
           </div>

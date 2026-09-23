@@ -50,6 +50,9 @@ public class RfqDataDto
     public string BacChairpersonTitle { get; set; } = "[BAC Chairperson / Secretariat Designation]";
     public string BacSecName { get; set; } = "[BAC Secretariat]";
     public string DeliveryPeriod { get; set; } = "[Delivery Period]";
+    public bool IsBlankTemplate { get; set; }
+    public string? SignatoryName { get; set; }
+    public string? DateSigned { get; set; }
     public List<RfqItemDataDto> Items { get; set; } = [];
     public List<RfqSupplierDataDto> Suppliers { get; set; } = [];
 }

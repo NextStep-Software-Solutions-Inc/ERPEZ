@@ -240,12 +240,16 @@ public class RFQController(ISender mediator) : ControllerBase
     public async Task<IActionResult> GenerateRFQ(
         Guid id,
         [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        [FromQuery] Guid? supplierId = null,
+        [FromQuery] bool blankTemplate = false,
         CancellationToken cancellationToken = default)
     {
         var command = new GenerateRFQDocumentCommand
         {
             RFQId = id,
             Format = format,
+            SupplierId = supplierId,
+            BlankTemplate = blankTemplate,
             GeneratedBy = User.Identity?.Name ?? "system"
         };
         var result = await mediator.Send(command, cancellationToken);

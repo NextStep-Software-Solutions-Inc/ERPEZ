@@ -139,12 +139,27 @@ export interface Supplier {
   supplierName: string
   name?: string
   email?: string
+  contactPerson?: string
+  contactNumber?: string
+  address?: string
+  tinNumber?: string
+  philGEPSNumber?: string
   submissionType?: SubmissionType | string
   isResponsive?: boolean // Meets minimum requirements
   remarks?: string
   submittedAt?: string
   deliveryPeriod?: string
   validityPeriodDays?: number
+  paymentTerms?: string
+  warrantyTerms?: string
+  totalBidAmount?: number
+  hasSubmitted?: boolean
+  rfqNumber?: string
+  rfqId?: string
+  quotationDocumentUrl?: string
+  signatureUrl?: string
+  signatoryName?: string
+  dateSigned?: string
   brochureUrl?: string // Uploaded brochure/technical docs
 }
 

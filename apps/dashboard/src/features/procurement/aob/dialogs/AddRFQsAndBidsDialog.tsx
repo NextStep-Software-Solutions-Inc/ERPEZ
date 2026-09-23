@@ -55,12 +55,14 @@ export function AddRFQsAndBidsDialog({
   const queryClient = useQueryClient()
   const { data: rfqsResponse, isLoading: isLoadingRFQs } = useRFQList({
     pathParams: {},
-    queryParams: { pageNumber: 1, pageSize: 50 },
+    queryParams: { pageNumber: 1, pageSize: 50, status: 'Approved' },
   })
   const { mutateAsync: linkRFQs } = useLinkRFQ()
 
   const availableRfqs = useMemo(() => {
-    return rfqsResponse?.data || []
+    return (rfqsResponse?.data || []).filter(
+      (r) => !r.status || r.status.toLowerCase() === 'approved'
+    )
   }, [rfqsResponse])
 
   // Track if there are unsaved changes
