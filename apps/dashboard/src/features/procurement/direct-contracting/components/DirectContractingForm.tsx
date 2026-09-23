@@ -11,10 +11,92 @@ import {
     SelectItem,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { UserCheck } from 'lucide-react'
+import { UserCheck, FileCheck, FileText, Building2 } from 'lucide-react'
 import FieldInfo from '@/components/FieldInfo'
 import { BacProject } from '../../bac-resolution'
 import { SupplierListItem } from '@/components/features/planning/procurement-library/suppliers/types'
+
+export interface BacProjectMetadata {
+    id: string
+    resolutionNumber: string
+    title: string
+    amount: number
+    formattedAmount: string
+    sourceTypeLabel: string
+    isConsolidatedPR: boolean
+    prNumbers: string[]
+    office: string
+    status?: string
+}
+
+export function extractBacProjectMeta(r: BacProject): BacProjectMetadata {
+    const resolutionNumber =
+        r.resolutionNumber ||
+        (r.title && r.title.startsWith('RES-') ? r.title : '') ||
+        (r.id ? `RES-${r.id.slice(0, 8)}` : 'N/A')
+
+    const title =
+        r.title ||
+        r.consolidatedPR?.description ||
+        r.appItem?.ppmpItemName ||
+        'Procurement Project'
+
+    const amount =
+        r.abc ??
+        r.sumABC ??
+        r.consolidatedPR?.totalAmount ??
+        r.appItem?.effectiveABC ??
+        0
+
+    const formattedAmount = `₱${amount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })}`
+
+    let prNumbers: string[] = []
+    const anyR = r as any
+    if (
+        Array.isArray(anyR.linkedConsolidatedPrs) &&
+        anyR.linkedConsolidatedPrs.length > 0
+    ) {
+        prNumbers = anyR.linkedConsolidatedPrs
+            .map((pr: any) => pr?.prNumber || pr?.cprNumber)
+            .filter(Boolean)
+    } else if (r.consolidatedPR?.prNumber) {
+        prNumbers = [r.consolidatedPR.prNumber]
+    } else if (r.consolidatedPR?.selectedPRItems?.length) {
+        prNumbers = r.consolidatedPR.selectedPRItems
+            .map((item) => item.prNumber)
+            .filter((num): num is string => Boolean(num))
+    } else if (r.appItem?.APP?.appNumber) {
+        prNumbers = [r.appItem.APP.appNumber]
+    }
+    prNumbers = Array.from(new Set(prNumbers))
+
+    const office =
+        r.consolidatedPR?.endUser ||
+        r.consolidatedPR?.selectedPRItems?.[0]?.prOffice ||
+        r.appItem?.officeName ||
+        anyR.officeName ||
+        (r.endUserRepresentativeId ? `Rep: ${r.endUserRepresentativeId}` : 'N/A')
+
+    const isConsolidatedPR =
+        r.sourceType === 'ConsolidatedPR' || String(r.sourceType) === '0'
+    const sourceTypeLabel = isConsolidatedPR ? 'Consolidated PR' : 'APP Item'
+
+    return {
+        id: r.id,
+        resolutionNumber,
+        title,
+        amount,
+        formattedAmount,
+        sourceTypeLabel,
+        isConsolidatedPR,
+        prNumbers,
+        office,
+        status: r.status,
+    }
+}
 
 export const createDirectContractingSchema = z.object({
     name: z.string().min(1, 'Direct Contracting Name is required'),
@@ -52,11 +134,21 @@ export function DirectContractingForm({
     suppliersList = [],
 }: DirectContractingFormProps) {
     const filteredResolutions = useMemo(() => {
-        return resolutionOptions.filter((r) => r.id && r.id.trim() !== '')
+        const seen = new Set<string>()
+        return resolutionOptions.filter((r) => {
+            if (!r.id || r.id.trim() === '' || seen.has(r.id)) return false
+            seen.add(r.id)
+            return true
+        })
     }, [resolutionOptions])
 
     const filteredSuppliers = useMemo(() => {
-        return suppliersList.filter((s) => s.id && s.id.trim() !== '')
+        const seen = new Set<string>()
+        return suppliersList.filter((s) => {
+            if (!s.id || s.id.trim() === '' || seen.has(s.id)) return false
+            seen.add(s.id)
+            return true
+        })
     }, [suppliersList])
 
     const form = useForm({
@@ -147,50 +239,134 @@ export function DirectContractingForm({
 
             <form.Field
                 name="bacProjectId"
-                children={(field) => (
-                    <div>
-                        <Label className="text-sm font-semibold">
-                            BAC Resolution <span className="text-destructive">*</span>
-                        </Label>
-                        <Select
-                            value={field.state.value || undefined}
-                            onValueChange={(val) => field.handleChange(val)}
-                            disabled={isEdit}
-                        >
-                            <SelectTrigger className="mt-1.5">
-                                <SelectValue placeholder="Select approved resolution..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {filteredResolutions.length > 0 ? (
-                                    filteredResolutions.map((r) => (
-                                        <SelectItem key={r.id} value={r.id}>
-                                            <div className="flex flex-col gap-1 items-start">
-                                                <span className="font-medium">{r.resolutionNumber}</span>
-                                                {/* <div className="flex flex-wrap gap-1">
-                                                    {r.num.map((pr) => (
-                                                        <Badge
-                                                            key={pr}
-                                                            variant="soft"
-                                                            color="secondary"
-                                                            className="text-[10px] py-0 px-1"
-                                                        >
-                                                            {pr}
-                                                        </Badge>
-                                                    ))}
-                                                </div> */}
+                children={(field) => {
+                    const selectedRes = resolutionOptions.find(
+                        (r) => r.id === field.state.value,
+                    )
+                    const selectedMeta = selectedRes
+                        ? extractBacProjectMeta(selectedRes)
+                        : null
+
+                    return (
+                        <div>
+                            <Label className="text-sm font-semibold">
+                                BAC Resolution <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                                value={field.state.value || undefined}
+                                onValueChange={(val) => field.handleChange(val)}
+                                disabled={isEdit}
+                            >
+                                <SelectTrigger className="mt-1.5 h-auto min-h-10 py-2">
+                                    <SelectValue placeholder="Select approved resolution...">
+                                        {selectedMeta ? (
+                                            <div className="flex items-center justify-between gap-3 w-full pr-2 text-xs">
+                                                <div className="flex items-center gap-2 truncate">
+                                                    <FileCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                    <span className="font-semibold text-foreground">
+                                                        {selectedMeta.resolutionNumber}
+                                                    </span>
+                                                    <span className="text-muted-foreground/60">—</span>
+                                                    <span className="text-muted-foreground truncate">
+                                                        {selectedMeta.title}
+                                                    </span>
+                                                </div>
+                                                <span className="font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                                                    {selectedMeta.formattedAmount}
+                                                </span>
                                             </div>
+                                        ) : undefined}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent className="max-h-80">
+                                    {filteredResolutions.length > 0 ? (
+                                        filteredResolutions.map((r) => {
+                                            const meta = extractBacProjectMeta(r)
+                                            return (
+                                                <SelectItem
+                                                    key={r.id}
+                                                    value={r.id}
+                                                    className="py-2.5 px-3 cursor-pointer border-b border-border/30 last:border-b-0 focus:bg-muted/70 rounded-md my-0.5"
+                                                >
+                                                    <div className="flex flex-col gap-1.5 w-full whitespace-normal text-left">
+                                                        {/* Top: Resolution Number + Source Tag + ABC Badge */}
+                                                        <div className="flex items-center justify-between gap-2 w-full">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                <FileCheck className="h-4 w-4 text-primary shrink-0" />
+                                                                <span className="font-semibold text-sm text-foreground truncate">
+                                                                    {meta.resolutionNumber}
+                                                                </span>
+                                                                <Badge
+                                                                    variant="soft"
+                                                                    color={
+                                                                        meta.isConsolidatedPR
+                                                                            ? 'secondary'
+                                                                            : 'info'
+                                                                    }
+                                                                    className="text-[10px] py-0 px-1.5 shrink-0"
+                                                                >
+                                                                    {meta.sourceTypeLabel}
+                                                                </Badge>
+                                                            </div>
+                                                            <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200/80 dark:border-emerald-800/60 shrink-0">
+                                                                {meta.formattedAmount}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Middle: Title / Description */}
+                                                        <div className="text-xs text-muted-foreground line-clamp-1 font-medium pl-6">
+                                                            {meta.title}
+                                                        </div>
+
+                                                        {/* Bottom: Office & PR Numbers */}
+                                                        <div className="flex items-center justify-between gap-2 pt-0.5 text-[11px] text-muted-foreground pl-6">
+                                                            <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                                                <Building2 className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+                                                                <span className="truncate">
+                                                                    {meta.office}
+                                                                </span>
+                                                            </div>
+                                                            {meta.prNumbers.length > 0 && (
+                                                                <div className="flex items-center gap-1 shrink-0">
+                                                                    <span className="text-[10px] text-muted-foreground/80">
+                                                                        PR:
+                                                                    </span>
+                                                                    {meta.prNumbers
+                                                                        .slice(0, 2)
+                                                                        .map((pr) => (
+                                                                            <Badge
+                                                                                key={pr}
+                                                                                variant="outline"
+                                                                                color="secondary"
+                                                                                className="text-[10px] py-0 px-1 font-mono font-normal"
+                                                                            >
+                                                                                {pr}
+                                                                            </Badge>
+                                                                        ))}
+                                                                    {meta.prNumbers.length >
+                                                                        2 && (
+                                                                        <span className="text-[10px] text-muted-foreground font-semibold">
+                                                                            +{meta.prNumbers.length - 2}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </SelectItem>
+                                            )
+                                        })
+                                    ) : (
+                                        <SelectItem value="none" disabled>
+                                            No approved resolutions available
                                         </SelectItem>
-                                    ))
-                                ) : (
-                                    <SelectItem value="none" disabled>
-                                        No approved resolutions available
-                                    </SelectItem>
-                                )}
-                            </SelectContent>
-                        </Select>
-                        <FieldInfo field={field} />
-                    </div>
-                )}
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            <FieldInfo field={field} />
+                        </div>
+                    )
+                }}
             />
 
             <form.Field
@@ -215,7 +391,16 @@ export function DirectContractingForm({
                             <SelectContent>
                                 {filteredSuppliers.map((s) => (
                                     <SelectItem key={s.id} value={s.id}>
-                                        {s.name}
+                                        <div className="flex items-center justify-between gap-3 w-full py-0.5 text-left">
+                                            <span className="font-medium text-foreground">
+                                                {s.name}
+                                            </span>
+                                            {s.philGEPSNumber && (
+                                                <span className="text-[11px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 shrink-0">
+                                                    PhilGEPS: {s.philGEPSNumber}
+                                                </span>
+                                            )}
+                                        </div>
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -232,27 +417,65 @@ export function DirectContractingForm({
                         (r) => r.id === selectedResolutionId,
                     )
                     if (!selectedResolutionId || !selectedRes) return null
+                    const meta = extractBacProjectMeta(selectedRes)
+
                     return (
-                        <div className="text-xs space-y-1 p-3 bg-muted rounded border border-border/60">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Linked PR:</span>
-                                <span className="font-medium">
-                                    {selectedRes.resolutionNumber}
-                                </span>
+                        <div className="rounded-xl border border-primary/20 bg-primary/[0.03] dark:bg-primary/[0.06] p-4 space-y-3 transition-all animate-in fade-in-50 duration-200">
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-3 border-b border-border/50 pb-2.5">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+                                        <FileCheck className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-sm text-foreground truncate">
+                                                {meta.resolutionNumber}
+                                            </span>
+                                            <Badge
+                                                variant="soft"
+                                                color={meta.isConsolidatedPR ? 'secondary' : 'info'}
+                                                className="text-[10px] py-0 px-1.5 shrink-0"
+                                            >
+                                                {meta.sourceTypeLabel}
+                                            </Badge>
+                                        </div>
+                                        <p
+                                            className="text-xs text-muted-foreground line-clamp-1 mt-0.5"
+                                            title={meta.title}
+                                        >
+                                            {meta.title}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                    <div className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">
+                                        Approved Budget (ABC)
+                                    </div>
+                                    <div className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                                        {meta.formattedAmount}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Office:</span>
-                                <span className="font-medium">
-                                    {selectedRes.endUserRepresentativeId || 'N/A'}
-                                </span>
-                            </div>
-                            <div className="flex justify-between border-t border-border/40 mt-1 pt-1">
-                                <span className="text-muted-foreground font-semibold">
-                                    Total ABC:
-                                </span>
-                                <span className="font-bold text-primary">
-                                    ₱{(selectedRes.abc ?? 0).toLocaleString()}
-                                </span>
+
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Building2 className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
+                                    <span className="truncate">
+                                        <strong className="text-foreground font-medium">Office:</strong>{' '}
+                                        {meta.office}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <FileText className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
+                                    <span className="truncate">
+                                        <strong className="text-foreground font-medium">Linked PR:</strong>{' '}
+                                        {meta.prNumbers.length > 0
+                                            ? meta.prNumbers.join(', ')
+                                            : 'None specified'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     )
