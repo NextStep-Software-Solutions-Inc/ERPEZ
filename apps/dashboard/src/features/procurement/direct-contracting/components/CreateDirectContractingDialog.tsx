@@ -111,16 +111,21 @@ export function CreateDirectContractingDialog({
       }
 
       await toast.promise(
-        createDirectContracting({
-          pathParams: {},
-          payload,
-        }),
-        {
-          loading: 'Creating Direct Contracting Request...',
-          success: (res) =>
-            res?.message || 'Direct Contracting Request created successfully!',
-          error: (err) => extractErrorMessage(err as AxiosError),
-        },
+        createDirectContracting(
+          {
+            pathParams: {},
+            payload,
+          },
+          {
+            onSuccess: () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].includes('direct-contracting'),
+              })
+            },
+          },
+        ),
       )
 
       await queryClient.invalidateQueries({

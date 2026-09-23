@@ -143,19 +143,19 @@ export function DirectContractingRequestPage() {
       await toast.promise(
         deleteMutation.mutateAsync({
           pathParams: { id: idToDelete },
-        }),
-        {
-          loading: 'Deleting Direct Contracting request...',
-          success: (res) =>
-            res?.message || 'Direct Contracting request deleted successfully.',
-          error: (err) => extractErrorMessage(err as AxiosError),
         },
+          {
+            onSuccess: () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].includes('direct-contracting'),
+              })
+            },
+          }
+        ),
       )
-      await queryClient.invalidateQueries({
-        predicate: (query) =>
-          typeof query.queryKey[0] === 'string' &&
-          query.queryKey[0].includes('direct-contracting'),
-      })
+
       setConfirmDeleteId(null)
     } catch {
       // toast.promise handles presentation
