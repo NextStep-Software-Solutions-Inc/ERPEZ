@@ -13,10 +13,10 @@ import type { AxiosError } from 'erpez-shared-lib'
 import { useDeleteDirectContracting } from '../handlers'
 
 import { CreateDirectContractingDialog } from '../components/CreateDirectContractingDialog'
-import { UpdateDirectContractingModal } from '../components/UpdateDirectContractingModal'
+import { UpdateDirectContractingDialog } from '../components/UpdateDirectContractingDialog'
 import { ViewProposalDetailsModal } from '../components/ViewProposalDetailsModal'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { createQueryHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
 import { getDirectContractingsRequest } from '../handlers/getDirectContractingsRequest'
 
 import {
@@ -28,6 +28,7 @@ import type { DirectContracting } from '../types'
 const useDirectContractings = createQueryHookFromTemplate(getDirectContractingsRequest)
 
 export function DirectContractingRequestPage() {
+  const queryClient = useQueryClient()
   const deleteMutation = useDeleteDirectContracting()
   const [isDeleting, setIsDeleting] = React.useState(false)
 
@@ -150,6 +151,11 @@ export function DirectContractingRequestPage() {
           error: (err) => extractErrorMessage(err as AxiosError),
         },
       )
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].includes('direct-contracting'),
+      })
       setConfirmDeleteId(null)
     } catch {
       // toast.promise handles presentation
@@ -178,6 +184,11 @@ export function DirectContractingRequestPage() {
           error: (err) => extractErrorMessage(err as AxiosError),
         },
       )
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].includes('direct-contracting'),
+      })
       setBulkDeleteRows(null)
     } catch {
       // toast.promise handles presentation
@@ -251,7 +262,7 @@ export function DirectContractingRequestPage() {
       />
 
       {editEntryId && (
-        <UpdateDirectContractingModal
+        <UpdateDirectContractingDialog
           open={!!editEntryId}
           onOpenChange={(v) => {
             if (!v) setEditEntryId(null)

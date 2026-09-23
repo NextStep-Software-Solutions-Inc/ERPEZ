@@ -1,0 +1,248 @@
+import { useState } from 'react'
+import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
+import { Button } from '@/components/ui/button'
+import { ShoppingCart, Loader2, Trash2 } from 'lucide-react'
+import { useBacResolutions } from '@/features/procurement/bac-resolution/handlers/hooks'
+import { useSuppliers } from '@/components/features/planning/procurement-library'
+import { createMutationHookFromTemplate, useQueryClient, type AxiosError } from 'erpez-shared-lib'
+import { toast } from 'sonner'
+import { extractErrorMessage } from '@/services/utils/messages'
+import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import { useDirectContracting } from '../handlers/hooks'
+import {
+  updateDirectContractingRequest,
+  type UpdateDirectContractingPayload,
+} from '../handlers/updateDirectContractingRequest'
+import { deleteDirectContractingRequest } from '../handlers/deleteDirectContractingRequest'
+import {
+  DirectContractingForm,
+  type CreateDirectContractingFormValues,
+} from './DirectContractingForm'
+
+const useUpdateDirectContracting = createMutationHookFromTemplate(
+  updateDirectContractingRequest,
+)
+
+const useDeleteDirectContracting = createMutationHookFromTemplate(
+  deleteDirectContractingRequest,
+)
+
+export interface UpdateDirectContractingDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  editEntryId: string
+  trigger?: React.ReactNode
+}
+
+export function UpdateDirectContractingDialog({
+  open,
+  onOpenChange,
+  editEntryId,
+  trigger,
+}: UpdateDirectContractingDialogProps) {
+  const queryClient = useQueryClient()
+  const { mutateAsync: updateDirectContracting, isPending: isUpdating } = useUpdateDirectContracting()
+  const { mutateAsync: deleteDirectContracting, isPending: isDeletingMutation } = useDeleteDirectContracting()
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+
+  // Query entry detail
+  const { data: entryData, isLoading: isLoadingEntry } = useDirectContracting({
+    pathParams: { id: editEntryId },
+    enabled: open && !!editEntryId,
+  })
+
+  // Resolution options
+  const { data: bacResolutions } = useBacResolutions({
+    pathParams: {},
+    queryParams: { pageSize: 200 },
+    enabled: open,
+  })
+
+  // Suppliers list
+  const { data: suppliers } = useSuppliers({
+    pathParams: {},
+    queryParams: {
+      pageSize: 200,
+      filters: 'Status==Approved,IsBlacklisted==false',
+    },
+    enabled: open,
+  })
+
+  const handleSubmit = async (values: CreateDirectContractingFormValues) => {
+    try {
+      setIsSubmitting(true)
+
+      let formattedDeadline = values.submissionDeadline
+      if (formattedDeadline && !formattedDeadline.includes('T')) {
+        const [year, month, day] = formattedDeadline.split('-').map(Number)
+        if (year && month && day) {
+          formattedDeadline = new Date(Date.UTC(year, month - 1, day, 23, 59, 59)).toISOString()
+        } else {
+          formattedDeadline = new Date(formattedDeadline).toISOString()
+        }
+      } else if (formattedDeadline) {
+        formattedDeadline = new Date(formattedDeadline).toISOString()
+      }
+
+      const payload: UpdateDirectContractingPayload = {
+        name: values.name.trim(),
+        exclusiveSupplierId: values.exclusiveSupplierId,
+        submissionDeadline: formattedDeadline,
+      }
+
+      await toast.promise(
+        updateDirectContracting({
+          pathParams: { id: editEntryId },
+          payload,
+        }),
+        {
+          loading: 'Updating Direct Contracting Request...',
+          success: (res) =>
+            res?.message || 'Direct Contracting Request updated successfully!',
+          error: (err) => extractErrorMessage(err as AxiosError),
+        },
+      )
+
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].includes('direct-contracting'),
+      })
+
+      onOpenChange(false)
+    } catch {
+      // toast.promise handles presentation
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true)
+
+      await toast.promise(
+        deleteDirectContracting({
+          pathParams: { id: editEntryId },
+        }),
+        {
+          loading: 'Deleting Direct Contracting Request...',
+          success: (res) =>
+            res?.message || 'Direct Contracting Request deleted successfully.',
+          error: (err) => extractErrorMessage(err as AxiosError),
+        },
+      )
+
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].includes('direct-contracting'),
+      })
+
+      setConfirmDeleteOpen(false)
+      onOpenChange(false)
+    } catch {
+      // toast.promise handles presentation
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const isBusy = isSubmitting || isUpdating || isDeleting || isDeletingMutation
+
+  return (
+    <>
+      <ResponsiveDialogDashtail
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!isBusy) onOpenChange(nextOpen)
+        }}
+        title="Edit Direct Contracting Request"
+        description="Modify the details or exclusive supplier assignment for this Direct Contracting request."
+        size="lg"
+        className="w-full max-h-[85vh]"
+        trigger={trigger}
+        footer={
+          <div className="flex justify-between items-center w-full">
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setConfirmDeleteOpen(true)}
+              disabled={isBusy || isLoadingEntry}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Request
+            </Button>
+
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isBusy}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="update-direct-contracting-form"
+                className="gap-2"
+                disabled={isBusy || isLoadingEntry}
+              >
+                {isSubmitting || isUpdating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ShoppingCart className="h-4 w-4" />
+                )}
+                {isSubmitting || isUpdating ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        {open && isLoadingEntry && (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="text-sm font-medium">Loading Direct Contracting details...</span>
+          </div>
+        )}
+
+        {open && !isLoadingEntry && entryData && (
+          <DirectContractingForm
+            formId="update-direct-contracting-form"
+            onSubmit={handleSubmit}
+            initialValues={{
+              name: entryData.name || '',
+              dcNumber: entryData.dcNumber || '',
+              bacProjectId: entryData.bacProjectId || '',
+              exclusiveSupplierId: entryData.exclusiveSupplierId || '',
+              submissionDeadline: entryData.submissionDeadline
+                ? entryData.submissionDeadline.split('T')[0]
+                : '',
+            }}
+            isEdit={true}
+            autoDCNumber={entryData.dcNumber}
+            resolutionOptions={bacResolutions?.data || []}
+            suppliersList={suppliers?.data || []}
+          />
+        )}
+      </ResponsiveDialogDashtail>
+
+      <ConfirmAlertDialog
+        open={confirmDeleteOpen}
+        onOpenChange={(next) => {
+          if (!isBusy) setConfirmDeleteOpen(next)
+        }}
+        title="Delete Direct Contracting Request?"
+        description="Are you sure you want to delete this Direct Contracting request? This action cannot be undone."
+        confirmLabel="Delete"
+        loading={isDeleting || isDeletingMutation}
+        onConfirm={handleDelete}
+      />
+    </>
+  )
+}
