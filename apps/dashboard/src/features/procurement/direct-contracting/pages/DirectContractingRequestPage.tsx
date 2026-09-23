@@ -75,7 +75,7 @@ export function DirectContractingRequestPage() {
     }
 
     if (searchQuery && searchQuery.trim()) {
-      filterParts.push(`name==${searchQuery.trim()}`)
+      filterParts.push(`name@=*${searchQuery.trim()}`)
     }
 
     return filterParts.length > 0 ? filterParts.join(',') : undefined
