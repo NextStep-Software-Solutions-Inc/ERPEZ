@@ -75,9 +75,10 @@ public class GetLIBsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
+        result.Data.Should().NotBeNull();
         result.Data.Should().HaveCount(1);
 
-        var item = result.Data.First();
+        var item = result.Data!.First();
         item.Id.Should().Be(libId);
         item.Name.Should().Be("FY 2026 ICT Division Budget");
         item.CreatedAt.Should().Be(now);
