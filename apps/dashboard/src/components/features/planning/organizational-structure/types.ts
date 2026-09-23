@@ -273,6 +273,7 @@ export type OfficeType =
   | 'bureau'
   | 'service'
   | 'center'
+  | (string & {})
 
 export type OfficeCategory =
   | 'executive'
@@ -282,6 +283,7 @@ export type OfficeCategory =
   | 'oversight'
   | 'delivery'
   | 'regulatory'
+  | (string & {})
 
 export type OfficeLevel =
   | 'central'
@@ -290,6 +292,7 @@ export type OfficeLevel =
   | 'municipal'
   | 'barangay'
   | 'satellite'
+  | (string & {})
 
 // Position Types
 export type PositionType =
@@ -337,6 +340,7 @@ export type ProcurementWorkflow =
   | 'decentralized'
   | 'mixed'
   | 'none'
+  | (string & {})
 
 // Civil Status
 export type CivilStatus =

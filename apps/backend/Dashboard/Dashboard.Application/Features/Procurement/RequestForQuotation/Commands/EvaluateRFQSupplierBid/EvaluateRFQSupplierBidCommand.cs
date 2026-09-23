@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQSupplierBids;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -27,9 +28,20 @@ public class EvaluateRFQSupplierBidCommandHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<RFQSupplierBidDto>> Handle(
         EvaluateRFQSupplierBidCommand command, CancellationToken cancellationToken)
     {
+        var rfq = await unitOfWork.RFQRepository.Query()
+            .FirstOrDefaultAsync(r => r.Id == command.RFQId && !r.IsDeleted, cancellationToken)
+            ?? throw new NotFoundException("RFQ not found.");
+
+        if (rfq.Status != StatusEnum.Approved)
+        {
+            return ApiResponse<RFQSupplierBidDto>.Fail("RFQ is not approved. Supplier submissions can only be evaluated for approved RFQs.");
+        }
+
         var bid = await unitOfWork.SupplierBidRepository.Query()
             .Include(b => b.Supplier)
                 .ThenInclude(s => s.SupplierCategory)
+            .Include(b => b.Supplier)
+                .ThenInclude(s => s.SupplierRequirements)
             .Include(b => b.SupplierBidItems)
                 .ThenInclude(i => i.RFQItem)
             .FirstOrDefaultAsync(
@@ -57,18 +69,42 @@ public class EvaluateRFQSupplierBidCommandHandler(IUnitOfWork unitOfWork)
         unitOfWork.SupplierBidRepository.Update(bid);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var seenUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var documents = new List<RFQBidDocumentDto>();
+
+        if (bid.Supplier?.SupplierRequirements != null)
+        {
+            foreach (var req in bid.Supplier.SupplierRequirements.Where(r => !string.IsNullOrEmpty(r.Url) && !r.IsDeleted))
+            {
+                if (seenUrls.Add(req.Url!))
+                {
+                    documents.Add(new RFQBidDocumentDto
+                    {
+                        Id = req.Id,
+                        Name = req.RequirementName,
+                        Type = "PDF",
+                        Size = 0,
+                        UploadedAt = req.CreatedAt,
+                        Url = req.Url
+                    });
+                }
+            }
+        }
+
         foreach (var item in bid.SupplierBidItems.Where(i => !string.IsNullOrEmpty(i.BrochureFileUrl)))
         {
-            documents.Add(new RFQBidDocumentDto
+            if (seenUrls.Add(item.BrochureFileUrl!))
             {
-                Id = item.BrochureFileId ?? item.Id,
-                Name = $"{item.RFQItem?.ItemNameSnapshot ?? "Item"} Brochure",
-                Type = "PDF",
-                Size = 0,
-                UploadedAt = bid.SubmittedAt ?? bid.CreatedAt,
-                Url = item.BrochureFileUrl
-            });
+                documents.Add(new RFQBidDocumentDto
+                {
+                    Id = item.BrochureFileId ?? item.Id,
+                    Name = $"{item.RFQItem?.ItemNameSnapshot ?? "Item"} Brochure / Form",
+                    Type = "PDF",
+                    Size = 0,
+                    UploadedAt = bid.SubmittedAt ?? bid.CreatedAt,
+                    Url = item.BrochureFileUrl
+                });
+            }
         }
 
         var dto = new RFQSupplierBidDto

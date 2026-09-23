@@ -51,6 +51,7 @@ public class SubmitSupplierBidCommandHandlerTests
         {
             Id = rfqId,
             RFQNumber = "RFQ-BID-001",
+            Status = StatusEnum.Approved,
             RFQItems =
             [
                 new RFQItem
@@ -140,5 +141,105 @@ public class SubmitSupplierBidCommandHandlerTests
         // Assert
         result.Succeeded.Should().BeFalse();
         result.Message.Should().Contain("not found");
+    }
+
+    [Theory]
+    [InlineData(StatusEnum.Draft)]
+    [InlineData(StatusEnum.Submitted)]
+    [InlineData(StatusEnum.Returned)]
+    public async Task Handle_WhenRFQNotApproved_ShouldReturnFail(StatusEnum unapprovedStatus)
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var rfqId = Guid.NewGuid();
+        var supplierId = Guid.NewGuid();
+
+        var supplier = new Supplier { Id = supplierId, Name = "Test Supplier", Email = "supplier@test.com" };
+        context.Suppliers?.Add(supplier);
+
+        var rfq = new RFQ
+        {
+            Id = rfqId,
+            RFQNumber = "RFQ-UNAPPROVED-001",
+            Status = unapprovedStatus,
+            RFQSuppliers =
+            [
+                new RFQSupplier
+                {
+                    RFQId = rfqId,
+                    SupplierId = supplierId
+                }
+            ]
+        };
+        context.RFQs?.Add(rfq);
+        await context.SaveChangesAsync();
+
+        var command = new SubmitSupplierBidCommand
+        {
+            RFQId = rfqId,
+            SupplierId = supplierId,
+            Status = "SUBMITTED",
+            Items = []
+        };
+
+        var handler = new SubmitSupplierBidCommandHandler(unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("not been approved");
+    }
+
+    [Fact]
+    public async Task Handle_WhenSupplierNotInvited_ShouldReturnFail()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var rfqId = Guid.NewGuid();
+        var invitedSupplierId = Guid.NewGuid();
+        var uninvitedSupplierId = Guid.NewGuid();
+
+        var supplier = new Supplier { Id = uninvitedSupplierId, Name = "Uninvited Supplier", Email = "uninvited@test.com" };
+        context.Suppliers?.Add(supplier);
+
+        var rfq = new RFQ
+        {
+            Id = rfqId,
+            RFQNumber = "RFQ-INVITE-001",
+            Status = StatusEnum.Approved,
+            RFQSuppliers =
+            [
+                new RFQSupplier
+                {
+                    RFQId = rfqId,
+                    SupplierId = invitedSupplierId
+                }
+            ]
+        };
+        context.RFQs?.Add(rfq);
+        await context.SaveChangesAsync();
+
+        var command = new SubmitSupplierBidCommand
+        {
+            RFQId = rfqId,
+            SupplierId = uninvitedSupplierId,
+            Status = "SUBMITTED",
+            Items = []
+        };
+
+        var handler = new SubmitSupplierBidCommandHandler(unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("not invited");
     }
 }

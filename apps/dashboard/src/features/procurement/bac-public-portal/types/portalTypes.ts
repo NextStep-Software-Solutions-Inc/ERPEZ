@@ -15,6 +15,16 @@ export interface RequiredDocument {
   envelopeType?: number
 }
 
+export interface PublicProjectItem {
+  id: string
+  itemName: string
+  description?: string
+  quantity: number
+  uom?: string
+  abcUnitPrice: number
+  abcTotalPrice: number
+}
+
 export interface PublicProject {
   id: string
   referenceNo: string
@@ -30,6 +40,7 @@ export interface PublicProject {
   bidOpening?: string
   scope: string
   requiredDocuments: RequiredDocument[]
+  items?: PublicProjectItem[]
 }
 
 export interface ApplicationFormData {
@@ -45,4 +56,5 @@ export interface SubmissionResult {
   referenceNumber: string
   submittedAt: string
   projectTitle: string
+  totalBidAmount?: number
 }

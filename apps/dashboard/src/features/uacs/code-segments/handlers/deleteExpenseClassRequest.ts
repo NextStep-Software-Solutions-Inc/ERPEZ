@@ -1,16 +1,15 @@
-export const deleteExpenseClassRequest = {
-  endpoint: '/expense-classes/{id}',
-  key: ({ url }: { url: string }) => [url] as const,
-  fetcher: async ({ finalUrl }: { finalUrl: string }) => {
-    const response = await fetch(finalUrl, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/json',
-      },
-    })
-    if (!response.ok) {
-      throw new Error(`Failed to delete expense class: ${response.statusText}`)
-    }
-    return response.json()
+import type { MutationBlueprintFromTemplate, APIResponse } from 'erpez-shared-lib'
+import api from '@/services/api'
+
+const endpoint = '/expense-classes/:id'
+
+export const deleteExpenseClassRequest: MutationBlueprintFromTemplate<
+  typeof endpoint,
+  unknown
+> = {
+  endpoint,
+  fetcher: async ({ finalUrl }) => {
+    const response = await api.delete<APIResponse<unknown>>(finalUrl)
+    return response.data?.data
   },
 }

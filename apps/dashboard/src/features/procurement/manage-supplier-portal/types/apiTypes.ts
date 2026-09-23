@@ -40,6 +40,10 @@ export interface SupplierApplicationResponse {
   evaluationStatus: 'Pending' | 'Passed' | 'Failed' | string
   submittedAt: string
   totalBidAmount: number
+  deliveryPeriod?: string
+  paymentTerms?: string
+  warrantyTerms?: string
+  validityPeriodDays?: number
   remarks?: string
   evaluatedBy?: string
   evaluatedAt?: string
@@ -74,6 +78,7 @@ export interface RFQListItemResponse {
   status: string
   totalAmount: number
   applicantCount: number
+  itemCount: number
 }
 
 export interface RFQDetailResponse {
@@ -128,6 +133,10 @@ export interface RFQSupplierBidResponse {
   status: string
   submittedAt?: string
   totalBidAmount: number
+  deliveryPeriod?: string
+  paymentTerms?: string
+  warrantyTerms?: string
+  validityPeriodDays?: number
   remarks?: string
   evaluatedBy?: string
   evaluatedAt?: string

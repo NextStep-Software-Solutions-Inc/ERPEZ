@@ -8,7 +8,6 @@ import {
   FileCheck2,
   FileText,
   FolderOpen,
-  Loader2,
   Lock,
   ShieldCheck,
   Unlock,
@@ -275,7 +274,7 @@ export function RecordBidOpeningDialog({
                     First Envelope: Eligibility & Technical Examination
                   </Label>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Non-discretionary Pass/Fail criterion under RA 12009 / RA 9184 IRR.
+                    Non-discretionary Pass/Fail criterion under RA 12009 IRR.
                   </p>
                 </div>
                 {envelope1Result === 'Passed' ? (
@@ -481,7 +480,7 @@ export function RecordBidOpeningDialog({
                 <div className="p-3 bg-destructive/10 rounded-md text-xs text-destructive flex items-center gap-2.5 font-medium">
                   <Lock className="h-4 w-4 text-destructive shrink-0" />
                   <span>
-                    Envelope 2 remains sealed because the First Envelope did not pass the initial examination. Under statutory bidding procedures (RA 9184 / RA 12009), the financial envelope of a disqualified bidder shall not be opened.
+                    Envelope 2 remains sealed because the First Envelope did not pass the initial examination. Under statutory bidding procedures (RA 12009), the financial envelope of a disqualified bidder shall not be opened.
                   </span>
                 </div>
               )}

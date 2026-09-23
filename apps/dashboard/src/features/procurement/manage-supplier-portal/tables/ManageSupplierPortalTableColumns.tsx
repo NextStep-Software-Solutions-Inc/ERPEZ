@@ -15,6 +15,8 @@ const getStatusColor = (status: string) => {
       return 'bg-emerald-100 text-emerald-800 border-emerald-300'
     case 'evaluation':
     case 'submitted':
+    case 'forapproval':
+    case 'for approval':
       return 'bg-amber-100 text-amber-800 border-amber-300'
     case 'closed':
     case 'returned':
@@ -110,9 +112,12 @@ export function getManageSupplierPortalTableColumns({
     columnHelper.accessor('status', {
       header: 'Status',
       cell: ({ row }) => {
-        const status = row.getValue('status') as string
+        let status = row.getValue('status') as string
+        if (typeof status === 'string' && status.toLowerCase() === 'submitted') {
+          status = 'ForApproval'
+        }
         return (
-          <Badge variant="outline" className={cn('text-xs font-medium capitalize', getStatusColor(status))}>
+          <Badge variant="outline" className={cn('text-xs font-medium', getStatusColor(status))}>
             {status || 'Active'}
           </Badge>
         )

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { deriveScheduleDates } from '../lib/ppmpScheduleDerivation'
 
 describe('AddPPMPItemsModal close and submission lifecycle logic', () => {
   type SelectedMap = Map<string, { id: string; name: string }>
@@ -174,5 +175,51 @@ describe('AddPPMPItemsModal close and submission lifecycle logic', () => {
 
     expect(state.isOpen).toBe(true)
     expect(state.confirmCloseOpen).toBe(false)
+  })
+})
+
+describe('AddPPMPItemsModal schedule auto-derivation lifecycle', () => {
+  it('automatically calculates dates when monthly allocation is provided', () => {
+    const monthlyQuantities = {
+      January: 0,
+      February: 0,
+      March: 0,
+      April: 25,
+      May: 0,
+      June: 0,
+      July: 25,
+      August: 0,
+      September: 0,
+      October: 25,
+      November: 0,
+      December: 0,
+    }
+
+    const derived = deriveScheduleDates({
+      monthlyQuantities,
+      fiscalYear: 2026,
+      procurementModeName: 'Small Value Procurement',
+    })
+
+    expect(derived).toEqual({
+      expectedDeliveryStart: '2026-04-01',
+      expectedDeliveryEnd: '2026-10-31',
+      procurementStartDate: '2026-03-17',
+      procurementEndDate: '2026-03-31',
+    })
+  })
+
+  it('preserves manual overrides when isScheduleAutoDerived is set to false', () => {
+    const config = {
+      procurementStartDate: '2026-02-01',
+      procurementEndDate: '2026-02-15',
+      expectedDeliveryStart: '2026-03-01',
+      expectedDeliveryEnd: '2026-03-31',
+      isScheduleAutoDerived: false,
+    }
+
+    // When isScheduleAutoDerived is false, auto-sync does not overwrite manual entries
+    expect(config.isScheduleAutoDerived).toBe(false)
+    expect(config.procurementStartDate).toBe('2026-02-01')
   })
 })

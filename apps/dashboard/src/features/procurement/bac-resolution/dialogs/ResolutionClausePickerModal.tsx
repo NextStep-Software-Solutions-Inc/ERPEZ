@@ -66,7 +66,9 @@ export function ResolutionClausePickerModal({
 
   useEffect(() => {
     if (open) {
-      setDraftItems(initialSelected || [])
+      setDraftItems(
+        (initialSelected || []).filter((c) => Boolean(c && c.resolutionClauseId)),
+      )
       setSearchTerm('')
     }
   }, [open, initialSelected])
@@ -78,9 +80,11 @@ export function ResolutionClausePickerModal({
 
   const targetType = normalizeClauseType(clauseType)
 
-  // Filter templates strictly by clauseType
+  // Filter templates strictly by clauseType and ensure they have a valid id
   const typeFilteredTemplates = useMemo(() => {
-    return templates.filter((t) => normalizeClauseType(t.clauseType) === targetType)
+    return templates.filter(
+      (t) => Boolean(t && t.id) && normalizeClauseType(t.clauseType) === targetType,
+    )
   }, [templates, targetType])
 
   const filteredTemplates = useMemo(() => {
@@ -88,12 +92,13 @@ export function ResolutionClausePickerModal({
     const term = searchTerm.toLowerCase()
     return typeFilteredTemplates.filter(
       (t) =>
-        t.name.toLowerCase().includes(term) ||
-        t.body.toLowerCase().includes(term),
+        t.name?.toLowerCase().includes(term) ||
+        t.body?.toLowerCase().includes(term),
     )
   }, [typeFilteredTemplates, searchTerm])
 
   const toggleTemplate = (templateId: string) => {
+    if (!templateId) return
     if (selectedIds.includes(templateId)) {
       const nextItems = draftItems
         .filter((c) => c.resolutionClauseId !== templateId)
@@ -304,7 +309,7 @@ export function ResolutionClausePickerModal({
                   const template = templates.find((t) => t.id === item.resolutionClauseId)
                   return (
                     <div
-                      key={item.resolutionClauseId}
+                      key={item.resolutionClauseId || index}
                       className="group flex items-start gap-2.5 p-2.5 rounded-lg border border-default-200 bg-white shadow-xs text-left"
                     >
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white mt-0.5">
@@ -313,7 +318,7 @@ export function ResolutionClausePickerModal({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1">
                           <p className="text-xs font-semibold text-default-900 truncate">
-                            {template?.name || 'Custom Clause'}
+                            {template?.name || (template?.body ? 'Clause' : 'Selected Clause')}
                           </p>
                           <Button
                             type="button"
@@ -326,7 +331,7 @@ export function ResolutionClausePickerModal({
                           </Button>
                         </div>
                         <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5 leading-snug">
-                          {template?.body || ''}
+                          {template?.body || 'Loading clause content...'}
                         </p>
                       </div>
                     </div>

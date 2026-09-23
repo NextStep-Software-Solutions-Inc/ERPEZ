@@ -70,6 +70,19 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 appItems.Add(appItem);
             }
 
+            // Mode of Procurement Single-Mode validation under RA 12009
+            var distinctModes = appItems
+                .Select(i => i.ProcurementModeId)
+                .Distinct()
+                .ToList();
+
+            if (distinctModes.Count > 1)
+            {
+                return ApiResponse<Guid>.Fail(
+                    "All selected APP items must share the same Mode of Procurement. Under RA 12009, Competitive Bidding and Alternative Modes (e.g., SVP) cannot be combined in a single Procurement Project."
+                );
+            }
+
             // Duplicate protection check for all APP Items
             var existingProject = await unitOfWork.ProcurementProjectRepository
                 .FindAsync(p => p.Status != "Cancelled" && (
@@ -115,7 +128,7 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             }
 
             projectABC = inheritedAbc;
-            procurementModeId = appItems.FirstOrDefault()?.ProcurementModeId;
+            procurementModeId = distinctModes[0];
         }
         else if (request.SourceType == ProcurementProjectSourceType.ConsolidatedPR)
         {

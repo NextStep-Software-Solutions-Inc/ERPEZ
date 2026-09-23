@@ -12,6 +12,7 @@ import {
   createNoticeOfAwardRequest,
   getAvailableAwardBacResolutionsRequest,
   getNoticeOfAwardsRequest,
+  printNoticeOfAwardRequest,
   returnNoticeOfAwardRequest,
 } from '../handlers'
 import type {
@@ -28,6 +29,7 @@ import {
   ReturnNoticeOfAwardDialog,
 } from '../dialogs'
 import { toast } from 'sonner'
+import { downloadNoticeOfAwardBlob } from '../utils/downloadNoticeOfAwardBlob'
 import { getNoaContractExecutionSlaState } from '../utils/noaContractExecutionSla'
 
 type NoticeOfAwardWorkspaceProps = {
@@ -175,6 +177,20 @@ export function NoticeOfAwardWorkspace({
     setCreateOpen(true)
   }
 
+  const handleGenerateNoa = async (noa: NoticeOfAward) => {
+    try {
+      const result = await printNoticeOfAwardRequest.fetcher({ noaId: noa.id })
+      downloadNoticeOfAwardBlob(result.blob, result.fileName)
+      toast.success('NOA document generated successfully.')
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to generate the NOA document.',
+      )
+    }
+  }
+
   if (isLoading && noticesOfAward.length === 0) {
     return (
       <div className="w-full h-64 flex flex-col items-center justify-center gap-3">
@@ -240,7 +256,7 @@ export function NoticeOfAwardWorkspace({
             <AlertDescription className="text-xs text-destructive-800 mt-1 space-y-1">
               <p>
                 There {overdueSlaCount === 1 ? 'is' : 'are'} <strong>{overdueSlaCount} Notice of Award record{overdueSlaCount === 1 ? '' : 's'}</strong> exceeding the statutory 10-calendar-day contract execution window.
-                Review the records immediately to log legal justifications or initiate next-ranked bidder forfeiture procedures under RA 9184 / RA 12009.
+                Review the records immediately to log legal justifications or initiate next-ranked bidder forfeiture procedures under RA 12009.
               </p>
             </AlertDescription>
           </div>
@@ -256,7 +272,7 @@ export function NoticeOfAwardWorkspace({
           </CardHeader>
           <CardContent>
             <div className="text-xl font-extrabold text-default-900">
-              RA 9184 / RA 12009
+              RA 12009
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
               Execution SLA: <span className="font-semibold text-blue-600">10 Calendar Days</span>
@@ -326,6 +342,7 @@ export function NoticeOfAwardWorkspace({
         rows={filteredNoticesOfAward}
         detailsTo={detailsTo}
         onCreateClick={role === 'procurement-staff' ? handleOpenCreate : undefined}
+        onGenerateNoa={handleGenerateNoa}
         activeStatus={activeFilter}
         onStatusChange={setActiveFilter}
         statusCounts={{

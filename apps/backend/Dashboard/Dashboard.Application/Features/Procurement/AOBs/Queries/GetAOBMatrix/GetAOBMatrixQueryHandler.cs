@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Procurement.AOBs.Common;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -24,7 +25,10 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
 
         // 1. Load Linked RFQs with their items
         var rfqs = await unitOfWork.RFQRepository.Query()
+            .Include(r => r.ConsolidatedPR)
             .Include(r => r.RFQItems)
+                .ThenInclude(i => i.CPRItem)
+                    .ThenInclude(ci => ci!.ConsolidatedPR)
             .Where(r => rfqIds.Contains(r.Id))
             .ToListAsync(cancellationToken);
 
@@ -35,7 +39,7 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
         var bids = await unitOfWork.SupplierBidRepository.Query()
             .Include(sb => sb.Supplier)
             .Include(sb => sb.SupplierBidItems)
-            .Where(sb => rfqIds.Contains(sb.RFQId) && sb.Status == "SUBMITTED")
+            .Where(sb => rfqIds.Contains(sb.RFQId) && !sb.IsDeleted && sb.Status != "Draft" && sb.Status != "Cancelled" && sb.Status != "Withdrawn")
             .ToListAsync(cancellationToken);
 
         // 3. Opening Date check
@@ -46,6 +50,9 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
             .GroupBy(b => b.SupplierId)
             .Select(g => g.First())
             .ToList();
+
+        var metadata = await AOBReferenceResolver.ResolveAsync(
+            unitOfWork, aob.Id, aob.ApprovedBy, rfqs, cancellationToken);
 
         var response = new AOBMatrixResponse
         {
@@ -59,6 +66,11 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
             IsBidsOpened = isBidsOpened,
             HasMinimumCanvassWarning = distinctSuppliers.Count < 3,
             Remarks = aob.Remarks,
+            BacResolutionNumber = metadata.BacResolutionNumber,
+            PRNumber = metadata.PRNumber,
+            PAPCode = metadata.PAPCode,
+            ApproverName = metadata.ApproverName,
+            ApproverTitle = metadata.ApproverTitle,
             LinkedRFQs = rfqs.Select(r => new AOBMatrixRFQDto
             {
                 Id = r.Id,
@@ -121,8 +133,10 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
                         Color = isBidsOpened ? bidItem.Color : null,
                         BrochureFileId = isBidsOpened ? bidItem.BrochureFileId : null,
                         BrochureFileUrl = isBidsOpened ? bidItem.BrochureFileUrl : null,
-                        IsResponsive = bidItem.IsResponsive,
-                        DisqualificationReason = bidItem.DisqualificationReason,
+                        IsResponsive = bidItem.IsResponsive && !string.Equals(bid.Status, "Failed", StringComparison.OrdinalIgnoreCase) && !string.Equals(bid.Status, "Disqualified", StringComparison.OrdinalIgnoreCase),
+                        DisqualificationReason = string.Equals(bid.Status, "Failed", StringComparison.OrdinalIgnoreCase)
+                            ? (bid.Remarks ?? "Failed BAC evaluation")
+                            : bidItem.DisqualificationReason,
                         IsOverABC = isOverABC,
                         QualityScore = isBidsOpened ? bidItem.QualityScore : null,
                         Rank = 0,

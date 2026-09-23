@@ -259,7 +259,7 @@ export function EvaluateBidsDialog({
                     Authoritative Evaluation Criterion <span className="text-destructive">*</span>
                   </Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Required under RA 12009 (NGPA) / RA 9184 before bid ranking.
+                    Required under RA 12009 (NGPA) before bid ranking.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

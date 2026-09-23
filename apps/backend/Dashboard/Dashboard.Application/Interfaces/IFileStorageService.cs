@@ -13,4 +13,5 @@ public interface IFileStorageService
     Task<string> GetDownloadUrlAsync(Guid fileId, TimeSpan? expiry = null, CancellationToken cancellationToken = default);
     Task UploadPermanentAsync(string fileName, Stream stream, CancellationToken cancellationToken = default);
     Task DeletePermanentAsync(Guid fileId, CancellationToken cancellationToken = default);
+    Task DeleteTempFileAsync(Guid fileId, CancellationToken cancellationToken = default);
 }

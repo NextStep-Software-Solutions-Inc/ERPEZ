@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { BiddingSchedulePage } from '@/features/procurement/bidding-schedule/pages'
 import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
@@ -28,7 +28,7 @@ function PublicBiddingScheduleRoute() {
         bacResolutionId={resolutionId}
         highlightMilestoneKey={search.highlightMilestoneKey}
         backTo="/v2/bac-resolutions-public-bidding"
-        backLabel="Back to BAC Resolutions (Public Bidding)"
+        backLabel="Back to BAC Resolutions (Competitive Bidding)"
       />
     </RoutePermissionGuard>
   )

@@ -370,7 +370,7 @@ export type AgencyMasterBudget = {
   id: string
   fiscalYearId: string
   fundSourceId: string
-  sourceDocumentType: number
+  sourceDocumentType: string  // API returns enum name e.g. "NEPGAA", "PRE", "MOA", "Others"
   sourceDocumentTypeEnum: number[]
   psAmount: number
   mooeAmount: number

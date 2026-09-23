@@ -1,3 +1,4 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -6,7 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Commands.ReturnAOB;
 
-public class ReturnAOBCommandHandler(IUnitOfWork unitOfWork)
+public class ReturnAOBCommandHandler(
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUserService)
     : IRequestHandler<ReturnAOBCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(ReturnAOBCommand request, CancellationToken cancellationToken)
@@ -24,10 +27,14 @@ public class ReturnAOBCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("Approved Abstract of Bids (AOB) cannot be returned.");
         }
 
+        var actorName = !string.IsNullOrWhiteSpace(currentUserService.Name)
+            ? currentUserService.Name
+            : (!string.IsNullOrWhiteSpace(currentUserService.Username) ? currentUserService.Username : "BAC Chairperson");
+
         aob.Status = StatusEnum.Returned;
         aob.Remarks = request.Remarks;
         aob.UpdatedAt = DateTime.UtcNow;
-        aob.UpdatedBy = "System";
+        aob.UpdatedBy = actorName;
 
         unitOfWork.AOBRepository.Update(aob);
         await unitOfWork.SaveChangesAsync(cancellationToken);

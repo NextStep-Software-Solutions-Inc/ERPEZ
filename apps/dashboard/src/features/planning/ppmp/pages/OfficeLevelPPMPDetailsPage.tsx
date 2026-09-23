@@ -2102,7 +2102,7 @@ export function ExpenditureItemGroup({
   // Object code lookup for Type and Item of Expenditure
   const { data: objectCodesResponse } = useObjectCodesQuery({
     pathParams: {},
-    queryParams: { pageSize: 1000 },
+    queryParams: { pageSize: 5000 },
   })
 
   const { typeOfExpenditure, itemOfExpenditure } = useMemo(() => {

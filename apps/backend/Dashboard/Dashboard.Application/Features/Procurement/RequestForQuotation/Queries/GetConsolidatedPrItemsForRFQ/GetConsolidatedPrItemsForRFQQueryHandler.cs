@@ -29,7 +29,33 @@ public class GetConsolidatedPrItemsForRFQQueryHandler(IUnitOfWork unitOfWork)
 
         foreach (var cpr in approvedCprs)
         {
-            projectByCprId.TryGetValue(cpr.Id, out var project);
+            if (!projectByCprId.TryGetValue(cpr.Id, out var project))
+            {
+                var appItemIds = cpr.ConsolidatedPRItems
+                    .Where(ci => !ci.IsDeleted && ci.PRItem != null && ci.PRItem.PPMPItem != null && ci.PRItem.PPMPItem.APPItems != null)
+                    .SelectMany(ci => ci.PRItem!.PPMPItem!.APPItems)
+                    .Where(ai => ai != null && !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                    .Select(ai => ai.Id)
+                    .Distinct()
+                    .ToList();
+
+                if (appItemIds.Count > 0)
+                {
+                    var lineageProjects = await unitOfWork.ProcurementProjectRepository
+                        .GetByAPPItemIdsWithResolutionsAsync(appItemIds, cancellationToken);
+
+                    project = lineageProjects
+                        .Where(p => !p.IsDeleted && p.BACResolutions.Any(r => !r.IsDeleted))
+                        .OrderByDescending(p => p.CreatedAt)
+                        .FirstOrDefault();
+
+                    if (project != null)
+                    {
+                        projectByCprId[cpr.Id] = project;
+                    }
+                }
+            }
+
             var resolution = project?.BACResolutions.FirstOrDefault(r => !r.IsDeleted);
             var hasBacRes = resolution != null || project != null;
             var bacStatus = !string.IsNullOrEmpty(resolution?.Status) ? resolution.Status : project?.Status;

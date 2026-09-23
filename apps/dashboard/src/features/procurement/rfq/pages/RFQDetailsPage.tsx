@@ -51,6 +51,7 @@ import {
   Shield,
   Loader2,
   Edit,
+  CornerDownLeft,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -1156,6 +1157,32 @@ export function RFQDetailsPage({
         </CardHeader>
       </Card>
 
+      {/* Return Reason Card — shown when RFQ has been returned */}
+      {!isSupplierPortal && (displayStatus === 'returned' || rfq.status === 'returned' || (rfq.status === 'draft' && rfq.remarks)) && (
+        <Card className="shadow-sm mt-6 border-l-4 border-l-destructive border-red-200 bg-gradient-to-r from-red-50/90 via-red-50/50 to-orange-50/30 dark:from-red-950/30 dark:to-red-900/10">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-red-200 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0">
+                <CornerDownLeft className="h-4 w-4 text-red-700 dark:text-red-300" />
+              </div>
+              <div>
+                <CardTitle className="text-red-800 dark:text-red-300 text-base font-bold">
+                  Return Reason / Remarks
+                </CardTitle>
+                <CardDescription className="text-xs text-red-600 dark:text-red-400">
+                  This RFQ was returned for revision by the BAC Chairperson. Please address the remarks below before editing or re-submitting.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="p-3.5 bg-white/90 dark:bg-slate-900/80 rounded-md border border-red-200 dark:border-red-900/60 text-sm font-medium text-red-950 dark:text-red-100 whitespace-pre-wrap leading-relaxed">
+              {rfq.remarks?.trim() ? rfq.remarks : 'No specific return reason was provided.'}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Details card */}
       <Card className="shadow-sm mt-6">
         <CardContent className="pt-6">
@@ -1660,6 +1687,10 @@ export function RFQDetailsPage({
         onOpenChange={setShowAddPRModal}
         onAdd={handleAddConsolidatedPR}
         existingCPRItemIds={(rfq?.items || []).map((it: any) => it.itemId || it.prId || '')}
+        currentConsolidatedPRId={rfq?.consolidatedPRId}
+        currentConsolidatedPRNumber={rfq?.consolidatedPRNumber}
+        currentModeOfProcurementId={rfq?.modeOfProcurementId}
+        currentModeOfProcurementName={rfq?.modeOfProcurementName || rfq?.modeOfProcurement}
       />
 
       {/* Set Quotation Modal */}

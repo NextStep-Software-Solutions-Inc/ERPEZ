@@ -59,7 +59,12 @@ function isLinkedPrPublicBidding(linkedPr: ConsolidatedPrLink) {
   }
 
   const mop = (linkedPr.modeOfProcurement || '').trim().toLowerCase()
-  return mop === 'public bidding' || mop.includes('limited')
+  return (
+    mop === 'public bidding' ||
+    mop === 'competitive bidding' ||
+    mop.includes('competitive') ||
+    mop.includes('limited')
+  )
 }
 
 export function getPrimaryLinkedConsolidatedPr(
@@ -315,8 +320,8 @@ export function getBacProjectProcurementMode(project: BacProject | null | undefi
       if (storePr.itemMOPs) {
         const firstMop = Object.values(storePr.itemMOPs)[0]?.mop
         if (firstMop) {
-          return firstMop === 'public-bidding'
-            ? 'Public Bidding'
+          return firstMop === 'public-bidding' || firstMop === 'competitive-bidding'
+            ? 'Competitive Bidding'
             : firstMop === 'limited-bidding' || firstMop === 'limited-source-bidding'
               ? 'Limited Source Bidding'
               : firstMop.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
