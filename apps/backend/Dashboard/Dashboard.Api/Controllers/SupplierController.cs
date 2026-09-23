@@ -3,6 +3,7 @@ using ERPEZ.Application.Features.Planning.Supplier.Commands.CreateSupplierWithRe
 using ERPEZ.Application.Features.Planning.Supplier.Commands.DeleteSupplier;
 using ERPEZ.Application.Features.Planning.Supplier.Commands.PatchSupplier;
 using ERPEZ.Application.Features.Planning.Supplier.Commands.UpdateSupplier;
+using ERPEZ.Application.Features.Planning.Supplier.Commands.ValidateSupplier;
 using ERPEZ.Application.Features.Planning.Supplier.Commands.VerifySupplierRequirements;
 using ERPEZ.Application.Features.Planning.Supplier.Dtos;
 using ERPEZ.Application.Features.Planning.Supplier.Queries.GetSupplierById;
@@ -21,6 +22,24 @@ namespace ERPEZ.Api.Controllers;
 [Authorize]
 public class SupplierController(ISender mediator) : ControllerBase
 {
+    /// <summary>
+    /// Pre-flight validation for supplier registration/update prior to uploading requirement files.
+    /// Prevents storage exhaustion if TIN or Business Permit is duplicated or category is missing.
+    /// </summary>
+    [HttpPost("validate")]
+    [HasPermission(Permissions.Procurement.supplierManage)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ValidateSupplier([FromBody] ValidateSupplierRequest request)
+    {
+        var command = new ValidateSupplierCommand(request);
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
     /// <summary>
     /// Create a new supplier/merchant profile
     /// </summary>

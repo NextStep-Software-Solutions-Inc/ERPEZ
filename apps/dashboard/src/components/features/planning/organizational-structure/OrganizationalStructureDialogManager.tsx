@@ -85,7 +85,7 @@ export default function OrganizationalStructureDialogManager() {
           onOpenChange={(open) =>
             setUpdateOfficeDialog({ ...updateOfficeDialog, isOpen: open })
           }
-          unit={null}
+          unitId={updateOfficeDialog.selectedId || undefined}
         />
       )}
       <DeleteOfficeDialog
@@ -93,6 +93,7 @@ export default function OrganizationalStructureDialogManager() {
         onOpenChange={(open) =>
           setDeleteOfficeDialog({ ...deleteOfficeDialog, isOpen: open })
         }
+        unitId={deleteOfficeDialog.selectedId || undefined}
       />
 
       {/* Position Dialogs */}

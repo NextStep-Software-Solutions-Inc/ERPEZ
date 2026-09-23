@@ -1,20 +1,18 @@
+import type { MutationBlueprintFromTemplate, APIResponse } from 'erpez-shared-lib'
 import type { CreateExpenseClassPayload } from '../types/expenseClassTypes'
+import api from '@/services/api'
 
-export const createExpenseClassRequest = {
-  endpoint: '/expense-classes',
-  key: ({ url }: { url: string }) => [url] as const,
-  fetcher: async ({ finalUrl, payload }: { finalUrl: string; payload: CreateExpenseClassPayload }) => {
-    const response = await fetch(finalUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
-    if (!response.ok) {
-      throw new Error(`Failed to create expense class: ${response.statusText}`)
-    }
-    return response.json()
+const endpoint = '/expense-classes'
+
+export const createExpenseClassRequest: MutationBlueprintFromTemplate<
+  typeof endpoint,
+  string,
+  undefined,
+  CreateExpenseClassPayload
+> = {
+  endpoint,
+  fetcher: async ({ finalUrl, payload }) => {
+    const response = await api.post<APIResponse<string>>(finalUrl, payload)
+    return response.data.data
   },
 }

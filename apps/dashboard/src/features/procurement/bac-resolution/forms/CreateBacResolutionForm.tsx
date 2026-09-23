@@ -59,12 +59,12 @@ import type {
 } from '../types'
 import {
   createQueryHookFromTemplate,
-  createMutationHookFromTemplate,
+  useQueryClient,
 } from 'erpez-shared-lib'
 import { getEligibleAppsForProcurementRequest } from '../handlers/getEligibleAppsForProcurementRequest'
 import { getEligibleConsolidatedPRsRequest } from '../handlers/getEligibleConsolidatedPRsRequest'
 import { getResolutionClausesRequest } from '../handlers/getResolutionClausesRequest'
-import { createResolutionClauseRequest } from '../handlers/createResolutionClauseRequest'
+import { useCreateResolutionClause } from '../handlers/hooks'
 import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
 
 const useEligibleAppsForProcurement = createQueryHookFromTemplate(
@@ -76,12 +76,10 @@ const useEligibleConsolidatedPRs = createQueryHookFromTemplate(
 const useResolutionClauses = createQueryHookFromTemplate(
   getResolutionClausesRequest,
 )
-const useCreateResolutionClause = createMutationHookFromTemplate(
-  createResolutionClauseRequest,
-)
 const useUsers = createQueryHookFromTemplate(getUsersRequest)
 
 import FieldInfo from '@/components/FieldInfo'
+import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type { User } from '@/services/api/users'
 import type { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import { CreateEditResolutionClauseDialog } from '../dialogs/CreateEditResolutionClauseDialog'
@@ -193,6 +191,8 @@ export const CreateBacResolutionForm = forwardRef<
     const [selectedAppItems, setSelectedAppItems] = useState<EligibleAppItem[]>(
       [],
     )
+    const [selectedProcurementModeId, setSelectedProcurementModeId] =
+      useState<string | null>(null)
 
     const [selectedConsolidatedPr, setSelectedConsolidatedPr] =
       useState<EligibleConsolidatedPR | null>(null)
@@ -245,13 +245,15 @@ export const CreateBacResolutionForm = forwardRef<
     const [isResolvedExpanded, setIsResolvedExpanded] = useState(false)
     const [showClauseErrors, setShowClauseErrors] = useState(false)
 
+    const queryClient = useQueryClient()
+
     // Fetch clauses for the picker modal based on active type
     const { data: resolutionClausesData, isPending: isClausesPending } =
       useResolutionClauses({
         pathParams: {},
         queryParams: {
           pageSize: 200,
-          filters: pickerModalType || undefined,
+          clauseType: pickerModalType || undefined,
         },
         enabled: pickerModalType !== null,
       })
@@ -264,19 +266,29 @@ export const CreateBacResolutionForm = forwardRef<
 
     const allClausesMap = useMemo(() => {
       const map = new Map<string, ResolutionClause>()
-      const list = Array.isArray(allClausesData?.data)
-        ? allClausesData.data
-        : Array.isArray(allClausesData)
-          ? allClausesData
-          : []
-      for (const item of list) {
-        map.set(item.id, item)
+      const addItems = (data: unknown) => {
+        if (!data) return
+        const list = Array.isArray((data as { data?: unknown })?.data)
+          ? (data as { data: ResolutionClause[] }).data
+          : Array.isArray(data)
+            ? (data as ResolutionClause[])
+            : []
+        for (const item of list) {
+          if (item && item.id) {
+            map.set(item.id, item)
+          }
+        }
       }
+
+      addItems(allClausesData)
+      addItems(resolutionClausesData)
       for (const item of createdClauses) {
-        map.set(item.id, item)
+        if (item && item.id) {
+          map.set(item.id, item)
+        }
       }
       return map
-    }, [allClausesData, createdClauses])
+    }, [allClausesData, resolutionClausesData, createdClauses])
 
     const clauseTemplates = useMemo<ResolutionClause[]>(() => {
       const map = new Map<string, ResolutionClause>()
@@ -288,7 +300,7 @@ export const CreateBacResolutionForm = forwardRef<
             ? (data as ResolutionClause[])
             : []
         for (const item of list) {
-          if (item?.id) {
+          if (item && item.id) {
             map.set(item.id, item)
           }
         }
@@ -297,7 +309,9 @@ export const CreateBacResolutionForm = forwardRef<
       addItems(allClausesData)
       addItems(resolutionClausesData)
       for (const item of createdClauses) {
-        map.set(item.id, item)
+        if (item && item.id) {
+          map.set(item.id, item)
+        }
       }
 
       const allList = Array.from(map.values())
@@ -335,6 +349,10 @@ export const CreateBacResolutionForm = forwardRef<
           return prevItems.filter((i) => allowedItemIds.has(i.id))
         })
 
+        if (next.length === 0) {
+          setSelectedProcurementModeId(null)
+        }
+
         return next
       })
     }
@@ -347,6 +365,7 @@ export const CreateBacResolutionForm = forwardRef<
     const handleDeselectAllApps = () => {
       setSelectedAppIds([])
       setSelectedAppItems([])
+      setSelectedProcurementModeId(null)
     }
 
     const derivedTitle = useMemo(() => {
@@ -427,24 +446,42 @@ export const CreateBacResolutionForm = forwardRef<
         payload: { name, body, clauseType: type },
       })
 
-      setCreatedClauses((prev) => [...prev, created])
+      const newClause: ResolutionClause = {
+        id: (created as any)?.id || (typeof created === 'string' ? created : ''),
+        name: (created as any)?.name || name,
+        body: (created as any)?.body || body,
+        clauseType: (created as any)?.clauseType || type,
+      }
+
+      if (!newClause.id) {
+        toast.error('Failed to create custom clause: missing clause ID from server.')
+        return
+      }
+
+      setCreatedClauses((prev) => [...prev, newClause])
 
       if (type === 'Whereas') {
         setWhereasClauses((prev) => [
           ...prev,
-          { resolutionClauseId: created.id, order: prev.length },
+          { resolutionClauseId: newClause.id, order: prev.length },
         ])
       } else if (type === 'NowTherefore') {
         setNowThereforeClauses((prev) => [
           ...prev,
-          { resolutionClauseId: created.id, order: prev.length },
+          { resolutionClauseId: newClause.id, order: prev.length },
         ])
       } else if (type === 'Resolved') {
         setResolvedClauses((prev) => [
           ...prev,
-          { resolutionClauseId: created.id, order: prev.length },
+          { resolutionClauseId: newClause.id, order: prev.length },
         ])
       }
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/resolution-clauses'),
+      })
 
       toast.success(`Custom ${type} Clause created and added to resolution.`)
     }
@@ -631,24 +668,42 @@ export const CreateBacResolutionForm = forwardRef<
         }
         setCurrentStep(2)
       } else if (currentStep === 2) {
-        const hasSelection =
-          (selectedSourceType === 'AppItem' &&
-            selectedAppIds.length > 0 &&
-            selectedAppItems.length > 0) ||
-          (selectedSourceType === 'ConsolidatedPr' &&
-            selectedConsolidatedPr !== null)
-        if (!hasSelection) {
-          toast.error(
-            selectedSourceType === 'AppItem'
-              ? selectedAppIds.length === 0
-                ? 'Please select at least one Annual Procurement Plan'
-                : 'Please select at least one APP Item to proceed'
-              : 'Please select a Consolidated PR to proceed',
-          )
-          return
-        }
-
         if (selectedSourceType === 'AppItem') {
+          if (selectedAppIds.length === 0) {
+            toast.error('Please select at least one Annual Procurement Plan')
+            return
+          }
+          if (!selectedProcurementModeId) {
+            toast.error('Please select a Mode of Procurement before proceeding.')
+            return
+          }
+          if (selectedAppItems.length === 0) {
+            toast.error('Please select at least one APP Item to proceed.')
+            return
+          }
+
+          // Invariant Check 1: All items share single mode under RA 12009
+          const distinctModes = new Set(
+            selectedAppItems.map((i) => i.procurementModeId),
+          )
+          if (distinctModes.size > 1) {
+            toast.error(
+              'All selected APP items must share the same Mode of Procurement under RA 12009.',
+            )
+            return
+          }
+
+          // Invariant Check 2: All items match the selected mode
+          const mismatched = selectedAppItems.filter(
+            (i) => i.procurementModeId !== selectedProcurementModeId,
+          )
+          if (mismatched.length > 0) {
+            toast.error(
+              'All selected APP items must match the selected Mode of Procurement.',
+            )
+            return
+          }
+
           // Cross-validation: Ensure all selected items belong to selected APPs
           const allowedItemIds = new Set(
             allApps
@@ -662,6 +717,11 @@ export const CreateBacResolutionForm = forwardRef<
             toast.error(
               'One or more selected APP items do not belong to the selected APPs.',
             )
+            return
+          }
+        } else if (selectedSourceType === 'ConsolidatedPr') {
+          if (selectedConsolidatedPr === null) {
+            toast.error('Please select a Consolidated PR to proceed')
             return
           }
         }
@@ -807,6 +867,7 @@ export const CreateBacResolutionForm = forwardRef<
               setSelectedAppIds([])
               setSelectedAppItems([])
               setSelectedConsolidatedPr(null)
+              setSelectedProcurementModeId(null)
             }}
           />
         )}
@@ -823,6 +884,8 @@ export const CreateBacResolutionForm = forwardRef<
             onSetSelectedAppItems={setSelectedAppItems}
             selectedConsolidatedPr={selectedConsolidatedPr}
             onSelectConsolidatedPr={setSelectedConsolidatedPr}
+            selectedProcurementModeId={selectedProcurementModeId}
+            onSelectProcurementModeId={setSelectedProcurementModeId}
           />
         )}
 
@@ -1467,6 +1530,8 @@ interface SourceRecordPickerStepProps {
   onSetSelectedAppItems: React.Dispatch<React.SetStateAction<EligibleAppItem[]>>
   selectedConsolidatedPr: EligibleConsolidatedPR | null
   onSelectConsolidatedPr: (cpr: EligibleConsolidatedPR) => void
+  selectedProcurementModeId: string | null
+  onSelectProcurementModeId: (modeId: string | null) => void
 }
 
 export function SourceRecordPickerStep({
@@ -1479,13 +1544,16 @@ export function SourceRecordPickerStep({
   onSetSelectedAppItems,
   selectedConsolidatedPr,
   onSelectConsolidatedPr,
+  selectedProcurementModeId,
+  onSelectProcurementModeId,
 }: SourceRecordPickerStepProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [itemSearchTerm, setItemSearchTerm] = useState('')
   const [officeFilter, setOfficeFilter] = useState('ALL')
-  const [modeFilter, setModeFilter] = useState('ALL')
   const [viewMode, setViewMode] = useState<'grouped' | 'flat'>('grouped')
   const [collapsedPaps, setCollapsedPaps] = useState<Record<string, boolean>>({})
+  const [pendingModeIdToChange, setPendingModeIdToChange] = useState<string | null>(null)
+  const [showModeChangeConfirm, setShowModeChangeConfirm] = useState(false)
 
   const { data: appsData, isLoading: isAppsLoading } =
     useEligibleAppsForProcurement({})
@@ -1537,24 +1605,51 @@ export function SourceRecordPickerStep({
     ).sort()
   }, [aggregatedItems])
 
-  const availableModes = useMemo(() => {
-    return Array.from(
-      new Set(
-        aggregatedItems.map((i) => i.procurementModeName).filter(Boolean),
-      ),
-    ).sort()
+  const availableModes = useMemo<{ id: string; name: string; count: number }[]>(() => {
+    const map = new Map<string, { id: string; name: string; count: number }>()
+    for (const item of aggregatedItems) {
+      if (item.procurementModeId) {
+        const existing = map.get(item.procurementModeId)
+        if (existing) {
+          existing.count++
+        } else {
+          map.set(item.procurementModeId, {
+            id: item.procurementModeId,
+            name: item.procurementModeName || 'Standard Mode',
+            count: 1,
+          })
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
   }, [aggregatedItems])
 
+  const selectedMode = useMemo(() => {
+    if (!selectedProcurementModeId) return null
+    return availableModes.find((m) => m.id === selectedProcurementModeId) || null
+  }, [availableModes, selectedProcurementModeId])
+
+  const handleModeChange = (newModeId: string | null) => {
+    if (newModeId === selectedProcurementModeId) return
+
+    if (selectedAppItems.length === 0) {
+      onSelectProcurementModeId(newModeId)
+      return
+    }
+
+    setPendingModeIdToChange(newModeId)
+    setShowModeChangeConfirm(true)
+  }
+
   const filteredItems = useMemo(() => {
+    if (!selectedProcurementModeId) return []
     return aggregatedItems.filter((item) => {
+      if (item.procurementModeId !== selectedProcurementModeId) return false
       const matchesSearch =
         !itemSearchTerm.trim() ||
         item.description.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
         item.itemNumber.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
         item.officeName.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
-        item.procurementModeName
-          .toLowerCase()
-          .includes(itemSearchTerm.toLowerCase()) ||
         (item.papCode &&
           item.papCode.toLowerCase().includes(itemSearchTerm.toLowerCase())) ||
         (item.ppmpItemName &&
@@ -1565,11 +1660,9 @@ export function SourceRecordPickerStep({
           item.appNumber.toLowerCase().includes(itemSearchTerm.toLowerCase()))
       const matchesOffice =
         officeFilter === 'ALL' || item.officeName === officeFilter
-      const matchesMode =
-        modeFilter === 'ALL' || item.procurementModeName === modeFilter
-      return matchesSearch && matchesOffice && matchesMode
+      return matchesSearch && matchesOffice
     })
-  }, [aggregatedItems, itemSearchTerm, officeFilter, modeFilter])
+  }, [aggregatedItems, selectedProcurementModeId, itemSearchTerm, officeFilter])
 
   interface MopSubGroup {
     modeName: string
@@ -1648,6 +1741,12 @@ export function SourceRecordPickerStep({
   }, [filteredItems])
 
   const handleToggleAppItem = (item: EligibleAppItem) => {
+    if (
+      selectedProcurementModeId &&
+      item.procurementModeId !== selectedProcurementModeId
+    ) {
+      return
+    }
     onSetSelectedAppItems((prev) => {
       const exists = prev.some((i) => i.id === item.id)
       if (exists) {
@@ -1661,7 +1760,8 @@ export function SourceRecordPickerStep({
   const handleTogglePapGroup = (groupItems: EligibleAppItem[]) => {
     onSetSelectedAppItems((prev) => {
       const selectedIds = new Set(prev.map((i) => i.id))
-      const allGroupSelected = groupItems.every((i) => selectedIds.has(i.id))
+      const allGroupSelected =
+        groupItems.length > 0 && groupItems.every((i) => selectedIds.has(i.id))
 
       if (allGroupSelected) {
         const groupItemIds = new Set(groupItems.map((i) => i.id))
@@ -1676,7 +1776,8 @@ export function SourceRecordPickerStep({
   const handleToggleMopSubGroup = (mopItems: EligibleAppItem[]) => {
     onSetSelectedAppItems((prev) => {
       const selectedIds = new Set(prev.map((i) => i.id))
-      const allMopSelected = mopItems.every((i) => selectedIds.has(i.id))
+      const allMopSelected =
+        mopItems.length > 0 && mopItems.every((i) => selectedIds.has(i.id))
 
       if (allMopSelected) {
         const mopItemIds = new Set(mopItems.map((i) => i.id))
@@ -1991,123 +2092,181 @@ export function SourceRecordPickerStep({
               </div>
             ) : (
               <>
-                {/* Header with Search, View Mode & Multi-select controls */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-default-100 pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-default-900">
-                        Eligible Line Items ({aggregatedItems.length})
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className="bg-primary/5 text-primary border-primary/20 text-xs"
+                {/* 1. Explicit Mode of Procurement Selector */}
+                <div className="rounded-lg border border-default-200 bg-default-50/70 p-3 space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <Label
+                        htmlFor="mop-selector"
+                        className="text-xs font-bold text-default-800 flex items-center gap-1.5"
                       >
-                        {selectedAppItems.length} selected
-                      </Badge>
+                        <ListFilter className="h-3.5 w-3.5 text-primary" />
+                        Mode of Procurement{' '}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <p className="text-[11px] text-muted-foreground">
+                        Under RA 12009, all items in a procurement project must share a single Mode of Procurement.
+                      </p>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[400px]">
-                      From {selectedApps.length} selected APP
-                      {selectedApps.length !== 1 ? 's' : ''} •{' '}
-                      {papCodeGroups.length} PAP Code
-                      {papCodeGroups.length !== 1 ? 's' : ''}
+                    <div className="min-w-[240px]">
+                      <select
+                        id="mop-selector"
+                        value={selectedProcurementModeId || ''}
+                        onChange={(e) => handleModeChange(e.target.value || null)}
+                        className="w-full h-8 rounded-md border border-default-300 bg-white px-2.5 text-xs font-medium text-default-800 focus:border-primary focus:outline-none shadow-xs"
+                      >
+                        <option value="">Select Mode of Procurement...</option>
+                        {availableModes.map((mode) => (
+                          <option key={mode.id} value={mode.id}>
+                            {mode.name} ({mode.count} item{mode.count !== 1 ? 's' : ''})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {selectedMode && (
+                    <div className="flex items-center justify-between pt-1 border-t border-default-200/60 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className="bg-white text-primary border-primary/40 font-semibold px-2 py-0.5"
+                        >
+                          {selectedMode.name}
+                        </Badge>
+                        <span className="text-[11px] text-muted-foreground">
+                          {filteredItems.length} line item{filteredItems.length !== 1 ? 's' : ''} available across {papCodeGroups.length} PAP code{papCodeGroups.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      {selectedAppItems.length > 0 && (
+                        <span className="text-[11px] font-semibold text-primary">
+                          {selectedAppItems.length} selected
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {!selectedProcurementModeId ? (
+                  <div className="flex-1 flex flex-col items-center justify-center p-10 text-center text-muted-foreground border border-dashed border-default-200 rounded-lg bg-default-50/50">
+                    <ListFilter className="h-10 w-10 text-muted-foreground/30 mb-2" />
+                    <h4 className="text-sm font-bold text-default-800">
+                      Select a Mode of Procurement
+                    </h4>
+                    <p className="text-xs text-muted-foreground max-w-sm mt-1">
+                      Please select a Mode of Procurement above to view and select eligible APP line items. Under RA 12009, Competitive Bidding and Alternative Modes cannot be mixed.
                     </p>
                   </div>
+                ) : filteredItems.length === 0 && !itemSearchTerm.trim() && officeFilter === 'ALL' ? (
+                  <div className="flex-1 flex flex-col items-center justify-center p-10 text-center text-muted-foreground border border-dashed border-default-200 rounded-lg bg-default-50/50">
+                    <p className="text-xs text-muted-foreground">
+                      No APP items available for this Mode of Procurement.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Header with Search, View Mode & Multi-select controls */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-default-100 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-default-900">
+                            Eligible Line Items ({filteredItems.length})
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className="bg-primary/5 text-primary border-primary/20 text-xs"
+                          >
+                            {selectedAppItems.length} selected
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[400px]">
+                          From {selectedApps.length} selected APP
+                          {selectedApps.length !== 1 ? 's' : ''} •{' '}
+                          {papCodeGroups.length} PAP Code
+                          {papCodeGroups.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
 
-                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                    {/* View Mode Toggle */}
-                    <div className="flex items-center bg-default-100 p-0.5 rounded-lg border border-default-200">
-                      <button
-                        type="button"
-                        onClick={() => setViewMode('grouped')}
-                        className={cn(
-                          'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all',
-                          viewMode === 'grouped'
-                            ? 'bg-white text-primary shadow-xs'
-                            : 'text-muted-foreground hover:text-default-900',
-                        )}
-                      >
-                        <Layers className="h-3.5 w-3.5" />
-                        Group by PAP
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setViewMode('flat')}
-                        className={cn(
-                          'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all',
-                          viewMode === 'flat'
-                            ? 'bg-white text-primary shadow-xs'
-                            : 'text-muted-foreground hover:text-default-900',
-                        )}
-                      >
-                        <List className="h-3.5 w-3.5" />
-                        All Items
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                        {/* View Mode Toggle */}
+                        <div className="flex items-center bg-default-100 p-0.5 rounded-lg border border-default-200">
+                          <button
+                            type="button"
+                            onClick={() => setViewMode('grouped')}
+                            className={cn(
+                              'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all',
+                              viewMode === 'grouped'
+                                ? 'bg-white text-primary shadow-xs'
+                                : 'text-muted-foreground hover:text-default-900',
+                            )}
+                          >
+                            <Layers className="h-3.5 w-3.5" />
+                            Group by PAP
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setViewMode('flat')}
+                            className={cn(
+                              'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all',
+                              viewMode === 'flat'
+                                ? 'bg-white text-primary shadow-xs'
+                                : 'text-muted-foreground hover:text-default-900',
+                            )}
+                          >
+                            <List className="h-3.5 w-3.5" />
+                            All Items
+                          </button>
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSelectAllVisible}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <CheckCheck className="h-3 w-3" /> Select Visible
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleDeselectAllVisible}
+                          disabled={selectedAppItems.length === 0}
+                          className="h-7 text-xs gap-1 text-muted-foreground hover:text-destructive"
+                        >
+                          <RotateCcw className="h-3 w-3" /> Deselect All
+                        </Button>
+                      </div>
                     </div>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSelectAllVisible}
-                      className="h-7 text-xs gap-1"
-                    >
-                      <CheckCheck className="h-3 w-3" /> Select Visible
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleDeselectAllVisible}
-                      disabled={selectedAppItems.length === 0}
-                      className="h-7 text-xs gap-1 text-muted-foreground hover:text-destructive"
-                    >
-                      <RotateCcw className="h-3 w-3" /> Deselect All
-                    </Button>
-                  </div>
-                </div>
+                    {/* Search & Filter bar */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="relative flex-1 min-w-[200px]">
+                        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by PAP code, activity, description..."
+                          value={itemSearchTerm}
+                          onChange={(e) => setItemSearchTerm(e.target.value)}
+                          className="pl-8 h-8 text-xs bg-default-50"
+                        />
+                      </div>
 
-                {/* Search & Filter bar */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by PAP code, activity, description, mode..."
-                      value={itemSearchTerm}
-                      onChange={(e) => setItemSearchTerm(e.target.value)}
-                      className="pl-8 h-8 text-xs bg-default-50"
-                    />
-                  </div>
-
-                  {availableOffices.length > 0 && (
-                    <select
-                      value={officeFilter}
-                      onChange={(e) => setOfficeFilter(e.target.value)}
-                      className="h-8 rounded-md border border-default-300 bg-white px-2.5 text-xs text-default-800 focus:border-primary focus:outline-none"
-                    >
-                      <option value="ALL">All Offices</option>
-                      {availableOffices.map((office) => (
-                        <option key={office} value={office}>
-                          {office}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {availableModes.length > 0 && (
-                    <select
-                      value={modeFilter}
-                      onChange={(e) => setModeFilter(e.target.value)}
-                      className="h-8 rounded-md border border-default-300 bg-white px-2.5 text-xs text-default-800 focus:border-primary focus:outline-none"
-                    >
-                      <option value="ALL">All Modes</option>
-                      {availableModes.map((mode) => (
-                        <option key={mode} value={mode}>
-                          {mode}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+                      {availableOffices.length > 0 && (
+                        <select
+                          value={officeFilter}
+                          onChange={(e) => setOfficeFilter(e.target.value)}
+                          className="h-8 rounded-md border border-default-300 bg-white px-2.5 text-xs text-default-800 focus:border-primary focus:outline-none"
+                        >
+                          <option value="ALL">All Offices</option>
+                          {availableOffices.map((office) => (
+                            <option key={office} value={office}>
+                              {office}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
 
                 {/* Items Presentation: Grouped by PAP Code vs Flat Table */}
                 {viewMode === 'grouped' ? (
@@ -2519,7 +2678,7 @@ export function SourceRecordPickerStep({
                 {/* Selection Summary Bar */}
                 <div className="rounded-lg bg-default-50 border border-default-200 p-2.5 flex items-center justify-between text-xs">
                   <span className="font-semibold text-default-700">
-                    {selectedAppItems.length} of {aggregatedItems.length} items
+                    {selectedAppItems.length} of {filteredItems.length} items
                     selected
                   </span>
                   <div className="flex items-center gap-2">
@@ -2534,11 +2693,32 @@ export function SourceRecordPickerStep({
                 </div>
               </>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+
+        <ConfirmAlertDialog
+          open={showModeChangeConfirm}
+          onOpenChange={setShowModeChangeConfirm}
+          title="Change Mode of Procurement?"
+          description={`Changing the mode will clear the ${selectedAppItems.length} APP line item${selectedAppItems.length !== 1 ? 's' : ''} currently selected under ${selectedMode?.name || 'the current mode'}. Are you sure you want to change the mode?`}
+          confirmLabel="Change Mode"
+          cancelLabel="Cancel"
+          onConfirm={() => {
+            onSetSelectedAppItems([])
+            onSelectProcurementModeId(pendingModeIdToChange)
+            setPendingModeIdToChange(null)
+            setShowModeChangeConfirm(false)
+          }}
+          onCancel={() => {
+            setPendingModeIdToChange(null)
+            setShowModeChangeConfirm(false)
+          }}
+        />
+      </div>
     </div>
-  )
+  )}
+</div>
+)
 }
 
 /* ── CLAUSE SECTION COMPONENT (COLLAPSIBLE) ──────────────────────────────── */
@@ -2748,7 +2928,7 @@ function ClauseSection({
                 const clauseObj = clausesMap.get(item.resolutionClauseId)
                 return (
                   <div
-                    key={item.resolutionClauseId}
+                    key={item.resolutionClauseId || index}
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={handleDragOver}
@@ -2771,7 +2951,7 @@ function ClauseSection({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-xs text-default-900">
-                          {clauseObj?.name || 'Clause'}
+                          {clauseObj?.name || (clauseObj?.body ? 'Clause' : 'Loading clause...')}
                         </span>
                         <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                           <Button
@@ -2806,9 +2986,15 @@ function ClauseSection({
                         </div>
                       </div>
 
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
-                        {clauseObj?.body || ''}
-                      </p>
+                      {clauseObj?.body ? (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                          {clauseObj.body}
+                        </p>
+                      ) : !clauseObj ? (
+                        <p className="text-xs text-muted-foreground/60 italic mt-1 flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin text-primary" /> Fetching clause content...
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 )

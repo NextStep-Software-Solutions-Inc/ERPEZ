@@ -1238,7 +1238,7 @@ export const menusConfig = {
         ],
       },
       {
-        title: 'Public Bidding',
+        title: 'Competitive Bidding',
         icon: Files,
         child: [
           {
@@ -1651,7 +1651,7 @@ export const menusConfig = {
         ],
       },
       {
-        title: 'Public Bidding',
+        title: 'Competitive Bidding',
         icon: Files,
         child: [
           {

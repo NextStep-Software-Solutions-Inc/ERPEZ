@@ -80,7 +80,30 @@ public class GetLIBsQueryHandler(IUnitOfWork unitOfWork)
                         LIBNumber = entity.PreviousVersion.LIBNumber,
                         Name = entity.PreviousVersion.Name ?? string.Empty,
                         Version = entity.PreviousVersion.Version
-                    }
+                    },
+                    AgencyMasterBudgetId = entity.AgencyMasterBudgetId,
+                    CreatedAt = entity.CreatedAt,
+                    ActivityCount = entity.LineItemBudgetActivities.Count(a => !a.IsDeleted),
+                    Activities = entity.LineItemBudgetActivities
+                        .Where(a => !a.IsDeleted)
+                        .Select(a => new LIBNestedActivityResponse
+                        {
+                            Id = a.Id,
+                            Name = a.Name,
+                            WFPObjectiveActivityId = a.WFPObjectiveActivityId,
+                            OPCRActivityId = a.OPCRActivityId,
+                            WFPObjectiveActivity = a.WFPObjectiveActivity == null ? null : new LIBNestedWFPActivityResponse
+                            {
+                                Id = a.WFPObjectiveActivity.Id,
+                                ActivityName = a.WFPObjectiveActivity.ActivityName
+                            },
+                            OPCRActivity = a.OPCRActivity == null ? null : new LIBNestedOPCRActivityResponse
+                            {
+                                Id = a.OPCRActivity.Id,
+                                Name = a.OPCRActivity.Name
+                            }
+                        })
+                        .ToList()
                 })
             .ToList();
 

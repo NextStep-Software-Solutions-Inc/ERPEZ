@@ -13,8 +13,8 @@ export function PublicBacResolutionsPage({
   return (
     <BacResolutionsPage
       selectedId={selectedResolutionId}
-      title="BAC Resolutions (Public Bidding)"
-      description="Focused workspace for Public Bidding BAC Resolution review, schedule readiness, and downstream execution tracking."
+      title="BAC Resolutions (Competitive Bidding)"
+      description="Focused workspace for Competitive Bidding BAC Resolution review, schedule readiness, and downstream execution tracking."
       role={role}
       workspaceScope="public-bidding"
       bacListRoutePath="/v2/bac-resolutions-public-bidding"

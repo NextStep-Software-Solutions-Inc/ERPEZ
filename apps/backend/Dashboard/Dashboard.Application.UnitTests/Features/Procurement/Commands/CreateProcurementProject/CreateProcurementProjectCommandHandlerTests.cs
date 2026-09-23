@@ -269,4 +269,135 @@ public class CreateProcurementProjectCommandHandlerTests
         Assert.Equal(clauseId2, items[1].BACResolutionWhereasClauseId);
         Assert.Equal(1, items[1].Order);
     }
+
+    [Fact]
+    public async Task Handle_AppItemSource_AllItemsSameMode_SucceedsWithValidatedProcurementModeId()
+    {
+        var appId = Guid.NewGuid();
+        var item1Id = Guid.NewGuid();
+        var item2Id = Guid.NewGuid();
+        var modeId = Guid.NewGuid();
+
+        var item1 = new APPItem { Id = item1Id, APPId = appId, ProcurementModeId = modeId, EstimatedBudgetOverride = 100000m };
+        var item2 = new APPItem { Id = item2Id, APPId = appId, ProcurementModeId = modeId, EstimatedBudgetOverride = 200000m };
+
+        mockAppRepo
+            .Setup(r => r.GetByIdAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new APP { Id = appId, APPNumber = "APP-2026-001" });
+
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(item1Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item1);
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(item2Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item2);
+
+        mockProjectRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<ProcurementProject, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProcurementProject?)null);
+
+        ProcurementProject? savedProject = null;
+        mockProjectRepo
+            .Setup(r => r.AddAsync(It.IsAny<ProcurementProject>(), It.IsAny<CancellationToken>()))
+            .Callback<ProcurementProject, CancellationToken>((p, _) => savedProject = p)
+            .Returns(Task.CompletedTask);
+
+        var handler = new CreateProcurementProjectCommandHandler(mockUnitOfWork.Object);
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPIds = new List<Guid> { appId },
+            APPItemIds = new List<Guid> { item1Id, item2Id },
+            ResolutionNumber = "BAC-RES-2026-SAME-MODE"
+        };
+
+        var response = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(response.Succeeded);
+        Assert.NotNull(savedProject);
+        Assert.Equal(modeId, savedProject!.ProcurementModeId);
+    }
+
+    [Fact]
+    public async Task Handle_AppItemSource_TwoDifferentModes_FailsUnderRA12009()
+    {
+        var appId = Guid.NewGuid();
+        var item1Id = Guid.NewGuid();
+        var item2Id = Guid.NewGuid();
+        var competitiveBiddingModeId = Guid.NewGuid();
+        var svpModeId = Guid.NewGuid();
+
+        var item1 = new APPItem { Id = item1Id, APPId = appId, ProcurementModeId = competitiveBiddingModeId, EstimatedBudgetOverride = 500000m };
+        var item2 = new APPItem { Id = item2Id, APPId = appId, ProcurementModeId = svpModeId, EstimatedBudgetOverride = 50000m };
+
+        mockAppRepo
+            .Setup(r => r.GetByIdAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new APP { Id = appId, APPNumber = "APP-2026-001" });
+
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(item1Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item1);
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(item2Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item2);
+
+        var handler = new CreateProcurementProjectCommandHandler(mockUnitOfWork.Object);
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPIds = new List<Guid> { appId },
+            APPItemIds = new List<Guid> { item1Id, item2Id },
+            ResolutionNumber = "BAC-RES-2026-MIXED"
+        };
+
+        var response = await handler.Handle(command, CancellationToken.None);
+
+        Assert.False(response.Succeeded);
+        Assert.Contains("All selected APP items must share the same Mode of Procurement", response.Message);
+        Assert.Contains("RA 12009", response.Message);
+    }
+
+    [Fact]
+    public async Task Handle_AppItemSource_ThreeDifferentModes_FailsUnderRA12009()
+    {
+        var appId = Guid.NewGuid();
+        var item1Id = Guid.NewGuid();
+        var item2Id = Guid.NewGuid();
+        var item3Id = Guid.NewGuid();
+        var mode1 = Guid.NewGuid();
+        var mode2 = Guid.NewGuid();
+        var mode3 = Guid.NewGuid();
+
+        var item1 = new APPItem { Id = item1Id, APPId = appId, ProcurementModeId = mode1 };
+        var item2 = new APPItem { Id = item2Id, APPId = appId, ProcurementModeId = mode2 };
+        var item3 = new APPItem { Id = item3Id, APPId = appId, ProcurementModeId = mode3 };
+
+        mockAppRepo
+            .Setup(r => r.GetByIdAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new APP { Id = appId, APPNumber = "APP-2026-001" });
+
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(item1Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item1);
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(item2Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item2);
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(item3Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item3);
+
+        var handler = new CreateProcurementProjectCommandHandler(mockUnitOfWork.Object);
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPIds = new List<Guid> { appId },
+            APPItemIds = new List<Guid> { item1Id, item2Id, item3Id },
+            ResolutionNumber = "BAC-RES-2026-TRI-MIX"
+        };
+
+        var response = await handler.Handle(command, CancellationToken.None);
+
+        Assert.False(response.Succeeded);
+        Assert.Contains("All selected APP items must share the same Mode of Procurement", response.Message);
+    }
 }

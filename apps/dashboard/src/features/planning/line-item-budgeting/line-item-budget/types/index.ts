@@ -53,6 +53,7 @@ export type LIB = {
   status: LIBStatus
   createdAt: string
   activities: LIBActivity[]
+  activityCount?: number
   version: number
   previousVersionId?: string
   fundSourceId?: string
@@ -92,6 +93,7 @@ export type LIBDetails = {
   consolidatedIntoLIB?: LIB
   previousVersion?: LIB
   activities?: LIBActivity[]
+  activityCount?: number
   orphanDetails?: OrphanLineItemDetail[]
   updatedAt?: string
   createdAt?: string

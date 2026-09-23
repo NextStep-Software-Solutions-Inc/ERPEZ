@@ -25,6 +25,7 @@ import {
 } from './createPpmpMetadataForm.schema'
 import FieldInfo from '@/components/FieldInfo'
 import { usePpmpFormData } from '../hooks/usePpmpFormData'
+import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
 
 interface CreatePpmpMetadataFormProps {
   formId: string
@@ -465,23 +466,22 @@ export function CreatePpmpMetadataForm({
         {(field) => (
           <div className="space-y-2">
             <Label htmlFor={field.name}>Fund Source (Optional)</Label>
-            <Select
-              value={field.state.value ?? 'none'}
-              onValueChange={(val) => field.handleChange(val === 'none' ? null : val)}
+            <FundSourceCombobox
+              id={field.name}
+              options={fundSources}
+              value={field.state.value || ''}
+              onValueChange={(val) => field.handleChange(val || null)}
+              placeholder={
+                isFormDataLoading
+                  ? 'Loading fund sources...'
+                  : 'Search or select a fund source...'
+              }
+              searchPlaceholder="Search by UACS code, fund name, or authorization..."
+              emptyMessage="No fund source found matching your search."
               disabled={isLoading || isFormDataLoading}
-            >
-              <SelectTrigger size="md">
-                <SelectValue placeholder="Select a fund source..." />
-              </SelectTrigger>
-              <SelectContent className="max-h-72 overflow-y-auto">
-                <SelectItem value="none">None / Select a fund source...</SelectItem>
-                {fundSources.map((fundSource) => (
-                  <SelectItem key={fundSource.id} value={fundSource.id}>
-                    {fundSource.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              isLoading={isFormDataLoading}
+              className="w-full text-xs"
+            />
             <FieldInfo field={field} />
           </div>
         )}
