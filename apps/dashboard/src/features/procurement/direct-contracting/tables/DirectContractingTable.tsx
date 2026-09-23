@@ -26,7 +26,7 @@ import {
 
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import DebouncedInput from '@/components/DebouncedInput'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -102,8 +102,6 @@ export function DirectContractingTable({
   const [internalStatusTab, setInternalStatusTab] = React.useState<string>(status || 'all')
   const activeStatusTab = status !== undefined ? status : internalStatusTab
 
-  // Search input local state for debouncing
-  const [localSearch, setLocalSearch] = React.useState<string>(searchQuery ?? '')
 
   // TanStack Table v9 States
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -132,6 +130,7 @@ export function DirectContractingTable({
     data: directContractings?.data || [],
     columns,
     manualPagination: true,
+    manualFiltering: true,
     pageCount,
     rowCount: totalRows,
     onSortingChange: setSorting,
@@ -167,37 +166,6 @@ export function DirectContractingTable({
       }))
     }
   }, [pageNumber, pageSize])
-
-  // Sync status filter when controlled status prop changes
-  React.useEffect(() => {
-    if (status !== undefined) {
-      if (status === 'all') {
-        table.getColumn('status')?.setFilterValue(undefined)
-      } else {
-        table.getColumn('status')?.setFilterValue(status)
-      }
-    }
-  }, [status, table])
-
-  // Keep localSearch in sync if searchQuery prop changes from outside (e.g. back/forward navigation)
-  React.useEffect(() => {
-    if (searchQuery !== undefined && searchQuery !== localSearch) {
-      setLocalSearch(searchQuery)
-      table.getColumn('dcNumber')?.setFilterValue(searchQuery.trim() || undefined)
-    }
-  }, [searchQuery])
-
-  // Debounce search input changes to parent onSearchChange and table column filter
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      table.getColumn('dcNumber')?.setFilterValue(localSearch.trim() || undefined)
-      if (onSearchChange && localSearch !== (searchQuery ?? '')) {
-        onSearchChange(localSearch.trim())
-      }
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [localSearch, onSearchChange, searchQuery, table])
 
   // Selected rows calculation
   const selectedRowList = React.useMemo(() => {
@@ -245,8 +213,6 @@ export function DirectContractingTable({
 
   // Reset all filters
   const handleResetFilters = () => {
-    setLocalSearch('')
-    table.getColumn('dcNumber')?.setFilterValue(undefined)
     table.getColumn('status')?.setFilterValue(undefined)
     setColumnFilters([])
     if (onSearchChange) onSearchChange('')
@@ -256,7 +222,6 @@ export function DirectContractingTable({
     setPagination((prev) => ({ ...prev, pageIndex: 0 }))
   }
 
-  const searchValue = (table.getColumn('dcNumber')?.getFilterValue() as string) ?? ''
 
   // Fallback export if not provided
   const handleExport = (records: DirectContracting[]) => {
@@ -351,23 +316,24 @@ export function DirectContractingTable({
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2 flex-1 min-w-[280px] max-w-md">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by DC#, project title, or supplier..."
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
-                className="pl-9 h-9 text-sm"
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+              <DebouncedInput
+                placeholder="Search by project name..."
+                value={searchQuery ?? ''}
+                onChange={(val) => {
+                  onSearchChange?.(val)
+                  onPageChange?.(1)
+                }}
+                className="pl-9 pr-9 h-9 text-sm"
               />
-              {localSearch && (
+              {searchQuery && (
                 <button
                   onClick={() => {
-                    setLocalSearch('')
-                    table.getColumn('dcNumber')?.setFilterValue(undefined)
                     onSearchChange?.('')
                     onPageChange?.(1)
                   }}
                   type="button"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer z-10"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -412,7 +378,7 @@ export function DirectContractingTable({
               size="sm"
               onClick={handleResetFilters}
               className="h-9 text-xs"
-              disabled={!localSearch && activeStatusTab === 'all' && columnFilters.length === 0}
+              disabled={!searchQuery && activeStatusTab === 'all' && columnFilters.length === 0}
             >
               Reset Filters
             </Button>
@@ -528,11 +494,11 @@ export function DirectContractingTable({
                         No Direct Contracting requests found
                       </div>
                       <p className="text-xs text-muted-foreground max-w-sm">
-                        {localSearch || activeStatusTab !== 'all'
+                        {searchQuery || activeStatusTab !== 'all'
                           ? 'No requests match your current search and filter criteria. Try adjusting or clearing your filters.'
                           : 'There are currently no Direct Contracting requests registered. Create your first request to get started.'}
                       </p>
-                      {(localSearch || activeStatusTab !== 'all') && (
+                      {(searchQuery || activeStatusTab !== 'all') && (
                         <Button
                           variant="outline"
                           size="sm"

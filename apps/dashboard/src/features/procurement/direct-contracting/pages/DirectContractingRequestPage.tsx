@@ -40,10 +40,17 @@ export function DirectContractingRequestPage() {
   const updateSearch = React.useCallback(
     (updates: Partial<typeof searchParams>) => {
       navigate({
-        search: (prev) => ({
-          ...prev,
-          ...updates,
-        }),
+        search: (prev) => {
+          const next = {
+            ...prev,
+            ...updates,
+          }
+          if (!next.searchQuery || !next.searchQuery.trim()) {
+            next.searchQuery = undefined
+            delete next.searchQuery
+          }
+          return next
+        },
         replace: true,
       })
     },
@@ -68,8 +75,7 @@ export function DirectContractingRequestPage() {
     }
 
     if (searchQuery && searchQuery.trim()) {
-      const term = searchQuery.trim()
-      filterParts.push(`name@=*${term}*|dcNumber@=*${term}*`)
+      filterParts.push(`name==${searchQuery.trim()}`)
     }
 
     return filterParts.length > 0 ? filterParts.join(',') : undefined

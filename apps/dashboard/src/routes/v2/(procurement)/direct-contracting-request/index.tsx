@@ -11,7 +11,10 @@ import { PERMISSIONS } from '@/constants/permissions'
 export const directContractingRequestSearchSchema = z.object({
   pageSize: z.coerce.number().min(1).catch(10).default(10),
   pageNumber: z.coerce.number().min(1).catch(1).default(1),
-  searchQuery: z.string().optional().default(''),
+  searchQuery: z
+    .string()
+    .optional()
+    .transform((val) => (val?.trim() ? val.trim() : undefined)),
   status: z.string().optional().default('all'),
 })
 
