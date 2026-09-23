@@ -56,9 +56,9 @@ public class SubmitRFQCommandHandler(IUnitOfWork unitOfWork)
                 if (cprWithDetails != null)
                 {
                     var appItemIds = cprWithDetails.ConsolidatedPRItems
-                        .Where(ci => !ci.IsDeleted)
-                        .SelectMany(ci => ci.PRItem?.PPMPItem?.APPItems ?? Enumerable.Empty<Domain.Entities.Planning.APPItem>())
-                        .Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                        .Where(ci => !ci.IsDeleted && ci.PRItem != null && ci.PRItem.PPMPItem != null && ci.PRItem.PPMPItem.APPItems != null)
+                        .SelectMany(ci => ci.PRItem!.PPMPItem!.APPItems)
+                        .Where(ai => ai != null && !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
                         .Select(ai => ai.Id)
                         .Distinct()
                         .ToList();
