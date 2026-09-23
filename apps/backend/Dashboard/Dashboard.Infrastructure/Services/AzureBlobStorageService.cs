@@ -188,4 +188,16 @@ public class AzureBlobStorageService : IFileStorageService
             await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
         }
     }
+
+    public async Task DeleteTempFileAsync(Guid fileId, CancellationToken cancellationToken = default)
+    {
+        var containerClient = blobServiceClient.GetBlobContainerClient(tempContainer);
+        var blobs = containerClient.GetBlobsAsync(prefix: fileId.ToString(), cancellationToken: cancellationToken);
+        await foreach (var blobItem in blobs.WithCancellation(cancellationToken))
+        {
+            var blobClient = containerClient.GetBlobClient(blobItem.Name);
+            await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
+            logger.LogInformation("Deleted temp blob: {BlobName}", blobItem.Name);
+        }
+    }
 }

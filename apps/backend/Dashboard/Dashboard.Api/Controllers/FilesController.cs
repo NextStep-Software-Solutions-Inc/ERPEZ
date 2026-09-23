@@ -46,6 +46,19 @@ public class FilesController(IFileStorageService fileStorageService) : Controlle
     }
 
     /// <summary>
+    /// Delete a temporary uploaded file to prevent storage exhaustion on failed or cancelled forms.
+    /// </summary>
+    [HttpDelete("temp/{fileId:guid}")]
+    [HttpDelete("{fileId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DeleteTempFile(Guid fileId, CancellationToken cancellationToken)
+    {
+        await fileStorageService.DeleteTempFileAsync(fileId, cancellationToken);
+        return Ok(ApiResponse<bool>.Success(true, "Temporary file deleted successfully."));
+    }
+
+    /// <summary>
     /// Public upload endpoint dedicated for unauthenticated portal submissions (e.g., BAC supplier applications).
     /// </summary>
     [AllowAnonymous]

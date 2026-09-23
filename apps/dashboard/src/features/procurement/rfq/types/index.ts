@@ -60,6 +60,10 @@ export type RFQ = {
   deadline?: string
   deliveryPeriod?: string
   modeOfProcurement?: string
+  modeOfProcurementId?: string
+  modeOfProcurementName?: string
+  consolidatedPRId?: string
+  consolidatedPRNumber?: string
   suppliers: Array<Supplier>
   items: Array<RFQItem>
   status: 'draft' | 'submitted' | 'returned' | 'approved'
@@ -149,6 +153,7 @@ export type ConsolidatedPRItem = {
   unitPrice?: number
   unitCost?: number
   totalAmount?: number
+  procurementModeId?: string
   procurementModeName?: string
   hasBACResolution?: boolean
   bacResolutionStatus?: string

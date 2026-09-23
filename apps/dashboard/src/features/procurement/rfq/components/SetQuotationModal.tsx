@@ -138,6 +138,8 @@ export function SetQuotationModal({
       setItems(
         (rfq.items || []).map((item: any) => ({
           ...item,
+          unitPrice: Number(item.unitPrice ?? item.unitPriceSnapshot ?? 0),
+          totalAmount: Number(item.totalAmount ?? item.totalABC ?? ((item.unitPrice ?? item.unitPriceSnapshot ?? 0) * (item.quantity || 1))),
           bidUnitPrice: item.bidUnitPrice !== undefined ? item.bidUnitPrice : (item.supplierUnitPrice || 0),
           bidTotalAmount: item.bidTotalAmount !== undefined ? item.bidTotalAmount : ((item.bidUnitPrice ?? item.supplierUnitPrice ?? 0) * (item.quantity || 1)),
           bidBrand: item.bidBrand || item.brand || '',
@@ -368,7 +370,12 @@ export function SetQuotationModal({
     }
   }
 
+  const totalABCAmount = items.reduce(
+    (sum, item) => sum + ((item.unitPrice || 0) * (item.quantity || 1)),
+    0
+  )
   const totalBidAmount = items.reduce((sum, item) => sum + (item.bidTotalAmount || 0), 0)
+  const isTotalOverBudget = totalABCAmount > 0 && totalBidAmount > totalABCAmount
 
   return (
     <>
@@ -377,132 +384,172 @@ export function SetQuotationModal({
         onOpenChange={onOpenChange}
         title={`Set Quotation - ${rfq.rfqNumber}`}
         description="Enter your bid specifications and unit prices for each item"
-        size="4xl"
+        size="5xl"
+        className="w-full max-w-[1350px]"
         showCloseButton
       >
         <div className="space-y-6">
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-50">
                     <TableHead>Item Name</TableHead>
-                    <TableHead>Qty</TableHead>
+                    <TableHead className="text-center">Qty</TableHead>
                     <TableHead>Unit</TableHead>
                     <TableHead>Model/Brand/Color</TableHead>
-                    <TableHead>Unit Bid (₱)</TableHead>
-                    <TableHead>Total Bid (₱)</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Unit ABC (₱)</TableHead>
+                    <TableHead className="whitespace-nowrap">Unit Bid (₱)</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Total Bid (₱)</TableHead>
                     <TableHead>Brochure</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.itemName}</TableCell>
-                      <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{item.unit}</TableCell>
-                      <TableCell>
-                        {item.bidModel || item.bidBrand || item.bidColor ? (
-                          <div className="text-sm">
-                            {item.bidModel && <div>Model: {item.bidModel}</div>}
-                            {item.bidBrand && <div>Brand: {item.bidBrand}</div>}
-                            {item.bidColor && <div>Color: {item.bidColor}</div>}
+                  {items.map((item) => {
+                    const isItemOverBudget =
+                      Boolean(item.bidUnitPrice && item.unitPrice && item.bidUnitPrice > item.unitPrice)
+
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.itemName}</TableCell>
+                        <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell>{item.unit}</TableCell>
+                        <TableCell>
+                          {item.bidModel || item.bidBrand || item.bidColor ? (
+                            <div className="text-sm">
+                              {item.bidModel && <div>Model: {item.bidModel}</div>}
+                              {item.bidBrand && <div>Brand: {item.bidBrand}</div>}
+                              {item.bidColor && <div>Color: {item.bidColor}</div>}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Not specified</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-slate-700 whitespace-nowrap">
+                          ₱{(item.unitPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              value={item.bidUnitPrice || ''}
+                              onChange={(e) => handleUnitBidChange(item.id, e.target.value)}
+                              disabled={isSubmitted}
+                              className={`w-32 ${
+                                isItemOverBudget
+                                  ? 'border-amber-500 focus-visible:ring-amber-500 text-amber-900 bg-amber-50/40'
+                                  : ''
+                              }`}
+                              min="0"
+                              step="0.01"
+                            />
+                            {isItemOverBudget && (
+                              <span className="text-[10px] text-amber-600 block font-medium">
+                                Exceeds ABC
+                              </span>
+                            )}
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">Not specified</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          value={item.bidUnitPrice || ''}
-                          onChange={(e) => handleUnitBidChange(item.id, e.target.value)}
-                          disabled={isSubmitted}
-                          className="w-32"
-                          min="0"
-                          step="0.01"
-                        />
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        ₱{(item.bidTotalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell>
-                        {item.bidBrochureUrl ? (
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-blue-600" />
-                            <a
-                              href={item.bidBrochureUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-blue-600 hover:underline max-w-[120px] truncate block"
-                              title={item.bidBrochureFileName || 'Brochure'}
-                            >
-                              {item.bidBrochureFileName || 'View Brochure'}
-                            </a>
-                            {!isSubmitted && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveBrochure(item.id)}
-                                className="h-6 w-6 p-0 hover:text-red-600"
+                        </TableCell>
+                        <TableCell className="text-right font-semibold whitespace-nowrap">
+                          ₱{(item.bidTotalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>
+                          {item.bidBrochureUrl ? (
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-blue-600" />
+                              <a
+                                href={item.bidBrochureUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:underline max-w-[120px] truncate block"
+                                title={item.bidBrochureFileName || 'Brochure'}
                               >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        ) : (
-                          <div>
-                            {!isSubmitted && (
-                              <>
-                                <input
-                                  type="file"
-                                  ref={(el) => (fileInputRefs.current[item.id] = el)}
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0]
-                                    if (file) handleBrochureUpload(item.id, file)
-                                  }}
-                                  className="hidden"
-                                  accept=".pdf,.jpg,.jpeg,.png"
-                                />
+                                {item.bidBrochureFileName || 'View Brochure'}
+                              </a>
+                              {!isSubmitted && (
                                 <Button
-                                  variant="outline"
+                                  variant="ghost"
                                   size="sm"
-                                  onClick={() => fileInputRefs.current[item.id]?.click()}
-                                  className="gap-2"
+                                  onClick={() => handleRemoveBrochure(item.id)}
+                                  className="h-6 w-6 p-0 hover:text-red-600"
                                 >
-                                  <Upload className="h-3 w-3" />
-                                  Upload
+                                  <X className="h-3 w-3" />
                                 </Button>
-                              </>
-                            )}
-                            {isSubmitted && <span className="text-muted-foreground text-sm">—</span>}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {!isSubmitted && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleBidSpecClick(item)}
-                            className="gap-2"
-                          >
-                            <Pencil className="h-3 w-3" />
-                            Item Bid Specification
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                              )}
+                            </div>
+                          ) : (
+                            <div>
+                              {!isSubmitted && (
+                                <>
+                                  <input
+                                    type="file"
+                                    ref={(el) => (fileInputRefs.current[item.id] = el)}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0]
+                                      if (file) handleBrochureUpload(item.id, file)
+                                    }}
+                                    className="hidden"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => fileInputRefs.current[item.id]?.click()}
+                                    className="gap-2"
+                                  >
+                                    <Upload className="h-3 w-3" />
+                                    Upload
+                                  </Button>
+                                </>
+                              )}
+                              {isSubmitted && <span className="text-muted-foreground text-sm">—</span>}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {!isSubmitted && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleBidSpecClick(item)}
+                              className="gap-2"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Item Bid Specification
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
 
-            <div className="mt-4 flex justify-between items-center p-4 bg-slate-50 rounded-lg">
-              <div className="text-lg font-semibold">Total Quotation Amount:</div>
-              <div className="text-2xl font-bold text-primary">
-                ₱{totalBidAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <div className="mt-4 flex justify-between items-center p-4 bg-slate-50 border rounded-lg">
+              <div>
+                <span className="text-xs text-muted-foreground block font-semibold uppercase tracking-wider">
+                  TOTAL APPROVED BUDGET (ABC)
+                </span>
+                <span className="text-lg font-bold text-slate-700">
+                  ₱{totalABCAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-muted-foreground block font-semibold uppercase tracking-wider">
+                  TOTAL QUOTATION AMOUNT
+                </span>
+                <div className="flex items-center gap-2.5 justify-end">
+                  <span className={`text-2xl font-bold ${isTotalOverBudget ? 'text-amber-600' : 'text-primary'}`}>
+                    ₱{totalBidAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  {isTotalOverBudget && (
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-medium">
+                      Exceeds Total ABC
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
 

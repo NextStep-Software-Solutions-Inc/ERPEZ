@@ -43,34 +43,55 @@ public class CreateSupplierWithRequirementsCommandHandler(IUnitOfWork unitOfWork
         };
 
         // Create supplier requirements
-        if (createRequest.Requirements.Count > 0)
+        var promotedFileIds = new List<Guid>();
+        try
         {
-            var requirements = new List<Domain.Entities.Planning.SupplierRequirement>();
-
-            foreach (var req in createRequest.Requirements)
+            if (createRequest.Requirements.Count > 0)
             {
-                string? promotedUrl = null;
-                if (req.FileId.HasValue)
+                var requirements = new List<Domain.Entities.Planning.SupplierRequirement>();
+
+                foreach (var req in createRequest.Requirements)
                 {
-                    var (url, _) = await fileStorageService.PromoteFileAsync(req.FileId.Value, cancellationToken);
-                    promotedUrl = url;
+                    string? promotedUrl = null;
+                    if (req.FileId.HasValue)
+                    {
+                        var (url, _) = await fileStorageService.PromoteFileAsync(req.FileId.Value, cancellationToken);
+                        promotedUrl = url;
+                        promotedFileIds.Add(req.FileId.Value);
+                    }
+
+                    requirements.Add(new Domain.Entities.Planning.SupplierRequirement
+                    {
+                        Id = Guid.NewGuid(),
+                        SupplierId = supplier.Id,
+                        RequirementName = req.RequirementName,
+                        Url = promotedUrl,
+                        IsVerified = false
+                    });
                 }
-
-                requirements.Add(new Domain.Entities.Planning.SupplierRequirement
-                {
-                    Id = Guid.NewGuid(),
-                    SupplierId = supplier.Id,
-                    RequirementName = req.RequirementName,
-                    Url = promotedUrl,
-                    IsVerified = false
-                });
+                supplier.SupplierRequirements = requirements;
             }
-            supplier.SupplierRequirements = requirements;
+
+            await unitOfWork.SupplierRepository.AddAsync(supplier, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return ApiResponse<Guid>.Success(supplier.Id, "Supplier and requirements created successfully.");
         }
-
-        await unitOfWork.SupplierRepository.AddAsync(supplier, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return ApiResponse<Guid>.Success(supplier.Id, "Supplier and requirements created successfully.");
+        catch
+        {
+            // Clean up any promoted files if creation fails to prevent storage exhaustion
+            foreach (var promotedId in promotedFileIds)
+            {
+                try
+                {
+                    await fileStorageService.DeletePermanentAsync(promotedId, cancellationToken);
+                }
+                catch
+                {
+                    // Ignore secondary errors during cleanup
+                }
+            }
+            throw;
+        }
     }
 }

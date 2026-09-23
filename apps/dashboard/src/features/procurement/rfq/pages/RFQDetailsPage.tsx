@@ -1687,6 +1687,10 @@ export function RFQDetailsPage({
         onOpenChange={setShowAddPRModal}
         onAdd={handleAddConsolidatedPR}
         existingCPRItemIds={(rfq?.items || []).map((it: any) => it.itemId || it.prId || '')}
+        currentConsolidatedPRId={rfq?.consolidatedPRId}
+        currentConsolidatedPRNumber={rfq?.consolidatedPRNumber}
+        currentModeOfProcurementId={rfq?.modeOfProcurementId}
+        currentModeOfProcurementName={rfq?.modeOfProcurementName || rfq?.modeOfProcurement}
       />
 
       {/* Set Quotation Modal */}
