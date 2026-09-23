@@ -74,6 +74,12 @@ import { getPPMPItemsRequest } from '../handlers/getPPMPItemsRequest'
 import { createPPMPItemRequest } from '../handlers/createPPMPItemRequest'
 import { createPPMPItemAllocationRequest } from '../handlers/createPPMPItemAllocationRequest'
 import type { AllocationMonth, ProcurementProjectType } from '../types'
+import {
+  deriveScheduleDates,
+  getFiscalYearDefaultDates,
+  PPMP_ALLOCATION_MONTHS,
+  type DerivedScheduleDates,
+} from '../lib/ppmpScheduleDerivation'
 
 import type { ProcurementItem } from '@/components/features/planning/procurement-item/types/procurementItem.types'
 import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
@@ -94,6 +100,10 @@ function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem & { availa
     availableStock: psdbm.availableStock,
   } as ProcurementItem & { availableStock?: number }
 }
+
+// ---------------------------------------------------------------------------
+// Shared Hooks
+// ---------------------------------------------------------------------------
 
 const useNONCSEItems = createQueryHookFromTemplate(getNONCSEItemsRequest)
 const useProcurementModes = createQueryHookFromTemplate(
@@ -123,6 +133,7 @@ export interface ItemReviewConfig {
   remarks: string
   enableAllocations: boolean
   monthlyQuantities: Record<AllocationMonth, number>
+  isScheduleAutoDerived?: boolean
 }
 
 interface AddPPMPItemsModalProps {
@@ -624,6 +635,7 @@ export default function AddPPMPItemsModal({
               expectedDeliveryEnd: '',
               remarks: '',
               enableAllocations: false,
+              isScheduleAutoDerived: true,
               monthlyQuantities: {
                 January: 0,
                 February: 0,
@@ -938,6 +950,77 @@ export default function AddPPMPItemsModal({
     () => Array.from(selectedItems.values()),
     [selectedItems],
   )
+
+  const handleAutoDeriveSchedule = useCallback(
+    (itemId: string) => {
+      const config = configs[itemId]
+      if (!config) return
+      const modeName =
+        procurementModes.find((m) => m.id === config.procurementModeId)?.name || ''
+
+      if (config.enableAllocations) {
+        const derived = deriveScheduleDates({
+          monthlyQuantities: config.monthlyQuantities,
+          fiscalYear,
+          procurementModeName: modeName,
+        })
+        if (derived) {
+          updateConfig(itemId, {
+            ...derived,
+            isScheduleAutoDerived: true,
+          })
+          toast.success('Procurement and delivery schedules updated from monthly allocations.')
+          return
+        }
+      }
+
+      // Fallback: apply default fiscal year schedule
+      const defaultDates = getFiscalYearDefaultDates(fiscalYear)
+      updateConfig(itemId, {
+        ...defaultDates,
+        isScheduleAutoDerived: true,
+      })
+      toast.info(`Defaulted schedule to fiscal year ${Number(fiscalYear) || new Date().getFullYear()}.`)
+    },
+    [configs, fiscalYear, procurementModes],
+  )
+
+  const handleAutoDeriveAllSchedules = useCallback(() => {
+    if (selectedList.length === 0) return
+
+    let updatedCount = 0
+    setConfigs((prev) => {
+      const next = { ...prev }
+      selectedList.forEach(({ item }) => {
+        const config = next[item.id]
+        if (!config) return
+        const modeName =
+          procurementModes.find((m) => m.id === config.procurementModeId)?.name || ''
+
+        let derived: DerivedScheduleDates | null = null
+        if (config.enableAllocations) {
+          derived = deriveScheduleDates({
+            monthlyQuantities: config.monthlyQuantities,
+            fiscalYear,
+            procurementModeName: modeName,
+          })
+        }
+        if (!derived) {
+          derived = getFiscalYearDefaultDates(fiscalYear)
+        }
+
+        next[item.id] = {
+          ...config,
+          ...derived,
+          isScheduleAutoDerived: true,
+        }
+        updatedCount++
+      })
+      return next
+    })
+
+    toast.success(`Auto-calculated schedules for ${updatedCount} ${updatedCount === 1 ? 'item' : 'items'}.`)
+  }, [selectedList, fiscalYear, procurementModes])
 
   return (
     <>
@@ -2089,7 +2172,17 @@ export default function AddPPMPItemsModal({
                   Review and configure procurement parameters, delivery timelines, and optional monthly quantity distributions for each selected item.
                 </p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAutoDeriveAllSchedules}
+                  className="h-7 text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/10 shadow-2xs"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  Auto-calculate All Schedules
+                </Button>
                 <Badge variant="soft" color="default" className="font-semibold text-xs px-2.5 py-1">
                   {selectedCount} {selectedCount === 1 ? 'Item' : 'Items'} to Configure
                 </Badge>
@@ -2140,6 +2233,7 @@ export default function AddPPMPItemsModal({
                       expectedDeliveryEnd: '',
                       remarks: '',
                       enableAllocations: false,
+                      isScheduleAutoDerived: true,
                       monthlyQuantities: {
                         January: 0,
                         February: 0,
@@ -2217,20 +2311,7 @@ export default function AddPPMPItemsModal({
                     const imgUrl =
                       (item as ProcurementItem).imageURL || item.imageUrl
 
-                    const MONTH_NAMES: AllocationMonth[] = [
-                      'January',
-                      'February',
-                      'March',
-                      'April',
-                      'May',
-                      'June',
-                      'July',
-                      'August',
-                      'September',
-                      'October',
-                      'November',
-                      'December',
-                    ]
+                    const MONTH_NAMES = PPMP_ALLOCATION_MONTHS
 
                     const formatCurrency = (val: number): string =>
                       new Intl.NumberFormat('en-PH', {
@@ -2534,13 +2615,25 @@ export default function AddPPMPItemsModal({
                                     <FieldDescriptionTooltip fieldKey="procurementModeId" className="h-3.5 w-3.5" />
                                   </div>
                                   <Select
-                                    value={config.procurementModeId}
-                                    onValueChange={(val) =>
-                                      updateConfig(item.id, {
-                                        procurementModeId: val,
-                                      })
-                                    }
-                                  >
+                                     value={config.procurementModeId}
+                                     onValueChange={(val) => {
+                                       const patch: Partial<ItemReviewConfig> = {
+                                         procurementModeId: val,
+                                       }
+                                       if (config.enableAllocations && config.isScheduleAutoDerived !== false) {
+                                         const selectedMode = procurementModes.find((m) => m.id === val)
+                                         const derived = deriveScheduleDates({
+                                           monthlyQuantities: config.monthlyQuantities,
+                                           fiscalYear,
+                                           procurementModeName: selectedMode?.name || '',
+                                         })
+                                         if (derived) {
+                                           Object.assign(patch, derived)
+                                         }
+                                       }
+                                       updateConfig(item.id, patch)
+                                     }}
+                                   >
                                     <SelectTrigger
                                       className={cn(
                                         'w-full border-default-200 text-xs h-9 focus:ring-primary/25',
@@ -2614,113 +2707,152 @@ export default function AddPPMPItemsModal({
                               </div>
 
                               {/* Row 2: Timeline Schedules */}
-                              <div className="grid gap-3.5 sm:grid-cols-2">
-                                {/* Procurement Schedule */}
-                                <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
-                                  <div className="flex items-center gap-1">
-                                    <label className="text-xs font-semibold text-foreground">
-                                      Procurement Schedule *
-                                    </label>
-                                    <FieldDescriptionTooltip fieldKey="procurementStartDate" className="h-3.5 w-3.5" />
+                              <div className="space-y-2.5">
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-foreground">
+                                      Timeline Schedules *
+                                    </span>
+                                    {config.isScheduleAutoDerived ? (
+                                      <Badge
+                                        variant="soft"
+                                        className="text-[10px] px-1.5 py-0 font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                                      >
+                                        Auto-calculated
+                                      </Badge>
+                                    ) : (config.procurementStartDate || config.expectedDeliveryStart) ? (
+                                      <Badge
+                                        variant="soft"
+                                        className="text-[10px] px-1.5 py-0 font-medium bg-muted/50 text-muted-foreground border border-border"
+                                      >
+                                        Custom
+                                      </Badge>
+                                    ) : null}
                                   </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                      <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
-                                      <Input
-                                        type="date"
-                                        value={config.procurementStartDate || ''}
-                                        onChange={(e) =>
-                                          updateConfig(item.id, {
-                                            procurementStartDate: e.target.value,
-                                          })
-                                        }
-                                        className={cn(
-                                          'text-xs h-9 border-default-200 w-full',
-                                          hasProcStartError && 'border-red-500 bg-red-50/20'
-                                        )}
-                                        placeholder="Start"
-                                      />
-                                      {hasProcStartError && (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
-                                      <Input
-                                        type="date"
-                                        value={config.procurementEndDate || ''}
-                                        onChange={(e) =>
-                                          updateConfig(item.id, {
-                                            procurementEndDate: e.target.value,
-                                          })
-                                        }
-                                        className={cn(
-                                          'text-xs h-9 border-default-200 w-full',
-                                          hasProcEndError && 'border-red-500 bg-red-50/20'
-                                        )}
-                                        placeholder="End"
-                                      />
-                                      {config.procurementEndDate && config.procurementStartDate && config.procurementEndDate < config.procurementStartDate ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
-                                      ) : !config.procurementEndDate ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
-                                      ) : null}
-                                    </div>
-                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleAutoDeriveSchedule(item.id)}
+                                    className="text-xs h-7 px-2 text-primary border-primary/30 hover:bg-primary/5 hover:text-primary gap-1"
+                                  >
+                                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                                    {config.enableAllocations ? 'Sync from Allocations' : 'Default to Fiscal Year'}
+                                  </Button>
                                 </div>
 
-                                {/* Expected Delivery Window */}
-                                <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
-                                  <div className="flex items-center gap-1">
-                                    <label className="text-xs font-semibold text-foreground">
-                                      Expected Delivery Window *
-                                    </label>
-                                    <FieldDescriptionTooltip fieldKey="expectedDeliveryStart" className="h-3.5 w-3.5" />
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                      <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
-                                      <Input
-                                        type="date"
-                                        value={config.expectedDeliveryStart || ''}
-                                        onChange={(e) =>
-                                          updateConfig(item.id, {
-                                            expectedDeliveryStart: e.target.value,
-                                          })
-                                        }
-                                        className={cn(
-                                          'text-xs h-9 border-default-200 w-full',
-                                          hasDelivStartError && 'border-red-500 bg-red-50/20'
-                                        )}
-                                        placeholder="Start"
-                                      />
-                                      {config.expectedDeliveryStart && config.procurementStartDate && config.expectedDeliveryStart < config.procurementStartDate ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before procurement start</p>
-                                      ) : !config.expectedDeliveryStart ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
-                                      ) : null}
+                                <div className="grid gap-3.5 sm:grid-cols-2">
+                                  {/* Procurement Schedule */}
+                                  <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
+                                    <div className="flex items-center gap-1">
+                                      <label className="text-xs font-semibold text-foreground">
+                                        Procurement Schedule *
+                                      </label>
+                                      <FieldDescriptionTooltip fieldKey="procurementStartDate" className="h-3.5 w-3.5" />
                                     </div>
-                                    <div>
-                                      <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
-                                      <Input
-                                        type="date"
-                                        value={config.expectedDeliveryEnd || ''}
-                                        onChange={(e) =>
-                                          updateConfig(item.id, {
-                                            expectedDeliveryEnd: e.target.value,
-                                          })
-                                        }
-                                        className={cn(
-                                          'text-xs h-9 border-default-200 w-full',
-                                          hasDelivEndError && 'border-red-500 bg-red-50/20'
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
+                                        <Input
+                                          type="date"
+                                          value={config.procurementStartDate || ''}
+                                          onChange={(e) =>
+                                            updateConfig(item.id, {
+                                              procurementStartDate: e.target.value,
+                                              isScheduleAutoDerived: false,
+                                            })
+                                          }
+                                          className={cn(
+                                            'text-xs h-9 border-default-200 w-full',
+                                            hasProcStartError && 'border-red-500 bg-red-50/20'
+                                          )}
+                                          placeholder="Start"
+                                        />
+                                        {hasProcStartError && (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
                                         )}
-                                        placeholder="End"
-                                      />
-                                      {config.expectedDeliveryEnd && config.expectedDeliveryStart && config.expectedDeliveryEnd < config.expectedDeliveryStart ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
-                                      ) : !config.expectedDeliveryEnd ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
-                                      ) : null}
+                                      </div>
+                                      <div>
+                                        <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
+                                        <Input
+                                          type="date"
+                                          value={config.procurementEndDate || ''}
+                                          onChange={(e) =>
+                                            updateConfig(item.id, {
+                                              procurementEndDate: e.target.value,
+                                              isScheduleAutoDerived: false,
+                                            })
+                                          }
+                                          className={cn(
+                                            'text-xs h-9 border-default-200 w-full',
+                                            hasProcEndError && 'border-red-500 bg-red-50/20'
+                                          )}
+                                          placeholder="End"
+                                        />
+                                        {config.procurementEndDate && config.procurementStartDate && config.procurementEndDate < config.procurementStartDate ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
+                                        ) : !config.procurementEndDate ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Expected Delivery Window */}
+                                  <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
+                                    <div className="flex items-center gap-1">
+                                      <label className="text-xs font-semibold text-foreground">
+                                        Expected Delivery Window *
+                                      </label>
+                                      <FieldDescriptionTooltip fieldKey="expectedDeliveryStart" className="h-3.5 w-3.5" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
+                                        <Input
+                                          type="date"
+                                          value={config.expectedDeliveryStart || ''}
+                                          onChange={(e) =>
+                                            updateConfig(item.id, {
+                                              expectedDeliveryStart: e.target.value,
+                                              isScheduleAutoDerived: false,
+                                            })
+                                          }
+                                          className={cn(
+                                            'text-xs h-9 border-default-200 w-full',
+                                            hasDelivStartError && 'border-red-500 bg-red-50/20'
+                                          )}
+                                          placeholder="Start"
+                                        />
+                                        {config.expectedDeliveryStart && config.procurementStartDate && config.expectedDeliveryStart < config.procurementStartDate ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before procurement start</p>
+                                        ) : !config.expectedDeliveryStart ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
+                                        ) : null}
+                                      </div>
+                                      <div>
+                                        <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
+                                        <Input
+                                          type="date"
+                                          value={config.expectedDeliveryEnd || ''}
+                                          onChange={(e) =>
+                                            updateConfig(item.id, {
+                                              expectedDeliveryEnd: e.target.value,
+                                              isScheduleAutoDerived: false,
+                                            })
+                                          }
+                                          className={cn(
+                                            'text-xs h-9 border-default-200 w-full',
+                                            hasDelivEndError && 'border-red-500 bg-red-50/20'
+                                          )}
+                                          placeholder="End"
+                                        />
+                                        {config.expectedDeliveryEnd && config.expectedDeliveryStart && config.expectedDeliveryEnd < config.expectedDeliveryStart ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
+                                        ) : !config.expectedDeliveryEnd ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
+                                        ) : null}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -2805,11 +2937,25 @@ export default function AddPPMPItemsModal({
                                   <Checkbox
                                     id={`alloc-${item.id}`}
                                     checked={config.enableAllocations}
-                                    onCheckedChange={(checked) =>
-                                      updateConfig(item.id, {
-                                        enableAllocations: !!checked,
-                                      })
-                                    }
+                                    onCheckedChange={(checked) => {
+                                      const isEnabled = !!checked
+                                      const patch: Partial<ItemReviewConfig> = {
+                                        enableAllocations: isEnabled,
+                                      }
+                                      if (isEnabled) {
+                                        const modeName =
+                                          procurementModes.find((m) => m.id === config.procurementModeId)?.name || ''
+                                        const derived = deriveScheduleDates({
+                                          monthlyQuantities: config.monthlyQuantities,
+                                          fiscalYear,
+                                          procurementModeName: modeName,
+                                        })
+                                        if (derived) {
+                                          Object.assign(patch, derived, { isScheduleAutoDerived: true })
+                                        }
+                                      }
+                                      updateConfig(item.id, patch)
+                                    }}
                                   />
                                   <label
                                     htmlFor={`alloc-${item.id}`}
@@ -2884,9 +3030,27 @@ export default function AddPPMPItemsModal({
                                                 ...config.monthlyQuantities,
                                                 [month]: qty,
                                               }
-                                              updateConfig(item.id, {
+                                              const patch: Partial<ItemReviewConfig> = {
                                                 monthlyQuantities,
-                                              })
+                                              }
+
+                                              if (
+                                                config.isScheduleAutoDerived !== false ||
+                                                (!config.procurementStartDate && !config.expectedDeliveryStart)
+                                              ) {
+                                                const modeName =
+                                                  procurementModes.find((m) => m.id === config.procurementModeId)?.name || ''
+                                                const derived = deriveScheduleDates({
+                                                  monthlyQuantities,
+                                                  fiscalYear,
+                                                  procurementModeName: modeName,
+                                                })
+                                                if (derived) {
+                                                  Object.assign(patch, derived, { isScheduleAutoDerived: true })
+                                                }
+                                              }
+
+                                              updateConfig(item.id, patch)
                                             }}
                                             className="text-xs h-8 text-center border-default-200 focus-visible:ring-primary/20"
                                           />

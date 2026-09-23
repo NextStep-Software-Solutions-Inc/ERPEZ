@@ -48,6 +48,40 @@ public class SubmitRFQCommandHandler(IUnitOfWork unitOfWork)
                 .Include(p => p.BACResolutions)
                 .FirstOrDefaultAsync(p => p.ConsolidatedPRId == cprId.Value && !p.IsDeleted, cancellationToken);
 
+            // Fallback: If not linked directly via ConsolidatedPRId, trace through the CPR's underlying APP items
+            // (e.g. Route 1 projects created directly from APP items such as BAC-RES-2026-724).
+            if (project == null)
+            {
+                var cprWithDetails = await unitOfWork.ConsolidatedPRRepository.GetCPRWithDetailsAsync(cprId.Value, cancellationToken);
+                if (cprWithDetails != null)
+                {
+                    var appItemIds = cprWithDetails.ConsolidatedPRItems
+                        .Where(ci => !ci.IsDeleted && ci.PRItem != null && ci.PRItem.PPMPItem != null && ci.PRItem.PPMPItem.APPItems != null)
+                        .SelectMany(ci => ci.PRItem!.PPMPItem!.APPItems)
+                        .Where(ai => ai != null && !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                        .Select(ai => ai.Id)
+                        .Distinct()
+                        .ToList();
+
+                    if (appItemIds.Count > 0)
+                    {
+                        var lineageProjects = await unitOfWork.ProcurementProjectRepository
+                            .GetByAPPItemIdsWithResolutionsAsync(appItemIds, cancellationToken);
+
+                        project = lineageProjects
+                            .Where(p => !p.IsDeleted && p.BACResolutions.Any(r => !r.IsDeleted))
+                            .OrderByDescending(p => p.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (project != null && !project.ConsolidatedPRId.HasValue)
+                        {
+                            project.ConsolidatedPRId = cprId.Value;
+                            unitOfWork.ProcurementProjectRepository.Update(project);
+                        }
+                    }
+                }
+            }
+
             var resolution = project?.BACResolutions.FirstOrDefault(r => !r.IsDeleted);
 
             var cprNumber = rfq.ConsolidatedPR?.CPRNumber;

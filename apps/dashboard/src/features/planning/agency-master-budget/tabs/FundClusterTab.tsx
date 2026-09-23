@@ -66,25 +66,34 @@ import { CreateMasterBudgetDialog, EditingMasterBudget } from '../dialogs/Create
 const useFiscalYears = createQueryHookFromTemplate(getFiscalYearsRequest)
 const useFundSources = createQueryHookFromTemplate(getFundSourcesRequest)
 
-// Maps sourceDocumentType integer to display label
-const SOURCE_DOCUMENT_LABELS: Record<number, string> = {
+// Maps sourceDocumentType string (C# enum name returned by API) to display label
+// The backend stores and returns the enum name, e.g. "NEPGAA", "PRE", "MOA", "Others"
+const SOURCE_DOCUMENT_LABELS: Record<string, string> = {
+  NEPGAA: 'NEP/GAA',
+  PRE: 'PRE',
+  MOA: 'MOA',
+  Others: 'Other',
+}
+
+// Also handle legacy numeric values just in case
+const LEGACY_SOURCE_DOCUMENT_LABELS: Record<number, string> = {
   0: 'NEP/GAA',
   1: 'PRE',
   2: 'MOA',
   3: 'Other',
 }
 
-const getSourceDocumentClasses = (sourceType: number) => {
-  switch (sourceType) {
-    case 0:
-      return 'bg-green-100 text-green-800 border-green-300'
-    case 1:
-      return 'bg-blue-100 text-blue-800 border-blue-300'
-    case 2:
-      return 'bg-purple-100 text-purple-800 border-purple-300'
-    default:
-      return 'text-slate-700 border-slate-300'
-  }
+const getSourceDocumentLabel = (sourceType: string | number): string => {
+  if (typeof sourceType === 'number') return LEGACY_SOURCE_DOCUMENT_LABELS[sourceType] ?? 'Unknown'
+  return SOURCE_DOCUMENT_LABELS[sourceType] ?? SOURCE_DOCUMENT_LABELS[sourceType.toUpperCase()] ?? 'Unknown'
+}
+
+const getSourceDocumentClasses = (sourceType: string | number) => {
+  const key = typeof sourceType === 'number' ? sourceType : sourceType.toUpperCase()
+  if (key === 'NEPGAA' || key === 0) return 'bg-green-100 text-green-800 border-green-300'
+  if (key === 'PRE' || key === 1) return 'bg-blue-100 text-blue-800 border-blue-300'
+  if (key === 'MOA' || key === 2) return 'bg-purple-100 text-purple-800 border-purple-300'
+  return 'text-slate-700 border-slate-300'
 }
 
 type SortOrder = 'asc' | 'desc' | null
@@ -483,7 +492,7 @@ export function FundClusterTab() {
                                 variant="outline"
                                 className={`capitalize ${getSourceDocumentClasses(budget.sourceDocumentType)} whitespace-nowrap`}
                               >
-                                {SOURCE_DOCUMENT_LABELS[budget.sourceDocumentType] ?? 'Unknown'}
+                                {getSourceDocumentLabel(budget.sourceDocumentType)}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">

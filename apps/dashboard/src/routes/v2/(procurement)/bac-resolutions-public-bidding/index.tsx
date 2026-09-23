@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { PublicBacResolutionsPage } from '@/features/procurement/bac-resolution/pages'
 import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
@@ -23,7 +23,7 @@ function PublicBacResolutionsRoute() {
   return (
     <RoutePermissionGuard
       permission={PERMISSIONS.Procurement.Bac.Manage}
-      message="You do not have permission to view Public Bidding BAC Resolutions."
+      message="You do not have permission to view Competitive Bidding BAC Resolutions."
     >
       <PublicBacResolutionsPage
         selectedResolutionId={search.selectedResolutionId || search.id}

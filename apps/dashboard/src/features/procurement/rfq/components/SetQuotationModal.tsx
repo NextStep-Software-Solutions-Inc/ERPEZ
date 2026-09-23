@@ -1,10 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { useRFQStore, RFQItem } from '../store/rfqStore'
 import { Pencil, Save, Upload, FileText, X, Send, Loader2 } from 'lucide-react'
@@ -22,7 +35,9 @@ import {
 import { createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { submitSupplierBidRequest } from '@/features/procurement/supplier-portal/handlers/supplierPortalRequests'
 
-const useSubmitSupplierBid = createMutationHookFromTemplate(submitSupplierBidRequest)
+const useSubmitSupplierBid = createMutationHookFromTemplate(
+  submitSupplierBidRequest,
+)
 
 interface SetQuotationModalProps {
   open: boolean
@@ -40,7 +55,12 @@ interface ItemBidSpecModalProps {
   onSave: (itemId: string, model: string, brand: string, color: string) => void
 }
 
-function ItemBidSpecModal({ open, onOpenChange, item, onSave }: ItemBidSpecModalProps) {
+function ItemBidSpecModal({
+  open,
+  onOpenChange,
+  item,
+  onSave,
+}: ItemBidSpecModalProps) {
   const [model, setModel] = useState('')
   const [brand, setBrand] = useState('')
   const [color, setColor] = useState('')
@@ -129,23 +149,40 @@ export function SetQuotationModal({
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({})
 
-  const { mutateAsync: submitBidMutation, isPending: isSubmitting } = useSubmitSupplierBid()
+  const { mutateAsync: submitBidMutation, isPending: isSubmitting } =
+    useSubmitSupplierBid()
 
-  const isSubmitted = rfq?.quotationStatus === 'submitted' && rfq?.quotationApprovalStatus !== 'returned'
+  const isSubmitted =
+    rfq?.quotationStatus === 'submitted' &&
+    rfq?.quotationApprovalStatus !== 'returned'
 
   useEffect(() => {
     if (rfq && open) {
       setItems(
         (rfq.items || []).map((item: any) => ({
           ...item,
-          bidUnitPrice: item.bidUnitPrice !== undefined ? item.bidUnitPrice : (item.supplierUnitPrice || 0),
-          bidTotalAmount: item.bidTotalAmount !== undefined ? item.bidTotalAmount : ((item.bidUnitPrice ?? item.supplierUnitPrice ?? 0) * (item.quantity || 1)),
+          unitPrice: Number(item.unitPrice ?? item.unitPriceSnapshot ?? 0),
+          totalAmount: Number(
+            item.totalAmount ??
+              item.totalABC ??
+              (item.unitPrice ?? item.unitPriceSnapshot ?? 0) *
+                (item.quantity || 1),
+          ),
+          bidUnitPrice:
+            item.bidUnitPrice !== undefined
+              ? item.bidUnitPrice
+              : item.supplierUnitPrice || 0,
+          bidTotalAmount:
+            item.bidTotalAmount !== undefined
+              ? item.bidTotalAmount
+              : (item.bidUnitPrice ?? item.supplierUnitPrice ?? 0) *
+                (item.quantity || 1),
           bidBrand: item.bidBrand || item.brand || '',
           bidModel: item.bidModel || item.model || '',
           bidColor: item.bidColor || item.color || '',
           bidBrochureUrl: item.bidBrochureUrl || item.brochureFileUrl,
           bidBrochureFileName: item.bidBrochureFileName,
-        }))
+        })),
       )
     }
   }, [rfq, open])
@@ -158,7 +195,9 @@ export function SetQuotationModal({
         title="Set Quotation"
         description="Loading quotation details..."
       >
-        <div className="p-8 text-center text-muted-foreground">Loading quotation details...</div>
+        <div className="p-8 text-center text-muted-foreground">
+          Loading quotation details...
+        </div>
       </ResponsiveDialog>
     )
   }
@@ -167,7 +206,7 @@ export function SetQuotationModal({
     if (isSubmitted) {
       toast({
         title: 'Cannot edit',
-        description: 'You cannot edit your bid after submission.'
+        description: 'You cannot edit your bid after submission.',
       })
       return
     }
@@ -175,29 +214,38 @@ export function SetQuotationModal({
     setSpecModalOpen(true)
   }
 
-  const handleSaveBidSpec = (itemId: string, model: string, brand: string, color: string) => {
-    setItems(items.map(item => 
-      item.id === itemId 
-        ? { ...item, bidModel: model, bidBrand: brand, bidColor: color }
-        : item
-    ))
+  const handleSaveBidSpec = (
+    itemId: string,
+    model: string,
+    brand: string,
+    color: string,
+  ) => {
+    setItems(
+      items.map((item) =>
+        item.id === itemId
+          ? { ...item, bidModel: model, bidBrand: brand, bidColor: color }
+          : item,
+      ),
+    )
     toast({
       title: 'Specification saved',
-      description: 'Item bid specification has been updated.'
+      description: 'Item bid specification has been updated.',
     })
   }
 
   const handleUnitBidChange = (itemId: string, value: string) => {
     const unitBid = parseFloat(value) || 0
-    setItems(items.map(item => 
-      item.id === itemId 
-        ? { 
-            ...item, 
-            bidUnitPrice: unitBid,
-            bidTotalAmount: unitBid * item.quantity
-          }
-        : item
-    ))
+    setItems(
+      items.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              bidUnitPrice: unitBid,
+              bidTotalAmount: unitBid * item.quantity,
+            }
+          : item,
+      ),
+    )
   }
 
   const createdObjectUrlsRef = useRef<Record<string, string>>({})
@@ -206,14 +254,18 @@ export function SetQuotationModal({
   useEffect(() => {
     if (!open) {
       Object.values(createdObjectUrlsRef.current).forEach((u) => {
-        try { URL.revokeObjectURL(u) } catch {}
+        try {
+          URL.revokeObjectURL(u)
+        } catch {}
       })
       createdObjectUrlsRef.current = {}
       prevBidUrlsRef.current = {}
     }
     return () => {
       Object.values(createdObjectUrlsRef.current).forEach((u) => {
-        try { URL.revokeObjectURL(u) } catch {}
+        try {
+          URL.revokeObjectURL(u)
+        } catch {}
       })
       createdObjectUrlsRef.current = {}
       prevBidUrlsRef.current = {}
@@ -225,61 +277,81 @@ export function SetQuotationModal({
     items.forEach((it) => {
       const prevUrl = prev[it.id]
       const currUrl = it.bidBrochureUrl
-      if (prevUrl && prevUrl !== currUrl && createdObjectUrlsRef.current[it.id] === prevUrl) {
-        try { URL.revokeObjectURL(prevUrl) } catch {}
+      if (
+        prevUrl &&
+        prevUrl !== currUrl &&
+        createdObjectUrlsRef.current[it.id] === prevUrl
+      ) {
+        try {
+          URL.revokeObjectURL(prevUrl)
+        } catch {}
         delete createdObjectUrlsRef.current[it.id]
       }
     })
-    prevBidUrlsRef.current = items.reduce((acc, it) => {
-      acc[it.id] = it.bidBrochureUrl
-      return acc
-    }, {} as Record<string, string | undefined>)
+    prevBidUrlsRef.current = items.reduce(
+      (acc, it) => {
+        acc[it.id] = it.bidBrochureUrl
+        return acc
+      },
+      {} as Record<string, string | undefined>,
+    )
   }, [items])
 
   const handleBrochureUpload = (itemId: string, file: File) => {
     const prev = items.find((i) => i.id === itemId)?.bidBrochureUrl
-    if (prev && prev.startsWith('blob:') && createdObjectUrlsRef.current[itemId] === prev) {
-      try { URL.revokeObjectURL(prev) } catch {}
+    if (
+      prev &&
+      prev.startsWith('blob:') &&
+      createdObjectUrlsRef.current[itemId] === prev
+    ) {
+      try {
+        URL.revokeObjectURL(prev)
+      } catch {}
       delete createdObjectUrlsRef.current[itemId]
     }
 
     const fileUrl = URL.createObjectURL(file)
     createdObjectUrlsRef.current[itemId] = fileUrl
 
-    setItems(items.map(item =>
-      item.id === itemId
-        ? {
-            ...item,
-            bidBrochureUrl: fileUrl,
-            bidBrochureFileName: file.name
-          }
-        : item
-    ))
+    setItems(
+      items.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              bidBrochureUrl: fileUrl,
+              bidBrochureFileName: file.name,
+            }
+          : item,
+      ),
+    )
     toast({
       title: 'Brochure uploaded',
-      description: `File "${file.name}" has been uploaded.`
+      description: `File "${file.name}" has been uploaded.`,
     })
   }
 
   const handleRemoveBrochure = (itemId: string) => {
-    setItems(items.map(item => 
-      item.id === itemId 
-        ? { 
-            ...item, 
-            bidBrochureUrl: undefined,
-            bidBrochureFileName: undefined
-          }
-        : item
-    ))
+    setItems(
+      items.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              bidBrochureUrl: undefined,
+              bidBrochureFileName: undefined,
+            }
+          : item,
+      ),
+    )
     toast({
       title: 'Brochure removed',
-      description: 'The brochure has been removed.'
+      description: 'The brochure has been removed.',
     })
   }
 
   const handleSaveDraft = async () => {
     try {
-      const targetSupplierId = supplierId || '00000000-0000-0000-0000-000000000001'
+      const targetSupplierId =
+        supplierId || '00000000-0000-0000-0000-000000000001'
       await submitBidMutation({
         pathParams: { rfqId: rfq.id },
         payload: {
@@ -301,7 +373,7 @@ export function SetQuotationModal({
 
       toast({
         title: 'Draft saved',
-        description: 'Your quotation has been saved as draft.'
+        description: 'Your quotation has been saved as draft.',
       })
       onOpenChange(false)
       onSuccess?.()
@@ -315,14 +387,14 @@ export function SetQuotationModal({
   }
 
   const handleSubmitQuotation = () => {
-    const incomplete = items.filter(item => 
-      !item.bidUnitPrice || item.bidUnitPrice <= 0
+    const incomplete = items.filter(
+      (item) => !item.bidUnitPrice || item.bidUnitPrice <= 0,
     )
 
     if (incomplete.length > 0) {
       toast({
         title: 'Incomplete quotation',
-        description: 'Please enter unit bid prices for all items.'
+        description: 'Please enter unit bid prices for all items.',
       })
       return
     }
@@ -332,7 +404,8 @@ export function SetQuotationModal({
 
   const confirmSubmit = async () => {
     try {
-      const targetSupplierId = supplierId || '00000000-0000-0000-0000-000000000001'
+      const targetSupplierId =
+        supplierId || '00000000-0000-0000-0000-000000000001'
       await submitBidMutation({
         pathParams: { rfqId: rfq.id },
         payload: {
@@ -354,7 +427,7 @@ export function SetQuotationModal({
 
       toast({
         title: 'Quotation submitted',
-        description: 'Your quotation has been successfully submitted.'
+        description: 'Your quotation has been successfully submitted.',
       })
       setSubmitConfirmOpen(false)
       onOpenChange(false)
@@ -368,7 +441,16 @@ export function SetQuotationModal({
     }
   }
 
-  const totalBidAmount = items.reduce((sum, item) => sum + (item.bidTotalAmount || 0), 0)
+  const totalABCAmount = items.reduce(
+    (sum, item) => sum + (item.unitPrice || 0) * (item.quantity || 1),
+    0,
+  )
+  const totalBidAmount = items.reduce(
+    (sum, item) => sum + (item.bidTotalAmount || 0),
+    0,
+  )
+  const isTotalOverBudget =
+    totalABCAmount > 0 && totalBidAmount > totalABCAmount
 
   return (
     <>
@@ -377,29 +459,48 @@ export function SetQuotationModal({
         onOpenChange={onOpenChange}
         title={`Set Quotation - ${rfq.rfqNumber}`}
         description="Enter your bid specifications and unit prices for each item"
-        size="4xl"
+        size="5xl"
+        className="w-full max-w-[1350px]"
         showCloseButton
       >
         <div className="space-y-6">
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50">
-                    <TableHead>Item Name</TableHead>
-                    <TableHead>Qty</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Model/Brand/Color</TableHead>
-                    <TableHead>Unit Bid (₱)</TableHead>
-                    <TableHead>Total Bid (₱)</TableHead>
-                    <TableHead>Brochure</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Item Name</TableHead>
+                  <TableHead className="text-center">Qty</TableHead>
+                  <TableHead>Unit</TableHead>
+                  <TableHead>Model/Brand/Color</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">
+                    Unit ABC (₱)
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap">
+                    Unit Bid (₱)
+                  </TableHead>
+                  <TableHead className="text-right whitespace-nowrap">
+                    Total Bid (₱)
+                  </TableHead>
+                  <TableHead>Brochure</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => {
+                  const isItemOverBudget = Boolean(
+                    item.bidUnitPrice &&
+                      item.unitPrice &&
+                      item.bidUnitPrice > item.unitPrice,
+                  )
+
+                  return (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.itemName}</TableCell>
-                      <TableCell>{item.quantity}</TableCell>
+                      <TableCell className="font-medium">
+                        {item.itemName}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {item.quantity}
+                      </TableCell>
                       <TableCell>{item.unit}</TableCell>
                       <TableCell>
                         {item.bidModel || item.bidBrand || item.bidColor ? (
@@ -409,23 +510,49 @@ export function SetQuotationModal({
                             {item.bidColor && <div>Color: {item.bidColor}</div>}
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Not specified</span>
+                          <span className="text-muted-foreground text-sm">
+                            Not specified
+                          </span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          value={item.bidUnitPrice || ''}
-                          onChange={(e) => handleUnitBidChange(item.id, e.target.value)}
-                          disabled={isSubmitted}
-                          className="w-32"
-                          min="0"
-                          step="0.01"
-                        />
+                      <TableCell className="text-right font-medium text-slate-700 whitespace-nowrap">
+                        ₱
+                        {(item.unitPrice || 0).toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </TableCell>
-                      <TableCell className="font-semibold">
-                        ₱{(item.bidTotalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            value={item.bidUnitPrice || ''}
+                            onChange={(e) =>
+                              handleUnitBidChange(item.id, e.target.value)
+                            }
+                            disabled={isSubmitted}
+                            className={`w-32 ${
+                              isItemOverBudget
+                                ? 'border-amber-500 focus-visible:ring-amber-500 text-amber-900 bg-amber-50/40'
+                                : ''
+                            }`}
+                            min="0"
+                            step="0.01"
+                          />
+                          {isItemOverBudget && (
+                            <span className="text-[10px] text-amber-600 block font-medium">
+                              Exceeds ABC
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold whitespace-nowrap">
+                        ₱
+                        {(item.bidTotalAmount || 0).toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </TableCell>
                       <TableCell>
                         {item.bidBrochureUrl ? (
@@ -457,10 +584,13 @@ export function SetQuotationModal({
                               <>
                                 <input
                                   type="file"
-                                  ref={(el) => (fileInputRefs.current[item.id] = el)}
+                                  ref={(el) =>
+                                    (fileInputRefs.current[item.id] = el)
+                                  }
                                   onChange={(e) => {
                                     const file = e.target.files?.[0]
-                                    if (file) handleBrochureUpload(item.id, file)
+                                    if (file)
+                                      handleBrochureUpload(item.id, file)
                                   }}
                                   className="hidden"
                                   accept=".pdf,.jpg,.jpeg,.png"
@@ -468,7 +598,9 @@ export function SetQuotationModal({
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => fileInputRefs.current[item.id]?.click()}
+                                  onClick={() =>
+                                    fileInputRefs.current[item.id]?.click()
+                                  }
                                   className="gap-2"
                                 >
                                   <Upload className="h-3 w-3" />
@@ -476,7 +608,11 @@ export function SetQuotationModal({
                                 </Button>
                               </>
                             )}
-                            {isSubmitted && <span className="text-muted-foreground text-sm">—</span>}
+                            {isSubmitted && (
+                              <span className="text-muted-foreground text-sm">
+                                —
+                              </span>
+                            )}
                           </div>
                         )}
                       </TableCell>
@@ -494,47 +630,104 @@ export function SetQuotationModal({
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
 
-            <div className="mt-4 flex justify-between items-center p-4 bg-slate-50 rounded-lg">
-              <div className="text-lg font-semibold">Total Quotation Amount:</div>
-              <div className="text-2xl font-bold text-primary">
-                ₱{totalBidAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
+          <div className="mt-4 flex justify-between items-center p-4 bg-slate-50 border rounded-lg">
+            <div>
+              <span className="text-xs text-muted-foreground block font-semibold uppercase tracking-wider">
+                TOTAL APPROVED BUDGET (ABC)
+              </span>
+              <span className="text-lg font-bold text-slate-700">
+                ₱
+                {totalABCAmount.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
             </div>
-
-            {isSubmitted && (
-              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-                <Badge className="bg-green-600">SUBMITTED</Badge>
-                <span className="text-sm text-green-800">
-                  This quotation was submitted on {rfq?.quotationSubmittedAt ? new Date(rfq.quotationSubmittedAt).toLocaleString() : '—'}. 
-                  You cannot edit your bid after submission.
+            <div className="text-right">
+              <span className="text-xs text-muted-foreground block font-semibold uppercase tracking-wider">
+                TOTAL QUOTATION AMOUNT
+              </span>
+              <div className="flex items-center gap-2.5 justify-end">
+                <span
+                  className={`text-2xl font-bold ${isTotalOverBudget ? 'text-amber-600' : 'text-primary'}`}
+                >
+                  ₱
+                  {totalBidAmount.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
+                {isTotalOverBudget && (
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-medium"
+                  >
+                    Exceeds Total ABC
+                  </Badge>
+                )}
               </div>
-            )}
-
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              {!isSubmitted && (
-                <>
-                  <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting} className="gap-2">
-                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    Save Draft
-                  </Button>
-                  <Button onClick={handleSubmitQuotation} disabled={isSubmitting} className="gap-2">
-                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    Submit Quotation
-                  </Button>
-                </>
-              )}
             </div>
           </div>
-        </ResponsiveDialog>
+
+          {isSubmitted && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+              <Badge className="bg-green-600">SUBMITTED</Badge>
+              <span className="text-sm text-green-800">
+                This quotation was submitted on{' '}
+                {rfq?.quotationSubmittedAt
+                  ? new Date(rfq.quotationSubmittedAt).toLocaleString()
+                  : '—'}
+                . You cannot edit your bid after submission.
+              </span>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Close
+            </Button>
+            {!isSubmitted && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={isSubmitting}
+                  className="gap-2"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  Save Draft
+                </Button>
+                <Button
+                  onClick={handleSubmitQuotation}
+                  disabled={isSubmitting}
+                  className="gap-2"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Submit Quotation
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </ResponsiveDialog>
 
       <ItemBidSpecModal
         open={specModalOpen}
@@ -548,7 +741,8 @@ export function SetQuotationModal({
           <AlertDialogHeader>
             <AlertDialogTitle>Submit Quotation?</AlertDialogTitle>
             <AlertDialogDescription>
-              You cannot edit your bid after submission. Are you sure you want to submit this quotation?
+              You cannot edit your bid after submission. Are you sure you want
+              to submit this quotation?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

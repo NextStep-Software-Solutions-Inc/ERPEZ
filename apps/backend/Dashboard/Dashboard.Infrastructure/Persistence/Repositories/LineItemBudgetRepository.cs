@@ -83,6 +83,9 @@ public class LineItemBudgetRepository : Repository<LineItemBudget>, ILineItemBud
             .Include(x => x.ConsolidatedIntoLIB)
             .Include(x => x.PreviousVersion)
             .Include(x => x.LineItemBudgetActivities)
+                .ThenInclude(a => a.OPCRActivity)
+            .Include(x => x.LineItemBudgetActivities)
+                .ThenInclude(a => a.WFPObjectiveActivity)
             .Include(x => x.LineItemBudgetDetails)
             .AsQueryable();
 
@@ -104,6 +107,9 @@ public class LineItemBudgetRepository : Repository<LineItemBudget>, ILineItemBud
             .Include(x => x.ConsolidatedIntoLIB)
             .Include(x => x.PreviousVersion)
             .Include(x => x.LineItemBudgetActivities)
+                .ThenInclude(a => a.OPCRActivity)
+            .Include(x => x.LineItemBudgetActivities)
+                .ThenInclude(a => a.WFPObjectiveActivity)
             .Include(x => x.LineItemBudgetDetails)
             .Where(x => !x.IsDeleted)
             .AsSplitQuery()

@@ -16,7 +16,17 @@ export const createResolutionClauseRequest: MutationBlueprintFromTemplate<
       throw new Error('Resolution clause payload is required.')
     }
 
-    const response = await api.post<APIResponse<ResolutionClause>>(finalUrl, payload)
-    return response.data.data
+    const response = await api.post<APIResponse<ResolutionClause | string>>(finalUrl, payload)
+    const raw = response.data?.data
+    if (raw && typeof raw === 'object' && 'id' in raw) {
+      return raw as ResolutionClause
+    }
+    const resolvedId = typeof raw === 'string' ? raw : (response.data as any)?.id || ''
+    return {
+      id: resolvedId,
+      name: payload.name,
+      body: payload.body,
+      clauseType: (payload.clauseType as any) || 'Whereas',
+    }
   },
 }

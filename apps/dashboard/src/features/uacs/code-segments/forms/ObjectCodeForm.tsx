@@ -12,9 +12,9 @@ const createObjectCodeSchema = (isAddingChild: boolean) => {
   return z.object({
     parentId: isAddingChild
       ? z.string().min(1, 'Parent is required when adding a sub-object')
-      : z.string(),
+      : z.string().optional(),
     code: z.string().length(10, 'Code must be 10 digits'),
-    name: z.string().min(2, 'Name is required'),
+    name: z.string().min(3, 'Name must be at least 3 characters'),
     isActive: z.boolean(),
   });
 };

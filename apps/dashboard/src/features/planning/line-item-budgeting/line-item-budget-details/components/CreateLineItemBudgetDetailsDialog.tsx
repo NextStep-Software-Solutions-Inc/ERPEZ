@@ -28,20 +28,22 @@ export default function CreateLineItemBudgetDetailsDialog({
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<LineItemBudgetDetailsFormApi | null>(null)
   const [, setWfpForm] = useState<WfpLineItemBudgetDetailsFormApi | null>(null)
+  const [splitInfo, setSplitInfo] = useState<{
+    isSplitMode: boolean
+    count: number
+  }>({
+    isSplitMode: false,
+    count: 0,
+  })
 
   const isWFP = sourceType === 'WFP'
 
   // Handle closing with unsaved items
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen && isWFP) {
-      // For WFP forms with multi-item workflow, we don't need to warn
-      // The form handles persistence internally
-      setOpen(newOpen)
-    } else if (!newOpen && !isWFP) {
-      setOpen(newOpen)
-    } else {
-      setOpen(newOpen)
+    if (!newOpen) {
+      setSplitInfo({ isSplitMode: false, count: 0 })
     }
+    setOpen(newOpen)
   }
 
   return (
@@ -81,9 +83,19 @@ export default function CreateLineItemBudgetDetailsDialog({
                     }}
                     loading={isSubmitting}
                     disabled={!canSubmit}
-                    className="bg-primary-600 hover:bg-primary-700 text-white"
+                    className={
+                      splitInfo.isSplitMode
+                        ? 'bg-amber-600 hover:bg-amber-700 text-white min-w-[140px]'
+                        : 'bg-primary-600 hover:bg-primary-700 text-white min-w-[120px]'
+                    }
                   >
-                    {isSubmitting ? 'Adding...' : 'Add Line Item'}
+                    {isSubmitting
+                      ? splitInfo.isSplitMode
+                        ? 'Splitting Line Item...'
+                        : 'Adding...'
+                      : splitInfo.isSplitMode
+                        ? `Split into ${splitInfo.count} Quarters & Add`
+                        : 'Add Line Item'}
                   </SubmitButton>
                 )}
               />
@@ -121,6 +133,7 @@ export default function CreateLineItemBudgetDetailsDialog({
               setOpen(false)
             }}
             setForm={setForm}
+            onSplitInfoChange={setSplitInfo}
           />
         ) : null}
       </div>

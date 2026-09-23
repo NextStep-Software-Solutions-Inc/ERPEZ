@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import FileUpload from '../../../file-upload/FileUpload'
 import { createFileRequest } from '../../../file-upload/handlers/createFileRequest'
+import { deleteFileRequest } from '../../../file-upload/handlers/deleteFileRequest'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -24,6 +25,7 @@ import {
   useSupplierById,
   useSupplierCategories,
   useUpdateSupplier,
+  useValidateSupplier,
 } from '../useSuppliers'
 import {
   SUPPLIER_STATUS_OPTIONS,
@@ -33,6 +35,7 @@ import {
 } from '../types'
 
 const useUploadFile = createMutationHookFromTemplate(createFileRequest)
+const useDeleteFile = createMutationHookFromTemplate(deleteFileRequest)
 
 interface SupplierRegistryFormProps {
   open: boolean
@@ -130,8 +133,10 @@ export function SupplierRegistryForm({
 
   const createMutation = useCreateSupplier()
   const updateMutation = useUpdateSupplier()
+  const validateMutation = useValidateSupplier()
   const { mutateAsync: uploadFile, isPending: isUploadingFile } =
     useUploadFile()
+  const { mutateAsync: deleteFile } = useDeleteFile()
   const supplierRecord = supplierData?.data
 
   const categoryOptions = useMemo(() => {
@@ -219,6 +224,25 @@ export function SupplierRegistryForm({
   }, [isEditing, open, supplierRecord, categoryOptions])
 
   const handleClose = () => {
+    // Clean up any uncommitted temp files when closing modal without saving
+    const uncommittedFileIds = formData.requirements
+      .filter((req) => req.fileId && !req.isExisting)
+      .map((req) => req.fileId as string)
+
+    if (uncommittedFileIds.length > 0) {
+      uncommittedFileIds.forEach((fileId) => {
+        void deleteFile({
+          pathParams: { fileId },
+          payload: undefined,
+        }).catch((error) => {
+          console.warn(
+            `[SupplierRegistryForm] Failed to delete temporary file ${fileId} during dialog close:`,
+            error,
+          )
+        })
+      })
+    }
+
     onOpenChange(false)
     setFormData(createEmptyValues())
     setErrors({})
@@ -259,8 +283,7 @@ export function SupplierRegistryForm({
 
         // A requirement must have either a newly selected File, an existing URL, or a fileId
         if (!requirement.file && !requirement.url && !requirement.fileId) {
-          nextErrors[`supplierRequirements.${index}.file`] =
-            'File is required'
+          nextErrors[`supplierRequirements.${index}.file`] = 'File is required'
         }
       })
     }
@@ -276,11 +299,48 @@ export function SupplierRegistryForm({
       return
     }
 
+    // ── STAGE 1: Server Pre-flight Validation Guard ─────────────────────────
+    // Validates duplicate TIN, duplicate Business Permit, and Supplier Category
+    // BEFORE uploading any file to avoid exhausting cloud/temp storage.
+    try {
+      await validateMutation.mutateAsync({
+        pathParams: {},
+        payload: {
+          id: supplierId ?? null,
+          name: formData.name.trim(),
+          businessPermitNo: formData.businessPermitNo.trim(),
+          contactPerson: formData.contactPerson.trim(),
+          contactNumber: formData.contactNumber.trim(),
+          address: formData.address.trim(),
+          email: formData.email.trim(),
+          tinNumber: formData.tinNumber.trim(),
+          philGEPSNumber: toNullable(formData.philGEPSNumber),
+          supplierCategoryId: formData.supplierCategoryId,
+        },
+      })
+    } catch (error) {
+      const message = getErrorMessage(
+        error,
+        'Supplier validation failed. Please check the entered information.',
+      )
+      toast.error(message)
+      setErrors((current) => ({
+        ...current,
+        submit: message,
+      }))
+      return
+    }
+
+    // ── STAGE 2: File Uploading & Failure Cleanup Guard ─────────────────────
+    // Upload files only after pre-flight passes. Track newly uploaded file IDs
+    // so they can be immediately deleted if subsequent creation/update fails.
+    const newlyUploadedFileIds: string[] = []
+
     try {
       const uploadedRequirements = await Promise.all(
-        formData.requirements.map(async (requirement) => {
+        formData.requirements.map(async (requirement, index) => {
           let fileId = requirement.fileId ?? null
-          if (requirement.file) {
+          if (requirement.file && !requirement.fileId) {
             const uploadResult = await uploadFile({
               pathParams: {},
               payload: { file: requirement.file },
@@ -290,6 +350,10 @@ export function SupplierRegistryForm({
               throw new Error('File upload failed')
             }
             fileId = uploadResult.data
+            newlyUploadedFileIds.push(fileId)
+
+            // Cache the fileId back into form state so repeated submissions don't re-upload
+            updateRequirement(index, { fileId })
           }
 
           return {
@@ -358,6 +422,44 @@ export function SupplierRegistryForm({
       onSaved?.()
       handleClose()
     } catch (error) {
+      // CLEANUP GUARD: Delete any newly uploaded temp files from storage so it is not exhausted.
+      // Wrapped in try-catch to ensure secondary cleanup errors never mask primary validation exceptions.
+      try {
+        if (newlyUploadedFileIds.length > 0) {
+          const cleanupResults = await Promise.allSettled(
+            newlyUploadedFileIds.map((fileId) =>
+              deleteFile({
+                pathParams: { fileId },
+                payload: undefined,
+              }),
+            ),
+          )
+
+          cleanupResults.forEach((result, idx) => {
+            if (result.status === 'rejected') {
+              console.warn(
+                `[SupplierRegistryForm] Secondary cleanup error: Failed to clean up temporary file ${newlyUploadedFileIds[idx]} on submit failure:`,
+                result.reason,
+              )
+            }
+          })
+
+          setFormData((current) => ({
+            ...current,
+            requirements: current.requirements.map((req) =>
+              req.fileId && newlyUploadedFileIds.includes(req.fileId)
+                ? { ...req, fileId: null }
+                : req,
+            ),
+          }))
+        }
+      } catch (cleanupError) {
+        console.warn(
+          '[SupplierRegistryForm] Secondary cleanup error occurred during failure rollback:',
+          cleanupError,
+        )
+      }
+
       const message = getErrorMessage(
         error,
         isEditing
@@ -373,6 +475,19 @@ export function SupplierRegistryForm({
   }
 
   const removeRequirement = (index: number) => {
+    const reqToRemove = formData.requirements[index]
+    if (reqToRemove?.fileId && !reqToRemove.isExisting) {
+      void deleteFile({
+        pathParams: { fileId: reqToRemove.fileId },
+        payload: undefined,
+      }).catch((error) => {
+        console.warn(
+          `[SupplierRegistryForm] Failed to delete temporary file ${reqToRemove.fileId} during requirement removal:`,
+          error,
+        )
+      })
+    }
+
     setFormData((current) => {
       if (current.requirements.length === 1) {
         return current
@@ -405,7 +520,10 @@ export function SupplierRegistryForm({
   }
 
   const isSaving =
-    createMutation.isPending || updateMutation.isPending || isUploadingFile
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    validateMutation.isPending ||
+    isUploadingFile
 
   return (
     <ResponsiveDialogDashtail
@@ -772,16 +890,28 @@ export function SupplierRegistryForm({
                     <div className="space-y-1">
                       {requirement.url && !requirement.file && (
                         <p className="text-xs text-muted-foreground">
-                          Upload a replacement file below to replace current document:
+                          Upload a replacement file below to replace current
+                          document:
                         </p>
                       )}
                       <FileUpload
-                        onFileChange={(file: File | null) =>
+                        onFileChange={(file: File | null) => {
+                          if (requirement.fileId && !requirement.isExisting) {
+                            void deleteFile({
+                              pathParams: { fileId: requirement.fileId },
+                              payload: undefined,
+                            }).catch((error) => {
+                              console.warn(
+                                `[SupplierRegistryForm] Failed to delete replaced temporary file ${requirement.fileId}:`,
+                                error,
+                              )
+                            })
+                          }
                           updateRequirement(index, {
                             file,
                             fileId: null,
                           })
-                        }
+                        }}
                         acceptedTypes=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                         maxSize={10}
                         disabled={isSaving}
