@@ -1,5 +1,5 @@
 {
-    "buildCommand": "cd ../erpez-shared-lib && pnpm build && cd ../tenant-management && pnpm build",
+    "buildCommand": "cd ../../packages/erpez-shared-lib && pnpm build && cd ../../apps/tenant-management && pnpm build",
     "installCommand": "pnpm install",
     "outputDirectory": "build/client",
     "rewrites": [
