@@ -3,18 +3,14 @@ import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ShoppingCart, Loader2 } from 'lucide-react'
 import { useSuppliers } from '@/components/features/planning/procurement-library'
-import { createMutationHookFromTemplate, useQueryClient, type AxiosError } from 'erpez-shared-lib'
+import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
 import { toast } from 'sonner'
-import { extractErrorMessage } from '@/services/utils/messages'
 import {
   createDirectContractingRequest,
   type CreateDirectContractingPayload,
 } from '../handlers/createDirectContractingRequest'
 import { useDirectContractings, useEligibleBacProjects } from '../handlers/hooks'
-import {
-  useDirectContractingStore,
-  type DirectContracting,
-} from '../store/directContractingStore'
+import { useDirectContractingStore } from '../store/directContractingStore'
 import {
   DirectContractingForm,
   type CreateDirectContractingFormValues,

@@ -1,6 +1,6 @@
-import type { APIResponse, MutationBlueprintFromTemplate, QueryParams } from 'erpez-shared-lib'
+import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
 import api from '@/services/api'
-import { DirectContracting } from '../types'
+import type { DirectContracting } from '../types'
 
 const endpoint = '/direct-contracting/:id' as const
 

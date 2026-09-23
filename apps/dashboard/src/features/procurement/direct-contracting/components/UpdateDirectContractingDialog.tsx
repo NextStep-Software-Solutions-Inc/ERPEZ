@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
-import { ShoppingCart, Loader2, Trash2 } from 'lucide-react'
+import { ShoppingCart, Loader2 } from 'lucide-react'
 import { useBacResolutions } from '@/features/procurement/bac-resolution/handlers/hooks'
 import { useSuppliers } from '@/components/features/planning/procurement-library'
-import { createMutationHookFromTemplate, useQueryClient, type AxiosError } from 'erpez-shared-lib'
+import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
 import { toast } from 'sonner'
-import { extractErrorMessage } from '@/services/utils/messages'
-import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import { useDirectContracting } from '../handlers/hooks'
 import {
   updateDirectContractingRequest,

@@ -1,4 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table'
+import { Link } from '@tanstack/react-router'
 import {
   ArrowUpDown,
   ArrowUp,
@@ -185,20 +186,25 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
         return (
           <div className="space-y-1 py-1 max-w-sm sm:max-w-md">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+              <Link
+                to="/v2/direct-contracting-request/$id"
+                params={{ id: dc.id }}
+                className="font-mono text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors px-2 py-0.5 rounded border border-primary/20"
+              >
                 {dc.dcNumber}
-              </span>
+              </Link>
               <span className="text-[11px] text-muted-foreground font-medium truncate">
                 Direct Contracting
               </span>
             </div>
-            <div
-              className="font-medium text-sm text-foreground line-clamp-1 hover:text-primary transition-colors cursor-pointer"
-              onClick={() => handlers.onViewProposal(dc)}
+            <Link
+              to="/v2/direct-contracting-request/$id"
+              params={{ id: dc.id }}
+              className="font-medium text-sm text-foreground line-clamp-1 hover:text-primary transition-colors block"
               title={dc.name || dc.dcName}
             >
               {dc.name || dc.dcName}
-            </div>
+            </Link>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <FileText className="h-3 w-3 text-muted-foreground/70 shrink-0" />
               <span className="truncate">
@@ -365,8 +371,17 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
                   <Copy className="mr-2 h-4 w-4" /> Copy DC Number
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/v2/direct-contracting-request/$id"
+                    params={{ id: dc.id }}
+                    className="flex items-center cursor-pointer text-primary"
+                  >
+                    <Eye className="mr-2 h-4 w-4" /> View Details
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handlers.onViewProposal(dc)}>
-                  <Eye className="mr-2 h-4 w-4 text-primary" /> View Proposal Details
+                  <FileText className="mr-2 h-4 w-4 text-muted-foreground" /> Quick Proposal Preview
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handlers.onEdit(dc.id)}>
                   <Edit className="mr-2 h-4 w-4 text-muted-foreground" /> Edit Request
