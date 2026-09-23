@@ -2,9 +2,8 @@ import { useMemo } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ShoppingCart } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import api from '@/services/api'
 import { useBacResolutions } from '@/features/procurement/bac-resolution/handlers/hooks'
+import { useSuppliers } from '@/components/features/planning/procurement-library'
 import {
   useDirectContractingStore,
   type DirectContracting,
@@ -14,7 +13,19 @@ import {
   type CreateDirectContractingFormValues,
 } from './DirectContractingForm'
 
-
+function genDCNumber(entries: DirectContracting[]): string {
+  const year = new Date().getFullYear()
+  let maxSeq = 0
+  for (const ent of entries) {
+    const dc = (ent?.dcNumber ?? '').toString()
+    const m = dc.match(new RegExp(`^DC-${year}-(\\d+)$`))
+    if (m) {
+      const seq = parseInt(m[1], 10)
+      if (!Number.isNaN(seq) && seq > maxSeq) maxSeq = seq
+    }
+  }
+  return `DC-${year}-${String(maxSeq + 1).padStart(4, '0')}`
+}
 
 export interface CreateDirectContractingDialogProps {
   open: boolean
@@ -27,10 +38,24 @@ export function CreateDirectContractingDialog({
   onOpenChange,
   trigger,
 }: CreateDirectContractingDialogProps) {
+  const { entries } = useDirectContractingStore()
 
+  const { data: bacResolutions } = useBacResolutions({
+    pathParams: {},
+    queryParams: { pageSize: 200 },
+    enabled: open,
+  })
 
+  const { data: suppliers } = useSuppliers({
+    pathParams: {},
+    queryParams: {
+      pageSize: 200,
+      filters: 'Status==Approved,IsBlacklisted==false',
+    },
+    enabled: open,
+  })
 
-
+  const autoDCNumber = useMemo(() => genDCNumber(entries), [entries])
 
   // Submission handler in the Dialog (anonymous placeholder function for now)
   const handleSubmit = async (values: CreateDirectContractingFormValues) => {
@@ -72,9 +97,9 @@ export function CreateDirectContractingDialog({
         <DirectContractingForm
           formId="create-direct-contracting-form"
           onSubmit={handleSubmit}
-          autoDCNumber={'3'}
-          resolutionOptions={[]}
-          suppliersList={[]}
+          autoDCNumber={autoDCNumber}
+          resolutionOptions={bacResolutions?.data || []}
+          suppliersList={suppliers?.data || []}
         />
       )}
     </ResponsiveDialogDashtail>
