@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from 'react'
 import {
   ArrowLeft,
@@ -8,7 +6,7 @@ import {
   Edit,
   FileCheck,
   FileText,
-  Printer,
+  Trash2,
   Receipt,
   RotateCcw,
   Send,
@@ -31,6 +29,7 @@ import { UpdateDirectContractingDialog } from '../components/UpdateDirectContrac
 import {
   useDirectContracting,
   useChangeDirectContractingStatus,
+  useDeleteDirectContracting,
 } from '../handlers'
 import { DirectContractingStatusEnum } from '../types'
 import { extractErrorMessage } from '@/services/utils/messages'
@@ -133,8 +132,10 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
 
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [showSubmitConfirm, setShowSubmitConfirm] = React.useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
 
   const statusMutation = useChangeDirectContractingStatus()
+  const deleteMutation = useDeleteDirectContracting()
 
   const handleSubmitForReview = async () => {
     try {
@@ -147,6 +148,19 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
       refetch()
     } catch (err) {
       toast.error(extractErrorMessage(err as AxiosError) || 'Failed to submit request for review.')
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({
+        pathParams: { id },
+      })
+      toast.success('Direct Contracting request deleted successfully.')
+      setShowDeleteConfirm(false)
+      navigate({ to: '/v2/direct-contracting-request' })
+    } catch (err) {
+      toast.error(extractErrorMessage(err as AxiosError) || 'Failed to delete request.')
     }
   }
 
@@ -184,10 +198,10 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
     item?.status && STATUS_CONFIG[item.status]
       ? STATUS_CONFIG[item.status]
       : {
-          label: item?.status || 'Loading...',
-          badgeClass: 'bg-muted text-muted-foreground border-border',
-          icon: HelpCircle,
-        }
+        label: item?.status || 'Loading...',
+        badgeClass: 'bg-muted text-muted-foreground border-border',
+        icon: HelpCircle,
+      }
   const StatusIcon = statusConfig.icon
 
   const isDraft = item?.status === DirectContractingStatusEnum.DRAFT
@@ -238,16 +252,16 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
                 >
                   <Send className="h-4 w-4" /> Submit for Review
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" /> Delete Request
+                </Button>
               </>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.print()}
-              className="gap-1.5"
-            >
-              <Printer className="h-4 w-4" /> Print / Export
-            </Button>
           </div>
         )
       }
@@ -332,6 +346,18 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
         cancelLabel="Cancel"
         loading={statusMutation.isPending}
         onConfirm={handleSubmitForReview}
+      />
+
+      {/* Delete Request Confirmation */}
+      <ConfirmAlertDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Direct Contracting Request"
+        description="Are you sure you want to delete this Direct Contracting request? This action cannot be undone."
+        confirmLabel="Delete Request"
+        cancelLabel="Cancel"
+        loading={deleteMutation.isPending}
+        onConfirm={handleDelete}
       />
     </PageContainerDashtail>
   )

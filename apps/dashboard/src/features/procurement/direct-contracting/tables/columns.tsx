@@ -9,14 +9,13 @@ import {
   Edit,
   Trash2,
   Send,
-  Copy,
   CheckCircle,
   AlertCircle,
-  FileText,
   FileCheck,
   ShieldCheck,
   ShoppingCart,
   Calendar,
+  FileText,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -365,12 +364,8 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => handlers.onCopyDCNumber(dc.dcNumber)}>
-                  <Copy className="mr-2 h-4 w-4" /> Copy DC Number
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link
                     to="/v2/direct-contracting-request/$id"
@@ -379,9 +374,6 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
                   >
                     <Eye className="mr-2 h-4 w-4" /> View Details
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handlers.onViewProposal(dc)}>
-                  <FileText className="mr-2 h-4 w-4 text-muted-foreground" /> Quick Proposal Preview
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handlers.onEdit(dc.id)}>
                   <Edit className="mr-2 h-4 w-4 text-muted-foreground" /> Edit Request

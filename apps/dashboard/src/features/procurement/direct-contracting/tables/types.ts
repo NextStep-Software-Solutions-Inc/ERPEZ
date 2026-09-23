@@ -11,8 +11,8 @@ export const COLUMN_LABELS: Record<string, string> = {
 }
 
 export interface TableActionHandlers {
-  onCopyDCNumber: (dcNumber: string) => void
-  onViewProposal: (entry: DirectContracting) => void
+  onCopyDCNumber?: (dcNumber: string) => void
+  onViewProposal?: (entry: DirectContracting) => void
   onEdit: (id: string) => void
   onPromptSubmit: (id: string) => void
   onPromptDelete: (id: string) => void
