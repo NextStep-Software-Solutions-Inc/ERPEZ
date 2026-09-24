@@ -8,6 +8,7 @@ using ERPEZ.Shared.Interfaces;
 using ERPEZ.Shared.Middlewares;
 using ERPEZ.Shared.Models;
 using ERPEZ.Shared.Services;
+using ERPEZ.Shared.Security;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -27,13 +28,14 @@ public class TenantSecurityBoundaryTests
     private readonly Mock<IHostEnvironment> envMock = new();
     private readonly Mock<IConfiguration> configMock = new();
     private readonly TenantRequestContext requestContext = new();
+    private readonly IClientOriginParser originParser = new ClientOriginParser();
 
     public TenantSecurityBoundaryTests()
     {
         envMock.Setup(e => e.EnvironmentName).Returns("Production");
     }
 
-    private static HttpContext CreateHttpContext(ClaimsPrincipal? user = null, string? host = "app.erpez.com")
+    private static HttpContext CreateHttpContext(ClaimsPrincipal? user = null, string? host = "app.erpez.com", string? origin = "https://app.erpez.com")
     {
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
@@ -44,6 +46,10 @@ public class TenantSecurityBoundaryTests
         if (!string.IsNullOrEmpty(host))
         {
             context.Request.Host = new HostString(host);
+        }
+        if (!string.IsNullOrEmpty(origin))
+        {
+            context.Request.Headers.Origin = origin;
         }
         return context;
     }
@@ -92,9 +98,7 @@ public class TenantSecurityBoundaryTests
 
         // 2. Setup access evaluation: caller is NOT a member of Tenant B
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                It.IsAny<ClaimsPrincipal>(),
-                tenantBId,
-                It.IsAny<string>(),
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantBId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Fail(
                 "Caller is not an active authorized member of this tenant.",
@@ -109,7 +113,7 @@ public class TenantSecurityBoundaryTests
         });
 
         // Act
-        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
@@ -173,9 +177,7 @@ public class TenantSecurityBoundaryTests
             "Active");
 
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                user,
-                tenantAId,
-                "app.erpez.com",
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantAId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Success(accessContext));
 
@@ -195,7 +197,7 @@ public class TenantSecurityBoundaryTests
         });
 
         // Act
-        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
 
         // Assert
         nextCalled.Should().BeTrue();
@@ -223,9 +225,7 @@ public class TenantSecurityBoundaryTests
         context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = candidateTenantId;
 
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                unauthenticatedUser,
-                candidateTenantId,
-                It.IsAny<string>(),
+                It.Is<TenantAccessRequest>(r => r.TenantId == candidateTenantId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Fail(
                 "Authentication credentials missing or invalid.",
@@ -240,7 +240,7 @@ public class TenantSecurityBoundaryTests
         });
 
         // Act
-        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -260,9 +260,7 @@ public class TenantSecurityBoundaryTests
         context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = tenantId;
 
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                user,
-                tenantId,
-                It.IsAny<string>(),
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Fail(
                 "Caller is not an active authorized member of this tenant.",
@@ -277,7 +275,7 @@ public class TenantSecurityBoundaryTests
         });
 
         // Act
-        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
@@ -297,9 +295,7 @@ public class TenantSecurityBoundaryTests
         context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = tenantId;
 
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                user,
-                tenantId,
-                It.IsAny<string>(),
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Fail(
                 "Tenant access has been disabled by administrator.",
@@ -314,7 +310,7 @@ public class TenantSecurityBoundaryTests
         });
 
         // Act
-        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
@@ -334,9 +330,7 @@ public class TenantSecurityBoundaryTests
         context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = tenantId;
 
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                user,
-                tenantId,
-                It.IsAny<string>(),
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Fail(
                 "Tenant operational database is currently being provisioned.",
@@ -351,7 +345,7 @@ public class TenantSecurityBoundaryTests
         });
 
         // Act
-        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status503ServiceUnavailable);
@@ -371,9 +365,7 @@ public class TenantSecurityBoundaryTests
         context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = tenantId;
 
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                user,
-                tenantId,
-                It.IsAny<string>(),
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Fail(
                 "Tenant license is expired or invalid.",
@@ -388,7 +380,7 @@ public class TenantSecurityBoundaryTests
         });
 
         // Act
-        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
@@ -400,21 +392,19 @@ public class TenantSecurityBoundaryTests
     [Fact]
     public async Task HostDomainMismatch_Returns403()
     {
-        // Invariant: Domain constraint violation receives 403 DOMAIN_VIOLATION
+        // Invariant: Domain constraint violation receives 403 API_HOST_VIOLATION
         var tenantId = Guid.NewGuid();
         var user = CreateUser("user-member", tenantId);
 
-        var context = CreateHttpContext(user, "evil-phishing-host.com");
+        var context = CreateHttpContext(user, "evil-phishing-host.com", "https://evil-phishing-host.com");
         context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = tenantId;
 
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                user,
-                tenantId,
-                "evil-phishing-host.com",
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Fail(
-                "Domain constraint violation: Host 'evil-phishing-host.com' is not authorized for this tenant.",
-                "DOMAIN_VIOLATION",
+                "API host 'evil-phishing-host.com' is not authorized.",
+                "API_HOST_VIOLATION",
                 StatusCodes.Status403Forbidden));
 
         var nextCalled = false;
@@ -425,7 +415,7 @@ public class TenantSecurityBoundaryTests
         });
 
         // Act
-        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
@@ -508,9 +498,7 @@ public class TenantSecurityBoundaryTests
             "Active");
 
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                user,
-                tenantId,
-                It.IsAny<string>(),
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Success(accessContext));
 
@@ -526,7 +514,7 @@ public class TenantSecurityBoundaryTests
         });
 
         // Act
-        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status503ServiceUnavailable);
@@ -552,11 +540,11 @@ public class TenantSecurityBoundaryTests
         var accessContextA = new TenantAccessContext(tenantAId, "Tenant Alpha", TenantProvisioningState.Ready, "app.erpez.com", "Active");
         var accessContextB = new TenantAccessContext(tenantBId, "Tenant Beta", TenantProvisioningState.Ready, "app.erpez.com", "Active");
 
-        accessServiceMock.Setup(s => s.EvaluateAccessAsync(user, tenantAId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(It.Is<TenantAccessRequest>(r => r.TenantId == tenantAId), It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Success(accessContextA));
-        accessServiceMock.Setup(s => s.EvaluateAccessAsync(user, tenantBId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(It.Is<TenantAccessRequest>(r => r.TenantId == tenantBId), It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Success(accessContextB));
-        accessServiceMock.Setup(s => s.EvaluateAccessAsync(user, tenantCId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(It.Is<TenantAccessRequest>(r => r.TenantId == tenantCId), It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Fail(
                 "Caller is not an active authorized member of this workspace.",
                 "WORKSPACE_MEMBERSHIP_REQUIRED",
@@ -575,7 +563,7 @@ public class TenantSecurityBoundaryTests
         contextA.Request.Headers["X-Tenant-Id"] = tenantAId.ToString();
         await resolutionMiddleware.InvokeAsync(contextA);
         var reqCtxA = new TenantRequestContext();
-        await validationMiddleware.InvokeAsync(contextA, accessServiceMock.Object, connectionResolverMock.Object, reqCtxA);
+        await validationMiddleware.InvokeAsync(contextA, accessServiceMock.Object, connectionResolverMock.Object, reqCtxA, originParser);
 
         contextA.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
         reqCtxA.IsResolved.Should().BeTrue();
@@ -587,7 +575,7 @@ public class TenantSecurityBoundaryTests
         contextB.Request.Headers["X-Tenant-Id"] = tenantBId.ToString();
         await resolutionMiddleware.InvokeAsync(contextB);
         var reqCtxB = new TenantRequestContext();
-        await validationMiddleware.InvokeAsync(contextB, accessServiceMock.Object, connectionResolverMock.Object, reqCtxB);
+        await validationMiddleware.InvokeAsync(contextB, accessServiceMock.Object, connectionResolverMock.Object, reqCtxB, originParser);
 
         contextB.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
         reqCtxB.IsResolved.Should().BeTrue();
@@ -599,7 +587,7 @@ public class TenantSecurityBoundaryTests
         contextC.Request.Headers["X-Tenant-Id"] = tenantCId.ToString();
         await resolutionMiddleware.InvokeAsync(contextC);
         var reqCtxC = new TenantRequestContext();
-        await validationMiddleware.InvokeAsync(contextC, accessServiceMock.Object, connectionResolverMock.Object, reqCtxC);
+        await validationMiddleware.InvokeAsync(contextC, accessServiceMock.Object, connectionResolverMock.Object, reqCtxC, originParser);
 
         // Golden Security Assertions:
         // 1. Response must fail closed with 403 Forbidden
@@ -623,9 +611,7 @@ public class TenantSecurityBoundaryTests
         context.Request.Headers["X-Tenant-Id"] = tenantId.ToString();
 
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                platformUser,
-                tenantId,
-                It.IsAny<string>(),
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(TenantAccessResult.Fail(
                 "Platform users do not have implicit access to tenant operational databases. Explicit workspace membership is required.",
@@ -637,7 +623,7 @@ public class TenantSecurityBoundaryTests
 
         var reqCtx = new TenantRequestContext();
         var validationMiddleware = new TenantAccessValidationMiddleware(c => Task.CompletedTask);
-        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, reqCtx);
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, reqCtx, originParser);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
@@ -683,9 +669,7 @@ public class TenantSecurityBoundaryTests
         context.Request.Headers["X-Tenant-Id"] = tenantId.ToString();
 
         accessServiceMock.Setup(s => s.EvaluateAccessAsync(
-                user,
-                tenantId,
-                It.IsAny<string>(),
+                It.IsAny<TenantAccessRequest>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException(cts.Token));
 
@@ -701,12 +685,190 @@ public class TenantSecurityBoundaryTests
         });
 
         // Act - should NOT throw OperationCanceledException
-        var act = () => validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, reqCtx);
+        var act = () => validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, reqCtx, originParser);
         await act.Should().NotThrowAsync();
 
         // Assert
         nextInvoked.Should().BeFalse();
         reqCtx.IsResolved.Should().BeFalse();
+    }
+
+    // =========================================================================
+    // Targeted Integration Scenarios (Section 19)
+    // =========================================================================
+
+    [Fact]
+    public async Task ValidTenant_ValidApiHost_ValidOrigin_ReturnsSuccess()
+    {
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-member", tenantId);
+
+        var context = CreateHttpContext(user, "erpez-app.api.dev.nextstep-software.com", "https://erpez-app.vercel.app");
+        context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = tenantId;
+
+        var accessContext = new TenantAccessContext(
+            tenantId,
+            "Valid Tenant",
+            TenantProvisioningState.Ready,
+            "https://erpez-app.vercel.app",
+            "Active");
+
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(
+                It.Is<TenantAccessRequest>(r =>
+                    r.TenantId == tenantId &&
+                    r.ApiHost == "erpez-app.api.dev.nextstep-software.com" &&
+                    r.ClientOrigin != null &&
+                    r.ClientOrigin.ToString() == "https://erpez-app.vercel.app/"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenantAccessResult.Success(accessContext));
+
+        connectionResolverMock.Setup(r => r.ResolveConnectionInfoAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TenantDatabaseConnectionInfo(tenantId, "Host=pg;Database=test;Username=postgres;Password=secret"));
+
+        var nextCalled = false;
+        var validationMiddleware = new TenantAccessValidationMiddleware(c =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        // Act
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
+
+        // Assert
+        context.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
+        nextCalled.Should().BeTrue();
+        requestContext.IsResolved.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ValidTenant_ValidApiHost_WrongOrigin_Returns403OriginViolation()
+    {
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-member", tenantId);
+
+        var context = CreateHttpContext(user, "erpez-app.api.dev.nextstep-software.com", "https://other-app.vercel.app");
+        context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = tenantId;
+
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantId),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenantAccessResult.Fail(
+                "Client origin is not authorized for this tenant.",
+                "ORIGIN_VIOLATION",
+                StatusCodes.Status403Forbidden));
+
+        var nextCalled = false;
+        var validationMiddleware = new TenantAccessValidationMiddleware(c =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        // Act
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
+
+        // Assert
+        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        nextCalled.Should().BeFalse();
+        requestContext.IsResolved.Should().BeFalse();
+        connectionResolverMock.Verify(r => r.ResolveConnectionInfoAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ValidTenant_WrongApiHost_ValidOrigin_Returns403ApiHostViolation()
+    {
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-member", tenantId);
+
+        var context = CreateHttpContext(user, "malicious.example.com", "https://erpez-app.vercel.app");
+        context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = tenantId;
+
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(
+                It.Is<TenantAccessRequest>(r => r.TenantId == tenantId),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenantAccessResult.Fail(
+                "API host 'malicious.example.com' is not authorized.",
+                "API_HOST_VIOLATION",
+                StatusCodes.Status403Forbidden));
+
+        var nextCalled = false;
+        var validationMiddleware = new TenantAccessValidationMiddleware(c =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        // Act
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
+
+        // Assert
+        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        nextCalled.Should().BeFalse();
+        requestContext.IsResolved.Should().BeFalse();
+        connectionResolverMock.Verify(r => r.ResolveConnectionInfoAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task BrowserRequest_MissingOrigin_Returns403OriginRequired()
+    {
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-member", tenantId);
+
+        var context = CreateHttpContext(user, "erpez-app.api.dev.nextstep-software.com", origin: null);
+        context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = tenantId;
+
+        accessServiceMock.Setup(s => s.EvaluateAccessAsync(
+                It.Is<TenantAccessRequest>(r => r.ClientOrigin == null),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TenantAccessResult.Fail(
+                "A valid client origin is required for tenant access.",
+                "ORIGIN_REQUIRED",
+                StatusCodes.Status403Forbidden));
+
+        var nextCalled = false;
+        var validationMiddleware = new TenantAccessValidationMiddleware(c =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        // Act
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
+
+        // Assert
+        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        nextCalled.Should().BeFalse();
+        requestContext.IsResolved.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task BrowserRequest_MalformedOrigin_Returns403OriginInvalid()
+    {
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-member", tenantId);
+
+        // Origin with a path is malformed per RFC 6454
+        var context = CreateHttpContext(user, "erpez-app.api.dev.nextstep-software.com", origin: "https://example.com/path");
+        context.Items[TenantResolutionMiddleware.candidateTenantItemKey] = tenantId;
+
+        var nextCalled = false;
+        var validationMiddleware = new TenantAccessValidationMiddleware(c =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+
+        // Act
+        await validationMiddleware.InvokeAsync(context, accessServiceMock.Object, connectionResolverMock.Object, requestContext, originParser);
+
+        // Assert - Middleware intercepts immediately without invoking access service
+        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        nextCalled.Should().BeFalse();
+        accessServiceMock.Verify(s => s.EvaluateAccessAsync(It.IsAny<TenantAccessRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        var body = await ReadResponseBodyAsync(context);
+        body.Should().Contain("Client origin header is malformed.");
     }
 }
 

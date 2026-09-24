@@ -11,22 +11,22 @@ using Microsoft.EntityFrameworkCore;
 namespace ERPEZ.TenantManagement.Infrastructure.Services;
 
 /// <summary>
-/// Authoritative gatekeeper evaluating tenant governance, domain constraints,
-/// license validity, and caller membership before operational database credentials can be accessed.
+/// Authoritative gatekeeper evaluating tenant governance, API host boundaries,
+/// client origin constraints, license validity, and caller membership before operational database credentials can be accessed.
 /// Never materializes or exposes DbConnectionString.
 /// </summary>
 public class TenantAccessService(
     ApplicationDbContext dbContext,
-    ILicenseService licenseService) : ITenantAccessService
+    ILicenseService licenseService,
+    IApiHostValidator apiHostValidator,
+    IClientOriginMatcher clientOriginMatcher) : ITenantAccessService
 {
     public async Task<TenantAccessResult> EvaluateAccessAsync(
-        ClaimsPrincipal user,
-        Guid candidateTenantId,
-        string requestHost,
+        TenantAccessRequest request,
         CancellationToken cancellationToken = default)
     {
         // 1. Authentication Prerequisite
-        if (user?.Identity?.IsAuthenticated != true)
+        if (request.User?.Identity?.IsAuthenticated != true)
         {
             return TenantAccessResult.Fail(
                 "Authentication credentials missing or invalid.",
@@ -34,8 +34,8 @@ public class TenantAccessService(
                 401);
         }
 
-        var externalIdentityId = user.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? user.FindFirstValue("sub");
+        var externalIdentityId = request.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? request.User.FindFirstValue("sub");
 
         if (string.IsNullOrWhiteSpace(externalIdentityId))
         {
@@ -45,10 +45,19 @@ public class TenantAccessService(
                 401);
         }
 
-        // 2. Server-side Membership Authorization (sub -> TenantMember -> TenantId)
+        // 2. API Host Validation: "Which API endpoint was reached?"
+        if (!apiHostValidator.IsAllowed(request.ApiHost))
+        {
+            return TenantAccessResult.Fail(
+                $"API host '{request.ApiHost}' is not authorized.",
+                "API_HOST_VIOLATION",
+                403);
+        }
+
+        // 3. Server-side Membership Authorization (sub -> TenantMember -> TenantId)
         var isMember = await dbContext.TenantMembers!
             .AsNoTracking()
-            .AnyAsync(tm => tm.TenantId == candidateTenantId &&
+            .AnyAsync(tm => tm.TenantId == request.TenantId &&
                             (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId) &&
                             tm.Status == Status.Active &&
                             !tm.IsDeleted, cancellationToken);
@@ -61,10 +70,10 @@ public class TenantAccessService(
                 403);
         }
 
-        // 3. Tenant Existence & Governance (Notice: DbConnectionString is NEVER materialized here)
+        // 4. Tenant Existence & Governance (Notice: DbConnectionString is NEVER materialized here)
         var tenantInfo = await dbContext.Tenants!
             .AsNoTracking()
-            .Where(t => t.Id == candidateTenantId && !t.IsDeleted)
+            .Where(t => t.Id == request.TenantId && !t.IsDeleted)
             .Select(t => new
             {
                 t.Id,
@@ -83,7 +92,7 @@ public class TenantAccessService(
                 404);
         }
 
-        // 4. Tenant Disabled Check
+        // 5. Tenant Disabled Check
         if (tenantInfo.IsDisabled)
         {
             return TenantAccessResult.Fail(
@@ -92,7 +101,7 @@ public class TenantAccessService(
                 403);
         }
 
-        // 5. Tenant Provisioning Readiness Check
+        // 6. Tenant Provisioning Readiness Check
         if (tenantInfo.ProvisioningState != TenantProvisioningState.Ready)
         {
             return TenantAccessResult.Fail(
@@ -101,25 +110,33 @@ public class TenantAccessService(
                 503);
         }
 
-        // 6. Host Domain Constraint Check (using DNS label-boundary matcher)
-        if (!HostMatcher.IsHostAllowed(requestHost, tenantInfo.AllowedDomain))
+        // 7. Client Origin Validation: "Which web origin initiated this request?"
+        if (request.ClientOrigin == null)
         {
             return TenantAccessResult.Fail(
-                $"Domain constraint violation: Host '{requestHost}' is not authorized for this tenant.",
-                "DOMAIN_VIOLATION",
+                "A valid client origin is required for tenant access.",
+                "ORIGIN_REQUIRED",
                 403);
         }
 
-        // 7. License & Expiration Check
+        if (!clientOriginMatcher.IsAllowed(request.ClientOrigin, tenantInfo.AllowedDomain))
+        {
+            return TenantAccessResult.Fail(
+                "Client origin is not authorized for this tenant.",
+                "ORIGIN_VIOLATION",
+                403);
+        }
+
+        // 8. License & Expiration Check
         var license = await dbContext.LicenseKeys!
             .AsNoTracking()
-            .Where(lk => lk.TenantId == candidateTenantId && !lk.IsDeleted)
+            .Where(lk => lk.TenantId == request.TenantId && !lk.IsDeleted)
             .OrderByDescending(lk => lk.ExpiresAt)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (license != null)
         {
-            var validation = licenseService.ValidateLicense(license, requestHost);
+            var validation = licenseService.ValidateLicense(license, request.ClientOrigin.Host);
             if (!validation.IsValid)
             {
                 return TenantAccessResult.Fail(
@@ -139,5 +156,29 @@ public class TenantAccessService(
         );
 
         return TenantAccessResult.Success(accessContext);
+    }
+
+    [Obsolete("Use EvaluateAccessAsync(TenantAccessRequest, CancellationToken) instead.")]
+    public Task<TenantAccessResult> EvaluateAccessAsync(
+        ClaimsPrincipal user,
+        Guid candidateTenantId,
+        string requestHost,
+        CancellationToken cancellationToken = default)
+    {
+        Uri? origin = null;
+        if (!string.IsNullOrWhiteSpace(requestHost))
+        {
+            if (requestHost.Contains("://"))
+            {
+                _ = Uri.TryCreate(requestHost, UriKind.Absolute, out origin);
+            }
+            else
+            {
+                _ = Uri.TryCreate($"https://{requestHost}", UriKind.Absolute, out origin);
+            }
+        }
+
+        var request = new TenantAccessRequest(user, candidateTenantId, requestHost, origin);
+        return EvaluateAccessAsync(request, cancellationToken);
     }
 }
