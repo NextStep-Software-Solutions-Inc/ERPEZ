@@ -49,6 +49,13 @@ public static class DependencyInjection
         services.Configure<ERPEZ.Shared.Configuration.TenantRoutingOptions>(
             builder.Configuration.GetSection(ERPEZ.Shared.Configuration.TenantRoutingOptions.sectionName));
 
+        services.AddSingleton<ERPEZ.Shared.Security.IApiHostValidator>(sp =>
+            new ERPEZ.Shared.Security.ApiHostValidator(
+                sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ERPEZ.Shared.Configuration.TenantRoutingOptions>>(),
+                sp.GetService<Microsoft.Extensions.Hosting.IHostEnvironment>()));
+        services.AddSingleton<ERPEZ.Shared.Security.IClientOriginParser, ERPEZ.Shared.Security.ClientOriginParser>();
+        services.AddSingleton<ERPEZ.Shared.Security.IClientOriginMatcher, ERPEZ.Shared.Security.ClientOriginMatcher>();
+
         services.AddScoped<ERPEZ.Shared.Services.TenantRequestContext>();
         services.AddScoped<ERPEZ.Shared.Interfaces.ITenantContextService>(sp => sp.GetRequiredService<ERPEZ.Shared.Services.TenantRequestContext>());
         services.AddScoped<ERPEZ.Shared.Interfaces.ITenantRequestContext>(sp => sp.GetRequiredService<ERPEZ.Shared.Services.TenantRequestContext>());

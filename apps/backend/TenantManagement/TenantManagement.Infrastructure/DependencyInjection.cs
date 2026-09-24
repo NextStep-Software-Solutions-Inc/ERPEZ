@@ -1,6 +1,7 @@
 using ERPEZ.Shared.Configuration;
 using ERPEZ.Shared.Interfaces;
 using ERPEZ.Shared.Interceptors;
+using ERPEZ.Shared.Security;
 using ERPEZ.Shared.Services;
 using ERPEZ.TenantManagement.Application.Common.Interfaces;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -38,6 +39,16 @@ public static class DependencyInjection
         services.AddMemoryCache();
 
         // Register current user and tenant context services
+        services.Configure<ERPEZ.Shared.Configuration.TenantRoutingOptions>(
+            builder.Configuration.GetSection(ERPEZ.Shared.Configuration.TenantRoutingOptions.sectionName));
+
+        services.AddSingleton<IApiHostValidator>(sp =>
+            new ApiHostValidator(
+                sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ERPEZ.Shared.Configuration.TenantRoutingOptions>>(),
+                sp.GetService<Microsoft.Extensions.Hosting.IHostEnvironment>()));
+        services.AddSingleton<IClientOriginParser, ClientOriginParser>();
+        services.AddSingleton<IClientOriginMatcher, ClientOriginMatcher>();
+
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<TenantRequestContext>();
         services.AddScoped<ITenantContextService>(sp => sp.GetRequiredService<TenantRequestContext>());

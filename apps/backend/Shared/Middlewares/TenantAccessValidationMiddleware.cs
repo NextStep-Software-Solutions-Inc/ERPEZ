@@ -1,6 +1,8 @@
 using System.Text.Json;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.Shared.Models;
+using ERPEZ.Shared.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 
@@ -17,7 +19,8 @@ public class TenantAccessValidationMiddleware(RequestDelegate next)
         HttpContext context,
         ITenantAccessService accessService,
         ITenantConnectionResolver connectionResolver,
-        ITenantRequestContext requestContext)
+        ITenantRequestContext requestContext,
+        IClientOriginParser originParser)
     {
         var endpoint = context.GetEndpoint();
         var isAllowAnonymous = endpoint?.Metadata.GetMetadata<IAllowAnonymous>() != null;
@@ -65,11 +68,32 @@ public class TenantAccessValidationMiddleware(RequestDelegate next)
 
         try
         {
-            // Candidate tenant provided: execute authoritative access evaluation
-            var accessResult = await accessService.EvaluateAccessAsync(
+            // Extract API host and client origin
+            var apiHost = context.Request.Host.Host;
+            var originHeader = context.Request.Headers.Origin.FirstOrDefault();
+            Uri? clientOrigin = null;
+
+            if (!string.IsNullOrWhiteSpace(originHeader))
+            {
+                if (!originParser.TryParse(originHeader, out clientOrigin))
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    context.Response.ContentType = "application/json";
+                    var err = ApiResponse<object>.Fail("Client origin header is malformed.");
+                    await context.Response.WriteAsync(JsonSerializer.Serialize(err));
+                    return;
+                }
+            }
+
+            var accessRequest = new TenantAccessRequest(
                 context.User,
                 candidateTenantId.Value,
-                context.Request.Host.Host,
+                apiHost,
+                clientOrigin);
+
+            // Candidate tenant provided: execute authoritative access evaluation
+            var accessResult = await accessService.EvaluateAccessAsync(
+                accessRequest,
                 context.RequestAborted);
 
             if (!accessResult.IsAllowed)

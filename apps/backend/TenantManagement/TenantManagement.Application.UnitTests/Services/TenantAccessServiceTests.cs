@@ -12,10 +12,15 @@ using Xunit;
 
 namespace ERPEZ.TenantManagement.Application.UnitTests.Services;
 
+using ERPEZ.Shared.Models;
+using ERPEZ.Shared.Security;
+
 public class TenantAccessServiceTests : IDisposable
 {
     private readonly ApplicationDbContext dbContext;
     private readonly Mock<ILicenseService> licenseServiceMock = new();
+    private readonly IApiHostValidator apiHostValidator;
+    private readonly IClientOriginMatcher clientOriginMatcher;
     private readonly TenantAccessService accessService;
 
     public TenantAccessServiceTests()
@@ -25,7 +30,9 @@ public class TenantAccessServiceTests : IDisposable
             .Options;
 
         dbContext = new ApplicationDbContext(options);
-        accessService = new TenantAccessService(dbContext, licenseServiceMock.Object);
+        apiHostValidator = new ApiHostValidator(new[] { "app.erpez.com", "customer1.erpez.com", "localhost", "erpez-app.api.dev.nextstep-software.com" }, allowDevFallback: true);
+        clientOriginMatcher = new ClientOriginMatcher();
+        accessService = new TenantAccessService(dbContext, licenseServiceMock.Object, apiHostValidator, clientOriginMatcher);
     }
 
     public void Dispose()
@@ -51,6 +58,13 @@ public class TenantAccessServiceTests : IDisposable
         return new ClaimsPrincipal(identity);
     }
 
+    private static TenantAccessRequest CreateRequest(
+        ClaimsPrincipal user,
+        Guid tenantId,
+        string apiHost = "app.erpez.com",
+        string origin = "https://app.erpez.com") =>
+        new(user, tenantId, apiHost, string.IsNullOrWhiteSpace(origin) ? null : new Uri(origin));
+
     [Fact]
     public async Task EvaluateAccessAsync_WhenUserUnauthenticated_Returns401AuthRequired()
     {
@@ -59,7 +73,7 @@ public class TenantAccessServiceTests : IDisposable
         var tenantId = Guid.NewGuid();
 
         // Act
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "app.erpez.com");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId));
 
         // Assert
         result.IsAllowed.Should().BeFalse();
@@ -76,7 +90,7 @@ public class TenantAccessServiceTests : IDisposable
         var tenantId = Guid.NewGuid();
 
         // Act
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "app.erpez.com");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId));
 
         // Assert
         result.IsAllowed.Should().BeFalse();
@@ -101,7 +115,7 @@ public class TenantAccessServiceTests : IDisposable
         await dbContext.SaveChangesAsync();
 
         // Act
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "app.erpez.com");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId));
 
         // Assert
         result.IsAllowed.Should().BeFalse();
@@ -127,7 +141,7 @@ public class TenantAccessServiceTests : IDisposable
         await dbContext.SaveChangesAsync();
 
         // Act
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "app.erpez.com");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId));
 
         // Assert
         result.IsAllowed.Should().BeFalse();
@@ -160,7 +174,7 @@ public class TenantAccessServiceTests : IDisposable
         await dbContext.SaveChangesAsync();
 
         // Act
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "app.erpez.com");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId));
 
         // Assert
         result.IsAllowed.Should().BeFalse();
@@ -193,7 +207,7 @@ public class TenantAccessServiceTests : IDisposable
         await dbContext.SaveChangesAsync();
 
         // Act
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "app.erpez.com");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId));
 
         // Assert
         result.IsAllowed.Should().BeFalse();
@@ -231,12 +245,12 @@ public class TenantAccessServiceTests : IDisposable
         await dbContext.SaveChangesAsync();
 
         // Act: request comes from unauthorized domain
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "evil-phishing.com");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId, apiHost: "evil-phishing.com"));
 
         // Assert
         result.IsAllowed.Should().BeFalse();
         result.HttpStatusCode.Should().Be(403);
-        result.ErrorCode.Should().Be("DOMAIN_VIOLATION");
+        result.ErrorCode.Should().Be("API_HOST_VIOLATION");
     }
 
     [Fact]
@@ -251,7 +265,12 @@ public class TenantAccessServiceTests : IDisposable
             Id = tenantId,
             Name = "Acme Corp",
             IsDisabled = false,
-            ProvisioningState = TenantProvisioningState.Ready
+            ProvisioningState = TenantProvisioningState.Ready,
+            TenantSetting = new TenantSetting
+            {
+                TenantId = tenantId,
+                AllowedDomain = "app.erpez.com"
+            }
         });
 
         dbContext.TenantMembers!.Add(new TenantMember
@@ -282,7 +301,7 @@ public class TenantAccessServiceTests : IDisposable
                 RemainingDays: 0));
 
         // Act
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "app.erpez.com");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId, "app.erpez.com"));
 
         // Assert
         result.IsAllowed.Should().BeFalse();
@@ -320,7 +339,7 @@ public class TenantAccessServiceTests : IDisposable
         await dbContext.SaveChangesAsync();
 
         // Act
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "customer1.erpez.com");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId, "customer1.erpez.com", "https://customer1.erpez.com"));
 
         // Assert
         result.IsAllowed.Should().BeTrue();
@@ -356,7 +375,7 @@ public class TenantAccessServiceTests : IDisposable
         await dbContext.SaveChangesAsync();
 
         // Act
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "localhost");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId));
 
         // Assert
         result.IsAllowed.Should().BeFalse();
@@ -376,7 +395,12 @@ public class TenantAccessServiceTests : IDisposable
             Id = tenantId,
             Name = "Acme Corp",
             IsDisabled = false,
-            ProvisioningState = TenantProvisioningState.Ready
+            ProvisioningState = TenantProvisioningState.Ready,
+            TenantSetting = new TenantSetting
+            {
+                TenantId = tenantId,
+                AllowedDomain = "app.erpez.com"
+            }
         });
 
         dbContext.TenantMembers!.Add(new TenantMember
@@ -396,11 +420,122 @@ public class TenantAccessServiceTests : IDisposable
         await dbContext.SaveChangesAsync();
 
         // Act
-        var result = await accessService.EvaluateAccessAsync(user, tenantId, "localhost");
+        var result = await accessService.EvaluateAccessAsync(CreateRequest(user, tenantId));
 
         // Assert
         result.IsAllowed.Should().BeFalse();
         result.HttpStatusCode.Should().Be(503);
         result.ErrorCode.Should().Be("TENANT_PROVISIONING");
+    }
+
+    [Fact]
+    public async Task Allows_VercelClient_When_ApiHost_Is_Different()
+    {
+        // Arrange
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-member");
+
+        var apiHost = "erpez-app.api.dev.nextstep-software.com";
+        var origin = new Uri("https://erpez-app.vercel.app");
+
+        dbContext.Tenants!.Add(new Tenant
+        {
+            Id = tenantId,
+            Name = "Vercel Tenant Corp",
+            IsDisabled = false,
+            ProvisioningState = TenantProvisioningState.Ready,
+            TenantSetting = new TenantSetting
+            {
+                TenantId = tenantId,
+                AllowedDomain = "erpez-app.vercel.app"
+            }
+        });
+
+        dbContext.TenantMembers!.Add(new TenantMember
+        {
+            TenantId = tenantId,
+            ExternalIdentityId = "user-member",
+            Status = Status.Active,
+            IsDeleted = false
+        });
+        await dbContext.SaveChangesAsync();
+
+        var customHostValidator = new ApiHostValidator(new[] { "erpez-app.api.dev.nextstep-software.com" });
+        var customAccessService = new TenantAccessService(dbContext, licenseServiceMock.Object, customHostValidator, clientOriginMatcher);
+
+        var request = new TenantAccessRequest(user, tenantId, apiHost, origin);
+
+        // Act
+        var result = await customAccessService.EvaluateAccessAsync(request);
+
+        // Assert
+        result.IsAllowed.Should().BeTrue();
+        result.Context.Should().NotBeNull();
+        result.Context!.AllowedDomain.Should().Be("erpez-app.vercel.app");
+    }
+
+    [Fact]
+    public async Task EvaluateAccessAsync_WhenApiHostUnauthorized_Returns403ApiHostViolation()
+    {
+        // Arrange
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-member");
+
+        var request = new TenantAccessRequest(
+            user,
+            tenantId,
+            "malicious-spoofed-api.com",
+            new Uri("https://erpez-app.vercel.app"));
+
+        var strictValidator = new ApiHostValidator(new[] { "erpez-app.api.dev.nextstep-software.com" }, allowDevFallback: false);
+        var svc = new TenantAccessService(dbContext, licenseServiceMock.Object, strictValidator, clientOriginMatcher);
+
+        // Act
+        var result = await svc.EvaluateAccessAsync(request);
+
+        // Assert
+        result.IsAllowed.Should().BeFalse();
+        result.HttpStatusCode.Should().Be(403);
+        result.ErrorCode.Should().Be("API_HOST_VIOLATION");
+    }
+
+    [Fact]
+    public async Task EvaluateAccessAsync_WhenClientOriginMissing_Returns403OriginRequired()
+    {
+        // Arrange
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-member");
+
+        dbContext.Tenants!.Add(new Tenant
+        {
+            Id = tenantId,
+            Name = "Acme Corp",
+            IsDisabled = false,
+            ProvisioningState = TenantProvisioningState.Ready,
+            TenantSetting = new TenantSetting
+            {
+                TenantId = tenantId,
+                AllowedDomain = "acme.erpez.com"
+            }
+        });
+
+        dbContext.TenantMembers!.Add(new TenantMember
+        {
+            TenantId = tenantId,
+            ExternalIdentityId = "user-member",
+            Status = Status.Active,
+            IsDeleted = false
+        });
+        await dbContext.SaveChangesAsync();
+
+        var request = new TenantAccessRequest(user, tenantId, "app.erpez.com", null);
+
+        // Act
+        var result = await accessService.EvaluateAccessAsync(request);
+
+        // Assert
+        result.IsAllowed.Should().BeFalse();
+        result.HttpStatusCode.Should().Be(403);
+        result.ErrorCode.Should().Be("ORIGIN_REQUIRED");
     }
 }
