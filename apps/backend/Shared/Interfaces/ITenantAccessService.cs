@@ -36,10 +36,10 @@ public interface ITenantAccessService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Evaluates tenant existence, active state, provisioning state, domain constraints,
-    /// license validity, and authenticated user membership.
+    /// Deprecated legacy overload. Scheduled for removal under tracking ticket [SEC-DEP-001] in v1.1.0.
+    /// All active callers must use <see cref="EvaluateAccessAsync(TenantAccessRequest, CancellationToken)"/>.
     /// </summary>
-    [Obsolete("Use EvaluateAccessAsync(TenantAccessRequest, CancellationToken) instead.")]
+    [Obsolete("Use EvaluateAccessAsync(TenantAccessRequest, CancellationToken) instead. Scheduled for removal in v1.1.0 under tracking ticket [SEC-DEP-001].")]
     Task<TenantAccessResult> EvaluateAccessAsync(
         ClaimsPrincipal user,
         Guid candidateTenantId,

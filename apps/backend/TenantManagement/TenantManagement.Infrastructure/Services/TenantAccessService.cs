@@ -199,7 +199,11 @@ public class TenantAccessService(
         }
     }
 
-    [Obsolete("Use EvaluateAccessAsync(TenantAccessRequest, CancellationToken) instead.")]
+    /// <summary>
+    /// Deprecated legacy overload. Scheduled for removal under tracking ticket [SEC-DEP-001] in v1.1.0.
+    /// All active callers must use <see cref="EvaluateAccessAsync(TenantAccessRequest, CancellationToken)"/>.
+    /// </summary>
+    [Obsolete("Use EvaluateAccessAsync(TenantAccessRequest, CancellationToken) instead. Scheduled for removal in v1.1.0 under tracking ticket [SEC-DEP-001].")]
     public Task<TenantAccessResult> EvaluateAccessAsync(
         ClaimsPrincipal user,
         Guid candidateTenantId,
