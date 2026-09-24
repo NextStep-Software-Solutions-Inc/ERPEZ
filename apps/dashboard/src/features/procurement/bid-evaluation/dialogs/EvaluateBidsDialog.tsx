@@ -7,7 +7,6 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useEvaluateProjectBids } from '../hooks/useBidEvaluationApi'
-import { extractErrorMessage } from '@/services/utils/messages'
 import type {
   BidderEvaluationInputPayload,
   BiddingSubmissionResponse,
@@ -35,6 +34,7 @@ interface EvaluateBidsDialogProps {
   technicalWeight?: number | null
   financialWeight?: number | null
   admittedSubmissions: Array<BiddingSubmissionResponse>
+  isWinnerDeclared?: boolean
 }
 
 interface BidderInputState {
@@ -55,6 +55,7 @@ export function EvaluateBidsDialog({
   technicalWeight,
   financialWeight,
   admittedSubmissions,
+  isWinnerDeclared = false,
 }: EvaluateBidsDialogProps) {
   const evaluateBidsMutation = useEvaluateProjectBids()
 
@@ -76,8 +77,8 @@ export function EvaluateBidsDialog({
           .map((s) => ({
             bidOpeningRecordId: s.openingRecord!.id,
             supplierName: s.supplierName,
-            asReadBidAmount: s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount,
-            evaluatedBidPrice: String(s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount),
+            asReadBidAmount: s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount ?? 0,
+            evaluatedBidPrice: String(s.openingRecord!.asReadBidAmount ?? s.originalProposedAmount ?? 0),
             technicalScore: '',
             isResponsive: true,
             nonResponsiveReason: '',
@@ -238,6 +239,16 @@ export function EvaluateBidsDialog({
           </DialogHeader>
 
           <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+            {isWinnerDeclared && (
+              <Alert variant="outline" className="border-amber-300 bg-amber-50/70 text-amber-900">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-xs font-bold">Evaluation Locked</AlertTitle>
+                <AlertDescription className="text-xs mt-1">
+                  A winning bidder has already been declared and recommended for award for this project. Bids cannot be re-evaluated.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Criterion Selection / Configuration */}
             <div className="p-4 rounded-lg bg-default-50 border border-default-200 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -247,7 +258,7 @@ export function EvaluateBidsDialog({
                     Authoritative Evaluation Criterion <span className="text-destructive">*</span>
                   </Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Required under RA 12009 (NGPA) / RA 9184 before bid ranking.
+                    Required under RA 12009 (NGPA) before bid ranking.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -469,7 +480,7 @@ export function EvaluateBidsDialog({
               type="submit"
               color="primary"
               className="gap-1.5 font-bold shadow-sm"
-              disabled={evaluateBidsMutation.isPending}
+              disabled={evaluateBidsMutation.isPending || isWinnerDeclared}
             >
               {evaluateBidsMutation.isPending ? (
                 'Evaluating...'

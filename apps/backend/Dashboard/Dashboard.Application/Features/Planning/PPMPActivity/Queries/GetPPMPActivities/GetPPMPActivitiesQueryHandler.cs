@@ -26,6 +26,7 @@ public class GetPPMPActivitiesQueryHandler(IUnitOfWork unitOfWork)
             PPMPId = activity.PPMPId,
             LIBActivityId = activity.LIBActivityId,
             ActivityName = activity.LIBActivity.Name,
+            PAPCode = activity.LIBActivity.PAPCode,
             TotalItems = activity.PPMPExpenditureItems
                 .Where(expenditure => !expenditure.IsDeleted)
                 .SelectMany(expenditure => expenditure.PPMPItems.Where(item => !item.IsDeleted))

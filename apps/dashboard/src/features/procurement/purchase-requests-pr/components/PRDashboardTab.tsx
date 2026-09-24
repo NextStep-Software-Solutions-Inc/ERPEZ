@@ -64,7 +64,11 @@ interface PRDashboardTabProps {
   onViewDetails: (pr: PurchaseRequest) => void
 }
 
-export function PRDashboardTab({ prType, onCreateClick, onViewDetails }: PRDashboardTabProps) {
+export function PRDashboardTab({
+  prType,
+  onCreateClick,
+  onViewDetails,
+}: PRDashboardTabProps) {
   const { toast } = useToast()
   const { setIsManagePRView } = usePurchaseRequestStore()
   const deletePRMutation = useDeletePurchaseRequest()

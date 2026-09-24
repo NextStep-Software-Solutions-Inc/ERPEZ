@@ -40,7 +40,8 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
                 {
                     // Resolve PPMPItemId: for APR items (out-of-stock), the FE may only
                     // send APRItemId. In that case look up the APRItem to get its PPMPItemId.
-                    Guid resolvedPpmpItemId;
+                    // For independent/custom PR items, neither is provided (resolvedPpmpItemId remains null).
+                    Guid? resolvedPpmpItemId = null;
                     if (itemReq.PPMPItemId.HasValue)
                     {
                         resolvedPpmpItemId = itemReq.PPMPItemId.Value;
@@ -58,37 +59,35 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
                         }
                         resolvedPpmpItemId = aprItem.PPMPItemId.Value;
                     }
-                    else
+
+                    if (resolvedPpmpItemId.HasValue)
                     {
-                        throw new ValidationException(
-                            "Each item must have either a PPMPItemId or an APRItemId.");
+                        var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
+                            resolvedPpmpItemId.Value, cancellationToken)
+                            ?? throw new NotFoundException($"PPMP Item with ID {resolvedPpmpItemId} not found.");
+
+                        if (pr.PRType == PRType.NonCSE && ppmpItem.NonCSEItemId == null)
+                            throw new ValidationException($"Item '{ppmpItem.Name}' is not an approved Non-CSE item.");
+
+                        if (pr.PRType == PRType.NonCSE)
+                        {
+                            var itemOfficeId = ppmpItem.PPMPExpenditureItem?.PPMP?.OfficeId
+                                            ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId;
+                            if (itemOfficeId.HasValue && itemOfficeId.Value != pr.OfficeId)
+                                throw new ValidationException($"Item '{ppmpItem.Name}' belongs to another office and cannot be added to this Purchase Request.");
+
+                            var ppmpStatus = ppmpItem.PPMPExpenditureItem?.PPMP?.Status
+                                          ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Status;
+                            if (ppmpStatus != StatusEnum.Approved)
+                                throw new ValidationException($"Item '{ppmpItem.Name}' belongs to a PPMP that is not approved.");
+
+                            var isAppApproved = ppmpItem.APPItems.Any(ai => !ai.IsDeleted && !ai.APP.IsDeleted && ai.APP.Status == StatusEnum.Approved);
+                            if (!isAppApproved)
+                                throw new ValidationException($"Item '{ppmpItem.Name}' has not been consolidated into an approved Annual Procurement Plan (APP).");
+                        }
+
+                        await ValidatePPMPItemBudget(ppmpItem.Id, itemReq.RequestedMonth, itemReq.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, request.Id, cancellationToken);
                     }
-
-                    var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
-                        resolvedPpmpItemId, cancellationToken)
-                        ?? throw new NotFoundException($"PPMP Item with ID {resolvedPpmpItemId} not found.");
-
-                    if (pr.PRType == PRType.NonCSE && ppmpItem.NonCSEItemId == null)
-                        throw new ValidationException($"Item '{ppmpItem.Name}' is not an approved Non-CSE item.");
-
-                    if (pr.PRType == PRType.NonCSE)
-                    {
-                        var itemOfficeId = ppmpItem.PPMPExpenditureItem?.PPMP?.OfficeId
-                                        ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId;
-                        if (itemOfficeId.HasValue && itemOfficeId.Value != pr.OfficeId)
-                            throw new ValidationException($"Item '{ppmpItem.Name}' belongs to another office and cannot be added to this Purchase Request.");
-
-                        var ppmpStatus = ppmpItem.PPMPExpenditureItem?.PPMP?.Status
-                                      ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Status;
-                        if (ppmpStatus != StatusEnum.Approved)
-                            throw new ValidationException($"Item '{ppmpItem.Name}' belongs to a PPMP that is not approved.");
-
-                        var isAppApproved = ppmpItem.APPItems.Any(ai => !ai.IsDeleted && !ai.APP.IsDeleted && ai.APP.Status == StatusEnum.Approved);
-                        if (!isAppApproved)
-                            throw new ValidationException($"Item '{ppmpItem.Name}' has not been consolidated into an approved Annual Procurement Plan (APP).");
-                    }
-
-                    await ValidatePPMPItemBudget(ppmpItem.Id, itemReq.RequestedMonth, itemReq.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, request.Id, cancellationToken);
 
                     var item = new PRItem
                     {

@@ -38,10 +38,10 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
   createQueryHookFromTemplate,
-  createMutationHookFromTemplate,
+  useQueryClient,
 } from 'erpez-shared-lib'
 import { getResolutionClausesRequest } from '../handlers/getResolutionClausesRequest'
-import { createResolutionClauseRequest } from '../handlers/createResolutionClauseRequest'
+import { useCreateResolutionClause } from '../handlers/hooks'
 import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
 import FieldInfo from '@/components/FieldInfo'
 import type { User } from '@/services/api/users'
@@ -61,9 +61,6 @@ import { UserPickerCombobox } from './CreateBacResolutionForm'
 
 const useResolutionClauses = createQueryHookFromTemplate(
   getResolutionClausesRequest,
-)
-const useCreateResolutionClause = createMutationHookFromTemplate(
-  createResolutionClauseRequest,
 )
 const useUsers = createQueryHookFromTemplate(getUsersRequest)
 
@@ -150,11 +147,13 @@ export const EditBacResolutionForm = forwardRef<
     const [isResolvedExpanded, setIsResolvedExpanded] = useState(false)
     const [showClauseErrors, setShowClauseErrors] = useState(false)
 
+    const queryClient = useQueryClient()
+
     // Load clauses for picker
     const { data: resolutionClausesData, isPending: isClausesPending } =
       useResolutionClauses({
         pathParams: {},
-        queryParams: { pageSize: 200, filters: pickerModalType || undefined },
+        queryParams: { pageSize: 200, clauseType: pickerModalType || undefined },
         enabled: pickerModalType !== null,
       })
 
@@ -166,19 +165,29 @@ export const EditBacResolutionForm = forwardRef<
 
     const allClausesMap = useMemo(() => {
       const map = new Map<string, ResolutionClause>()
-      const list = Array.isArray(allClausesData?.data)
-        ? allClausesData.data
-        : Array.isArray(allClausesData)
-          ? allClausesData
-          : []
-      for (const item of list) {
-        map.set(item.id, item)
+      const addItems = (data: unknown) => {
+        if (!data) return
+        const list = Array.isArray((data as { data?: unknown })?.data)
+          ? (data as { data: ResolutionClause[] }).data
+          : Array.isArray(data)
+            ? (data as ResolutionClause[])
+            : []
+        for (const item of list) {
+          if (item && item.id) {
+            map.set(item.id, item)
+          }
+        }
       }
+
+      addItems(allClausesData)
+      addItems(resolutionClausesData)
       for (const item of createdClauses) {
-        map.set(item.id, item)
+        if (item && item.id) {
+          map.set(item.id, item)
+        }
       }
       return map
-    }, [allClausesData, createdClauses])
+    }, [allClausesData, resolutionClausesData, createdClauses])
 
     const clauseTemplates = useMemo<ResolutionClause[]>(() => {
       const map = new Map<string, ResolutionClause>()
@@ -190,7 +199,7 @@ export const EditBacResolutionForm = forwardRef<
             ? (data as ResolutionClause[])
             : []
         for (const item of list) {
-          if (item?.id) {
+          if (item && item.id) {
             map.set(item.id, item)
           }
         }
@@ -199,7 +208,9 @@ export const EditBacResolutionForm = forwardRef<
       addItems(allClausesData)
       addItems(resolutionClausesData)
       for (const item of createdClauses) {
-        map.set(item.id, item)
+        if (item && item.id) {
+          map.set(item.id, item)
+        }
       }
 
       const allList = Array.from(map.values())
@@ -257,24 +268,42 @@ export const EditBacResolutionForm = forwardRef<
         payload: { name, body, clauseType: type },
       })
 
-      setCreatedClauses((prev) => [...prev, created])
+      const newClause: ResolutionClause = {
+        id: (created as any)?.id || (typeof created === 'string' ? created : ''),
+        name: (created as any)?.name || name,
+        body: (created as any)?.body || body,
+        clauseType: (created as any)?.clauseType || type,
+      }
+
+      if (!newClause.id) {
+        toast.error('Failed to create custom clause: missing clause ID from server.')
+        return
+      }
+
+      setCreatedClauses((prev) => [...prev, newClause])
 
       if (type === 'Whereas') {
         setWhereasClauses((prev) => [
           ...prev,
-          { resolutionClauseId: created.id, order: prev.length },
+          { resolutionClauseId: newClause.id, order: prev.length },
         ])
       } else if (type === 'NowTherefore') {
         setNowThereforeClauses((prev) => [
           ...prev,
-          { resolutionClauseId: created.id, order: prev.length },
+          { resolutionClauseId: newClause.id, order: prev.length },
         ])
       } else if (type === 'Resolved') {
         setResolvedClauses((prev) => [
           ...prev,
-          { resolutionClauseId: created.id, order: prev.length },
+          { resolutionClauseId: newClause.id, order: prev.length },
         ])
       }
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/resolution-clauses'),
+      })
 
       toast.success(`Custom ${type} Clause created and added.`)
     }
@@ -450,6 +479,9 @@ export const EditBacResolutionForm = forwardRef<
               <Table>
                 <TableHeader className="bg-default-50">
                   <TableRow>
+                    <TableHead className="w-[110px] text-xs font-bold">
+                      PAP Code
+                    </TableHead>
                     <TableHead className="w-[100px] text-xs font-bold">
                       Item #
                     </TableHead>
@@ -457,6 +489,7 @@ export const EditBacResolutionForm = forwardRef<
                       Description / Line Item
                     </TableHead>
                     <TableHead className="text-xs font-bold">Office</TableHead>
+                    <TableHead className="text-xs font-bold">Mode</TableHead>
                     <TableHead className="text-right text-xs font-bold">
                       Approved Budget (ABC)
                     </TableHead>
@@ -468,6 +501,18 @@ export const EditBacResolutionForm = forwardRef<
                       key={item.id || item.appItemId}
                       className="text-xs"
                     >
+                      <TableCell className="font-mono text-xs">
+                        {item.papCode ? (
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-[10px] bg-default-50"
+                          >
+                            {item.papCode}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="font-semibold text-primary">
                         {item.itemNumber ||
                           `Item ${(idx + 1).toString().padStart(2, '0')}`}
@@ -480,6 +525,9 @@ export const EditBacResolutionForm = forwardRef<
                       <TableCell className="text-default-700">
                         {item.officeName || '—'}
                       </TableCell>
+                      <TableCell className="text-default-700">
+                        {item.procurementModeName || '—'}
+                      </TableCell>
                       <TableCell className="text-right font-semibold text-emerald-700">
                         ₱
                         {item.effectiveABC.toLocaleString('en-US', {
@@ -490,7 +538,7 @@ export const EditBacResolutionForm = forwardRef<
                   ))}
                   <TableRow className="bg-default-50/80 font-bold border-t-2 border-default-300">
                     <TableCell
-                      colSpan={3}
+                      colSpan={5}
                       className="text-right text-xs uppercase tracking-wider text-default-800"
                     >
                       Total Approved Budget for Contract (ABC):
@@ -1045,7 +1093,7 @@ function EditClauseSection({
                 const clauseObj = clausesMap.get(item.resolutionClauseId)
                 return (
                   <div
-                    key={item.resolutionClauseId}
+                    key={item.resolutionClauseId || index}
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={handleDragOver}
@@ -1068,7 +1116,7 @@ function EditClauseSection({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-xs text-default-900">
-                          {clauseObj?.name || 'Clause'}
+                          {clauseObj?.name || (clauseObj?.body ? 'Clause' : 'Loading clause...')}
                         </span>
                         <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                           <Button
@@ -1103,9 +1151,15 @@ function EditClauseSection({
                         </div>
                       </div>
 
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
-                        {clauseObj?.body || ''}
-                      </p>
+                      {clauseObj?.body ? (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                          {clauseObj.body}
+                        </p>
+                      ) : !clauseObj ? (
+                        <p className="text-xs text-muted-foreground/60 italic mt-1 flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin text-primary" /> Fetching clause content...
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 )

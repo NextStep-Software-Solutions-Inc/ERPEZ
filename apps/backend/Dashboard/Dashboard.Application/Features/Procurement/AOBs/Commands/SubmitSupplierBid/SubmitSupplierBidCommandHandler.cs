@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -22,11 +23,24 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Guid>.Fail("Request for Quotation (RFQ) not found.");
         }
 
-        // 2. Verify supplier exists
+        // 2. Verify RFQ is approved
+        if (rfq.Status != StatusEnum.Approved)
+        {
+            return ApiResponse<Guid>.Fail("Cannot submit bids for an RFQ that has not been approved by the BAC.");
+        }
+
+        // 3. Verify supplier exists
         var supplier = await unitOfWork.SupplierRepository.GetByIdAsync(request.SupplierId, cancellationToken);
         if (supplier == null)
         {
             return ApiResponse<Guid>.Fail("Supplier not found.");
+        }
+
+        // 4. Verify supplier was invited to this RFQ
+        var isInvited = rfq.RFQSuppliers.Any(s => s.SupplierId == request.SupplierId);
+        if (!isInvited)
+        {
+            return ApiResponse<Guid>.Fail("Supplier is not invited to this RFQ.");
         }
 
         // 3. Validate Status
@@ -86,6 +100,14 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
             existingBid.PaymentTerms = request.PaymentTerms;
             existingBid.WarrantyTerms = request.WarrantyTerms;
             existingBid.Remarks = request.Remarks;
+            var cleanSignatory = !string.IsNullOrWhiteSpace(request.SignatoryName) ? request.SignatoryName.Trim() : null;
+            var cleanQuotationDoc = !string.IsNullOrWhiteSpace(request.QuotationDocumentUrl) ? request.QuotationDocumentUrl.Trim() : null;
+            var cleanSignature = !string.IsNullOrWhiteSpace(request.SignatureUrl) ? request.SignatureUrl.Trim() : null;
+
+            existingBid.QuotationDocumentUrl = cleanQuotationDoc ?? existingBid.QuotationDocumentUrl;
+            existingBid.SignatureUrl = cleanSignature ?? existingBid.SignatureUrl;
+            existingBid.SignatoryName = cleanSignatory ?? existingBid.SignatoryName;
+            existingBid.DateSigned = request.DateSigned ?? (cleanSignatory != null ? DateTime.UtcNow : existingBid.DateSigned);
             existingBid.TotalAmount = totalBidAmount;
             existingBid.SubmittedAt = normalizedStatus == "SUBMITTED" ? DateTime.UtcNow : existingBid.SubmittedAt;
             existingBid.UpdatedAt = DateTime.UtcNow;
@@ -106,6 +128,10 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
         }
         else
         {
+            var cleanSignatory = !string.IsNullOrWhiteSpace(request.SignatoryName) ? request.SignatoryName.Trim() : null;
+            var cleanQuotationDoc = !string.IsNullOrWhiteSpace(request.QuotationDocumentUrl) ? request.QuotationDocumentUrl.Trim() : null;
+            var cleanSignature = !string.IsNullOrWhiteSpace(request.SignatureUrl) ? request.SignatureUrl.Trim() : null;
+
             var newBid = new SupplierBid
             {
                 RFQId = request.RFQId,
@@ -117,6 +143,10 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
                 PaymentTerms = request.PaymentTerms,
                 WarrantyTerms = request.WarrantyTerms,
                 Remarks = request.Remarks,
+                QuotationDocumentUrl = cleanQuotationDoc,
+                SignatureUrl = cleanSignature,
+                SignatoryName = cleanSignatory,
+                DateSigned = request.DateSigned ?? (cleanSignatory != null ? DateTime.UtcNow : null),
                 TotalAmount = totalBidAmount,
                 SubmittedAt = normalizedStatus == "SUBMITTED" ? DateTime.UtcNow : null,
                 CreatedAt = DateTime.UtcNow,

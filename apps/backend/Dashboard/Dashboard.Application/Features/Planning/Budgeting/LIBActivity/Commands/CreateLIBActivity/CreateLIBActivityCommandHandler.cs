@@ -63,11 +63,30 @@ public class CreateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
                 ?? throw new NotFoundException($"OPCR Activity with ID {request.OPCRActivityId} not found.");
         }
 
+        string papCode = request.PAPCode ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(papCode))
+        {
+            var fiscalYear = lib.FiscalYearEntity
+                ?? (lib.FiscalYearId.HasValue ? await unitOfWork.FiscalYearRepository.GetByIdAsync(lib.FiscalYearId.Value, cancellationToken) : null);
+            var yearStr = fiscalYear?.Year.ToString() ?? DateTime.UtcNow.Year.ToString();
+
+            var office = lib.Office
+                ?? (lib.OfficeId.HasValue ? await unitOfWork.OfficeRepository.GetByIdAsync(lib.OfficeId.Value, cancellationToken) : null);
+            var officeCode = !string.IsNullOrWhiteSpace(office?.Code) ? office.Code : "00";
+
+            var existingActivities = await unitOfWork.LineItemBudgetActivityRepository.FindAllAsync(
+                x => x.LineItemBudgetId == request.LineItemBudgetId && !x.IsDeleted,
+                cancellationToken);
+
+            papCode = $"{yearStr}-{officeCode}-{(existingActivities.Count + 1):D5}";
+        }
+
         var entity = new Domain.Entities.Planning.LineItemBudgetActivity
         {
             LineItemBudgetId = request.LineItemBudgetId,
             WFPObjectiveActivityId = request.WFPObjectiveActivityId,
             OPCRActivityId = request.OPCRActivityId,
+            PAPCode = papCode,
             Name = wfpActivity?.ActivityName
                 ?? opcrActivity?.Name
                 ?? request.Name

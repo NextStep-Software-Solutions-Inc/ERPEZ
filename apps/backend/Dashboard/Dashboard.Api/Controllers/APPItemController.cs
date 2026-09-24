@@ -35,10 +35,16 @@ public class APPItemController(ISender mediator) : ControllerBase
             OfficeId = request.OfficeId,
             PAPCode = request.PAPCode,
             Remarks = request.Remarks,
+            ItemNameOverride = request.ItemNameOverride,
+            GeneralDescription = request.GeneralDescription,
             IsEarlyProcurementActivity = request.IsEarlyProcurementActivity,
+            EPARemarks = request.EPARemarks,
             IsOutsourced = request.IsOutsourced,
             BidEvaluationCriteria = request.BidEvaluationCriteria,
-            ProcurementStrategies = request.ProcurementStrategies
+            ProcurementStrategies = request.ProcurementStrategies,
+            StartOfProcurementOverride = request.StartOfProcurementOverride,
+            EndOfProcurementOverride = request.EndOfProcurementOverride,
+            EstimatedBudgetOverride = request.EstimatedBudgetOverride
         };
 
         var result = await mediator.Send(command);
@@ -81,10 +87,16 @@ public class APPItemController(ISender mediator) : ControllerBase
             OfficeId = request.OfficeId,
             PAPCode = request.PAPCode,
             Remarks = request.Remarks,
+            ItemNameOverride = request.ItemNameOverride,
+            GeneralDescription = request.GeneralDescription,
             IsEarlyProcurementActivity = request.IsEarlyProcurementActivity,
+            EPARemarks = request.EPARemarks,
             IsOutsourced = request.IsOutsourced,
             BidEvaluationCriteria = request.BidEvaluationCriteria,
-            ProcurementStrategies = request.ProcurementStrategies
+            ProcurementStrategies = request.ProcurementStrategies,
+            StartOfProcurementOverride = request.StartOfProcurementOverride,
+            EndOfProcurementOverride = request.EndOfProcurementOverride,
+            EstimatedBudgetOverride = request.EstimatedBudgetOverride
         };
 
         var result = await mediator.Send(command);

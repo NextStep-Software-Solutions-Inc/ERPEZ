@@ -154,11 +154,14 @@ public interface IUnitOfWork
     IAPRItemRepository APRItemRepository { get; }
     IAPRItemMilestoneRepository APRItemMilestoneRepository { get; }
     IRFQRepository RFQRepository { get; }
+    IRepository<ERPEZ.Domain.Entities.Procurement.RFQSupplier> RFQSupplierRepository { get; }
     IPurchaseOrderRepository PurchaseOrderRepository { get; }
     IPurchaseOrderItemRepository PurchaseOrderItemRepository { get; }
     INoticeOfAwardRepository NoticeOfAwardRepository { get; }
     INoticeOfAwardMilestoneRepository NoticeOfAwardMilestoneRepository { get; }
     INoticeOfAwardActivityRepository NoticeOfAwardActivityRepository { get; }
+    IContractRepository ContractRepository { get; }
+    INoticeToProceedRepository NoticeToProceedRepository { get; }
     IBiddingSubmissionRepository BiddingSubmissionRepository { get; }
     IBiddingEvaluationRepository BiddingEvaluationRepository { get; }
     IBiddingAwardRecommendationRepository BiddingAwardRecommendationRepository { get; }

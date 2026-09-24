@@ -25,6 +25,11 @@ interface RawBackendMatrixResponse {
   isBidsOpened: boolean
   hasMinimumCanvassWarning: boolean
   remarks?: string
+  bacResolutionNumber?: string
+  prNumber?: string
+  papCode?: string
+  approverName?: string
+  approverTitle?: string
   linkedRFQs: Array<{
     id: string
     rfqNumber: string
@@ -38,10 +43,26 @@ interface RawBackendMatrixResponse {
     supplierId: string
     name: string
     email: string
+    contactPerson?: string
+    contactNumber?: string
+    address?: string
+    tinNumber?: string
+    philGEPSNumber?: string
     submissionType?: string
     submittedAt?: string
     deliveryPeriod?: string
     validityPeriodDays?: number
+    paymentTerms?: string
+    warrantyTerms?: string
+    totalBidAmount?: number
+    remarks?: string
+    hasSubmitted?: boolean
+    rfqNumber?: string
+    rfqId?: string
+    quotationDocumentUrl?: string
+    signatureUrl?: string
+    signatoryName?: string
+    dateSigned?: string
   }>
   items: Array<{
     rfqItemId: string
@@ -94,16 +115,32 @@ export const getBidMatrixRequest: QueryBlueprintFromTemplate<
       supplierName: s.name,
       name: s.name,
       email: s.email,
+      contactPerson: s.contactPerson,
+      contactNumber: s.contactNumber,
+      address: s.address,
+      tinNumber: s.tinNumber,
+      philGEPSNumber: s.philGEPSNumber,
       submissionType: s.submissionType as any,
       isResponsive: true,
       submittedAt: s.submittedAt,
       deliveryPeriod: s.deliveryPeriod,
       validityPeriodDays: s.validityPeriodDays,
+      paymentTerms: s.paymentTerms,
+      warrantyTerms: s.warrantyTerms,
+      totalBidAmount: s.totalBidAmount,
+      remarks: s.remarks,
+      hasSubmitted: s.hasSubmitted !== false && (!!s.submittedAt || !!s.submissionType),
+      rfqNumber: s.rfqNumber,
+      rfqId: s.rfqId,
+      quotationDocumentUrl: s.quotationDocumentUrl,
+      signatureUrl: s.signatureUrl,
+      signatoryName: s.signatoryName,
+      dateSigned: s.dateSigned,
     }))
 
     const supplierMap = new Map(suppliers.map((s) => [s.supplierId, s]))
 
-    const lineItems: LineItem[] = (data.items || []).map((item) => {
+    const lineItems: LineItem[] = (data.items || []).map((item, index) => {
       const itemBids: SupplierBid[] = (data.bids || [])
         .filter((b) => b.rfqItemId === item.rfqItemId)
         .map((b) => ({
@@ -139,7 +176,7 @@ export const getBidMatrixRequest: QueryBlueprintFromTemplate<
         aobId: data.aobId,
         rfqId: item.rfqId,
         rfqItemId: item.rfqItemId,
-        itemCode: item.rfqItemId.substring(0, 8).toUpperCase(),
+        itemCode: `${index + 1}`,
         description: item.name,
         itemName: item.name,
         name: item.name,
@@ -172,7 +209,12 @@ export const getBidMatrixRequest: QueryBlueprintFromTemplate<
       isBidsOpened: data.isBidsOpened,
       hasMinimumCanvassWarning: data.hasMinimumCanvassWarning,
       remarks: data.remarks,
-      linkedRFQs: data.linkedRFQs,
+      bacResolutionNumber: data.bacResolutionNumber,
+      prNumber: data.prNumber,
+      papCode: data.papCode,
+      approverName: data.approverName,
+      approverTitle: data.approverTitle,
+      linkedRFQs: data.linkedRFQs || (data as any).linkedRfQs || [],
       suppliers,
       items: lineItems,
       lineItems,

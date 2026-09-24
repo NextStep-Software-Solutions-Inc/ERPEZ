@@ -11,7 +11,9 @@ public class PurchaseOrderDto
     public POProcurementModeEnum ProcurementMode { get; set; }
     public SourceDocumentTypeEnum SourceDocumentType { get; set; }
     public Guid SourceDocumentId { get; set; }
+    public string SourceDocumentNumber { get; set; } = string.Empty;
     public Guid SupplierId { get; set; }
+    public string SupplierName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public DateOnly Date { get; set; }
     public string? PlaceOfDelivery { get; set; }
@@ -21,6 +23,9 @@ public class PurchaseOrderDto
     public StatusEnum Status { get; set; }
     public decimal TotalAmount { get; set; }
     public string? SupportingDocumentUrl { get; set; }
+    public string? ReturnReason { get; set; }
+    public Guid? ApprovedById { get; set; }
+    public DateTime? ApprovedAt { get; set; }
     public List<PurchaseOrderItemDto> Items { get; set; } = new();
 }
 

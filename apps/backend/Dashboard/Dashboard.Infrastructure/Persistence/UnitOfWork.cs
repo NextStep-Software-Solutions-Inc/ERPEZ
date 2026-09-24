@@ -161,12 +161,15 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IDirectPurchaseEntryRepository directPurchaseEntryRepository;
     private readonly IDirectAcquisitionDocumentRepository directAcquisitionDocumentRepository;
     private readonly IRFQRepository rfqRepository;
+    private readonly IRepository<ERPEZ.Domain.Entities.Procurement.RFQSupplier> rfqSupplierRepository;
     private readonly IPublicSupplierApplicationRepository publicSupplierApplicationRepository;
     private readonly IPurchaseOrderRepository purchaseOrderRepository;
     private readonly IPurchaseOrderItemRepository purchaseOrderItemRepository;
     private readonly INoticeOfAwardRepository noticeOfAwardRepository;
     private readonly INoticeOfAwardMilestoneRepository noticeOfAwardMilestoneRepository;
     private readonly INoticeOfAwardActivityRepository noticeOfAwardActivityRepository;
+    private readonly IContractRepository contractRepository;
+    private readonly INoticeToProceedRepository noticeToProceedRepository;
     private readonly IBiddingSubmissionRepository biddingSubmissionRepository;
     private readonly IBiddingEvaluationRepository biddingEvaluationRepository;
     private readonly IBiddingAwardRecommendationRepository biddingAwardRecommendationRepository;
@@ -324,12 +327,15 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         directPurchaseEntryRepository = new DirectPurchaseEntryRepository(context, sieveProcessor);
         directAcquisitionDocumentRepository = new DirectAcquisitionDocumentRepository(context, sieveProcessor);
         rfqRepository = new RFQRepository(context, sieveProcessor);
+        rfqSupplierRepository = new Repository<ERPEZ.Domain.Entities.Procurement.RFQSupplier>(context, sieveProcessor);
         publicSupplierApplicationRepository = new PublicSupplierApplicationRepository (context, sieveProcessor);
         purchaseOrderRepository = new PurchaseOrderRepository(context, sieveProcessor);
         purchaseOrderItemRepository = new PurchaseOrderItemRepository(context, sieveProcessor);
         noticeOfAwardRepository = new NoticeOfAwardRepository(context, sieveProcessor);
         noticeOfAwardMilestoneRepository = new NoticeOfAwardMilestoneRepository(context, sieveProcessor);
         noticeOfAwardActivityRepository = new NoticeOfAwardActivityRepository(context, sieveProcessor);
+        contractRepository = new ContractRepository(context, sieveProcessor);
+        noticeToProceedRepository = new NoticeToProceedRepository(context, sieveProcessor);
         biddingSubmissionRepository = new BiddingSubmissionRepository(context, sieveProcessor);
         biddingEvaluationRepository = new BiddingEvaluationRepository(context, sieveProcessor);
         biddingAwardRecommendationRepository = new BiddingAwardRecommendationRepository(context, sieveProcessor);
@@ -482,12 +488,15 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDirectPurchaseEntryRepository DirectPurchaseEntryRepository => directPurchaseEntryRepository;
     public IDirectAcquisitionDocumentRepository DirectAcquisitionDocumentRepository => directAcquisitionDocumentRepository;
     public IRFQRepository RFQRepository => rfqRepository;
+    public IRepository<ERPEZ.Domain.Entities.Procurement.RFQSupplier> RFQSupplierRepository => rfqSupplierRepository;
     public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => publicSupplierApplicationRepository;
     public IPurchaseOrderRepository PurchaseOrderRepository => purchaseOrderRepository;
     public IPurchaseOrderItemRepository PurchaseOrderItemRepository => purchaseOrderItemRepository;
     public INoticeOfAwardRepository NoticeOfAwardRepository => noticeOfAwardRepository;
     public INoticeOfAwardMilestoneRepository NoticeOfAwardMilestoneRepository => noticeOfAwardMilestoneRepository;
     public INoticeOfAwardActivityRepository NoticeOfAwardActivityRepository => noticeOfAwardActivityRepository;
+    public IContractRepository ContractRepository => contractRepository;
+    public INoticeToProceedRepository NoticeToProceedRepository => noticeToProceedRepository;
     public IBiddingSubmissionRepository BiddingSubmissionRepository => biddingSubmissionRepository;
     public IBiddingEvaluationRepository BiddingEvaluationRepository => biddingEvaluationRepository;
     public IBiddingAwardRecommendationRepository BiddingAwardRecommendationRepository => biddingAwardRecommendationRepository;
@@ -515,7 +524,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            throw new ConcurrencyConflictException("A save conflict occurred.", ex);
+            var details = ex.Entries != null && ex.Entries.Count > 0
+                ? string.Join("; ", ex.Entries.Select(e =>
+                    $"{e.Entity.GetType().Name} [State: {e.State}] PK: ({string.Join(", ", e.Properties.Where(p => p.Metadata.IsPrimaryKey()).Select(p => $"{p.Metadata.Name}={p.CurrentValue}"))})"))
+                : "No entries in exception";
+            throw new ConcurrencyConflictException($"A save conflict occurred. Entries: {details}", ex);
         }
     }
 

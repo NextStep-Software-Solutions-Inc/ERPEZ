@@ -55,6 +55,8 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
 
                 var modeChanged = appItem.ProcurementModeId != entry.ModeOfProcurementId;
                 var remarksChanged = appItem.Remarks != entry.Remarks;
+                var itemNameChanged = appItem.ItemNameOverride != entry.ItemNameOverride;
+                var descriptionChanged = appItem.GeneralDescription != entry.GeneralDescription;
                 var epaChanged = appItem.IsEarlyProcurementActivity != entry.EPAEligible;
                 var epaRemarksChanged = appItem.EPARemarks != entry.EPARemarks;
                 var startProcChanged = oldEffectiveStart != newEffectiveStart;
@@ -64,7 +66,7 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
                 var outsourcedChanged = entry.IsOutsourced.HasValue && appItem.IsOutsourced != entry.IsOutsourced.Value;
                 var schedulesProvided = entry.Schedules is not null && entry.Schedules.Count > 0;
 
-                if (modeChanged || remarksChanged || epaChanged || epaRemarksChanged || startProcChanged || endProcChanged || budgetChanged || criteriaChanged || outsourcedChanged || schedulesProvided)
+                if (modeChanged || remarksChanged || itemNameChanged || descriptionChanged || epaChanged || epaRemarksChanged || startProcChanged || endProcChanged || budgetChanged || criteriaChanged || outsourcedChanged || schedulesProvided)
                 {
                     appItem.IsRevised = true;
                 }
@@ -73,6 +75,8 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
             // Update procurement strategy fields
             appItem.ProcurementModeId = entry.ModeOfProcurementId;
             appItem.Remarks = entry.Remarks;
+            appItem.ItemNameOverride = entry.ItemNameOverride;
+            appItem.GeneralDescription = entry.GeneralDescription;
             appItem.IsEarlyProcurementActivity = entry.EPAEligible;
             appItem.EPARemarks = entry.EPARemarks;
             appItem.StartOfProcurementOverride = entry.StartOfProcurementOverride;

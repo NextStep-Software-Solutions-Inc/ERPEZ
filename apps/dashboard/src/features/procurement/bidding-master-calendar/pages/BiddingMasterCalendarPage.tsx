@@ -119,12 +119,14 @@ export function BiddingMasterCalendarPage({
 
   const { data: scheduleResponse } = useBiddingSchedule({
     pathParams: { resolutionId: activeResolutionIdForSchedule },
+    enabled: Boolean(activeResolutionIdForSchedule),
   })
   const realSchedule = scheduleResponse?.data ?? null
 
   const { data: resolutionResponse } = useBacResolution({
     pathParams: { id: activeResolutionIdForSchedule },
     queryParams: {},
+    enabled: Boolean(activeResolutionIdForSchedule),
   })
   const realResolution = resolutionResponse?.data ?? null
 
@@ -315,7 +317,7 @@ export function BiddingMasterCalendarPage({
     }>,
   ) => {
     void navigate({
-      to: '/v2/bidding-master-calendar',
+      to: '.',
       search: (previous) => ({
         ...previous,
         ...nextSearch,
@@ -428,17 +430,17 @@ export function BiddingMasterCalendarPage({
             variant="default"
             size="sm"
             className="gap-1.5 h-8 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer"
-            onClick={() => navigate({ to: '/v2/bidding-master-calendar-v2' })}
+            onClick={() => navigate({ to: '/v2/bidding-master-calendar' })}
           >
             <Sparkles className="h-3.5 w-3.5" />
-            Try Calendar v2 Playground
+            Switch to Modern Calendar
           </Button>
           <Badge
             variant="outline"
-            className="h-fit gap-1.5 py-1 px-2.5 bg-primary/10 text-primary border-primary/20 text-xs font-semibold"
+            className="h-fit gap-1.5 py-1 px-2.5 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 text-xs font-semibold"
           >
             <CalendarRange className="h-3.5 w-3.5" />
-            BAC Operations
+            Legacy Calendar
           </Badge>
           <Button
             type="button"

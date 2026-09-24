@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import {
   AlertCircle,
   Building2,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   FileCheck2,
   FileText,
   FolderOpen,
   Lock,
+  Package,
   RefreshCw,
   ShieldCheck,
   UserCheck,
@@ -50,6 +53,11 @@ export function BidOpeningTab({
 
   const [selectedSubmission, setSelectedSubmission] = useState<BiddingSubmissionResponse | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [expandedSubId, setExpandedSubId] = useState<string | null>(null)
+
+  const toggleExpand = (id: string) => {
+    setExpandedSubId((prev) => (prev === id ? null : id))
+  }
 
   const handleOpenDialog = (submission: BiddingSubmissionResponse) => {
     setSelectedSubmission(submission)
@@ -220,8 +228,9 @@ export function BidOpeningTab({
                   const isFail = sub.openingRecord?.envelope1Result === 'Failed'
 
                   return (
-                    <TableRow
-                      key={sub.id}
+                    <Fragment key={sub.id}>
+                      <TableRow
+                        key={sub.id}
                       className={`transition-colors ${
                         isFail
                           ? 'bg-destructive/5'
@@ -273,7 +282,20 @@ export function BidOpeningTab({
 
                       {/* Submitted Amount */}
                       <TableCell className="text-xs font-semibold text-default-900">
-                        {formatCurrency(sub.originalProposedAmount)}
+                        {sub.isFinancialOpened && sub.originalProposedAmount !== null && sub.originalProposedAmount !== undefined ? (
+                          <div>
+                            <span>{formatCurrency(sub.originalProposedAmount)}</span>
+                            {sub.items && sub.items.length > 0 && (
+                              <span className="text-[10px] text-muted-foreground block font-normal">
+                                {sub.items.length} {sub.items.length === 1 ? 'item bid' : 'item bids'}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <Badge color="secondary" variant="soft" className="font-semibold text-[10px] flex items-center gap-1 w-fit">
+                            <Lock className="h-3 w-3" /> Sealed
+                          </Badge>
+                        )}
                       </TableCell>
 
                       {/* Envelope 1 Result */}
@@ -378,19 +400,110 @@ export function BidOpeningTab({
 
                       {/* Action Button */}
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant={hasOpening ? 'outline' : 'default'}
-                          color={hasOpening ? 'default' : 'primary'}
-                          onClick={() => handleOpenDialog(sub)}
-                          className="h-8 text-xs font-semibold"
-                        >
-                          {hasOpening ? 'Edit Record' : 'Record Opening'}
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => toggleExpand(sub.id)}
+                            className="h-8 text-xs gap-1 text-muted-foreground hover:text-default-900"
+                            title={expandedSubId === sub.id ? 'Hide item bids' : 'View item bids'}
+                          >
+                            {expandedSubId === sub.id ? (
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            )}
+                            <span className="hidden sm:inline">
+                              {sub.isFinancialOpened ? 'Items' : 'Inspect'}
+                            </span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={hasOpening ? 'outline' : 'default'}
+                            color={hasOpening ? 'default' : 'primary'}
+                            onClick={() => handleOpenDialog(sub)}
+                            className="h-8 text-xs font-semibold"
+                          >
+                            {hasOpening ? 'Edit Record' : 'Record Opening'}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  )
-                })}
+
+                    {expandedSubId === sub.id && (
+                      <TableRow className="bg-default-50/70 border-t border-default-200">
+                        <TableCell colSpan={8} className="p-4">
+                          {sub.isFinancialOpened ? (
+                            sub.items && sub.items.length > 0 ? (
+                              <div className="space-y-3 rounded-lg border border-default-200 bg-white p-4 shadow-xs">
+                                <div className="flex items-center justify-between border-b border-default-100 pb-2">
+                                  <span className="font-bold text-xs text-default-900 flex items-center gap-1.5">
+                                    <Package className="h-4 w-4 text-primary" /> Submitted Item-Level Bids ({sub.supplierName})
+                                  </span>
+                                  <Badge variant="outline" className="text-[10px]">
+                                    {sub.items.length} {sub.items.length === 1 ? 'Item' : 'Items'}
+                                  </Badge>
+                                </div>
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-xs">
+                                    <thead>
+                                      <tr className="border-b border-default-100 text-left text-muted-foreground font-semibold">
+                                        <th className="py-1.5 px-2">#</th>
+                                        <th className="py-1.5 px-2">Item Description</th>
+                                        <th className="py-1.5 px-2 text-right">Quantity</th>
+                                        <th className="py-1.5 px-2 text-right">Offered Unit Price</th>
+                                        <th className="py-1.5 px-2 text-right">Offered Total</th>
+                                        <th className="py-1.5 px-2">Brand / Model</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {sub.items.map((it, idx) => (
+                                        <tr key={it.id || idx} className="border-b border-default-50 hover:bg-default-50/50">
+                                          <td className="py-1.5 px-2 text-muted-foreground">{idx + 1}</td>
+                                          <td className="py-1.5 px-2">
+                                            <div className="font-semibold text-default-900">{it.itemName || 'Item'}</div>
+                                            {it.description && <div className="text-[11px] text-muted-foreground line-clamp-1">{it.description}</div>}
+                                          </td>
+                                          <td className="py-1.5 px-2 text-right font-medium">{it.quantity} {it.uom}</td>
+                                          <td className="py-1.5 px-2 text-right font-semibold">{formatCurrency(it.unitPrice)}</td>
+                                          <td className="py-1.5 px-2 text-right font-bold text-default-900">{formatCurrency(it.totalPrice)}</td>
+                                          <td className="py-1.5 px-2 text-muted-foreground">{[it.brand, it.model].filter(Boolean).join(' ') || '-'}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                    <tfoot>
+                                      <tr className="border-t border-default-200 font-bold bg-default-50/50">
+                                        <td colSpan={4} className="py-2 px-2 text-right uppercase text-[11px]">Total Submitted Bid:</td>
+                                        <td className="py-2 px-2 text-right text-success text-xs">{formatCurrency(sub.originalProposedAmount)}</td>
+                                        <td></td>
+                                      </tr>
+                                    </tfoot>
+                                  </table>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-3 bg-white rounded-lg border border-default-200 text-xs text-muted-foreground flex items-center justify-between">
+                                <span>Lump-sum financial proposal: <strong className="text-default-900">{formatCurrency(sub.originalProposedAmount)}</strong></span>
+                                <Badge variant="soft" color="info" className="text-[10px]">Lump-Sum Bid Proposal</Badge>
+                              </div>
+                            )
+                          ) : (
+                            <div className="p-4 bg-white rounded-lg border border-amber-200 text-xs text-muted-foreground flex items-center gap-3">
+                              <Lock className="h-5 w-5 text-amber-500 shrink-0" />
+                              <div>
+                                <span className="font-bold text-default-800 block text-xs">Financial Proposal Sealed</span>
+                                <span className="text-[11px]">
+                                  Under Section 30 of RA 9184 / RA 12009, item-level pricing and financial documents remain strictly confidential and sealed until the Second Envelope is unsealed by the BAC during the official public opening session.
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
+                )
+              })}
               </TableBody>
             </Table>
           )}

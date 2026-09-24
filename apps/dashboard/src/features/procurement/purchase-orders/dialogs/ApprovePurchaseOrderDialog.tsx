@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,12 +14,14 @@ type ApprovePurchaseOrderDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (signedDocument: File) => void
+  isSubmitting?: boolean
 }
 
 export function ApprovePurchaseOrderDialog({
   open,
   onOpenChange,
   onSubmit,
+  isSubmitting = false,
 }: ApprovePurchaseOrderDialogProps) {
   const [signedDocument, setSignedDocument] = useState<File | null>(null)
 
@@ -44,20 +46,19 @@ export function ApprovePurchaseOrderDialog({
             variant="outline"
             color="secondary"
             onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
           <Button
-            disabled={!signedDocument}
+            disabled={!signedDocument || isSubmitting}
             onClick={() => {
               if (signedDocument) {
                 onSubmit(signedDocument)
-                setSignedDocument(null)
-                onOpenChange(false)
               }
             }}
           >
-            Approve PO
+            {isSubmitting ? 'Approving...' : 'Approve PO'}
           </Button>
         </DialogFooter>
       </DialogContent>

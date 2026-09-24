@@ -301,7 +301,7 @@ export const LibList = ({
                     Activities
                   </p>
                   <p className="text-lg font-bold text-gray-900">
-                    {lib.activities?.length || 0}
+                    {lib.activityCount ?? lib.activities?.length ?? 0}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -317,8 +317,7 @@ export const LibList = ({
                     Created
                   </p>
                   <p className="text-sm font-bold text-gray-900">
-                    {/* {new Date(lib.createdAt).toLocaleDateString()} */}
-                    {lib.createdAt}
+                    {lib.createdAt ? new Date(lib.createdAt).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
               </div>

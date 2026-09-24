@@ -1,21 +1,14 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { ResolutionClausesPage } from '@/features/procurement/resolution-clauses'
-import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
-import { PERMISSIONS } from '@/constants/permissions'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute(
   '/v2/(procurement)/bac-resolutions/clauses/',
 )({
-  component: BacResolutionClausesRoute,
+  beforeLoad: () => {
+    throw redirect({
+      to: '/v2/procurement-library',
+      search: { tab: 'ResolutionClauses' },
+      replace: true,
+    })
+  },
+  component: () => null,
 })
-
-function BacResolutionClausesRoute() {
-  return (
-    <RoutePermissionGuard
-      permission={PERMISSIONS.Procurement.ProcurementLibrary.Manage}
-      message="You do not have permission to manage Resolution Clauses."
-    >
-      <ResolutionClausesPage />
-    </RoutePermissionGuard>
-  )
-}

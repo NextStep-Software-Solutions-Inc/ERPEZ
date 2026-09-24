@@ -5,6 +5,7 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.SupplierPortal.Commands.SubmitPublicApplication;
 
@@ -18,8 +19,226 @@ public class SubmitPublicApplicationCommandHandler(
     {
         // ── 1. LOAD PROJECT (with schedules + PBD gate) ───────────────────────────
         var project = await unitOfWork.ProcurementProjectRepository
-            .GetWithPublicDetailsByIdAsync(request.ProjectId, cancellationToken)
-            ?? throw new NotFoundException("Project not found.");
+            .GetWithPublicDetailsByIdAsync(request.ProjectId, cancellationToken);
+
+        if (project == null)
+        {
+            var rfq = await unitOfWork.RFQRepository.Query()
+                .Include(r => r.RFQSuppliers)
+                .Include(r => r.RFQItems)
+                .FirstOrDefaultAsync(r => r.Id == request.ProjectId && !r.IsDeleted, cancellationToken);
+
+            if (rfq == null)
+                throw new NotFoundException("Project not found.");
+
+            if (rfq.Status != StatusEnum.Approved)
+                throw new ForbiddenException("This RFQ is not currently accepting public applications.");
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            if (rfq.Deadline.HasValue && rfq.Deadline.Value < today)
+                throw new ForbiddenException("The submission deadline for this RFQ has passed.");
+
+            // Find or create supplier
+            var trimmedTinRfq = request.TinNumber.Trim();
+            var rfqSupplierRecord = await unitOfWork.SupplierRepository.Query()
+                .Include(s => s.SupplierRequirements)
+                .FirstOrDefaultAsync(s => s.TINNumber == trimmedTinRfq && !s.IsDeleted, cancellationToken);
+
+            if (rfqSupplierRecord == null)
+            {
+                var defaultCategory = await unitOfWork.SupplierCategoryRepository.FindAsync(
+                    c => !c.IsDeleted, cancellationToken);
+
+                rfqSupplierRecord = new ERPEZ.Domain.Entities.Planning.Supplier
+                {
+                    Id = Guid.NewGuid(),
+                    Name = request.CompanyName.Trim(),
+                    TINNumber = trimmedTinRfq,
+                    BusinessPermitNo = $"BP-PORTAL-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
+                    SupplierCategoryId = defaultCategory?.Id ?? Guid.Empty,
+                    ContactPerson = request.ContactPerson.Trim(),
+                    ContactNumber = request.ContactNumber.Trim(),
+                    Email = request.EmailAddress.Trim(),
+                    Address = request.BusinessAddress.Trim(),
+                    Status = "Pending",
+                    IsBlocked = false,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "PublicPortal"
+                };
+                await unitOfWork.SupplierRepository.AddAsync(rfqSupplierRecord, cancellationToken);
+            }
+            else
+            {
+                // Guard against duplicate submission for the same RFQ
+                var existingBid = await unitOfWork.SupplierBidRepository.FindAsync(
+                    b => b.RFQId == rfq.Id && b.SupplierId == rfqSupplierRecord.Id && !b.IsDeleted,
+                    cancellationToken);
+
+                if (existingBid != null)
+                {
+                    throw new FluentValidation.ValidationException(
+                        "An application/quotation with this TIN number has already been submitted for this RFQ.");
+                }
+            }
+
+            // Promote uploaded documents (temp -> permanent storage) and attach as SupplierRequirements
+            string? quotationUrl = null;
+            if (request.Documents != null && request.Documents.Count > 0)
+            {
+                foreach (var doc in request.Documents)
+                {
+                    (string Url, string OriginalFileName) promoted;
+                    try
+                    {
+                        promoted = await fileStorageService.PromoteFileAsync(doc.FileId, cancellationToken);
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        throw new FluentValidation.ValidationException(
+                            $"Uploaded file with ID '{doc.FileId}' was not found or has expired. Please re-upload and try again.");
+                    }
+
+                    string docName;
+                    if (doc.ChecklistItemId == Guid.Parse("00000000-0000-0000-0000-000000000001"))
+                        docName = "Valid Mayor's / Business Permit";
+                    else if (doc.ChecklistItemId == Guid.Parse("00000000-0000-0000-0000-000000000002"))
+                        docName = "PhilGEPS Registration Certificate";
+                    else if (doc.ChecklistItemId == Guid.Parse("00000000-0000-0000-0000-000000000003"))
+                        docName = "Omnibus Sworn Statement (GPPB Prescribed Form)";
+                    else if (doc.ChecklistItemId == rfq.Id)
+                    {
+                        docName = $"Price Quotation Form - {rfq.RFQNumber}";
+                        quotationUrl = promoted.Url;
+                    }
+                    else
+                    {
+                        docName = !string.IsNullOrWhiteSpace(promoted.OriginalFileName)
+                            ? promoted.OriginalFileName
+                            : "Quotation Attachment";
+                    }
+
+                    var req = new ERPEZ.Domain.Entities.Planning.SupplierRequirement
+                    {
+                        Id = Guid.NewGuid(),
+                        SupplierId = rfqSupplierRecord.Id,
+                        RequirementName = docName,
+                        Url = promoted.Url,
+                        IsVerified = false,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = "PublicPortal"
+                    };
+                    rfqSupplierRecord.SupplierRequirements.Add(req);
+                    await unitOfWork.SupplierRequirementRepository.AddAsync(req, cancellationToken);
+                }
+            }
+
+            // Register supplier under RFQ invited/participating suppliers if not already present
+            if (!rfq.RFQSuppliers.Any(s => s.SupplierId == rfqSupplierRecord.Id))
+            {
+                var rfqSupplier = new RFQSupplier
+                {
+                    Id = Guid.NewGuid(),
+                    RFQId = rfq.Id,
+                    SupplierId = rfqSupplierRecord.Id,
+                    InvitedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "PublicPortal"
+                };
+                rfq.RFQSuppliers.Add(rfqSupplier);
+                await unitOfWork.RFQSupplierRepository.AddAsync(rfqSupplier, cancellationToken);
+            }
+
+            // Create SupplierBid for the RFQ
+            var itemBidsDict = request.ItemBids?.ToDictionary(ib => ib.RFQItemId) ?? new Dictionary<Guid, PublicItemBidDto>();
+
+            // Calculate total quoted amount with standard financial centavo rounding
+            decimal totalQuoted = 0m;
+            if (request.ProposedBidAmount.HasValue && request.ProposedBidAmount.Value > 0)
+            {
+                totalQuoted = Math.Round(request.ProposedBidAmount.Value, 2, MidpointRounding.AwayFromZero);
+            }
+            else if (itemBidsDict.Count > 0)
+            {
+                totalQuoted = rfq.RFQItems
+                    .Where(item => !item.IsDeleted && itemBidsDict.ContainsKey(item.Id))
+                    .Sum(item => Math.Round(itemBidsDict[item.Id].UnitPrice * item.Quantity, 2, MidpointRounding.AwayFromZero));
+            }
+
+            totalQuoted = Math.Round(totalQuoted, 2, MidpointRounding.AwayFromZero);
+            var rfqCeiling = Math.Round(rfq.TotalAmount, 2, MidpointRounding.AwayFromZero);
+
+            if (totalQuoted > 0 && rfqCeiling > 0 && totalQuoted > rfqCeiling)
+            {
+                throw new FluentValidation.ValidationException(
+                    $"Your total quoted bid (₱{totalQuoted:N2}) exceeds the Approved Budget for the Contract (₱{rfqCeiling:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
+            }
+
+            var bidItems = new List<SupplierBidItem>();
+            foreach (var item in rfq.RFQItems.Where(item => !item.IsDeleted))
+            {
+                itemBidsDict.TryGetValue(item.Id, out var itemBid);
+                string? itemBrochureUrl = quotationUrl;
+
+                if (itemBid?.BrochureFileId != null)
+                {
+                    try
+                    {
+                        var promotedBrochure = await fileStorageService.PromoteFileAsync(itemBid.BrochureFileId.Value, cancellationToken);
+                        itemBrochureUrl = promotedBrochure.Url;
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        // Fall back to quotationUrl if brochure promotion fails
+                    }
+                }
+
+                var unitPrice = Math.Round(itemBid?.UnitPrice ?? 0m, 2, MidpointRounding.AwayFromZero);
+                var lineTotal = Math.Round(unitPrice * item.Quantity, 2, MidpointRounding.AwayFromZero);
+                bidItems.Add(new SupplierBidItem
+                {
+                    Id = Guid.NewGuid(),
+                    RFQItemId = item.Id,
+                    UnitPrice = unitPrice,
+                    TotalPrice = lineTotal,
+                    Brand = itemBid?.Brand,
+                    Model = itemBid?.Model,
+                    Color = itemBid?.Color,
+                    IsResponsive = true,
+                    BrochureFileUrl = itemBrochureUrl,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "PublicPortal"
+                });
+            }
+
+            var newBid = new SupplierBid
+            {
+                Id = Guid.NewGuid(),
+                RFQId = rfq.Id,
+                SupplierId = rfqSupplierRecord.Id,
+                SubmissionType = "PublicPortal",
+                Status = "Submitted",
+                SubmittedAt = DateTime.UtcNow,
+                Remarks = request.Remarks ?? $"Applied via BAC Public Portal ({request.CompanyName.Trim()})",
+                TotalAmount = totalQuoted,
+                DeliveryPeriod = request.DeliveryPeriod ?? rfq.DeliveryPeriod,
+                PaymentTerms = request.PaymentTerms,
+                WarrantyTerms = request.WarrantyTerms,
+                ValidityPeriodDays = request.ValidityPeriodDays,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = "PublicPortal",
+                SupplierBidItems = bidItems
+            };
+
+            foreach (var bi in bidItems)
+            {
+                bi.SupplierBidId = newBid.Id;
+            }
+
+            await unitOfWork.SupplierBidRepository.AddAsync(newBid, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return ApiResponse<Guid>.Success(newBid.Id, "Your application/quotation has been submitted successfully.");
+        }
 
         var allowedFallbackStatuses = new[] { "Open", "ClosingSoon", "Published", "ROUTED_TO_PORTAL", "Active", "Posted" };
         var isPubliclyVisible = project.BiddingDocument is not null
@@ -34,9 +253,13 @@ public class SubmitPublicApplicationCommandHandler(
         var submissionSchedule = project.BiddingActivitySchedules
             .FirstOrDefault(s => s.ProcurementActivityType?.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids);
 
-        if (submissionSchedule != null && submissionSchedule.EndDate != default && DateTime.UtcNow > submissionSchedule.EndDate)
+        var submissionDeadline = submissionSchedule != null
+            ? (submissionSchedule.EndDate != default ? submissionSchedule.EndDate : submissionSchedule.StartDate)
+            : (DateTime?)null;
+
+        if (submissionDeadline.HasValue && DateTime.UtcNow > submissionDeadline.Value)
             throw new ForbiddenException(
-                $"The submission deadline was {submissionSchedule.EndDate:MMMM dd, yyyy 'at' hh:mm tt} UTC. " +
+                $"The submission deadline was {submissionDeadline.Value:MMMM dd, yyyy 'at' hh:mm tt} UTC. " +
                 "This project is no longer accepting applications.");
 
         if (project.Status == "Closed")
@@ -88,6 +311,7 @@ public class SubmitPublicApplicationCommandHandler(
                 Address = request.BusinessAddress.Trim(),
                 Status = "Pending",
                 IsBlocked = false,
+                CreatedAt = DateTime.UtcNow,
                 CreatedBy = "PublicPortal"
             };
             await unitOfWork.SupplierRepository.AddAsync(supplier, cancellationToken);
@@ -105,7 +329,9 @@ public class SubmitPublicApplicationCommandHandler(
             TinNumber            = trimmedTin,
             BusinessAddress      = request.BusinessAddress.Trim(),
             Status               = "Submitted",
-            SubmittedAt          = DateTime.UtcNow
+            SubmittedAt          = DateTime.UtcNow,
+            CreatedAt            = DateTime.UtcNow,
+            CreatedBy            = "PublicPortal"
         };
 
         // ── 5. PROMOTE EACH FILE: temp → permanent ────────────────────────────────
@@ -130,8 +356,21 @@ public class SubmitPublicApplicationCommandHandler(
                 BlobStorageUrl   = promoted.Url,
                 OriginalFileName = promoted.OriginalFileName,
                 UploadedAt       = DateTime.UtcNow,
+                CreatedAt        = DateTime.UtcNow,
                 CreatedBy        = "PublicPortal"
             });
+        }
+
+        // ── 5b. ABC CEILING VALIDATION (NGPA / RA 12009 Statutory Ceiling) ──────────────────────
+        if (request.ProposedBidAmount.HasValue && project.ABC > 0)
+        {
+            var roundedProposed = Math.Round(request.ProposedBidAmount.Value, 2, MidpointRounding.AwayFromZero);
+            var roundedAbc = Math.Round(project.ABC, 2, MidpointRounding.AwayFromZero);
+            if (roundedProposed > roundedAbc)
+            {
+                throw new FluentValidation.ValidationException(
+                    $"Your proposed bid amount (₱{roundedProposed:N2}) exceeds the Approved Budget for the Contract (₱{roundedAbc:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
+            }
         }
 
         // ── 6. CONDITIONAL BIDDING SUBMISSION (Competitive / Public Bidding Only) ──
@@ -158,14 +397,188 @@ public class SubmitPublicApplicationCommandHandler(
                 ProcurementProjectId        = request.ProjectId,
                 SupplierId                  = supplier.Id,
                 PublicSupplierApplicationId = application.Id,
-                OriginalProposedAmount      = 0m,
-                BidSecurityType             = "Bid Securing Declaration",
+                OriginalProposedAmount      = request.ProposedBidAmount ?? 0m,
+                BidSecurityType             = request.BidSecurityType ?? "Bid Securing Declaration",
+                BidSecurityAmount           = request.BidSecurityAmount,
+                BidSecurityNumber           = request.BidSecurityNumber,
+                BidSecurityValidityDays     = request.BidSecurityValidityDays,
                 SubmissionType              = "Electronic",
                 SubmittedAt                 = application.SubmittedAt,
+                Remarks                     = request.Remarks,
+                CreatedAt                   = DateTime.UtcNow,
                 CreatedBy                   = "PublicPortal"
             };
 
+            var itemBidsList = request.ItemBids ?? new List<PublicItemBidDto>();
+            var itemBidsDict = itemBidsList.ToDictionary(ib => ib.RFQItemId);
+
+            if (project.ConsolidatedPRId.HasValue && itemBidsDict.Count > 0)
+            {
+                var cpr = await unitOfWork.ConsolidatedPRRepository
+                    .GetCPRWithDetailsAsync(project.ConsolidatedPRId.Value, cancellationToken);
+
+                if (cpr?.ConsolidatedPRItems != null && cpr.ConsolidatedPRItems.Any())
+                {
+                    decimal totalCalculatedAmount = 0m;
+                    var submissionItems = new List<BiddingSubmissionItem>();
+
+                    foreach (var cprItem in cpr.ConsolidatedPRItems.Where(ci => !ci.IsDeleted && ci.PRItem != null))
+                    {
+                        if (itemBidsDict.TryGetValue(cprItem.Id, out var itemBid))
+                        {
+                            if (itemBid.UnitPrice < 0)
+                            {
+                                throw new FluentValidation.ValidationException($"Unit price for item '{cprItem.PRItem.Name}' cannot be negative.");
+                            }
+
+                            var qty = cprItem.PRItem.RequestedQuantity;
+                            var uom = cprItem.PRItem.PPMPItem?.Unit ?? "Unit";
+                            var unitPrice = Math.Round(itemBid.UnitPrice, 2, MidpointRounding.AwayFromZero);
+                            var lineTotal = Math.Round(unitPrice * qty, 2, MidpointRounding.AwayFromZero);
+                            totalCalculatedAmount += lineTotal;
+
+                            submissionItems.Add(new BiddingSubmissionItem
+                            {
+                                Id = Guid.NewGuid(),
+                                BiddingSubmissionId = biddingSubmission.Id,
+                                ProcurementProjectItemId = cprItem.Id,
+                                Quantity = qty,
+                                Uom = uom,
+                                UnitPrice = unitPrice,
+                                TotalPrice = lineTotal,
+                                Brand = itemBid.Brand,
+                                Model = itemBid.Model,
+                                CreatedAt = DateTime.UtcNow,
+                                CreatedBy = "PublicPortal"
+                            });
+                        }
+                    }
+
+                    if (submissionItems.Count > 0)
+                    {
+                        biddingSubmission.OriginalProposedAmount = Math.Round(totalCalculatedAmount, 2, MidpointRounding.AwayFromZero);
+                        biddingSubmission.BiddingSubmissionItems = submissionItems;
+                    }
+                }
+            }
+
+            var finalProposedAmount = Math.Round(biddingSubmission.OriginalProposedAmount, 2, MidpointRounding.AwayFromZero);
+            var projectAbcCeiling = Math.Round(project.ABC, 2, MidpointRounding.AwayFromZero);
+            if (projectAbcCeiling > 0 && finalProposedAmount > projectAbcCeiling)
+            {
+                throw new FluentValidation.ValidationException(
+                    $"Your total bid amount (₱{finalProposedAmount:N2}) exceeds the Approved Budget for the Contract (₱{projectAbcCeiling:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
+            }
+
             await unitOfWork.BiddingSubmissionRepository.AddAsync(biddingSubmission, cancellationToken);
+        }
+        else
+        {
+            // ── 6b. CONDITIONAL RFQ BID SUBMISSION (SVP / Alternative Methods with Associated RFQ) ──
+            var associatedRfq = await unitOfWork.RFQRepository.Query()
+                .Include(r => r.RFQSuppliers)
+                .Include(r => r.RFQItems)
+                .FirstOrDefaultAsync(r =>
+                    (project.ConsolidatedPRId.HasValue && r.ConsolidatedPRId == project.ConsolidatedPRId.Value)
+                    || (project.ContractNo != null && r.RFQNumber.Contains(project.ContractNo))
+                    || (project.ContractNo != null && r.TracingNumber.Contains(project.ContractNo)),
+                    cancellationToken);
+
+            if (associatedRfq != null)
+            {
+                if (!associatedRfq.RFQSuppliers.Any(s => s.SupplierId == supplier.Id))
+                {
+                    var rfqSupplier = new RFQSupplier
+                    {
+                        Id = Guid.NewGuid(),
+                        RFQId = associatedRfq.Id,
+                        SupplierId = supplier.Id,
+                        InvitedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = "PublicPortal"
+                    };
+                    associatedRfq.RFQSuppliers.Add(rfqSupplier);
+                    await unitOfWork.RFQSupplierRepository.AddAsync(rfqSupplier, cancellationToken);
+                }
+
+                // Guard against duplicate bid for the same associated RFQ
+                var existingRfqBid = await unitOfWork.SupplierBidRepository.FindAsync(
+                    b => b.RFQId == associatedRfq.Id && b.SupplierId == supplier.Id && !b.IsDeleted,
+                    cancellationToken);
+
+                if (existingRfqBid != null)
+                {
+                    throw new FluentValidation.ValidationException(
+                        "An application/quotation has already been submitted for the RFQ associated with this project.");
+                }
+
+                var itemBidsDict = request.ItemBids?.ToDictionary(ib => ib.RFQItemId) ?? new Dictionary<Guid, PublicItemBidDto>();
+                decimal totalQuoted = request.ProposedBidAmount ?? 0m;
+                if (totalQuoted == 0 && itemBidsDict.Count > 0)
+                {
+                    totalQuoted = associatedRfq.RFQItems
+                        .Where(item => !item.IsDeleted && itemBidsDict.ContainsKey(item.Id))
+                        .Sum(item => itemBidsDict[item.Id].UnitPrice * item.Quantity);
+                }
+
+                var bidItems = new List<SupplierBidItem>();
+                foreach (var item in associatedRfq.RFQItems.Where(item => !item.IsDeleted))
+                {
+                    itemBidsDict.TryGetValue(item.Id, out var itemBid);
+                    string? itemBrochureUrl = null;
+                    if (itemBid?.BrochureFileId != null)
+                    {
+                        try
+                        {
+                            var promotedBrochure = await fileStorageService.PromoteFileAsync(itemBid.BrochureFileId.Value, cancellationToken);
+                            itemBrochureUrl = promotedBrochure.Url;
+                        }
+                        catch (FileNotFoundException) { }
+                    }
+
+                    var unitPrice = itemBid?.UnitPrice ?? 0m;
+                    bidItems.Add(new SupplierBidItem
+                    {
+                        Id = Guid.NewGuid(),
+                        RFQItemId = item.Id,
+                        UnitPrice = unitPrice,
+                        TotalPrice = unitPrice * item.Quantity,
+                        Brand = itemBid?.Brand,
+                        Model = itemBid?.Model,
+                        Color = itemBid?.Color,
+                        IsResponsive = true,
+                        BrochureFileUrl = itemBrochureUrl,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = "PublicPortal"
+                    });
+                }
+
+                var newBid = new SupplierBid
+                {
+                    Id = Guid.NewGuid(),
+                    RFQId = associatedRfq.Id,
+                    SupplierId = supplier.Id,
+                    SubmissionType = "PublicPortal",
+                    Status = "Submitted",
+                    SubmittedAt = application.SubmittedAt,
+                    Remarks = request.Remarks ?? $"Applied via BAC Public Portal ({request.CompanyName.Trim()})",
+                    TotalAmount = totalQuoted,
+                    DeliveryPeriod = request.DeliveryPeriod ?? associatedRfq.DeliveryPeriod,
+                    PaymentTerms = request.PaymentTerms,
+                    WarrantyTerms = request.WarrantyTerms,
+                    ValidityPeriodDays = request.ValidityPeriodDays,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "PublicPortal",
+                    SupplierBidItems = bidItems
+                };
+
+                foreach (var bi in bidItems)
+                {
+                    bi.SupplierBidId = newBid.Id;
+                }
+
+                await unitOfWork.SupplierBidRepository.AddAsync(newBid, cancellationToken);
+            }
         }
 
         // ── 7. PERSIST ALL IN ONE TRANSACTION ────────────────────────────────────

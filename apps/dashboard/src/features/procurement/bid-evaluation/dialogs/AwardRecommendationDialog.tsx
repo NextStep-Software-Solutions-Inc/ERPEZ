@@ -50,7 +50,7 @@ export function AwardRecommendationDialog({
     if (open && winningBid) {
       const criterionLabel = awardCriterion === 'MEARB' ? 'Most Economically Advantageous Responsive Bid (MEARB)' : 'Lowest Calculated Responsive Bid (LCRB)'
       setJustification(
-        `Declared as the ${criterionLabel} having complied with all legal, technical, and financial capability post-qualification requirements under RA 12009 / RA 9184.`
+        `Declared as the ${criterionLabel} having complied with all legal, technical, and financial capability post-qualification requirements under RA 12009.`
       )
       setRemarks('')
       setValidationError(null)
@@ -86,11 +86,8 @@ export function AwardRecommendationDialog({
       await recommendAwardMutation.mutateAsync({
         projectId,
         data: {
-          biddingEvaluatedBidId: winningBid.id,
           biddingPostQualificationId: winningBid.postQualification.id,
-          awardedAmount: winningBid.evaluatedBidPrice, // Authoritative evaluated amount
-          justification: justification.trim() ? justification.trim() : null,
-          remarks: remarks.trim() ? remarks.trim() : null,
+          remarks: [justification.trim(), remarks.trim()].filter(Boolean).join(' | ') || null,
         },
       })
       onOpenChange(false)

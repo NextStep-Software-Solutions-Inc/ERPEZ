@@ -3,7 +3,12 @@ import { Check, ChevronDown, Search, X, Layers, Filter } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { parseUACSFundSource } from '@/utils/uacsFundSource'
+import {
+  parseUACSFundSource,
+  getUACSAuthorizationName,
+  getUACSBadge,
+  ParsedUACSFundSource,
+} from '@/utils/uacsFundSource'
 
 export interface FundSourceOptionItem {
   id: string
@@ -15,7 +20,10 @@ export interface FundSourceOptionItem {
 interface FundSourceComboboxProps {
   options: FundSourceOptionItem[]
   value?: string | null
-  onValueChange: (value: string, selectedItem?: FundSourceOptionItem | null) => void
+  onValueChange: (
+    value: string,
+    selectedItem?: FundSourceOptionItem | null,
+  ) => void
   placeholder?: string
   searchPlaceholder?: string
   emptyMessage?: string
@@ -27,6 +35,92 @@ interface FundSourceComboboxProps {
    * Optional helper to match value by id (default) or by code
    */
   valueKey?: 'id' | 'code'
+}
+
+interface ParsedOptionItem {
+  raw: FundSourceOptionItem
+  id: string
+  code: string
+  name: string
+  parsed: ParsedUACSFundSource
+}
+
+/**
+ * Calculates a relevance score for a fund source item given a search query and tokens.
+ * Higher score places the item closer to the top of the dropdown.
+ */
+function calculateRelevanceScore(
+  item: ParsedOptionItem,
+  query: string,
+  tokens: string[],
+): number {
+  if (!query) return 0
+
+  const lowerQuery = query.toLowerCase()
+  const lowerCode = item.code.toLowerCase()
+  const lowerDigits = item.code.replace(/\D/g, '')
+  const lowerName = item.name.toLowerCase()
+  const lowerAuth = (item.parsed.authorizationName || '').toLowerCase()
+  const lowerBadge = (item.parsed.badge.shortLabel || '').toLowerCase()
+  const lowerCluster = (item.parsed.clusterName || '').toLowerCase()
+  const lowerFinancing = (item.parsed.financingName || '').toLowerCase()
+
+  let score = 0
+
+  // 1. Exact full code match (e.g. searching "011" or "01101101")
+  if (lowerCode === lowerQuery || lowerDigits === lowerQuery) {
+    score += 1000
+  }
+  // Code starts with query (e.g. searching "011" matches "01101")
+  else if (
+    lowerCode.startsWith(lowerQuery) ||
+    lowerDigits.startsWith(lowerQuery)
+  ) {
+    score += 650
+  }
+  // Code contains query
+  else if (lowerCode.includes(lowerQuery) || lowerDigits.includes(lowerQuery)) {
+    score += 450
+  }
+
+  // 2. Exact name match (e.g. searching "General Fund" matches "General Fund")
+  if (lowerName === lowerQuery) {
+    score += 900
+  }
+  // Name starts with query
+  else if (lowerName.startsWith(lowerQuery)) {
+    score += 700
+  }
+  // Full query contained in name
+  else if (lowerName.includes(lowerQuery)) {
+    score += 500
+  }
+
+  // 3. Authorization match (e.g. searching "New General", "Continuing", "Supplemental")
+  if (lowerAuth === lowerQuery || lowerBadge === lowerQuery) {
+    score += 450
+  } else if (lowerAuth.startsWith(lowerQuery)) {
+    score += 350
+  } else if (lowerAuth.includes(lowerQuery)) {
+    score += 250
+  }
+
+  // 4. Token matches in primary fields (name, code, auth)
+  for (const token of tokens) {
+    if (lowerName.includes(token)) score += 80
+    if (lowerCode.includes(token) || lowerDigits.includes(token)) score += 70
+    if (lowerAuth.includes(token)) score += 50
+  }
+
+  // 5. Cluster, financing, and fiscal year matches
+  const fyStr = String(item.raw?.fiscalYear?.year || item.raw?.fiscalYear || '')
+  if (fyStr && (fyStr === lowerQuery || lowerQuery.includes(fyStr))) {
+    score += 150
+  }
+  if (lowerCluster.includes(lowerQuery)) score += 30
+  if (lowerFinancing.includes(lowerQuery)) score += 25
+
+  return score
 }
 
 export function FundSourceCombobox({
@@ -49,7 +143,7 @@ export function FundSourceCombobox({
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Parse all options with UACS metadata
-  const parsedOptions = useMemo(() => {
+  const parsedOptions = useMemo<ParsedOptionItem[]>(() => {
     return options.map((opt) => {
       const parsed = parseUACSFundSource(opt.code || '', opt.name || '')
       return {
@@ -67,7 +161,7 @@ export function FundSourceCombobox({
     if (!value) return null
     return (
       parsedOptions.find((item) =>
-        valueKey === 'id' ? item.id === value : item.code === value
+        valueKey === 'id' ? item.id === value : item.code === value,
       ) || null
     )
   }, [parsedOptions, value, valueKey])
@@ -83,26 +177,60 @@ export function FundSourceCombobox({
     return Array.from(codes).sort()
   }, [parsedOptions])
 
-  // Filter options based on search query and authorization filter
+  // Multi-token search match across options (independent of authorization filter)
+  const searchMatchedOptions = useMemo(() => {
+    const query = searchValue.trim().toLowerCase()
+    if (!query) return parsedOptions
+
+    const tokens = query.split(/\s+/).filter(Boolean)
+    return parsedOptions.filter((item) =>
+      tokens.every((token) => item.parsed.searchString.includes(token)),
+    )
+  }, [parsedOptions, searchValue])
+
+  // Compute dynamic counts per authorization category based on search results
+  const authCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: searchMatchedOptions.length }
+    searchMatchedOptions.forEach((opt) => {
+      const code = opt.parsed.authorizationCode
+      if (code) {
+        counts[code] = (counts[code] || 0) + 1
+      }
+    })
+    return counts
+  }, [searchMatchedOptions])
+
+  // Filter options based on search query, authorization filter, and sort by relevance
   const filteredOptions = useMemo(() => {
     const query = searchValue.trim().toLowerCase()
+    const tokens = query.split(/\s+/).filter(Boolean)
 
-    return parsedOptions.filter((item) => {
-      // Authorization filter match
-      if (
-        selectedAuthFilter !== 'all' &&
-        item.parsed.authorizationCode !== selectedAuthFilter
-      ) {
-        return false
+    let list = searchMatchedOptions
+    if (selectedAuthFilter !== 'all') {
+      list = list.filter(
+        (item) => item.parsed.authorizationCode === selectedAuthFilter,
+      )
+    }
+
+    if (!query) return list
+
+    // Score and sort by relevance
+    return [...list].sort((a, b) => {
+      const scoreA = calculateRelevanceScore(a, query, tokens)
+      const scoreB = calculateRelevanceScore(b, query, tokens)
+
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA
       }
 
-      // If no search query, keep
-      if (!query) return true
+      // Secondary sort: shorter code first (e.g. 011 before 01101 before 01101101)
+      if (a.code.length !== b.code.length) {
+        return a.code.length - b.code.length
+      }
 
-      // Match against precomputed rich search string
-      return item.parsed.searchString.includes(query)
+      return a.code.localeCompare(b.code)
     })
-  }, [parsedOptions, searchValue, selectedAuthFilter])
+  }, [searchMatchedOptions, selectedAuthFilter, searchValue])
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -112,6 +240,7 @@ export function FundSourceCombobox({
         !containerRef.current.contains(event.target as Node)
       ) {
         setOpen(false)
+        setSelectedAuthFilter('all')
       }
     }
 
@@ -119,12 +248,13 @@ export function FundSourceCombobox({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleSelect = (item: (typeof parsedOptions)[0]) => {
+  const handleSelect = (item: ParsedOptionItem) => {
     const selectedVal = valueKey === 'id' ? item.id : item.code
     const isDeselect = value === selectedVal
     onValueChange(isDeselect ? '' : selectedVal, isDeselect ? null : item.raw)
     setOpen(false)
     setSearchValue('')
+    setSelectedAuthFilter('all')
   }
 
   const handleClear = (e: React.MouseEvent) => {
@@ -150,17 +280,20 @@ export function FundSourceCombobox({
           const nextState = !open
           setOpen(nextState)
           if (nextState) {
+            setSelectedAuthFilter('all')
             setTimeout(() => inputRef.current?.focus(), 50)
           }
         }}
         className={cn(
           'w-full max-w-full h-auto min-h-10 py-1.5 px-3 justify-between bg-white text-left font-normal border-gray-300 hover:bg-gray-50 focus:ring-1 focus:ring-blue-500',
-          disabled && 'opacity-60 cursor-not-allowed bg-gray-100'
+          disabled && 'opacity-60 cursor-not-allowed bg-gray-100',
         )}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden pr-1">
           {isLoading ? (
-            <span className="text-gray-400 text-sm">Loading fund sources...</span>
+            <span className="text-gray-400 text-sm">
+              Loading fund sources...
+            </span>
           ) : selectedParsed ? (
             <div className="flex flex-col min-w-0 text-left">
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -175,7 +308,7 @@ export function FundSourceCombobox({
                       'text-[11px] font-medium px-1.5 py-0.5 rounded border',
                       selectedParsed.parsed.badge.bg,
                       selectedParsed.parsed.badge.text,
-                      selectedParsed.parsed.badge.border
+                      selectedParsed.parsed.badge.border,
                     )}
                   >
                     {selectedParsed.parsed.badge.shortLabel}
@@ -187,10 +320,17 @@ export function FundSourceCombobox({
                 title={selectedParsed.name}
               >
                 {selectedParsed.name}
+                {selectedParsed.raw?.fiscalYear?.year && (
+                  <span className="text-slate-500 font-normal ml-1">
+                    (FY {selectedParsed.raw.fiscalYear.year})
+                  </span>
+                )}
               </span>
             </div>
           ) : (
-            <span className="text-sm text-gray-500 truncate">{placeholder}</span>
+            <span className="text-sm text-gray-500 truncate">
+              {placeholder}
+            </span>
           )}
         </div>
 
@@ -215,7 +355,7 @@ export function FundSourceCombobox({
           <ChevronDown
             className={cn(
               'h-4 w-4 opacity-50 transition-transform duration-150',
-              open && 'transform rotate-180'
+              open && 'transform rotate-180',
             )}
           />
         </div>
@@ -232,21 +372,32 @@ export function FundSourceCombobox({
                 ref={inputRef}
                 placeholder={searchPlaceholder}
                 value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setSearchValue(val)
+                  if (val.trim() && selectedAuthFilter !== 'all') {
+                    setSelectedAuthFilter('all')
+                  }
+                }}
                 className="pl-9 pr-8 h-9 text-xs bg-white border-gray-200 focus-visible:ring-blue-500"
               />
               {searchValue && (
                 <button
                   type="button"
-                  onClick={() => setSearchValue('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    setSearchValue('')
+                    setSelectedAuthFilter('all')
+                    inputRef.current?.focus()
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
+                  title="Clear search"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Quick Authorization Filter Chips (if multiple authorization types exist) */}
+            {/* Quick Authorization Filter Chips */}
             {availableAuthCodes.length > 1 && (
               <div className="flex items-center gap-1 overflow-x-auto pb-0.5 pt-0.5 text-[11px] no-scrollbar">
                 <span className="text-gray-400 text-[10px] font-semibold uppercase shrink-0 flex items-center gap-0.5 mr-1">
@@ -256,34 +407,38 @@ export function FundSourceCombobox({
                   type="button"
                   onClick={() => setSelectedAuthFilter('all')}
                   className={cn(
-                    'px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors border',
+                    'px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors border text-[11px]',
                     selectedAuthFilter === 'all'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100',
                   )}
                 >
-                  All ({parsedOptions.length})
+                  All ({authCounts['all'] || 0})
                 </button>
                 {availableAuthCodes.map((code) => {
-                  const badge = parseUACSFundSource(`011${code}000`).badge
-                  const count = parsedOptions.filter(
-                    (p) => p.parsed.authorizationCode === code
-                  ).length
+                  const badge = getUACSBadge(code)
+                  const count = authCounts[code] || 0
+                  const isSelected = selectedAuthFilter === code
 
                   return (
                     <button
                       key={code}
                       type="button"
                       onClick={() =>
-                        setSelectedAuthFilter(
-                          selectedAuthFilter === code ? 'all' : code
-                        )
+                        setSelectedAuthFilter(isSelected ? 'all' : code)
                       }
                       className={cn(
-                        'px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors border',
-                        selectedAuthFilter === code
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : cn(badge.bg, badge.text, badge.border, 'hover:brightness-95')
+                        'px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-colors border text-[11px]',
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : count === 0
+                            ? 'bg-gray-50 text-gray-400 border-gray-100 opacity-60'
+                            : cn(
+                                badge.bg,
+                                badge.text,
+                                badge.border,
+                                'hover:brightness-95',
+                              ),
                       )}
                     >
                       {badge.shortLabel} ({count})
@@ -294,24 +449,60 @@ export function FundSourceCombobox({
             )}
           </div>
 
+          {/* Active Category Filter Banner */}
+          {selectedAuthFilter !== 'all' && (
+            <div className="flex items-center justify-between px-3 py-1.5 bg-blue-50/90 border-b border-blue-100 text-[11px] text-blue-800">
+              <span className="flex items-center gap-1.5 truncate">
+                <Filter className="h-3 w-3 shrink-0 text-blue-600" />
+                <span>
+                  Filtered by:{' '}
+                  <strong>
+                    {getUACSAuthorizationName(selectedAuthFilter)}
+                  </strong>{' '}
+                  ({filteredOptions.length} of {searchMatchedOptions.length})
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedAuthFilter('all')}
+                className="shrink-0 font-medium text-blue-700 hover:text-blue-950 underline ml-2 cursor-pointer"
+              >
+                Show all
+              </button>
+            </div>
+          )}
+
           {/* Options List */}
           <div className="max-h-72 overflow-y-auto divide-y divide-gray-50 p-1">
             {filteredOptions.length === 0 ? (
               <div className="py-8 px-4 text-center">
                 <Layers className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-xs font-medium text-gray-600">{emptyMessage}</p>
+                <p className="text-xs font-medium text-gray-600">
+                  {emptyMessage}
+                </p>
                 {searchValue && (
                   <p className="text-[11px] text-gray-400 mt-1">
                     No fund sources match "{searchValue}"
+                    {selectedAuthFilter !== 'all'
+                      ? ` under ${getUACSAuthorizationName(selectedAuthFilter)}`
+                      : ''}
                   </p>
+                )}
+                {selectedAuthFilter !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAuthFilter('all')}
+                    className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-800 underline inline-block cursor-pointer"
+                  >
+                    Search in all categories ({searchMatchedOptions.length}{' '}
+                    results)
+                  </button>
                 )}
               </div>
             ) : (
               filteredOptions.map((item) => {
                 const isSelected =
-                  valueKey === 'id'
-                    ? value === item.id
-                    : value === item.code
+                  valueKey === 'id' ? value === item.id : value === item.code
 
                 return (
                   <button
@@ -320,7 +511,7 @@ export function FundSourceCombobox({
                     onClick={() => handleSelect(item)}
                     className={cn(
                       'w-full text-left p-2.5 rounded-md hover:bg-blue-50/70 transition-colors flex items-start justify-between gap-3 group',
-                      isSelected && 'bg-blue-50/90 ring-1 ring-blue-200'
+                      isSelected && 'bg-blue-50/90 ring-1 ring-blue-200',
                     )}
                   >
                     <div className="flex-1 min-w-0 space-y-1">
@@ -337,7 +528,7 @@ export function FundSourceCombobox({
                               'text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border',
                               item.parsed.badge.bg,
                               item.parsed.badge.text,
-                              item.parsed.badge.border
+                              item.parsed.badge.border,
                             )}
                           >
                             {item.parsed.badge.label}
@@ -350,10 +541,23 @@ export function FundSourceCombobox({
                         {item.name}
                       </div>
 
-                      {/* Bottom row: Cluster & Financing Source Details */}
-                      {(item.parsed.clusterName || item.parsed.financingName) && (
+                      {/* Bottom row: Cluster & Financing Source Details & Fiscal Year */}
+                      {(item.parsed.clusterName ||
+                        item.parsed.financingName ||
+                        item.raw?.fiscalYear?.year ||
+                        item.raw?.fiscalYear) && (
                         <div className="text-[11px] text-gray-500 flex items-center gap-1">
-                          <span>{item.parsed.clusterName || 'Standard Cluster'}</span>
+                          {item.raw?.fiscalYear?.year && (
+                            <>
+                              <span className="font-semibold text-slate-700 bg-slate-100 px-1 py-0.2 rounded text-[10px]">
+                                FY {item.raw.fiscalYear.year}
+                              </span>
+                              <span>•</span>
+                            </>
+                          )}
+                          <span>
+                            {item.parsed.clusterName || 'Standard Cluster'}
+                          </span>
                           {item.parsed.financingName && (
                             <>
                               <span>•</span>
@@ -383,7 +587,9 @@ export function FundSourceCombobox({
             <span>
               Showing {filteredOptions.length} of {parsedOptions.length} sources
             </span>
-            <span className="text-[10px] text-gray-400">UACS Philippine Standard</span>
+            <span className="text-[10px] text-gray-400">
+              UACS Philippine Standard
+            </span>
           </div>
         </div>
       )}

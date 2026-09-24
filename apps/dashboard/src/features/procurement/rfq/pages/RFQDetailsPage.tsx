@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRFQStore, RFQItem } from '../store/rfqStore'
 import {
   Card,
@@ -51,6 +51,9 @@ import {
   Shield,
   Loader2,
   Edit,
+  CornerDownLeft,
+  FileSpreadsheet,
+  ChevronDown,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -76,7 +79,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ExportComingSoonDialog } from '@/components/ExportComingSoonDialog'
+import { generateAndDownloadRfqDocument } from '../utils/generateRfqDocumentRequest'
+import { SupplierRFQPreviewDialog } from '@/features/procurement/aob/dialogs/SupplierRFQPreviewDialog'
+import type { BidMatrix } from '@/features/procurement/aob/types/aobTypes'
 import api from '@/services/api'
 import type { APIResponse } from 'erpez-shared-lib'
 import type { SupplierDetail } from '../types'
@@ -97,13 +102,13 @@ export function RFQDetailsPage({
   const { fetchRFQById, submitRFQ, addRFQItems, removeRFQItem } = useRFQStore()
   const [rfq, setRfq] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [greenSpecs, setGreenSpecs] = useState<Record<string, string>>({})
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddPRModal, setShowAddPRModal] = useState(false)
   const [showQuotationModal, setShowQuotationModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [showExportDialog, setShowExportDialog] = useState(false)
   const [viewingSupplier, setViewingSupplier] = useState<string | null>(null)
   const [viewingSupplierDetail, setViewingSupplierDetail] = useState<SupplierDetail | null>(null)
   const [isLoadingSupplierDetail, setIsLoadingSupplierDetail] = useState(false)
@@ -111,9 +116,63 @@ export function RFQDetailsPage({
   const [selectedMonth, setSelectedMonth] = useState<string>('all')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedFund, setSelectedFund] = useState<string>('all')
+  const [previewingSupplierRFQ, setPreviewingSupplierRFQ] = useState<any | null>(null)
 
-  const loadRFQ = async () => {
-    setIsLoading(true)
+  const rfqBidMatrix = useMemo<BidMatrix>(() => ({
+    id: rfq?.id || '',
+    aobNumber: rfq?.rfqNumber || 'RFQ',
+    description: rfq?.description || rfq?.purpose || '',
+    openingDate: rfq?.deadline || '',
+    status: rfq?.status || '',
+    awardCriterion: 'LCRB',
+    isBidsOpened: true,
+    linkedRFQs: rfq ? [{
+      id: rfq.id,
+      rfqNumber: rfq.rfqNumber || '',
+      tracingNumber: rfq.prNumber || '',
+      totalAmount: rfq.totalAmount || 0,
+      status: rfq.status,
+      date: rfq.date || '',
+      deadline: rfq.deadline,
+    }] : [],
+    lineItems: (rfq?.items || []).map((it: any) => ({
+      lineItemId: it.id,
+      rfqItemId: it.id,
+      itemCode: it.itemCode || '',
+      name: it.itemName || '',
+      description: it.itemName || '',
+      quantity: it.quantity || 1,
+      unit: it.unit || 'units',
+      abcUnitPrice: it.unitPrice || 0,
+      totalABC: (it.unitPrice || 0) * (it.quantity || 1),
+      lineItems: [{
+        supplierId: previewingSupplierRFQ?.id || previewingSupplierRFQ?.supplierId || '',
+        supplierName: previewingSupplierRFQ?.name || previewingSupplierRFQ?.supplierName || '',
+        unitBid: it.bidUnitPrice,
+        totalBid: (it.bidUnitPrice || 0) * (it.quantity || 1),
+        brand: it.bidBrand,
+        model: it.bidModel,
+        color: it.bidColor,
+        isResponsive: true,
+      }],
+    })),
+    suppliers: previewingSupplierRFQ ? [{
+      id: previewingSupplierRFQ.id,
+      supplierId: previewingSupplierRFQ.id,
+      supplierName: previewingSupplierRFQ.name || previewingSupplierRFQ.supplierName || 'Supplier',
+      name: previewingSupplierRFQ.name || previewingSupplierRFQ.supplierName || 'Supplier',
+      rfqId: rfq?.id,
+      rfqNumber: rfq?.rfqNumber,
+      hasSubmitted: true,
+      contactPerson: previewingSupplierRFQ.contact || previewingSupplierRFQ.contactPerson,
+      quotationDocumentUrl: previewingSupplierRFQ.quotationDocumentUrl,
+      signatureUrl: previewingSupplierRFQ.signatureUrl,
+      signatoryName: previewingSupplierRFQ.signatoryName,
+    }] : [],
+  }), [rfq, previewingSupplierRFQ])
+
+  const loadRFQ = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     if (isSupplierPortal && supplierId) {
       try {
         const rfqRes = await api.get<{ data: any }>(`/api/supplier/rfqs/${rfqId}?supplierId=${supplierId}`)
@@ -144,7 +203,17 @@ export function RFQDetailsPage({
             status: rfqData.status || 'approved',
             description: rfqData.description,
             purpose: rfqData.purpose,
-            deliveryPeriod: rfqData.deliveryPeriod,
+            deliveryPeriod: bidData?.deliveryPeriod || rfqData.deliveryPeriod || '',
+            paymentTerms: bidData?.paymentTerms || '',
+            warrantyTerms: bidData?.warrantyTerms || '',
+            remarks: bidData?.remarks || '',
+            signatoryName: bidData?.signatoryName || '',
+            supplierSignatoryName: bidData?.signatoryName || '',
+            signatureUrl: bidData?.signatureUrl,
+            quotationDocumentUrl: bidData?.quotationDocumentUrl,
+            quotationSubmissionType: bidData?.submissionType || (bidData?.quotationDocumentUrl ? 'Manual' : 'Electronic'),
+            submissionType: bidData?.submissionType || (bidData?.quotationDocumentUrl ? 'Manual' : 'Electronic'),
+            dateSigned: bidData?.dateSigned,
             totalAmount: rfqData.totalAmount,
             quotationStatus: bidData?.status ? bidData.status.toLowerCase() : rfqData.hasSubmittedBid ? 'submitted' : 'draft',
             quotationSubmittedAt: bidData?.submittedAt,
@@ -179,7 +248,7 @@ export function RFQDetailsPage({
             }),
             invitedSuppliers: [],
           })
-          setIsLoading(false)
+          if (!silent) setIsLoading(false)
           return
         }
       } catch (e) {
@@ -189,7 +258,7 @@ export function RFQDetailsPage({
 
     const res = await fetchRFQById(rfqId)
     setRfq(res)
-    setIsLoading(false)
+    if (!silent) setIsLoading(false)
   }
 
   useEffect(() => {
@@ -248,13 +317,30 @@ export function RFQDetailsPage({
   const toggleBrochure = async (itemId: string, v: boolean) => {
     const item = rfq.items.find((it: any) => it.id === itemId)
     if (!item) return
-    await addRFQItems(rfqId, [{
-      cprItemId: item.itemId || item.prId || '',
-      quantity: item.quantity,
-      isBrochureRequired: v,
-      greenSpecification: greenSpecs[itemId] !== undefined ? greenSpecs[itemId] : (item.greenSpecification || ''),
-    }])
-    loadRFQ()
+
+    // Optimistic in-place update to prevent jump or reload disruption
+    setRfq((prev: any) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        items: (prev.items || []).map((it: any) =>
+          it.id === itemId ? { ...it, isRequiredBrochure: v } : it
+        ),
+      }
+    })
+
+    try {
+      await addRFQItems(rfqId, [{
+        cprItemId: item.itemId || item.prId || '',
+        quantity: item.quantity,
+        isBrochureRequired: v,
+        greenSpecification: greenSpecs[itemId] !== undefined ? greenSpecs[itemId] : (item.greenSpecification || ''),
+      }])
+      loadRFQ(true)
+    } catch (err) {
+      console.error('Failed to toggle brochure requirement:', err)
+      loadRFQ(true)
+    }
   }
 
   const handleGreenSpecificationChange = (itemId: string, value: string) => {
@@ -270,7 +356,7 @@ export function RFQDetailsPage({
       isBrochureRequired: !!item.isRequiredBrochure,
       greenSpecification: value,
     }])
-    loadRFQ()
+    loadRFQ(true)
   }
 
   const handleDeleteClick = (itemId: string) => {
@@ -503,6 +589,17 @@ export function RFQDetailsPage({
       }
     }
 
+    const activeMonths = mockMonths
+      .map((m, i) => ({ month: m, qty: monthlyQty[i] }))
+      .filter((x) => x.qty > 0)
+
+    let monthBadgeText = '—'
+    if (activeMonths.length === 1) {
+      monthBadgeText = `${activeMonths[0].month} (${activeMonths[0].qty})`
+    } else if (activeMonths.length > 1) {
+      monthBadgeText = activeMonths.map((a) => a.month).join(', ')
+    }
+
     return (
       <TableRow key={it.id}>
         <TableCell>{it.itemName}</TableCell>
@@ -516,36 +613,50 @@ export function RFQDetailsPage({
           <Popover>
             <PopoverTrigger asChild>
               <button
-                className="flex items-center gap-2"
-                title={monthLabel}
-                aria-label={`View month breakdown for ${monthLabel}`}
+                type="button"
+                className="flex items-center gap-1.5 focus:outline-none"
+                title={`Month breakdown for ${it.itemName}`}
+                aria-label={`View month breakdown for ${it.itemName}`}
               >
-                <Badge className="px-2 py-1">View months</Badge>
+                {activeMonths.length === 0 ? (
+                  <span className="text-muted-foreground">—</span>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="px-2 py-0.5 text-xs font-medium cursor-pointer border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+                  >
+                    {monthBadgeText}
+                  </Badge>
+                )}
               </button>
             </PopoverTrigger>
             <PopoverContent
               align="start"
               sideOffset={6}
-              className="min-w-[300px] max-w-[420px] p-3"
+              className="min-w-[320px] max-w-[420px] p-3 shadow-md"
             >
-              <div className="text-sm font-medium mb-2">Month breakdown</div>
+              <div className="text-sm font-semibold mb-2 flex items-center justify-between">
+                <span>Monthly Allocation</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Total: {monthlyQty.reduce((s, q) => s + q, 0)} {it.unitOfMeasure || 'units'}
+                </span>
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 {mockMonths.map((m, mi) => (
                   <div
                     key={m}
-                    className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-slate-50"
+                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs ${
+                      monthlyQty[mi] > 0
+                        ? 'bg-primary/10 border border-primary/20 text-primary font-medium'
+                        : 'bg-slate-50 text-slate-500'
+                    }`}
                   >
-                    <div className="text-sm whitespace-nowrap mr-2">{m}</div>
-                    <Badge
-                      className={`ml-2 px-2 py-0.5 text-xs ${monthlyQty[mi] > 0 ? 'bg-primary text-primary-foreground' : 'bg-slate-100 text-muted-foreground'}`}
-                    >
+                    <div className="whitespace-nowrap">{m}</div>
+                    <span className={monthlyQty[mi] > 0 ? 'font-bold' : ''}>
                       {monthlyQty[mi] > 0 ? monthlyQty[mi] : '—'}
-                    </Badge>
+                    </span>
                   </div>
                 ))}
-              </div>
-              <div className="mt-3 text-xs text-muted-foreground">
-                Total: {monthlyQty.reduce((s, q) => s + q, 0)}
               </div>
             </PopoverContent>
           </Popover>
@@ -964,6 +1075,62 @@ export function RFQDetailsPage({
     }
   }
 
+  const handleExport = async (format: 'Pdf' | 'Excel' = 'Pdf') => {
+    if (!rfq?.id) return
+    setIsExporting(true)
+    const ext = format === 'Excel' ? 'xlsx' : 'pdf'
+    toast({
+      title: `Generating RFQ Canvass (${format})...`,
+      description: `Please wait while the official RFQ ${format} document is being prepared.`,
+    })
+    try {
+      await generateAndDownloadRfqDocument({
+        rfqId: rfq.id,
+        format,
+        supplierId: supplierId || undefined,
+        blankTemplate: true,
+        filename: `RFQ_${rfq.rfqNumber || rfq.id}_Canvass.${ext}`,
+      })
+      toast({
+        title: `RFQ ${format} Downloaded`,
+        description: `Successfully exported RFQ canvass document for ${rfq.rfqNumber || ''}.`,
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : `Failed to export RFQ ${format}`
+      toast({
+        title: 'Export Failed',
+        description: msg,
+        variant: 'destructive',
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleDownloadSupplierTemplate = async (format: 'Pdf' | 'Excel' = 'Pdf') => {
+    if (!rfq?.id) return
+    const ext = format === 'Excel' ? 'xlsx' : 'pdf'
+    try {
+      await generateAndDownloadRfqDocument({
+        rfqId: rfq.id,
+        format,
+        supplierId: supplierId || undefined,
+        blankTemplate: true,
+        filename: `RFQ_${rfq.rfqNumber || rfq.id}_Template.${ext}`,
+      })
+      toast({
+        title: `Template Downloaded (${format})`,
+        description: `RFQ ${format} template is ready for offline routing/signing.`,
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Download Failed',
+        description: err?.message || 'Could not download RFQ template.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   return (
     <div className="w-full space-y-6 pb-10">
       {/* Back above card */}
@@ -1047,15 +1214,30 @@ export function RFQDetailsPage({
                   </Button>
                 )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowExportDialog(true)}
-                className="gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isExporting}
+                    className="gap-2"
+                  >
+                    {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    Export RFQ
+                    <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => handleExport('Pdf')} className="gap-2 cursor-pointer text-xs">
+                    <FileText className="w-4 h-4 text-red-500" />
+                    Export PDF (.pdf)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('Excel')} className="gap-2 cursor-pointer text-xs">
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                    Export Excel (.xlsx)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {!isSupplierPortal && canEdit && (
                 <Button
@@ -1083,6 +1265,32 @@ export function RFQDetailsPage({
           </div>
         </CardHeader>
       </Card>
+
+      {/* Return Reason Card — shown when RFQ has been returned */}
+      {!isSupplierPortal && (displayStatus === 'returned' || rfq.status === 'returned' || (rfq.status === 'draft' && rfq.remarks)) && (
+        <Card className="shadow-sm mt-6 border-l-4 border-l-destructive border-red-200 bg-gradient-to-r from-red-50/90 via-red-50/50 to-orange-50/30 dark:from-red-950/30 dark:to-red-900/10">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-red-200 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0">
+                <CornerDownLeft className="h-4 w-4 text-red-700 dark:text-red-300" />
+              </div>
+              <div>
+                <CardTitle className="text-red-800 dark:text-red-300 text-base font-bold">
+                  Return Reason / Remarks
+                </CardTitle>
+                <CardDescription className="text-xs text-red-600 dark:text-red-400">
+                  This RFQ was returned for revision by the BAC Chairperson. Please address the remarks below before editing or re-submitting.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="p-3.5 bg-white/90 dark:bg-slate-900/80 rounded-md border border-red-200 dark:border-red-900/60 text-sm font-medium text-red-950 dark:text-red-100 whitespace-pre-wrap leading-relaxed">
+              {rfq.remarks?.trim() ? rfq.remarks : 'No specific return reason was provided.'}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Details card */}
       <Card className="shadow-sm mt-6">
@@ -1258,15 +1466,35 @@ export function RFQDetailsPage({
                         </div>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setViewingSupplier(s.id)}
-                      className="gap-2"
-                    >
-                      <Eye className="h-4 w-4" />
-                      View Details
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewingSupplierRFQ({
+                          id: s.id,
+                          supplierId: s.id,
+                          name: s.name,
+                          supplierName: s.name,
+                          rfqId: rfq.id,
+                          rfqNumber: rfq.rfqNumber,
+                          contactPerson: s.contact,
+                          hasSubmitted: true,
+                        })}
+                        className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        Preview Submitted RFQ
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setViewingSupplier(s.id)}
+                        className="gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View Details
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}
@@ -1293,7 +1521,44 @@ export function RFQDetailsPage({
                   </CardDescription>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                  onClick={handleDownloadSupplierTemplate}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download RFQ Template
+                </Button>
+                {rfq.quotationStatus === 'submitted' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-xs h-8 border-emerald-200 text-emerald-800 bg-emerald-50 hover:bg-emerald-100"
+                    onClick={() => setPreviewingSupplierRFQ({
+                      id: supplierId || '00000000-0000-0000-0000-000000000001',
+                      supplierId: supplierId || '00000000-0000-0000-0000-000000000001',
+                      name: 'My Submitted RFQ',
+                      supplierName: 'My Submitted RFQ',
+                      rfqId: rfq.id,
+                      rfqNumber: rfq.rfqNumber,
+                      hasSubmitted: true,
+                      signatoryName: rfq.signatoryName,
+                      signatureUrl: rfq.signatureUrl,
+                      quotationDocumentUrl: rfq.quotationDocumentUrl,
+                      deliveryPeriod: rfq.deliveryPeriod,
+                      paymentTerms: rfq.paymentTerms,
+                      warrantyTerms: rfq.warrantyTerms,
+                      remarks: rfq.remarks,
+                      dateSigned: rfq.dateSigned,
+                      submissionType: rfq.submissionType,
+                    })}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Preview Submitted RFQ
+                  </Button>
+                )}
                 {rfq.quotationStatus === 'submitted' ? (
                   <Badge className="bg-emerald-600 text-white font-semibold">
                     SUBMITTED
@@ -1587,6 +1852,11 @@ export function RFQDetailsPage({
         open={showAddPRModal}
         onOpenChange={setShowAddPRModal}
         onAdd={handleAddConsolidatedPR}
+        existingCPRItemIds={(rfq?.items || []).map((it: any) => it.itemId || it.prId || '')}
+        currentConsolidatedPRId={rfq?.consolidatedPRId}
+        currentConsolidatedPRNumber={rfq?.consolidatedPRNumber}
+        currentModeOfProcurementId={rfq?.modeOfProcurementId}
+        currentModeOfProcurementName={rfq?.modeOfProcurementName || rfq?.modeOfProcurement}
       />
 
       {/* Set Quotation Modal */}
@@ -1627,12 +1897,6 @@ export function RFQDetailsPage({
         </AlertDialogContent>
       </AlertDialog>
 
-      <ExportComingSoonDialog
-        open={showExportDialog}
-        onOpenChange={setShowExportDialog}
-        entityLabel="RFQ details"
-      />
-
       {/* Edit RFQ Modal */}
       <CreateRFQModal
         open={showEditModal}
@@ -1642,6 +1906,14 @@ export function RFQDetailsPage({
           setShowEditModal(false)
           loadRFQ()
         }}
+      />
+
+      {/* Supplier RFQ Submission Preview Dialog */}
+      <SupplierRFQPreviewDialog
+        open={Boolean(previewingSupplierRFQ)}
+        onOpenChange={(open) => !open && setPreviewingSupplierRFQ(null)}
+        supplier={previewingSupplierRFQ}
+        bidMatrix={rfqBidMatrix}
       />
     </div>
   )

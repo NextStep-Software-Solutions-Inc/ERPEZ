@@ -412,7 +412,7 @@ export function ConsolidatedItemsTable({
 
                       {/* Locked Columns */}
                       {(visibleColumns['code'] ?? true) && (
-                        <TableCell className="font-mono text-xs bg-gray-50">
+                        <TableCell className="text-xs font-medium bg-gray-50">
                           {item.id}
                         </TableCell>
                       )}
@@ -589,7 +589,7 @@ export function ConsolidatedItemsTable({
                                   <div className="grid grid-cols-6 gap-2">
                                     <div>
                                       <span className="text-gray-600">PPMP:</span>
-                                      <div className="font-mono text-xs">{lineage.ppmpNumber}</div>
+                                      <div className="text-xs font-medium">{lineage.ppmpNumber}</div>
                                     </div>
                                     <div>
                                       <span className="text-gray-600">Office:</span>

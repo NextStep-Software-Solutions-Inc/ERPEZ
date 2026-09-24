@@ -12,6 +12,7 @@ public record ConsolidatedPrItemForRFQDto
     public string? Category { get; init; }
     public string? Fund { get; init; }
     public AllocationMonthEnum Month { get; init; } = AllocationMonthEnum.January;
+    public string Unit { get; init; } = "pc";
     public decimal UnitCost { get; init; }
     public int RequestedQuantity { get; init; }
     public int AlreadySourcedQuantity { get; init; }

@@ -57,6 +57,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
         modeOfProcurementName: rfq.modeOfProcurementName || 'SVP',
         abc: rfq.totalAmount || 0,
         deadline: rfq.deadline,
+        status: rfq.status,
         source: 'rfq' as const,
       }
     }
@@ -70,9 +71,21 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
       modeOfProcurementName: bac.modeOfProcurementName || 'Public Bidding',
       abc: bac.abc || 0,
       deadline: '',
+      status: bac.status,
       source: 'bac' as const,
     }
   }, [source, rfqResponse, bacProjectResponse, projectId])
+
+  const isApproved = useMemo(() => {
+    if (source !== 'rfq') return true
+    const rfq = (rfqResponse as any)?.data ?? rfqResponse
+    if (!rfq) return false
+    return (
+      rfq.status === 'Approved' ||
+      rfq.status === 3 ||
+      (typeof rfq.status === 'string' && rfq.status.toLowerCase() === 'approved')
+    )
+  }, [source, rfqResponse])
 
   const isCompetitiveBidding = useMemo(() => {
     if (source !== 'bac') return false
@@ -93,7 +106,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
     handleSaveEvaluation,
     isLoading: isLoadingBids,
     isSaving,
-  } = useSupplierEvaluation(projectId, source)
+  } = useSupplierEvaluation(projectId, source, isApproved)
 
   const bidStats = {
     totalApplicants: bids.length,
@@ -123,8 +136,8 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
       )
 
       toast({
-        title: 'Download Started',
-        description: `Downloading ${selectedBid.documents.length} documents for ${selectedBid.supplierName}.`,
+        title: 'ZIP Download Complete',
+        description: `Successfully downloaded ZIP archive containing ${selectedBid.documents.length} documents for ${selectedBid.supplierName}.`,
       })
     } catch (error) {
       console.error('Bulk download failed:', error)
@@ -163,8 +176,8 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
       )
 
       toast({
-        title: 'Download Started',
-        description: `Downloading ${allDocuments.length} total documents from all applicants.`,
+        title: 'ZIP Download Complete',
+        description: `Successfully downloaded ZIP archive containing ${allDocuments.length} documents from all applicants.`,
       })
     } catch (error) {
       console.error('Bulk download failed:', error)
@@ -212,6 +225,33 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
     )
   }
 
+  if (source === 'rfq' && !isApproved) {
+    const rawStatus = projectInfo.status
+    const displayStatus =
+      typeof rawStatus === 'number'
+        ? rawStatus === 0
+          ? 'Draft'
+          : rawStatus === 1
+            ? 'Submitted / For Approval'
+            : rawStatus === 2
+              ? 'Returned'
+              : 'Pending'
+        : rawStatus || 'Draft'
+
+    return (
+      <div className="p-8 text-center space-y-3">
+        <h2 className="text-2xl font-bold">RFQ Not Approved</h2>
+        <p className="text-muted-foreground max-w-md mx-auto">
+          The RFQ <code className="bg-muted px-1.5 py-0.5 rounded text-sm">{projectInfo.number}</code> is currently in{' '}
+          <strong>{displayStatus}</strong> status. The BAC Evaluator can only manage supplier submissions for approved RFQs.
+        </p>
+        <Button className="mt-4" onClick={() => navigate({ to: '/v2/manage-supplier-portal' })}>
+          Back to Manage Supplier Portal
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="w-full space-y-6 pb-10">
       <div className="flex items-center gap-4 flex-wrap">
@@ -253,7 +293,7 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
             ) : (
               <>
                 <Download className="h-4 w-4" />
-                Bulk Download All
+                Bulk Download All (ZIP)
               </>
             )}
           </Button>

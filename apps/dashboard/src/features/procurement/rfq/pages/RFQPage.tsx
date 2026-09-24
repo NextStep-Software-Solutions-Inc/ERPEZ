@@ -133,6 +133,17 @@ export function RFQPage() {
     }
   }
 
+  const handleSearchChange = (v: string) => {
+    const nextVal = String(v ?? '')
+    setSearch((prev) => {
+      if (prev !== nextVal) {
+        setPage(1)
+        return nextVal
+      }
+      return prev
+    })
+  }
+
   return (
     <div className="w-full space-y-6 pb-10">
       {/* Module header */}
@@ -240,12 +251,18 @@ export function RFQPage() {
               <DebouncedInput
                 placeholder="Search RFQ number, description or tracing number"
                 value={search}
-                onChange={(v: any) => setSearch(String(v))}
+                onChange={handleSearchChange}
                 className="w-full pl-10"
               />
             </div>
 
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => {
+                setStatusFilter(v as any)
+                setPage(1)
+              }}
+            >
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filter by Status" />
               </SelectTrigger>
@@ -258,7 +275,13 @@ export function RFQPage() {
               </SelectContent>
             </Select>
 
-            <Select value={modeFilter} onValueChange={(v) => setModeFilter(v)}>
+            <Select
+              value={modeFilter}
+              onValueChange={(v) => {
+                setModeFilter(v)
+                setPage(1)
+              }}
+            >
               <SelectTrigger className="w-56">
                 <SelectValue placeholder="Filter by Mode" />
               </SelectTrigger>
@@ -350,12 +373,32 @@ export function RFQPage() {
                         )}
                         {columnVisibility.status && (
                           <TableCell>
-                            <Badge
-                              color={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.color}
-                              variant={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.variant}
-                            >
-                              {normalizeStatus(r).toUpperCase()}
-                            </Badge>
+                            {r.remarks && normalizeStatus(r) === 'returned' ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge
+                                      className="cursor-help"
+                                      color={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.color}
+                                      variant={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.variant}
+                                    >
+                                      {normalizeStatus(r).toUpperCase()}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs text-xs">
+                                    <p className="font-semibold mb-1">Return Reason / Remarks:</p>
+                                    <p className="text-slate-600">{r.remarks}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <Badge
+                                color={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.color}
+                                variant={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.variant}
+                              >
+                                {normalizeStatus(r).toUpperCase()}
+                              </Badge>
+                            )}
                           </TableCell>
                         )}
                         <TableCell>
@@ -421,7 +464,7 @@ export function RFQPage() {
             <div className="flex items-center gap-2">
               <div className="text-sm text-muted-foreground">Page {page} of {totalPages}</div>
               <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage(Math.max(1, page - 1))}>Previous</Button>
-              <Button size="sm" onClick={() => setPage(Math.min(totalPages, page + 1))}>Next</Button>
+              <Button size="sm" disabled={page >= totalPages} onClick={() => setPage(Math.min(totalPages, page + 1))}>Next</Button>
             </div>
           </div>
         </CardContent>

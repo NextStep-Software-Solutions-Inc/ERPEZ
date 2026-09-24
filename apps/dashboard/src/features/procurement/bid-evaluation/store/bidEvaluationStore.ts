@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { PublicBiddingProject, SupplierBid, BidStatus, ComplianceEvent, BacResolutionDraft } from '../types';
+import { PublicBiddingProject, BidStatus, ComplianceEvent, BacResolutionDraft } from '../types';
 import { initialMockProjects, getSortedSuppliers } from '../data/mockProjects';
 
 interface BidEvaluationState {
@@ -141,7 +141,7 @@ export const useBidEvaluationStore = create<StoreType>()(
             // Find the winning supplier (who has status LCRB)
             const sorted = getSortedSuppliers(
               proj.suppliers,
-              proj.awardCriterion,
+              proj.awardCriterion === 'MEARB' ? 'MEARB' : 'LCRB',
               proj.technicalWeight,
               proj.financialWeight
             );

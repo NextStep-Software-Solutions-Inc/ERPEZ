@@ -29,5 +29,17 @@ public class SubmitSupplierBidCommandValidator : AbstractValidator<SubmitSupplie
                 .GreaterThan(0)
                 .WithMessage("Unit price must be greater than zero.");
         });
+
+        RuleFor(x => x.SignatoryName)
+            .MaximumLength(200)
+            .WithMessage("Signatory name must not exceed 200 characters.");
+
+        RuleFor(x => x.QuotationDocumentUrl)
+            .MaximumLength(2048)
+            .WithMessage("Quotation document URL must not exceed 2048 characters.");
+
+        RuleFor(x => x.SignatureUrl)
+            .MaximumLength(500_000)
+            .WithMessage("Signature URL or data URI must not exceed 500,000 characters.");
     }
 }

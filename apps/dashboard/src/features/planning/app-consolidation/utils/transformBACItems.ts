@@ -29,6 +29,7 @@ export function transformAPPItemsToBACLineItems(app: AppMaster): BACLineItem[] {
   return items.map((appItem: any) => {
     return {
       id: appItem.id,
+      papCode: appItem.papCode || '',
       code: appItem.papCode || appItem.code || '',
       description: appItem.ppmpItemName || appItem.description || 'Procurement Item',
       unit: appItem.unit || 'unit',
@@ -73,6 +74,7 @@ export function transformAggregatedItemsToBACLineItems(app: AppMaster): BACLineI
 
       return {
         id: ppmpItem.id,
+        papCode: ppmpItem.papCode || '',
         description: ppmpItem.description,
         unit: ppmpItem.unit,
         quantity: ppmpItem.quantity,

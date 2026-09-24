@@ -21,7 +21,7 @@ interface ProjectLevelPPMPWorkspaceProps {
   lib?: LIBDetails | null
   isEditable: boolean
   ExpenditureItemGroupComponent?: React.ComponentType<any>
-  onAddItem?: (groupId: string) => void
+  onAddItem?: (groupId: string, papCode?: string) => void
   onEditItem?: (item: PPMPItem) => void
   onDeleteItem?: (item: PPMPItem) => void
   onAddGroup?: () => void
@@ -170,7 +170,7 @@ export function ProjectLevelPPMPWorkspace({
                     group={group}
                     expandedItemIds={expandedItemIds}
                     onToggleItem={toggleItem}
-                    onAddItem={isEditable ? onAddItem : undefined}
+                    onAddItem={isEditable ? (groupId: string, papCode?: string) => onAddItem?.(groupId, papCode || lib?.lineItemBudgetActivities?.[0]?.papCode) : undefined}
                     onEditItem={isEditable ? onEditItem : undefined}
                     onDeleteItem={isEditable ? onDeleteItem : undefined}
                     onEditGroup={isEditable ? onEditGroup : undefined}

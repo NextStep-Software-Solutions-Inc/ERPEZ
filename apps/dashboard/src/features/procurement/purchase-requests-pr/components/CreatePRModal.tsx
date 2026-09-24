@@ -1,6 +1,7 @@
 /**
  * Create PR Modal
- * Dialog for creating new Purchase Requests with header details
+ * Dialog for creating new Purchase Requests with header details.
+ * Redesigned using the Post-Qualification verification dialog as design basis.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -10,7 +11,15 @@ import {
 } from 'erpez-shared-lib'
 import { useForm } from '@tanstack/react-form'
 import { format } from 'date-fns'
-import { CalendarIcon, Loader2 } from 'lucide-react'
+import {
+  CalendarIcon,
+  Loader2,
+  Layers,
+  Sparkles,
+  FileText,
+  Building2,
+  CheckCircle2,
+} from 'lucide-react'
 import * as z from 'zod'
 import { useCreatePurchaseRequest } from '../handlers/hooks'
 import { toApiPrType } from '../types/apiTypes'
@@ -22,6 +31,17 @@ import { Calendar } from '@/components/ui/calendar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -37,26 +57,12 @@ import {
 import FileUpload from '@/components/features/planning/file-upload/FileUpload'
 import { createFileRequest } from '@/components/features/planning/file-upload/handlers/createFileRequest'
 import { useToast } from '@/components/ui/use-toast'
-import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { useProcurementCategories } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementCategories'
 import FieldInfo from '@/components/FieldInfo'
 import {
   getOfficesRequest,
   type Office,
 } from '@/features/planning/app-consolidation/handlers/getOfficesRequest'
-
-// function generateUUID(): string {
-//   const nativeId = globalThis.crypto?.randomUUID?.()
-//   if (typeof nativeId === 'string') {
-//     return nativeId
-//   }
-
-  // return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-  //   const r = (Math.random() * 16) | 0
-  //   const v = c === 'x' ? r : (r & 0x3) | 0x8
-  //   return v.toString(16)
-  // })
-// }
 
 const createPRSchema = z.object({
   date: z.date(),
@@ -98,6 +104,7 @@ export function CreatePRModal({
   const createPRMutation = useCreatePurchaseRequest()
   const { departmentId } = useDashboardRole()
   const { toast } = useToast()
+  const [isIndependent, setIsIndependent] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [torUploadResetKey, setTorUploadResetKey] = useState(0)
   const uploadMutation = useUploadFile()
@@ -115,7 +122,11 @@ export function CreatePRModal({
     [categoriesResponse],
   )
 
-  const offices = useMemo<Array<Office>>(() => officesResponse ?? [], [officesResponse])
+  const offices = useMemo<Array<Office>>(() => {
+    if (Array.isArray(officesResponse)) return officesResponse
+    if (Array.isArray((officesResponse as any)?.data)) return (officesResponse as any).data
+    return []
+  }, [officesResponse])
 
   const defaultValues: CreatePRFormData = {
     date: new Date(),
@@ -151,7 +162,6 @@ export function CreatePRModal({
             purpose: value.purpose,
             officeId,
             prType: toApiPrType(prType),
-            // TODO: add fundClusterId + uacsCodeCombinationId selectors to this form
           },
         })
 
@@ -163,6 +173,7 @@ export function CreatePRModal({
           id: result.data,
           type: prType as PurchaseRequest['type'],
           status: 'draft',
+          isIndependent,
           headerDetails: {
             date: format(value.date, 'yyyy-MM-dd'),
             prNumber: value.prNumber,
@@ -175,6 +186,8 @@ export function CreatePRModal({
             torRequired: requiresTor,
             isHighlyTechnicalGoodsServices:
               selectedCategory?.isHighlyTechnicalGoodsServices,
+            isIndependent,
+            sourceType: isIndependent ? 'INDEPENDENT' : 'APP_ITEM',
           },
           items: [],
           totalAmount: 0,
@@ -185,13 +198,17 @@ export function CreatePRModal({
         }
 
         toast({
-          title: 'Purchase Request Created',
-          description: `PR ${value.prNumber} has been created as draft. You can now add items.`,
+          title: isIndependent ? 'Independent PR Created' : 'Purchase Request Created',
+          description: isIndependent
+            ? `PR ${value.prNumber} created. You can now add Non-CSE items.`
+            : `PR ${value.prNumber} created. You can now add items from approved PPMP.`,
         })
 
         form.reset()
         onOpenChange(false)
-        onSuccess?.(newPR)
+        setTimeout(() => {
+          onSuccess?.(newPR)
+        }, 80)
       } catch (error) {
         console.error('Failed to create PR:', error)
         toast({
@@ -257,210 +274,286 @@ export function CreatePRModal({
   }
 
   return (
-    <ResponsiveDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Create New Purchase Request"
-      description={
-        prType === 'non-cse'
-          ? 'Create a Purchase Request for Non-CSE items'
-          : prType === 'out-of-stock'
-            ? 'Create a Purchase Request for Out-of-Stock items'
-            : 'Create a Consolidated Purchase Request'
-      }
-      fitContent={true}
-      className="max-w-[980px] w-full"
-      footer={
-        <div className="mt-6 flex justify-end gap-3 border-t pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting || uploadMutation.isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            form="create-pr-form"
-            disabled={isSubmitting || uploadMutation.isPending}
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit'}
-          </Button>
-        </div>
-      }
-      showCloseButton
-      size="lg"
-    >
-      <form
-        id="create-pr-form"
-        onSubmit={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="lg" className="p-0 gap-0 overflow-hidden bg-white dark:bg-slate-900 max-w-3xl">
+        <form
+          id="create-pr-form"
+          onSubmit={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            form.handleSubmit()
+          }}
+        >
+          {/* Header styled like PostQualResultDialog */}
+          <DialogHeader className="p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-default-200 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <DialogTitle className="text-xl font-extrabold text-default-900 dark:text-slate-50 flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Create New Purchase Request
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  {prType === 'non-cse'
+                    ? 'Enter requisition details, select office and category, and configure PR source.'
+                    : prType === 'out-of-stock'
+                      ? 'Create a Purchase Request for Out-of-Stock CSE items from approved APR.'
+                      : 'Create a Consolidated Purchase Request across offices.'}
+                </DialogDescription>
+              </div>
+              <Badge
+                variant="outline"
+                className="font-bold bg-white dark:bg-slate-950 shadow-sm border-primary/30 text-primary uppercase text-[10px] tracking-wider px-2.5 py-1"
+              >
+                {isIndependent
+                  ? 'Independent PR'
+                  : prType === 'out-of-stock'
+                    ? 'Out-of-Stock CSE'
+                    : 'From Approved PPMP'}
+              </Badge>
+            </div>
+          </DialogHeader>
 
-          form.handleSubmit()
-        }}
-        className="max-h-[calc(90vh-180px)] overflow-y-auto pr-1"
-      >
-        <div className="space-y-6">
-            <form.Field name="date">
-              {(field) => (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    PR Date <span className="text-red-500">*</span>
-                  </label>
-                  <Popover
-                    open={isDatePickerOpen}
-                    onOpenChange={setIsDatePickerOpen}
+          {/* Form Content Area */}
+          <div className="p-6 space-y-5 max-h-[72vh] overflow-y-auto">
+            {/* PR Type / Source Selection Cards (styled exactly like PostQual Result Radio Cards) */}
+            {prType === 'non-cse' && (
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wider text-default-700 dark:text-slate-300">
+                  PR Type / Requisition Source <span className="text-destructive">*</span>
+                </Label>
+                <RadioGroup
+                  value={isIndependent ? 'independent' : 'ppmp'}
+                  onValueChange={(val) => {
+                    const nextIsIndependent = val === 'independent'
+                    setIsIndependent(nextIsIndependent)
+                    if (!nextIsIndependent) {
+                      if (form.getFieldValue('prNumber')?.startsWith('PR-IND-')) {
+                        form.setFieldValue('prNumber', '')
+                      }
+                    } else {
+                      if (!form.getFieldValue('prNumber')) {
+                        form.setFieldValue(
+                          'prNumber',
+                          `PR-IND-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+                        )
+                      }
+                    }
+                  }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                >
+                  <label
+                    htmlFor="src-ppmp"
+                    onClick={() => {
+                      setIsIndependent(false)
+                      if (form.getFieldValue('prNumber')?.startsWith('PR-IND-')) {
+                        form.setFieldValue('prNumber', '')
+                      }
+                    }}
+                    className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
+                      !isIndependent
+                        ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary'
+                        : 'border-default-200 dark:border-slate-800 hover:bg-default-50 dark:hover:bg-slate-800/50'
+                    }`}
                   >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.state.value
-                          ? format(field.state.value, 'PPP')
-                          : 'Pick a date'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.state.value}
-                        onSelect={(date) => {
-                          field.handleChange(date ?? new Date())
-                          setIsDatePickerOpen(false)
-                        }}
-                        disabled={(date: Date) =>
-                          date > new Date() || date < new Date('1900-01-01')
-                        }
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FieldInfo field={field} />
-                </div>
-              )}
-            </form.Field>
-
-            <form.Field name="prNumber">
-              {(field) => (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    PR Number <span className="text-red-500">*</span>
+                    <div className="mt-0.5">
+                      <RadioGroupItem value="ppmp" id="src-ppmp" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-bold text-default-900 dark:text-slate-100 flex items-center gap-1.5">
+                        <Layers className="h-4 w-4 text-primary" />
+                        From Approved PPMP
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        Standard PR linked to items allocated in approved office PPMPs.
+                      </p>
+                    </div>
                   </label>
-                  <Input
-                    placeholder="e.g., PR-2024-001"
+
+                  <label
+                    htmlFor="src-independent"
+                    onClick={() => {
+                      setIsIndependent(true)
+                      if (!form.getFieldValue('prNumber')) {
+                        form.setFieldValue(
+                          'prNumber',
+                          `PR-IND-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+                        )
+                      }
+                    }}
+                    className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
+                      isIndependent
+                        ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/20 shadow-sm ring-1 ring-amber-500'
+                        : 'border-default-200 dark:border-slate-800 hover:bg-default-50 dark:hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <div className="mt-0.5">
+                      <RadioGroupItem value="independent" id="src-independent" color="warning" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-bold text-default-900 dark:text-slate-100 flex items-center gap-1.5">
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        Independent PR
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        Standalone PR for direct non-CSE catalog or custom items.
+                      </p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              </div>
+            )}
+
+            {/* Row 1: PR Date & PR Number (2 cols) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <form.Field name="date">
+                {(field) => (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-default-800 dark:text-slate-200">
+                      PR Date <span className="text-destructive">*</span>
+                    </Label>
+                    <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal h-9 text-xs"
+                        >
+                          <CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                          {field.state.value ? format(field.state.value, 'PPP') : 'Pick a date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.state.value}
+                          onSelect={(date) => {
+                            field.handleChange(date ?? new Date())
+                            setIsDatePickerOpen(false)
+                          }}
+                          disabled={(date: Date) =>
+                            date > new Date() || date < new Date('1900-01-01')
+                          }
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FieldInfo field={field} />
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name="prNumber">
+                {(field) => (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-default-800 dark:text-slate-200">
+                      PR Number <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      placeholder={isIndependent ? 'e.g., PR-IND-2026-1001' : 'e.g., PR-2026-001'}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(event) => field.handleChange(event.target.value)}
+                      className="h-9 text-xs"
+                    />
+                    <FieldInfo field={field} />
+                  </div>
+                )}
+              </form.Field>
+            </div>
+
+            {/* Row 2: Office & Procurement Category (2 cols) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <form.Field name="officeId">
+                {(field) => (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-default-800 dark:text-slate-200 flex items-center gap-1">
+                      <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                      Requesting Office <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      disabled={isOfficesLoading || isSubmitting || uploadMutation.isPending}
+                      onValueChange={(value) => field.handleChange(value)}
+                      value={field.state.value}
+                    >
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder={isOfficesLoading ? 'Loading offices...' : 'Select an office'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {offices.map((office) => (
+                          <SelectItem key={office.id} value={office.id} className="text-xs">
+                            {office.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldInfo field={field} />
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name="procurementCategoryId">
+                {(field) => (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-default-800 dark:text-slate-200">
+                      Procurement Category <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      disabled={isCategoriesLoading || isSubmitting || uploadMutation.isPending}
+                      onValueChange={(value) => {
+                        field.handleChange(value)
+                        const nextCategory = procurementCategories.find((category) => category.id === value)
+                        if (!categoryRequiresTorAttachment(nextCategory)) {
+                          form.setFieldValue('torAttachment', null)
+                        }
+                      }}
+                      value={field.state.value}
+                    >
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder={isCategoriesLoading ? 'Loading categories...' : 'Select category'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {procurementCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.id} className="text-xs">
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldInfo field={field} />
+                  </div>
+                )}
+              </form.Field>
+            </div>
+
+            {/* Row 3: Purpose (Required Textarea) */}
+            <form.Field name="purpose">
+              {(field) => (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-default-800 dark:text-slate-200">
+                    Purpose / Justification <span className="text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    placeholder="State the specific operational justification or purpose of this purchase requisition..."
+                    className="resize-none text-xs"
+                    rows={3}
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(event) => field.handleChange(event.target.value)}
                   />
-                  <p className="text-sm text-muted-foreground">
-                    Unique identifier for this Purchase Request
-                  </p>
                   <FieldInfo field={field} />
                 </div>
               )}
             </form.Field>
 
-            <form.Field name="procurementCategoryId">
-              {(field) => (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Procurement Category <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    disabled={
-                      isCategoriesLoading ||
-                      isSubmitting ||
-                      uploadMutation.isPending
-                    }
-                    onValueChange={(value) => {
-                      field.handleChange(value)
-                      const nextCategory = procurementCategories.find(
-                        (category) => category.id === value,
-                      )
-
-                      if (!categoryRequiresTorAttachment(nextCategory)) {
-                        form.setFieldValue('torAttachment', null)
-                      }
-                    }}
-                    value={field.state.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          isCategoriesLoading
-                            ? 'Loading procurement categories...'
-                            : 'Select a procurement category'
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {procurementCategories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground">
-                    Select the procurement category to determine whether TOR is
-                    required.
-                  </p>
-                  <FieldInfo field={field} />
-                </div>
-              )}
-            </form.Field>
-
-            <form.Field name="officeId">
-              {(field) => (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Office <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    disabled={
-                      isOfficesLoading ||
-                      isSubmitting ||
-                      uploadMutation.isPending
-                    }
-                    onValueChange={(value) => field.handleChange(value)}
-                    value={field.state.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          isOfficesLoading
-                            ? 'Loading offices...'
-                            : 'Select an office'
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {offices.map((office) => (
-                        <SelectItem key={office.id} value={office.id}>
-                          {office.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground">
-                    Select one office for this purchase request.
-                  </p>
-                  <FieldInfo field={field} />
-                </div>
-              )}
-            </form.Field>
-
+            {/* Row 4: Description (Optional Textarea) */}
             <form.Field name="description">
               {(field) => (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Description</label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-default-800 dark:text-slate-200">
+                    Description / Remarks <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                  </Label>
                   <Textarea
-                    placeholder="Describe the purpose of this PR..."
-                    className="resize-none"
-                    rows={3}
+                    placeholder="Optional background details, delivery location instructions, or notes..."
+                    className="resize-none text-xs"
+                    rows={2}
                     value={field.state.value ?? ''}
                     onBlur={field.handleBlur}
                     onChange={(event) => {
@@ -473,39 +566,17 @@ export function CreatePRModal({
               )}
             </form.Field>
 
-            <form.Field name="purpose">
-              {(field) => (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Purpose <span className="text-red-500">*</span>
-                  </label>
-                  <Textarea
-                    placeholder="Explain the purpose and justification..."
-                    className="resize-none"
-                    rows={3}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                  />
-                  <FieldInfo field={field} />
-                </div>
-              )}
-            </form.Field>
-
+            {/* Terms of Reference (TOR) section if required */}
             <form.Subscribe
               selector={(state) => {
                 const selectedCategory = procurementCategories.find(
-                  (category) =>
-                    category.id === state.values?.procurementCategoryId,
+                  (category) => category.id === state.values?.procurementCategoryId
                 )
-
                 return categoryRequiresTorAttachment(selectedCategory)
               }}
             >
               {(requiresTor) => {
-                if (!requiresTor) {
-                  return null
-                }
+                if (!requiresTor) return null
 
                 return (
                   <form.Field
@@ -521,20 +592,18 @@ export function CreatePRModal({
                   >
                     {(field) => (
                       <div
-                        className={`space-y-4 rounded-xl border p-4 ${
+                        className={`space-y-3 rounded-lg border p-4 ${
                           field.state.meta.errors.length > 0
                             ? 'border-destructive bg-destructive/5'
-                            : 'border-amber-200 bg-linear-to-br from-amber-50 to-orange-50'
+                            : 'border-amber-200 bg-amber-50/40 dark:bg-amber-950/20'
                         }`}
                       >
-                        <div className="space-y-1">
-                          <p className="text-sm font-semibold text-amber-900">
-                            Terms of Reference (TOR) - Required for this
-                            category
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-bold text-amber-900 dark:text-amber-300">
+                            Terms of Reference (TOR) Required
                           </p>
-                          <p className="text-xs text-amber-800">
-                            Upload a PDF or Word document up to 10 MB before
-                            creating this PR draft.
+                          <p className="text-[11px] text-amber-800/80 dark:text-amber-400">
+                            Upload a PDF or Word document (up to 10 MB) mandatory for this category.
                           </p>
                         </div>
 
@@ -545,19 +614,15 @@ export function CreatePRModal({
                           existingFileName={field.state.value?.name}
                           existingFileUrl={field.state.value?.url}
                           maxSize={10}
-                          validationState={
-                            field.state.meta.errors.length > 0
-                              ? 'error'
-                              : 'default'
-                          }
+                          validationState={field.state.meta.errors.length > 0 ? 'error' : 'default'}
                           onFileChange={(file) => {
                             void uploadTorFile(file, field.handleChange)
                           }}
                         />
 
                         {uploadMutation.isPending && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             Uploading TOR...
                           </div>
                         )}
@@ -569,8 +634,40 @@ export function CreatePRModal({
                 )
               }}
             </form.Subscribe>
-        </div>
-      </form>
-    </ResponsiveDialog>
+          </div>
+
+          {/* Footer styled like PostQualResultDialog */}
+          <DialogFooter className="p-4 bg-default-50 dark:bg-slate-900/60 border-t border-default-200 dark:border-slate-800 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting || uploadMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              className="gap-1.5 font-bold shadow-sm text-white bg-primary hover:bg-primary/90"
+              disabled={isSubmitting || uploadMutation.isPending}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating PR...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Create Purchase Request
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

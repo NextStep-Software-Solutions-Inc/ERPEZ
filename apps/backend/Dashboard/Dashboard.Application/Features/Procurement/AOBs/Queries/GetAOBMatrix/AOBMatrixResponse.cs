@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Queries.GetAOBMatrix;
@@ -14,7 +15,13 @@ public class AOBMatrixResponse
     public bool IsBidsOpened { get; set; }
     public bool HasMinimumCanvassWarning { get; set; }
     public string? Remarks { get; set; }
+    public string? BacResolutionNumber { get; set; }
+    public string? PRNumber { get; set; }
+    public string? PAPCode { get; set; }
+    public string? ApproverName { get; set; }
+    public string? ApproverTitle { get; set; }
 
+    [JsonPropertyName("linkedRFQs")]
     public List<AOBMatrixRFQDto> LinkedRFQs { get; set; } = [];
     public List<AOBMatrixSupplierDto> Suppliers { get; set; } = [];
     public List<AOBMatrixItemDto> Items { get; set; } = [];
@@ -37,10 +44,26 @@ public class AOBMatrixSupplierDto
     public Guid SupplierId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? ContactPerson { get; set; }
+    public string? ContactNumber { get; set; }
+    public string? Address { get; set; }
+    public string? TINNumber { get; set; }
+    public string? PhilGEPSNumber { get; set; }
     public string? SubmissionType { get; set; }
     public DateTime? SubmittedAt { get; set; }
     public string? DeliveryPeriod { get; set; }
     public int? ValidityPeriodDays { get; set; }
+    public string? PaymentTerms { get; set; }
+    public string? WarrantyTerms { get; set; }
+    public decimal TotalBidAmount { get; set; }
+    public string? Remarks { get; set; }
+    public bool HasSubmitted { get; set; }
+    public string? RFQNumber { get; set; }
+    public Guid? RFQId { get; set; }
+    public string? QuotationDocumentUrl { get; set; }
+    public string? SignatureUrl { get; set; }
+    public string? SignatoryName { get; set; }
+    public DateTime? DateSigned { get; set; }
 }
 
 public class AOBMatrixItemDto

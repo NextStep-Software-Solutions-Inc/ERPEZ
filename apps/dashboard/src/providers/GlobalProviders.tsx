@@ -2,6 +2,7 @@ import { Provider as JotaiProvider } from 'jotai'
 import { useEffect, type ReactNode } from 'react'
 import { KeycloakProvider } from '@/providers/KeycloakProvider'
 import { DevRoleSwitcher } from '@/components/DevRoleSwitcher'
+import { initConsoleSecurityWarning } from 'erpez-shared-lib'
 
 interface GlobalProvidersProps {
   children: ReactNode
@@ -35,12 +36,16 @@ function TenantContextInitializer() {
 }
 
 export default function GlobalProviders({ children }: GlobalProvidersProps) {
+  useEffect(() => {
+    initConsoleSecurityWarning()
+  }, [])
+
   return (
     <JotaiProvider>
       <TenantContextInitializer />
       <KeycloakProvider>
         {children}
-        <DevRoleSwitcher />
+        {!import.meta.env.PROD && <DevRoleSwitcher />}
       </KeycloakProvider>
     </JotaiProvider>
   )

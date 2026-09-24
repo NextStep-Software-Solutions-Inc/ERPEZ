@@ -70,6 +70,19 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 appItems.Add(appItem);
             }
 
+            // Mode of Procurement Single-Mode validation under RA 12009
+            var distinctModes = appItems
+                .Select(i => i.ProcurementModeId)
+                .Distinct()
+                .ToList();
+
+            if (distinctModes.Count > 1)
+            {
+                return ApiResponse<Guid>.Fail(
+                    "All selected APP items must share the same Mode of Procurement. Under RA 12009, Competitive Bidding and Alternative Modes (e.g., SVP) cannot be combined in a single Procurement Project."
+                );
+            }
+
             // Duplicate protection check for all APP Items
             var existingProject = await unitOfWork.ProcurementProjectRepository
                 .FindAsync(p => p.Status != "Cancelled" && (
@@ -109,13 +122,13 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
 
             decimal inheritedAbc = appItems.Sum(i => i.EffectiveABC);
 
-            if (request.ABC.HasValue && request.ABC.Value > 0 && request.ABC.Value != inheritedAbc)
+            if (request.ABC.HasValue && request.ABC.Value > 0 && Math.Abs(Math.Round(request.ABC.Value, 2) - Math.Round(inheritedAbc, 2)) >= 0.01m)
             {
                 return ApiResponse<Guid>.Fail($"Approved Budget (ABC) cannot be overridden. Provided: {request.ABC.Value:N2}, Expected: {inheritedAbc:N2}.");
             }
 
             projectABC = inheritedAbc;
-            procurementModeId = appItems.FirstOrDefault()?.ProcurementModeId;
+            procurementModeId = distinctModes[0];
         }
         else if (request.SourceType == ProcurementProjectSourceType.ConsolidatedPR)
         {
@@ -173,7 +186,7 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 : (!string.IsNullOrWhiteSpace(consolidatedPr.CPRNumber) ? consolidatedPr.CPRNumber : (request.Title ?? "Consolidated PR Project"));
 
             decimal expectedCprAbc = consolidatedPr.TotalAmount;
-            if (request.ABC.HasValue && request.ABC.Value > 0 && request.ABC.Value != expectedCprAbc)
+            if (request.ABC.HasValue && request.ABC.Value > 0 && Math.Abs(Math.Round(request.ABC.Value, 2) - Math.Round(expectedCprAbc, 2)) >= 0.01m)
             {
                 return ApiResponse<Guid>.Fail($"Approved Budget (ABC) cannot be overridden. Provided: {request.ABC.Value:N2}, Expected: {expectedCprAbc:N2}.");
             }

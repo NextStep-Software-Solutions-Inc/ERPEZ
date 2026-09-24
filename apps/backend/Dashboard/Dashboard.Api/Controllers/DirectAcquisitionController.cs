@@ -11,6 +11,7 @@ using ERPEZ.Application.Features.Procurement.DirectAcquisitions.Dtos;
 using ERPEZ.Application.Features.Procurement.DirectAcquisitions.Queries.GetDirectAcquisitionById;
 using ERPEZ.Application.Features.Procurement.DirectAcquisitions.Queries.GetDirectAcquisitions;
 using ERPEZ.Application.Features.Procurement.DirectAcquisitions.Queries.GetDirectAcquisitionSummary;
+using ERPEZ.Application.Features.Procurement.DirectAcquisitions.Queries.GetApprovedDaResolutionsAvailableForPO;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -41,6 +42,17 @@ public class DirectAcquisitionController(ISender mediator) : ControllerBase
     public async Task<IActionResult> GetDirectAcquisitions([FromQuery] GetDirectAcquisitionsQuery query, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get approved Direct Acquisitions that are available for Purchase Order creation (not linked to an active PO)
+    /// </summary>
+    [HttpGet("available-for-po")]
+    [ProducesResponseType(typeof(ApiResponse<List<AvailableDaResolutionDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAvailableDirectAcquisitionsForPO(CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetApprovedDaResolutionsAvailableForPOQuery(), cancellationToken);
         return Ok(result);
     }
 

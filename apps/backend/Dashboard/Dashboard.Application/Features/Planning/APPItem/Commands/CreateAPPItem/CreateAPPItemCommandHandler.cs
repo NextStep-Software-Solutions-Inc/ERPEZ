@@ -44,6 +44,12 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
 
         var isNewItem = string.Equals(app.APPType, "Updated", StringComparison.OrdinalIgnoreCase);
 
+        var papCode = !string.IsNullOrWhiteSpace(request.PAPCode)
+            ? request.PAPCode
+            : (!string.IsNullOrWhiteSpace(ppmpItem.PAPCode)
+                ? ppmpItem.PAPCode
+                : (ppmpItem.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.PAPCode ?? string.Empty));
+
         var entity = new ERPEZ.Domain.Entities.Planning.APPItem
         {
             Id = Guid.NewGuid(),
@@ -52,12 +58,18 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
             ProcurementModeId = request.ProcurementModeId,
             FundSourceId = fundSourceId,
             OfficeId = officeId,
-            PAPCode = request.PAPCode,
+            PAPCode = papCode,
             Remarks = request.Remarks,
+            ItemNameOverride = request.ItemNameOverride,
+            GeneralDescription = request.GeneralDescription,
             IsEarlyProcurementActivity = request.IsEarlyProcurementActivity,
+            EPARemarks = request.EPARemarks,
             IsOutsourced = request.IsOutsourced,
             BidEvaluationCriteria = request.BidEvaluationCriteria != null ? Enum.Parse<BidEvaluationCriteria>(request.BidEvaluationCriteria, true) : null,
             ProcurementStrategies = request.ProcurementStrategies?.Select(x => Enum.Parse<ProcurementStrategy>(x, true)).ToList(),
+            StartOfProcurementOverride = request.StartOfProcurementOverride,
+            EndOfProcurementOverride = request.EndOfProcurementOverride,
+            EstimatedBudgetOverride = request.EstimatedBudgetOverride,
             IsNew = isNewItem,
             IsRevised = false
         };

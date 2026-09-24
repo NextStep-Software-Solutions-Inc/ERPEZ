@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft,
   Download,
@@ -47,6 +47,8 @@ import {
 import GroupedExpenditureItemsView from '@/features/planning/line-item-budgeting/line-item-budget-details/components/GroupedExpenditureItemsView'
 import { groupExpenditureItems } from '@/features/planning/line-item-budgeting/line-item-budget-details/utils/groupExpenditureData'
 import type { LineItemBudgetDetails } from '@/features/planning/line-item-budgeting/line-item-budget-details/types/types'
+import { ViewLineItemBudgetDetailsDialog } from '@/features/planning/line-item-budgeting/line-item-budget-details/components/ViewLineItemBudgetDetailsDialog'
+import { EditLineItemBudgetDetailsDialog } from '@/features/planning/line-item-budgeting/line-item-budget-details/components/EditLineItemBudgetDetailsDialog'
 import { updateLIBStatusRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/updateLIBStatusRequest'
 import { generateLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/generateLIBDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
@@ -163,6 +165,12 @@ export default function LIBDetailPage({
   const [deletingOrphanItemId, setDeletingOrphanItemId] = useState<
     string | null
   >(null)
+  const [viewingOrphanItem, setViewingOrphanItem] = useState<LineItemBudgetDetails | null>(
+    null,
+  )
+  const [editingOrphanItem, setEditingOrphanItem] = useState<LineItemBudgetDetails | null>(
+    null,
+  )
 
   const handleExport = async (format: 'Excel' | 'Pdf') => {
     if (!libId) return
@@ -228,14 +236,25 @@ export default function LIBDetailPage({
   })
 
   // Fetch LIB Activities filtered by libId
-  const { data: libActivitiesData, isLoading: isLIBActivitiesLoading } =
-    useLIBActivities({
-      pathParams: {},
-      queryParams: {
-        filters: `lineItemBudgetId==${libId}`,
-      },
-      enabled: !!libId,
-    })
+  const {
+    data: libActivitiesData,
+    isLoading: isLIBActivitiesLoading,
+    refetch: refetchLibActivities,
+  } = useLIBActivities({
+    pathParams: {},
+    queryParams: {
+      filters: `lineItemBudgetId==${libId}`,
+    },
+    enabled: !!libId,
+  })
+
+  // Whenever returning from activity expenditures view, immediately refetch to evaluate readiness without delay
+  useEffect(() => {
+    if (libId && !libActivityId) {
+      void refetch()
+      void refetchLibActivities()
+    }
+  }, [libId, libActivityId, refetch, refetchLibActivities])
 
   const lib = libData?.data
   const displayActivities = libActivitiesData?.data || []
@@ -765,6 +784,8 @@ export default function LIBDetailPage({
                     data={groupExpenditureItems(
                       lib.orphanDetails as unknown as LineItemBudgetDetails[],
                     )}
+                    onViewItem={(item) => setViewingOrphanItem(item)}
+                    onEditItem={(item) => setEditingOrphanItem(item)}
                     onDeleteItem={async (item: LineItemBudgetDetails) => {
                       setDeletingOrphanItemId(item.id)
                       try {
@@ -866,6 +887,45 @@ export default function LIBDetailPage({
                               | undefined
                             const wfpActivity = activity?.wfpObjectiveActivity
 
+                            // Match the activity in libData to get all details / line items added
+                            const matchingLibActivity = (
+                              lib?.activities || []
+                            ).find(
+                              (a) =>
+                                (activity.id && a.id === activity.id) ||
+                                (activity.wfpObjectiveActivityId &&
+                                  a.wfpObjectiveActivityId ===
+                                    activity.wfpObjectiveActivityId) ||
+                                (activity.opcrActivityId &&
+                                  a.opcrActivityId ===
+                                    activity.opcrActivityId),
+                            )
+
+                            const details =
+                              matchingLibActivity?.details &&
+                              matchingLibActivity.details.length > 0
+                                ? matchingLibActivity.details
+                                : activity.details || []
+
+                            const detailsBudgetSum = details.reduce(
+                              (sum, d) => sum + (Number(d.budget) || 0),
+                              0,
+                            )
+
+                            const activityExpenditures =
+                              detailsBudgetSum > 0
+                                ? detailsBudgetSum
+                                : Number(activity.budget) || 0
+
+                            const itemCount = details.length
+
+                            const targetBudget =
+                              lib.sourceType === 'OPCR'
+                                ? opcrActivity?.budget
+                                : lib.sourceType === 'WFP'
+                                  ? calculateWFPBudget(wfpActivity)
+                                  : undefined
+
                             const handleDeleteActivity = async () => {
                               try {
                                 await deleteActivity(
@@ -880,7 +940,7 @@ export default function LIBDetailPage({
                                       void queryClient.invalidateQueries({
                                         predicate: (query) =>
                                           typeof query.queryKey[0] ===
-                                          'string' &&
+                                            'string' &&
                                           query.queryKey[0].startsWith(
                                             '/lib-activities',
                                           ),
@@ -897,76 +957,52 @@ export default function LIBDetailPage({
                               }
                             }
 
+                            const subtitle =
+                              lib.sourceType === 'OPCR' &&
+                              opcrActivity?.PAPDepartments
+                                ? `Responsible Office: ${opcrActivity.PAPDepartments.map(
+                                    (dept) => dept.office.name,
+                                  ).join(', ')}`
+                                : lib.sourceType === 'WFP'
+                                  ? 'WFP Activity'
+                                  : 'LIB Activity'
+
                             return (
-                              <>
-                                {lib.sourceType === 'OPCR' && opcrActivity ? (
-                                  <LIBActivityCard
-                                    key={activity.id || index}
+                              <LIBActivityCard
+                                key={activity.id || index}
+                                activity={activity}
+                                subtitle={subtitle}
+                                budget={activityExpenditures}
+                                targetBudget={targetBudget}
+                                itemCount={itemCount}
+                                onViewExpenditures={() =>
+                                  navigation({
+                                    search: (prev) => ({
+                                      ...prev,
+                                      libActivityId: activity.id || '',
+                                      wfpObjectiveActivityId:
+                                        activity.wfpObjectiveActivity?.id ||
+                                        '',
+                                    }),
+                                  })
+                                }
+                                actionMenu={
+                                  <LIBActivityActionMenu
+                                    onView={
+                                      opcrActivity
+                                        ? () =>
+                                            setSelectedActivity(
+                                              opcrActivity,
+                                            )
+                                        : undefined
+                                    }
+                                    onEdit={undefined}
                                     activity={activity}
-                                    subtitle={
-                                      opcrActivity?.PAPDepartments
-                                        ? `Responsible Office: ${opcrActivity.PAPDepartments.map(
-                                          (dept) => dept.office.name,
-                                        ).join(', ')}`
-                                        : 'LIB Activity'
-                                    }
-                                    budget={opcrActivity?.budget}
-                                    onViewExpenditures={() =>
-                                      navigation({
-                                        search: (prev) => ({
-                                          ...prev,
-                                          libActivityId: activity.id || '',
-                                        }),
-                                      })
-                                    }
-                                    actionMenu={
-                                      <LIBActivityActionMenu
-                                        onView={
-                                          opcrActivity
-                                            ? () =>
-                                              setSelectedActivity(
-                                                opcrActivity,
-                                              )
-                                            : undefined
-                                        }
-                                        onEdit={undefined}
-                                        activity={activity}
-                                        onDelete={handleDeleteActivity}
-                                        isDeleting={isDeleting}
-                                      />
-                                    }
+                                    onDelete={handleDeleteActivity}
+                                    isDeleting={isDeleting}
                                   />
-                                ) : lib.sourceType === 'WFP' && wfpActivity ? (
-                                  <LIBActivityCard
-                                    key={activity.id || index}
-                                    activity={activity}
-                                    subtitle={`WFP Activity`}
-                                    budget={calculateWFPBudget(wfpActivity)}
-                                    onViewExpenditures={() =>
-                                      navigation({
-                                        search: (prev) => ({
-                                          ...prev,
-                                          libActivityId: activity.id || '',
-                                          wfpObjectiveActivityId:
-                                            activity.wfpObjectiveActivity?.id ||
-                                            '',
-                                        }),
-                                      })
-                                    }
-                                    actionMenu={
-                                      <LIBActivityActionMenu
-                                        onView={undefined}
-                                        onEdit={undefined}
-                                        activity={activity}
-                                        onDelete={handleDeleteActivity}
-                                        isDeleting={isDeleting}
-                                      />
-                                    }
-                                  />
-                                ) : (
-                                  <></>
-                                )}
-                              </>
+                                }
+                              />
                             )
                           },
                         )}
@@ -1136,6 +1172,33 @@ export default function LIBDetailPage({
         }
         isLoading={isApprovalLoading}
       />
+
+      {/* View Line Item Details Dialog */}
+      <ViewLineItemBudgetDetailsDialog
+        item={viewingOrphanItem}
+        open={!!viewingOrphanItem}
+        onOpenChange={(open) => !open && setViewingOrphanItem(null)}
+        onEdit={(item) => setEditingOrphanItem(item)}
+        readOnly={lib?.status === 'Approved' || lib?.status === 'Submitted'}
+      />
+
+      {/* Edit Line Item Dialog */}
+      <EditLineItemBudgetDetailsDialog
+        item={editingOrphanItem}
+        open={!!editingOrphanItem}
+        onOpenChange={(open) => !open && setEditingOrphanItem(null)}
+        libId={libId}
+        onSuccess={() => {
+          void refetch()
+          void queryClient.invalidateQueries({
+            predicate: (query) =>
+              typeof query.queryKey[0] === 'string' &&
+              (query.queryKey[0].startsWith('/line-item-budget-details') ||
+                query.queryKey[0].includes('/libs') ||
+                query.queryKey[0].includes('/lib-activities')),
+          })
+        }}
+      />
     </div>
   )
 }
@@ -1145,6 +1208,8 @@ interface LIBActivityCardProps {
   activity: LIBActivity
   subtitle?: string
   budget?: number
+  targetBudget?: number
+  itemCount?: number
   onViewExpenditures?: () => void
   actionMenu?: React.ReactNode
   icon?: React.ReactNode
@@ -1153,52 +1218,122 @@ interface LIBActivityCardProps {
 export function LIBActivityCard({
   activity,
   subtitle,
-  budget,
+  budget = 0,
+  targetBudget,
+  itemCount = 0,
   onViewExpenditures,
   actionMenu,
   icon,
 }: LIBActivityCardProps) {
+  const hasItems = itemCount > 0 || budget > 0
+
   return (
-    <Card className="border-l-4 border-l-green-500 transition-shadow hover:border-l-green-600 hover:shadow-md">
-      <CardContent className="pt-6">
-        <div className="mb-4 flex items-start justify-between">
+    <Card
+      className={`transition-all duration-200 hover:shadow-md ${
+        hasItems
+          ? 'border-l-4 border-l-emerald-500 bg-white hover:border-l-emerald-600'
+          : 'border-l-4 border-l-amber-400 bg-amber-50/10 hover:border-l-amber-500'
+      }`}
+    >
+      <CardContent className="p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           {/* Left */}
-          <div className="flex flex-1 items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-100">
-              {icon ?? <span className="text-sm">📄</span>}
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                hasItems
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-amber-100 text-amber-700'
+              }`}
+            >
+              {icon ?? <span className="text-base">📄</span>}
             </div>
 
-            <div>
-              <h3 className="font-semibold text-gray-900">{activity.name}</h3>
+            <div className="space-y-1.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-gray-900 text-base leading-snug">
+                  {activity.name}
+                </h3>
+                {activity.papCode && (
+                  <span className="font-mono text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 rounded-full font-semibold">
+                    PAP: {activity.papCode}
+                  </span>
+                )}
+                {hasItems ? (
+                  <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 font-medium flex items-center gap-1.5 shadow-2xs">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    {itemCount} {itemCount === 1 ? 'item added' : 'items added'}
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-50 text-amber-700 border-amber-200 text-xs px-2.5 py-0.5 font-medium flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <AlertCircle className="h-3 w-3 text-amber-500" />
+                    No items added
+                  </Badge>
+                )}
+              </div>
 
-              {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+              {subtitle && (
+                <p className="text-xs text-gray-500">{subtitle}</p>
+              )}
             </div>
           </div>
 
-          {/* Right */}
-          <div className="flex items-center gap-2">
-            {budget !== undefined && (
-              <Badge className="gap-2 bg-blue-100 px-3 py-1 text-blue-700">
-                <span>₱</span>
-                {(budget / 1000).toFixed(0)}K
-              </Badge>
-            )}
+          {/* Right: Prominent Total Expenditures & Action Menu */}
+          <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+            <div className="flex flex-col items-end justify-center bg-gray-50 border border-gray-200/80 rounded-lg px-3.5 py-1.5 shadow-2xs min-w-[150px]">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                Total Expenditures
+              </span>
+              <span
+                className={`text-base sm:text-lg font-bold tracking-tight font-mono ${
+                  budget > 0 ? 'text-emerald-700' : 'text-gray-400'
+                }`}
+              >
+                {formatCurrencyPHP(budget)}
+              </span>
+              {targetBudget !== undefined && targetBudget > 0 && (
+                <span className="text-[11px] text-gray-400 font-medium">
+                  Target: {formatCurrencyPHP(targetBudget)}
+                </span>
+              )}
+            </div>
 
             {actionMenu}
           </div>
         </div>
 
+        {/* Bottom bar with action button and clear indicator */}
         {onViewExpenditures && (
-          <div className="flex justify-start">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 mt-4 border-t border-gray-100">
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 text-green-600 hover:text-green-700"
+              className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 transition-colors font-medium shadow-2xs"
               onClick={onViewExpenditures}
             >
               <Eye className="h-4 w-4" />
-              View Expenditures
+              {hasItems
+                ? `View Expenditures (${itemCount})`
+                : 'Add Expenditures'}
             </Button>
+
+            <div className="flex items-center gap-2 text-xs">
+              {hasItems ? (
+                <span className="flex items-center gap-1.5 text-emerald-700 font-medium bg-emerald-50/60 px-2.5 py-1 rounded-md border border-emerald-100">
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                  Allocated: <strong>{formatCurrencyPHP(budget)}</strong> across{' '}
+                  {itemCount} {itemCount === 1 ? 'line item' : 'line items'}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-amber-600 font-medium bg-amber-50/60 px-2.5 py-1 rounded-md border border-amber-100">
+                  <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                  Requires expenditure line items ({formatCurrencyPHP(0)})
+                </span>
+              )}
+            </div>
           </div>
         )}
       </CardContent>

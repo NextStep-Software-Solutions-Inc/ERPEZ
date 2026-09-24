@@ -17,23 +17,27 @@ const useUpdateRFQEvaluation = createMutationHookFromTemplate(evaluateRFQSupplie
 const isValidGuid = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
 
-export function useSupplierEvaluation(projectId: string, source: 'rfq' | 'bac' = 'rfq') {
+export function useSupplierEvaluation(
+  projectId: string,
+  source: 'rfq' | 'bac' = 'rfq',
+  enabled: boolean = true,
+) {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const isGuid = Boolean(projectId && isValidGuid(projectId))
 
-  // Fetch RFQ Bids
+  // Fetch RFQ Bids (only when enabled, e.g. when RFQ is approved)
   const { data: rfqBidsResponse, isLoading: isLoadingRfqBids } = useRFQSupplierBids({
     pathParams: { rfqId: projectId },
     queryParams: {},
-    enabled: Boolean(isGuid && source === 'rfq'),
+    enabled: Boolean(enabled && isGuid && source === 'rfq'),
   })
 
   // Fetch BAC Applications
   const { data: bacApplicationsResponse, isLoading: isLoadingBacApps } = useBACSupplierApplications({
     pathParams: { projectId },
     queryParams: {},
-    enabled: Boolean(isGuid && source === 'bac'),
+    enabled: Boolean(enabled && isGuid && source === 'bac'),
   })
 
   const { mutateAsync: updateRFQEvaluationMutation, isPending: isSavingRfq } = useUpdateRFQEvaluation()
@@ -48,7 +52,7 @@ export function useSupplierEvaluation(projectId: string, source: 'rfq' | 'bac' =
       return rawBids.map((b: any) => ({
         id: b.id,
         projectId: b.rfqId || projectId,
-        source: 'rfq' as const,
+        source: (b.submissionType === 'PublicPortal' ? 'bac' : 'rfq') as 'rfq' | 'bac',
         supplierName: b.supplierName || 'Unnamed Supplier',
         supplierCategory: b.supplierCategory,
         contactPerson: b.contactPerson,
@@ -59,6 +63,10 @@ export function useSupplierEvaluation(projectId: string, source: 'rfq' | 'bac' =
         businessAddress: b.businessAddress,
         philGepsStatus: b.philGepsStatus,
         totalBidAmount: b.totalBidAmount || 0,
+        deliveryPeriod: b.deliveryPeriod,
+        paymentTerms: b.paymentTerms,
+        warrantyTerms: b.warrantyTerms,
+        validityPeriodDays: b.validityPeriodDays,
         remarks: b.remarks,
         evaluatedBy: b.evaluatedBy,
         evaluatedAt: b.evaluatedAt,
@@ -102,6 +110,10 @@ export function useSupplierEvaluation(projectId: string, source: 'rfq' | 'bac' =
       tinNumber: a.tinNumber,
       businessAddress: a.businessAddress,
       totalBidAmount: a.totalBidAmount || 0,
+      deliveryPeriod: a.deliveryPeriod,
+      paymentTerms: a.paymentTerms,
+      warrantyTerms: a.warrantyTerms,
+      validityPeriodDays: a.validityPeriodDays,
       remarks: a.remarks,
       evaluatedBy: a.evaluatedBy,
       evaluatedAt: a.evaluatedAt,

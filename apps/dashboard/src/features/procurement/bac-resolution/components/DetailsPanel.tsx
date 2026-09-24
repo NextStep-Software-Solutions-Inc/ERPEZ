@@ -45,7 +45,10 @@ import { downloadBacResolutionDocumentRequest } from '../handlers/downloadBacRes
 import { ApproveBacResolutionDialog } from '../dialogs/ApproveBacResolutionDialog'
 import { ReturnBacResolutionDialog } from '../dialogs/ReturnBacResolutionDialog'
 import type { ApproveBacResolutionFormValues } from '../forms/ApproveBacResolutionForm'
-import { isBacProjectReadyForScheduling } from '../utils/bacResolutionWorkflow'
+import {
+  isBacProjectReadyForScheduling,
+  isBacProjectPublicBidding,
+} from '../utils/bacResolutionWorkflow'
 import { useApproveBacResolution, useReturnBacResolution } from '../handlers'
 import { Badge } from '@/components/ui/badge'
 
@@ -386,6 +389,13 @@ export function DetailsPanel({
   }))
 
   const isReadyForScheduling = isBacProjectReadyForScheduling(selectedProject)
+  const isPublicBidding = isBacProjectPublicBidding(selectedProject)
+  const hasConsolidatedPr = Boolean(
+    cprNumber ||
+      selectedProject.consolidatedPR ||
+      selectedProject.consolidatedPRId,
+  )
+  const showSchedulingWarning = isPublicBidding && !hasConsolidatedPr
 
   return (
     <div className="space-y-4">
@@ -587,12 +597,12 @@ export function DetailsPanel({
       </Card>
 
       {/* Amber Alert Banner */}
-      {isAppItemSource && (
+      {showSchedulingWarning && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 flex items-center gap-3 text-xs text-amber-900 shadow-2xs">
           <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
           <span className="font-medium">
             Link exactly one Consolidated PR to keep this BAC Resolution in the
-            Public Bidding scheduling flow.
+            Competitive Bidding scheduling flow.
           </span>
         </div>
       )}
@@ -833,6 +843,9 @@ export function DetailsPanel({
                           <thead className="bg-default-50 border-b border-default-200">
                             <tr>
                               <th className="p-2 text-left font-bold text-default-700">
+                                PAP Code
+                              </th>
+                              <th className="p-2 text-left font-bold text-default-700">
                                 Item #
                               </th>
                               <th className="p-2 text-left font-bold text-default-700">
@@ -840,6 +853,9 @@ export function DetailsPanel({
                               </th>
                               <th className="p-2 text-left font-bold text-default-700">
                                 Office
+                              </th>
+                              <th className="p-2 text-left font-bold text-default-700">
+                                Mode
                               </th>
                               <th className="p-2 text-right font-bold text-default-700">
                                 ABC
@@ -849,6 +865,18 @@ export function DetailsPanel({
                           <tbody className="divide-y divide-default-100">
                             {appItemLinks.map((item, idx) => (
                               <tr key={item.id || idx}>
+                                <td className="p-2 font-mono text-[11px] text-default-700">
+                                  {item.papCode ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="font-mono text-[10px] bg-default-50"
+                                    >
+                                      {item.papCode}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </td>
                                 <td className="p-2 font-semibold text-primary">
                                   {item.itemNumber || `#${idx + 1}`}
                                 </td>
@@ -857,6 +885,9 @@ export function DetailsPanel({
                                 </td>
                                 <td className="p-2 text-default-600">
                                   {item.officeName || '—'}
+                                </td>
+                                <td className="p-2 text-default-600">
+                                  {item.procurementModeName || '—'}
                                 </td>
                                 <td className="p-2 text-right font-semibold text-emerald-700">
                                   ₱

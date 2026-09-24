@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.WFP.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivityExpenditure.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
@@ -16,6 +17,11 @@ public record WFPObjectiveActivityDetailedResponse
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
     public string? WFPStatus { get; init; }
+
+    /// <summary>
+    /// Parent WFP that this activity belongs to.
+    /// </summary>
+    public WFPResponse? WFP { get; init; }
 
     /// <summary>
     /// Parent WFP Objective that this target belongs to.

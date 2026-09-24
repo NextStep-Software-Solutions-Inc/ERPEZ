@@ -4,6 +4,7 @@ import {
   Building2,
   Calculator,
   CheckCircle2,
+  Lock,
   RefreshCw,
   Sparkles,
   UserCheck,
@@ -85,6 +86,23 @@ export function BidEvaluationTab({
   const activeTechWeight = evaluation?.technicalWeight ?? technicalWeight ?? null
   const activeFinWeight = evaluation?.financialWeight ?? financialWeight ?? null
 
+  // Check if a winning bidder has been declared (Award Recommendation exists or a bidder passed Post-Qual)
+  const isWinnerDeclared =
+    Boolean(evaluation?.awardRecommendation) ||
+    evaluatedBids.some(
+      (b) =>
+        b.status === 'Passed_PostQual' ||
+        (b.postQualification && b.postQualification.status === 'Passed' && b.isResponsive)
+    )
+
+  const winningSupplierName =
+    evaluation?.awardRecommendation?.winningSupplierName ||
+    evaluatedBids.find(
+      (b) =>
+        b.status === 'Passed_PostQual' ||
+        (b.postQualification && b.postQualification.status === 'Passed' && b.isResponsive)
+    )?.supplierName
+
   if (isEvalLoading) {
     return (
       <div className="w-full h-64 flex flex-col items-center justify-center gap-3">
@@ -117,7 +135,7 @@ export function BidEvaluationTab({
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertTitle className="text-xs font-bold">Authoritative Evaluation Criterion Required</AlertTitle>
           <AlertDescription className="text-xs mt-1">
-            No bid evaluation criterion has been established for this project. Under RA 12009 (NGPA) / RA 9184, an authoritative criterion (such as LCRB for Goods/Civil Works or MEARB) must be selected before bid evaluation can proceed.
+            No bid evaluation criterion has been established for this project. Under RA 12009 (NGPA), an authoritative criterion (such as LCRB for Goods/Civil Works or MEARB) must be selected before bid evaluation can proceed.
           </AlertDescription>
         </Alert>
       )}
@@ -163,6 +181,16 @@ export function BidEvaluationTab({
           </div>
 
           <div className="flex items-center gap-2">
+            {isWinnerDeclared && (
+              <Badge
+                variant="outline"
+                className="border-emerald-300 text-emerald-800 bg-emerald-50 text-[11px] font-semibold gap-1 py-1"
+              >
+                <Lock className="h-3 w-3 text-emerald-600" />
+                Winner Declared {winningSupplierName ? `(${winningSupplierName})` : ''}
+              </Badge>
+            )}
+
             <Button
               variant="outline"
               size="sm"
@@ -173,16 +201,39 @@ export function BidEvaluationTab({
               Refresh Rankings
             </Button>
 
-            <Button
-              color="primary"
-              size="sm"
-              onClick={() => setIsEvaluateModalOpen(true)}
-              disabled={admittedSubmissions.length === 0}
-              className="h-9 text-xs font-bold gap-1.5 shadow-sm"
-            >
-              <Sparkles className="h-4 w-4 text-amber-300" />
-              {hasEvaluation ? 'Re-evaluate Bids' : 'Execute Bid Evaluation'}
-            </Button>
+            {isWinnerDeclared ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        color="primary"
+                        size="sm"
+                        disabled
+                        className="h-9 text-xs font-bold gap-1.5 shadow-sm opacity-60 cursor-not-allowed"
+                      >
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        Re-evaluate Bids
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-xs">
+                    Bid evaluation cannot be re-evaluated after a winning bidder {winningSupplierName ? `(${winningSupplierName}) ` : ''}has been declared and recommended for award.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <Button
+                color="primary"
+                size="sm"
+                onClick={() => setIsEvaluateModalOpen(true)}
+                disabled={admittedSubmissions.length === 0}
+                className="h-9 text-xs font-bold gap-1.5 shadow-sm"
+              >
+                <Sparkles className="h-4 w-4 text-amber-300" />
+                {hasEvaluation ? 'Re-evaluate Bids' : 'Execute Bid Evaluation'}
+              </Button>
+            )}
           </div>
         </CardHeader>
 
@@ -399,6 +450,7 @@ export function BidEvaluationTab({
         technicalWeight={activeTechWeight}
         financialWeight={activeFinWeight}
         admittedSubmissions={admittedSubmissions}
+        isWinnerDeclared={isWinnerDeclared}
       />
     </div>
   )

@@ -74,6 +74,12 @@ import { getPPMPItemsRequest } from '../handlers/getPPMPItemsRequest'
 import { createPPMPItemRequest } from '../handlers/createPPMPItemRequest'
 import { createPPMPItemAllocationRequest } from '../handlers/createPPMPItemAllocationRequest'
 import type { AllocationMonth, ProcurementProjectType } from '../types'
+import {
+  deriveScheduleDates,
+  getFiscalYearDefaultDates,
+  PPMP_ALLOCATION_MONTHS,
+  type DerivedScheduleDates,
+} from '../lib/ppmpScheduleDerivation'
 
 import type { ProcurementItem } from '@/components/features/planning/procurement-item/types/procurementItem.types'
 import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
@@ -95,6 +101,10 @@ function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem & { availa
   } as ProcurementItem & { availableStock?: number }
 }
 
+// ---------------------------------------------------------------------------
+// Shared Hooks
+// ---------------------------------------------------------------------------
+
 const useNONCSEItems = createQueryHookFromTemplate(getNONCSEItemsRequest)
 const useProcurementModes = createQueryHookFromTemplate(
   getProcurementModesRequest,
@@ -110,10 +120,10 @@ export interface ItemReviewConfig {
   plannedQuantity?: number
   procurementModeId: string
   projectType:
-    | 'Goods'
-    | 'Infrastructure'
-    | 'ConsultingServices'
-    | 'GeneralSupportServices'
+  | 'Goods'
+  | 'Infrastructure'
+  | 'ConsultingServices'
+  | 'GeneralSupportServices'
   papCode: string
   preProcurementConference: boolean
   procurementStartDate: string
@@ -123,6 +133,7 @@ export interface ItemReviewConfig {
   remarks: string
   enableAllocations: boolean
   monthlyQuantities: Record<AllocationMonth, number>
+  isScheduleAutoDerived?: boolean
 }
 
 interface AddPPMPItemsModalProps {
@@ -134,6 +145,7 @@ interface AddPPMPItemsModalProps {
   fiscalYear?: number | string
   ppmpTitle?: string
   expenditureItemTitle?: string
+  defaultPapCode?: string
   onSuccess?: () => void
 }
 
@@ -220,6 +232,7 @@ export default function AddPPMPItemsModal({
   fiscalYear,
   ppmpTitle,
   expenditureItemTitle,
+  defaultPapCode,
   onSuccess,
 }: AddPPMPItemsModalProps) {
   const queryClient = useQueryClient()
@@ -253,6 +266,11 @@ export default function AddPPMPItemsModal({
   const [isAdding, setIsAdding] = useState(false)
   const [progressIndex, setProgressIndex] = useState(0)
   const [totalProgress, setTotalProgress] = useState(0)
+  const [processingItemName, setProcessingItemName] = useState('')
+  const [processingSubStep, setProcessingSubStep] = useState('')
+  const [failedItems, setFailedItems] = useState<
+    Array<{ id: string; name: string; error: string }>
+  >([])
   const isCommittedRef = useRef(false)
 
   // Filters by CSE tab vs Non-CSE tab
@@ -375,6 +393,7 @@ export default function AddPPMPItemsModal({
 
   // Query existing PPMP items in this expenditure block to prevent duplicates
   const { data: existingPPMPItemsResponse } = usePPMPItems({
+    pathParams: {},
     queryParams: {
       filters: ppmpExpenditureItemId ? `ppmpExpenditureItemId==${ppmpExpenditureItemId}` : undefined,
       pageSize: 1000,
@@ -608,7 +627,7 @@ export default function AddPPMPItemsModal({
               plannedQuantity: undefined,
               procurementModeId: '',
               projectType: 'Goods',
-              papCode: '',
+              papCode: defaultPapCode || '',
               preProcurementConference: false,
               procurementStartDate: '',
               procurementEndDate: '',
@@ -616,6 +635,7 @@ export default function AddPPMPItemsModal({
               expectedDeliveryEnd: '',
               remarks: '',
               enableAllocations: false,
+              isScheduleAutoDerived: true,
               monthlyQuantities: {
                 January: 0,
                 February: 0,
@@ -636,7 +656,7 @@ export default function AddPPMPItemsModal({
         return next
       })
     },
-    [],
+    [defaultPapCode],
   )
 
   const updateConfig = (itemId: string, patch: Partial<ItemReviewConfig>) => {
@@ -666,6 +686,9 @@ export default function AddPPMPItemsModal({
     setDetailsItemId(null)
     setDetailsItemType(null)
     setConfirmCloseOpen(false)
+    setFailedItems([])
+    setProcessingItemName('')
+    setProcessingSubStep('')
     isCommittedRef.current = false
   }, [])
 
@@ -753,6 +776,7 @@ export default function AddPPMPItemsModal({
     }
 
     setIsAdding(true)
+    setFailedItems([])
     isCommittedRef.current = false
 
     // Calculate total operations to track progress
@@ -767,16 +791,19 @@ export default function AddPPMPItemsModal({
       }
     })
 
-    setTotalProgress(totalOps)
+    setTotalProgress(Math.max(1, totalOps))
     setProgressIndex(0)
 
     let successCount = 0
     let failedCount = 0
     const successfullyCreatedIds: string[] = []
+    const failedItemsList: Array<{ id: string; name: string; error: string }> = []
 
     try {
       for (const { type, item } of selectedList) {
         const config = configs[item.id]!
+        setProcessingItemName(item.name || 'Item')
+        setProcessingSubStep('Creating procurement item entry...')
         setProgressIndex((prev) => prev + 1)
 
         let createdItemId = ''
@@ -796,7 +823,7 @@ export default function AddPPMPItemsModal({
             cseItemId: undefined,
             nonCseItemId: type === 'non-cse' ? item.id : undefined,
             projectType: config.projectType,
-            papCode: config.papCode || undefined,
+            papCode: defaultPapCode || config.papCode || undefined,
             preProcurementConference: config.preProcurementConference,
             procurementStartDate: config.procurementStartDate || undefined,
             procurementEndDate: config.procurementEndDate || undefined,
@@ -811,11 +838,27 @@ export default function AddPPMPItemsModal({
             payload,
           })
           // Extract GUID from response - handle both string and object payloads
-          createdItemId = typeof response.data === 'string' ? response.data : (response.data?.id ?? '')
+          createdItemId =
+            typeof response.data === 'string'
+              ? response.data
+              : (response.data?.id ?? '')
           successCount++
           successfullyCreatedIds.push(item.id)
-        } catch (err) {
+        } catch (err: unknown) {
           failedCount++
+          const errorObj = err as {
+            response?: { data?: { message?: string } }
+            message?: string
+          }
+          const errorMessage =
+            errorObj?.response?.data?.message ||
+            errorObj?.message ||
+            'Failed to create item'
+          failedItemsList.push({
+            id: item.id,
+            name: item.name || 'Item',
+            error: errorMessage,
+          })
           console.error(`Failed to add item: ${item.name}`, err)
           continue // Skip allocations if item creation failed
         }
@@ -826,6 +869,7 @@ export default function AddPPMPItemsModal({
             ([_, qty]) => qty > 0,
           )
           for (const [month, qty] of activeMonths) {
+            setProcessingSubStep(`Allocating ${qty} units for ${month}...`)
             setProgressIndex((prev) => prev + 1)
             try {
               await createAllocation({
@@ -863,10 +907,6 @@ export default function AddPPMPItemsModal({
           return next
         })
 
-        toast.success(
-          `Successfully added ${successCount} item(s) to expenditure block.`,
-        )
-
         // Invalidate queries to refresh lists and workspace
         await queryClient.invalidateQueries({
           predicate: (query) =>
@@ -879,19 +919,29 @@ export default function AddPPMPItemsModal({
         onSuccess?.()
       }
 
-      if (failedCount > 0) {
-        toast.error(`Failed to add ${failedCount} item(s).`)
-      }
-
-      // If all items succeeded, wait a 600ms safety delay for list updates, mark committed and close cleanly
       if (failedCount === 0 && successCount > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 600))
+        setProgressIndex(totalOps)
+        setProcessingSubStep('All items successfully added!')
+        toast.success(
+          `Successfully added ${successCount} item(s) to expenditure block.`,
+        )
+        // Brief 180ms frame so 100% completion is visually registered
+        await new Promise((resolve) => setTimeout(resolve, 180))
         isCommittedRef.current = true
-        forceClose()
+        onOpenChange(false)
+      } else if (failedCount > 0) {
+        setFailedItems(failedItemsList)
+        setIsAdding(false)
+        if (successCount > 0) {
+          toast.warning(
+            `Added ${successCount} item(s), but ${failedCount} item(s) failed.`,
+          )
+        } else {
+          toast.error(`Failed to add ${failedCount} item(s).`)
+        }
       }
     } catch (globalErr) {
       toast.error('An error occurred during batch creation.')
-    } finally {
       setIsAdding(false)
     }
   }
@@ -900,6 +950,77 @@ export default function AddPPMPItemsModal({
     () => Array.from(selectedItems.values()),
     [selectedItems],
   )
+
+  const handleAutoDeriveSchedule = useCallback(
+    (itemId: string) => {
+      const config = configs[itemId]
+      if (!config) return
+      const modeName =
+        procurementModes.find((m) => m.id === config.procurementModeId)?.name || ''
+
+      if (config.enableAllocations) {
+        const derived = deriveScheduleDates({
+          monthlyQuantities: config.monthlyQuantities,
+          fiscalYear,
+          procurementModeName: modeName,
+        })
+        if (derived) {
+          updateConfig(itemId, {
+            ...derived,
+            isScheduleAutoDerived: true,
+          })
+          toast.success('Procurement and delivery schedules updated from monthly allocations.')
+          return
+        }
+      }
+
+      // Fallback: apply default fiscal year schedule
+      const defaultDates = getFiscalYearDefaultDates(fiscalYear)
+      updateConfig(itemId, {
+        ...defaultDates,
+        isScheduleAutoDerived: true,
+      })
+      toast.info(`Defaulted schedule to fiscal year ${Number(fiscalYear) || new Date().getFullYear()}.`)
+    },
+    [configs, fiscalYear, procurementModes],
+  )
+
+  const handleAutoDeriveAllSchedules = useCallback(() => {
+    if (selectedList.length === 0) return
+
+    let updatedCount = 0
+    setConfigs((prev) => {
+      const next = { ...prev }
+      selectedList.forEach(({ item }) => {
+        const config = next[item.id]
+        if (!config) return
+        const modeName =
+          procurementModes.find((m) => m.id === config.procurementModeId)?.name || ''
+
+        let derived: DerivedScheduleDates | null = null
+        if (config.enableAllocations) {
+          derived = deriveScheduleDates({
+            monthlyQuantities: config.monthlyQuantities,
+            fiscalYear,
+            procurementModeName: modeName,
+          })
+        }
+        if (!derived) {
+          derived = getFiscalYearDefaultDates(fiscalYear)
+        }
+
+        next[item.id] = {
+          ...config,
+          ...derived,
+          isScheduleAutoDerived: true,
+        }
+        updatedCount++
+      })
+      return next
+    })
+
+    toast.success(`Auto-calculated schedules for ${updatedCount} ${updatedCount === 1 ? 'item' : 'items'}.`)
+  }, [selectedList, fiscalYear, procurementModes])
 
   return (
     <>
@@ -911,146 +1032,226 @@ export default function AddPPMPItemsModal({
           }
         }}
         title={
-          step === 'select'
-            ? 'Add Items to Workspace'
-            : 'Configure Selected Items'
+          isAdding
+            ? 'Adding Items to Workspace'
+            : failedItems.length > 0
+              ? 'Batch Addition Incomplete'
+              : step === 'select'
+                ? 'Add Items to Workspace'
+                : 'Configure Selected Items'
         }
         description={
-          step === 'select'
-            ? 'Browse procurement catalog items, filter quickly, and select items to add to the PPMP.'
-            : 'Define procurement mode and individual unit prices for the selected items.'
+          isAdding
+            ? 'Please wait while items and monthly distribution allocations are registered.'
+            : failedItems.length > 0
+              ? 'One or more items encountered an error during batch addition.'
+              : step === 'select'
+                ? 'Browse procurement catalog items, filter quickly, and select items to add to the PPMP.'
+                : 'Define procurement mode and individual unit prices for the selected items.'
         }
         size="5xl"
-        showCloseButton={!isAdding}
+        showCloseButton={!isAdding && failedItems.length === 0}
         onPointerDownOutside={
           isAdding
             ? (e) => e.preventDefault()
             : selectedItems.size > 0 && !isCommittedRef.current
               ? (e) => {
-                  e.preventDefault()
-                  setConfirmCloseOpen(true)
-                }
+                e.preventDefault()
+                setConfirmCloseOpen(true)
+              }
               : undefined
         }
         footer={
-          <div className="sticky bottom-0 border-t border-border bg-background/95 px-1 pt-4 backdrop-blur">
-            <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Badge
-                  variant="soft"
-                  color={selectedCount > 0 ? 'default' : 'secondary'}
-                >
-                  {selectedCount} selected
-                </Badge>
-                <span>
-                  {step === 'select'
-                    ? selectedCount > 0
-                      ? 'Items ready to be configured.'
-                      : 'Select one or more items to continue.'
-                    : `Total Planned Cost: ${new Intl.NumberFormat('en-PH', {
+          isAdding || failedItems.length > 0 ? null : (
+            <div className="sticky bottom-0 border-t border-border bg-background/95 px-1 pt-4 backdrop-blur">
+              <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <Badge
+                    variant="soft"
+                    color={selectedCount > 0 ? 'default' : 'secondary'}
+                  >
+                    {selectedCount} selected
+                  </Badge>
+                  <span>
+                    {step === 'select'
+                      ? selectedCount > 0
+                        ? 'Items ready to be configured.'
+                        : 'Select one or more items to continue.'
+                      : `Total Planned Cost: ${new Intl.NumberFormat('en-PH', {
                         style: 'currency',
                         currency: 'PHP',
                       }).format(totalStep2EstimatedCost)}`}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {step === 'select' ? (
-                  <>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedItems(new Map())}
-                      disabled={selectedCount === 0}
-                    >
-                      Clear selection
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setStep('configure')
-                        if (selectedList.length > 0 && !expandedItemId) {
-                          setExpandedItemId(selectedList[0].item.id)
-                        }
-                      }}
-                      disabled={selectedCount === 0}
-                    >
-                      Review Selected ({selectedCount})
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setStep('select')}
-                      disabled={isAdding}
-                      className="gap-2"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Back to Catalog
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleConfirmAdd}
-                      disabled={isAdding || selectedCount === 0}
-                      className="gap-2 bg-primary hover:bg-primary/95 text-white"
-                    >
-                      {isAdding ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Adding...
-                        </>
-                      ) : (
-                        `Add to Workspace (${selectedCount})`
-                      )}
-                    </Button>
-                  </>
-                )}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {step === 'select' ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedItems(new Map())}
+                        disabled={selectedCount === 0}
+                      >
+                        Clear selection
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setStep('configure')
+                          if (selectedList.length > 0 && !expandedItemId) {
+                            setExpandedItemId(selectedList[0].item.id)
+                          }
+                        }}
+                        disabled={selectedCount === 0}
+                      >
+                        Review Selected ({selectedCount})
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStep('select')}
+                        disabled={isAdding}
+                        className="gap-2"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to Catalog
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleConfirmAdd}
+                        disabled={isAdding || selectedCount === 0}
+                        className="gap-2 bg-primary hover:bg-primary/95 text-white"
+                      >
+                        {isAdding ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Adding...
+                          </>
+                        ) : (
+                          `Add to Workspace (${selectedCount})`
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )
         }
       >
-        {/* 
-        Safety Overlay during Batch Addition
-      */}
-        {isAdding && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-6 text-center">
-            <div className="bg-background border border-border shadow-xl rounded-xl p-8 max-w-md w-full flex flex-col items-center space-y-4">
-              <Loader2 className="h-12 w-12 text-primary animate-spin" />
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Creating PPMP Items
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Adding item{' '}
-                  <span className="font-semibold text-foreground">
-                    {progressIndex}
-                  </span>{' '}
-                  of{' '}
-                  <span className="font-semibold text-foreground">
-                    {totalProgress}
+        {isAdding ? (
+          /* Full-Dialog Modal Takeover during Batch Addition */
+          <div className="flex flex-col items-center justify-center min-h-[440px] py-12 px-6 text-center space-y-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative flex items-center justify-center h-20 w-20 rounded-2xl bg-primary/10 border border-primary/20 shadow-xl shadow-primary/10">
+              <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping opacity-25" />
+              <Loader2 className="h-10 w-10 text-primary animate-spin" />
+            </div>
+
+            <div className="space-y-2 max-w-md w-full">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Adding to PPMP Workspace</span>
+              </div>
+
+              <h3 className="text-xl font-bold text-foreground">
+                {processingItemName ? (
+                  <span className="truncate block max-w-sm sm:max-w-md mx-auto" title={processingItemName}>
+                    {processingItemName}
                   </span>
-                  .
-                </p>
-              </div>
-              <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-primary h-full transition-all duration-300 rounded-full"
-                  style={{ width: `${(progressIndex / totalProgress) * 100}%` }}
-                />
-              </div>
-              <p className="text-xs text-rose-500 font-medium">
-                Please do not close the modal, refresh the page, or navigate
-                away.
+                ) : (
+                  'Processing PPMP Items'
+                )}
+              </h3>
+
+              <p className="text-xs text-muted-foreground min-h-[18px]">
+                {processingSubStep || 'Registering procurement records...'}
               </p>
             </div>
-          </div>
-        )}
 
-        {step === 'select' ? (
+            {/* Progress Bar & Operations Counter */}
+            <div className="w-full max-w-md space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold px-1">
+                <span className="text-muted-foreground">
+                  Step {Math.min(progressIndex, totalProgress)} of {totalProgress} operations
+                </span>
+                <span className="text-primary font-mono font-bold">
+                  {Math.min(100, Math.round((progressIndex / Math.max(1, totalProgress)) * 100))}%
+                </span>
+              </div>
+
+              <div className="w-full bg-muted/60 h-3 rounded-full overflow-hidden p-0.5 border border-border/60 shadow-inner">
+                <div
+                  className="bg-primary h-full transition-all duration-300 rounded-full shadow-xs"
+                  style={{
+                    width: `${Math.min(100, Math.max(5, (progressIndex / Math.max(1, totalProgress)) * 100))}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Safety Notice */}
+            <p className="text-xs text-muted-foreground/80 max-w-xs">
+              Please keep this window open while records and monthly distributions are being saved.
+            </p>
+          </div>
+        ) : failedItems.length > 0 ? (
+          /* Error Summary View when one or more items fail */
+          <div className="flex flex-col items-center justify-center min-h-[400px] py-10 px-6 text-center space-y-5 animate-in fade-in duration-200">
+            <div className="h-16 w-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/10">
+              <AlertCircle className="h-8 w-8" />
+            </div>
+
+            <div className="space-y-1 max-w-md">
+              <h3 className="text-lg font-bold text-foreground">
+                Batch Addition Partially Incomplete
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {failedItems.length} item(s) could not be registered. Successfully added items have been saved to your expenditure block.
+              </p>
+            </div>
+
+            {/* List of failed items */}
+            <div className="w-full max-w-lg rounded-xl border border-border bg-muted/20 p-3 max-h-56 overflow-y-auto divide-y divide-border/60 text-left">
+              {failedItems.map((fail, idx) => (
+                <div key={idx} className="py-2.5 px-2 space-y-0.5 first:pt-1 last:pb-1">
+                  <div className="text-xs font-semibold text-foreground flex items-center justify-between">
+                    <span className="truncate max-w-[280px]">{fail.name}</span>
+                    <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/30 bg-amber-500/5">
+                      Failed
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate">{fail.error}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={forceClose}
+                className="text-xs"
+              >
+                Close & Review Workspace
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleConfirmAdd}
+                className="text-xs gap-2 bg-primary hover:bg-primary/95 text-white"
+              >
+                <RefreshCcw className="h-3.5 w-3.5" />
+                Retry Failed Items ({failedItems.length})
+              </Button>
+            </div>
+          </div>
+        ) : step === 'select' ? (
           <div className="space-y-4 pr-1">
             <Tabs
               value={activeTab}
@@ -1366,13 +1567,13 @@ export default function AddPPMPItemsModal({
                                                         category,
                                                       )
                                                         ? tabFilters.categories.filter(
-                                                            (c) =>
-                                                              c !== category,
-                                                          )
+                                                          (c) =>
+                                                            c !== category,
+                                                        )
                                                         : [
-                                                            ...tabFilters.categories,
-                                                            category,
-                                                          ],
+                                                          ...tabFilters.categories,
+                                                          category,
+                                                        ],
                                                   },
                                                   true,
                                                 )
@@ -1417,12 +1618,12 @@ export default function AddPPMPItemsModal({
                                               {
                                                 unitOfMeasures: isSelected
                                                   ? tabFilters.unitOfMeasures.filter(
-                                                      (u) => u !== unit,
-                                                    )
+                                                    (u) => u !== unit,
+                                                  )
                                                   : [
-                                                      ...tabFilters.unitOfMeasures,
-                                                      unit,
-                                                    ],
+                                                    ...tabFilters.unitOfMeasures,
+                                                    unit,
+                                                  ],
                                               },
                                               true,
                                             )
@@ -1488,9 +1689,9 @@ export default function AddPPMPItemsModal({
                           </div>
                         ) : totalMatchingCount === 0 ? (
                           activeTab === 'cse' &&
-                          isReadyToFetchCse &&
-                          !search.trim() &&
-                          currentFilters.categories.length === 0 ? (
+                            isReadyToFetchCse &&
+                            !search.trim() &&
+                            currentFilters.categories.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
                               <div className="rounded-full bg-amber-500/10 p-3 mb-3 text-amber-600 dark:text-amber-400">
                                 <AlertCircle className="h-6 w-6" />
@@ -1590,7 +1791,7 @@ export default function AddPPMPItemsModal({
                                   tab === 'cse'
                                     ? (item as ProcurementItem).objectCodeName
                                     : (item as NONCSEItem)
-                                        .procurementCategoryName
+                                      .procurementCategoryName
 
                                 return (
                                   <div
@@ -1751,25 +1952,25 @@ export default function AddPPMPItemsModal({
 
                                         {((tab === 'cse' &&
                                           (item as ProcurementItem).unitPrice !==
-                                            undefined) ||
+                                          undefined) ||
                                           (tab === 'non-cse' &&
                                             (item as NONCSEItem).currentPrice !==
-                                              undefined)) && (
-                                          <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
-                                            <span className="text-[10px] text-slate-400 font-normal">
-                                              Catalog Price
-                                            </span>
-                                            <span className="text-primary font-extrabold text-[12px]">
-                                              ₱
-                                              {(tab === 'cse'
-                                                ? (item as ProcurementItem)
+                                            undefined)) && (
+                                            <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
+                                              <span className="text-[10px] text-slate-400 font-normal">
+                                                Catalog Price
+                                              </span>
+                                              <span className="text-primary font-extrabold text-[12px]">
+                                                ₱
+                                                {(tab === 'cse'
+                                                  ? (item as ProcurementItem)
                                                     .unitPrice ?? 0
-                                                : (item as NONCSEItem)
+                                                  : (item as NONCSEItem)
                                                     .currentPrice ?? 0
-                                              ).toFixed(2)}
-                                            </span>
-                                          </div>
-                                        )}
+                                                ).toFixed(2)}
+                                              </span>
+                                            </div>
+                                          )}
 
                                         <div className="flex items-center justify-between border-t border-slate-100/80 pt-2 mt-1">
                                           <button
@@ -1971,7 +2172,17 @@ export default function AddPPMPItemsModal({
                   Review and configure procurement parameters, delivery timelines, and optional monthly quantity distributions for each selected item.
                 </p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAutoDeriveAllSchedules}
+                  className="h-7 text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/10 shadow-2xs"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  Auto-calculate All Schedules
+                </Button>
                 <Badge variant="soft" color="default" className="font-semibold text-xs px-2.5 py-1">
                   {selectedCount} {selectedCount === 1 ? 'Item' : 'Items'} to Configure
                 </Badge>
@@ -1995,26 +2206,26 @@ export default function AddPPMPItemsModal({
                     const isPriceLocked =
                       type === 'cse'
                         ? (item as ProcurementItem).hasPrice &&
-                          typeof (item as ProcurementItem).unitPrice ===
-                            'number' &&
-                          ((item as ProcurementItem).unitPrice ?? 0) > 0
+                        typeof (item as ProcurementItem).unitPrice ===
+                        'number' &&
+                        ((item as ProcurementItem).unitPrice ?? 0) > 0
                         : typeof (item as NONCSEItem).currentPrice ===
-                            'number' &&
-                          ((item as NONCSEItem).currentPrice ?? 0) > 0
+                        'number' &&
+                        ((item as NONCSEItem).currentPrice ?? 0) > 0
 
                     const config = configs[item.id] || {
                       unitPrice:
                         type === 'cse'
                           ? (item as ProcurementItem).hasPrice &&
                             typeof (item as ProcurementItem).unitPrice ===
-                              'number' &&
+                            'number' &&
                             ((item as ProcurementItem).unitPrice ?? 0) > 0
                             ? ((item as ProcurementItem).unitPrice ?? 0)
                             : 0
                           : ((item as NONCSEItem).currentPrice ?? 0),
                       procurementModeId: '',
                       projectType: 'Goods',
-                      papCode: '',
+                      papCode: defaultPapCode || '',
                       preProcurementConference: false,
                       procurementStartDate: '',
                       procurementEndDate: '',
@@ -2022,6 +2233,7 @@ export default function AddPPMPItemsModal({
                       expectedDeliveryEnd: '',
                       remarks: '',
                       enableAllocations: false,
+                      isScheduleAutoDerived: true,
                       monthlyQuantities: {
                         January: 0,
                         February: 0,
@@ -2042,10 +2254,12 @@ export default function AddPPMPItemsModal({
                     const plannedQty = config.plannedQuantity || 0
                     const allocatedQty = config.enableAllocations
                       ? Object.values(config.monthlyQuantities).reduce(
-                          (a, b) => a + b,
-                          0,
-                        )
+                        (a, b) => a + b,
+                        0,
+                      )
                       : 0
+                    const remainingQty = Math.max(0, plannedQty - allocatedQty)
+                    const calculatedTotal = plannedQty * (config.unitPrice || 0)
                     const availableStock = item.availableStock ?? item.stockOnHand
                     const hasStockLimit = typeof availableStock === 'number' && availableStock > 0
                     const hasExceededStock = hasStockLimit && plannedQty > availableStock
@@ -2057,7 +2271,7 @@ export default function AddPPMPItemsModal({
                     const hasMopError = !config.procurementModeId
                     const hasAllocError =
                       config.enableAllocations && allocatedQty > plannedQty
-                    
+
                     const hasProcStartError = !config.procurementStartDate
                     const hasProcEndError =
                       !config.procurementEndDate ||
@@ -2097,20 +2311,7 @@ export default function AddPPMPItemsModal({
                     const imgUrl =
                       (item as ProcurementItem).imageURL || item.imageUrl
 
-                    const MONTH_NAMES: AllocationMonth[] = [
-                      'January',
-                      'February',
-                      'March',
-                      'April',
-                      'May',
-                      'June',
-                      'July',
-                      'August',
-                      'September',
-                      'October',
-                      'November',
-                      'December',
-                    ]
+                    const MONTH_NAMES = PPMP_ALLOCATION_MONTHS
 
                     const formatCurrency = (val: number): string =>
                       new Intl.NumberFormat('en-PH', {
@@ -2226,7 +2427,7 @@ export default function AddPPMPItemsModal({
                             >
                               View Details
                             </Button>
-                            
+
                             <div className="text-right pl-2 border-l border-border/60">
                               <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
                                 Estimated Cost
@@ -2335,28 +2536,28 @@ export default function AddPPMPItemsModal({
                                     placeholder="e.g. 100"
                                     value={config.plannedQuantity ?? ''}
                                     onChange={(e) =>
-                                       updateConfig(item.id, {
-                                         plannedQuantity:
-                                           e.target.value === ''
-                                             ? undefined
-                                             : Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                                       })
-                                     }
-                                     className={cn(
-                                       'text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
-                                       hasQtyError && 'border-red-500 bg-red-50/20',
-                                     )}
-                                   />
-                                   {hasQtyError && !hasExceededStock && (
-                                     <p className="text-[10px] text-red-500 font-medium mt-0.5">Planned quantity is required (≥ 1)</p>
-                                   )}
-                                   {hasStockLimit && (
-                                     <p className={cn('text-[10px] font-medium mt-0.5', hasExceededStock ? 'text-red-500 font-semibold' : 'text-muted-foreground')}>
-                                       Available Stock: {availableStock} {item.uomName || 'units'}
-                                       {hasExceededStock && ' (Cannot exceed available stock)'}
-                                     </p>
-                                   )}
-                                 </div>
+                                      updateConfig(item.id, {
+                                        plannedQuantity:
+                                          e.target.value === ''
+                                            ? undefined
+                                            : Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                                      })
+                                    }
+                                    className={cn(
+                                      'text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
+                                      hasQtyError && 'border-red-500 bg-red-50/20',
+                                    )}
+                                  />
+                                  {hasQtyError && !hasExceededStock && (
+                                    <p className="text-[10px] text-red-500 font-medium mt-0.5">Planned quantity is required (≥ 1)</p>
+                                  )}
+                                  {hasStockLimit && (
+                                    <p className={cn('text-[10px] font-medium mt-0.5', hasExceededStock ? 'text-red-500 font-semibold' : 'text-muted-foreground')}>
+                                      Available Stock: {availableStock} {item.uomName || 'units'}
+                                      {hasExceededStock && ' (Cannot exceed available stock)'}
+                                    </p>
+                                  )}
+                                </div>
 
                                 {/* Unit Price */}
                                 <div className="space-y-1.5">
@@ -2385,16 +2586,16 @@ export default function AddPPMPItemsModal({
                                           unitPrice: Math.max(
                                             0,
                                             Number.parseFloat(e.target.value) ||
-                                              0,
+                                            0,
                                           ),
                                         })
                                       }
                                       className={cn(
                                         'pl-6 text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
                                         isPriceLocked &&
-                                          'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
+                                        'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
                                         hasPriceError &&
-                                          'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20',
+                                        'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20',
                                       )}
                                     />
                                   </div>
@@ -2414,18 +2615,30 @@ export default function AddPPMPItemsModal({
                                     <FieldDescriptionTooltip fieldKey="procurementModeId" className="h-3.5 w-3.5" />
                                   </div>
                                   <Select
-                                    value={config.procurementModeId}
-                                    onValueChange={(val) =>
-                                      updateConfig(item.id, {
-                                        procurementModeId: val,
-                                      })
-                                    }
-                                  >
+                                     value={config.procurementModeId}
+                                     onValueChange={(val) => {
+                                       const patch: Partial<ItemReviewConfig> = {
+                                         procurementModeId: val,
+                                       }
+                                       if (config.enableAllocations && config.isScheduleAutoDerived !== false) {
+                                         const selectedMode = procurementModes.find((m) => m.id === val)
+                                         const derived = deriveScheduleDates({
+                                           monthlyQuantities: config.monthlyQuantities,
+                                           fiscalYear,
+                                           procurementModeName: selectedMode?.name || '',
+                                         })
+                                         if (derived) {
+                                           Object.assign(patch, derived)
+                                         }
+                                       }
+                                       updateConfig(item.id, patch)
+                                     }}
+                                   >
                                     <SelectTrigger
                                       className={cn(
                                         'w-full border-default-200 text-xs h-9 focus:ring-primary/25',
                                         hasMopError &&
-                                          'border-red-500 bg-red-50/20',
+                                        'border-red-500 bg-red-50/20',
                                       )}
                                     >
                                       <SelectValue placeholder="Select Mode *" />
@@ -2494,113 +2707,152 @@ export default function AddPPMPItemsModal({
                               </div>
 
                               {/* Row 2: Timeline Schedules */}
-                              <div className="grid gap-3.5 sm:grid-cols-2">
-                                {/* Procurement Schedule */}
-                                <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
-                                  <div className="flex items-center gap-1">
-                                    <label className="text-xs font-semibold text-foreground">
-                                      Procurement Schedule *
-                                    </label>
-                                    <FieldDescriptionTooltip fieldKey="procurementStartDate" className="h-3.5 w-3.5" />
+                              <div className="space-y-2.5">
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-foreground">
+                                      Timeline Schedules *
+                                    </span>
+                                    {config.isScheduleAutoDerived ? (
+                                      <Badge
+                                        variant="soft"
+                                        className="text-[10px] px-1.5 py-0 font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                                      >
+                                        Auto-calculated
+                                      </Badge>
+                                    ) : (config.procurementStartDate || config.expectedDeliveryStart) ? (
+                                      <Badge
+                                        variant="soft"
+                                        className="text-[10px] px-1.5 py-0 font-medium bg-muted/50 text-muted-foreground border border-border"
+                                      >
+                                        Custom
+                                      </Badge>
+                                    ) : null}
                                   </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                      <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
-                                      <Input
-                                        type="date"
-                                        value={config.procurementStartDate || ''}
-                                        onChange={(e) =>
-                                          updateConfig(item.id, {
-                                            procurementStartDate: e.target.value,
-                                          })
-                                        }
-                                        className={cn(
-                                          'text-xs h-9 border-default-200 w-full',
-                                          hasProcStartError && 'border-red-500 bg-red-50/20'
-                                        )}
-                                        placeholder="Start"
-                                      />
-                                      {hasProcStartError && (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
-                                      <Input
-                                        type="date"
-                                        value={config.procurementEndDate || ''}
-                                        onChange={(e) =>
-                                          updateConfig(item.id, {
-                                            procurementEndDate: e.target.value,
-                                          })
-                                        }
-                                        className={cn(
-                                          'text-xs h-9 border-default-200 w-full',
-                                          hasProcEndError && 'border-red-500 bg-red-50/20'
-                                        )}
-                                        placeholder="End"
-                                      />
-                                      {config.procurementEndDate && config.procurementStartDate && config.procurementEndDate < config.procurementStartDate ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
-                                      ) : !config.procurementEndDate ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
-                                      ) : null}
-                                    </div>
-                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleAutoDeriveSchedule(item.id)}
+                                    className="text-xs h-7 px-2 text-primary border-primary/30 hover:bg-primary/5 hover:text-primary gap-1"
+                                  >
+                                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                                    {config.enableAllocations ? 'Sync from Allocations' : 'Default to Fiscal Year'}
+                                  </Button>
                                 </div>
 
-                                {/* Expected Delivery Window */}
-                                <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
-                                  <div className="flex items-center gap-1">
-                                    <label className="text-xs font-semibold text-foreground">
-                                      Expected Delivery Window *
-                                    </label>
-                                    <FieldDescriptionTooltip fieldKey="expectedDeliveryStart" className="h-3.5 w-3.5" />
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                      <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
-                                      <Input
-                                        type="date"
-                                        value={config.expectedDeliveryStart || ''}
-                                        onChange={(e) =>
-                                          updateConfig(item.id, {
-                                            expectedDeliveryStart: e.target.value,
-                                          })
-                                        }
-                                        className={cn(
-                                          'text-xs h-9 border-default-200 w-full',
-                                          hasDelivStartError && 'border-red-500 bg-red-50/20'
-                                        )}
-                                        placeholder="Start"
-                                      />
-                                      {config.expectedDeliveryStart && config.procurementStartDate && config.expectedDeliveryStart < config.procurementStartDate ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before procurement start</p>
-                                      ) : !config.expectedDeliveryStart ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
-                                      ) : null}
+                                <div className="grid gap-3.5 sm:grid-cols-2">
+                                  {/* Procurement Schedule */}
+                                  <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
+                                    <div className="flex items-center gap-1">
+                                      <label className="text-xs font-semibold text-foreground">
+                                        Procurement Schedule *
+                                      </label>
+                                      <FieldDescriptionTooltip fieldKey="procurementStartDate" className="h-3.5 w-3.5" />
                                     </div>
-                                    <div>
-                                      <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
-                                      <Input
-                                        type="date"
-                                        value={config.expectedDeliveryEnd || ''}
-                                        onChange={(e) =>
-                                          updateConfig(item.id, {
-                                            expectedDeliveryEnd: e.target.value,
-                                          })
-                                        }
-                                        className={cn(
-                                          'text-xs h-9 border-default-200 w-full',
-                                          hasDelivEndError && 'border-red-500 bg-red-50/20'
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
+                                        <Input
+                                          type="date"
+                                          value={config.procurementStartDate || ''}
+                                          onChange={(e) =>
+                                            updateConfig(item.id, {
+                                              procurementStartDate: e.target.value,
+                                              isScheduleAutoDerived: false,
+                                            })
+                                          }
+                                          className={cn(
+                                            'text-xs h-9 border-default-200 w-full',
+                                            hasProcStartError && 'border-red-500 bg-red-50/20'
+                                          )}
+                                          placeholder="Start"
+                                        />
+                                        {hasProcStartError && (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
                                         )}
-                                        placeholder="End"
-                                      />
-                                      {config.expectedDeliveryEnd && config.expectedDeliveryStart && config.expectedDeliveryEnd < config.expectedDeliveryStart ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
-                                      ) : !config.expectedDeliveryEnd ? (
-                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
-                                      ) : null}
+                                      </div>
+                                      <div>
+                                        <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
+                                        <Input
+                                          type="date"
+                                          value={config.procurementEndDate || ''}
+                                          onChange={(e) =>
+                                            updateConfig(item.id, {
+                                              procurementEndDate: e.target.value,
+                                              isScheduleAutoDerived: false,
+                                            })
+                                          }
+                                          className={cn(
+                                            'text-xs h-9 border-default-200 w-full',
+                                            hasProcEndError && 'border-red-500 bg-red-50/20'
+                                          )}
+                                          placeholder="End"
+                                        />
+                                        {config.procurementEndDate && config.procurementStartDate && config.procurementEndDate < config.procurementStartDate ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
+                                        ) : !config.procurementEndDate ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Expected Delivery Window */}
+                                  <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
+                                    <div className="flex items-center gap-1">
+                                      <label className="text-xs font-semibold text-foreground">
+                                        Expected Delivery Window *
+                                      </label>
+                                      <FieldDescriptionTooltip fieldKey="expectedDeliveryStart" className="h-3.5 w-3.5" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
+                                        <Input
+                                          type="date"
+                                          value={config.expectedDeliveryStart || ''}
+                                          onChange={(e) =>
+                                            updateConfig(item.id, {
+                                              expectedDeliveryStart: e.target.value,
+                                              isScheduleAutoDerived: false,
+                                            })
+                                          }
+                                          className={cn(
+                                            'text-xs h-9 border-default-200 w-full',
+                                            hasDelivStartError && 'border-red-500 bg-red-50/20'
+                                          )}
+                                          placeholder="Start"
+                                        />
+                                        {config.expectedDeliveryStart && config.procurementStartDate && config.expectedDeliveryStart < config.procurementStartDate ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before procurement start</p>
+                                        ) : !config.expectedDeliveryStart ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
+                                        ) : null}
+                                      </div>
+                                      <div>
+                                        <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
+                                        <Input
+                                          type="date"
+                                          value={config.expectedDeliveryEnd || ''}
+                                          onChange={(e) =>
+                                            updateConfig(item.id, {
+                                              expectedDeliveryEnd: e.target.value,
+                                              isScheduleAutoDerived: false,
+                                            })
+                                          }
+                                          className={cn(
+                                            'text-xs h-9 border-default-200 w-full',
+                                            hasDelivEndError && 'border-red-500 bg-red-50/20'
+                                          )}
+                                          placeholder="End"
+                                        />
+                                        {config.expectedDeliveryEnd && config.expectedDeliveryStart && config.expectedDeliveryEnd < config.expectedDeliveryStart ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
+                                        ) : !config.expectedDeliveryEnd ? (
+                                          <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
+                                        ) : null}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -2609,22 +2861,31 @@ export default function AddPPMPItemsModal({
                               {/* Row 3: PAP Code & Conference */}
                               <div className="grid gap-3.5 sm:grid-cols-3 sm:items-end">
                                 <div className="space-y-1.5 sm:col-span-2">
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex items-center gap-1.5">
                                     <label className="text-xs font-semibold text-foreground">
                                       PAP Code
                                     </label>
                                     <FieldDescriptionTooltip fieldKey="papCode" className="h-3.5 w-3.5" />
                                   </div>
-                                  <Input
-                                    value={config.papCode || ''}
-                                    placeholder="e.g. 5020301000"
-                                    onChange={(e) =>
-                                      updateConfig(item.id, {
-                                        papCode: e.target.value,
-                                      })
-                                    }
-                                    className="text-xs h-9 border-default-200"
-                                  />
+                                  <div className="h-9 px-3 py-2 rounded-md border border-border/60 bg-muted/40 flex items-center justify-between text-xs">
+                                    {defaultPapCode || config.papCode ? (
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-mono font-medium text-foreground">
+                                          {defaultPapCode || config.papCode}
+                                        </span>
+                                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800">
+                                          Inherited
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground italic text-xs">
+                                        No PAP Code assigned
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    Auto-inherited from parent Program / Activity / Project (PAP).
+                                  </p>
                                 </div>
 
                                 <div className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/70 bg-muted/15 hover:bg-muted/30 cursor-pointer transition-colors">
@@ -2676,11 +2937,25 @@ export default function AddPPMPItemsModal({
                                   <Checkbox
                                     id={`alloc-${item.id}`}
                                     checked={config.enableAllocations}
-                                    onCheckedChange={(checked) =>
-                                      updateConfig(item.id, {
-                                        enableAllocations: !!checked,
-                                      })
-                                    }
+                                    onCheckedChange={(checked) => {
+                                      const isEnabled = !!checked
+                                      const patch: Partial<ItemReviewConfig> = {
+                                        enableAllocations: isEnabled,
+                                      }
+                                      if (isEnabled) {
+                                        const modeName =
+                                          procurementModes.find((m) => m.id === config.procurementModeId)?.name || ''
+                                        const derived = deriveScheduleDates({
+                                          monthlyQuantities: config.monthlyQuantities,
+                                          fiscalYear,
+                                          procurementModeName: modeName,
+                                        })
+                                        if (derived) {
+                                          Object.assign(patch, derived, { isScheduleAutoDerived: true })
+                                        }
+                                      }
+                                      updateConfig(item.id, patch)
+                                    }}
                                   />
                                   <label
                                     htmlFor={`alloc-${item.id}`}
@@ -2749,15 +3024,33 @@ export default function AddPPMPItemsModal({
                                               const qty = Math.max(
                                                 0,
                                                 Number.parseInt(e.target.value) ||
-                                                  0,
+                                                0,
                                               )
                                               const monthlyQuantities = {
                                                 ...config.monthlyQuantities,
                                                 [month]: qty,
                                               }
-                                              updateConfig(item.id, {
+                                              const patch: Partial<ItemReviewConfig> = {
                                                 monthlyQuantities,
-                                              })
+                                              }
+
+                                              if (
+                                                config.isScheduleAutoDerived !== false ||
+                                                (!config.procurementStartDate && !config.expectedDeliveryStart)
+                                              ) {
+                                                const modeName =
+                                                  procurementModes.find((m) => m.id === config.procurementModeId)?.name || ''
+                                                const derived = deriveScheduleDates({
+                                                  monthlyQuantities,
+                                                  fiscalYear,
+                                                  procurementModeName: modeName,
+                                                })
+                                                if (derived) {
+                                                  Object.assign(patch, derived, { isScheduleAutoDerived: true })
+                                                }
+                                              }
+
+                                              updateConfig(item.id, patch)
                                             }}
                                             className="text-xs h-8 text-center border-default-200 focus-visible:ring-primary/20"
                                           />
@@ -2864,7 +3157,7 @@ export default function AddPPMPItemsModal({
                     <span className="font-semibold text-foreground mt-0.5 block truncate">
                       {detailsItemType === 'cse'
                         ? (detailData as ProcurementItem).objectCodeName ||
-                          'N/A'
+                        'N/A'
                         : 'N/A'}
                     </span>
                   </div>
@@ -2878,7 +3171,7 @@ export default function AddPPMPItemsModal({
                   <p className="text-foreground leading-relaxed mt-1 text-xs bg-muted/20 p-3 rounded-lg border border-border/40 whitespace-pre-wrap">
                     {detailsItemType === 'cse'
                       ? (detailData as ProcurementItem).specifications ||
-                        'No specifications provided.'
+                      'No specifications provided.'
                       : 'No description provided.'}
                   </p>
                 </div>
@@ -2896,7 +3189,7 @@ export default function AddPPMPItemsModal({
                     )}
                   {detailsItemType === 'cse' &&
                     typeof (detailData as ProcurementItem).itemLife ===
-                      'number' && (
+                    'number' && (
                       <div className="flex justify-between py-1 border-b border-border/20">
                         <span className="text-muted-foreground">
                           Item Life:
@@ -2908,7 +3201,7 @@ export default function AddPPMPItemsModal({
                     )}
                   {detailsItemType === 'cse' &&
                     typeof (detailData as ProcurementItem).unitPrice ===
-                      'number' && (
+                    'number' && (
                       <div className="flex justify-between py-1 border-b border-border/20">
                         <span className="text-muted-foreground">
                           Catalog Unit Price:
@@ -2925,7 +3218,7 @@ export default function AddPPMPItemsModal({
                     )}
                   {detailsItemType === 'non-cse' &&
                     typeof (detailData as NONCSEItem).currentPrice ===
-                      'number' && (
+                    'number' && (
                       <div className="flex justify-between py-1 border-b border-border/20">
                         <span className="text-muted-foreground">
                           Catalog Price:

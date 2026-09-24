@@ -79,7 +79,7 @@ export function AppInfoSection({ app, isDraft: _isDraft, onEdit: _onEdit }: AppI
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Consolidated PPMPs</p>
               <div className="flex flex-wrap gap-2">
                 {app.ppmpIds.map((ppmpId) => (
-                  <Badge key={ppmpId} variant="outline" className="font-mono">
+                  <Badge key={ppmpId} variant="outline">
                     {ppmpId}
                   </Badge>
                 ))}

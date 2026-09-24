@@ -65,6 +65,11 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             dbQuery = dbQuery.Where(p => allowedPortalStatuses.Contains(p.Status));
         }
 
+        if (string.IsNullOrWhiteSpace(query.Sorts))
+        {
+            dbQuery = dbQuery.OrderByDescending(p => p.CreatedAt);
+        }
+
         var sieveModel = new Sieve.Models.SieveModel
         {
             PageSize = query.PageSize,

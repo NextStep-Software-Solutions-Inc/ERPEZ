@@ -23,6 +23,7 @@ using ERPEZ.Shared.Configuration;
 using SharedCurrentUserService     = ERPEZ.Shared.Interfaces.ICurrentUserService;
 using SharedCurrentUserServiceImpl = ERPEZ.Shared.Services.CurrentUserService;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
+using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Dtos;
 using ERPEZ.Infrastructure.Services.DocumentGeneration.Renderers.Excel;
 
 namespace ERPEZ.Infrastructure;
@@ -196,6 +197,22 @@ public static class DependencyInjection
 
         // APR — PDF
         services.AddScoped<IDocumentRenderer<AprDataDto>, AprPdfRenderer>();
+
+        // Notice of Award — PDF (RA 12009 NGPA Compliant)
+        services.AddScoped<IDocumentRenderer<NoticeOfAwardDataDto>, NoticeOfAwardPdfRenderer>();
+
+        // RFQ — PDF and Excel
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos.RfqDataDto>, RfqPdfRenderer>();
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos.RfqDataDto>, RfqExcelRenderer>();
+
+        // AOB / Abstract of Quotation — PDF
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.AOBs.Dtos.AobDataDto>, AobPdfRenderer>();
+
+        // Contract Agreement — PDF (RA 12009 NGPA Compliant)
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.Contracts.Dtos.ContractDataDto>, ContractPdfRenderer>();
+
+        // Notice to Proceed — PDF (RA 12009 Sec. 66 / GPPB Res. 03-2025)
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.NoticeToProceeds.Dtos.NoticeToProceedDataDto>, NoticeToProceedPdfRenderer>();
 
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config

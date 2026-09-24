@@ -300,7 +300,10 @@ export function BacResolutionWorkspace({
                 <Button
                   variant="outline"
                   onClick={() =>
-                    void navigate({ to: '/v2/bac-resolutions/clauses' })
+                    void navigate({
+                      to: '/v2/procurement-library',
+                      search: { tab: 'ResolutionClauses' },
+                    })
                   }
                   className="gap-1.5 text-xs h-9 bg-white/80 hover:bg-white shadow-xs border-default-300"
                 >
@@ -332,7 +335,7 @@ export function BacResolutionWorkspace({
         {/* 2-Column Responsive Split Master-Detail Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Master Queue (4 cols on desktop) */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 lg:sticky lg:top-4 lg:h-[calc(100vh-8rem)] flex flex-col min-h-0">
             <InboxPanel
               inboxCards={inboxCards}
               selectedId={selectedId ?? null}

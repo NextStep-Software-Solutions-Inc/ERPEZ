@@ -12,7 +12,8 @@ public class BiddingSubmissionResponse
     public string SupplierName { get; set; } = string.Empty;
     public string? TinNumber { get; set; }
     public Guid? PublicSupplierApplicationId { get; set; }
-    public decimal OriginalProposedAmount { get; set; }
+    public decimal? OriginalProposedAmount { get; set; }
+    public bool IsFinancialOpened { get; set; }
     public string BidSecurityType { get; set; } = string.Empty;
     public decimal? BidSecurityAmount { get; set; }
     public string? BidSecurityNumber { get; set; }
@@ -22,6 +23,22 @@ public class BiddingSubmissionResponse
     public string? Remarks { get; set; }
     public BidOpeningRecordResponse? OpeningRecord { get; set; }
     public List<ApplicationDocumentDto> Documents { get; set; } = [];
+    public List<BiddingSubmissionItemResponse>? Items { get; set; }
+}
+
+public class BiddingSubmissionItemResponse
+{
+    public Guid Id { get; set; }
+    public Guid BiddingSubmissionId { get; set; }
+    public Guid ProcurementProjectItemId { get; set; }
+    public string? ItemName { get; set; }
+    public string? Description { get; set; }
+    public decimal Quantity { get; set; }
+    public string Uom { get; set; } = string.Empty;
+    public decimal? UnitPrice { get; set; }
+    public decimal? TotalPrice { get; set; }
+    public string? Brand { get; set; }
+    public string? Model { get; set; }
 }
 
 public class BidOpeningRecordResponse

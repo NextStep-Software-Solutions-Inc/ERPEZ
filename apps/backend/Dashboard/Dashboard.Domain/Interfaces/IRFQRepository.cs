@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using Sieve.Models;
 
 namespace ERPEZ.Domain.Interfaces;
@@ -11,6 +12,7 @@ public interface IRFQRepository : IRepository<RFQ>
 {
     Task<(IReadOnlyList<RFQ> Entities, int TotalCount)> GetAllWithDetailsAsync(
         SieveModel sieveModel,
+        StatusEnum? status = null,
         CancellationToken cancellationToken = default);
 
     Task<RFQ?> GetRFQWithDetailsAsync(Guid rfqId, CancellationToken cancellationToken = default);
@@ -41,5 +43,17 @@ public interface IRFQRepository : IRepository<RFQ>
     Task<Dictionary<Guid, int>> GetSourcedQuantitiesForCprItemsAsync(
         List<Guid> cprItemIds,
         Guid? excludingRfqId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<string?> GetLastRFQNumberAsync(int year, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetches all RFQItems (including soft-deleted records) for a given RFQ that match the specified CPRItemIds.
+    /// Used by AddRFQItemsCommandHandler to reactivate/update existing records rather than violating the
+    /// IX_RFQItems_RFQId_CPRItemId unique constraint.
+    /// </summary>
+    Task<List<RFQItem>> GetItemsByRfqAndCprItemIdsAsync(
+        Guid rfqId,
+        List<Guid> cprItemIds,
         CancellationToken cancellationToken = default);
 }

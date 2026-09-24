@@ -33,6 +33,8 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { format } from 'date-fns'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
 import { ApprovePRModal } from './ApprovePRModal'
 import { ReturnPRModal } from './ReturnPRModal'
@@ -41,6 +43,9 @@ import { PurchaseRequest, PRStatus, PRType } from '../types'
 import { usePurchaseRequests, useUpdatePurchaseRequestStatus } from '../handlers/hooks'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
 import { openSignedDocument } from '../utils/openSignedDocument'
+import { getOfficesRequest } from '@/features/planning/app-consolidation/handlers/getOfficesRequest'
+
+const useOffices = createQueryHookFromTemplate(getOfficesRequest)
 
 const STATUS_BADGE_CONFIG: Record<
   PRStatus,
@@ -76,29 +81,56 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
 
   // Use API hooks
   const { data: prResponse, isLoading } = usePurchaseRequests({ pathParams: {}, queryParams: { PageSize: 100 } })
+  const { data: officesResponse } = useOffices({})
   const statusMutation = useUpdatePurchaseRequestStatus()
+
+  const officesMap = useMemo(() => {
+    const map = new Map<string, string>()
+    const list: Office[] = Array.isArray(officesResponse)
+      ? officesResponse
+      : Array.isArray((officesResponse as any)?.data)
+        ? (officesResponse as any).data
+        : []
+
+    for (const off of list) {
+      if (off && off.id && off.name) {
+        map.set(off.id, off.name)
+      }
+    }
+    return map
+  }, [officesResponse])
 
   // Map API response to frontend PurchaseRequest models (purely API-driven)
   const purchaseRequests: PurchaseRequest[] = useMemo(() => {
-    return (prResponse?.data || []).map((apiPr) => ({
-      id: apiPr.id,
-      type: fromApiPrType(apiPr.prType),
-      status: fromApiStatus(apiPr.status),
-      headerDetails: {
-        prNumber: apiPr.prNumber,
-        description: apiPr.description || '',
-        date: apiPr.requestedDate ? String(apiPr.requestedDate) : '',
-        purpose: '',
-        officeId: '',
-        officeName: '',
-      },
-      items: [],
-      totalAmount: apiPr.totalAmount,
-      createdAt: apiPr.createdDate ? String(apiPr.createdDate) : '',
-      updatedAt: apiPr.createdDate ? String(apiPr.createdDate) : '',
-      createdBy: '',
-    } as PurchaseRequest))
-  }, [prResponse])
+    return (prResponse?.data || []).map((apiPr) => {
+      const resolvedOfficeName =
+        (apiPr.officeName && apiPr.officeName.trim().length > 0)
+          ? apiPr.officeName.trim()
+          : (apiPr.officeId && officesMap.get(apiPr.officeId))
+            ? officesMap.get(apiPr.officeId)!
+            : 'General Administration'
+
+      return {
+        id: apiPr.id,
+        type: fromApiPrType(apiPr.prType),
+        status: fromApiStatus(apiPr.status),
+        headerDetails: {
+          prNumber: apiPr.prNumber,
+          description: apiPr.description || '',
+          date: apiPr.requestedDate ? String(apiPr.requestedDate) : '',
+          purpose: '',
+          officeId: apiPr.officeId || '',
+          officeName: resolvedOfficeName,
+        },
+        items: [],
+        totalAmount: apiPr.totalAmount,
+        createdAt: apiPr.createdDate ? String(apiPr.createdDate) : '',
+        updatedAt: apiPr.createdDate ? String(apiPr.createdDate) : '',
+        dateSubmitted: apiPr.requestedDate ? String(apiPr.requestedDate) : (apiPr.createdDate ? String(apiPr.createdDate) : ''),
+        createdBy: '',
+      } as PurchaseRequest
+    })
+  }, [prResponse, officesMap])
 
   // Local UI state for modals and selected PR
   const [approveOpen, setApproveOpen] = useState(false)
@@ -370,7 +402,7 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                     <TableHead>Description</TableHead>
                     <TableHead>Total Amount</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Submitted</TableHead>
+                    <TableHead>Date Submitted</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -381,7 +413,7 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                         {pr.headerDetails.prNumber}
                       </TableCell>
                       <TableCell className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                        {pr.headerDetails.officeName || '—'}
+                        {pr.headerDetails.officeName || officesMap.get(pr.headerDetails.officeId || '') || 'General Administration'}
                       </TableCell>
                       <TableCell className="text-sm">
                         <Badge color={TYPE_BADGE_COLOR[pr.type] || 'default'} variant="outline" className="capitalize">
@@ -402,8 +434,17 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                           {STATUS_BADGE_CONFIG[getDisplayStatus(pr)].label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(pr.createdAt).toLocaleDateString()}
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {(() => {
+                          const raw = pr.dateSubmitted || pr.headerDetails.date || pr.createdAt
+                          if (!raw) return '—'
+                          try {
+                            const d = new Date(raw)
+                            return isNaN(d.getTime()) ? raw : format(d, 'MMM dd, yyyy')
+                          } catch {
+                            return raw
+                          }
+                        })()}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>

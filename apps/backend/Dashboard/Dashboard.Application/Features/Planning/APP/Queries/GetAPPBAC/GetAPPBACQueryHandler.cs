@@ -25,7 +25,11 @@ public class GetAPPBACQueryHandler(IUnitOfWork unitOfWork)
                 Unit = g.Key,
                 Items = g.Select(a => new BACUnitItemResponse
                 {
-                    PPMPCode = a.PPMPItem?.PAPCode ?? string.Empty,
+                    PPMPCode = !string.IsNullOrWhiteSpace(a.PPMPItem?.PAPCode)
+                        ? a.PPMPItem.PAPCode
+                        : (!string.IsNullOrWhiteSpace(a.PAPCode)
+                            ? a.PAPCode
+                            : (a.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.PAPCode ?? string.Empty)),
                     ItemName = a.PPMPItem?.Name ?? string.Empty,
                     Quantity = a.PPMPItem?.PPMPItemAllocations.Sum(al => al.Quantity) ?? 0,
                     Amount = a.PPMPItem?.UnitPrice ?? 0m,
@@ -112,9 +116,16 @@ public class GetAPPBACQueryHandler(IUnitOfWork unitOfWork)
                     CustomDateText = s.CustomDateText
                 }).ToList() ?? [];
 
+            var papCode = !string.IsNullOrWhiteSpace(a.PAPCode)
+                ? a.PAPCode
+                : (!string.IsNullOrWhiteSpace(a.PPMPItem?.PAPCode)
+                    ? a.PPMPItem.PAPCode
+                    : (a.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.PAPCode ?? string.Empty));
+
             return new BACLineItemResponse
             {
                 Id = a.Id,
+                PAPCode = papCode,
                 ItemName = a.PPMPItem?.Name ?? string.Empty,
                 Unit = a.PPMPItem?.Unit ?? string.Empty,
                 Quantity = a.PPMPItem?.PPMPItemAllocations.Sum(al => al.Quantity) ?? 0,

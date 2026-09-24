@@ -5,6 +5,8 @@ using ERPEZ.Application.Features.Planning.PPMP.Commands.ConsolidatePPMPs;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.CreatePPMP;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.CreateSupplementalPPMP;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.DeletePPMP;
+using ERPEZ.Application.Features.Planning.PPMP.Commands.ApprovePPMP;
+using ERPEZ.Application.Features.Planning.PPMP.Commands.ReturnPPMP;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.TogglePPMPFinalization;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.UpdatePPMPStatus;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.UpdatePPMP;
@@ -109,6 +111,28 @@ public class PPMPController(ISender mediator) : ControllerBase
     public async Task<IActionResult> UpdatePPMPStatus([FromBody] UpdatePPMPStatusCommand command)
     {
         var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpApprove)]
+    public async Task<IActionResult> ApprovePPMP(Guid id, [FromBody] ApprovePPMPRequest? request)
+    {
+        var result = await mediator.Send(new ApprovePPMPCommand(id, request));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("{id}/return")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.ppmpApprove)]
+    public async Task<IActionResult> ReturnPPMP(Guid id, [FromBody] ReturnPPMPRequest request)
+    {
+        var result = await mediator.Send(new ReturnPPMPCommand(id, request));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

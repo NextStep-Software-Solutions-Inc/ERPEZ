@@ -49,7 +49,7 @@ export function ConsolidatedAPPItemsCard({
         fundSourceName: item.fundSource || '',
         officeId: undefined,
         officeName: item.office || '',
-        papCode: item.code || '',
+        papCode: item.papCode || item.code || '',
         remarks: item.remarks || '',
         isEarlyProcurementActivity: item.eligibleForEPA,
         isOutsourced: undefined,
@@ -79,7 +79,7 @@ export function ConsolidatedAPPItemsCard({
           fundSourceName: item.fundSource || '',
           officeId: undefined,
           officeName: item.office || '',
-          papCode: item.code || '',
+          papCode: (item as any).papCode || item.code || '',
           remarks: undefined,
           isEarlyProcurementActivity: false,
           isOutsourced: undefined,
@@ -119,6 +119,18 @@ export function ConsolidatedAPPItemsCard({
   // APP Items Columns
   const appItemColumnHelper = createColumnHelper<APPItemFromAPI>()
   const appItemColumns = useMemo(() => [
+    appItemColumnHelper.accessor('papCode', {
+      header: () => <NGPAColumnHeader columnNumber={1} label="PAP Code" />,
+      cell: ({ getValue }) => {
+        const val = getValue()
+        return (
+          <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 whitespace-nowrap inline-block">
+            {val || '—'}
+          </span>
+        )
+      },
+      size: 140,
+    }),
     appItemColumnHelper.accessor('ppmpItemName', {
       header: () => <NGPAColumnHeader columnNumber={2} label="Item Code/Name" />,
       cell: ({ row }) => (
@@ -136,9 +148,6 @@ export function ConsolidatedAPPItemsCard({
               </span>
             )}
           </div>
-          {row.original.papCode && (
-            <span className="text-[10px] text-gray-400 font-mono">PAP Code: {row.original.papCode}</span>
-          )}
         </div>
       ),
       size: 200,

@@ -5,12 +5,10 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  ExternalLink,
   FileCheck2,
   FileText,
   Files,
   History,
-  Loader2,
   RefreshCw,
   Send,
   Sparkles,
@@ -23,7 +21,7 @@ import {
   useProjectBidEvaluation,
   useSendPostQualificationNotice,
 } from '../hooks/useBidEvaluationApi'
-import { previewDocument } from '@/features/procurement/manage-supplier-portal/utils'
+import { DocumentPreviewDialog, type PreviewableDocument } from '../dialogs/DocumentPreviewDialog'
 import { SlaDeadlineBadge } from './SlaDeadlineBadge'
 import type { BiddingEvaluatedBidResponse } from '../types/bidEvaluationApi.types'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -61,7 +59,8 @@ export function PostQualificationTab({
   const [selectedBidderForResult, setSelectedBidderForResult] =
     useState<BiddingEvaluatedBidResponse | null>(null)
   const [isResultDialogOpen, setIsResultDialogOpen] = useState(false)
-  const [previewingDocId, setPreviewingDocId] = useState<string | null>(null)
+  const [previewDoc, setPreviewDoc] = useState<PreviewableDocument | null>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 
   const evaluatedBids = evaluation?.evaluatedBids ?? []
   const hasEvaluation = evaluatedBids.length > 0
@@ -136,16 +135,16 @@ export function PostQualificationTab({
     setIsResultDialogOpen(true)
   }
 
-  const handlePreview = async (doc: { id: string; name: string; url?: string }) => {
+  const handlePreview = (doc: { id: string; name: string; url?: string; size?: number; type?: string }) => {
     if (!doc.url) return
-    setPreviewingDocId(doc.id)
-    try {
-      await previewDocument(doc.url, doc.name)
-    } catch (err) {
-      console.error('Failed to preview document:', err)
-    } finally {
-      setPreviewingDocId(null)
-    }
+    setPreviewDoc({
+      id: doc.id,
+      name: doc.name,
+      url: doc.url,
+      size: doc.size,
+      type: doc.type,
+    })
+    setIsPreviewOpen(true)
   }
 
   if (isLoading) {
@@ -501,18 +500,11 @@ export function PostQualificationTab({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          disabled={previewingDocId === doc.id}
                           className="h-7 text-[11px] px-2 text-primary hover:text-primary hover:bg-primary/10 gap-1 shrink-0 font-bold"
-                          onClick={() => void handlePreview(doc)}
+                          onClick={() => handlePreview(doc)}
                         >
-                          {previewingDocId === doc.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <>
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              View
-                            </>
-                          )}
+                          <FileText className="h-3.5 w-3.5" />
+                          Preview
                         </Button>
                       ) : (
                         <span className="text-[10px] text-muted-foreground italic shrink-0 pt-1">
@@ -729,6 +721,13 @@ export function PostQualificationTab({
         onOpenChange={setIsResultDialogOpen}
         projectId={projectId}
         evaluatedBid={selectedBidderForResult}
+      />
+
+      {/* DOCUMENT PREVIEW MODAL */}
+      <DocumentPreviewDialog
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        document={previewDoc}
       />
     </div>
   )

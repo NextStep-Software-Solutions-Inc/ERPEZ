@@ -1,17 +1,26 @@
-import type { PublicProject, RequiredDocument, ModeOfProcurement, ProjectStatus } from '../types/portalTypes'
+import type {
+  PublicProject,
+  RequiredDocument,
+  ModeOfProcurement,
+  ProjectStatus,
+  BackendPublicProject,
+  BackendBidNotice,
+  BackendRequiredSubmission,
+  BackendProjectItem,
+} from '../types/portalTypes'
 
-export const mapBackendProjectToFrontend = (p: any): PublicProject => {
+export const mapBackendProjectToFrontend = (p: BackendPublicProject): PublicProject => {
   const requiredDocuments: RequiredDocument[] = []
   
   if (p.requiredSubmissions) {
-    const bidNoticesMap = new Map<string, any>()
+    const bidNoticesMap = new Map<string, BackendBidNotice>()
     if (p.bidNotices) {
-      p.bidNotices.forEach((b: any) => {
+      p.bidNotices.forEach((b: BackendBidNotice) => {
         bidNoticesMap.set(b.checklistItemId, b)
       })
     }
 
-    p.requiredSubmissions.forEach((s: any) => {
+    p.requiredSubmissions.forEach((s: BackendRequiredSubmission) => {
       const matchingNotice = bidNoticesMap.get(s.checklistItemId)
       const downloadUrl = s.downloadUrl || matchingNotice?.downloadUrl
       requiredDocuments.push({
@@ -32,17 +41,40 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
   let mop: ModeOfProcurement = 'public-bidding'
   const modeStr = (p.modeOfProcurement || '').toLowerCase()
   const contractNo = (p.contractNo || '').toLowerCase()
-  if (modeStr.includes('small value') || modeStr.includes('svp') || modeStr.includes('53.9') || contractNo.startsWith('svp') || contractNo.includes('svp')) {
+
+  const isPb =
+    modeStr.includes('public bidding') ||
+    modeStr.includes('competitive') ||
+    (modeStr.includes('bidding') && !modeStr.includes('small value')) ||
+    contractNo.includes('itb') ||
+    contractNo.includes('pb')
+
+  if (
+    !isPb &&
+    (modeStr.includes('small value') ||
+      modeStr.includes('svp') ||
+      modeStr.includes('53.9') ||
+      modeStr.includes('shopping') ||
+      modeStr.includes('52') ||
+      contractNo.startsWith('svp') ||
+      contractNo.includes('svp') ||
+      contractNo.startsWith('rfq'))
+  ) {
     mop = 'svp'
   }
 
   // Handle status mapping
   let status: ProjectStatus = 'open'
   const backendStatus = (p.status || '').toLowerCase()
-  if (backendStatus === 'closingsoon' || backendStatus === 'closing soon' || backendStatus === 'closing-soon') {
-    status = 'closing-soon'
-  } else if (backendStatus === 'closed') {
+  const deadlineStr = p.submissionDeadline || p.deadline || ''
+  const isPastDeadline = deadlineStr && !isNaN(Date.parse(deadlineStr))
+    ? new Date(deadlineStr).getTime() < Date.now()
+    : false
+
+  if (backendStatus === 'closed' || isPastDeadline) {
     status = 'closed'
+  } else if (backendStatus === 'closingsoon' || backendStatus === 'closing soon' || backendStatus === 'closing-soon') {
+    status = 'closing-soon'
   }
 
   return {
@@ -60,5 +92,18 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
     bidOpening: p.bidOpeningDate || p.bidOpening || undefined,
     scope: p.scopeOfWork || p.scope || '',
     requiredDocuments,
+    pricingStructure: p.pricingStructure || (mop === 'svp' && Array.isArray(p.items) && p.items.length > 0 ? 'Itemized' : 'LumpSum'),
+    procurementCategory: p.procurementCategory || 'Goods',
+    items: Array.isArray(p.items)
+      ? p.items.map((i: BackendProjectItem) => ({
+          id: i.id,
+          itemName: i.itemName || '',
+          description: i.description,
+          quantity: i.quantity,
+          uom: i.uom,
+          abcUnitPrice: Number(i.abcUnitPrice || 0),
+          abcTotalPrice: Number(i.abcTotalPrice || 0),
+        }))
+      : [],
   }
 }

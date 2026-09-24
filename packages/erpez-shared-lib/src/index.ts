@@ -1,5 +1,6 @@
 export * from "@tanstack/react-query";
 export * from "./services/api";
+export * from "./utils/security";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { getQueryClient } from "./lib/get-query-client";
 import { createQueryHookFromTemplate } from "./factories/createQueryHookFromTemplate";

@@ -169,4 +169,55 @@ public class TogglePPMPFinalizationCommandHandlerTests
         ppmpRepoMock.Verify(r => r.Update(ppmp), Times.Once);
         unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_WhenPPMPIsSupplemental_ThrowsValidationException()
+    {
+        // Arrange
+        var ppmpId = Guid.NewGuid();
+        var ppmp = new ERPEZ.Domain.Entities.Planning.PPMP
+        {
+            Id = ppmpId,
+            PPMPNumber = "PPMP-2026-SUP-001",
+            Status = StatusEnum.Approved,
+            PPMPType = PPMPTypeEnum.Supplemental,
+            IsFinal = true
+        };
+
+        ppmpRepoMock.Setup(r => r.GetByIdAsync(ppmpId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ppmp);
+
+        var command = new TogglePPMPFinalizationCommand(ppmpId, false);
+
+        // Act & Assert
+        var act = () => handler.Handle(command, CancellationToken.None);
+        await act.Should().ThrowAsync<ValidationException>()
+            .WithMessage("*Supplemental PPMPs are inherently final*");
+    }
+
+    [Fact]
+    public async Task Handle_WhenPPMPHasSourcePPMPId_ThrowsValidationException()
+    {
+        // Arrange
+        var ppmpId = Guid.NewGuid();
+        var ppmp = new ERPEZ.Domain.Entities.Planning.PPMP
+        {
+            Id = ppmpId,
+            PPMPNumber = "PPMP-2026-SUP-002",
+            Status = StatusEnum.Approved,
+            SourcePPMPId = Guid.NewGuid(),
+            IsFinal = true
+        };
+
+        ppmpRepoMock.Setup(r => r.GetByIdAsync(ppmpId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ppmp);
+
+        var command = new TogglePPMPFinalizationCommand(ppmpId, true);
+
+        // Act & Assert
+        var act = () => handler.Handle(command, CancellationToken.None);
+        await act.Should().ThrowAsync<ValidationException>()
+            .WithMessage("*Supplemental PPMPs are inherently final*");
+    }
 }
+

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { toast } from 'sonner'
+import { Sparkles, Split } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -21,11 +23,11 @@ import FieldInfo from '@/components/FieldInfo'
 import { getObjectsRequest } from '@/features/planning/object/handlers/getObjectsRequest'
 import PeriodAllocationPanel from './PeriodAllocationPanel'
 import {
-  generateQuarterlyPeriodDetails,
+  STANDARD_QUARTERS,
+  getCoveredQuarters,
   generateMonthlyPeriodDetails,
   formatDateToISO,
-  QuarterlyAllocation,
-  MonthlyAllocation,
+  type MonthlyAllocation,
 } from '../utils/periodAllocationHelpers'
 import {
   submitConcurrentPeriodAllocations,
@@ -33,67 +35,29 @@ import {
   ConcurrentSubmissionOutcome,
 } from '../handlers/concurrentSubmissionHandler'
 import { PeriodAllocationPayload } from '../types/wfp-line-item'
+import {
+  resolveExpenditureTypes,
+  getDescendantExpenditureItems,
+} from '../utils/expenditureHierarchyHelpers'
+import { ExpenditureItemCombobox } from './ExpenditureItemCombobox'
+import { formatCurrencyPHP } from '@/utils/formatters'
 
 const TIMELINE_TYPES = [
   { id: 'quarterly', label: 'Quarterly' },
   { id: 'monthly', label: 'Monthly' },
 ] as const
 
-const PERIOD_TIMELINE_TYPES = ['monthly', 'quarterly']
-
 const useGetObjects = createQueryHookFromTemplate(getObjectsRequest)
 
-// Hook for fetching child objects based on parent selection
-const useGetChildObjects = (parentId: string | null) => {
-  return useGetObjects({
-    pathParams: {},
-    queryParams: {
-      filters: parentId ? `parentId==${parentId}` : 'parentId==null',
-      pageSize: 1000,
-    },
-    enabled: !!parentId,
-  })
-}
-
-// Conditional validation: Budget is required only for non-period timeline types
-const createLineItemBudgetDetailsSchema = z
-  .object({
-    objectId: z.string().min(1, 'Type of Expenditure is required'),
-    itemOfExpenditureId: z.string(),
-    description: z.string().min(10, 'Description is required'),
-    // unitQuantity: z.number(),
-    // unitCost: z.number(),
-    timelineType: z.string().min(1, 'Timeline Type is required'),
-    startDate: z.string(),
-    endDate: z.string(),
-    budget: z.number(),
-  })
-  .refine(
-    (data) => {
-      // For non-period timeline types, budget is required
-      if (!PERIOD_TIMELINE_TYPES.includes(data.timelineType)) {
-        return data.budget >= 0.01
-      }
-      return true
-    },
-    {
-      message: 'Budget must be greater than 0',
-      path: ['budget'],
-    },
-  )
-  .refine(
-    (data) => {
-      // For non-period timeline types, dates are required
-      if (!PERIOD_TIMELINE_TYPES.includes(data.timelineType)) {
-        return data.startDate && data.endDate
-      }
-      return true
-    },
-    {
-      message: 'Dates are required',
-      path: ['startDate'],
-    },
-  )
+const createLineItemBudgetDetailsSchema = z.object({
+  objectId: z.string().min(1, 'Type of Expenditure is required'),
+  itemOfExpenditureId: z.string().optional(),
+  description: z.string().min(1, 'Description is required'),
+  timelineType: z.string().min(1, 'Timeline Type is required'),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  budget: z.number().optional(),
+})
 
 export type CreateLineItemBudgetDetailsFormValues = z.infer<
   typeof createLineItemBudgetDetailsSchema
@@ -103,8 +67,6 @@ interface LineItemBudgetDetailsDefaults {
   objectId: string
   itemOfExpenditureId: string
   description: string
-  // unitQuantity: number
-  // unitCost: number
   timelineType: string
   startDate: string
   endDate: string
@@ -114,7 +76,7 @@ interface LineItemBudgetDetailsDefaults {
 // Helper to extract the form type
 const useLineItemBudgetDetailsFormInstance = (
   defaultValues: LineItemBudgetDetailsDefaults,
-  onLineItemCreated: (lineItem: CreateLineItemBudgetDetailsFormValues) => void,
+  onLineItemCreated: (lineItem: CreateLineItemBudgetDetailsFormValues) => Promise<void> | void,
 ) =>
   useForm({
     defaultValues,
@@ -122,7 +84,7 @@ const useLineItemBudgetDetailsFormInstance = (
       onChange: createLineItemBudgetDetailsSchema,
     },
     onSubmit: async ({ value }) => {
-      onLineItemCreated(value)
+      await onLineItemCreated(value)
     },
   })
 
@@ -130,16 +92,22 @@ export type LineItemBudgetDetailsFormApi = ReturnType<
   typeof useLineItemBudgetDetailsFormInstance
 >
 
+export interface SplitInfo {
+  isSplitMode: boolean
+  count: number
+}
+
 interface CreateLineItemBudgetDetailsFormProps {
   libId: string
   libActivityId: string
   onCreated?: () => void
   onClose?: () => void
   setForm?: (form: LineItemBudgetDetailsFormApi) => void
-  activityStartDate?: Date // For period-based allocation date calculations
-  activityEndDate?: Date // For period-based allocation date calculations
-  activityBudget?: number // For validating period sum
+  activityStartDate?: Date
+  activityEndDate?: Date
+  activityBudget?: number
   onSubmitOverride?: (value: CreateLineItemBudgetDetailsFormValues, periods: any[]) => void
+  onSplitInfoChange?: (info: SplitInfo) => void
 }
 
 const useCreateLineItemBudgetDetails = createMutationHookFromTemplate(
@@ -156,94 +124,195 @@ export default function CreateLineItemBudgetDetailsForm({
   activityEndDate = new Date(),
   activityBudget,
   onSubmitOverride,
+  onSplitInfoChange,
 }: CreateLineItemBudgetDetailsFormProps) {
   const queryClient = useQueryClient()
   const { mutateAsync, isPending } = useCreateLineItemBudgetDetails()
 
-  // Fetch root objects (parentId==null) to locate the Expenses root object
-  const { data: rootObjectsResponse, isLoading: isLoadingRootObjects } = useGetObjects({
+  // Fetch all objects (up to 5000) to build the complete UACS hierarchy
+  const { data: allObjectsResponse, isLoading: isLoadingObjects } = useGetObjects({
     pathParams: {},
     queryParams: {
-      filters: `parentId==null`,
-      pageSize: 1000,
+      pageSize: 5000,
     },
   })
 
-  // Locate the Expenses root container object if one exists
-  const expensesRootObject = useMemo(() => {
-    return rootObjectsResponse?.data?.find(
-      (item) =>
-        item.code === 'CLS:Expenses' ||
-        item.name?.toLowerCase() === 'expenses' ||
-        item.code === '50000000' ||
-        item.code === '5000000000',
+  const allObjects = useMemo(
+    () => allObjectsResponse?.data ?? [],
+    [allObjectsResponse?.data],
+  )
+
+  const { expenditureTypes } = useMemo(
+    () => resolveExpenditureTypes(allObjects),
+    [allObjects],
+  )
+
+  const currentYear = activityStartDate
+    ? activityStartDate.getFullYear()
+    : new Date().getFullYear()
+
+  const defaultQuarter = 'Q1'
+  const defaultQuarterDef = STANDARD_QUARTERS[0]
+  const defaultStartDate = new Date(
+    Date.UTC(currentYear, defaultQuarterDef.startMonth, defaultQuarterDef.startDay),
+  )
+    .toISOString()
+    .split('T')[0]
+  const defaultEndDate = new Date(
+    Date.UTC(currentYear, defaultQuarterDef.endMonth, defaultQuarterDef.endDay),
+  )
+    .toISOString()
+    .split('T')[0]
+
+  // Form states
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null)
+  const [autoInheritedName, setAutoInheritedName] = useState<string | null>(null)
+  const [budget, setBudget] = useState<string>('')
+  const [timelineType, setTimelineType] = useState<string>('quarterly')
+  const [selectedQuarter, setSelectedQuarter] = useState<string>(defaultQuarter)
+  const [startDate, setStartDate] = useState<string>(defaultStartDate)
+  const [endDate, setEndDate] = useState<string>(defaultEndDate)
+
+  // Split mode state
+  const [isSplitMode, setIsSplitMode] = useState<boolean>(false)
+  const [splitBudgets, setSplitBudgets] = useState<Record<string, string>>({})
+
+  // Covered quarters based on current dates
+  const coveredQuarters = useMemo(
+    () => getCoveredQuarters(startDate, endDate),
+    [startDate, endDate],
+  )
+  const spansMultipleQuarters = coveredQuarters.length > 1
+
+  const splitSum = useMemo(() => {
+    return Object.values(splitBudgets).reduce(
+      (acc, val) => acc + (parseFloat(val) || 0),
+      0,
     )
-  }, [rootObjectsResponse?.data])
+  }, [splitBudgets])
 
-  // Fetch expenditure types (children of Expenses, if an Expenses container exists)
-  const { data: expenditureTypesResponse, isLoading: isLoadingExpenditureTypes } = useGetObjects({
-    pathParams: {},
-    queryParams: {
-      filters: expensesRootObject ? `parentId==${expensesRootObject.id}` : undefined,
-      pageSize: 1000,
-    },
-    enabled: !!expensesRootObject,
-  })
+  const totalBudgetNum = parseFloat(budget) || 0
 
-  const expenditureTypes = useMemo(() => {
-    // If an Expenses root container exists and has children, use those children (PS, MOOE, CO, etc.)
-    if (expensesRootObject && expenditureTypesResponse?.data && expenditureTypesResponse.data.length > 0) {
-      return expenditureTypesResponse.data
-    }
-    // Otherwise, the root objects themselves (parentId==null) are the expenditure types (e.g. PS, MOOE, CO)
-    return (rootObjectsResponse?.data ?? []).filter(
-      (item) => item.id !== expensesRootObject?.id,
-    )
-  }, [expensesRootObject, expenditureTypesResponse?.data, rootObjectsResponse?.data])
-
-  // Period allocation state
-  const [periodAllocation, setPeriodAllocation] = useState<
-    QuarterlyAllocation | MonthlyAllocation
-  >({
-    q1: 0,
-    q2: 0,
-    q3: 0,
-    q4: 0,
+  // Period allocation state for monthly
+  const [periodAllocation, setPeriodAllocation] = useState<MonthlyAllocation>({
+    january: 0,
+    february: 0,
+    march: 0,
+    april: 0,
+    may: 0,
+    june: 0,
+    july: 0,
+    august: 0,
+    september: 0,
+    october: 0,
+    november: 0,
+    december: 0,
   })
   const [submissionOutcome, setSubmissionOutcome] =
     useState<ConcurrentSubmissionOutcome | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [selectedParentId, setSelectedParentId] = useState<string | null>(null)
-  const [autoInheritedName, setAutoInheritedName] = useState<string | null>(null)
+
+  // Notify parent dialog about split info
+  useEffect(() => {
+    onSplitInfoChange?.({
+      isSplitMode,
+      count: coveredQuarters.length,
+    })
+  }, [isSplitMode, coveredQuarters.length, onSplitInfoChange])
 
   const lineItemDefaults: LineItemBudgetDetailsDefaults = {
     objectId: '',
     itemOfExpenditureId: '',
     description: '',
-    // unitQuantity: 0,
-    // unitCost: 0,
     timelineType: 'quarterly',
-    startDate: '',
-    endDate: '',
+    startDate: defaultStartDate,
+    endDate: defaultEndDate,
     budget: 0,
   }
 
-  // Handle period allocation change
+  // Handle monthly period allocation change
   const handlePeriodAllocationChange = useCallback(
-    (allocation: QuarterlyAllocation | MonthlyAllocation) => {
+    (allocation: MonthlyAllocation) => {
       setPeriodAllocation(allocation)
     },
     [],
   )
 
-  // Handle form submission with concurrent period allocation logic
+  // Compute descendants of the selected parent category
+  const descendantExpenditureItems = useMemo(
+    () => getDescendantExpenditureItems(allObjects, selectedParentId),
+    [allObjects, selectedParentId],
+  )
+
+  const handleToggleSplitMode = () => {
+    if (!isSplitMode) {
+      const totalB = parseFloat(budget) || 0
+      const count = coveredQuarters.length || 2
+      const perQ = Math.floor((totalB / count) * 100) / 100
+      const initial: Record<string, string> = {}
+      coveredQuarters.forEach((q, idx) => {
+        if (idx === count - 1) {
+          initial[q.id] = (totalB - perQ * (count - 1)).toFixed(2)
+        } else {
+          initial[q.id] = perQ.toFixed(2)
+        }
+      })
+      setSplitBudgets(initial)
+      setIsSplitMode(true)
+    } else {
+      setIsSplitMode(false)
+    }
+  }
+
+  const handleEqualizeBudgets = () => {
+    const totalB = parseFloat(budget) || 0
+    const count = coveredQuarters.length || 2
+    const perQ = Math.floor((totalB / count) * 100) / 100
+    const initial: Record<string, string> = {}
+    coveredQuarters.forEach((q, idx) => {
+      if (idx === count - 1) {
+        initial[q.id] = (totalB - perQ * (count - 1)).toFixed(2)
+      } else {
+        initial[q.id] = perQ.toFixed(2)
+      }
+    })
+    setSplitBudgets(initial)
+  }
+
+  const handleQuarterChange = (qId: string) => {
+    setSelectedQuarter(qId)
+    setIsSplitMode(false)
+    const quarterDef = STANDARD_QUARTERS.find((q) => q.id === qId)
+    if (!quarterDef) return
+
+    const year = startDate
+      ? new Date(startDate).getFullYear()
+      : currentYear
+
+    const s = new Date(Date.UTC(year, quarterDef.startMonth, quarterDef.startDay))
+    const e = new Date(Date.UTC(year, quarterDef.endMonth, quarterDef.endDay))
+    const sStr = s.toISOString().split('T')[0]
+    const eStr = e.toISOString().split('T')[0]
+
+    setStartDate(sStr)
+    setEndDate(eStr)
+    form.setFieldValue('startDate', sStr)
+    form.setFieldValue('endDate', eStr)
+  }
+
+  // Handle form submission with Option 2 Split or Single Period
   const handleLineItemSubmit = useCallback(
     async (value: CreateLineItemBudgetDetailsFormValues) => {
       try {
-        const timelineType = value.timelineType
+        const currentTimeline = value.timelineType || timelineType
 
         // Determine final objectId: use child if selected, otherwise use parent
         const finalObjectId = value.itemOfExpenditureId || value.objectId
+
+        if (!finalObjectId) {
+          toast.error('Type of Expenditure is required')
+          return
+        }
 
         // Get the selected parent object to check if it has children
         const parentObject = expenditureTypes?.find(
@@ -252,33 +321,187 @@ export default function CreateLineItemBudgetDetailsForm({
 
         // Validate that if parent has children, child must be selected
         if (
-          (parentObject?.childObjectCount || 0) > 0 &&
+          (descendantExpenditureItems.length > 0 || (parentObject?.childObjectCount || 0) > 0) &&
           !value.itemOfExpenditureId
         ) {
           toast.error('Select Item of Expenditure is required')
           return
         }
 
-        // Period-based allocation path (Quarterly or Monthly)
-        if (PERIOD_TIMELINE_TYPES.includes(timelineType)) {
+        if (!value.description || value.description.trim() === '') {
+          toast.error('Description is required')
+          return
+        }
+
+        if (currentTimeline === 'quarterly') {
+          if (isSplitMode) {
+            if (coveredQuarters.length < 2) {
+              toast.error('At least 2 quarters are required to split')
+              return
+            }
+
+            for (const q of coveredQuarters) {
+              const val = parseFloat(splitBudgets[q.id] || '0')
+              if (isNaN(val) || val <= 0) {
+                toast.error(
+                  `Please provide a valid budget greater than 0 for ${q.label}`,
+                )
+                return
+              }
+            }
+
+            setIsSubmitting(true)
+
+            const periods = coveredQuarters.map((q) => ({
+              period: q.label,
+              startDate: new Date(q.startDate),
+              endDate: new Date(q.endDate),
+              budget: parseFloat(splitBudgets[q.id] || '0'),
+              payload: {
+                lineItemBudgetId: libId,
+                lineItemBudgetActivityId: libActivityId,
+                wfpObjectiveActivityExpenditureId: undefined,
+                objectId: finalObjectId,
+                description: value.description.trim() || undefined,
+                timelineType: 'quarterly',
+                startDate: formatDateToISO(new Date(q.startDate)),
+                endDate: formatDateToISO(new Date(q.endDate)),
+                budget: parseFloat(splitBudgets[q.id] || '0'),
+              },
+            }))
+
+            if (onSubmitOverride) {
+              onSubmitOverride(value, periods)
+              setIsSubmitting(false)
+              onCreated?.()
+              onClose?.()
+              return
+            }
+
+            const submitFunction = async (period: {
+              period: string
+              payload: PeriodAllocationPayload
+            }) => {
+              await mutateAsync({
+                pathParams: {},
+                payload: period.payload,
+              })
+            }
+
+            const outcome = await submitConcurrentPeriodAllocations(
+              submitFunction,
+              periods.map((p) => ({ period: p.period, payload: p.payload })),
+            )
+
+            setSubmissionOutcome(outcome)
+
+            if (outcome.failureCount === 0) {
+              toast.success(
+                `Successfully created ${coveredQuarters.length} quarterly line items!`,
+              )
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  (query.queryKey[0].includes('/line-item-budget-details') ||
+                    query.queryKey[0].includes('/lib-activities') ||
+                    query.queryKey[0].includes('/libs')),
+              })
+              onCreated?.()
+              onClose?.()
+            } else if (outcome.successCount > 0) {
+              toast.warning(generateSubmissionSummary(outcome))
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  (query.queryKey[0].includes('/line-item-budget-details') ||
+                    query.queryKey[0].includes('/lib-activities') ||
+                    query.queryKey[0].includes('/libs')),
+              })
+            } else {
+              toast.error(generateSubmissionSummary(outcome))
+            }
+
+            setIsSubmitting(false)
+            return
+          } else {
+            // Single quarterly allocation
+            const numBudget = parseFloat(budget) || value.budget || 0
+            if (isNaN(numBudget) || numBudget <= 0) {
+              toast.error('Allocated budget must be greater than 0')
+              return
+            }
+
+            const effectiveStart = value.startDate || startDate
+            const effectiveEnd = value.endDate || endDate
+
+            if (!effectiveStart || !effectiveEnd) {
+              toast.error('Start date and end date are required')
+              return
+            }
+
+            if (new Date(effectiveEnd) < new Date(effectiveStart)) {
+              toast.error('End date must be on or after start date')
+              return
+            }
+
+            setIsSubmitting(true)
+
+            const singlePeriod = [
+              {
+                period: selectedQuarter || 'Quarterly',
+                startDate: new Date(effectiveStart),
+                endDate: new Date(effectiveEnd),
+                budget: numBudget,
+                payload: {
+                  lineItemBudgetId: libId,
+                  lineItemBudgetActivityId: libActivityId,
+                  wfpObjectiveActivityExpenditureId: undefined,
+                  objectId: finalObjectId,
+                  description: value.description.trim() || undefined,
+                  timelineType: 'quarterly',
+                  startDate: formatDateToISO(new Date(effectiveStart)),
+                  endDate: formatDateToISO(new Date(effectiveEnd)),
+                  budget: numBudget,
+                },
+              },
+            ]
+
+            if (onSubmitOverride) {
+              onSubmitOverride(value, singlePeriod)
+              setIsSubmitting(false)
+              onCreated?.()
+              onClose?.()
+              return
+            }
+
+            await mutateAsync({
+              pathParams: {},
+              payload: singlePeriod[0].payload,
+            })
+
+            toast.success('Line Item created successfully!')
+            void queryClient.invalidateQueries({
+              predicate: (query) =>
+                typeof query.queryKey[0] === 'string' &&
+                (query.queryKey[0].includes('/line-item-budget-details') ||
+                  query.queryKey[0].includes('/lib-activities') ||
+                  query.queryKey[0].includes('/libs')),
+            })
+            setIsSubmitting(false)
+            onCreated?.()
+            onClose?.()
+            return
+          }
+        } else if (currentTimeline === 'monthly') {
+          // Monthly allocation path
           setIsSubmitting(true)
-          setSubmissionOutcome(null)
+          const periods = generateMonthlyPeriodDetails(
+            periodAllocation,
+            activityStartDate,
+          )
 
-          // Generate period details
-          const periods =
-            timelineType === 'quarterly'
-              ? generateQuarterlyPeriodDetails(
-                  periodAllocation as QuarterlyAllocation,
-                  activityStartDate,
-                )
-              : generateMonthlyPeriodDetails(
-                  periodAllocation as MonthlyAllocation,
-                  activityStartDate,
-                )
-
-          // Validate at least one non-zero period
           if (periods.length === 0) {
-            toast.error('At least one period with budget > 0 is required')
+            toast.error('At least one month with budget > 0 is required')
             setIsSubmitting(false)
             return
           }
@@ -291,73 +514,57 @@ export default function CreateLineItemBudgetDetailsForm({
             return
           }
 
-          // Create submit function for concurrent execution
-          const submitFunction = async (period: {
-            period: string
-            payload: PeriodAllocationPayload
-          }) => {
-            await mutateAsync({
-              pathParams: {},
-              payload: period.payload,
-            })
-          }
-
-          // Create payloads for all periods
-          const submitPayloads: Array<{
-            period: string
-            payload: PeriodAllocationPayload
-          }> = periods.map((period) => ({
+          const submitPayloads = periods.map((period) => ({
             period: period.period,
             payload: {
               lineItemBudgetId: libId,
               lineItemBudgetActivityId: libActivityId,
               wfpObjectiveActivityExpenditureId: undefined,
               objectId: finalObjectId,
-              description: value.description || undefined,
-              // unitQuantity: value.unitQuantity || undefined,
-              // unitCost: value.unitCost || undefined,
-              timelineType: timelineType,
+              description: value.description.trim() || undefined,
+              timelineType: 'monthly',
               startDate: formatDateToISO(period.startDate),
               endDate: formatDateToISO(period.endDate),
               budget: period.budget,
             },
           }))
 
-          // Submit concurrently
           const outcome = await submitConcurrentPeriodAllocations(
-            submitFunction,
+            async (p) => {
+              await mutateAsync({ pathParams: {}, payload: p.payload })
+            },
             submitPayloads,
           )
 
           setSubmissionOutcome(outcome)
 
-          // Handle result
           if (outcome.failureCount === 0) {
             toast.success(generateSubmissionSummary(outcome))
             void queryClient.invalidateQueries({
               predicate: (query) =>
                 typeof query.queryKey[0] === 'string' &&
-                query.queryKey[0].includes('/lib-activities'),
+                (query.queryKey[0].includes('/line-item-budget-details') ||
+                  query.queryKey[0].includes('/lib-activities') ||
+                  query.queryKey[0].includes('/libs')),
             })
             onCreated?.()
             onClose?.()
           } else if (outcome.successCount > 0) {
-            // Partial success
             toast.warning(generateSubmissionSummary(outcome))
             void queryClient.invalidateQueries({
               predicate: (query) =>
                 typeof query.queryKey[0] === 'string' &&
-                query.queryKey[0].includes('/lib-activities'),
+                (query.queryKey[0].includes('/line-item-budget-details') ||
+                  query.queryKey[0].includes('/lib-activities') ||
+                  query.queryKey[0].includes('/libs')),
             })
-            // Keep form open to show failures
           } else {
-            // All failed
             toast.error(generateSubmissionSummary(outcome))
           }
-
           setIsSubmitting(false)
         } else {
-          // Single-period allocation path (Daily, Weekly, Yearly)
+          // Fallback
+          const numBudget = parseFloat(budget) || value.budget || 0
           await mutateAsync({
             pathParams: {},
             payload: {
@@ -365,19 +572,20 @@ export default function CreateLineItemBudgetDetailsForm({
               lineItemBudgetActivityId: libActivityId,
               wfpObjectiveActivityExpenditureId: undefined,
               objectId: finalObjectId,
-              description: value.description || undefined,
-              // unitQuantity: value.unitQuantity || undefined,
-              // unitCost: value.unitCost || undefined,
+              description: value.description.trim() || undefined,
               timelineType: value.timelineType || undefined,
               startDate: value.startDate || undefined,
               endDate: value.endDate || undefined,
-              budget: value.budget || 0,
+              budget: numBudget,
             },
           })
+          toast.success('Line Item created successfully!')
           void queryClient.invalidateQueries({
             predicate: (query) =>
               typeof query.queryKey[0] === 'string' &&
-              query.queryKey[0].includes('/lib-activities'),
+              (query.queryKey[0].includes('/line-item-budget-details') ||
+                query.queryKey[0].includes('/lib-activities') ||
+                query.queryKey[0].includes('/libs')),
           })
           onCreated?.()
           onClose?.()
@@ -390,16 +598,25 @@ export default function CreateLineItemBudgetDetailsForm({
       }
     },
     [
+      timelineType,
+      budget,
+      startDate,
+      endDate,
       libId,
       libActivityId,
       mutateAsync,
       queryClient,
       onCreated,
       onClose,
+      isSplitMode,
+      coveredQuarters,
+      splitBudgets,
+      selectedQuarter,
+      onSubmitOverride,
       periodAllocation,
       activityStartDate,
-      activityEndDate,
       expenditureTypes,
+      descendantExpenditureItems,
     ],
   )
 
@@ -419,14 +636,8 @@ export default function CreateLineItemBudgetDetailsForm({
     return expenditureTypes.find((item) => item.id === selectedParentId)
   }, [selectedParentId, expenditureTypes])
 
-  // Fetch child objects only when parent is selected and has children
-  const { data: childObjectsResponse, isLoading: isLoadingChildObjects } =
-    useGetChildObjects(selectedParentId)
-
-  const currentTimelineType = form.getFieldValue('timelineType')
-  const isPeriodTimeline = PERIOD_TIMELINE_TYPES.includes(currentTimelineType)
   const isLoading = isPending || isSubmitting
-  const isLoadingTypes = isLoadingRootObjects || isLoadingExpenditureTypes
+  const isLoadingTypes = isLoadingObjects
 
   return (
     <form
@@ -444,17 +655,15 @@ export default function CreateLineItemBudgetDetailsForm({
         children={(field) => (
           <div className="space-y-1.5">
             <Label htmlFor={field.name} className="font-medium">
-              Type of Expenditure
+              Type of Expenditure <span className="text-red-500">*</span>
             </Label>
             <Select
               value={field.state.value}
               onValueChange={(value) => {
                 field.handleChange(value)
                 setSelectedParentId(value)
-                // Reset child selection when parent changes
                 form.setFieldValue('itemOfExpenditureId', '')
 
-                // Smart description inheritance if category has no child items
                 const selectedParent = expenditureTypes.find((item) => item.id === value)
                 if (selectedParent && (!selectedParent.childObjectCount || selectedParent.childObjectCount === 0)) {
                   const currentDesc = form.getFieldValue('description') as string | undefined
@@ -493,58 +702,41 @@ export default function CreateLineItemBudgetDetailsForm({
         )}
       />
 
-      {/* Select Item of Expenditure - Conditionally shown when parent has children */}
-      {selectedParentObject && selectedParentObject.childObjectCount > 0 && (
+      {/* Select Item of Expenditure */}
+      {selectedParentObject && descendantExpenditureItems.length > 0 && (
         <form.Field
           name="itemOfExpenditureId"
           children={(field) => (
             <div className="space-y-1.5">
               <Label htmlFor={field.name} className="font-medium">
-                Select Item of Expenditure
+                Select Item of Expenditure <span className="text-red-500">*</span>
               </Label>
-              <Select
+              <ExpenditureItemCombobox
+                id={field.name}
+                items={descendantExpenditureItems}
                 value={field.state.value || ''}
-                onValueChange={(val) => {
+                onValueChange={(val, selectedDescendant) => {
                   field.handleChange(val)
 
-                  // Smart Description Inheritance Logic
-                  const children = childObjectsResponse?.data || []
-                  const selectedChild = children.find((item) => item.id === val)
-
-                  if (selectedChild) {
+                  if (selectedDescendant) {
                     const currentDesc = form.getFieldValue('description') as string | undefined
                     const isEmpty = !currentDesc || currentDesc.trim() === ''
                     const matchesPreviousAuto = autoInheritedName && currentDesc === autoInheritedName
-                    const matchesAnyObjName = children.some((i) => i.name === currentDesc)
+                    const matchesAnyObjName = descendantExpenditureItems.some((i) => i.name === currentDesc)
 
-                    // Rule A (Empty) or Rule B (Default Match): update Description
                     if (isEmpty || matchesPreviousAuto || matchesAnyObjName) {
-                      form.setFieldValue('description', selectedChild.name || '')
-                      setAutoInheritedName(selectedChild.name || null)
+                      form.setFieldValue('description', selectedDescendant.name || '')
+                      setAutoInheritedName(selectedDescendant.name || null)
                     }
-                    // Rule C (Custom Edit): If user manually edited description, do NOT overwrite it!
+                  } else {
+                    setAutoInheritedName(null)
                   }
                 }}
-                disabled={isLoading || isLoadingChildObjects}
-              >
-                <SelectTrigger id={field.name} className="w-full">
-                  <SelectValue
-                    placeholder={
-                      isLoadingChildObjects
-                        ? 'Loading items...'
-                        : 'Select item of expenditure'
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {childObjectsResponse?.data?.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name}
-                      {item.code ? ` (${item.code})` : ''}
-                    </SelectItem>
-                  )) || []}
-                </SelectContent>
-              </Select>
+                disabled={isLoading || isLoadingTypes}
+                isLoading={isLoadingTypes}
+                placeholder="Select item of expenditure"
+                hasError={Boolean(field.state.meta.errors.length)}
+              />
               <FieldInfo field={field} />
             </div>
           )}
@@ -558,7 +750,7 @@ export default function CreateLineItemBudgetDetailsForm({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor={field.name} className="font-medium">
-                Description
+                Description <span className="text-red-500">*</span>
               </Label>
               {autoInheritedName && field.state.value === autoInheritedName && (
                 <span className="text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">
@@ -580,153 +772,301 @@ export default function CreateLineItemBudgetDetailsForm({
         )}
       />
 
-      {/* Timeline Type */}
-      <form.Field
-        name="timelineType"
-        children={(field) => (
-          <div className="space-y-1.5">
-            <Label htmlFor={field.name} className="font-medium">
-              Timeline Type
-            </Label>
-            <Select
-              value={field.state.value || ''}
-              onValueChange={(value) => {
-                field.handleChange(value)
-                // Reset period allocation when timeline type changes
-                if (value === 'monthly') {
-                  setPeriodAllocation({
-                    january: 0,
-                    february: 0,
-                    march: 0,
-                    april: 0,
-                    may: 0,
-                    june: 0,
-                    july: 0,
-                    august: 0,
-                    september: 0,
-                    october: 0,
-                    november: 0,
-                    december: 0,
-                  })
-                } else {
-                  setPeriodAllocation({ q1: 0, q2: 0, q3: 0, q4: 0 })
-                }
-              }}
-              disabled={isLoading}
-            >
-              <SelectTrigger id={field.name} className="w-full">
-                <SelectValue placeholder="Select timeline type" />
-              </SelectTrigger>
-              <SelectContent>
-                {TIMELINE_TYPES.map((timeline) => (
-                  <SelectItem key={timeline.id} value={timeline.id}>
-                    {timeline.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FieldInfo field={field} />
-          </div>
-        )}
-      />
-
-      {/* Budget Field - Only shown for non-period timeline types */}
-      {!isPeriodTimeline && (
+      {/* Budget and Timeline Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <form.Field
           name="budget"
           children={(field) => (
-            <div className="space-y-2">
-              <Label htmlFor={field.name} className="font-medium">
-                Budget
+            <div className="space-y-1.5">
+              <Label htmlFor={field.name} className="text-xs font-semibold text-gray-700">
+                Allocated Budget (₱) <span className="text-red-500">*</span>
               </Label>
               <Input
                 id={field.name}
                 type="number"
                 step="0.01"
-                placeholder="0"
-                value={field.state.value || ''}
-                onChange={(e) => field.handleChange(parseFloat(e.target.value))}
+                min="0.01"
+                value={budget}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setBudget(val)
+                  field.handleChange(parseFloat(val) || 0)
+                }}
+                placeholder="0.00"
+                className="text-sm font-semibold"
                 disabled={isLoading}
-                className="w-full"
+                required
               />
               <FieldInfo field={field} />
             </div>
           )}
         />
-      )}
 
-      {/* Start Date - Only shown for non-period timeline types */}
-      {!isPeriodTimeline && (
         <form.Field
-          name="startDate"
+          name="timelineType"
           children={(field) => (
-            <div className="space-y-2">
-              <Label htmlFor={field.name} className="font-medium">
-                Start Date
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-gray-700">
+                Timeline Type
               </Label>
-              <Input
-                id={field.name}
-                type="datetime-local"
-                value={
-                  field.state.value
-                    ? new Date(field.state.value).toISOString().slice(0, 16)
-                    : ''
-                }
-                onChange={(e) => {
-                  if (e.target.value) {
-                    field.handleChange(new Date(e.target.value).toISOString())
-                  } else {
-                    field.handleChange('')
-                  }
+              <Select
+                value={field.state.value || timelineType}
+                onValueChange={(val) => {
+                  field.handleChange(val)
+                  setTimelineType(val)
                 }}
                 disabled={isLoading}
-                className="w-full"
-              />
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select timeline type..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIMELINE_TYPES.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FieldInfo field={field} />
             </div>
           )}
         />
-      )}
+      </div>
 
-      {/* End Date - Only shown for non-period timeline types */}
-      {!isPeriodTimeline && (
-        <form.Field
-          name="endDate"
-          children={(field) => (
-            <div className="space-y-2">
-              <Label htmlFor={field.name} className="font-medium">
-                End Date
+      {/* Quarter & Date Selectors for Quarterly Timeline */}
+      {timelineType === 'quarterly' && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-gray-700">
+                Quarter Preset
               </Label>
-              <Input
-                id={field.name}
-                type="datetime-local"
-                value={
-                  field.state.value
-                    ? new Date(field.state.value).toISOString().slice(0, 16)
-                    : ''
-                }
-                onChange={(e) => {
-                  if (e.target.value) {
-                    field.handleChange(new Date(e.target.value).toISOString())
-                  } else {
-                    field.handleChange('')
-                  }
-                }}
+              <Select
+                value={selectedQuarter}
+                onValueChange={handleQuarterChange}
                 disabled={isLoading}
-                className="w-full"
-              />
-              <FieldInfo field={field} />
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pick quarter..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {spansMultipleQuarters && (
+                    <SelectItem
+                      value="MULTI"
+                      disabled
+                      className="font-semibold text-amber-700 bg-amber-50/80"
+                    >
+                      Spans {coveredQuarters.map((q) => q.id).join(' & ')}
+                    </SelectItem>
+                  )}
+                  {STANDARD_QUARTERS.map((q) => (
+                    <SelectItem key={q.id} value={q.id}>
+                      {q.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <form.Field
+              name="startDate"
+              children={(field) => (
+                <div className="space-y-1.5">
+                  <Label htmlFor={field.name} className="text-xs font-semibold text-gray-700">
+                    Start Date <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id={field.name}
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      const newSDate = e.target.value
+                      setStartDate(newSDate)
+                      field.handleChange(newSDate)
+                      const covered = getCoveredQuarters(newSDate, endDate)
+                      if (covered.length === 1) {
+                        setSelectedQuarter(covered[0].id)
+                        setIsSplitMode(false)
+                      } else if (covered.length > 1) {
+                        setSelectedQuarter('MULTI')
+                      } else {
+                        setSelectedQuarter('')
+                        setIsSplitMode(false)
+                      }
+                    }}
+                    disabled={isLoading}
+                    required
+                  />
+                  <FieldInfo field={field} />
+                </div>
+              )}
+            />
+
+            <form.Field
+              name="endDate"
+              children={(field) => (
+                <div className="space-y-1.5">
+                  <Label htmlFor={field.name} className="text-xs font-semibold text-gray-700">
+                    End Date <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id={field.name}
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => {
+                      const newEDate = e.target.value
+                      setEndDate(newEDate)
+                      field.handleChange(newEDate)
+                      const covered = getCoveredQuarters(startDate, newEDate)
+                      if (covered.length === 1) {
+                        setSelectedQuarter(covered[0].id)
+                        setIsSplitMode(false)
+                      } else if (covered.length > 1) {
+                        setSelectedQuarter('MULTI')
+                      } else {
+                        setSelectedQuarter('')
+                        setIsSplitMode(false)
+                      }
+                    }}
+                    disabled={isLoading}
+                    required
+                  />
+                  <FieldInfo field={field} />
+                </div>
+              )}
+            />
+          </div>
+
+          {/* Multi-Quarter Split Banner & Breakdown */}
+          {spansMultipleQuarters && (
+            <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-start gap-2.5">
+                  <Sparkles className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-semibold text-amber-900">
+                      Multi-Quarter Allocation ({coveredQuarters.map((q) => q.id).join(' & ')})
+                    </h4>
+                    <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+                      This allocation spans {startDate} to {endDate}. Split it across quarters to align with the quarterly matrix columns.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={isSplitMode ? 'default' : 'outline'}
+                  onClick={handleToggleSplitMode}
+                  className={`h-7 px-2.5 text-xs font-medium shrink-0 ${
+                    isSplitMode
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                      : 'border-amber-300 text-amber-800 hover:bg-amber-100 bg-white'
+                  }`}
+                >
+                  <Split className="h-3.5 w-3.5 mr-1" />
+                  {isSplitMode ? 'Cancel Split' : 'Split Across Quarters'}
+                </Button>
+              </div>
+
+              {/* Split Breakdown */}
+              {isSplitMode && (
+                <div className="bg-white rounded-lg border border-amber-200 p-3 space-y-3 pt-2.5">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <span className="text-xs font-bold text-gray-800">
+                      Quarterly Budget Breakdown
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleEqualizeBudgets}
+                      className="h-6 text-[11px] text-blue-600 hover:text-blue-800 font-medium px-2"
+                    >
+                      Divide Equally
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {coveredQuarters.map((q) => (
+                      <div
+                        key={q.id}
+                        className="bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 space-y-1"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-800">
+                            {q.label}
+                          </span>
+                          <span className="text-[10px] text-gray-500 font-mono">
+                            {q.startDate} – {q.endDate}
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-2 text-xs font-semibold text-gray-400">
+                            ₱
+                          </span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            value={splitBudgets[q.id] || ''}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              setSplitBudgets((prev) => ({
+                                ...prev,
+                                [q.id]: val,
+                              }))
+                            }}
+                            className="h-8 pl-6 text-xs font-semibold"
+                            placeholder="0.00"
+                            required
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100">
+                    <span className="text-gray-500 text-[11px]">
+                      Sum of quarters:{' '}
+                      <strong
+                        className={`font-semibold ${
+                          Math.abs(splitSum - totalBudgetNum) > 0.01
+                            ? 'text-amber-600'
+                            : 'text-emerald-600'
+                        }`}
+                      >
+                        {formatCurrencyPHP(splitSum)}
+                      </strong>
+                    </span>
+                    <span className="text-gray-500 text-[11px]">
+                      Total Budget:{' '}
+                      <strong className="text-gray-900 font-semibold">
+                        {formatCurrencyPHP(totalBudgetNum)}
+                      </strong>
+                    </span>
+                  </div>
+
+                  {Math.abs(splitSum - totalBudgetNum) > 0.01 && (
+                    <p className="text-[11px] text-amber-700 font-medium">
+                      ⚠️ The sum of quarters ({formatCurrencyPHP(splitSum)}) differs from the total budget ({formatCurrencyPHP(totalBudgetNum)}).
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
-        />
+        </>
       )}
 
-      {/* Period Allocation Panel - Only shown for period timeline types */}
-      {isPeriodTimeline && (
+      {/* Monthly Period Allocation Panel */}
+      {timelineType === 'monthly' && (
         <PeriodAllocationPanel
-          timelineType={currentTimelineType as 'quarterly' | 'monthly'}
+          timelineType="monthly"
           allocation={periodAllocation}
-          onAllocationChange={handlePeriodAllocationChange}
+          onAllocationChange={(alloc) =>
+            handlePeriodAllocationChange(alloc as MonthlyAllocation)
+          }
           activityStartDate={activityStartDate}
           activityEndDate={activityEndDate}
           maxBudget={activityBudget}

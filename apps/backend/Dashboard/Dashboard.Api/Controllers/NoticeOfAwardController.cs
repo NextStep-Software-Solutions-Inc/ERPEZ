@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Commands.ApproveNoticeOfAward;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Commands.CreateNoticeOfAward;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Commands.DeleteNoticeOfAward;
+using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Commands.GenerateNoticeOfAwardDocument;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Commands.LogNoticeOfAwardMilestone;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Commands.RecordNoticeOfAwardCascadeDecision;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Commands.RecordNoticeOfAwardJustification;
@@ -13,8 +14,10 @@ using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Commands.UpdateNotic
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Dtos;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetAvailableAwardBacResolutions;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetNoticeOfAwardById;
+using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetNoticeOfAwardPdf;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetNoticeOfAwards;
 using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetNoticeOfAwardSummary;
+using ERPEZ.Application.Features.Procurement.NoticeOfAwards.Queries.GetApprovedNoasAvailableForPO;
 using ERPEZ.Application.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -48,6 +51,17 @@ public class NoticeOfAwardController(ISender mediator, ICurrentUserService curre
     public async Task<IActionResult> GetNoticeOfAwards([FromQuery] GetNoticeOfAwardsQuery query)
     {
         var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get approved Notice of Awards that are available for Purchase Order creation (not linked to an active PO)
+    /// </summary>
+    [HttpGet("available-for-po")]
+    [ProducesResponseType(typeof(ApiResponse<List<AvailableNoaDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAvailableNoasForPO()
+    {
+        var result = await mediator.Send(new GetApprovedNoasAvailableForPOQuery());
         return Ok(result);
     }
 
@@ -219,5 +233,43 @@ public class NoticeOfAwardController(ISender mediator, ICurrentUserService curre
         var command = new DeleteNoticeOfAwardCommand(id, actorId, actorName);
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Generate and persist official Notice of Award PDF document
+    /// </summary>
+    [HttpPost("{id:guid}/generate-document")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GenerateDocument(Guid id)
+    {
+        var (_, actorName) = GetCurrentActor();
+        var command = new GenerateNoticeOfAwardDocumentCommand
+        {
+            NoticeOfAwardId = id,
+            GeneratedBy = actorName
+        };
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Stream official server-rendered Notice of Award PDF directly (inline preview / download)
+    /// </summary>
+    [HttpGet("{id:guid}/pdf")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPdf(Guid id)
+    {
+        var query = new GetNoticeOfAwardPdfQuery(id);
+        var result = await mediator.Send(query);
+        if (!result.Succeeded || result.Data == null)
+        {
+            return NotFound(result);
+        }
+
+        Response.Headers["Content-Disposition"] = $"inline; filename=\"{result.Data.FileName}\"";
+        return File(result.Data.FileBytes, result.Data.ContentType, result.Data.FileName);
     }
 }

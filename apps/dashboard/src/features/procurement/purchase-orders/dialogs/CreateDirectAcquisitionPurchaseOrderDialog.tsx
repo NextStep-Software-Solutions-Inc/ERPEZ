@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import {
   Form,
   FormControl,
@@ -17,21 +18,18 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { CalendarIcon, ChevronDown, Eye, Plus, Search, Store, X, FileText, Package } from 'lucide-react'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { CalendarIcon, Eye, FileText, Store, Plus, Package, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
-import { usePurchaseOrderStore } from '../data/purchaseOrderStore'
-import { useConsolidatedPRStore } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
-import type { ConsolidatedPR } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
-import { useBacResolutions, type BacResolution } from '@/features/procurement/bac-resolution'
+import { toast } from 'sonner'
+import { useGetDaResolutionsAvailableForPO, useCreatePurchaseOrder, uploadPoDocument } from '../handlers'
+import { useSuppliers } from '@/components/features/planning/procurement-library/suppliers/useSuppliers'
+import type { AvailableDaResolution } from '../types'
 import {
   purchaseOrderFormSchema,
   type PurchaseOrderFormValues,
   DELIVERY_TERMS,
   PAYMENT_TERMS,
 } from './purchaseOrderFormSchema'
-import { ResponsiveDialog } from '@/components/ResponsiveDialog'
-import { Label } from '@/components/ui/label'
 
 type CreateDirectAcquisitionPurchaseOrderDialogProps = {
   open: boolean
@@ -40,111 +38,71 @@ type CreateDirectAcquisitionPurchaseOrderDialogProps = {
 
 type FormValues = PurchaseOrderFormValues
 
-// ── Retail Supplier type (local, no backend yet) ──────────────────────────────
-type RetailSupplier = { id: string; name: string; tin: string }
-
-const INITIAL_SUPPLIERS: RetailSupplier[] = [
-  { id: 's-001', name: 'National Bookstore', tin: '000-123-456-000' },
-  { id: 's-002', name: 'Shopee Official Store', tin: '000-234-567-000' },
-  { id: 's-003', name: 'Lazada Mall', tin: '000-345-678-000' },
-  { id: 's-004', name: 'Abenson', tin: '000-456-789-000' },
-  { id: 's-005', name: 'Octagon Computer Accessories', tin: '000-567-890-000' },
-]
-
-const DA_MOP_KEYWORDS = ['direct acquisition', 'direct contracting']
-
-function isDaMop(mop?: string): boolean {
-  if (!mop) return false
-  return DA_MOP_KEYWORDS.some((k) => mop.toLowerCase().includes(k))
-}
-
 export function CreateDirectAcquisitionPurchaseOrderDialog({
   open,
   onOpenChange,
 }: CreateDirectAcquisitionPurchaseOrderDialogProps) {
-  const createDraft = usePurchaseOrderStore((state) => state.createDraft)
-  const consolidatedPRs = useConsolidatedPRStore((s) => s.consolidatedPRs)
+  const { data: availableDas = [], isLoading: isLoadingDas } = useGetDaResolutionsAvailableForPO()
+  const { data: suppliersResponse, isLoading: isLoadingSuppliers } = useSuppliers({
+    enabled: open,
+    payload: { PageSize: 100 },
+  })
+  const existingSuppliers = useMemo(() => {
+    return suppliersResponse?.data?.items ?? []
+  }, [suppliersResponse])
 
-  // Load BAC Resolutions
-  const { data: resolutionsData } = useBacResolutions({ enabled: open })
-  const bacResolutions = useMemo(() => resolutionsData ?? [], [resolutionsData])
+  const createMutation = useCreatePurchaseOrder()
 
-  // ── Filter: only resolutions that have a linked PR with at least one item with Direct Acquisition MoP ──
-  const daResolutions = useMemo(() => {
-    return bacResolutions.filter((resolution) => {
-      const linkedPrLink = resolution.linkedConsolidatedPrs?.[0]
-      if (!linkedPrLink) return false
-      const prFromStore = consolidatedPRs.find(
-        (p) => p.id === linkedPrLink.id || p.prNumber === linkedPrLink.prNumber
-      )
-      if (!prFromStore) return false
-      if (!prFromStore.itemMOPs) return false
-      return Object.values(prFromStore.itemMOPs).some((v) => isDaMop(v?.mop))
-    })
-  }, [bacResolutions, consolidatedPRs])
+  const [selectedDaId, setSelectedDaId] = useState<string | null>(null)
+  const [viewingDa, setViewingDa] = useState<AvailableDaResolution | null>(null)
+  const [daSearch, setDaSearch] = useState('')
+  const [isDaDropdownOpen, setIsDaDropdownOpen] = useState(false)
 
-  // ── Dropdown state ─────────────────────────────────────────────────────────
-  const [prDropOpen, setPrDropOpen] = useState(false)
-  const [prSearch, setPrSearch] = useState('')
-  const [selectedResolution, setSelectedResolution] = useState<BacResolution | null>(null)
-  const [viewingPR, setViewingPR] = useState<ConsolidatedPR | null>(null)
-
-  // Derive selectedPR from selectedResolution
-  const selectedPR = useMemo(() => {
-    if (!selectedResolution) return null
-    const linkedPrLink = selectedResolution.linkedConsolidatedPrs?.[0]
-    if (!linkedPrLink) return null
-    return consolidatedPRs.find(
-      (p) => p.id === linkedPrLink.id || p.prNumber === linkedPrLink.prNumber
-    ) || null
-  }, [selectedResolution, consolidatedPRs])
-
-  const filteredResolutions = useMemo(() => {
-    const q = prSearch.toLowerCase()
-    return daResolutions.filter((res) => {
-      const prNumber = res.linkedConsolidatedPrs?.[0]?.prNumber ?? ''
-      return (
-        (res.bacResolutionNumber ?? '').toLowerCase().includes(q) ||
-        (res.description ?? '').toLowerCase().includes(q) ||
-        prNumber.toLowerCase().includes(q)
-      )
-    })
-  }, [daResolutions, prSearch])
-
-  // ── Retail supplier state ─────────────────────────────────────────────────────
-  const [suppliers, setSuppliers] = useState<RetailSupplier[]>(INITIAL_SUPPLIERS)
+  // Supplier selection state (either existing supplier ID or custom retail store)
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
+  const [customRetailStore, setCustomRetailStore] = useState<{
+    name: string
+    tin?: string
+    address?: string
+  } | null>(null)
   const [supplierSearch, setSupplierSearch] = useState('')
-  const [supplierDropOpen, setSupplierDropOpen] = useState(false)
-  const [selectedSupplier, setSelectedSupplier] = useState<RetailSupplier | null>(null)
+  const [isSupplierDropdownOpen, setIsSupplierDropdownOpen] = useState(false)
 
-  // Add New Store mini-modal
-  const [addStoreOpen, setAddStoreOpen] = useState(false)
+  // Add Custom Store Modal
+  const [isAddStoreOpen, setIsAddStoreOpen] = useState(false)
   const [newStoreName, setNewStoreName] = useState('')
   const [newStoreTin, setNewStoreTin] = useState('')
+  const [newStoreAddress, setNewStoreAddress] = useState('')
+
+  const [isDateOpen, setIsDateOpen] = useState(false)
+  const [isDeliveryDateOpen, setIsDeliveryDateOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const selectedDa = useMemo(
+    () => availableDas.find((da) => da.id === selectedDaId),
+    [availableDas, selectedDaId],
+  )
+
+  const filteredDas = useMemo(() => {
+    return availableDas.filter((da) =>
+      [da.daNumber, da.description ?? '', da.cprNumber ?? '']
+        .join(' ')
+        .toLowerCase()
+        .includes(daSearch.toLowerCase()),
+    )
+  }, [availableDas, daSearch])
 
   const filteredSuppliers = useMemo(() => {
     const q = supplierSearch.toLowerCase()
-    return suppliers.filter((s) => s.name.toLowerCase().includes(q) || s.tin.includes(q))
-  }, [suppliers, supplierSearch])
+    return existingSuppliers.filter((s: any) =>
+      (s.name ?? '').toLowerCase().includes(q) || (s.tinNumber ?? '').includes(q),
+    )
+  }, [existingSuppliers, supplierSearch])
 
-  const handleAddStore = () => {
-    if (!newStoreName.trim()) return
-    const newSupplier: RetailSupplier = {
-      id: `s-${crypto.randomUUID()}`,
-      name: newStoreName.trim(),
-      tin: newStoreTin.trim() || '—',
-    }
-    setSuppliers((prev) => [...prev, newSupplier])
-    setSelectedSupplier(newSupplier)
-    setNewStoreName('')
-    setNewStoreTin('')
-    setAddStoreOpen(false)
-    setSupplierDropOpen(false)
-  }
-
-  // ── Form date popovers ────────────────────────────────────────────────────────
-  const [isDateOpen, setIsDateOpen] = useState(false)
-  const [isDeliveryDateOpen, setIsDeliveryDateOpen] = useState(false)
+  const selectedSupplierObj = useMemo(
+    () => existingSuppliers.find((s: any) => s.id === selectedSupplierId),
+    [existingSuppliers, selectedSupplierId],
+  )
 
   const form = useForm<FormValues>({
     resolver: zodResolver(purchaseOrderFormSchema),
@@ -165,51 +123,81 @@ export function CreateDirectAcquisitionPurchaseOrderDialog({
   const watchDeliveryTerm = form.watch('deliveryTerm')
   const watchPaymentTerm = form.watch('paymentTerm')
 
-  const handleSubmit = (data: FormValues) => {
-    const deliveryTerm = data.deliveryTerm === 'Others' ? (data.deliveryTermCustom?.trim() ?? '') : data.deliveryTerm
-    const paymentTerm = data.paymentTerm === 'Others' ? (data.paymentTermCustom?.trim() ?? '') : data.paymentTerm
+  const handleAddStoreSubmit = () => {
+    if (!newStoreName.trim()) {
+      toast.error('Store name is required.')
+      return
+    }
+    const store = {
+      name: newStoreName.trim(),
+      tin: newStoreTin.trim() || undefined,
+      address: newStoreAddress.trim() || undefined,
+    }
+    setCustomRetailStore(store)
+    setSelectedSupplierId(null)
+    setIsAddStoreOpen(false)
+    setIsSupplierDropdownOpen(false)
+    setNewStoreName('')
+    setNewStoreTin('')
+    setNewStoreAddress('')
+    toast.info(`Retail store "${store.name}" set for this PO.`)
+  }
 
-    // If a Consolidated PR was selected, include only the items flagged for Direct Acquisition MoP
-    const prDaItems = selectedPR
-      ? selectedPR.selectedPRItems.filter((item) => isDaMop(selectedPR.itemMOPs?.[item.id]?.mop))
-      : []
+  const handleSubmit = async (data: FormValues) => {
+    if (!selectedDaId || !selectedDa) {
+      toast.error('Please select an approved Direct Acquisition resolution.')
+      return
+    }
 
-    const lineItems = prDaItems.map((i) => ({
-      id: i.id,
-      description: i.itemName,
-      quantity: i.qty,
-      unit: i.unit,
-      unitPrice: i.unitPrice,
-      amount: i.totalAmount,
-    }))
+    if (!selectedSupplierId && !customRetailStore) {
+      toast.error('Please select an existing supplier or enter a retail store.')
+      return
+    }
 
-    const totalAmount = lineItems.reduce((s, it) => s + it.amount, 0)
+    try {
+      setIsSubmitting(true)
+      let supportingDocumentUrl: string | undefined = undefined
+      if (data.bidSupportingDocument instanceof File) {
+        supportingDocumentUrl = await uploadPoDocument(data.bidSupportingDocument)
+      }
 
-    createDraft({
-      source: 'direct-acquisition',
-      poNumber: data.poNumber,
-      description: data.description ?? '',
-      date: data.date ? format(data.date, 'yyyy-MM-dd') : '',
-      placeOfDelivery: data.placeOfDelivery,
-      dateOfDelivery: data.dateOfDelivery ? format(data.dateOfDelivery, 'yyyy-MM-dd') : '',
-      deliveryTerm: deliveryTerm || data.deliveryTerm,
-      paymentTerm: paymentTerm || data.paymentTerm,
-      bidSupportingDocument: null,
-      supplierName: selectedSupplier?.name ?? null,
-      supplierTin: selectedSupplier?.tin ?? null,
-      // Link back to the originating Consolidated PR and include its DA items
-      sourceDocumentType: selectedPR ? 'direct-acquisition' : null,
-      sourceDocumentId: selectedPR?.id ?? null,
-      sourceDocumentNumber: selectedPR?.prNumber ?? null,
-      sourceDocumentDescription: selectedPR?.description ?? null,
-      lineItems: lineItems.length > 0 ? lineItems : undefined,
-      totalAmount: lineItems.length > 0 ? totalAmount : undefined,
-    })
+      const deliveryTerm =
+        data.deliveryTerm === 'Others'
+          ? (data.deliveryTermCustom?.trim() ?? '')
+          : data.deliveryTerm
+      const paymentTerm =
+        data.paymentTerm === 'Others'
+          ? (data.paymentTermCustom?.trim() ?? '')
+          : data.paymentTerm
 
-    form.reset()
-    setSelectedResolution(null)
-    setSelectedSupplier(null)
-    onOpenChange(false)
+      await createMutation.mutateAsync({
+        poNumber: data.poNumber,
+        procurementMode: 'DIRECT_ACQUISITION',
+        sourceDocumentType: 'BAC_RESOLUTION',
+        sourceDocumentId: selectedDaId,
+        supplierId: selectedSupplierId || undefined,
+        retailStoreInfo: customRetailStore || undefined,
+        description: data.description ?? '',
+        date: data.date ? format(data.date, 'yyyy-MM-dd') : '',
+        placeOfDelivery: data.placeOfDelivery,
+        dateOfDelivery: data.dateOfDelivery ? format(data.dateOfDelivery, 'yyyy-MM-dd') : '',
+        deliveryTerm: deliveryTerm || data.deliveryTerm,
+        paymentTerm: paymentTerm || data.paymentTerm,
+        supportingDocumentUrl,
+      })
+
+      toast.success('Direct Acquisition Purchase Order created successfully!')
+      form.reset()
+      setSelectedDaId(null)
+      setSelectedSupplierId(null)
+      setCustomRetailStore(null)
+      setDaSearch('')
+      onOpenChange(false)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create Direct Acquisition Purchase Order.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -218,7 +206,7 @@ export function CreateDirectAcquisitionPurchaseOrderDialog({
         open={open}
         onOpenChange={onOpenChange}
         title="Create PO for Direct Acquisition"
-        description="Prepare the draft header, select the approved Consolidated PR with Direct Acquisition MoP, then choose the retail supplier."
+        description="Prepare the header, pick the approved Direct Acquisition resolution, and specify the retail store or supplier."
         size="2xl"
         className="w-full"
         footer={null}
@@ -244,7 +232,11 @@ export function CreateDirectAcquisitionPurchaseOrderDialog({
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={field.value} onSelect={(d) => { field.onChange(d); setIsDateOpen(false) }} />
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(d) => { field.onChange(d); setIsDateOpen(false) }}
+                          />
                         </PopoverContent>
                       </Popover>
                       <FormMessage />
@@ -260,7 +252,7 @@ export function CreateDirectAcquisitionPurchaseOrderDialog({
                     <FormItem>
                       <FormLabel>PO Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="PO-2026-001" {...field} />
+                        <Input placeholder="PO-2026-DA-001" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -275,7 +267,7 @@ export function CreateDirectAcquisitionPurchaseOrderDialog({
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Short description of the purchase order" rows={3} {...field} />
+                        <Textarea placeholder="Short description of the direct acquisition order" rows={3} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -312,7 +304,11 @@ export function CreateDirectAcquisitionPurchaseOrderDialog({
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={field.value} onSelect={(d) => { field.onChange(d); setIsDeliveryDateOpen(false) }} />
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(d) => { field.onChange(d); setIsDeliveryDateOpen(false) }}
+                          />
                         </PopoverContent>
                       </Popover>
                       <FormMessage />
@@ -396,237 +392,246 @@ export function CreateDirectAcquisitionPurchaseOrderDialog({
                   />
                 )}
 
-                {/* ── BAC Resolution (Direct Acquisition MoP) ── */}
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold">
-                    BAC Resolution <span className="text-destructive">*</span>
-                  </Label>
-                  <p className="text-xs text-muted-foreground">Select the approved BAC Resolution with Direct Acquisition MoP to link to this PO.</p>
+                {/* BID Supporting Document */}
+                <FormField
+                  control={form.control}
+                  name="bidSupportingDocument"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supporting Document</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept=".pdf,application/pdf"
+                          onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {field.value ? `Selected: ${(field.value as File).name}` : 'Optional. Upload any supporting document if available.'}
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  {/* Inline searchable dropdown */}
+                {/* DA Resolution — inline dropdown with search + View per row */}
+                <div>
+                  <FormLabel>Direct Acquisition (BAC Resolution)</FormLabel>
+                  <p className="text-xs text-muted-foreground mt-1 mb-2">
+                    Select the approved Direct Acquisition resolution to auto-fill line items.
+                  </p>
+
                   <div className="relative">
                     <button
                       type="button"
-                      onClick={() => setPrDropOpen((o) => !o)}
+                      aria-haspopup="listbox"
+                      aria-expanded={isDaDropdownOpen}
+                      aria-controls="da-dropdown-list"
+                      aria-label="Select approved Direct Acquisition"
+                      onClick={() => setIsDaDropdownOpen((o) => !o)}
                       className="flex h-10 w-full items-center justify-between rounded-md border border-gray-200 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     >
-                      <span className={selectedResolution ? 'text-foreground' : 'text-muted-foreground'}>
-                        {selectedResolution
-                          ? `${selectedResolution.bacResolutionNumber ?? selectedResolution.id}${selectedPR?.prNumber ? ` (PR: ${selectedPR.prNumber})` : ''} — ${selectedResolution.description ?? ''}`
-                          : '— Select Approved BAC Resolution —'}
+                      <span className={selectedDa ? 'text-foreground font-medium' : 'text-muted-foreground'}>
+                        {selectedDa
+                          ? `${selectedDa.daNumber} · CPR: ${selectedDa.cprNumber}`
+                          : isLoadingDas
+                            ? 'Loading available Direct Acquisitions...'
+                            : 'Select Direct Acquisition'}
                       </span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      <svg
+                        className={`h-4 w-4 text-muted-foreground transition-transform ${isDaDropdownOpen ? 'rotate-180' : ''}`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
                     </button>
 
-                    {prDropOpen && (
-                      <div className="mt-2 w-full rounded-md border border-default-200 bg-popover shadow-sm">
-                        {/* Search bar */}
-                        <div className="p-2 border-b flex items-center gap-2">
-                          <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    {isDaDropdownOpen && (
+                      <div className="absolute z-50 mt-1 w-full rounded-md border border-default-200 bg-popover shadow-lg">
+                        <div className="p-2 border-b">
                           <Input
-                            value={prSearch}
-                            onChange={(e) => setPrSearch(e.target.value)}
-                            placeholder="Search by BAC Reso No. or PR No. or description…"
-                            className="h-7 text-sm border-0 p-0 focus-visible:ring-0"
+                            value={daSearch}
+                            onChange={(e) => setDaSearch(e.target.value)}
+                            placeholder="Search by DA number, CPR, or description"
+                            className="h-8 text-sm"
                             onClick={(e) => e.stopPropagation()}
-                            autoFocus
                           />
-                          {prSearch && (
-                            <button onClick={() => setPrSearch('')} className="text-muted-foreground hover:text-foreground">
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          )}
                         </div>
-
-                        {/* Resolution list */}
-                        <div className="max-h-[28rem] overflow-y-auto divide-y divide-default-100">
-                          {filteredResolutions.length > 0 ? (
-                            filteredResolutions.map((res) => {
-                              const linkedPrLink = res.linkedConsolidatedPrs?.[0]
-                              const prFromStore = linkedPrLink
-                                ? consolidatedPRs.find(
-                                    (p) => p.id === linkedPrLink.id || p.prNumber === linkedPrLink.prNumber
-                                  )
-                                : null
-                              const total = prFromStore
-                                ? prFromStore.selectedPRItems.reduce((s, i) => s + i.totalAmount, 0)
-                                : res.totalAmount
-                              const daMopCount = prFromStore
-                                ? prFromStore.selectedPRItems.filter((item) =>
-                                    isDaMop(prFromStore.itemMOPs?.[item.id]?.mop),
-                                  ).length
-                                : 0
-                              return (
-                                <div
-                                  key={res.id}
-                                  className={`flex items-center justify-between px-3 py-2.5 text-sm ${selectedResolution?.id === res.id ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
-                                >
-                                  <button
-                                    type="button"
-                                    className="flex-1 text-left"
-                                    onClick={() => { setSelectedResolution(res); setPrDropOpen(false); setPrSearch('') }}
-                                  >
-                                    <div className="font-semibold text-primary">
-                                      {res.bacResolutionNumber ?? res.id}
-                                      {linkedPrLink?.prNumber && (
-                                        <span className="text-xs text-muted-foreground ml-2">
-                                          (PR: {linkedPrLink.prNumber})
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground truncate max-w-xs">{res.description ?? '—'}</div>
-                                    <div className="flex gap-3 mt-0.5">
-                                      <span className="text-xs text-muted-foreground">
-                                        ₱{total.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                      </span>
-                                      {daMopCount > 0 && (
-                                        <Badge className="text-xs h-4 bg-violet-100 text-violet-700 border-violet-300">
-                                          {daMopCount} DA item{daMopCount !== 1 ? 's' : ''}
-                                        </Badge>
-                                      )}
-                                      <Badge variant="outline" className="text-xs h-4">{res.status}</Badge>
-                                    </div>
-                                  </button>
-                                  {prFromStore && (
-                                    <button
-                                      type="button"
-                                      title="View Details"
-                                      onClick={(e) => { e.stopPropagation(); setViewingPR(prFromStore); }}
-                                      className="ml-2 shrink-0 rounded p-1 hover:bg-muted text-muted-foreground hover:text-foreground"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </button>
-                                  )}
+                        <div className="max-h-52 overflow-y-auto divide-y divide-default-100">
+                          {filteredDas.length ? (
+                            filteredDas.map((da) => (
+                              <div
+                                key={da.id}
+                                onClick={() => {
+                                  setSelectedDaId(da.id)
+                                  setIsDaDropdownOpen(false)
+                                }}
+                                className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/50 ${selectedDaId === da.id ? 'bg-primary/10' : ''}`}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium">{da.daNumber}</div>
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    CPR: {da.cprNumber}{da.description ? ` · ${da.description}` : ''}
+                                  </div>
                                 </div>
-                              )
-                            })
+                                <div className="text-sm font-medium shrink-0">
+                                  ₱{da.totalABC.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs gap-1 shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setViewingDa(da)
+                                  }}
+                                >
+                                  <Eye className="h-3 w-3" />
+                                  View
+                                </Button>
+                              </div>
+                            ))
                           ) : (
-                            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
-                              <FileText className="h-6 w-6 opacity-30" />
-                              <p className="text-xs">No BAC Resolutions with Direct Acquisition MoP found.</p>
-                            </div>
+                            <p className="px-3 py-4 text-sm text-muted-foreground text-center">
+                              {isLoadingDas ? 'Loading available records...' : 'No approved Direct Acquisitions available for PO.'}
+                            </p>
                           )}
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Selected BAC Resolution summary chip */}
-                  {selectedResolution && (
-                    <div className="rounded-md border bg-muted/20 px-3 py-2 text-xs space-y-1 mt-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-primary">
-                          {selectedResolution.bacResolutionNumber ?? selectedResolution.id}
-                          {selectedPR?.prNumber && (
-                            <span className="text-muted-foreground font-normal ml-2">
-                              (PR: {selectedPR.prNumber})
-                            </span>
-                          )}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          {selectedPR && (
-                            <button
-                              type="button"
-                              onClick={() => setViewingPR(selectedPR)}
-                              className="flex items-center gap-1 text-xs text-primary hover:underline"
-                            >
-                              <Eye className="h-3 w-3" /> View PR Details
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setSelectedResolution(null)}
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
+                  {selectedDa && (
+                    <div className="mt-3 p-3 rounded-lg border bg-muted/30 space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">CPR Number:</span>
+                        <span className="font-semibold text-foreground">{selectedDa.cprNumber}</span>
                       </div>
-                      <div className="flex gap-4 flex-wrap">
-                        <span><span className="text-muted-foreground">Status: </span><Badge variant="outline" className="text-xs">{selectedResolution.status}</Badge></span>
-                        {selectedPR && (
-                          <>
-                            <span><span className="text-muted-foreground">Items: </span><span className="font-medium">{selectedPR.selectedPRItems.length}</span></span>
-                            <span>
-                              <span className="text-muted-foreground">Total ABC: </span>
-                              <span className="font-semibold text-primary">
-                                ₱{selectedPR.selectedPRItems.reduce((s, i) => s + i.totalAmount, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                              </span>
-                            </span>
-                          </>
-                        )}
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Total ABC:</span>
+                        <span className="font-semibold text-primary">
+                          ₱{selectedDa.totalABC.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Items to auto-fill:</span>
+                        <span className="font-medium text-foreground">{selectedDa.consolidatedPRItems?.length ?? 0} item(s)</span>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* ── Retail Supplier ── */}
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold">
-                    Retail Supplier / Store <span className="text-destructive">*</span>
-                  </Label>
-                  <p className="text-xs text-muted-foreground">Select an existing store or add a new one on the fly.</p>
-                  <div className="flex gap-2">
-                    {/* Supplier dropdown */}
-                    <div className="relative flex-1">
+                {/* Retail Store / Supplier Selection */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <FormLabel>Retail Store / Supplier</FormLabel>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1"
+                      onClick={() => setIsAddStoreOpen(true)}
+                    >
+                      <Plus className="h-3 w-3" />
+                      + Add New Retail Store
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Pick an accredited supplier or enter a non-accredited retail store on-the-fly.
+                  </p>
+
+                  {customRetailStore ? (
+                    <div className="flex items-center justify-between p-3 rounded-lg border border-primary/40 bg-primary/5">
+                      <div className="flex items-center gap-2.5">
+                        <Store className="h-4 w-4 text-primary" />
+                        <div>
+                          <div className="text-sm font-semibold text-primary">{customRetailStore.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {customRetailStore.tin ? `TIN: ${customRetailStore.tin}` : 'No TIN'}
+                            {customRetailStore.address ? ` · ${customRetailStore.address}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => setCustomRetailStore(null)}
+                      >
+                        Change
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="relative">
                       <button
                         type="button"
-                        onClick={() => setSupplierDropOpen((o) => !o)}
+                        aria-haspopup="listbox"
+                        aria-expanded={isSupplierDropdownOpen}
+                        onClick={() => setIsSupplierDropdownOpen((o) => !o)}
                         className="flex h-10 w-full items-center justify-between rounded-md border border-gray-200 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                       >
-                        <span className={selectedSupplier ? 'text-foreground' : 'text-muted-foreground'}>
-                          {selectedSupplier ? `${selectedSupplier.name} · TIN ${selectedSupplier.tin}` : '— Select Retail Supplier —'}
+                        <span className={selectedSupplierObj ? 'text-foreground font-medium' : 'text-muted-foreground'}>
+                          {selectedSupplierObj
+                            ? `${selectedSupplierObj.name} (TIN: ${selectedSupplierObj.tinNumber || '—'})`
+                            : isLoadingSuppliers
+                              ? 'Loading suppliers...'
+                              : 'Select existing supplier or click "+ Add New Retail Store"'}
                         </span>
-                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <svg
+                          className={`h-4 w-4 text-muted-foreground transition-transform ${isSupplierDropdownOpen ? 'rotate-180' : ''}`}
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
                       </button>
 
-                      {supplierDropOpen && (
+                      {isSupplierDropdownOpen && (
                         <div className="absolute z-50 mt-1 w-full rounded-md border border-default-200 bg-popover shadow-lg">
-                          <div className="p-2 border-b flex items-center gap-2">
-                            <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <div className="p-2 border-b">
                             <Input
                               value={supplierSearch}
                               onChange={(e) => setSupplierSearch(e.target.value)}
-                              placeholder="Search store name or TIN…"
-                              className="h-7 text-sm border-0 p-0 focus-visible:ring-0"
+                              placeholder="Search suppliers by name or TIN"
+                              className="h-8 text-sm"
                               onClick={(e) => e.stopPropagation()}
-                              autoFocus
                             />
                           </div>
                           <div className="max-h-48 overflow-y-auto divide-y divide-default-100">
-                            {filteredSuppliers.length > 0 ? (
-                              filteredSuppliers.map((s) => (
+                            {filteredSuppliers.length ? (
+                              filteredSuppliers.map((s: any) => (
                                 <div
                                   key={s.id}
-                                  onClick={() => { setSelectedSupplier(s); setSupplierDropOpen(false); setSupplierSearch('') }}
-                                  className={`flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted/50 text-sm ${selectedSupplier?.id === s.id ? 'bg-primary/10' : ''}`}
+                                  onClick={() => {
+                                    setSelectedSupplierId(s.id)
+                                    setCustomRetailStore(null)
+                                    setIsSupplierDropdownOpen(false)
+                                  }}
+                                  className={`flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted/50 ${selectedSupplierId === s.id ? 'bg-primary/10' : ''}`}
                                 >
-                                  <span className="font-medium">{s.name}</span>
-                                  <span className="text-xs text-muted-foreground">TIN: {s.tin}</span>
+                                  <div className="text-sm font-medium">{s.name}</div>
+                                  <div className="text-xs text-muted-foreground">{s.tinNumber || '—'}</div>
                                 </div>
                               ))
                             ) : (
-                              <div className="px-3 py-4 text-sm text-muted-foreground text-center">
-                                No results found for "{supplierSearch}"
-                              </div>
+                              <p className="px-3 py-4 text-sm text-muted-foreground text-center">
+                                No suppliers found. Click "+ Add New Retail Store" above.
+                              </p>
                             )}
                           </div>
                         </div>
                       )}
                     </div>
-
-                    {/* Add New Store button */}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-10 gap-1.5 shrink-0"
-                      onClick={() => setAddStoreOpen(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add New Store
-                    </Button>
-                  </div>
+                  )}
                 </div>
 
               </form>
@@ -634,179 +639,153 @@ export function CreateDirectAcquisitionPurchaseOrderDialog({
 
             {/* Sticky footer */}
             <div className="flex justify-end gap-3 pt-4 border-t mt-4 bg-background shrink-0">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" form="create-da-po-form">
-                Create Draft
+              <Button
+                type="submit"
+                form="create-da-po-form"
+                disabled={isSubmitting || !selectedDaId || (!selectedSupplierId && !customRetailStore)}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Draft'
+                )}
               </Button>
             </div>
           </div>
         </Form>
       </ResponsiveDialog>
 
-      {/* ── PR Details Dialog ─────────────────────────────────────────────────────── */}
-      <Dialog open={!!viewingPR} onOpenChange={(o) => { if (!o) setViewingPR(null) }}>
-        <DialogContent size="3xl" className="max-h-[92vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Consolidated PR Details — {viewingPR?.prNumber ?? viewingPR?.id}
-            </DialogTitle>
-            <DialogDescription>
-              {viewingPR?.description ?? ''}
-            </DialogDescription>
-          </DialogHeader>
-
-          {viewingPR && (
-            <div className="flex-1 overflow-auto space-y-4 py-2">
-              {/* Header meta */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">PR Number</p>
-                  <p className="font-semibold text-primary">{viewingPR.prNumber ?? viewingPR.id}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Date</p>
-                  <p className="font-medium">{viewingPR.date}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <Badge variant="outline" className="mt-0.5">{viewingPR.status}</Badge>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Total ABC</p>
-                  <p className="font-semibold text-primary">
-                    ₱{viewingPR.selectedPRItems.reduce((s, i) => s + i.totalAmount, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-              </div>
-
-              {viewingPR.purpose && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground font-medium">Purpose: </span>
-                  <span>{viewingPR.purpose}</span>
-                </div>
-              )}
-
-              {/* Line items table */}
-              <div>
-                <p className="text-sm font-semibold mb-2 flex items-center gap-2">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  Line Items
-                </p>
-                <div className="rounded-md border overflow-auto">
-                  <Table>
-                    <TableHeader className="bg-muted/40">
-                      <TableRow>
-                        <TableHead className="text-xs">Item</TableHead>
-                        <TableHead className="text-xs">Office</TableHead>
-                        <TableHead className="text-xs text-right">Qty</TableHead>
-                        <TableHead className="text-xs">Unit</TableHead>
-                        <TableHead className="text-xs text-right">Unit Price</TableHead>
-                        <TableHead className="text-xs text-right">Total</TableHead>
-                        <TableHead className="text-xs">MoP</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {viewingPR.selectedPRItems.map((item) => {
-                        const mop = viewingPR.itemMOPs?.[item.id]?.mop ?? '—'
-                        const isDa = isDaMop(mop)
-                        return (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium text-sm">{item.itemName}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{item.prOffice}</TableCell>
-                            <TableCell className="text-right text-sm">{item.qty}</TableCell>
-                            <TableCell className="text-xs">{item.unit}</TableCell>
-                            <TableCell className="text-right text-sm">
-                              ₱{item.unitPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                            </TableCell>
-                            <TableCell className="text-right font-semibold text-sm text-primary">
-                              ₱{item.totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                            </TableCell>
-                            <TableCell>
-                              {isDa ? (
-                                <Badge className="text-xs bg-violet-100 text-violet-700 border-violet-300">{mop}</Badge>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">{mop}</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 pt-3 border-t">
-            {viewingPR && selectedResolution?.linkedConsolidatedPrs?.[0]?.id !== viewingPR.id && (
-              <Button
-                type="button"
-                variant="default"
-                onClick={() => {
-                  const matchingRes = daResolutions.find((res) => {
-                    const linked = res.linkedConsolidatedPrs?.[0]
-                    return linked && (linked.id === viewingPR.id || linked.prNumber === viewingPR.prNumber)
-                  })
-                  if (matchingRes) {
-                    setSelectedResolution(matchingRes)
-                  }
-                  setViewingPR(null)
-                  setPrDropOpen(false)
-                }}
-              >
-                Select This PR
-              </Button>
-            )}
-            <Button type="button" variant="outline" onClick={() => setViewingPR(null)}>Close</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Add New Store Mini-Modal ─────────────────────────────────────────────── */}
-      <Dialog open={addStoreOpen} onOpenChange={setAddStoreOpen}>
-        <DialogContent className="max-w-sm">
+      {/* Add New Retail Store Dialog */}
+      <Dialog open={isAddStoreOpen} onOpenChange={setIsAddStoreOpen}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Store className="h-5 w-5 text-primary" />
-              Add New Store
+              Add Retail Store / Supplier
             </DialogTitle>
             <DialogDescription>
-              Quick registration for a Direct Acquisition retail supplier. Only Store Name and TIN are required.
+              Enter the name and details of the retail store. A supplier record will automatically be provisioned.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="new-store-name">Store Name <span className="text-destructive">*</span></Label>
+              <label className="text-sm font-medium">Store Name *</label>
               <Input
-                id="new-store-name"
-                placeholder="e.g., Shopee Gadget Store"
+                placeholder="e.g., National Bookstore"
                 value={newStoreName}
                 onChange={(e) => setNewStoreName(e.target.value)}
               />
             </div>
+
             <div className="space-y-1.5">
-              <Label htmlFor="new-store-tin">TIN</Label>
+              <label className="text-sm font-medium">TIN Number</label>
               <Input
-                id="new-store-tin"
-                placeholder="000-000-000-000"
+                placeholder="e.g., 000-123-456-000"
                 value={newStoreTin}
                 onChange={(e) => setNewStoreTin(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">Leave blank if TIN is not yet available.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Address / Branch</label>
+              <Input
+                placeholder="e.g., SM Mall Branch, Manila"
+                value={newStoreAddress}
+                onChange={(e) => setNewStoreAddress(e.target.value)}
+              />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddStoreOpen(false)}>Cancel</Button>
-            <Button type="button" onClick={handleAddStore} disabled={!newStoreName.trim()}>
-              Save &amp; Select
+            <Button variant="outline" onClick={() => setIsAddStoreOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddStoreSubmit} disabled={!newStoreName.trim()}>
+              Use This Store
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DA Details Overlay Modal */}
+      <Dialog open={!!viewingDa} onOpenChange={(o) => !o && setViewingDa(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-3">
+              <FileText className="h-5 w-5 text-primary" />
+              {viewingDa?.daNumber}
+            </DialogTitle>
+          </DialogHeader>
+
+          {viewingDa && (
+            <div className="space-y-6 mt-2">
+              <div className="flex items-center gap-2">
+                <Badge color="success" variant="outline">APPROVED</Badge>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    CPR Number
+                  </div>
+                  <div className="font-medium">{viewingDa.cprNumber || '—'}</div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Total ABC
+                  </div>
+                  <div className="font-semibold text-primary">
+                    ₱{viewingDa.totalABC.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                <div className="space-y-1 md:col-span-2">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Description
+                  </div>
+                  <div className="font-medium">{viewingDa.description || '—'}</div>
+                </div>
+              </div>
+
+              {viewingDa.consolidatedPRItems && viewingDa.consolidatedPRItems.length > 0 && (
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    Consolidated PR Items
+                  </h3>
+                  <div className="space-y-2">
+                    {viewingDa.consolidatedPRItems.map((item) => (
+                      <div key={item.id} className="flex items-start justify-between gap-4 rounded-md border p-3">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{item.itemName}</div>
+                          {item.itemDescription && (
+                            <div className="text-xs text-muted-foreground">{item.itemDescription}</div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {item.quantity} {item.unit} × ₱{item.unitPrice.toLocaleString('en-PH')}
+                          </div>
+                        </div>
+                        <div className="text-sm font-semibold shrink-0">
+                          ₱{item.totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

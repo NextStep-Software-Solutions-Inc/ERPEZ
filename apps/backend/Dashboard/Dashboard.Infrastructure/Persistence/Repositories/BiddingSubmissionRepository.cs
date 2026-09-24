@@ -20,6 +20,7 @@ public class BiddingSubmissionRepository : Repository<BiddingSubmission>, IBiddi
         return await context.Set<BiddingSubmission>()
             .Include(s => s.Supplier)
             .Include(s => s.BidOpeningRecord)
+            .Include(s => s.BiddingSubmissionItems)
             .Include(s => s.PublicSupplierApplication)
                 .ThenInclude(a => a!.UploadedDocuments)
                     .ThenInclude(d => d.ChecklistItem)

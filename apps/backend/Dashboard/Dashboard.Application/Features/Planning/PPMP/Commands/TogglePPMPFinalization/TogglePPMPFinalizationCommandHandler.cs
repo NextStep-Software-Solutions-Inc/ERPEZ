@@ -17,6 +17,11 @@ public class TogglePPMPFinalizationCommandHandler(IUnitOfWork unitOfWork)
         if (ppmp.IsDeleted)
             throw new NotFoundException($"PPMP '{request.Id}' not found.");
 
+        if (ppmp.PPMPType == PPMPTypeEnum.Supplemental || ppmp.SourcePPMPId.HasValue)
+        {
+            throw new ValidationException("Supplemental PPMPs are inherently final and cannot have their finality toggled.");
+        }
+
         if (request.IsFinal)
         {
             if (ppmp.Status != StatusEnum.Approved)

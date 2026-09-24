@@ -21,6 +21,8 @@ public class GetLIBActivityByIdQueryHandler(IUnitOfWork unitOfWork)
             WFPObjectiveActivityId = entity.WFPObjectiveActivityId,
             OPCRActivityId = entity.OPCRActivityId,
             Name = entity.Name,
+            PAPCode = entity.PAPCode,
+            Budget = entity.LineItemBudgetDetails.Where(d => !d.IsDeleted).Sum(d => d.Budget),
             LineItemBudget = entity.LineItemBudget == null ? null : new LIBActivityLineItemBudgetResponse
             {
                 Id = entity.LineItemBudget.Id,

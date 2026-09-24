@@ -74,6 +74,8 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
                 Name = entity.PreviousVersion.Name ?? string.Empty,
                 Version = entity.PreviousVersion.Version
             },
+            CreatedAt = entity.CreatedAt,
+            ActivityCount = entity.LineItemBudgetActivities.Count(a => !a.IsDeleted),
             Activities = entity.LineItemBudgetActivities
                 .Where(a => !a.IsDeleted)
                 .Select(a => new LIBNestedActivityResponse

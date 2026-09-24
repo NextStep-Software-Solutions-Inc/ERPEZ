@@ -39,6 +39,10 @@ interface ResponsiveDialogProps {
   onPointerDownOutside?: (event: Event) => void
   fitContent?: boolean // when true, dialog height will fit its content instead of using max-h and flex layout
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "full"
+  bodyClassName?: string
+  hideScrollbar?: boolean
+  bodyRef?: React.Ref<HTMLDivElement>
+  onScroll?: React.UIEventHandler<HTMLDivElement>
 }
 export function ResponsiveDialog({
   children,
@@ -54,6 +58,10 @@ export function ResponsiveDialog({
   onPointerDownOutside,
   fitContent = false,
   size,
+  bodyClassName,
+  hideScrollbar = true,
+  bodyRef,
+  onScroll,
 }: ResponsiveDialogProps) {
   const sizeMap = RESPONSIVE_DIALOG_SIZE_MAP
   const defaultSizeClass = size ? sizeMap[size] ?? '' : RESPONSIVE_DIALOG_SIZE_MAP['md']
@@ -93,10 +101,20 @@ export function ResponsiveDialog({
         </DialogHeader>
         {fitContent ? (
           // natural height
-          <div className="">{children}</div>
+          <div className={cn(bodyClassName)}>{children}</div>
         ) : (
           // constrained height with scroll
-          <div className={cn('flex-1 overflow-y-auto pr-4 scrollbar-hide')}>{children}</div>
+          <div
+            ref={bodyRef}
+            onScroll={onScroll}
+            className={cn(
+              'flex-1 overflow-y-auto',
+              hideScrollbar ? 'pr-4 scrollbar-hide' : 'pr-2.5',
+              bodyClassName
+            )}
+          >
+            {children}
+          </div>
         )}
         {footer && <div className="shrink-0">{footer}</div>}
       </DialogContent>

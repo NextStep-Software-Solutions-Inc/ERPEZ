@@ -24,14 +24,6 @@ ERPEZ.TenantManagement.Infrastructure.DependencyInjection.AddInfrastructureServi
 
 var app = builder.Build();
 
-// Seed master & prerequisite test data on startup (idempotent)
-using (var scope = app.Services.CreateScope())
-{
-    var unitOfWork = scope.ServiceProvider.GetRequiredService<ERPEZ.Domain.Interfaces.IUnitOfWork>();
-    var dbContext = scope.ServiceProvider.GetRequiredService<ERPEZ.Infrastructure.Persistence.ApplicationDbContext>();
-    await ERPEZ.Infrastructure.Persistence.Seeders.ProcurementTestDataSeeder.SeedAllAsync(dbContext, unitOfWork);
-}
-
 app.UseApiMiddlewares();
 
 if (app.Environment.IsDevelopment())

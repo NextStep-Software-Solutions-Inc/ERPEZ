@@ -31,6 +31,10 @@ export interface SupplierBid {
   certifications?: string[]
   businessAddress?: string
   totalBidAmount: number
+  deliveryPeriod?: string
+  paymentTerms?: string
+  warrantyTerms?: string
+  validityPeriodDays?: number
   remarks?: string
   evaluatedBy?: string
   evaluatedAt?: string

@@ -19,7 +19,6 @@ import { PostQualificationTab } from '../components/PostQualificationTab'
 import {
   BIDDER_SLA_DAYS,
   RA_12009_BAC_DAYS,
-  RA_9184_BAC_DAYS,
 } from '../data/mockProjects'
 import { useBidEvaluationStore } from '../store/bidEvaluationStore'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -67,7 +66,7 @@ export function BidEvaluationPage() {
         projectName: p.title || 'Untitled Project',
         abc: Number(p.abc || 0),
         resolutionNumber: p.contractNo || (p.id ? p.id.substring(0, 8) : 'BAC-PROJ'),
-        governingLaw: 'RA_9184',
+        governingLaw: 'RA_12009',
         awardCriterion: p.appItem?.bidEvaluationCriteria || p.bidEvaluationCriteria || undefined,
         projectStatus: p.status === 'Approved' ? 'Approved' : 'Active',
         suppliers: [],
@@ -126,7 +125,7 @@ export function BidEvaluationPage() {
           overdueList.push({ supplierName: sup.supplierName, type: 'Bidder', days: BIDDER_SLA_DAYS })
         }
       } else if (sup.status === 'Under_PostQual' && sup.postQualDocsReceivedDate) {
-        const limitDays = activeProject.governingLaw === 'RA_9184' ? RA_9184_BAC_DAYS : RA_12009_BAC_DAYS
+        const limitDays = RA_12009_BAC_DAYS
         const startMs = new Date(sup.postQualDocsReceivedDate).getTime()
         const limitMs = limitDays * 24 * 60 * 60 * 1000
         if (nowMs > startMs + limitMs) {
@@ -235,10 +234,10 @@ export function BidEvaluationPage() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-extrabold text-default-900">
-              {activeProject.governingLaw === 'RA_9184' ? 'RA 9184' : 'RA 12009'}
+              RA 12009
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              BAC SLA: <span className="font-semibold text-blue-600">{activeProject.governingLaw === 'RA_9184' ? '12 Days' : '10 Days'}</span>
+              BAC SLA: <span className="font-semibold text-blue-600">10 Days</span>
             </p>
           </CardContent>
         </Card>
@@ -332,19 +331,19 @@ export function BidEvaluationPage() {
         <TabsList className="bg-default-100 p-1 rounded-lg border border-default-200">
           <TabsTrigger value="opening" className="gap-2 font-bold text-xs">
             <FolderOpen className="h-4 w-4 text-primary" />
-            1. Bid Opening (Live API)
+            1. Bid Opening
           </TabsTrigger>
           <TabsTrigger value="evaluation" className="gap-2 font-bold text-xs">
             <Calculator className="h-4 w-4 text-purple-600" />
-            2. Evaluation & Ranking (Live API)
+            2. Evaluation & Ranking
           </TabsTrigger>
           <TabsTrigger value="postqual" className="gap-2 font-bold text-xs">
             <Sparkles className="h-4 w-4 text-amber-600" />
-            3. Post-Qualification (Live API)
+            3. Post-Qualification
           </TabsTrigger>
           <TabsTrigger value="award" className="gap-2 font-bold text-xs">
             <Award className="h-4 w-4 text-emerald-600" />
-            4. Award Recommendation (Live API)
+            4. Award Recommendation
           </TabsTrigger>
         </TabsList>
 

@@ -541,6 +541,7 @@ export type PPMPActivity = {
   ppmpId: string
   libActivityId: string
   activityName?: string
+  papCode?: string
   totalItems: number
   totalItemAllocations: number
   totalAllocationQuantity: number

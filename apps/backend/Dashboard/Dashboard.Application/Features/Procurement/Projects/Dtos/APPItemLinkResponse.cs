@@ -13,4 +13,6 @@ public record APPItemLinkResponse
     public int Order { get; init; }
     public string AppNumber { get; init; } = string.Empty;
     public string AppName { get; init; } = string.Empty;
+    public string PAPCode { get; init; } = string.Empty;
+    public string ProcurementModeName { get; init; } = string.Empty;
 }

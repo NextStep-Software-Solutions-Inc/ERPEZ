@@ -15,6 +15,8 @@ import { LineItemBudgetDetails } from '../../line-item-budget-details/types/type
 import { Card, CardContent } from '@/components/ui/card'
 import { getLineItemBudgetDetailsRequest } from '../../line-item-budget-details/hooks/getLineItemBudgetDetailsRequest'
 import { deleteLineItemBudgetDetailsRequest } from '../../line-item-budget-details/handlers/deleteLineItemBudgetDetailsRequest'
+import { ViewLineItemBudgetDetailsDialog } from '../../line-item-budget-details/components/ViewLineItemBudgetDetailsDialog'
+import { EditLineItemBudgetDetailsDialog } from '../../line-item-budget-details/components/EditLineItemBudgetDetailsDialog'
 import { Badge } from '@/components/ui/badge'
 
 const useLineItemBudgetDetails = createQueryHookFromTemplate(
@@ -95,6 +97,12 @@ export default function LIBItemExpenditures({
   const [deletingLineItemId, setDeletingLineItemId] = useState<string | null>(
     null,
   )
+  const [viewingItem, setViewingItem] = useState<LineItemBudgetDetails | null>(
+    null,
+  )
+  const [editingItem, setEditingItem] = useState<LineItemBudgetDetails | null>(
+    null,
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -105,7 +113,13 @@ export default function LIBItemExpenditures({
             {/* Left Section - Title and Info */}
             <div className="flex items-center gap-4 flex-1">
               <button
-                onClick={() =>
+                onClick={() => {
+                  void queryClient.invalidateQueries({
+                    predicate: (query) =>
+                      typeof query.queryKey[0] === 'string' &&
+                      (query.queryKey[0].includes('/libs') ||
+                        query.queryKey[0].includes('/lib-activities')),
+                  })
                   navigation({
                     search: (prev) => ({
                       ...prev,
@@ -113,7 +127,7 @@ export default function LIBItemExpenditures({
                       wfpObjectiveActivityId: undefined,
                     }),
                   })
-                }
+                }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Go back"
               >
@@ -144,6 +158,11 @@ export default function LIBItemExpenditures({
                   {currentActivityName}
                 </span>
               )}
+              {currentActivity?.papCode && (
+                <span className="text-xs font-mono bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded-full font-semibold">
+                  PAP: {currentActivity.papCode}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -167,6 +186,11 @@ export default function LIBItemExpenditures({
                 <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">
                   {currentActivityName}
                 </span>
+                {currentActivity?.papCode && (
+                  <span className="text-xs font-mono bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-semibold">
+                    PAP: {currentActivity.papCode}
+                  </span>
+                )}
               </div>
               {lib?.sourceType && !isReadOnly && (
                 <CreateLineItemBudgetDetailsDialog
@@ -179,9 +203,11 @@ export default function LIBItemExpenditures({
                     void queryClient.invalidateQueries({
                       predicate: (query) =>
                         typeof query.queryKey[0] === 'string' &&
-                        query.queryKey[0].startsWith(
+                        (query.queryKey[0].startsWith(
                           '/line-item-budget-details',
-                        ),
+                        ) ||
+                          query.queryKey[0].includes('/libs') ||
+                          query.queryKey[0].includes('/lib-activities')),
                     })
                   }}
                 />
@@ -196,11 +222,11 @@ export default function LIBItemExpenditures({
                   libActivityDetailsData.data as LineItemBudgetDetails[],
                 )}
                 readOnly={isReadOnly}
-                onViewItem={(_item: LineItemBudgetDetails) => {
-                  // Handle view item
+                onViewItem={(item: LineItemBudgetDetails) => {
+                  setViewingItem(item)
                 }}
-                onEditItem={(_item: LineItemBudgetDetails) => {
-                  // Handle edit item
+                onEditItem={(item: LineItemBudgetDetails) => {
+                  setEditingItem(item)
                 }}
                 onDeleteItem={async (item: LineItemBudgetDetails) => {
                   setDeletingLineItemId(item.id)
@@ -215,9 +241,11 @@ export default function LIBItemExpenditures({
                           void queryClient.invalidateQueries({
                             predicate: (query) =>
                               typeof query.queryKey[0] === 'string' &&
-                              query.queryKey[0].startsWith(
+                              (query.queryKey[0].startsWith(
                                 '/line-item-budget-details',
-                              ),
+                              ) ||
+                                query.queryKey[0].includes('/libs') ||
+                                query.queryKey[0].includes('/lib-activities')),
                           })
                         },
                         onError: (error: unknown) => {
@@ -248,6 +276,33 @@ export default function LIBItemExpenditures({
           </div>
         )}
       </div>
+
+      {/* View Line Item Details Dialog */}
+      <ViewLineItemBudgetDetailsDialog
+        item={viewingItem}
+        open={!!viewingItem}
+        onOpenChange={(open) => !open && setViewingItem(null)}
+        onEdit={(item) => setEditingItem(item)}
+        readOnly={isReadOnly}
+      />
+
+      {/* Edit Line Item Dialog */}
+      <EditLineItemBudgetDetailsDialog
+        item={editingItem}
+        open={!!editingItem}
+        onOpenChange={(open) => !open && setEditingItem(null)}
+        libId={libId}
+        libActivityId={libActivityId}
+        onSuccess={() => {
+          void queryClient.invalidateQueries({
+            predicate: (query) =>
+              typeof query.queryKey[0] === 'string' &&
+              (query.queryKey[0].startsWith('/line-item-budget-details') ||
+                query.queryKey[0].includes('/libs') ||
+                query.queryKey[0].includes('/lib-activities')),
+          })
+        }}
+      />
     </div>
   )
 }

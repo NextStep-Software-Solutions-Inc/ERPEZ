@@ -21,8 +21,8 @@ import { Label } from '@/components/ui/label'
 export const updateWFPObjectiveSchema = z.object({
   wfpObjectiveId: z.string().min(1, 'WFP Objective ID is required'),
   activityName: z.string().min(1, 'Activity name is required'),
-  weight: z.number().min(0.01).max(100, 'Weight must be between 0 and 100'),
-  indicator: z.string().min(1, 'Indicator is required'),
+  weight: z.number().min(0.01).max(100, 'Weight must be between 0 and 100').optional(),
+  indicator: z.string().min(3, 'Indicator must be at least 3 characters long'),
   dates: z.array(z.object({
     timelineType: z.enum(['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annual']),
     startDate: z.string(),
@@ -102,12 +102,50 @@ export default function UpdateWFPObjectiveTargetForm({
   const selectedCount = Object.keys(targetValues).length
 
   const getPeriodsForType = useCallback((type: string): ReadonlyArray<string> => {
-    if (!wfpData?.projectStartDate || !wfpData?.projectEndDate) {
-      return getPeriods(type)
+    let projectStart: Date | null = null
+    let projectEnd: Date | null = null
+
+    if (wfpData?.projectStartDate && wfpData?.projectEndDate) {
+      const ps = new Date(wfpData.projectStartDate)
+      const pe = new Date(wfpData.projectEndDate)
+      if (!isNaN(ps.getTime()) && ps.getFullYear() > 1900 && !isNaN(pe.getTime()) && pe.getFullYear() > 1900) {
+        projectStart = ps
+        projectEnd = pe
+      }
     }
-    const projectStart = new Date(wfpData.projectStartDate)
-    const projectEnd = new Date(wfpData.projectEndDate)
-    if (type === 'Quarterly') {
+
+    if (!projectStart || !projectEnd) {
+      const fallbackYear = (initialValues.dates && initialValues.dates.length > 0 && initialValues.dates[0].startDate)
+        ? new Date(initialValues.dates[0].startDate).getFullYear()
+        : new Date().getFullYear()
+      const year = fallbackYear > 1900 ? fallbackYear : new Date().getFullYear()
+      projectStart = new Date(year, 0, 1)
+      projectEnd = new Date(year, 11, 31)
+    }
+
+    if (type === 'Monthly') {
+      const startMonth = projectStart.getMonth()
+      const endMonth = projectEnd.getMonth()
+      const startYear = projectStart.getFullYear()
+      const endYear = projectEnd.getFullYear()
+
+      if (startYear === endYear) {
+        return MONTH_ABBREVIATIONS.slice(startMonth, endMonth + 1)
+      } else {
+        const periodsArr: Array<string> = []
+        let currentYear = startYear
+        let currentMonth = startMonth
+        while (currentYear < endYear || (currentYear === endYear && currentMonth <= endMonth)) {
+          periodsArr.push(`${MONTH_ABBREVIATIONS[currentMonth]} ${currentYear}`)
+          currentMonth++
+          if (currentMonth > 11) {
+            currentMonth = 0
+            currentYear++
+          }
+        }
+        return periodsArr
+      }
+    } else if (type === 'Quarterly') {
       const startQuarter = Math.floor(projectStart.getMonth() / 3)
       const endQuarter = Math.floor(projectEnd.getMonth() / 3)
       const startYear = projectStart.getFullYear()
@@ -131,7 +169,7 @@ export default function UpdateWFPObjectiveTargetForm({
       }
     }
     return getPeriods(type)
-  }, [wfpData])
+  }, [wfpData, initialValues.dates])
 
   const periods = useMemo(() => {
     return getPeriodsForType(selectedType)
@@ -155,7 +193,7 @@ export default function UpdateWFPObjectiveTargetForm({
         activityName: value.activityName,
         indicator: value.indicator,
         weight: value.weight,
-        dates: dates.length > 0 ? dates : undefined,
+        dates: dates,
       }
       onSubmit(payload)
     },
@@ -226,14 +264,15 @@ export default function UpdateWFPObjectiveTargetForm({
       <form.Field
         name="indicator"
         validators={{
-          onChange: z.string().min(1, 'Indicator is required'),
+          onChange: z.string().min(3, 'Indicator must be at least 3 characters long'),
         }}
         children={(field) => (
           <div className="space-y-1">
             <Label className="text-sm font-bold text-gray-700">
-              Target Accomplishment <span className="text-red-500">*</span>
+              Target Accomplishment (Indicator) <span className="text-red-500">*</span>
             </Label>
             <Input
+              placeholder="e.g., 10 blueprints drafted and submitted"
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               className="border-gray-200"
@@ -304,6 +343,7 @@ export default function UpdateWFPObjectiveTargetForm({
         selectedType={selectedType}
         getPeriodDates={getPeriodDates}
         projectStart={wfpData?.projectStartDate}
+        onRemovePeriod={(period) => handleTargetChange(period, '')}
       />
 
       {/* Footer Buttons */}

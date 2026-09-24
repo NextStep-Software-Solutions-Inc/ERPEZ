@@ -26,6 +26,7 @@ public class PlanningSieveConfiguration : ISieveConfiguration
             .CanSort()
             .CanFilter();
 
+
         mapper.Property<WFP>(p => p.ProjectStartDate.Year)
             .CanSort()
             .CanFilter()
