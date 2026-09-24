@@ -5,7 +5,9 @@ using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Exceptions;
+using ERPEZ.Shared.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -16,6 +18,9 @@ public class GenerateRFQDocumentCommandHandler(
     IDocumentRendererService rendererService,
     IDocumentStorageService storageService,
     IRFQDocumentContextService rfqContextService,
+    ICurrentUserService currentUser,
+    IUserAuthorizationService authorizationService,
+    ITenantContextService tenantContext,
     ILogger<GenerateRFQDocumentCommandHandler> logger)
     : IRequestHandler<GenerateRFQDocumentCommand, ApiResponse<Guid>>
 {
@@ -123,6 +128,67 @@ public class GenerateRFQDocumentCommandHandler(
         if (request.SupplierId.HasValue)
         {
             targetSupplier = await unitOfWork.SupplierRepository.GetByIdAsync(request.SupplierId.Value, cancellationToken);
+            if (targetSupplier == null)
+            {
+                throw new NotFoundException($"Supplier with ID '{request.SupplierId.Value}' was not found.");
+            }
+
+            // Verify supplier was invited to this RFQ
+            var isInvited = rfq.RFQSuppliers?.Any(s => s.SupplierId == request.SupplierId.Value) ?? false;
+            if (!isInvited)
+            {
+                throw new ValidationException($"Supplier '{targetSupplier.Name}' is not invited to RFQ '{rfq.RFQNumber}'.");
+            }
+
+            // Authorization Guard: Prevent unauthorized users from exporting supplier templates or bids
+            var isAuthorized = false;
+
+            if (currentUser.IsSuperAdmin)
+            {
+                isAuthorized = true;
+            }
+            else if (currentUser.IsAuthenticated && !string.IsNullOrWhiteSpace(currentUser.ExternalIdentityId))
+            {
+                var userPerms = await authorizationService.GetPermissionsAsync(
+                    currentUser.ExternalIdentityId,
+                    tenantContext.TenantId,
+                    cancellationToken);
+
+                // Internal Procurement / BAC personnel can view and export any supplier's quotation or canvass template
+                if (userPerms.Contains(Permissions.Procurement.rfqManage) ||
+                    userPerms.Contains(Permissions.Procurement.bacManage) ||
+                    userPerms.Contains(Permissions.Procurement.aobManage))
+                {
+                    isAuthorized = true;
+                }
+                // Supplier portal users can only export their own template or quotation
+                else if (userPerms.Contains(Permissions.Procurement.supplierView) ||
+                         userPerms.Contains(Permissions.Procurement.supplierManage))
+                {
+                    var userEmail = currentUser.Email?.Trim();
+                    var userUsername = currentUser.Username?.Trim();
+                    var supplierEmail = targetSupplier.Email?.Trim();
+
+                    // Authorized if user identity/email matches the supplier's contact email
+                    if (!string.IsNullOrEmpty(supplierEmail) &&
+                        (string.Equals(userEmail, supplierEmail, StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(userUsername, supplierEmail, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        isAuthorized = true;
+                    }
+                }
+            }
+
+            if (!isAuthorized)
+            {
+                var docTypeDesc = request.BlankTemplate ? "supplier quotation template" : "submitted supplier bid quotation";
+                logger.LogWarning(
+                    "Unauthorized export attempt for {DocType} (Supplier {SupplierId}, RFQ {RFQId}) by user '{UserIdentity}'.",
+                    docTypeDesc, request.SupplierId.Value, rfq.Id, currentUser.ExternalIdentityId ?? request.GeneratedBy);
+
+                throw new ForbiddenException($"You do not have permission to export this {docTypeDesc}.");
+            }
+
             targetBid = bids.FirstOrDefault(b => b.SupplierId == request.SupplierId.Value);
         }
 
