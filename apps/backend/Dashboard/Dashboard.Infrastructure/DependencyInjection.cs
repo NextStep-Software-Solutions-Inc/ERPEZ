@@ -184,8 +184,9 @@ public static class DependencyInjection
         // Notice of Award — PDF (RA 12009 NGPA Compliant)
         services.AddScoped<IDocumentRenderer<NoticeOfAwardDataDto>, NoticeOfAwardPdfRenderer>();
 
-        // RFQ — PDF
+        // RFQ — PDF and Excel
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos.RfqDataDto>, RfqPdfRenderer>();
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos.RfqDataDto>, RfqExcelRenderer>();
 
         // AOB / Abstract of Quotation — PDF
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.AOBs.Dtos.AobDataDto>, AobPdfRenderer>();

@@ -11327,6 +11327,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("DateSigned")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -11342,10 +11345,19 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("PaymentTerms")
                         .HasColumnType("text");
 
+                    b.Property<string>("QuotationDocumentUrl")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("RFQId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SignatoryName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SignatureUrl")
                         .HasColumnType("text");
 
                     b.Property<string>("Status")

@@ -26,15 +26,15 @@ public class LinkRFQsCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail($"Cannot link RFQs to an AOB in status '{aob.Status}'.");
         }
 
-        var existingRfqIds = await unitOfWork.RFQRepository.Query()
-            .Where(r => request.RFQIds.Contains(r.Id))
+        var existingApprovedRfqIds = await unitOfWork.RFQRepository.Query()
+            .Where(r => request.RFQIds.Contains(r.Id) && r.Status == StatusEnum.Approved)
             .Select(r => r.Id)
             .ToListAsync(cancellationToken);
 
-        var missingIds = request.RFQIds.Except(existingRfqIds).ToList();
-        if (missingIds.Count > 0)
+        var invalidOrUnapprovedIds = request.RFQIds.Except(existingApprovedRfqIds).ToList();
+        if (invalidOrUnapprovedIds.Count > 0)
         {
-            return ApiResponse<Unit>.Fail($"The following RFQ ID(s) do not exist: {string.Join(", ", missingIds)}");
+            return ApiResponse<Unit>.Fail($"Only approved RFQs can be linked to an AOB. The following RFQ ID(s) do not exist or are not approved: {string.Join(", ", invalidOrUnapprovedIds)}");
         }
 
         var alreadyMappedIds = aob.AOBRFQMappings.Select(m => m.RFQId).ToHashSet();

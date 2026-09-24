@@ -43,10 +43,26 @@ interface RawBackendMatrixResponse {
     supplierId: string
     name: string
     email: string
+    contactPerson?: string
+    contactNumber?: string
+    address?: string
+    tinNumber?: string
+    philGEPSNumber?: string
     submissionType?: string
     submittedAt?: string
     deliveryPeriod?: string
     validityPeriodDays?: number
+    paymentTerms?: string
+    warrantyTerms?: string
+    totalBidAmount?: number
+    remarks?: string
+    hasSubmitted?: boolean
+    rfqNumber?: string
+    rfqId?: string
+    quotationDocumentUrl?: string
+    signatureUrl?: string
+    signatoryName?: string
+    dateSigned?: string
   }>
   items: Array<{
     rfqItemId: string
@@ -99,11 +115,27 @@ export const getBidMatrixRequest: QueryBlueprintFromTemplate<
       supplierName: s.name,
       name: s.name,
       email: s.email,
+      contactPerson: s.contactPerson,
+      contactNumber: s.contactNumber,
+      address: s.address,
+      tinNumber: s.tinNumber,
+      philGEPSNumber: s.philGEPSNumber,
       submissionType: s.submissionType as any,
       isResponsive: true,
       submittedAt: s.submittedAt,
       deliveryPeriod: s.deliveryPeriod,
       validityPeriodDays: s.validityPeriodDays,
+      paymentTerms: s.paymentTerms,
+      warrantyTerms: s.warrantyTerms,
+      totalBidAmount: s.totalBidAmount,
+      remarks: s.remarks,
+      hasSubmitted: s.hasSubmitted !== false && (!!s.submittedAt || !!s.submissionType),
+      rfqNumber: s.rfqNumber,
+      rfqId: s.rfqId,
+      quotationDocumentUrl: s.quotationDocumentUrl,
+      signatureUrl: s.signatureUrl,
+      signatoryName: s.signatoryName,
+      dateSigned: s.dateSigned,
     }))
 
     const supplierMap = new Map(suppliers.map((s) => [s.supplierId, s]))
