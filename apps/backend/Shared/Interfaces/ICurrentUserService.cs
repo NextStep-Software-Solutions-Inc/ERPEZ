@@ -6,7 +6,7 @@ namespace ERPEZ.Shared.Interfaces;
 public interface ICurrentUserService
 {
     /// <summary>
-    /// The external identity ID from JWT (sub claim), representing Keycloak subject ID.
+    /// The external identity ID from JWT (sub claim), representing federated subject ID (e.g., Clerk user ID or Keycloak subject ID).
     /// </summary>
     string? ExternalIdentityId { get; }
 

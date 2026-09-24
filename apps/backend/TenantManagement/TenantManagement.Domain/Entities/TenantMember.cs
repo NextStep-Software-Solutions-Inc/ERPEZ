@@ -13,7 +13,7 @@ public class TenantMember : BaseEntity
     public string UserId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Keycloak subject identifier (sub claim) representing the user's federated identity.
+    /// Clerk subject identifier (sub claim, e.g., user_2...) representing the user's federated identity.
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public string ExternalIdentityId { get; set; } = string.Empty;

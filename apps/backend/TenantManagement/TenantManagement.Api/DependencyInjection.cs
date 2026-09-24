@@ -13,6 +13,19 @@ public static class DependencyInjection
         var services = builder.Services;
         services.AddControllers();
         services.AddHttpClient();
+
+        // Bind Clerk settings
+        services.Configure<ERPEZ.TenantManagement.Api.Configuration.ClerkSettings>(
+            builder.Configuration.GetSection(ERPEZ.TenantManagement.Api.Configuration.ClerkSettings.sectionName));
+        var clerkSettings = builder.Configuration
+            .GetSection(ERPEZ.TenantManagement.Api.Configuration.ClerkSettings.sectionName)
+            .Get<ERPEZ.TenantManagement.Api.Configuration.ClerkSettings>();
+
+        var isClerkConfigured = clerkSettings != null 
+            && !string.IsNullOrWhiteSpace(clerkSettings.Authority) 
+            && !clerkSettings.Authority.Contains("placeholder")
+            && !clerkSettings.Authority.Contains("example.com")
+            && !clerkSettings.Authority.Contains("dev.nextstep-software.com");
         var devSecurityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
             System.Text.Encoding.UTF8.GetBytes("ERPEZ_Development_Symmetric_Signing_Key_2026_Secure_Secret_12345!"));
 
@@ -23,11 +36,22 @@ public static class DependencyInjection
         })
         .AddJwtBearer(options =>
         {
+            if (isClerkConfigured)
+            {
+                options.Authority = clerkSettings!.Authority;
+                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+                if (!string.IsNullOrWhiteSpace(clerkSettings.Audience))
+                {
+                    options.Audience = clerkSettings.Audience;
+                }
+            }
+
             options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
             {
-                ValidateIssuer = false,
+                ValidateIssuer = isClerkConfigured && !builder.Environment.IsDevelopment(),
+                ValidIssuer = isClerkConfigured ? clerkSettings!.Authority : null,
                 ValidateAudience = false,
-                ValidateLifetime = false,
+                ValidateLifetime = isClerkConfigured && !builder.Environment.IsDevelopment(),
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = devSecurityKey
             };

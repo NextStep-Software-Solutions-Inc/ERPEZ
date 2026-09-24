@@ -23,7 +23,7 @@ public class AcceptInvitationCommandHandler(
 
         if (string.IsNullOrWhiteSpace(authenticatedExternalId))
         {
-            throw new UnauthorizedException("You must be authenticated with Keycloak to accept an invitation.");
+            throw new UnauthorizedException("You must be authenticated with Clerk to accept an invitation.");
         }
 
         if (string.IsNullOrWhiteSpace(authenticatedEmail))
