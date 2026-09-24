@@ -111,10 +111,10 @@ public class GenerateRFQDocumentCommandHandler(
             project = await unitOfWork.ProcurementProjectRepository.GetByConsolidatedPRIdWithResolutionsAsync(cprId.Value, cancellationToken);
         }
 
-        var resolution = project?.BACResolutions
+        var resolution = project?.BACResolutions?
             .OrderByDescending(r => r.CreatedAt)
-            .FirstOrDefault(r => string.Equals(r.Status, "Approved", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(r.Status))
-            ?? project?.BACResolutions.OrderByDescending(r => r.CreatedAt).FirstOrDefault();
+            .FirstOrDefault(r => string.Equals(r.Status, nameof(StatusEnum.Approved), StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(r.Status))
+            ?? project?.BACResolutions?.OrderByDescending(r => r.CreatedAt).FirstOrDefault();
 
         var bacResNumber = !string.IsNullOrWhiteSpace(resolution?.ResolutionNumber)
             ? resolution.ResolutionNumber.Trim()
@@ -365,8 +365,9 @@ public class GenerateRFQDocumentCommandHandler(
         var fileName = $"RFQ_{rfqNum}{suffix}_{DateTime.UtcNow:yyyyMMddHHmmss}_{Guid.NewGuid().ToString("N")[..6]}.{extension}";
         var storagePath = await storageService.SaveAsync(bytes, fileName, cancellationToken);
 
-        string generatedByInfo = !string.IsNullOrWhiteSpace(request.GeneratedBy) ? request.GeneratedBy.Trim() : "system";
-        if (!string.IsNullOrWhiteSpace(request.GeneratedBy) && !string.Equals(request.GeneratedBy, "system", StringComparison.OrdinalIgnoreCase))
+        const string defaultSystemUser = "system";
+        string generatedByInfo = !string.IsNullOrWhiteSpace(request.GeneratedBy) ? request.GeneratedBy.Trim() : defaultSystemUser;
+        if (!string.IsNullOrWhiteSpace(request.GeneratedBy) && !string.Equals(request.GeneratedBy, defaultSystemUser, StringComparison.OrdinalIgnoreCase))
         {
             // Resolve user via domain interface methods — no EF dependency in Application layer
             var generatedByValue = request.GeneratedBy.Trim();
