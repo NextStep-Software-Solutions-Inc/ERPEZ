@@ -79,6 +79,17 @@ export type RFQ = {
   quotationApprovalStatus?: 'Approved' | 'Returned' | 'Pending' | string
   quotationApprovalAt?: string
   quotationApprovalRemarks?: string
+  // Signatory & commercial verification terms
+  quotationSubmissionType?: 'Electronic' | 'Manual' | string
+  submissionType?: 'Electronic' | 'Manual' | string
+  signatoryName?: string
+  supplierSignatoryName?: string
+  signatureUrl?: string
+  quotationDocumentUrl?: string
+  quotationDocumentName?: string
+  paymentTerms?: string
+  warrantyTerms?: string
+  dateSigned?: string
 }
 
 export type RFQSummary = {
