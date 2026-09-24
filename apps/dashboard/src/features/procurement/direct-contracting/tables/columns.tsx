@@ -1,4 +1,4 @@
-import { createColumnHelper } from '@tanstack/react-table'
+import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
 import { Link } from '@tanstack/react-router'
 import {
   ArrowUpDown,
@@ -9,6 +9,7 @@ import {
   Edit,
   Trash2,
   Send,
+  Copy,
   CheckCircle,
   AlertCircle,
   FileCheck,
@@ -32,10 +33,9 @@ import {
 import { formatCurrencyPHP, formatDateV2 } from '@/utils/formatters'
 import { cn } from '@/lib/utils'
 
-import type { DataTableFeatures } from '@/components/ui/table-features'
 import type { DirectContracting, TableActionHandlers } from './types'
 
-const columnHelper = createColumnHelper<DataTableFeatures, DirectContracting>()
+const columnHelper = createColumnHelper<DirectContracting>()
 
 export function renderStatusBadge(status: string) {
   const normalized = (status || '').toLowerCase()
@@ -114,8 +114,10 @@ export function renderStatusBadge(status: string) {
   }
 }
 
-export function getDirectContractingColumns(handlers: TableActionHandlers) {
-  return columnHelper.columns([
+export function getDirectContractingColumns(
+  handlers: TableActionHandlers,
+): ColumnDef<DirectContracting, any>[] {
+  return [
     columnHelper.display({
       id: 'select',
       header: ({ table }) => (
@@ -366,6 +368,11 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                {handlers.onCopyDCNumber && (
+                  <DropdownMenuItem onClick={() => handlers.onCopyDCNumber?.(dc.dcNumber)}>
+                    <Copy className="mr-2 h-4 w-4" /> Copy DC Number
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link
                     to="/v2/direct-contracting-request/$id"
@@ -375,10 +382,15 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
                     <Eye className="mr-2 h-4 w-4" /> View Details
                   </Link>
                 </DropdownMenuItem>
+                {handlers.onViewProposal && (
+                  <DropdownMenuItem onClick={() => handlers.onViewProposal?.(dc)}>
+                    <FileText className="mr-2 h-4 w-4 text-muted-foreground" /> Quick Proposal Preview
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => handlers.onEdit(dc.id)}>
                   <Edit className="mr-2 h-4 w-4 text-muted-foreground" /> Edit Request
                 </DropdownMenuItem>
-                {dc.status === 'DRAFT' && (
+                {(dc.status || '').toUpperCase() === 'DRAFT' && (
                   <DropdownMenuItem onClick={() => handlers.onPromptSubmit(dc.id)}>
                     <Send className="mr-2 h-4 w-4 text-sky-600" /> Submit for Review
                   </DropdownMenuItem>
@@ -396,5 +408,5 @@ export function getDirectContractingColumns(handlers: TableActionHandlers) {
         )
       },
     }),
-  ])
+  ]
 }

@@ -1,8 +1,13 @@
 import * as React from 'react'
 import {
-  useTable,
+  useReactTable,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
   type ColumnFiltersState,
-  type ColumnVisibilityState,
+  type VisibilityState,
   type SortingState,
   type PaginationState,
   type RowSelectionState,
@@ -51,7 +56,6 @@ import {
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 
-import { features } from '@/components/ui/table-features'
 import { getDirectContractingColumns } from './columns'
 import {
   COLUMN_LABELS,
@@ -100,10 +104,10 @@ export function DirectContractingTable({
   const activeStatusTab = status !== undefined ? status : internalStatusTab
 
 
-  // TanStack Table v9 States
+  // TanStack Table v8 States
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: Math.max(0, (pageNumber ?? 1) - 1),
@@ -114,19 +118,26 @@ export function DirectContractingTable({
   const columns = React.useMemo(() => getDirectContractingColumns(handlers), [handlers])
 
   const totalRows =
-    directContractings?.totalRows
+    directContractings?.totalRows ?? directContractings?.data?.length ?? 0
 
-  const pageCount = Math.max(1, Math.ceil((totalRows ?? 0) / (pagination.pageSize || 10)))
+  const pageCount = Math.max(1, Math.ceil(totalRows / (pagination.pageSize || 10)))
 
-  // Initialize TanStack Table v9
-  const table = useTable({
-    features,
+  // Initialize TanStack Table v8
+  const table = useReactTable({
     data: directContractings?.data || [],
     columns,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+      pagination,
+    },
+    enableRowSelection: true,
     manualPagination: true,
     manualFiltering: true,
+    manualSorting: true,
     pageCount,
-    rowCount: totalRows,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -142,13 +153,10 @@ export function DirectContractingTable({
         onPageChange?.(1)
       }
     },
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination,
-    },
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   })
 
   // Sync pagination state when controlled props change
@@ -395,9 +403,12 @@ export function DirectContractingTable({
                 <TableRow key={headerGroup.id} className="hover:bg-transparent">
                   {headerGroup.headers.map((header) => (
                     <TableHead key={header.id} className="h-11">
-                      {header.isPlaceholder ? null : (
-                        <table.FlexRender header={header} />
-                      )}
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -423,7 +434,10 @@ export function DirectContractingTable({
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="py-2.5">
-                        <table.FlexRender cell={cell} />
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
