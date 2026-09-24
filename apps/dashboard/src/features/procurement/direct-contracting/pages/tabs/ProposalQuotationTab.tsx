@@ -189,7 +189,9 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                       <TableRow>
                         <TableHead className="font-semibold text-xs">Item Description</TableHead>
                         <TableHead className="font-semibold text-xs">Brand / Model / Specs</TableHead>
+                        <TableHead className="font-semibold text-xs text-center">Qty</TableHead>
                         <TableHead className="font-semibold text-xs text-right">Unit ABC</TableHead>
+                        <TableHead className="font-semibold text-xs text-right">Total ABC</TableHead>
                         <TableHead className="font-semibold text-xs text-right">Unit Bid</TableHead>
                         <TableHead className="font-semibold text-xs text-right">Total Bid</TableHead>
                         <TableHead className="font-semibold text-xs text-center">Brochure</TableHead>
@@ -212,14 +214,20 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                               <span>Standard / Proprietary Specification</span>
                             )}
                           </TableCell>
+                          <TableCell className="text-center text-xs font-mono font-semibold text-foreground">
+                            {pItem.quantity ?? 1}
+                          </TableCell>
                           <TableCell className="text-right text-xs font-mono text-muted-foreground">
                             {formatCurrencyPHP(pItem.unitABC || 0)}
+                          </TableCell>
+                          <TableCell className="text-right text-xs font-mono font-semibold text-muted-foreground">
+                            {formatCurrencyPHP(pItem.totalABC || ((pItem.unitABC || 0) * (pItem.quantity || 1)))}
                           </TableCell>
                           <TableCell className="text-right text-xs font-mono font-medium text-foreground">
                             {formatCurrencyPHP(pItem.unitBid || 0)}
                           </TableCell>
                           <TableCell className="text-right text-xs font-mono font-bold text-foreground">
-                            {formatCurrencyPHP(pItem.totalBid || 0)}
+                            {formatCurrencyPHP(pItem.totalBid || ((pItem.unitBid || 0) * (pItem.quantity || 1)))}
                           </TableCell>
                           <TableCell className="text-center">
                             {pItem.brochureFileUrl ? (

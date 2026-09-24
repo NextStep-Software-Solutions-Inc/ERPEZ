@@ -1,16 +1,24 @@
-"use client"
-
 import * as React from 'react'
-import { Building, Plus } from 'lucide-react'
+import { Building, Plus, Layers, Clock, Send, CheckCircle2 } from 'lucide-react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { extractErrorMessage } from '@/services/utils/messages'
 import type { AxiosError } from 'erpez-shared-lib'
-import { useDeleteDirectContracting } from '../handlers'
+import {
+  useDeleteDirectContracting,
+  useDirectContractingSummary,
+} from '../handlers'
 
 import { CreateDirectContractingDialog } from '../components/CreateDirectContractingDialog'
 import { UpdateDirectContractingDialog } from '../components/UpdateDirectContractingDialog'
@@ -19,13 +27,12 @@ import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import { createQueryHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
 import { getDirectContractingsRequest } from '../handlers/getDirectContractingsRequest'
 
-import {
-  DirectContractingTable,
-  type TableActionHandlers,
-} from '../tables'
+import { DirectContractingTable, type TableActionHandlers } from '../tables'
 import type { DirectContracting } from '../types'
 
-const useDirectContractings = createQueryHookFromTemplate(getDirectContractingsRequest)
+const useDirectContractings = createQueryHookFromTemplate(
+  getDirectContractingsRequest,
+)
 
 export function DirectContractingRequestPage() {
   const queryClient = useQueryClient()
@@ -75,7 +82,8 @@ export function DirectContractingRequestPage() {
         rejected: 'RETURNED',
         returned: 'RETURNED',
       }
-      const backendStatus = statusMap[status.toLowerCase()] || status.toUpperCase()
+      const backendStatus =
+        statusMap[status.toLowerCase()] || status.toUpperCase()
       filterParts.push(`status==${backendStatus}`)
     }
 
@@ -96,16 +104,26 @@ export function DirectContractingRequestPage() {
     },
   })
 
-
+  // Summary Metrics Query
+  const { data: summary, isLoading: isSummaryLoading } =
+    useDirectContractingSummary({})
 
   // Modals & Action States
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
   const [editEntryId, setEditEntryId] = React.useState<string | null>(null)
-  const [viewEntry, setViewEntry] = React.useState<DirectContracting | null>(null)
+  const [viewEntry, setViewEntry] = React.useState<DirectContracting | null>(
+    null,
+  )
   const [viewOpen, setViewOpen] = React.useState(false)
-  const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null)
-  const [confirmSubmitId, setConfirmSubmitId] = React.useState<string | null>(null)
-  const [bulkDeleteRows, setBulkDeleteRows] = React.useState<DirectContracting[] | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(
+    null,
+  )
+  const [confirmSubmitId, setConfirmSubmitId] = React.useState<string | null>(
+    null,
+  )
+  const [bulkDeleteRows, setBulkDeleteRows] = React.useState<
+    DirectContracting[] | null
+  >(null)
 
   // Row Action Handlers
   const handlers: TableActionHandlers = React.useMemo(
@@ -132,7 +150,7 @@ export function DirectContractingRequestPage() {
   )
 
   // Single submit execution
-  const handleExecuteSubmit = () => { }
+  const handleExecuteSubmit = () => {}
 
   // Single delete execution
   const handleExecuteDelete = async () => {
@@ -141,9 +159,10 @@ export function DirectContractingRequestPage() {
     try {
       setIsDeleting(true)
       await toast.promise(
-        deleteMutation.mutateAsync({
-          pathParams: { id: idToDelete },
-        },
+        deleteMutation.mutateAsync(
+          {
+            pathParams: { id: idToDelete },
+          },
           {
             onSuccess: () => {
               void queryClient.invalidateQueries({
@@ -152,7 +171,7 @@ export function DirectContractingRequestPage() {
                   query.queryKey[0].includes('direct-contracting'),
               })
             },
-          }
+          },
         ),
       )
 
@@ -198,7 +217,7 @@ export function DirectContractingRequestPage() {
   }
 
   // CSV Export
-  const handleExportCSV = () => { }
+  const handleExportCSV = () => {}
 
   return (
     <div className="space-y-6 pb-12">
@@ -213,15 +232,23 @@ export function DirectContractingRequestPage() {
                 </CardTitle>
               </div>
               <CardDescription className="text-base text-muted-foreground">
-                Single-source procurement for proprietary items under RA 12009 Rule XVI.
-                Strictly requires Proof of Exclusivity & Verified PhilGEPS Certification.
+                Single-source procurement for proprietary items under RA 12009
+                Rule XVI. Strictly requires Proof of Exclusivity & Verified
+                PhilGEPS Certification.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="h-fit px-3 py-1 font-semibold border-default-300">
-                <Building className="h-3.5 w-3.5 mr-1.5 text-primary" /> RA 12009 / Rule XVI
+              <Badge
+                variant="outline"
+                className="h-fit px-3 py-1 font-semibold border-default-300"
+              >
+                <Building className="h-3.5 w-3.5 mr-1.5 text-primary" /> RA
+                12009 / Rule XVI
               </Badge>
-              <Button onClick={() => setIsCreateModalOpen(true)} className="gap-1.5 shadow-sm">
+              <Button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="gap-1.5 shadow-sm"
+              >
                 <Plus className="h-4 w-4" /> New Direct Contracting
               </Button>
             </div>
@@ -229,12 +256,132 @@ export function DirectContractingRequestPage() {
         </CardHeader>
       </Card>
 
+      {/* Interactive KPI Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Requests */}
+        <Card
+          onClick={() => updateSearch({ status: 'all', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            !status || status === 'all'
+              ? 'ring-2 ring-primary/40 border-primary/40 bg-primary/[0.03]'
+              : 'hover:border-primary/30',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Requests
+              </p>
+              <p className="text-2xl font-bold font-mono text-foreground">
+                {isSummaryLoading ? '...' : (summary?.total ?? 0)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                All DC procurement requests
+              </p>
+            </div>
+            <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+              <Layers className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Drafts */}
+        <Card
+          onClick={() => updateSearch({ status: 'draft', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            status === 'draft'
+              ? 'ring-2 ring-slate-400/50 border-slate-400 bg-slate-500/[0.04]'
+              : 'hover:border-slate-300',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Drafts
+              </p>
+              <p className="text-2xl font-bold font-mono text-slate-700 dark:text-slate-300">
+                {isSummaryLoading ? '...' : (summary?.draft ?? 0)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Editable and unsent
+              </p>
+            </div>
+            <div className="h-11 w-11 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+              <Clock className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* In Review / Active */}
+        <Card
+          onClick={() => updateSearch({ status: 'for-review', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            status === 'for-review' || status === 'submitted-to-supplier'
+              ? 'ring-2 ring-amber-500/50 border-amber-500 bg-amber-500/[0.04]'
+              : 'hover:border-amber-400/40',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                In Review / Active
+              </p>
+              <p className="text-2xl font-bold font-mono text-amber-800 dark:text-amber-300">
+                {isSummaryLoading
+                  ? '...'
+                  : (summary?.forReview ?? 0) +
+                    (summary?.submittedToSupplier ?? 0) +
+                    (summary?.pendingForApproval ?? 0)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                With BAC or Supplier
+              </p>
+            </div>
+            <div className="h-11 w-11 rounded-lg bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Send className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Approved */}
+        <Card
+          onClick={() => updateSearch({ status: 'approved', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            status === 'approved'
+              ? 'ring-2 ring-emerald-500/50 border-emerald-500 bg-emerald-500/[0.04]'
+              : 'hover:border-emerald-400/40',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                Approved
+              </p>
+              <p className="text-2xl font-bold font-mono text-emerald-800 dark:text-emerald-300">
+                {isSummaryLoading ? '...' : (summary?.approved ?? 0)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Ready for award / PO
+              </p>
+            </div>
+            <div className="h-11 w-11 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Modular TanStack Table Component */}
       <DirectContractingTable
         directContractings={directContractings}
+        summary={summary}
         isLoading={isLoading}
         handlers={handlers}
-        onBulkSubmit={() => { }}
+        onBulkSubmit={() => {}}
         onBulkDelete={(rows) => setBulkDeleteRows(rows)}
         onExportCSV={handleExportCSV}
         pageNumber={pageNumber}
@@ -242,7 +389,9 @@ export function DirectContractingRequestPage() {
         status={status}
         searchQuery={searchQuery}
         onPageChange={(page) => updateSearch({ pageNumber: page })}
-        onPageSizeChange={(size) => updateSearch({ pageSize: size, pageNumber: 1 })}
+        onPageSizeChange={(size) =>
+          updateSearch({ pageSize: size, pageNumber: 1 })
+        }
         onStatusChange={(status) => updateSearch({ status, pageNumber: 1 })}
         onSearchChange={(query) =>
           updateSearch({ searchQuery: query || undefined, pageNumber: 1 })

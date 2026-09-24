@@ -1,5 +1,6 @@
 export * from './getDirectContractingsRequest'
 export * from './getDirectContractingRequest'
+export * from './getDirectContractingSummaryRequest'
 export * from './createDirectContractingRequest'
 export * from './updateDirectContractingRequest'
 export * from './changeDirectContractingStatusRequest'

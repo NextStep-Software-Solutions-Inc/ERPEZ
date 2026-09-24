@@ -62,10 +62,11 @@ import {
   type TableActionHandlers,
 } from './types'
 import type { PaginationResponse } from 'erpez-shared-lib'
-import type { DirectContracting } from '../types'
+import type { DirectContracting, DirectContractingSummary } from '../types'
 
 export interface DirectContractingTableProps {
   directContractings?: PaginationResponse<DirectContracting>
+  summary?: DirectContractingSummary
   isLoading?: boolean
   handlers: TableActionHandlers
   onBulkSubmit?: (selectedRows: DirectContracting[]) => void
@@ -84,6 +85,7 @@ export interface DirectContractingTableProps {
 
 export function DirectContractingTable({
   directContractings,
+  summary,
   isLoading = false,
   handlers,
   onBulkSubmit,
@@ -176,8 +178,19 @@ export function DirectContractingTable({
 
   const selectedCount = selectedRowList.length
 
-  // Tab counts calculation
+  // Tab counts calculation: use server summary if available, fallback to client page count
   const statusCounts = React.useMemo(() => {
+    if (summary) {
+      return {
+        all: summary.total,
+        draft: summary.draft,
+        'for-review': summary.forReview + summary.pendingForApproval,
+        'submitted-to-supplier': summary.submittedToSupplier,
+        approved: summary.approved,
+        rejected: summary.returned,
+      }
+    }
+
     const counts = {
       all: directContractings?.data?.length || 0,
       draft: 0,
@@ -195,7 +208,7 @@ export function DirectContractingTable({
       else if (s === 'rejected' || s === 'returned') counts.rejected += 1
     })
     return counts
-  }, [directContractings?.data])
+  }, [summary, directContractings?.data])
 
   // Change status tab
   const handleSelectStatusTab = (tabValue: string) => {

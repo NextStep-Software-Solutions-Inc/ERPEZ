@@ -78,6 +78,7 @@ export type DirectContractingProposal = {
     proposalId: string
     cprItemId: string
     cprItemName: string
+    quantity?: number
     unitABC: number
     totalABC: number
     unitBid: number
@@ -87,4 +88,14 @@ export type DirectContractingProposal = {
     color?: string
     brochureFileUrl?: string
   }[]
+}
+
+export type DirectContractingSummary = {
+  total: number
+  draft: number
+  forReview: number
+  submittedToSupplier: number
+  pendingForApproval: number
+  approved: number
+  returned: number
 }

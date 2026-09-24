@@ -5,6 +5,7 @@ import {
 } from 'erpez-shared-lib'
 import { getDirectContractingsRequest } from './getDirectContractingsRequest'
 import { getDirectContractingRequest } from './getDirectContractingRequest'
+import { getDirectContractingSummaryRequest } from './getDirectContractingSummaryRequest'
 import { createDirectContractingRequest } from './createDirectContractingRequest'
 import { changeDirectContractingStatusRequest } from './changeDirectContractingStatusRequest'
 import { submitProposalRequest } from './submitProposalRequest'
@@ -67,6 +68,10 @@ export const useDirectContractings = createQueryHookFromTemplate(
 
 export const useDirectContracting = createQueryHookFromTemplate(
   getDirectContractingRequest,
+)
+
+export const useDirectContractingSummary = createQueryHookFromTemplate(
+  getDirectContractingSummaryRequest,
 )
 
 export const useEligibleBacProjects = createQueryHookFromTemplate(
