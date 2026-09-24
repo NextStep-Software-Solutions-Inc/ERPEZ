@@ -248,7 +248,14 @@ public class GenerateRFQDocumentCommandHandler(
             else
             {
                 // Filled quotation preview (for RFQ Manager or AOB Matrix preview)
-                signatoryName = targetBid?.SignatoryName ?? targetSupplier.ContactPerson;
+                var rawSignatory = !string.IsNullOrWhiteSpace(targetBid?.SignatoryName)
+                    ? targetBid.SignatoryName.Trim()
+                    : targetSupplier.ContactPerson?.Trim();
+
+                signatoryName = !string.IsNullOrWhiteSpace(rawSignatory)
+                    ? new string(rawSignatory.Where(c => !char.IsControl(c)).Take(200).ToArray()).Trim()
+                    : null;
+
                 dateSigned = targetBid?.DateSigned?.ToString("MMMM dd, yyyy")
                     ?? targetBid?.SubmittedAt?.ToString("MMMM dd, yyyy");
 

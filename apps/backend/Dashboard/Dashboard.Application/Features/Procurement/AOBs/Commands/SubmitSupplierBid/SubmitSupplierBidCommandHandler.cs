@@ -100,10 +100,14 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
             existingBid.PaymentTerms = request.PaymentTerms;
             existingBid.WarrantyTerms = request.WarrantyTerms;
             existingBid.Remarks = request.Remarks;
-            existingBid.QuotationDocumentUrl = request.QuotationDocumentUrl ?? existingBid.QuotationDocumentUrl;
-            existingBid.SignatureUrl = request.SignatureUrl ?? existingBid.SignatureUrl;
-            existingBid.SignatoryName = request.SignatoryName ?? existingBid.SignatoryName;
-            existingBid.DateSigned = request.DateSigned ?? (request.SignatoryName != null ? DateTime.UtcNow : existingBid.DateSigned);
+            var cleanSignatory = !string.IsNullOrWhiteSpace(request.SignatoryName) ? request.SignatoryName.Trim() : null;
+            var cleanQuotationDoc = !string.IsNullOrWhiteSpace(request.QuotationDocumentUrl) ? request.QuotationDocumentUrl.Trim() : null;
+            var cleanSignature = !string.IsNullOrWhiteSpace(request.SignatureUrl) ? request.SignatureUrl.Trim() : null;
+
+            existingBid.QuotationDocumentUrl = cleanQuotationDoc ?? existingBid.QuotationDocumentUrl;
+            existingBid.SignatureUrl = cleanSignature ?? existingBid.SignatureUrl;
+            existingBid.SignatoryName = cleanSignatory ?? existingBid.SignatoryName;
+            existingBid.DateSigned = request.DateSigned ?? (cleanSignatory != null ? DateTime.UtcNow : existingBid.DateSigned);
             existingBid.TotalAmount = totalBidAmount;
             existingBid.SubmittedAt = normalizedStatus == "SUBMITTED" ? DateTime.UtcNow : existingBid.SubmittedAt;
             existingBid.UpdatedAt = DateTime.UtcNow;
@@ -124,6 +128,10 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
         }
         else
         {
+            var cleanSignatory = !string.IsNullOrWhiteSpace(request.SignatoryName) ? request.SignatoryName.Trim() : null;
+            var cleanQuotationDoc = !string.IsNullOrWhiteSpace(request.QuotationDocumentUrl) ? request.QuotationDocumentUrl.Trim() : null;
+            var cleanSignature = !string.IsNullOrWhiteSpace(request.SignatureUrl) ? request.SignatureUrl.Trim() : null;
+
             var newBid = new SupplierBid
             {
                 RFQId = request.RFQId,
@@ -135,10 +143,10 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
                 PaymentTerms = request.PaymentTerms,
                 WarrantyTerms = request.WarrantyTerms,
                 Remarks = request.Remarks,
-                QuotationDocumentUrl = request.QuotationDocumentUrl,
-                SignatureUrl = request.SignatureUrl,
-                SignatoryName = request.SignatoryName,
-                DateSigned = request.DateSigned ?? (request.SignatoryName != null ? DateTime.UtcNow : null),
+                QuotationDocumentUrl = cleanQuotationDoc,
+                SignatureUrl = cleanSignature,
+                SignatoryName = cleanSignatory,
+                DateSigned = request.DateSigned ?? (cleanSignatory != null ? DateTime.UtcNow : null),
                 TotalAmount = totalBidAmount,
                 SubmittedAt = normalizedStatus == "SUBMITTED" ? DateTime.UtcNow : null,
                 CreatedAt = DateTime.UtcNow,

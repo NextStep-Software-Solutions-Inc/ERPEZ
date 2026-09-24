@@ -59,3 +59,10 @@
 #*.DOT   diff=astextplain
 # Generated TanStack Router file line endings
 apps/dashboard/src/routeTree.gen.ts text eol=crlf
+
+###############################################################################
+# Code-generated migration snapshots and designer files (EF Core, etc.)
+# Keeps PR review diffs focused strictly on intentional schema changes.
+###############################################################################
+*.Designer.cs linguist-generated=true
+
