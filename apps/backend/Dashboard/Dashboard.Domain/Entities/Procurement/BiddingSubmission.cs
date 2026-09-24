@@ -41,4 +41,5 @@ public class BiddingSubmission : BaseEntity
     public virtual Supplier Supplier { get; set; } = null!;
     public virtual PublicSupplierApplication? PublicSupplierApplication { get; set; }
     public virtual BidOpeningRecord? BidOpeningRecord { get; set; }
+    public virtual List<BiddingSubmissionItem> BiddingSubmissionItems { get; set; } = [];
 }

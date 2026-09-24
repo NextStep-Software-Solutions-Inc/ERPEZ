@@ -24,7 +24,7 @@ describe('DocumentPreviewDialog', () => {
   })
 
   it('renders nothing when open is false', () => {
-    const { container } = render(
+    render(
       <DocumentPreviewDialog
         open={false}
         onOpenChange={vi.fn()}

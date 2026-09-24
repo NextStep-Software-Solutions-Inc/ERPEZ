@@ -34,7 +34,6 @@ export function getSortedSuppliers(
     const normalizedTechWeight = techWeight > 1 ? techWeight / 100 : techWeight;
     const normalizedFinWeight = finWeight > 1 ? finWeight / 100 : finWeight;
 
-    const totalScore = (techScore * normalizedTechWeight * 100) + (finScore * normalizedFinWeight);
     // Note: If technicalScore is out of 100 and financial score is out of 100,
     // the formula (technical_score * tech_weight) + (financial_bid_score * fin_weight) is correct.
     // e.g. 95 * 0.70 + 85 * 0.30 = 66.5 + 25.5 = 92.0
@@ -56,9 +55,6 @@ export function getSortedSuppliers(
     computedRank: idx + 1,
   }));
 }
-
-// Generate pre-seeded timestamps relative to now for demonstration
-const now = new Date();
 
 const minusDays = (days: number) => {
   const d = new Date();

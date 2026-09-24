@@ -131,10 +131,22 @@ public class RecordBidOpeningCommandHandler(
             {
                 throw new FluentValidation.ValidationException("A valid positive As-Read Bid Amount is required when Envelope 2 is opened.");
             }
+
+            var roundedSubmissionAmount = Math.Round(submission.OriginalProposedAmount, 2, MidpointRounding.AwayFromZero);
+            var roundedAsReadAmount = Math.Round(command.Request.AsReadBidAmount.Value, 2, MidpointRounding.AwayFromZero);
+
+            if (roundedSubmissionAmount > 0 && Math.Abs(roundedSubmissionAmount - roundedAsReadAmount) > 0.009m)
+            {
+                if (string.IsNullOrWhiteSpace(command.Request.Remarks))
+                {
+                    throw new FluentValidation.ValidationException(
+                        $"A variance exists between the supplier-submitted amount (₱{roundedSubmissionAmount:N2}) and the recorded As-Read amount (₱{roundedAsReadAmount:N2}). System policy requires explanatory BAC remarks when recording an As-Read amount that differs from the submitted proposal.");
+                }
+            }
         }
 
-        var asReadAmount = envelope2Opened 
-            ? command.Request.AsReadBidAmount
+        var asReadAmount = envelope2Opened && command.Request.AsReadBidAmount.HasValue
+            ? Math.Round(command.Request.AsReadBidAmount.Value, 2, MidpointRounding.AwayFromZero)
             : (decimal?)null;
 
         var openingRecord = submission.BidOpeningRecord;

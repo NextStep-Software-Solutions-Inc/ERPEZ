@@ -482,7 +482,7 @@ export function ReviewWorkspace({
                 variant="outline"
                 size="sm"
                 className="w-full h-8 text-xs font-semibold bg-white text-blue-700 border-blue-300 hover:bg-blue-50 gap-1.5"
-                onClick={() => navigate({ to: '/v2/bid-evaluation', search: projectId ? { projectId } : undefined })}
+                onClick={() => navigate({ to: '/v2/bid-evaluation', search: { projectId: projectId || undefined } })}
               >
                 <FolderOpen className="h-3.5 w-3.5" />
                 Proceed to BAC Bid Opening & Evaluation &rarr;

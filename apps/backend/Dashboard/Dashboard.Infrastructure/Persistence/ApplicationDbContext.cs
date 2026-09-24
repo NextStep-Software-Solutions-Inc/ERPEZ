@@ -212,6 +212,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     // Public Bidding Evaluation & Award Ecosystem
     public DbSet<BiddingSubmission>? BiddingSubmissions { get; set; }
+    public DbSet<BiddingSubmissionItem>? BiddingSubmissionItems { get; set; }
     public DbSet<BidOpeningRecord>? BidOpeningRecords { get; set; }
     public DbSet<BiddingEvaluation>? BiddingEvaluations { get; set; }
     public DbSet<BiddingEvaluatedBid>? BiddingEvaluatedBids { get; set; }
@@ -3486,6 +3487,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.Property(s => s.BidSecurityAmount)
                 .HasPrecision(18, 2);
+        });
+
+        // BiddingSubmissionItem
+        modelBuilder.Entity<BiddingSubmissionItem>(entity =>
+        {
+            entity.HasOne(i => i.BiddingSubmission)
+                .WithMany(s => s.BiddingSubmissionItems)
+                .HasForeignKey(i => i.BiddingSubmissionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(i => new { i.BiddingSubmissionId, i.ProcurementProjectItemId });
+
+            entity.Property(i => i.UnitPrice)
+                .HasPrecision(18, 2);
+
+            entity.Property(i => i.TotalPrice)
+                .HasPrecision(18, 2);
+
+            entity.Property(i => i.Quantity)
+                .HasPrecision(18, 4);
         });
 
         // BidOpeningRecord
