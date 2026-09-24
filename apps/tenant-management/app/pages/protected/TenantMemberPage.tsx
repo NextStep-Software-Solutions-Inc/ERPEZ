@@ -19,7 +19,7 @@ import { toggleTenantMemberStatusRequest } from '~/features/tenant-member/handle
 import { revokeTenantMemberInvitationRequest } from '~/features/tenant-member/handlers/revokeTenantMemberInvitationRequest';
 import { deleteTenantMemberRequest } from '~/features/tenant-member/handlers/deleteTenantMemberRequest';
 import { useTenant } from '~/providers/TenantProvider';
-import { useKeycloak } from '~/providers/KeycloakProvider';
+import { useClerkAuth } from '~/providers/ClerkAuthProvider';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -47,7 +47,7 @@ const useDeleteMember = createMutationHookFromTemplate(deleteTenantMemberRequest
 function TenantMemberPage() {
     const navigate = useNavigate();
     const { tenant } = useTenant();
-    const { user } = useKeycloak();
+    const { user } = useClerkAuth();
 
     // Invite Modal State
     const [isAddOpen, setIsAddOpen] = useState(false);

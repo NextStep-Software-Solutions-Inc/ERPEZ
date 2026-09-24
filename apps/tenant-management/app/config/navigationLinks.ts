@@ -5,7 +5,6 @@ export const navigationLinks = [
     items: [
       { title: "Overview", url: "overview", icon: "LayoutDashboard" },
       { title: "Members", url: "tenant-member", icon: "Users" },
-      { title: "Delivery Units", url: "delivery-unit", icon: "Building2" },
     ],
   },
   {

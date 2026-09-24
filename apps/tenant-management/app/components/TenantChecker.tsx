@@ -1,4 +1,4 @@
-import { useKeycloak } from "~/providers/KeycloakProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { TenantOverviewSkeleton } from "./features/overview/skeleton/TenantOverviewSkeleton";
 import { useTenant } from "~/providers/TenantProvider";
 
@@ -9,7 +9,7 @@ interface TenantCheckerProps {
 }
 
 export default function TenantChecker({ children, inverted = false, fallback }: TenantCheckerProps) {
-    const { isInitialized } = useKeycloak();
+    const { isInitialized } = useClerkAuth();
     const { tenant, isLoading } = useTenant();
 
     if (!isInitialized || isLoading) {

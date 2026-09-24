@@ -1,4 +1,4 @@
-import { useKeycloak } from "~/providers/KeycloakProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import Unauthorized from "./Unauthorized";
 
 interface SuperAdminGuardProps {
@@ -6,7 +6,7 @@ interface SuperAdminGuardProps {
 }
 
 export default function SuperAdminGuard({ children }: SuperAdminGuardProps) {
-    const { isSuperAdmin } = useKeycloak();
+    const { isSuperAdmin } = useClerkAuth();
 
     if (!isSuperAdmin) {
         return <Unauthorized />;

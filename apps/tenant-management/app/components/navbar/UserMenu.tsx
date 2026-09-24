@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
-import { useKeycloak } from '~/providers/KeycloakProvider';
+import { useClerkAuth } from '~/providers/ClerkAuthProvider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ className = '', showDetails = true }: UserMenuProps) {
-  const { user, isSuperAdmin, logout, switchDevUser, activeDevUser } = useKeycloak();
+  const { user, isSuperAdmin, logout, switchDevUser, activeDevUser } = useClerkAuth();
   const navigate = useNavigate();
 
   const handleSwitchUser = async (newUsername: string) => {

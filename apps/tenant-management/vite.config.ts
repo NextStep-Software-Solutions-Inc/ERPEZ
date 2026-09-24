@@ -15,9 +15,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       dedupe: ["react", "react-dom"],
     },
-    optimizeDeps: {
-      include: ["react", "react-dom", "react-router", "@tanstack/react-query"],
-    },
     server: {
       port: 5173,
     },

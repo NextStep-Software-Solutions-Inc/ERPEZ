@@ -1,18 +1,19 @@
-import { ArrowLeft, KeyRound, Shield, Building, Sparkles, UserCheck } from "lucide-react";
+import { ArrowLeft, KeyRound, Building, Sparkles, UserCheck } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import { useKeycloak } from "~/providers/KeycloakProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { Button } from "~/components/ui/button";
 import { useEffect } from "react";
+import { SignIn } from "@clerk/clerk-react";
 
 export function meta() {
   return [
     { title: "Sign In - ERPEZ Tenant Management" },
-    { name: "description", content: "Sign In with Keycloak SSO" },
+    { name: "description", content: "Sign In with Clerk Identity Services" },
   ];
 }
 
 export default function SignInPage() {
-  const { isAuthenticated, isSuperAdmin, login, switchDevUser, activeDevUser } = useKeycloak();
+  const { isAuthenticated, isSuperAdmin, login, switchDevUser, activeDevUser, isClerkLive } = useClerkAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,17 +38,17 @@ export default function SignInPage() {
   return (
     <div className="flex h-screen w-full">
       {/* Sign In Form Section */}
-      <div className="relative flex w-full lg:w-1/2 items-center justify-center p-6 bg-slate-50 dark:bg-slate-900">
+      <div className="relative flex w-full lg:w-1/2 items-center justify-center p-6 bg-slate-50 dark:bg-slate-900 overflow-y-auto">
         {/* Back button */}
         <Link
           to="/"
-          className="absolute top-6 left-6 flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
+          className="absolute top-6 left-6 flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors z-10"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Home
         </Link>
 
-        <div className="w-full max-w-md space-y-6">
+        <div className="w-full max-w-md space-y-6 pt-12 lg:pt-0">
           <div className="space-y-2 text-center">
             <div className="inline-flex p-3 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 mb-2 shadow-inner">
               <KeyRound className="h-7 w-7" />
@@ -56,17 +57,23 @@ export default function SignInPage() {
               Welcome to ERPEZ
             </h1>
             <p className="text-sm text-muted-foreground">
-              Sign in via Enterprise Single Sign-On (Keycloak) or select a dev persona
+              Sign in to access your tenant control plane and organization settings
             </p>
           </div>
 
           <div className="space-y-4">
-            <Button
-              onClick={() => login()}
-              className="w-full h-11 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all"
-            >
-              Sign In with Keycloak SSO
-            </Button>
+            {isClerkLive ? (
+              <div className="flex justify-center">
+                <SignIn routing="hash" fallbackRedirectUrl="/overview" />
+              </div>
+            ) : (
+              <Button
+                onClick={() => login()}
+                className="w-full h-11 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all"
+              >
+                Sign In with Clerk
+              </Button>
+            )}
 
             {import.meta.env.DEV && (
               <div className="pt-6 border-t border-gray-200 dark:border-gray-800 space-y-3">
@@ -119,6 +126,7 @@ export default function SignInPage() {
                       Global Bypass
                     </span>
                   </button>
+
                   <button
                     onClick={() => handleDevLogin("dev_planner")}
                     className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all ${
@@ -154,7 +162,7 @@ export default function SignInPage() {
           <span className="text-blue-100">Tenant & Identity Management</span>
         </h1>
         <p className="text-blue-50 text-sm max-w-md text-center mb-8">
-          Seamless multi-tenant orchestration, licensing, and role-based access control.
+          Seamless multi-tenant orchestration, licensing, and role-based access control powered by Clerk.
         </p>
         <img
           src="/image/SignIn.png"

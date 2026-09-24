@@ -70,7 +70,7 @@ interface PlatformUser {
     lastName: string;
     platformRole: "Platform Administrator" | "Platform Auditor" | "Platform Support";
     workspaceMemberships: WorkspaceAccessItem[];
-    keycloakSynced: boolean;
+    clerkSynced: boolean;
     isActive: boolean;
     createdDate: string;
 }
@@ -97,7 +97,7 @@ const INITIAL_PLATFORM_USERS: PlatformUser[] = [
                 status: "Active",
             },
         ],
-        keycloakSynced: true,
+        clerkSynced: true,
         isActive: true,
         createdDate: "2026-01-10",
     },
@@ -109,7 +109,7 @@ const INITIAL_PLATFORM_USERS: PlatformUser[] = [
         lastName: "Smith",
         platformRole: "Platform Auditor",
         workspaceMemberships: [],
-        keycloakSynced: true,
+        clerkSynced: true,
         isActive: true,
         createdDate: "2026-02-14",
     },
@@ -128,7 +128,7 @@ const INITIAL_PLATFORM_USERS: PlatformUser[] = [
                 status: "Active",
             },
         ],
-        keycloakSynced: true,
+        clerkSynced: true,
         isActive: true,
         createdDate: "2026-03-01",
     },
@@ -162,11 +162,11 @@ export default function UserManagementPage() {
             u.platformRole.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleSyncKeycloak = () => {
+    const handleSyncClerk = () => {
         setIsSyncing(true);
         setTimeout(() => {
             setIsSyncing(false);
-            toast.success("Master Keycloak Realm platform users synchronized successfully.");
+            toast.success("Clerk platform directory synchronized successfully.");
         }, 1200);
     };
 
@@ -185,13 +185,13 @@ export default function UserManagementPage() {
             lastName,
             platformRole,
             workspaceMemberships: [],
-            keycloakSynced: true,
+            clerkSynced: true,
             isActive: true,
             createdDate: new Date().toISOString().split("T")[0],
         };
 
         setUsers([newUser, ...users]);
-        toast.success(`Platform User ${username} successfully provisioned with role ${platformRole}.`);
+        toast.success(`Platform User ${username} successfully provisioned into Clerk directory with role ${platformRole}.`);
         setIsAddOpen(false);
 
         // Reset form
@@ -271,12 +271,12 @@ export default function UserManagementPage() {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleSyncKeycloak}
+                        onClick={handleSyncClerk}
                         disabled={isSyncing}
                         className="flex items-center gap-2"
                     >
                         <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
-                        Sync Realm
+                        Sync Clerk Directory
                     </Button>
                     <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                         <DialogTrigger asChild>
@@ -288,7 +288,7 @@ export default function UserManagementPage() {
                         <DialogContent className="sm:max-w-lg">
                             <form onSubmit={handleCreateUser}>
                                 <DialogHeader>
-                                    <DialogTitle>Provision Platform User into Keycloak</DialogTitle>
+                                    <DialogTitle>Provision Platform User into Clerk Directory</DialogTitle>
                                     <DialogDescription className="text-xs text-muted-foreground">
                                         Assign platform control-plane capabilities to an authenticated identity.
                                     </DialogDescription>
@@ -362,7 +362,7 @@ export default function UserManagementPage() {
                                     <div className="p-3 bg-blue-50/70 rounded-lg border border-blue-200/60 text-xs text-blue-800 flex items-start gap-2">
                                         <Key className="w-4 h-4 shrink-0 mt-0.5 text-blue-600" />
                                         <span>
-                                            This user will be provisioned directly into the master Keycloak realm with platform-plane permissions. Platform roles grant access to ERPEZ administration and do not grant access to workspace ERP data.
+                                            This user will be provisioned directly into Clerk with platform-plane permissions. Platform roles grant access to ERPEZ administration and do not grant access to workspace ERP data.
                                         </span>
                                     </div>
                                 </div>
@@ -373,7 +373,7 @@ export default function UserManagementPage() {
                                     <Button type="submit" className="btn-blue">
                                         Create Platform User
                                     </Button>
-                                </DialogFooter>
+                                 </DialogFooter>
                             </form>
                         </DialogContent>
                     </Dialog>
@@ -395,11 +395,11 @@ export default function UserManagementPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="border-slate-200 bg-white">
                     <CardHeader className="p-4 flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-semibold text-slate-700">Identity Realm</CardTitle>
+                        <CardTitle className="text-sm font-semibold text-slate-700">Identity Provider</CardTitle>
                         <Shield className="h-4 w-4 text-blue-600" />
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-xl font-bold text-slate-900">erpez-realm</div>
+                        <div className="text-xl font-bold text-slate-900">Clerk Directory</div>
                         <div className="flex items-center gap-1.5 mt-1 text-xs text-emerald-600 font-medium">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             Connected & Authorized
@@ -415,7 +415,7 @@ export default function UserManagementPage() {
                     <CardContent className="p-4 pt-0">
                         <div className="text-xl font-bold text-slate-900">OAuth 2.0 / OIDC</div>
                         <div className="text-xs text-slate-500 mt-1">
-                            Fail-Closed JWT Validation
+                            Clerk JWKS Validation
                         </div>
                     </CardContent>
                 </Card>
@@ -460,7 +460,7 @@ export default function UserManagementPage() {
                                 <th className="py-3.5 px-4">Platform User</th>
                                 <th className="py-3.5 px-4">Platform Role</th>
                                 <th className="py-3.5 px-4">Workspace Memberships</th>
-                                <th className="py-3.5 px-4">Keycloak Sync</th>
+                                <th className="py-3.5 px-4">Clerk Sync</th>
                                 <th className="py-3.5 px-4">Status</th>
                                 <th className="py-3.5 px-4 text-right">Actions</th>
                             </tr>
@@ -496,7 +496,7 @@ export default function UserManagementPage() {
                                         </td>
                                         <td className="py-3.5 px-4">
                                             {user.workspaceMemberships.length > 0 ? (
-                                                <button
+                                                 <button
                                                     onClick={() => setViewingAccessUser(user)}
                                                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
                                                     title="Click to view workspace memberships"
@@ -513,7 +513,7 @@ export default function UserManagementPage() {
                                             )}
                                         </td>
                                         <td className="py-3.5 px-4">
-                                            {user.keycloakSynced ? (
+                                            {user.clerkSynced ? (
                                                 <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
                                                     <CheckCircle2 className="h-3.5 w-3.5" />
                                                     Synced
@@ -560,12 +560,12 @@ export default function UserManagementPage() {
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         onClick={() => {
-                                                            toast.success(`Keycloak sync verified for @${user.username}`);
+                                                            toast.success(`Clerk sync verified for @${user.username}`);
                                                         }}
                                                         className="cursor-pointer text-xs flex items-center gap-2"
                                                     >
                                                         <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
-                                                        Sync from Keycloak
+                                                        Sync from Clerk
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem
@@ -650,7 +650,7 @@ export default function UserManagementPage() {
                         <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-600">
                             <span className="font-semibold block text-slate-700">Platform Authorization Policy</span>
                             <p className="mt-0.5">
-                                Platform roles are mutually exclusive and governed via Keycloak master realm claims. Workspace memberships remain unchanged.
+                                Platform roles are mutually exclusive and governed via Clerk directory publicMetadata claims. Workspace memberships remain unchanged.
                             </p>
                         </div>
                     </div>
