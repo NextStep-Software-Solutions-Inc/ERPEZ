@@ -400,4 +400,65 @@ public class BiddingConfidentialityAndItemOpeningTests
         updatedSubmission.BidOpeningRecord!.AsReadBidAmount.Should().Be(880_000m);
         updatedSubmission.BidOpeningRecord.Remarks.Should().Be("Bid Form reflects ₱880,000 as read aloud during the public session.");
     }
+
+    [Fact]
+    public async Task RecordBidOpening_WhenAmountsMatchWithinCentavoRounding_DoesNotThrowDiscrepancyException()
+    {
+        using var context = NoticeOfAwardTestHelpers.CreateInMemoryDbContext();
+        var uow = NoticeOfAwardTestHelpers.CreateUnitOfWork(context);
+
+        var project = new ProcurementProject
+        {
+            Id = Guid.NewGuid(),
+            Title = "Centavo Precision Test Project",
+            ABC = 500_000m,
+            Status = "Active",
+            CreatedBy = "Admin"
+        };
+        await context.ProcurementProjects!.AddAsync(project);
+
+        var supplier = new Supplier
+        {
+            Id = Guid.NewGuid(),
+            Name = "Precision Tech Corp.",
+            TINNumber = "555-444-333-000",
+            BusinessPermitNo = "BP-99999",
+            Status = "Active",
+            CreatedBy = "Admin"
+        };
+        await context.Suppliers!.AddAsync(supplier);
+
+        var submission = new BiddingSubmission
+        {
+            Id = Guid.NewGuid(),
+            ProcurementProjectId = project.Id,
+            SupplierId = supplier.Id,
+            OriginalProposedAmount = 100_000.00m,
+            SubmissionType = "Electronic",
+            CreatedBy = "PublicPortal"
+        };
+        await context.BiddingSubmissions!.AddAsync(submission);
+        await context.SaveChangesAsync();
+
+        var handler = new RecordBidOpeningCommandHandler(uow, currentUserService);
+        var command = new RecordBidOpeningCommand
+        {
+            ProjectId = project.Id,
+            Request = new RecordBidOpeningRequest
+            {
+                BiddingSubmissionId = submission.Id,
+                Envelope1Result = "Passed",
+                Envelope2Opened = true,
+                AsReadBidAmount = 100_000.004m, // Sub-centavo noise rounds to 100,000.00m matching submission
+                Remarks = "" // Blank remarks should be allowed since rounded amounts match
+            }
+        };
+
+        var result = await handler.Handle(command, CancellationToken.None);
+        result.Should().NotBeNull();
+
+        var updatedSubmission = await uow.BiddingSubmissionRepository.GetByIdAsync(submission.Id);
+        updatedSubmission!.BidOpeningRecord.Should().NotBeNull();
+        updatedSubmission.BidOpeningRecord!.AsReadBidAmount.Should().Be(100_000.00m);
+    }
 }

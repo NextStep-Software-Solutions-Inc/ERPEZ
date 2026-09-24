@@ -79,13 +79,16 @@ public class ValidatePublicApplicationCommandHandler(IUnitOfWork unitOfWork)
             {
                 totalQuoted = rfq.RFQItems
                     .Where(item => !item.IsDeleted && itemBidsDict.ContainsKey(item.Id))
-                    .Sum(item => itemBidsDict[item.Id].UnitPrice * item.Quantity);
+                    .Sum(item => Math.Round(itemBidsDict[item.Id].UnitPrice * item.Quantity, 2, MidpointRounding.AwayFromZero));
             }
 
-            if (totalQuoted > 0 && rfq.TotalAmount > 0 && totalQuoted > rfq.TotalAmount)
+            totalQuoted = Math.Round(totalQuoted, 2, MidpointRounding.AwayFromZero);
+            var rfqCeiling = Math.Round(rfq.TotalAmount, 2, MidpointRounding.AwayFromZero);
+
+            if (totalQuoted > 0 && rfqCeiling > 0 && totalQuoted > rfqCeiling)
             {
                 throw new FluentValidation.ValidationException(
-                    $"Your total quoted bid (₱{totalQuoted:N2}) exceeds the Approved Budget for the Contract (₱{rfq.TotalAmount:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
+                    $"Your total quoted bid (₱{totalQuoted:N2}) exceeds the Approved Budget for the Contract (₱{rfqCeiling:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
             }
 
             // Checklist verification
@@ -162,10 +165,15 @@ public class ValidatePublicApplicationCommandHandler(IUnitOfWork unitOfWork)
             throw new ForbiddenException("This supplier has been suspended or blacklisted.");
 
         // ABC ceiling check
-        if (request.ProposedBidAmount.HasValue && project.ABC > 0 && request.ProposedBidAmount.Value > project.ABC)
+        if (request.ProposedBidAmount.HasValue && project.ABC > 0)
         {
-            throw new FluentValidation.ValidationException(
-                $"Your proposed bid (₱{request.ProposedBidAmount.Value:N2}) exceeds the Approved Budget for the Contract (₱{project.ABC:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
+            var roundedProposed = Math.Round(request.ProposedBidAmount.Value, 2, MidpointRounding.AwayFromZero);
+            var roundedAbc = Math.Round(project.ABC, 2, MidpointRounding.AwayFromZero);
+            if (roundedProposed > roundedAbc)
+            {
+                throw new FluentValidation.ValidationException(
+                    $"Your proposed bid (₱{roundedProposed:N2}) exceeds the Approved Budget for the Contract (₱{roundedAbc:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
+            }
         }
 
         return ApiResponse<bool>.Success(true, "Application is valid for submission.");

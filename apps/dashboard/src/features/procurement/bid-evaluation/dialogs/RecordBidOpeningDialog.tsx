@@ -539,13 +539,15 @@ export function RecordBidOpeningDialog({
 
               {/* State D: Envelope 2 is Officially Opened */}
               {envelope1Result === 'Passed' && envelope2Opened && (() => {
-                const numAsRead = parseFloat(asReadBidAmount) || 0
+                const numAsRead = Math.round(((parseFloat(asReadBidAmount) || 0) + Number.EPSILON) * 100) / 100
+                const origAmount =
+                  submission.originalProposedAmount !== null && submission.originalProposedAmount !== undefined
+                    ? Math.round((submission.originalProposedAmount + Number.EPSILON) * 100) / 100
+                    : 0
                 const hasDiscrepancy =
-                  submission.originalProposedAmount !== null &&
-                  submission.originalProposedAmount !== undefined &&
-                  submission.originalProposedAmount > 0 &&
+                  origAmount > 0 &&
                   numAsRead > 0 &&
-                  Math.abs(submission.originalProposedAmount - numAsRead) > 0.009
+                  Math.abs(origAmount - numAsRead) > 0.009
 
                 return (
                   <div className="space-y-4 pt-2">

@@ -69,6 +69,9 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+const roundToCentavos = (val: number): number => Math.round((val + Number.EPSILON) * 100) / 100
+
+
 export function BACApplicationForm({
   project,
   onBack,
@@ -131,21 +134,23 @@ export function BACApplicationForm({
 
   const requiredUploads = project.requiredDocuments
 
-  // Calculate live total quoted bid
+  // Calculate live total quoted bid with centavo rounding to prevent off-by-one discrepancies
   const totalQuotedBid = useMemo(() => {
     if (isItemized && project.items) {
-      return project.items.reduce((sum, item) => {
-        const price = Number(formValues.itemBids[item.id]?.unitPrice || 0)
-        return sum + price * item.quantity
-      }, 0)
+      return roundToCentavos(
+        project.items.reduce((sum, item) => {
+          const price = Number(formValues.itemBids[item.id]?.unitPrice || 0)
+          return sum + roundToCentavos(price * item.quantity)
+        }, 0)
+      )
     }
-    return Number(formValues.proposedBidAmount || 0)
+    return roundToCentavos(Number(formValues.proposedBidAmount || 0))
   }, [isItemized, project.items, formValues.itemBids, formValues.proposedBidAmount])
 
-  // NGPA / statutory ABC compliance check
-  const numericAbc = Number(project.approvedBudget || 0)
+  // NGPA / statutory ABC compliance check with centavo precision
+  const numericAbc = roundToCentavos(Number(project.approvedBudget || 0))
   const isOverAbc = numericAbc > 0 && totalQuotedBid > numericAbc
-  const varianceFromAbc = numericAbc > 0 ? numericAbc - totalQuotedBid : 0
+  const varianceFromAbc = numericAbc > 0 ? roundToCentavos(numericAbc - totalQuotedBid) : 0
 
   const isPastDeadline =
     project.deadline && !isNaN(Date.parse(project.deadline))
@@ -349,7 +354,7 @@ export function BACApplicationForm({
                 const state = formValues.itemBids[item.id]
                 return {
                   rfqItemId: item.id,
-                  unitPrice: Number(state?.unitPrice || 0),
+                  unitPrice: roundToCentavos(Number(state?.unitPrice || 0)),
                   brand: state?.brand?.trim() || null,
                   model: state?.model?.trim() || null,
                 }
@@ -385,7 +390,7 @@ export function BACApplicationForm({
               const state = formValues.itemBids[item.id]
               return {
                 rfqItemId: item.id,
-                unitPrice: Number(state?.unitPrice || 0),
+                unitPrice: roundToCentavos(Number(state?.unitPrice || 0)),
                 brand: state?.brand?.trim() || null,
                 model: state?.model?.trim() || null,
                 brochureFileId: itemBrochureFileIds[item.id] || null,
@@ -584,7 +589,7 @@ export function BACApplicationForm({
                     {project.items.map((item, idx) => {
                       const state = formValues.itemBids[item.id] || { unitPrice: '', brand: '', model: '' }
                       const unitPriceNum = Number(state.unitPrice || 0)
-                      const itemTotal = unitPriceNum * item.quantity
+                      const itemTotal = roundToCentavos(unitPriceNum * item.quantity)
                       const itemBrochure = itemBrochures[item.id]
                       const itemError = errors[`item_${item.id}`]
                       const brochureError = errors[`brochure_${item.id}`]
