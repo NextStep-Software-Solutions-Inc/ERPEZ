@@ -85,13 +85,18 @@ public class SupplierPortalController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [HasPermission(Permissions.Procurement.supplierView)]
-    public async Task<IActionResult> GenerateBlankTemplate(Guid rfqId, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GenerateBlankTemplate(
+        Guid rfqId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        [FromQuery] Guid? supplierId = null,
+        CancellationToken cancellationToken = default)
     {
         var command = new GenerateRFQDocumentCommand
         {
             RFQId = rfqId,
+            SupplierId = supplierId,
             BlankTemplate = true,
-            Format = ExportFormat.Pdf,
+            Format = format,
             GeneratedBy = User.Identity?.Name ?? "SupplierPortal"
         };
         var result = await mediator.Send(command, cancellationToken);

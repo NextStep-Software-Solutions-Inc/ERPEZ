@@ -20,8 +20,14 @@ import {
 } from '@/components/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { useRFQStore, RFQItem } from '../store/rfqStore'
-import { Pencil, Save, Upload, FileText, X, Send, Loader2, Download, CheckCircle2, FileCheck } from 'lucide-react'
+import { Pencil, Save, Upload, FileText, X, Send, Loader2, Download, CheckCircle2, FileCheck, FileSpreadsheet, ChevronDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 import { generateAndDownloadRfqDocument } from '../utils/generateRfqDocumentRequest'
 import {
   AlertDialog,
@@ -377,19 +383,21 @@ export function SetQuotationModal({
     })
   }
 
-  const handleDownloadTemplate = async () => {
+  const handleDownloadTemplate = async (format: 'Pdf' | 'Excel' = 'Pdf') => {
     if (!rfq?.id) return
     setIsDownloadingTemplate(true)
+    const ext = format === 'Excel' ? 'xlsx' : 'pdf'
     try {
       await generateAndDownloadRfqDocument({
         rfqId: rfq.id,
-        format: 'Pdf',
+        format,
+        supplierId: supplierId || undefined,
         blankTemplate: true,
-        filename: `RFQ_${rfq.rfqNumber || rfq.id}_Blank_Template.pdf`,
+        filename: `RFQ_${rfq.rfqNumber || rfq.id}_Template.${ext}`,
       })
       toast({
-        title: 'Template Downloaded',
-        description: 'Blank RFQ template is ready for offline routing/signing.',
+        title: `Template Downloaded (${format})`,
+        description: `Pre-filled RFQ ${format} template is ready for quotation and offline routing/signing.`,
       })
     } catch (err: any) {
       toast({
@@ -603,21 +611,35 @@ export function SetQuotationModal({
               </div>
             </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadTemplate}
-              disabled={isDownloadingTemplate}
-              className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-            >
-              {isDownloadingTemplate ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              Download Blank RFQ Template (PDF)
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isDownloadingTemplate}
+                  className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                >
+                  {isDownloadingTemplate ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" />
+                  )}
+                  Download RFQ Template
+                  <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => handleDownloadTemplate('Pdf')} className="gap-2 cursor-pointer text-xs">
+                  <FileText className="w-3.5 h-3.5 text-red-500" />
+                  Download PDF Template (.pdf)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadTemplate('Excel')} className="gap-2 cursor-pointer text-xs">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  Download Excel Template (.xlsx)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Manual Routed RFQ Document Upload Card */}

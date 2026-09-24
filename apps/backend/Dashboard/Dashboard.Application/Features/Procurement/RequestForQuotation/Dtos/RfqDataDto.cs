@@ -25,6 +25,8 @@ public class RfqSupplierDataDto
     public string ContactPerson { get; set; } = string.Empty;
     public string ContactNumber { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string TINNumber { get; set; } = string.Empty;
+    public string PhilGEPSNumber { get; set; } = string.Empty;
     public List<RfqItemDataDto> QuotedItems { get; set; } = [];
 }
 

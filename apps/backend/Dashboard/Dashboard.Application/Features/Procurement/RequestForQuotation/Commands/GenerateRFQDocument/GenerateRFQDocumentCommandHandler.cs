@@ -97,11 +97,34 @@ public class GenerateRFQDocumentCommandHandler(
             ? rfq.ConsolidatedPR.CPRNumber.Trim()
             : (!string.IsNullOrWhiteSpace(rfq.TracingNumber) ? rfq.TracingNumber.Trim() : "[PR / Tracing No.]");
 
-        var bacResNumber = "[BAC Resolution No.]";
+        var cprId = rfq.ConsolidatedPRId
+            ?? rfq.RFQItems?.Select(i => i.CPRItem?.ConsolidatedPRId).FirstOrDefault(id => id.HasValue && id.Value != Guid.Empty);
+
+        ProcurementProject? project = null;
+        if (cprId.HasValue && cprId.Value != Guid.Empty)
+        {
+            project = await unitOfWork.ProcurementProjectRepository.GetByConsolidatedPRIdWithResolutionsAsync(cprId.Value, cancellationToken);
+        }
+
+        var resolution = project?.BACResolutions
+            .OrderByDescending(r => r.CreatedAt)
+            .FirstOrDefault(r => string.Equals(r.Status, "Approved", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(r.Status))
+            ?? project?.BACResolutions.OrderByDescending(r => r.CreatedAt).FirstOrDefault();
+
+        var bacResNumber = !string.IsNullOrWhiteSpace(resolution?.ResolutionNumber)
+            ? resolution.ResolutionNumber.Trim()
+            : string.Empty;
 
         // Query bids submitted for this RFQ
         var bids = await unitOfWork.SupplierBidRepository.GetByRFQIdAsync(rfq.Id, cancellationToken);
 
+        Supplier? targetSupplier = null;
+        SupplierBid? targetBid = null;
+        if (request.SupplierId.HasValue)
+        {
+            targetSupplier = await unitOfWork.SupplierRepository.GetByIdAsync(request.SupplierId.Value, cancellationToken);
+            targetBid = bids.FirstOrDefault(b => b.SupplierId == request.SupplierId.Value);
+        }
 
         var rawRfqItems = (rfq.RFQItems ?? []).Where(i => !i.IsDeleted).ToList();
         var rfqItems = rawRfqItems
@@ -123,13 +146,89 @@ public class GenerateRFQDocumentCommandHandler(
             totalABC = rfq.TotalAmount;
         }
 
-        var isBlank = request.BlankTemplate || !request.SupplierId.HasValue;
+        var isBlank = request.BlankTemplate || targetBid == null;
         var suppliers = new List<RfqSupplierDataDto>();
         string? signatoryName = null;
+        string? dateSigned = null;
 
-        if (isBlank)
+        if (targetSupplier != null)
         {
-            // Blank RFQ canvass / quotation template (for BAC Officer export or Supplier Portal download)
+            // Supplier-specific document (canvass template for this supplier or their submitted quotation)
+            List<RfqItemDataDto> quotedItems;
+
+            if (isBlank)
+            {
+                // Blank RFQ canvass / quotation template for invited supplier
+                // Company info is pre-filled, but quotation offer/price columns are left blank for them to fill in
+                quotedItems = rfqItems.Select(baseItem => new RfqItemDataDto
+                {
+                    ItemNo = baseItem.ItemNo,
+                    ItemName = baseItem.ItemName,
+                    Specifications = baseItem.Specifications,
+                    Quantity = baseItem.Quantity,
+                    Unit = baseItem.Unit,
+                    ApprovedUnitCost = baseItem.ApprovedUnitCost,
+                    ApprovedTotalCost = baseItem.ApprovedTotalCost,
+                    QuotedUnitPrice = null,
+                    QuotedTotalCost = null,
+                    OfferedBrand = null,
+                    OfferedModel = null,
+                    OfferedSpecifications = null
+                }).ToList();
+
+                signatoryName = null;
+                dateSigned = null;
+            }
+            else
+            {
+                // Filled quotation preview (for RFQ Manager or AOB Matrix preview)
+                signatoryName = targetBid?.SignatoryName ?? targetSupplier.ContactPerson;
+                dateSigned = targetBid?.DateSigned?.ToString("MMMM dd, yyyy")
+                    ?? targetBid?.SubmittedAt?.ToString("MMMM dd, yyyy");
+
+                quotedItems = rfqItems.Select(baseItem =>
+                {
+                    var bidItem = targetBid?.SupplierBidItems?.FirstOrDefault(bi =>
+                        rawRfqItems.Any(ri => ri.Id == bi.RFQItemId && string.Equals(ri.ItemNameSnapshot?.Trim(), baseItem.ItemName?.Trim(), StringComparison.OrdinalIgnoreCase)));
+
+                    return new RfqItemDataDto
+                    {
+                        ItemNo = baseItem.ItemNo,
+                        ItemName = baseItem.ItemName,
+                        Specifications = baseItem.Specifications,
+                        Quantity = baseItem.Quantity,
+                        Unit = baseItem.Unit,
+                        ApprovedUnitCost = baseItem.ApprovedUnitCost,
+                        ApprovedTotalCost = baseItem.ApprovedTotalCost,
+                        QuotedUnitPrice = bidItem?.UnitPrice,
+                        QuotedTotalCost = bidItem?.TotalPrice,
+                        OfferedBrand = bidItem?.Brand?.Trim(),
+                        OfferedModel = bidItem?.Model?.Trim(),
+                        OfferedSpecifications = !string.IsNullOrWhiteSpace(bidItem?.Brand)
+                            ? string.Join(" ", new[] { bidItem.Brand?.Trim(), bidItem.Model?.Trim(), bidItem.Color?.Trim() }.Where(s => !string.IsNullOrWhiteSpace(s)))
+                            : null
+                    };
+                }).ToList();
+            }
+
+            suppliers.Add(new RfqSupplierDataDto
+            {
+                SupplierId = targetSupplier.Id,
+                SupplierName = targetSupplier.Name?.Trim() ?? "[Supplier / Bidder Name]",
+                TradeName = targetSupplier.Name?.Trim() ?? "[Business / Store Name]",
+                Address = targetSupplier.Address?.Trim() ?? string.Empty,
+                ContactPerson = targetSupplier.ContactPerson?.Trim() ?? string.Empty,
+                ContactNumber = targetSupplier.ContactNumber?.Trim() ?? string.Empty,
+                Email = targetSupplier.Email?.Trim() ?? string.Empty,
+                TINNumber = targetSupplier.TINNumber?.Trim() ?? string.Empty,
+                PhilGEPSNumber = targetSupplier.PhilGEPSNumber?.Trim() ?? string.Empty,
+                QuotedItems = quotedItems
+            });
+        }
+        else
+        {
+            // Generic blank RFQ canvass / template (for BAC Officer generic export)
+            isBlank = true;
             suppliers.Add(new RfqSupplierDataDto
             {
                 SupplierName = string.Empty,
@@ -138,6 +237,8 @@ public class GenerateRFQDocumentCommandHandler(
                 ContactPerson = string.Empty,
                 ContactNumber = string.Empty,
                 Email = string.Empty,
+                TINNumber = string.Empty,
+                PhilGEPSNumber = string.Empty,
                 QuotedItems = rfqItems.Select(baseItem => new RfqItemDataDto
                 {
                     ItemNo = baseItem.ItemNo,
@@ -153,51 +254,6 @@ public class GenerateRFQDocumentCommandHandler(
                     OfferedModel = null,
                     OfferedSpecifications = null
                 }).ToList()
-            });
-        }
-        else
-        {
-            // Specific supplier's filled quotation (for RFQ Manager or AOB Matrix preview)
-            var targetSupplierId = request.SupplierId!.Value;
-            var targetSupplier = await unitOfWork.SupplierRepository.GetByIdAsync(targetSupplierId, cancellationToken);
-            var targetBid = bids.FirstOrDefault(b => b.SupplierId == targetSupplierId);
-
-            signatoryName = targetBid?.SignatoryName ?? targetSupplier?.ContactPerson;
-
-            var quotedItems = rfqItems.Select(baseItem =>
-            {
-                var bidItem = targetBid?.SupplierBidItems?.FirstOrDefault(bi =>
-                    rawRfqItems.Any(ri => ri.Id == bi.RFQItemId && string.Equals(ri.ItemNameSnapshot?.Trim(), baseItem.ItemName?.Trim(), StringComparison.OrdinalIgnoreCase)));
-
-                return new RfqItemDataDto
-                {
-                    ItemNo = baseItem.ItemNo,
-                    ItemName = baseItem.ItemName,
-                    Specifications = baseItem.Specifications,
-                    Quantity = baseItem.Quantity,
-                    Unit = baseItem.Unit,
-                    ApprovedUnitCost = baseItem.ApprovedUnitCost,
-                    ApprovedTotalCost = baseItem.ApprovedTotalCost,
-                    QuotedUnitPrice = bidItem?.UnitPrice,
-                    QuotedTotalCost = bidItem?.TotalPrice,
-                    OfferedBrand = bidItem?.Brand?.Trim(),
-                    OfferedModel = bidItem?.Model?.Trim(),
-                    OfferedSpecifications = !string.IsNullOrWhiteSpace(bidItem?.Brand)
-                        ? string.Join(" ", new[] { bidItem.Brand?.Trim(), bidItem.Model?.Trim(), bidItem.Color?.Trim() }.Where(s => !string.IsNullOrWhiteSpace(s)))
-                        : null
-                };
-            }).ToList();
-
-            suppliers.Add(new RfqSupplierDataDto
-            {
-                SupplierId = targetSupplierId,
-                SupplierName = targetSupplier?.Name?.Trim() ?? "[Supplier / Bidder Name]",
-                TradeName = targetSupplier?.Name?.Trim() ?? "[Business / Store Name]",
-                Address = targetSupplier?.Address?.Trim() ?? string.Empty,
-                ContactPerson = targetSupplier?.ContactPerson?.Trim() ?? string.Empty,
-                ContactNumber = targetSupplier?.ContactNumber?.Trim() ?? string.Empty,
-                Email = targetSupplier?.Email?.Trim() ?? string.Empty,
-                QuotedItems = quotedItems
             });
         }
 
@@ -225,6 +281,7 @@ public class GenerateRFQDocumentCommandHandler(
             DeliveryPeriod = deliveryPeriod,
             IsBlankTemplate = isBlank,
             SignatoryName = signatoryName,
+            DateSigned = dateSigned,
             Items = rfqItems,
             Suppliers = suppliers
         };

@@ -52,6 +52,8 @@ import {
   Loader2,
   Edit,
   CornerDownLeft,
+  FileSpreadsheet,
+  ChevronDown,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -1063,26 +1065,28 @@ export function RFQDetailsPage({
     }
   }
 
-  const handleExportPDF = async () => {
+  const handleExport = async (format: 'Pdf' | 'Excel' = 'Pdf') => {
     if (!rfq?.id) return
     setIsExporting(true)
+    const ext = format === 'Excel' ? 'xlsx' : 'pdf'
     toast({
-      title: 'Generating Blank RFQ Canvass PDF...',
-      description: 'Please wait while the official blank template is being prepared.',
+      title: `Generating RFQ Canvass (${format})...`,
+      description: `Please wait while the official RFQ ${format} document is being prepared.`,
     })
     try {
       await generateAndDownloadRfqDocument({
         rfqId: rfq.id,
-        format: 'Pdf',
+        format,
+        supplierId: supplierId || undefined,
         blankTemplate: true,
-        filename: `RFQ_${rfq.rfqNumber || rfq.id}_Blank_Canvass.pdf`,
+        filename: `RFQ_${rfq.rfqNumber || rfq.id}_Canvass.${ext}`,
       })
       toast({
-        title: 'RFQ Template Downloaded',
-        description: `Successfully exported blank RFQ canvass template for ${rfq.rfqNumber || ''}.`,
+        title: `RFQ ${format} Downloaded`,
+        description: `Successfully exported RFQ canvass document for ${rfq.rfqNumber || ''}.`,
       })
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to export RFQ PDF'
+      const msg = err instanceof Error ? err.message : `Failed to export RFQ ${format}`
       toast({
         title: 'Export Failed',
         description: msg,
@@ -1093,18 +1097,20 @@ export function RFQDetailsPage({
     }
   }
 
-  const handleDownloadSupplierTemplate = async () => {
+  const handleDownloadSupplierTemplate = async (format: 'Pdf' | 'Excel' = 'Pdf') => {
     if (!rfq?.id) return
+    const ext = format === 'Excel' ? 'xlsx' : 'pdf'
     try {
       await generateAndDownloadRfqDocument({
         rfqId: rfq.id,
-        format: 'Pdf',
+        format,
+        supplierId: supplierId || undefined,
         blankTemplate: true,
-        filename: `RFQ_${rfq.rfqNumber || rfq.id}_Blank_Template.pdf`,
+        filename: `RFQ_${rfq.rfqNumber || rfq.id}_Template.${ext}`,
       })
       toast({
-        title: 'Template Downloaded',
-        description: 'Blank RFQ template is ready for offline routing/signing.',
+        title: `Template Downloaded (${format})`,
+        description: `RFQ ${format} template is ready for offline routing/signing.`,
       })
     } catch (err: any) {
       toast({
@@ -1198,16 +1204,30 @@ export function RFQDetailsPage({
                   </Button>
                 )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={isExporting}
-                onClick={handleExportPDF}
-                className="gap-2"
-              >
-                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                Export PDF
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isExporting}
+                    className="gap-2"
+                  >
+                    {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    Export RFQ
+                    <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => handleExport('Pdf')} className="gap-2 cursor-pointer text-xs">
+                    <FileText className="w-4 h-4 text-red-500" />
+                    Export PDF (.pdf)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('Excel')} className="gap-2 cursor-pointer text-xs">
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                    Export Excel (.xlsx)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {!isSupplierPortal && canEdit && (
                 <Button
