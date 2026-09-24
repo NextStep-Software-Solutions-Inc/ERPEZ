@@ -1,9 +1,9 @@
-import { useKeycloak } from "~/providers/KeycloakProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { useLocation, Navigate, Outlet } from "react-router";
 import LoadingSpinner from "~/components/LoadingSpinner"; 
 
 export default function RoleLayout() {
-    const { isInitialized, isSuperAdmin } = useKeycloak();
+    const { isInitialized, isSuperAdmin } = useClerkAuth();
     const location = useLocation();
 
     if (!isInitialized) {

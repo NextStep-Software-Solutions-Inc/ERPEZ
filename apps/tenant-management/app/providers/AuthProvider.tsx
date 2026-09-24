@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useAuth } from './KeycloakProvider';
+import { useAuth } from './ClerkAuthProvider';
 import { setAuthToken } from '~/services/api';
 
 interface AuthContextType {

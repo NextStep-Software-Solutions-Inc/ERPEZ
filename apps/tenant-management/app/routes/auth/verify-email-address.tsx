@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, Link } from "react-router";
-import { useKeycloak } from "~/providers/KeycloakProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { Button } from "~/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 
@@ -12,7 +12,7 @@ export function meta() {
 }
 
 export default function VerifyEmailAddressPage() {
-    const { isAuthenticated, isSuperAdmin } = useKeycloak();
+    const { isAuthenticated, isSuperAdmin } = useClerkAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -28,10 +28,10 @@ export default function VerifyEmailAddressPage() {
                     <CheckCircle2 className="w-8 h-8" />
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    Keycloak Account Verification
+                    Clerk Account Verification
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                    Email verification is handled directly by Keycloak during registration. Once verified in Keycloak, proceed to sign in.
+                    Email verification is handled securely by Clerk during registration. Once verified, you can proceed to sign in.
                 </p>
                 <div className="pt-2">
                     <Link to="/sign-in">

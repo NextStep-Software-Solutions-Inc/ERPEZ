@@ -4,7 +4,7 @@ import stylesheet from './app.css?url'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Toaster } from 'sonner'
-import { KeycloakProvider } from './providers/KeycloakProvider'
+import { ClerkAuthProvider } from './providers/ClerkAuthProvider'
 import { AuthProvider } from './providers/AuthProvider'
 
 export const links: Route.LinksFunction = () => [
@@ -54,14 +54,14 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <KeycloakProvider>
+      <ClerkAuthProvider>
         <AuthProvider>
           <main>
             <Outlet />
             <Toaster position="bottom-right" richColors />
           </main>
         </AuthProvider>
-      </KeycloakProvider>
+      </ClerkAuthProvider>
     </QueryClientProvider>
   )
 }

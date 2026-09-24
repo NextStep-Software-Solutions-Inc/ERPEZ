@@ -106,7 +106,7 @@ export const onPremisePlans: PlanItem[] = [
     features: [
       "Unlimited local tenants on your hardware",
       "Air-gapped offline operation with custom prefix",
-      "System Management (Keycloak) user decoupling",
+      "System Management (Identity Provider) user decoupling",
       "High-availability standalone database cluster",
       "Custom domain constraints & tenant disable controls",
       "Dedicated on-site & secure channel SLA",
