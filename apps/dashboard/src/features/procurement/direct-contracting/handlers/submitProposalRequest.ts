@@ -1,5 +1,5 @@
 import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
-import type { BackendDirectContractingItem } from '../store/directContractingStore'
+import type { BackendDirectContractingItem } from '../types'
 import type { QuotationItemBid } from '@/features/procurement/supplier-portal/types/daItemTypes'
 import api from '@/services/api'
 

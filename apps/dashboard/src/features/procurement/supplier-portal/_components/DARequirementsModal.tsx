@@ -32,8 +32,9 @@ import { useToast } from '@/components/ui/use-toast'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { useConsolidatedPRStore, type ConsolidatedPRItem } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
 import { ItemBidSpecModal } from './ItemBidSpecModal'
+import { cn } from '@/lib/utils'
 import type { DirectContractingItem, QuotationItemBid } from '../types/daItemTypes'
-import type { DirectContracting } from '@/features/procurement/direct-contracting/store/directContractingStore'
+import type { DirectContracting } from '@/features/procurement/direct-contracting/types'
 
 interface DARequirementsModalProps {
   open: boolean
@@ -78,15 +79,38 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
   const [isDragging, setIsDragging] = useState(false)
 
   // ── Step 2 state & logic (RFQ-style quotation per item) ──
+  const dcItems = 'items' in item && Array.isArray(item.items) && item.items.length > 0 ? item.items : null
+  const hasDCItems = !!dcItems
+
   const consolidatedPRs = useConsolidatedPRStore((s) => s.consolidatedPRs)
   const linkedPR = useMemo(
     () => consolidatedPRs.find((pr) => pr.id === item.prNumber || pr.prNumber === item.prNumber) ?? null,
     [consolidatedPRs, item.prNumber],
   )
   const prItems: ConsolidatedPRItem[] = linkedPR?.selectedPRItems ?? []
-  const hasPRItems = prItems.length > 0
+  const hasPRItems = !hasDCItems && prItems.length > 0
 
   const buildInitialRows = (): Record<string, RowBidState> => {
+    if (hasDCItems) {
+      const existing = item.quotationItems ?? []
+      return Object.fromEntries(
+        dcItems.map((di) => {
+          const rowKey = di.cprItemId || di.id
+          const ex = existing.find((e) => e.prItemId === rowKey || e.prItemId === di.id || e.prItemId === di.cprItemId)
+          return [
+            rowKey,
+            {
+              unitPrice: ex?.bidUnitPrice ?? '',
+              model: ex?.bidModel ?? '',
+              brand: ex?.bidBrand ?? '',
+              color: ex?.bidColor ?? '',
+              brochureUrl: ex?.bidBrochureUrl,
+              brochureFileName: ex?.bidBrochureFileName,
+            } satisfies RowBidState,
+          ]
+        }),
+      )
+    }
     if (hasPRItems) {
       const existing = item.quotationItems ?? []
       return Object.fromEntries(
@@ -136,7 +160,7 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
       })
       blobUrls.current = []
     }
-  }, [open, item, hasPRItems])
+  }, [open, item, hasDCItems, hasPRItems])
 
   useEffect(() => {
     return () => {
@@ -165,13 +189,37 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
 
   const rowTotal = (key: string): number => {
     const r = rows[key]
-    const qty = hasPRItems ? (prItems.find((pi) => pi.id === key)?.qty ?? 0) : quantity
+    let qty = quantity
+    if (hasDCItems) {
+      qty = dcItems.find((di) => (di.cprItemId || di.id) === key)?.quantity ?? 0
+    } else if (hasPRItems) {
+      qty = prItems.find((pi) => pi.id === key)?.qty ?? 0
+    }
     return (Number(r?.unitPrice) || 0) * qty
   }
 
   const totalQuotation = Object.keys(rows).reduce((sum, key) => sum + rowTotal(key), 0)
 
   const buildQuotationItems = (): QuotationItemBid[] => {
+    if (hasDCItems) {
+      return dcItems.map((di) => {
+        const key = di.cprItemId || di.id
+        const r = rows[key]
+        return {
+          prItemId: key,
+          itemName: di.itemName,
+          qty: di.quantity,
+          unit: di.unit,
+          bidUnitPrice: Number(r?.unitPrice) || 0,
+          bidTotalAmount: rowTotal(key),
+          bidModel: r?.model || undefined,
+          bidBrand: r?.brand || undefined,
+          bidColor: r?.color || undefined,
+          bidBrochureUrl: r?.brochureUrl,
+          bidBrochureFileName: r?.brochureFileName,
+        }
+      })
+    }
     if (hasPRItems) {
       return prItems.map((pi) => {
         const r = rows[pi.id]
@@ -194,7 +242,7 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
     return [
       {
         prItemId: 'single',
-        itemName: itemName,
+        itemName: itemName || "",
         qty: quantity || 1,
         unit: unit,
         bidUnitPrice: Number(r?.unitPrice) || 0,
@@ -260,8 +308,71 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
     })
   }
 
-  // Submission validation: Exclusivity document is required + all rows must have unit price > 0
-  const canSubmit = !!exclusivityFileName && Object.keys(rows).every((k) => Number(rows[k]?.unitPrice) > 0)
+  const displayRows = hasDCItems
+    ? dcItems.map((di) => ({
+      key: di.cprItemId || di.id,
+      name: di.itemName,
+      specs: di.description,
+      qty: di.quantity,
+      unit: di.unit,
+      unitABC: di.unitABC,
+      totalABC: di.totalABC,
+      office: di.office || '—',
+      prNumber: di.prNumber,
+    }))
+    : hasPRItems
+      ? prItems.map((pi) => ({
+        key: pi.id,
+        name: pi.itemName,
+        specs: undefined,
+        qty: pi.qty,
+        unit: pi.unit,
+        unitABC: pi.unitPrice,
+        totalABC: pi.unitPrice * pi.qty,
+        office: pi.prOffice,
+        prNumber: undefined,
+      }))
+      : [
+        {
+          key: 'single',
+          name: itemName,
+          specs: undefined,
+          qty: quantity || 1,
+          unit: unit,
+          unitABC: totalAmount && quantity ? totalAmount / quantity : totalAmount,
+          totalABC: totalAmount,
+          office: '—',
+          prNumber: undefined,
+        },
+      ]
+
+  const effectiveBudgetCeiling = totalAmount || displayRows.reduce((sum, r) => sum + (r.totalABC || 0), 0)
+
+  // Submission validation:
+  // 1. Exclusivity document is required
+  // 2. All items must have unit price > 0 (All-or-Nothing rule)
+  // 3. No line-item unit price may exceed its Unit ABC (Strict Line-Item Cap)
+  // 4. Total quotation may not exceed Total ABC budget
+  const allRowsFilled =
+    displayRows.length > 0 &&
+    displayRows.every((row) => {
+      const val = rows[row.key]?.unitPrice
+      return val !== '' && val !== undefined && Number(val) > 0
+    })
+
+  const hasLineItemExceededABC = displayRows.some((row) => {
+    const r = rows[row.key]
+    const bidPrice = Number(r?.unitPrice) || 0
+    return row.unitABC > 0 && bidPrice > row.unitABC
+  })
+
+  const hasTotalExceededABC = effectiveBudgetCeiling > 0 && totalQuotation > effectiveBudgetCeiling
+
+  const canSubmit =
+    !!exclusivityFileName &&
+    allRowsFilled &&
+    !hasLineItemExceededABC &&
+    !hasTotalExceededABC
 
   const buildPatch = (status: 'draft' | 'submitted'): Partial<DirectContracting> | Partial<DirectContractingItem> => {
     const quotationItems = buildQuotationItems()
@@ -325,10 +436,6 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
     setSubmitConfirmOpen(false)
     onOpenChange(false)
   }
-
-  const displayRows = hasPRItems
-    ? prItems.map((pi) => ({ key: pi.id, name: pi.itemName, qty: pi.qty, unit: pi.unit, office: pi.prOffice, category: pi.category }))
-    : [{ key: 'single', name: itemName, qty: quantity || 1, unit: unit, office: '—', category: '—' }]
 
   return (
     <>
@@ -419,10 +526,10 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
             </p>
             <div
               className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${exclusivityFileName
-                  ? 'border-emerald-400 bg-emerald-50/60'
-                  : isDragging
-                    ? 'border-primary bg-primary/10 scale-[1.01] shadow-md'
-                    : 'border-red-300 bg-red-50/40 hover:border-red-400 hover:bg-red-50'
+                ? 'border-emerald-400 bg-emerald-50/60'
+                : isDragging
+                  ? 'border-primary bg-primary/10 scale-[1.01] shadow-md'
+                  : 'border-red-300 bg-red-50/40 hover:border-red-400 hover:bg-red-50'
                 } ${isSubmitted ? 'cursor-default' : 'cursor-pointer'}`}
               onClick={() => !isSubmitted && exclusivityRef.current?.click()}
               onDragOver={(e) => !isSubmitted && handleDragOver(e)}
@@ -473,77 +580,121 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
               <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-50">
-                    <TableHead>Item Name</TableHead>
-                    <TableHead>Qty</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Model/Brand/Color</TableHead>
-                    <TableHead>Unit Bid (₱)</TableHead>
-                    <TableHead>Total Bid (₱)</TableHead>
+                    <TableHead className="min-w-[180px]">Item &amp; Specifications</TableHead>
+                    <TableHead>Office / PR</TableHead>
+                    <TableHead className="text-center">Qty / Unit</TableHead>
+                    <TableHead className="text-right">Unit ABC (₱)</TableHead>
+                    <TableHead className="text-right min-w-[130px]">Unit Bid (₱)</TableHead>
+                    <TableHead className="text-right">Total Bid (₱)</TableHead>
+                    <TableHead>Brand &amp; Specs</TableHead>
                     <TableHead>Brochure</TableHead>
-                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayRows.map(({ key, name, qty, unit }) => {
+                  {displayRows.map(({ key, name, specs, qty, unit, unitABC, office, prNumber }) => {
                     const r = rows[key] ?? { unitPrice: '', model: '', brand: '', color: '' }
                     const total = rowTotal(key)
+                    const isExceeded = unitABC > 0 && Number(r.unitPrice) > unitABC
                     return (
-                      <TableRow key={key}>
-                        <TableCell className="font-medium max-w-[180px]">
-                          <span title={name} className="line-clamp-2">
+                      <TableRow key={key} className={cn(isExceeded && "bg-rose-50/50")}>
+                        <TableCell className="font-medium max-w-[200px]">
+                          <span title={name} className="font-semibold line-clamp-2 text-foreground">
                             {name}
                           </span>
-                        </TableCell>
-                        <TableCell>{qty}</TableCell>
-                        <TableCell>{unit}</TableCell>
-                        <TableCell>
-                          {r.model && r.brand ? (
-                            <div className="text-xs space-y-0.5">
-                              <div><strong>Model:</strong> {r.model}</div>
-                              <div><strong>Brand:</strong> {r.brand}</div>
-                              {r.color && <div><strong>Color:</strong> {r.color}</div>}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">Not set</span>
+                          {specs && (
+                            <span title={specs} className="text-[11px] text-muted-foreground line-clamp-1 block mt-0.5">
+                              {specs}
+                            </span>
                           )}
                         </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={r.unitPrice}
-                            onChange={(e) =>
-                              updateRow(key, { unitPrice: e.target.value === '' ? '' : Number(e.target.value) })
-                            }
-                            placeholder="0.00"
-                            className="w-32"
-                            disabled={isSubmitted}
-                          />
+                        <TableCell className="text-xs">
+                          <div className="font-medium text-foreground">{office}</div>
+                          {prNumber && (
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              PR: {prNumber}
+                            </span>
+                          )}
                         </TableCell>
-                        <TableCell>
-                          <span className="font-medium text-emerald-700">
+                        <TableCell className="text-center text-xs whitespace-nowrap">
+                          <span className="font-semibold">{qty}</span> {unit}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                          ₱{unitABC.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex flex-col items-end">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={r.unitPrice}
+                              onChange={(e) =>
+                                updateRow(key, { unitPrice: e.target.value === '' ? '' : Number(e.target.value) })
+                              }
+                              placeholder="0.00"
+                              className={cn(
+                                "w-28 text-right font-mono text-xs",
+                                isExceeded && "border-rose-500 text-rose-700 bg-rose-50/60 focus-visible:ring-rose-500"
+                              )}
+                              disabled={isSubmitted}
+                            />
+                            {isExceeded && (
+                              <span className="text-[10px] text-rose-600 font-medium block mt-1 leading-tight text-right">
+                                Exceeds max ₱{unitABC.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className={cn(
+                            "font-semibold text-xs font-mono",
+                            isExceeded ? "text-rose-600" : "text-emerald-700"
+                          )}>
                             ₱{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </TableCell>
                         <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            {r.model && r.brand ? (
+                              <div className="text-[11px] space-y-0.5 max-w-[120px]">
+                                <div className="truncate"><strong>Model:</strong> {r.model}</div>
+                                <div className="truncate"><strong>Brand:</strong> {r.brand}</div>
+                                {r.color && <div className="truncate"><strong>Color:</strong> {r.color}</div>}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs italic">Not set</span>
+                            )}
+                            {!isSubmitted && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSpecOpenFor(key)}
+                                className="h-7 w-7 p-0 ml-1 text-muted-foreground hover:text-foreground shrink-0"
+                                title="Edit Model, Brand, Color"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           {r.brochureFileName ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               <a
                                 href={r.brochureUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-sm text-primary hover:underline truncate max-w-[100px]"
+                                className="flex items-center gap-1 text-xs text-primary hover:underline truncate max-w-[90px]"
                               >
-                                <Paperclip className="h-4 w-4" />
-                                <span className="truncate max-w-[80px]" title={r.brochureFileName}>{r.brochureFileName}</span>
+                                <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate" title={r.brochureFileName}>{r.brochureFileName}</span>
                               </a>
                               {!isSubmitted && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleRemoveBrochure(key)}
-                                  className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                  className="h-6 w-6 p-0 text-destructive hover:text-destructive shrink-0"
                                 >
                                   <X className="h-3 w-3" />
                                 </Button>
@@ -569,28 +720,15 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
                                     variant="outline"
                                     size="sm"
                                     onClick={() => fileInputRefs.current[key]?.click()}
-                                    className="gap-2"
+                                    className="gap-1.5 h-7 px-2 text-xs"
                                   >
                                     <Upload className="h-3 w-3" />
                                     Upload
                                   </Button>
                                 </>
                               )}
-                              {isSubmitted && <span className="text-muted-foreground text-sm">—</span>}
+                              {isSubmitted && <span className="text-muted-foreground text-xs">—</span>}
                             </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {!isSubmitted && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSpecOpenFor(key)}
-                              className="gap-2 whitespace-nowrap"
-                            >
-                              <Pencil className="h-3 w-3" />
-                              Specs
-                            </Button>
                           )}
                         </TableCell>
                       </TableRow>
@@ -600,10 +738,54 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
               </Table>
             </div>
 
-            <div className="mt-4 flex justify-between items-center p-4 bg-slate-50 rounded-lg border">
-              <div className="text-base font-semibold">Total Quotation Amount:</div>
-              <div className="text-2xl font-bold text-primary">
-                ₱{totalQuotation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {/* Live ABC Ceiling Error Alerts */}
+            {hasLineItemExceededABC && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-3 flex items-start gap-2.5 text-xs">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="font-semibold">Unit Bid Ceiling Exceeded:</strong> Under RA 9184 and RA 12009 Rule XVI, no unit bid may exceed the Approved Budget for Contract (ABC) for any line item. Please adjust the highlighted item(s) before submitting.
+                </div>
+              </div>
+            )}
+
+            {hasTotalExceededABC && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-3 flex items-start gap-2.5 text-xs">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="font-semibold">Total ABC Ceiling Exceeded:</strong> Total proposal amount (₱{totalQuotation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) exceeds the total approved ABC (₱{effectiveBudgetCeiling.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4 flex flex-col sm:flex-row justify-between sm:items-center gap-2 p-4 bg-slate-50 rounded-lg border">
+              <div>
+                <div className="text-sm font-semibold">Total Quotation Amount:</div>
+                <div className="text-xs text-muted-foreground">
+                  Budget Ceiling (ABC): ₱{effectiveBudgetCeiling.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <div className={cn(
+                  "text-2xl font-bold font-mono",
+                  hasTotalExceededABC ? "text-rose-600" : "text-primary"
+                )}>
+                  ₱{totalQuotation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                {effectiveBudgetCeiling > 0 && totalQuotation > 0 && (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-xs",
+                      hasTotalExceededABC
+                        ? "text-rose-600 border-rose-300 bg-rose-50"
+                        : "text-emerald-700 border-emerald-300 bg-emerald-50"
+                    )}
+                  >
+                    {hasTotalExceededABC
+                      ? `+₱${(totalQuotation - effectiveBudgetCeiling).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Over ABC`
+                      : `₱${(effectiveBudgetCeiling - totalQuotation).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Savings`}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
@@ -644,7 +826,11 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
           }}
           item={{
             ...item,
-            itemName: hasPRItems ? prItems.find(pi => pi.id === specOpenFor)?.itemName : itemName,
+            itemName: hasDCItems
+              ? dcItems.find((di) => (di.cprItemId || di.id) === specOpenFor)?.itemName
+              : hasPRItems
+                ? prItems.find((pi) => pi.id === specOpenFor)?.itemName
+                : itemName,
             bidModel: rows[specOpenFor]?.model,
             bidBrand: rows[specOpenFor]?.brand,
             bidColor: rows[specOpenFor]?.color,

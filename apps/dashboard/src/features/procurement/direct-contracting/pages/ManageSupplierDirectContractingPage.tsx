@@ -46,7 +46,8 @@ import {
   ShoppingBag,
   Upload,
 } from 'lucide-react'
-import { useDirectContractingStore, type DirectContracting } from '@/features/procurement/direct-contracting/store/directContractingStore'
+import { useDirectContractingStore } from '@/features/procurement/direct-contracting/store/directContractingStore'
+import type { DirectContracting } from '../types'
 import { useReviewProposal, useApproveDirectContracting } from '../handlers'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { useToast } from '@/components/ui/use-toast'

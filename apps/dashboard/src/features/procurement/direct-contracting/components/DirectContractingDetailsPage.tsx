@@ -11,7 +11,8 @@ import {
   Calendar, Building2, Tag, Receipt, Download, FileText, UserCheck, FileCheck, CheckCircle
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
-import { useDirectContractingStore, type DirectContracting } from '../store/directContractingStore'
+import { useDirectContractingStore } from '../store/directContractingStore'
+import type { DirectContracting } from '../types'
 import { useConsolidatedPRStore } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
 import { formatCurrencyPHP, formatDisplayDate } from '@/utils/formatters';
 import { cn } from '@/lib/utils'

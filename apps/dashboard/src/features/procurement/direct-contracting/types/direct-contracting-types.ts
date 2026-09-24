@@ -1,3 +1,5 @@
+import type { QuotationItemBid } from '@/features/procurement/supplier-portal/types/daItemTypes'
+
 /**
  * Direct Contracting Types
  * Matches the backend DirectContractingResponse schema with frontend-friendly conventions.
@@ -32,6 +34,39 @@ export const DIRECT_CONTRACTING_STATUS_LABELS: Record<DirectContractingStatusEnu
   [DirectContractingStatusEnum.RETURNED]: 'Returned',
 }
 
+export type ProofFile = {
+  id: string
+  name: string
+  url?: string
+  fileType?: 'image' | 'pdf' | 'document'
+  uploadedAt?: string
+}
+
+export interface BackendDirectContractingItem {
+  id: string
+  dcNumber: string
+  name: string
+  bacProjectId: string
+  bacProjectTitle?: string
+  resolutionNumber?: string
+  resolutionType?: string
+  exclusiveSupplierId: string
+  exclusiveSupplierName?: string
+  submissionDeadline?: string
+  totalABC: number
+  status: string
+  createdAt?: string
+  reviewRemarks?: string
+  proposalAmount?: number
+  bidTotalAmount?: number
+  bidUnitPrice?: number
+  bidModel?: string
+  bidBrand?: string
+  bidColor?: string
+  bidBrochureFileName?: string
+  bidBrochureUrl?: string
+}
+
 export type DirectContracting = {
   id: string
   dcNumber: string
@@ -39,28 +74,83 @@ export type DirectContracting = {
   dcName?: string // Frontend convenience alias for name
   bacProjectId: string
   bacProjectTitle: string
-  bacProjectABC: number
-  bacProjectStatus: string
+  bacProjectABC?: number
+  bacProjectStatus?: string
   exclusiveSupplierId: string
   exclusiveSupplierName: string
   supplierName?: string // Frontend convenience alias for exclusiveSupplierName
-  exclusiveSupplierEmail: string
-  exclusiveSupplierContact: string
-  exclusiveSupplierPhilGEPS: string
-  submissionDeadline: string
+  exclusiveSupplierEmail?: string
+  exclusiveSupplierContact?: string
+  exclusiveSupplierPhilGEPS?: string
+  submissionDeadline?: string
   deadline?: string // Frontend convenience alias for submissionDeadline
-  status: DirectContractingStatusEnum
+  status: DirectContractingStatusEnum | 'draft' | 'submitted' | 'for-review' | 'submitted-to-supplier' | 'approved' | 'rejected' | string
   totalABC: number
   reviewRemarks?: string
   createdByUserId?: string
   reviewedByUserId?: string
-  createdAt: string
-  createdBy: string
+  createdAt?: string
   approvedAttachment?: {
     fileId: string
   }
-  // directContractingProposal?: DirectContractingProposal
   proposal?: DirectContractingProposal
+  items?: DirectContractingItem[]
+
+  // Store & Supplier Portal / Legacy convenience fields
+  bacResolutionId?: string
+  bacResolutionNumber?: string
+  prNumber?: string
+  office?: string
+  category?: string
+  modeOfProcurement?: 'Direct Contracting' | string
+  supplierId?: string
+  proposalAmount?: number
+  remarks?: string
+  reason?: string
+  totalItems?: number
+  unit?: string
+  proposalAttachment?: string
+  approvedBy?: string
+  approvedAt?: string
+  approvalDocumentFileName?: string
+  approvalDocumentUrl?: string
+  removedFromDashboard?: boolean
+  exclusivityProofFileName?: string
+  exclusivityProofUrl?: string
+  soleDistCertFileName?: string
+  soleDistCertUrl?: string
+  proposalNotes?: string
+  quotationStatus?: 'draft' | 'submitted'
+  quotationSubmittedAt?: string
+  quotationItems?: QuotationItemBid[]
+  bidTotalAmount?: number
+  bidUnitPrice?: number
+  proposalUnitPrice?: number
+  bidModel?: string
+  bidBrand?: string
+  bidColor?: string
+  bidBrochureFileName?: string
+  bidBrochureUrl?: string
+  daRequirementsStatus?: 'draft' | 'submitted'
+  daRequirementsSubmittedAt?: string
+  createdBy?: string
+}
+
+export type DirectContractingItem = {
+  id: string
+  cprItemId?: string
+  sourceItemId: string
+  itemName: string
+  description?: string
+  unit: string
+  quantity: number
+  unitABC: number
+  totalABC: number
+  office: string
+  prNumber?: string
+  papCode?: string
+  category?: string
+  sourceType: string
 }
 
 

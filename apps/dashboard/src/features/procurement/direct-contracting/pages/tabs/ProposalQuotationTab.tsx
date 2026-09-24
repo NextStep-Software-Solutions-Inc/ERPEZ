@@ -182,7 +182,7 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                   </div>
                 </div>
 
-                {/* Proposal Items Table */}
+                {/* Proposal Items Comparative Table */}
                 <div className="rounded-md border overflow-hidden">
                   <Table>
                     <TableHeader className="bg-muted/40">
@@ -198,59 +198,86 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {item.proposal!.proposalItems.map((pItem) => (
-                        <TableRow key={pItem.id || pItem.cprItemId}>
-                          <TableCell className="font-medium text-sm">
-                            {pItem.cprItemName || 'Consolidated PR Item'}
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {pItem.brand || pItem.model || pItem.color ? (
-                              <div className="space-y-0.5">
-                                {pItem.brand && <span>Brand: {pItem.brand} </span>}
-                                {pItem.model && <span>• Model: {pItem.model} </span>}
-                                {pItem.color && <span>• Color: {pItem.color}</span>}
+                      {item.proposal!.proposalItems.map((pItem) => {
+                        const matchedReq = (item.items || []).find(
+                          (r) => r.cprItemId === pItem.cprItemId || r.id === pItem.cprItemId
+                        )
+                        return (
+                          <TableRow key={pItem.id || pItem.cprItemId}>
+                            <TableCell className="font-medium text-sm">
+                              <div className="font-semibold text-foreground">
+                                {matchedReq?.itemName || pItem.cprItemName || 'Consolidated PR Item'}
                               </div>
-                            ) : (
-                              <span>Standard / Proprietary Specification</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center text-xs font-mono font-semibold text-foreground">
-                            {pItem.quantity ?? 1}
-                          </TableCell>
-                          <TableCell className="text-right text-xs font-mono text-muted-foreground">
-                            {formatCurrencyPHP(pItem.unitABC || 0)}
-                          </TableCell>
-                          <TableCell className="text-right text-xs font-mono font-semibold text-muted-foreground">
-                            {formatCurrencyPHP(pItem.totalABC || ((pItem.unitABC || 0) * (pItem.quantity || 1)))}
-                          </TableCell>
-                          <TableCell className="text-right text-xs font-mono font-medium text-foreground">
-                            {formatCurrencyPHP(pItem.unitBid || 0)}
-                          </TableCell>
-                          <TableCell className="text-right text-xs font-mono font-bold text-foreground">
-                            {formatCurrencyPHP(pItem.totalBid || ((pItem.unitBid || 0) * (pItem.quantity || 1)))}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {pItem.brochureFileUrl ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-xs text-primary gap-1"
-                                asChild
-                              >
-                                <a
-                                  href={pItem.brochureFileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                              {matchedReq?.description && (
+                                <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                                  {matchedReq.description}
+                                </div>
+                              )}
+                              {(matchedReq?.office || matchedReq?.prNumber || matchedReq?.papCode) && (
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-muted-foreground">
+                                  {matchedReq.office && (
+                                    <span className="font-medium text-foreground/80">{matchedReq.office}</span>
+                                  )}
+                                  {matchedReq.prNumber && <span>• PR: {matchedReq.prNumber}</span>}
+                                  {matchedReq.papCode && <span>• PAP: {matchedReq.papCode}</span>}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {pItem.brand || pItem.model || pItem.color ? (
+                                <div className="space-y-0.5">
+                                  {pItem.brand && <span>Brand: {pItem.brand} </span>}
+                                  {pItem.model && <span>• Model: {pItem.model} </span>}
+                                  {pItem.color && <span>• Color: {pItem.color}</span>}
+                                </div>
+                              ) : (
+                                <span>Standard / Proprietary Specification</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center text-xs font-mono font-semibold text-foreground">
+                              {pItem.quantity ?? matchedReq?.quantity ?? 1} {matchedReq?.unit || ''}
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-mono text-muted-foreground">
+                              {formatCurrencyPHP(pItem.unitABC || matchedReq?.unitABC || 0)}
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-mono font-semibold text-muted-foreground">
+                              {formatCurrencyPHP(
+                                pItem.totalABC ||
+                                  matchedReq?.totalABC ||
+                                  (pItem.unitABC || 0) * (pItem.quantity || 1)
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-mono font-medium text-foreground">
+                              {formatCurrencyPHP(pItem.unitBid || 0)}
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-mono font-bold text-foreground">
+                              {formatCurrencyPHP(
+                                pItem.totalBid || (pItem.unitBid || 0) * (pItem.quantity || 1)
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {pItem.brochureFileUrl ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs text-primary gap-1"
+                                  asChild
                                 >
-                                  <ExternalLink className="h-3.5 w-3.5" /> View
-                                </a>
-                              </Button>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                  <a
+                                    href={pItem.brochureFileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <ExternalLink className="h-3.5 w-3.5" /> View
+                                  </a>
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -266,25 +293,99 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                 )}
               </div>
             ) : (
-              /* Pending Proposal Submission Empty State */
-              <div className="py-8 px-4 text-center space-y-3 bg-muted/10 rounded-lg border border-dashed">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                  <Clock className="h-6 w-6" />
+              /* Pending Proposal Submission: Show Requested Line Items Table */
+              <div className="space-y-4">
+                <div className="p-4 bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="h-9 w-9 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground">Awaiting Supplier Quotation & Submission</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        The exclusive supplier has been invited. They must submit their itemized unit bids, specifications, and exclusivity certificate for the line items below.
+                      </p>
+                    </div>
+                  </div>
+                  {item.submissionDeadline && (
+                    <Badge variant="outline" className="text-xs bg-background shrink-0 font-medium">
+                      Submission Deadline: {formatDateV2(item.submissionDeadline)}
+                    </Badge>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-semibold text-base text-foreground">
-                    Awaiting Supplier Quotation & Exclusivity Submission
-                  </h3>
-                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                    The exclusive supplier has been designated. Once their official quotation,
-                    itemized bid prices, and Exclusivity Certificate are received and logged,
-                    the comparative analysis will be displayed here.
-                  </p>
-                </div>
-                {item.submissionDeadline && (
-                  <Badge variant="outline" className="text-xs bg-background">
-                    Submission Deadline: {formatDateV2(item.submissionDeadline)}
-                  </Badge>
+
+                {item.items && item.items.length > 0 ? (
+                  <div className="rounded-md border overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-muted/40">
+                        <TableRow>
+                          <TableHead className="font-semibold text-xs">Item Description & Specifications</TableHead>
+                          <TableHead className="font-semibold text-xs">Office / Source</TableHead>
+                          <TableHead className="font-semibold text-xs text-center">Qty / Unit</TableHead>
+                          <TableHead className="font-semibold text-xs text-right">Unit ABC</TableHead>
+                          <TableHead className="font-semibold text-xs text-right">Total ABC</TableHead>
+                          <TableHead className="font-semibold text-xs text-center">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {item.items.map((reqItem, idx) => (
+                          <TableRow key={reqItem.id || reqItem.cprItemId || idx}>
+                            <TableCell className="max-w-[280px]">
+                              <div className="font-semibold text-sm text-foreground">{reqItem.itemName}</div>
+                              {reqItem.description && (
+                                <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                                  {reqItem.description}
+                                </div>
+                              )}
+                              {reqItem.category && (
+                                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 mt-1 font-normal">
+                                  {reqItem.category}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              <div className="font-medium text-foreground">{reqItem.office || 'Procuring Entity'}</div>
+                              {reqItem.prNumber && <div className="text-[11px] text-muted-foreground">PR: {reqItem.prNumber}</div>}
+                              {reqItem.papCode && <div className="text-[11px] text-muted-foreground">PAP: {reqItem.papCode}</div>}
+                            </TableCell>
+                            <TableCell className="text-center text-xs font-mono font-semibold text-foreground">
+                              {reqItem.quantity} {reqItem.unit || 'unit'}
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-mono text-muted-foreground">
+                              {formatCurrencyPHP(reqItem.unitABC || 0)}
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-mono font-semibold text-foreground">
+                              {formatCurrencyPHP(reqItem.totalABC || 0)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-300 dark:text-amber-400"
+                              >
+                                Awaiting Bid
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    <div className="bg-muted/20 px-4 py-2.5 border-t flex flex-wrap items-center justify-between text-xs text-muted-foreground">
+                      <span>Total Line Items: <strong className="text-foreground">{item.items.length}</strong></span>
+                      <span>
+                        Total Approved Budget (ABC):{' '}
+                        <strong className="text-foreground font-mono font-semibold text-sm">
+                          {formatCurrencyPHP(item.totalABC || item.bacProjectABC || 0)}
+                        </strong>
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-8 px-4 text-center space-y-2 border border-dashed rounded-lg bg-muted/10">
+                    <p className="text-sm font-medium text-foreground">No line items loaded from BAC Project</p>
+                    <p className="text-xs text-muted-foreground">
+                      Ensure the linked BAC project has items configured in its Consolidated PR or APP links.
+                    </p>
+                  </div>
                 )}
               </div>
             )}
