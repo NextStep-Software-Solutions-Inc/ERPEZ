@@ -77,7 +77,14 @@ public class SubmitDirectContractingProposalCommandHandler(IUnitOfWork unitOfWor
             int quantity = allocations.Sum(a => a.Quantity);
             if (quantity <= 0)
             {
-                return ApiResponse<Guid>.Fail($"CPR item '{cprItem.Name}' has no quantity allocations. Please ensure PPMP allocations are complete before submitting.");
+                if (cprItem.PlannedQuantity > 0)
+                {
+                    quantity = cprItem.PlannedQuantity;
+                }
+                else
+                {
+                    return ApiResponse<Guid>.Fail($"CPR item '{cprItem.Name}' has no quantity allocations. Please ensure PPMP allocations are complete before submitting.");
+                }
             }
 
             decimal totalBid = itemRequest.UnitBid * quantity;

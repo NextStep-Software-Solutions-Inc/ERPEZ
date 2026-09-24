@@ -55,6 +55,7 @@ public record DirectContractingProposalItemResponse
     public Guid ProposalId { get; init; }
     public Guid CPRItemId { get; init; }
     public string CPRItemName { get; init; } = string.Empty;
+    public int Quantity { get; init; }
     public decimal UnitABC { get; init; }
     public decimal TotalABC { get; init; }
     public decimal UnitBid { get; init; }

@@ -7,6 +7,7 @@ using ERPEZ.Application.Features.Procurement.DirectContractings.Commands.UpdateD
 using ERPEZ.Application.Features.Procurement.DirectContractings.Dtos;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingById;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingProposal;
+using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingSummary;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractings;
 using ERPEZ.Application.Features.Procurement.Projects.Dtos;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjects;
@@ -26,6 +27,15 @@ namespace ERPEZ.Api.Controllers;
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class DirectContractingController(ISender mediator) : ControllerBase
 {
+    [HttpGet("summary")]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    [ProducesResponseType(typeof(ApiResponse<DirectContractingSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSummary()
+    {
+        var result = await mediator.Send(new GetDirectContractingSummaryQuery());
+        return Ok(result);
+    }
+
     [HttpGet("eligible-bac-projects")]
     [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(PaginatedApiResponse<ProcurementProjectResponse>), StatusCodes.Status200OK)]
