@@ -77,8 +77,17 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
                     ProposalId = item.ProposalId,
                     CPRItemId = item.CPRItemId,
                     CPRItemName = item.CPRItem != null ? item.CPRItem.Name : string.Empty,
+                    Quantity = item.CPRItem != null
+                        ? (item.CPRItem.PlannedQuantity > 0
+                            ? item.CPRItem.PlannedQuantity
+                            : (item.CPRItem.PPMPItemAllocations.Any() ? item.CPRItem.PPMPItemAllocations.Sum(a => a.Quantity) : 1))
+                        : 1,
                     UnitABC = item.CPRItem != null ? item.CPRItem.UnitPrice : 0,
-                    TotalABC = item.CPRItem != null ? item.CPRItem.UnitPrice : 0, // unit cost * qty can be detailed later
+                    TotalABC = item.CPRItem != null
+                        ? item.CPRItem.UnitPrice * (item.CPRItem.PlannedQuantity > 0
+                            ? item.CPRItem.PlannedQuantity
+                            : (item.CPRItem.PPMPItemAllocations.Any() ? item.CPRItem.PPMPItemAllocations.Sum(a => a.Quantity) : 1))
+                        : 0,
                     UnitBid = item.UnitBid,
                     TotalBid = item.TotalBid,
                     Brand = item.Brand,

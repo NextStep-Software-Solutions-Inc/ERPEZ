@@ -21,6 +21,7 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
             .Include(dc => dc.Proposal)
                 .ThenInclude(p => p!.ProposalItems)
                     .ThenInclude(pi => pi.CPRItem)
+                        .ThenInclude(cpr => cpr.PPMPItemAllocations)
             .Where(dc => dc.Id == request.Id && !dc.IsDeleted)
             .AsSplitQuery()
             .FirstOrDefaultAsync(cancellationToken);
@@ -72,8 +73,21 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
                     ProposalId = item.ProposalId,
                     CPRItemId = item.CPRItemId,
                     CPRItemName = item.CPRItem != null ? item.CPRItem.Name : string.Empty,
+                    Quantity = item.CPRItem != null
+                        ? (item.CPRItem.PlannedQuantity > 0
+                            ? item.CPRItem.PlannedQuantity
+                            : (item.CPRItem.PPMPItemAllocations != null && item.CPRItem.PPMPItemAllocations.Count > 0
+                                ? item.CPRItem.PPMPItemAllocations.Sum(a => a.Quantity)
+                                : 1))
+                        : 1,
                     UnitABC = item.CPRItem != null ? item.CPRItem.UnitPrice : 0,
-                    TotalABC = item.CPRItem != null ? item.CPRItem.UnitPrice : 0,
+                    TotalABC = item.CPRItem != null
+                        ? item.CPRItem.UnitPrice * (item.CPRItem.PlannedQuantity > 0
+                            ? item.CPRItem.PlannedQuantity
+                            : (item.CPRItem.PPMPItemAllocations != null && item.CPRItem.PPMPItemAllocations.Count > 0
+                                ? item.CPRItem.PPMPItemAllocations.Sum(a => a.Quantity)
+                                : 1))
+                        : 0,
                     UnitBid = item.UnitBid,
                     TotalBid = item.TotalBid,
                     Brand = item.Brand,
