@@ -34,6 +34,21 @@ public class RecordBidOpeningCommandHandler(
             throw new FluentValidation.ValidationException("The bidding submission does not belong to this procurement project.");
         }
 
+        // ── 0. Enforce Audit Immutability if Winner is Declared ───────────────
+        var awardRecs = await unitOfWork.BiddingAwardRecommendationRepository
+            .FindAllAsync(a => a.ProcurementProjectId == command.ProjectId && !a.IsDeleted, cancellationToken);
+        if (awardRecs.Any())
+        {
+            throw new FluentValidation.ValidationException("Cannot modify bid opening records: An award recommendation has already been established for this project.");
+        }
+
+        var evaluation = await unitOfWork.BiddingEvaluationRepository
+            .GetByProjectIdWithDetailsAsync(command.ProjectId, cancellationToken);
+        if (evaluation != null && evaluation.EvaluatedBids.Any(b => b.Status == "Passed_PostQual" || b.PostQualification?.Status == "Passed" || b.PostQualification?.Passed == true))
+        {
+            throw new FluentValidation.ValidationException("Cannot modify bid opening records: A candidate has already successfully passed post-qualification verification.");
+        }
+
         // Determine Opening Schedule ID
         var openingSchedule = project.BiddingActivitySchedules?
             .FirstOrDefault(s => s.ProcurementActivityType?.SystemRole == ProcurementActivitySystemRole.SubmissionOpeningOfBids)

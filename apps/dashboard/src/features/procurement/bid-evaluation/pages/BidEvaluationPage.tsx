@@ -20,6 +20,7 @@ import {
   BIDDER_SLA_DAYS,
   RA_12009_BAC_DAYS,
 } from '../data/mockProjects'
+import { useProjectBidEvaluation } from '../hooks/useBidEvaluationApi'
 import { useBidEvaluationStore } from '../store/bidEvaluationStore'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -92,6 +93,11 @@ export function BidEvaluationPage() {
   }, [search.projectId, selectedProjectId, combinedProjects])
 
   const activeProject = combinedProjects.find((p) => p.id === selectedId) ?? combinedProjects[0]
+
+  const { data: projectEvaluation } = useProjectBidEvaluation(activeProject?.id)
+  const effectiveAwardCriterion = projectEvaluation?.awardCriterion || activeProject?.awardCriterion
+  const effectiveTechnicalWeight = projectEvaluation?.technicalWeight ?? activeProject?.technicalWeight
+  const effectiveFinancialWeight = projectEvaluation?.financialWeight ?? activeProject?.financialWeight
 
   const handleSelectProject = (newId: string) => {
     selectProject(newId)
@@ -249,20 +255,20 @@ export function BidEvaluationPage() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-extrabold text-default-900">
-              {activeProject.awardCriterion === 'LCRB'
+              {effectiveAwardCriterion === 'LCRB'
                 ? 'LCRB (Lowest Price)'
-                : activeProject.awardCriterion === 'MEARB'
+                : effectiveAwardCriterion === 'MEARB'
                 ? 'MEARB (Weighted Total)'
-                : activeProject.awardCriterion
-                ? activeProject.awardCriterion
+                : effectiveAwardCriterion
+                ? effectiveAwardCriterion
                 : 'Not Established'}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              {activeProject.awardCriterion === 'MEARB' 
-                ? (activeProject.technicalWeight != null && activeProject.financialWeight != null
-                    ? `Split: ${activeProject.technicalWeight}% Tech / ${activeProject.financialWeight}% Fin`
+              {effectiveAwardCriterion === 'MEARB' 
+                ? (effectiveTechnicalWeight != null && effectiveFinancialWeight != null
+                    ? `Split: ${effectiveTechnicalWeight}% Tech / ${effectiveFinancialWeight}% Fin`
                     : 'Weights Not Configured')
-                : activeProject.awardCriterion === 'LCRB'
+                : effectiveAwardCriterion === 'LCRB'
                 ? 'Criteria: Lowest Financial Bid'
                 : 'Criterion established during evaluation'}
             </p>
@@ -362,9 +368,9 @@ export function BidEvaluationPage() {
             projectId={activeProject.id}
             projectName={activeProject.projectName}
             abc={activeProject.abc}
-            awardCriterion={activeProject.awardCriterion}
-            technicalWeight={activeProject.technicalWeight}
-            financialWeight={activeProject.financialWeight}
+            awardCriterion={effectiveAwardCriterion}
+            technicalWeight={effectiveTechnicalWeight}
+            financialWeight={effectiveFinancialWeight}
           />
         </TabsContent>
 
