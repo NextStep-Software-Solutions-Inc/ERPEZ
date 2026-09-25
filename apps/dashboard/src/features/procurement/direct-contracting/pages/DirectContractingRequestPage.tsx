@@ -273,7 +273,7 @@ export function DirectContractingRequestPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Total Requests
               </p>
-              <p className="text-2xl font-bold font-mono text-foreground">
+              <p className="text-2xl font-bold text-foreground">
                 {isSummaryLoading ? '...' : (summary?.total ?? 0)}
               </p>
               <p className="text-[11px] text-muted-foreground">
@@ -301,7 +301,7 @@ export function DirectContractingRequestPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Drafts
               </p>
-              <p className="text-2xl font-bold font-mono text-slate-700 dark:text-slate-300">
+              <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">
                 {isSummaryLoading ? '...' : (summary?.draft ?? 0)}
               </p>
               <p className="text-[11px] text-muted-foreground">
@@ -329,7 +329,7 @@ export function DirectContractingRequestPage() {
               <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                 In Review / Active
               </p>
-              <p className="text-2xl font-bold font-mono text-amber-800 dark:text-amber-300">
+              <p className="text-2xl font-bold text-amber-800 dark:text-amber-300">
                 {isSummaryLoading
                   ? '...'
                   : (summary?.forReview ?? 0) +
@@ -361,7 +361,7 @@ export function DirectContractingRequestPage() {
               <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
                 Approved
               </p>
-              <p className="text-2xl font-bold font-mono text-emerald-800 dark:text-emerald-300">
+              <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">
                 {isSummaryLoading ? '...' : (summary?.approved ?? 0)}
               </p>
               <p className="text-[11px] text-muted-foreground">

@@ -215,7 +215,7 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
           <div className="flex flex-wrap items-center gap-2">
             <Badge
               variant="outline"
-              className="font-mono text-xs px-2.5 py-0.5 font-bold text-primary bg-primary/10 border-primary/20"
+              className="text-xs px-2.5 py-0.5 font-bold text-primary bg-primary/10 border-primary/20"
             >
               {item.dcNumber}
             </Badge>

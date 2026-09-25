@@ -99,7 +99,7 @@ export function BacProjectTab({
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Resolution Reference
             </span>
-            <p className="font-mono font-bold text-foreground">
+            <p className="font-bold text-foreground">
               {bacProject.resolutionNumber || fallbackTitle || 'BAC Project Ref'}
             </p>
           </div>
@@ -115,7 +115,7 @@ export function BacProjectTab({
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Approved Budget (ABC)
             </span>
-            <p className="font-mono font-bold text-primary">
+            <p className="font-bold text-primary">
               {formatCurrencyPHP(bacProject.abc || fallbackAbc)}
             </p>
           </div>
@@ -256,7 +256,7 @@ export function BacProjectTab({
                 <TableBody>
                   {bacProject.appItemLinks.map((appItem, idx) => (
                     <TableRow key={appItem.id || idx}>
-                      <TableCell className="font-mono text-xs font-medium">
+                      <TableCell className="text-xs font-medium">
                         {appItem.itemNumber || idx + 1}
                       </TableCell>
                       <TableCell className="font-medium text-sm">
@@ -265,10 +265,10 @@ export function BacProjectTab({
                       <TableCell className="text-xs text-muted-foreground">
                         {appItem.officeName || '—'}
                       </TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">
+                      <TableCell className="text-xs text-muted-foreground">
                         {appItem.appNumber || appItem.appName || '—'}
                       </TableCell>
-                      <TableCell className="text-right font-mono font-semibold text-foreground">
+                      <TableCell className="text-right font-semibold text-foreground">
                         {formatCurrencyPHP(appItem.effectiveABC || 0)}
                       </TableCell>
                     </TableRow>

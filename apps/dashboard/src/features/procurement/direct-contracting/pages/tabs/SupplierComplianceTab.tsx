@@ -136,7 +136,7 @@ export function SupplierComplianceTab({
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   PhilGEPS Registration
                 </span>
-                <p className="font-mono font-semibold text-amber-700 dark:text-amber-400">
+                <p className="font-semibold text-amber-700 dark:text-amber-400">
                   {supplierPhilGeps}
                 </p>
               </div>
@@ -144,7 +144,7 @@ export function SupplierComplianceTab({
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Business Permit No.
                 </span>
-                <p className="font-mono font-medium text-foreground">
+                <p className="font-medium text-foreground">
                   {supplier?.businessPermitNo || '—'}
                 </p>
               </div>
@@ -155,7 +155,7 @@ export function SupplierComplianceTab({
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   TIN (Tax ID Number)
                 </span>
-                <p className="font-mono font-medium text-foreground">
+                <p className="font-medium text-foreground">
                   {supplier?.tinNumber || '—'}
                 </p>
               </div>
