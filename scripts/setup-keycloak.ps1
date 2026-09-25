@@ -110,13 +110,15 @@ $clientPayload = @{
     publicClient              = $true
     standardFlowEnabled       = $true
     directAccessGrantsEnabled = $true
-    rootUrl                   = "http://localhost:5173"
-    baseUrl                   = "http://localhost:5173"
+    rootUrl                   = "http://localhost:3000"
+    baseUrl                   = "http://localhost:3000"
     redirectUris              = @(
+        "http://localhost:3000/*",
         "http://localhost:5173/*",
         "http://localhost:5174/*"
     )
     webOrigins                = @(
+        "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:5174",
         "+"

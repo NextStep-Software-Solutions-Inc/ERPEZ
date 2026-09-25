@@ -66,8 +66,14 @@ export function KeycloakProvider({
   onInitialized,
   onAuthError,
 }: KeycloakProviderProps) {
-  const [isInitialized, setIsInitialized] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(true)
+  const isLiveKeycloak = Boolean(
+    import.meta.env.VITE_KEYCLOAK_URL &&
+    !import.meta.env.VITE_KEYCLOAK_URL.includes('placeholder') &&
+    import.meta.env.VITE_ENABLE_DEV_PERSONAS !== 'true'
+  )
+
+  const [isInitialized, setIsInitialized] = useState(!isLiveKeycloak)
+  const [isAuthenticated, setIsAuthenticated] = useState(!isLiveKeycloak)
   const [token, setToken] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -86,11 +92,11 @@ export function KeycloakProvider({
     return null
   })
   const [refreshToken, setRefreshToken] = useState<string | null>(null)
-  const [userName, setUserName] = useState<string | null>('dev_planner')
-  const [email, setEmail] = useState<string | null>('dev_planner@erpez.dev')
-  const [firstName, setFirstName] = useState<string | null>('Planning Officer')
+  const [userName, setUserName] = useState<string | null>(isLiveKeycloak ? null : 'dev_planner')
+  const [email, setEmail] = useState<string | null>(isLiveKeycloak ? null : 'dev_planner@erpez.dev')
+  const [firstName, setFirstName] = useState<string | null>(isLiveKeycloak ? null : 'Planning Officer')
   const [lastName, setLastName] = useState<string | null>('')
-  const [roles, setRoles] = useState<string[]>(['Planning Officer'])
+  const [roles, setRoles] = useState<string[]>(isLiveKeycloak ? [] : ['Planning Officer'])
   const [tenantId, setTenantId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -179,7 +185,76 @@ export function KeycloakProvider({
     if (typeof window === 'undefined' || initializedRef.current) return
     initializedRef.current = true
 
-    const init = async () => {
+    if (isLiveKeycloak) {
+      // Live Keycloak OIDC Authentication flow
+      const initLive = async () => {
+        try {
+          const authenticated = await keycloak.init({
+            onLoad: 'login-required',
+            checkLoginIframe: false,
+            pkceMethod: 'S256',
+            ...initOptions,
+          })
+
+          setIsAuthenticated(authenticated)
+          if (authenticated && keycloak.token) {
+            setToken(keycloak.token)
+            setRefreshToken(keycloak.refreshToken || null)
+            try {
+              localStorage.setItem('erpez_auth_token', keycloak.token)
+            } catch {}
+
+            const parsed = keycloak.tokenParsed as any
+            const sub = parsed?.sub || ''
+            const userEmail = parsed?.email || ''
+            const givenName = parsed?.given_name || parsed?.name || 'User'
+            const familyName = parsed?.family_name || ''
+            const realmRoles = parsed?.realm_access?.roles || []
+
+            setUserName(parsed?.preferred_username || userEmail || sub)
+            setEmail(userEmail)
+            setFirstName(givenName)
+            setLastName(familyName)
+            setRoles(realmRoles.length > 0 ? realmRoles : ['Tenant Administrator'])
+            setIsSuperAdmin(realmRoles.includes('platform_administrator') || realmRoles.includes('SuperAdmin'))
+          }
+
+          keycloak.onTokenExpired = () => {
+            keycloak.updateToken(30).then((refreshed) => {
+              if (refreshed && keycloak.token) {
+                setToken(keycloak.token)
+                setRefreshToken(keycloak.refreshToken || null)
+                localStorage.setItem('erpez_auth_token', keycloak.token)
+              }
+            }).catch((err) => {
+              console.error('Failed to refresh Keycloak token:', err)
+              onAuthError?.(err)
+            })
+          }
+
+          keycloak.onAuthLogout = () => {
+            setIsAuthenticated(false)
+            setToken(null)
+            setRefreshToken(null)
+            localStorage.removeItem('erpez_auth_token')
+          }
+
+          setIsInitialized(true)
+          onInitialized?.(authenticated)
+        } catch (err) {
+          console.error('Keycloak initialization error:', err)
+          setIsAuthenticated(false)
+          setIsInitialized(true)
+          onAuthError?.(err)
+        }
+      }
+
+      initLive()
+      return
+    }
+
+    // Dev persona fallback flow
+    const initDev = async () => {
       let savedUser = 'dev_planner'
       try {
         savedUser = localStorage.getItem('erpez_dev_user') || 'dev_planner'
@@ -195,27 +270,66 @@ export function KeycloakProvider({
       if (onInitialized) onInitialized(true)
     }
 
-    init()
-  }, [loginAsDevUser, onInitialized])
+    initDev()
+  }, [isLiveKeycloak, loginAsDevUser, onInitialized, onAuthError, initOptions])
 
   const switchDevUser = async (username: string) => {
-    await loginAsDevUser(username)
+    if (!isLiveKeycloak) {
+      await loginAsDevUser(username)
+    }
   }
 
   const login = () => {
-    keycloak?.login?.()
+    if (isLiveKeycloak && keycloak) {
+      keycloak.login?.()
+    }
   }
 
   const logout = () => {
-    keycloak?.logout?.()
+    if (isLiveKeycloak && keycloak) {
+      keycloak.logout?.()
+    } else {
+      localStorage.removeItem('erpez_auth_token')
+      setIsAuthenticated(false)
+    }
   }
 
   const register = () => {
-    keycloak?.register?.()
+    if (isLiveKeycloak && keycloak) {
+      keycloak.register?.()
+    }
   }
 
-  const updateToken = async (_minValidity = 5): Promise<boolean> => {
+  const updateToken = async (minValidity = 5): Promise<boolean> => {
+    if (isLiveKeycloak && keycloak) {
+      try {
+        const refreshed = await keycloak.updateToken(minValidity)
+        if (refreshed && keycloak.token) {
+          setToken(keycloak.token)
+          setRefreshToken(keycloak.refreshToken || null)
+          localStorage.setItem('erpez_auth_token', keycloak.token)
+        }
+        return refreshed
+      } catch (err) {
+        console.error('Failed to update Keycloak token', err)
+        return false
+      }
+    }
     return true
+  }
+
+  if (!isInitialized) {
+    if (LoadingComponent) {
+      return <LoadingComponent />
+    }
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+          <p className="mt-4 text-lg">Initializing authentication...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -43,16 +43,28 @@ public static class AuthenticationExtensions
                 options.Authority = jwtSettings!.Authority;
                 options.Audience = jwtSettings.Audience;
                 options.RequireHttpsMetadata = false;
-            }
 
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtSettings.Authority,
+                    ValidateAudience = !string.IsNullOrWhiteSpace(jwtSettings.Audience),
+                    ValidAudience = jwtSettings.Audience,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true
+                };
+            }
+            else
             {
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ValidateLifetime = false,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = devSecurityKey
-            };
+                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = devSecurityKey
+                };
+            }
         });
 
         return services;

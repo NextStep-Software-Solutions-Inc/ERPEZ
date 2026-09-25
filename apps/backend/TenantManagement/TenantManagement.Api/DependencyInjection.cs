@@ -46,15 +46,29 @@ public static class DependencyInjection
                 }
             }
 
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            if (isClerkConfigured)
             {
-                ValidateIssuer = isClerkConfigured && !builder.Environment.IsDevelopment(),
-                ValidIssuer = isClerkConfigured ? clerkSettings!.Authority : null,
-                ValidateAudience = false,
-                ValidateLifetime = isClerkConfigured && !builder.Environment.IsDevelopment(),
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = devSecurityKey
-            };
+                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = clerkSettings!.Authority,
+                    ValidateAudience = !string.IsNullOrWhiteSpace(clerkSettings.Audience),
+                    ValidAudience = clerkSettings.Audience,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true
+                };
+            }
+            else
+            {
+                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = devSecurityKey
+                };
+            }
         });
         services.AddEndpointsApiExplorer();
         services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();

@@ -14,7 +14,8 @@ namespace ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTen
 public sealed class CreateTenantCommandHandler(
     IUnitOfWork unitOfWork,
     ICurrentUserService currentUserService,
-    IBackgroundJobClient? backgroundJobClient = null) : IRequestHandler<CreateTenantCommand, ApiResponse<Guid>>
+    IBackgroundJobClient? backgroundJobClient = null,
+    ILicenseService? licenseService = null) : IRequestHandler<CreateTenantCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
@@ -44,9 +45,25 @@ public sealed class CreateTenantCommandHandler(
             }
         };
 
-        var module = await unitOfWork.ModuleRepository.FindAsync(m => m.Key == "ams", cancellationToken: cancellationToken);
-        if (module != null) tenant.Modules.Add(module);
+        // Provision full system access: all active system modules (PBMS, PMS, SAMS, AMS)
+        var allModules = await unitOfWork.ModuleRepository.ToListAsync(
+            unitOfWork.ModuleRepository.Query(m => m.IsActive), cancellationToken);
+        if (allModules != null && allModules.Count > 0)
+        {
+            foreach (var m in allModules)
+            {
+                tenant.Modules.Add(m);
+            }
+        }
+        else
+        {
+            var defaultModule = await unitOfWork.ModuleRepository.FindAsync(m => m.Key == "ams", cancellationToken: cancellationToken);
+            if (defaultModule != null) tenant.Modules.Add(defaultModule);
+        }
 
+        // 14-day Free Trial Subscription
+        var trialDays = 14;
+        var trialExpiry = DateTime.UtcNow.AddDays(trialDays);
         var subscription = new TenantSubscription
         {
             TenantId = tenant.Id,
@@ -54,11 +71,35 @@ public sealed class CreateTenantCommandHandler(
             Status = Status.Active,
             Amount = 0m,
             StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddYears(1),
+            EndDate = trialExpiry,
             BillingCycle = BillingCycle.Monthly,
-            AutoRenew = true
+            AutoRenew = false
         };
         tenant.TenantSubscriptions.Add(subscription);
+
+        // Generate matching 14-day Trial License Key
+        if (licenseService != null)
+        {
+            var keyString = licenseService.GenerateKeyString("TRIAL", request.BillingContactEmail, trialExpiry, Plan.Starter);
+            var signature = licenseService.ComputeSignature(keyString, request.BillingContactEmail, "localhost", trialExpiry);
+            var license = new LicenseKey
+            {
+                TenantId = tenant.Id,
+                Key = keyString,
+                Prefix = "TRIAL",
+                BoundEmail = request.BillingContactEmail,
+                Plan = Plan.Starter,
+                AllowedDomain = "localhost",
+                MaxTenants = 1,
+                MaxUsers = 10,
+                IssuedAt = DateTime.UtcNow,
+                ExpiresAt = trialExpiry,
+                Status = LicenseStatus.Active,
+                Signature = signature,
+                Notes = $"{trialDays}-Day Full System Access Free Trial"
+            };
+            tenant.LicenseKeys.Add(license);
+        }
 
         await unitOfWork.TenantRepository.AddAsync(tenant, cancellationToken);
 

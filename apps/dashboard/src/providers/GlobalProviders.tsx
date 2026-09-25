@@ -45,7 +45,7 @@ export default function GlobalProviders({ children }: GlobalProvidersProps) {
       <TenantContextInitializer />
       <KeycloakProvider>
         {children}
-        {!import.meta.env.PROD && <DevRoleSwitcher />}
+        {import.meta.env.VITE_ENABLE_DEV_PERSONAS === 'true' && <DevRoleSwitcher />}
       </KeycloakProvider>
     </JotaiProvider>
   )
