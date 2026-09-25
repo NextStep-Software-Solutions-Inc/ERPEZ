@@ -1,4 +1,3 @@
-import * as React from 'react'
 import {
   Building2,
   Calendar,
@@ -72,7 +71,7 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Approved Budget for Contract (ABC)
               </span>
-              <p className="font-bold text-base text-foreground font-mono">
+              <p className="font-bold text-base text-foreground">
                 {formatCurrencyPHP(item.totalABC || item.bacProjectABC || 0)}
               </p>
             </div>
@@ -151,7 +150,7 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-muted/30 rounded-lg border text-sm">
                   <div>
                     <span className="text-xs text-muted-foreground block">Total Proposal Quoted</span>
-                    <span className="font-bold text-base font-mono text-foreground">
+                    <span className="font-bold text-base text-foreground">
                       {formatCurrencyPHP(item.proposal!.totalProposalAmount || 0)}
                     </span>
                   </div>
@@ -159,7 +158,7 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                     <span className="text-xs text-muted-foreground block">Variance vs. ABC</span>
                     <span
                       className={cn(
-                        'font-semibold font-mono text-sm',
+                        'font-semibold text-sm',
                         (item.totalABC || 0) >= (item.proposal!.totalProposalAmount || 0)
                           ? 'text-emerald-600 dark:text-emerald-400'
                           : 'text-rose-600 dark:text-rose-400'
@@ -234,23 +233,23 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                                 <span>Standard / Proprietary Specification</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-center text-xs font-mono font-semibold text-foreground">
+                            <TableCell className="text-center text-xs font-semibold text-foreground">
                               {pItem.quantity ?? matchedReq?.quantity ?? 1} {matchedReq?.unit || ''}
                             </TableCell>
-                            <TableCell className="text-right text-xs font-mono text-muted-foreground">
+                            <TableCell className="text-right text-xs text-muted-foreground">
                               {formatCurrencyPHP(pItem.unitABC || matchedReq?.unitABC || 0)}
                             </TableCell>
-                            <TableCell className="text-right text-xs font-mono font-semibold text-muted-foreground">
+                            <TableCell className="text-right text-xs font-semibold text-muted-foreground">
                               {formatCurrencyPHP(
                                 pItem.totalABC ||
                                   matchedReq?.totalABC ||
                                   (pItem.unitABC || 0) * (pItem.quantity || 1)
                               )}
                             </TableCell>
-                            <TableCell className="text-right text-xs font-mono font-medium text-foreground">
+                            <TableCell className="text-right text-xs font-medium text-foreground">
                               {formatCurrencyPHP(pItem.unitBid || 0)}
                             </TableCell>
-                            <TableCell className="text-right text-xs font-mono font-bold text-foreground">
+                            <TableCell className="text-right text-xs font-bold text-foreground">
                               {formatCurrencyPHP(
                                 pItem.totalBid || (pItem.unitBid || 0) * (pItem.quantity || 1)
                               )}
@@ -348,13 +347,13 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                               {reqItem.prNumber && <div className="text-[11px] text-muted-foreground">PR: {reqItem.prNumber}</div>}
                               {reqItem.papCode && <div className="text-[11px] text-muted-foreground">PAP: {reqItem.papCode}</div>}
                             </TableCell>
-                            <TableCell className="text-center text-xs font-mono font-semibold text-foreground">
+                            <TableCell className="text-center text-xs font-semibold text-foreground">
                               {reqItem.quantity} {reqItem.unit || 'unit'}
                             </TableCell>
-                            <TableCell className="text-right text-xs font-mono text-muted-foreground">
+                            <TableCell className="text-right text-xs text-muted-foreground">
                               {formatCurrencyPHP(reqItem.unitABC || 0)}
                             </TableCell>
-                            <TableCell className="text-right text-xs font-mono font-semibold text-foreground">
+                            <TableCell className="text-right text-xs font-semibold text-foreground">
                               {formatCurrencyPHP(reqItem.totalABC || 0)}
                             </TableCell>
                             <TableCell className="text-center">
@@ -373,7 +372,7 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                       <span>Total Line Items: <strong className="text-foreground">{item.items.length}</strong></span>
                       <span>
                         Total Approved Budget (ABC):{' '}
-                        <strong className="text-foreground font-mono font-semibold text-sm">
+                        <strong className="text-foreground font-semibold text-sm">
                           {formatCurrencyPHP(item.totalABC || item.bacProjectABC || 0)}
                         </strong>
                       </span>
@@ -427,7 +426,7 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
               <div className="flex items-center gap-1.5 pt-0.5">
                 <Badge
                   variant="outline"
-                  className="font-mono text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800"
+                  className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800"
                 >
                   {item.exclusiveSupplierPhilGEPS || 'PhilGEPS Verified'}
                 </Badge>
