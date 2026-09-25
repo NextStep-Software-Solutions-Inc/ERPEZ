@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, Send, Trash2, Check, XCircle } from 'lucide-react'
+import { Loader2, Send, Trash2, Check, XCircle, FileText, Eye } from 'lucide-react'
 import api from '@/services/api'
 import { createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { deleteLIBRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/deleteLIBRequest'
@@ -13,6 +13,7 @@ import {
   useApproveLIBAmendment,
   useReturnLIBAmendment,
 } from '../hooks/useLIBAmendments'
+import { useRealignmentPdf } from '../hooks/useRealignmentPdf'
 import { DraftAmendmentActivityView } from './DraftAmendmentActivityView'
 import { DraftAmendmentProjectView } from './DraftAmendmentProjectView'
 import type { LIBAmendment } from '../../line-item-budget/types/type'
@@ -64,6 +65,7 @@ export function AmendmentEditPanel({
   const { mutateAsync: returnAmendment, isPending: isReturning } =
     useReturnLIBAmendment()
   const { mutateAsync: deleteCloneBudget } = useDeleteLIB()
+  const { downloadPdf, previewPdf, isGenerating } = useRealignmentPdf()
 
   const [showReturnRemarks, setShowReturnRemarks] = useState(false)
   const [returnRemarksText, setReturnRemarksText] = useState('')
@@ -286,14 +288,14 @@ export function AmendmentEditPanel({
         )}
       </div>
 
-      {/* Action Footer for Submission / Discard */}
+      {/* Action Footer for Submission / Discard / Document Export */}
       {!isReadOnly && (
-        <div className="flex justify-between pt-4 border-t border-dashed border-slate-200">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-dashed border-slate-200">
           <Button
             onClick={handleDiscard}
             disabled={isDeleting || isSubmitting}
             variant="destructive"
-            className="text-xs h-9 gap-1.5 font-semibold"
+            className="text-xs h-9 gap-1.5 font-semibold w-full sm:w-auto"
           >
             {isDeleting ? (
               <>
@@ -308,56 +310,109 @@ export function AmendmentEditPanel({
             )}
           </Button>
 
-          <Button
-            onClick={handleSubmitForApproval}
-            disabled={isSubmitting || isDeleting}
-            className="bg-green-600 hover:bg-green-700 text-white text-xs h-9 gap-1.5 font-semibold shadow-sm transition-all"
-          >
-            {isSubmitting ? (
-              <>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            <Button
+              variant="outline"
+              onClick={() => previewPdf(amendment.id)}
+              disabled={isGenerating || isSubmitting}
+              className="text-xs h-9 gap-1.5 font-semibold border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              <Eye className="w-3.5 h-3.5 text-slate-500" />
+              Preview PDF
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => downloadPdf(amendment.id, originalLib.libNumber)}
+              disabled={isGenerating || isSubmitting}
+              className="text-xs h-9 gap-1.5 font-semibold border-red-200 text-red-700 hover:bg-red-50"
+            >
+              {isGenerating ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Submitting Request...
-              </>
-            ) : (
-              <>
-                <Send className="w-3.5 h-3.5" />
-                Submit for Approval
-              </>
-            )}
-          </Button>
+              ) : (
+                <FileText className="w-3.5 h-3.5 text-red-600" />
+              )}
+              Download ISO Document
+            </Button>
+            <Button
+              onClick={handleSubmitForApproval}
+              disabled={isSubmitting || isDeleting}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs h-9 gap-1.5 font-semibold shadow-sm transition-all"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Submitting Request...
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  Submit for Approval
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Reviewer Action Footer */}
-      {isReadOnly && isPlanningUser && amendment.status === 'Submitted' && (
-        <div className="flex justify-end gap-3 pt-4 border-t border-dashed border-slate-200">
-          <Button
-            onClick={() => setShowReturnRemarks(true)}
-            disabled={isApproving || isReturning}
-            variant="outline"
-            className="text-xs h-9 gap-1.5 font-semibold border-red-250 text-red-600 hover:bg-red-50/50"
-          >
-            <XCircle className="w-3.5 h-3.5" />
-            Return Realignment
-          </Button>
-
-          <Button
-            onClick={handleApprove}
-            disabled={isApproving || isReturning}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 gap-1.5 font-semibold shadow-sm"
-          >
-            {isApproving ? (
-              <>
+      {/* Reviewer / Read-Only Action Footer */}
+      {isReadOnly && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-dashed border-slate-200">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => previewPdf(amendment.id)}
+              disabled={isGenerating}
+              className="text-xs h-9 gap-1.5 font-semibold border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              <Eye className="w-3.5 h-3.5 text-slate-500" />
+              Preview PDF
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => downloadPdf(amendment.id, originalLib.libNumber)}
+              disabled={isGenerating}
+              className="text-xs h-9 gap-1.5 font-semibold border-red-200 text-red-700 hover:bg-red-50"
+            >
+              {isGenerating ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Approving...
-              </>
-            ) : (
-              <>
-                <Check className="w-3.5 h-3.5" />
-                Approve Realignment
-              </>
-            )}
-          </Button>
+              ) : (
+                <FileText className="w-3.5 h-3.5 text-red-600" />
+              )}
+              Download ISO Document
+            </Button>
+          </div>
+
+          {isPlanningUser && amendment.status === 'Submitted' && (
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowReturnRemarks(true)}
+                disabled={isApproving || isReturning}
+                variant="outline"
+                className="text-xs h-9 gap-1.5 font-semibold border-red-250 text-red-600 hover:bg-red-50/50"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+                Return Realignment
+              </Button>
+
+              <Button
+                onClick={handleApprove}
+                disabled={isApproving || isReturning}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 gap-1.5 font-semibold shadow-sm"
+              >
+                {isApproving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Approving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    Approve Realignment
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

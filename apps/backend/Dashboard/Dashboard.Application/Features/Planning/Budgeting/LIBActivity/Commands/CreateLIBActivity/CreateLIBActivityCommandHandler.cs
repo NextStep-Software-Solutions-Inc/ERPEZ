@@ -18,7 +18,14 @@ public class CreateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");
 
         if (!LIBRules.IsEditable(lib.Status))
-            throw new ValidationException("Activities can only be added to a Draft, Proposed, or Returned LIB.");
+        {
+            var isUnderActiveAmendment = await unitOfWork.LIBAmendmentRequestRepository
+                .FindAsync(ar => ar.ProposedLineItemBudgetId == request.LineItemBudgetId &&
+                    (ar.Status == "Draft" || ar.Status == "Returned"), cancellationToken) != null;
+
+            if (!isUnderActiveAmendment)
+                throw new ValidationException("Activities can only be added to a Draft, Proposed, or Returned LIB.");
+        }
 
         if (request.WFPObjectiveActivityId.HasValue && request.OPCRActivityId.HasValue)
         {

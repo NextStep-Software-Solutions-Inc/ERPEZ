@@ -18,5 +18,6 @@ public enum DocumentType
     Rfq,
     Aob,
     Contract,
-    NoticeToProceed
+    NoticeToProceed,
+    LibRealignment
 }

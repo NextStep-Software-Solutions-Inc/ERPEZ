@@ -46,6 +46,7 @@ interface RealignmentAccordionItemProps {
   onExportCSV: () => void
   onExportExcel: () => void
   onExportPDF: () => void
+  onExportRealignmentPDF?: () => void
   onHistoryClick: () => void
   historyCount: number
 }
@@ -64,6 +65,7 @@ export function RealignmentAccordionItem({
   onExportCSV,
   onExportExcel,
   onExportPDF,
+  onExportRealignmentPDF,
   onHistoryClick,
   historyCount,
 }: RealignmentAccordionItemProps) {
@@ -195,8 +197,17 @@ export function RealignmentAccordionItem({
                         className="cursor-pointer"
                       >
                         <FileText className="w-3.5 h-3.5 mr-2 text-slate-500" />{' '}
-                        Export as PDF
+                        Export Original LIB as PDF
                       </DropdownMenuItem>
+                      {activeAmendment && onExportRealignmentPDF && (
+                        <DropdownMenuItem
+                          onClick={onExportRealignmentPDF}
+                          className="cursor-pointer font-medium text-red-600 focus:text-red-700"
+                        >
+                          <FileText className="w-3.5 h-3.5 mr-2 text-red-500" />{' '}
+                          Export Realignment PDF (FM-USTP-FDP-002)
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
 

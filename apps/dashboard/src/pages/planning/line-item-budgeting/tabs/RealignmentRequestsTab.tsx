@@ -17,12 +17,13 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, Eye } from 'lucide-react'
+import { Loader2, Eye, FileText } from 'lucide-react'
 import {
   useLIBAmendments,
   useApproveLIBAmendment,
   useReturnLIBAmendment,
-} from '@/features/planning/line-item-budgeting/realignment/hooks/useLIBAmendments'
+  useRealignmentPdf,
+} from '@/features/planning/line-item-budgeting/realignment'
 import { useQueryClient } from '@tanstack/react-query'
 import type { LIBAmendment } from '@/features/planning/line-item-budgeting/line-item-budget/types/type'
 import { RealignmentReviewDetailPage } from './RealignmentReviewDetailPage'
@@ -30,6 +31,7 @@ import { RealignmentReviewDetailPage } from './RealignmentReviewDetailPage'
 export function RealignmentRequestsTab() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { downloadPdf, generatingId } = useRealignmentPdf()
 
   const [reviewingAmendment, setReviewingAmendment] = useState<LIBAmendment | null>(
     null,
@@ -149,7 +151,7 @@ export function RealignmentRequestsTab() {
                     <TableHead className="font-semibold text-xs">Original LIB Ref</TableHead>
                     <TableHead className="font-semibold text-xs">Reason</TableHead>
                     <TableHead className="font-semibold text-xs">Status</TableHead>
-                    <TableHead className="text-center font-semibold text-xs w-28">
+                    <TableHead className="text-center font-semibold text-xs w-36">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -185,14 +187,35 @@ export function RealignmentRequestsTab() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 text-xs font-semibold shadow-xs"
-                          onClick={() => setReviewingAmendment(amendment)}
-                        >
-                          <Eye className="w-3.5 h-3.5 mr-1.5" /> Review
-                        </Button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs font-semibold shadow-xs"
+                            onClick={() => setReviewingAmendment(amendment)}
+                          >
+                            <Eye className="w-3.5 h-3.5 mr-1.5" /> Review
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            title="Download Modification of Budget PDF (FM-USTP-FDP-002)"
+                            className="h-8 w-8 p-0 text-slate-600 hover:text-red-600 hover:border-red-200 shadow-xs"
+                            onClick={() =>
+                              downloadPdf(
+                                amendment.id,
+                                amendment.lineItemBudget?.libNumber,
+                              )
+                            }
+                            disabled={generatingId === amendment.id}
+                          >
+                            {generatingId === amendment.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <FileText className="w-3.5 h-3.5" />
+                            )}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

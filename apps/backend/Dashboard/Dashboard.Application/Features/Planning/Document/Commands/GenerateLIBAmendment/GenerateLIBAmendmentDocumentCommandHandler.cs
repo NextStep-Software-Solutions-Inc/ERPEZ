@@ -71,10 +71,10 @@ public class GenerateLIBAmendmentDocumentCommandHandler(
             ProposedBudget = MapBudgetSection(proposedLib),
             Signatories = 
             [
-                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = "Engr. Alex L. Maureal", Position = "Head, Innovation and Technology Solutions Division" },
-                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = "Cherry Ann S. Villarte, CPA", Position = "Director, Finance Division" },
-                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = "Atty. Dionel O. Albina", Position = "Chancellor, USTP CDO" },
-                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = "Dr. Ambrosio B. Cultura II", Position = "System President" }
+                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = string.Empty, Position = !string.IsNullOrWhiteSpace(originalLib.Office?.Name) ? $"Head, {originalLib.Office.Name}" : "Head of Office" },
+                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = string.Empty, Position = "Director, Financial Management Services" },
+                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = string.Empty, Position = "Chancellor" },
+                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = string.Empty, Position = "President" }
             ]
         };
     }
