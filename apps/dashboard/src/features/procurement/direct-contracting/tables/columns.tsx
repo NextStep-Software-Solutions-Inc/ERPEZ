@@ -17,6 +17,7 @@ import {
   ShoppingCart,
   Calendar,
   FileText,
+  RotateCcw,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -190,7 +191,7 @@ export function getDirectContractingColumns(
               <Link
                 to="/v2/direct-contracting-request/$id"
                 params={{ id: dc.id }}
-                className="font-mono text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors px-2 py-0.5 rounded border border-primary/20"
+                className="text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-colors px-2 py-0.5 rounded border border-primary/20"
               >
                 {dc.dcNumber}
               </Link>
@@ -393,6 +394,11 @@ export function getDirectContractingColumns(
                 {(dc.status || '').toUpperCase() === 'DRAFT' && (
                   <DropdownMenuItem onClick={() => handlers.onPromptSubmit(dc.id)}>
                     <Send className="mr-2 h-4 w-4 text-sky-600" /> Submit for Review
+                  </DropdownMenuItem>
+                )}
+                {((dc.status || '').toUpperCase() === 'FOR_REVIEW' || (dc.status || '').toUpperCase() === 'FOR-REVIEW') && (
+                  <DropdownMenuItem onClick={() => handlers.onPromptConvertToDraft?.(dc.id)}>
+                    <RotateCcw className="mr-2 h-4 w-4 text-amber-600" /> Convert to Draft
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />

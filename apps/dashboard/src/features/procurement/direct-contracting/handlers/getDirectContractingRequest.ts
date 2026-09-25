@@ -1,20 +1,28 @@
-import type { QueryBlueprintFromTemplate } from 'erpez-shared-lib'
-import type { DirectContracting } from '../types'
+import type {
+  APIResponse,
+  QueryBlueprintFromTemplate,
+  QueryKey,
+  QueryParams,
+} from 'erpez-shared-lib'
+
 import api from '@/services/api'
+import type { DirectContracting } from '../types'
 
 const endpoint = '/direct-contracting/:id'
 
 export const getDirectContractingRequest: QueryBlueprintFromTemplate<
   typeof endpoint,
-  DirectContracting
+  APIResponse<DirectContracting>,
+  QueryParams,
+  QueryKey
 > = {
   endpoint,
-  key: ({ url }) => ['direct-contracting', url] as const,
+  key: ({ url }) => [url],
   fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<{ succeeded: boolean; data: DirectContracting }>(finalUrl, { signal })
-    if (!response.data?.succeeded || !response.data.data) {
-      throw new Error('Failed to fetch Direct Contracting entry.')
-    }
-    return response.data.data
+    const response = await api.get<APIResponse<DirectContracting>>(finalUrl, {
+      signal,
+    })
+    return response.data
   },
 }
+

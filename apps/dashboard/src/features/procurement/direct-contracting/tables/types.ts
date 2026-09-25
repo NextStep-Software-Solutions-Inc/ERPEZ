@@ -15,5 +15,6 @@ export interface TableActionHandlers {
   onViewProposal?: (entry: DirectContracting) => void
   onEdit: (id: string) => void
   onPromptSubmit: (id: string) => void
+  onPromptConvertToDraft?: (id: string) => void
   onPromptDelete: (id: string) => void
 }
