@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { extractErrorMessage } from '@/services/utils/messages'
 import type { AxiosError } from 'erpez-shared-lib'
 import {
+  useChangeDirectContractingStatus,
   useDeleteDirectContracting,
   useDirectContractingSummary,
 } from '../handlers'
@@ -28,7 +29,7 @@ import { createQueryHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
 import { getDirectContractingsRequest } from '../handlers/getDirectContractingsRequest'
 
 import { DirectContractingTable, type TableActionHandlers } from '../tables'
-import type { DirectContracting } from '../types'
+import { DirectContractingStatusEnum, type DirectContracting } from '../types'
 
 const useDirectContractings = createQueryHookFromTemplate(
   getDirectContractingsRequest,
@@ -36,8 +37,10 @@ const useDirectContractings = createQueryHookFromTemplate(
 
 export function DirectContractingRequestPage() {
   const queryClient = useQueryClient()
+  const statusMutation = useChangeDirectContractingStatus()
   const deleteMutation = useDeleteDirectContracting()
   const [isDeleting, setIsDeleting] = React.useState(false)
+  const [confirmConvertToDraftId, setConfirmConvertToDraftId] = React.useState<string | null>(null)
 
   // URL-based Search Parameters & Navigation
   const searchParams = useSearch({
@@ -142,6 +145,9 @@ export function DirectContractingRequestPage() {
       onPromptSubmit: (id: string) => {
         setConfirmSubmitId(id)
       },
+      onPromptConvertToDraft: (id: string) => {
+        setConfirmConvertToDraftId(id)
+      },
       onPromptDelete: (id: string) => {
         setConfirmDeleteId(id)
       },
@@ -150,7 +156,70 @@ export function DirectContractingRequestPage() {
   )
 
   // Single submit execution
-  const handleExecuteSubmit = () => {}
+  const handleExecuteSubmit = async () => {
+    if (!confirmSubmitId) return
+    const idToSubmit = confirmSubmitId
+    try {
+      await toast.promise(
+        statusMutation.mutateAsync(
+          {
+            pathParams: { id: idToSubmit },
+            payload: { status: DirectContractingStatusEnum.FOR_REVIEW },
+          },
+          {
+            onSuccess: () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].includes('direct-contracting'),
+              })
+            },
+          },
+        ),
+        {
+          loading: 'Submitting request for review...',
+          success: 'Direct Contracting request submitted for review successfully.',
+          error: (err) => extractErrorMessage(err as AxiosError) || 'Failed to submit request for review.',
+        },
+      )
+      setConfirmSubmitId(null)
+    } catch {
+      // toast.promise handles presentation
+    }
+  }
+
+  // Single convert to draft execution
+  const handleExecuteConvertToDraft = async () => {
+    if (!confirmConvertToDraftId) return
+    const idToConvert = confirmConvertToDraftId
+    try {
+      await toast.promise(
+        statusMutation.mutateAsync(
+          {
+            pathParams: { id: idToConvert },
+            payload: { status: DirectContractingStatusEnum.DRAFT },
+          },
+          {
+            onSuccess: () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].includes('direct-contracting'),
+              })
+            },
+          },
+        ),
+        {
+          loading: 'Converting request to draft...',
+          success: 'Direct Contracting request converted back to draft successfully.',
+          error: (err) => extractErrorMessage(err as AxiosError) || 'Failed to convert request to draft.',
+        },
+      )
+      setConfirmConvertToDraftId(null)
+    } catch {
+      // toast.promise handles presentation
+    }
+  }
 
   // Single delete execution
   const handleExecuteDelete = async () => {
@@ -441,7 +510,18 @@ export function DirectContractingRequestPage() {
         title="Submit Request for BAC Review?"
         description="Are you sure you want to submit this Direct Contracting request for BAC review and validation under Rule XVI?"
         confirmLabel="Submit"
+        loading={statusMutation.isPending}
         onConfirm={handleExecuteSubmit}
+      />
+
+      <ConfirmAlertDialog
+        open={!!confirmConvertToDraftId}
+        onOpenChange={(v) => !v && setConfirmConvertToDraftId(null)}
+        title="Convert Request to Draft?"
+        description="Are you sure you want to convert this Direct Contracting request back to draft? It will be editable again."
+        confirmLabel="Convert to Draft"
+        loading={statusMutation.isPending}
+        onConfirm={handleExecuteConvertToDraft}
       />
 
       <ConfirmAlertDialog

@@ -27,6 +27,13 @@ public class ChangeDirectContractingStatusCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Success(Unit.Value, $"Direct Contracting status is already '{command.Status}'.");
         }
 
+        if (command.Status == DirectContractingStatusEnum.DRAFT &&
+            oldStatus != DirectContractingStatusEnum.FOR_REVIEW &&
+            oldStatus != DirectContractingStatusEnum.RETURNED)
+        {
+            return ApiResponse<Unit>.Fail($"Direct Contracting request can only be reverted to Draft when in 'For Review' or 'Returned' status. Current status is '{oldStatus}'.");
+        }
+
         if (!IsValidTransition(oldStatus, command.Status))
         {
             return ApiResponse<Unit>.Fail($"Cannot transition Direct Contracting request from status '{oldStatus}' to '{command.Status}'.");
@@ -59,6 +66,7 @@ public class ChangeDirectContractingStatusCommandHandler(IUnitOfWork unitOfWork)
             (DirectContractingStatusEnum.DRAFT, DirectContractingStatusEnum.FOR_REVIEW) => true,
             (DirectContractingStatusEnum.FOR_REVIEW, DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER) => true,
             (DirectContractingStatusEnum.FOR_REVIEW, DirectContractingStatusEnum.RETURNED) => true,
+            (DirectContractingStatusEnum.FOR_REVIEW, DirectContractingStatusEnum.DRAFT) => true,
             (DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER, DirectContractingStatusEnum.PENDING_FOR_APPROVAL) => true,
             (DirectContractingStatusEnum.PENDING_FOR_APPROVAL, DirectContractingStatusEnum.APPROVED) => true,
             (DirectContractingStatusEnum.PENDING_FOR_APPROVAL, DirectContractingStatusEnum.RETURNED) => true,

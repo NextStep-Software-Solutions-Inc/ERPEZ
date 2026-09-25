@@ -338,7 +338,7 @@ export function DirectContractingForm({
                                                                                 key={pr}
                                                                                 variant="outline"
                                                                                 color="secondary"
-                                                                                className="text-[10px] py-0 px-1 font-mono font-normal"
+                                                                                className="text-[10px] py-0 px-1 font-normal"
                                                                             >
                                                                                 {pr}
                                                                             </Badge>
@@ -396,7 +396,7 @@ export function DirectContractingForm({
                                                 {s.name}
                                             </span>
                                             {s.philGEPSNumber && (
-                                                <span className="text-[11px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 shrink-0">
+                                                <span className="text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 shrink-0">
                                                     PhilGEPS: {s.philGEPSNumber}
                                                 </span>
                                             )}

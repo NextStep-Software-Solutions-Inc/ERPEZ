@@ -132,6 +132,7 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
 
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [showSubmitConfirm, setShowSubmitConfirm] = React.useState(false)
+  const [showConvertToDraftConfirm, setShowConvertToDraftConfirm] = React.useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
 
   const statusMutation = useChangeDirectContractingStatus()
@@ -148,6 +149,20 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
       refetch()
     } catch (err) {
       toast.error(extractErrorMessage(err as AxiosError) || 'Failed to submit request for review.')
+    }
+  }
+
+  const handleConvertToDraft = async () => {
+    try {
+      await statusMutation.mutateAsync({
+        pathParams: { id },
+        payload: { status: DirectContractingStatusEnum.DRAFT },
+      })
+      toast.success('Direct Contracting request converted back to draft successfully.')
+      setShowConvertToDraftConfirm(false)
+      refetch()
+    } catch (err) {
+      toast.error(extractErrorMessage(err as AxiosError) || 'Failed to convert request to draft.')
     }
   }
 
@@ -240,13 +255,24 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
             >
               <Edit className="h-4 w-4" /> Edit Request
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setShowSubmitConfirm(true)}
-              className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
-            >
-              <Send className="h-4 w-4" /> Submit for Review
-            </Button>
+            {item.status === DirectContractingStatusEnum.FOR_REVIEW || item.status === DirectContractingStatusEnum.RETURNED ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowConvertToDraftConfirm(true)}
+                className="gap-1.5 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+              >
+                <RotateCcw className="h-4 w-4" /> Convert to Draft
+              </Button>
+            ) : item.status === DirectContractingStatusEnum.DRAFT ? (
+              <Button
+                size="sm"
+                onClick={() => setShowSubmitConfirm(true)}
+                className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
+              >
+                <Send className="h-4 w-4" /> Submit for Review
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               size="sm"
@@ -337,6 +363,18 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
         cancelLabel="Cancel"
         loading={statusMutation.isPending}
         onConfirm={handleSubmitForReview}
+      />
+
+      {/* Convert to Draft Confirmation */}
+      <ConfirmAlertDialog
+        open={showConvertToDraftConfirm}
+        onOpenChange={setShowConvertToDraftConfirm}
+        title="Convert Request to Draft"
+        description="Are you sure you want to convert this Direct Contracting request back to draft? It will be editable again."
+        confirmLabel="Convert to Draft"
+        cancelLabel="Cancel"
+        loading={statusMutation.isPending}
+        onConfirm={handleConvertToDraft}
       />
 
       {/* Delete Request Confirmation */}

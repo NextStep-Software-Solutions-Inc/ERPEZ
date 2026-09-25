@@ -86,11 +86,8 @@ export const useCreateDirectContracting = makeMutationWithRefresh(
 )
 
 
-const useChangeDirectContractingStatusBase = createMutationHookFromTemplate(
+export const useChangeDirectContractingStatus = createMutationHookFromTemplate(
   changeDirectContractingStatusRequest,
-)
-export const useChangeDirectContractingStatus = makeMutationWithRefresh(
-  useChangeDirectContractingStatusBase,
 )
 
 const useSubmitProposalBase = createMutationHookFromTemplate(
