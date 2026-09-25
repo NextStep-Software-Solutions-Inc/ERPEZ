@@ -58,10 +58,10 @@ public class CreateTenantMemberCommandHandler(
         }
         else
         {
-            var endUserRole = await unitOfWork.RoleRepository.Query()
-                .FirstOrDefaultAsync(r => r.NormalizedName == "END USER", cancellationToken)
-                ?? throw new ValidationException("Default End User role was not found.");
-            rolesToAssign = [endUserRole.Id];
+            var tenantMemberRole = await unitOfWork.RoleRepository.Query()
+                .FirstOrDefaultAsync(r => r.NormalizedName == "TENANT MEMBER", cancellationToken)
+                ?? throw new ValidationException("Default Tenant Member role was not found.");
+            rolesToAssign = [tenantMemberRole.Id];
         }
 
         // 3. Role assignment and delegation validation
@@ -70,7 +70,8 @@ public class CreateTenantMemberCommandHandler(
             actorExternalId,
             targetMemberId: null,
             rolesToAssign,
-            cancellationToken);
+            expectedScope: RoleScope.TenantManagement,
+            cancellationToken: cancellationToken);
 
         // 4. Generate cryptographically secure invitation token (32 bytes Base64Url)
         var tokenBytes = RandomNumberGenerator.GetBytes(32);

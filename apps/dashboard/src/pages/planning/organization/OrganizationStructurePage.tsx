@@ -7,6 +7,7 @@ import SettingsTab from './SettingsTab'
 const StructuralManagementTab = lazy(() => import('./StructuralManagementTab'))
 const StaffingAndPlantillaTab = lazy(() => import('./StaffingAndPlantillaTab'))
 const PersonnelReportingTab = lazy(() => import('./PersonnelReportingTab'))
+const OperationalRolesTab = lazy(() => import('./OperationalRolesTab'))
 
 export default function OrganizationStructurePage() {
   const search = useSearch({ from: '/v2/_planning/organization/' })
@@ -37,9 +38,14 @@ export default function OrganizationStructurePage() {
         {/* Tab 3 defines reporting lines FOR that unit */}
         <PersonnelReportingTab />
       </TabsContent>
+
+      <TabsContent value="operational-roles">
+        {/* Tab 4 manages ERP operational business roles per member */}
+        <OperationalRolesTab />
+      </TabsContent>
       
       <TabsContent value="settings">
-        {/* Tab 4 defines reporting lines FOR that unit */}
+        {/* Tab 5 defines settings FOR that unit */}
         <SettingsTab 
           staffingSearch={staffingSearch} 
           unitId={selectedUnitId}

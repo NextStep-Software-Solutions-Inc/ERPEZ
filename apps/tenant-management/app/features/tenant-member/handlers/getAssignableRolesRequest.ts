@@ -4,7 +4,7 @@ import {
   type APIResponse,
 } from 'erpez-shared-lib';
 
-const endpoint = '/roles/assignable';
+const endpoint = '/tenant-members/assignable-roles';
 
 export type RoleSummary = {
   id: string;

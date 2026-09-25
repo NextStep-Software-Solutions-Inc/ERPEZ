@@ -14,9 +14,10 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
 
         IConfigurationRoot configuration = new ConfigurationBuilder()
             .SetBasePath(Path.GetFullPath(Path.Combine(basePath, "../TenantManagement.Api")))
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
             .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
-            .AddUserSecrets(Assembly.Load("TenantManagement.Api"))
+            .AddUserSecrets("ffbf3e68-ee2c-440d-a99c-23760f25344e")
+            .AddEnvironmentVariables()
             .Build();
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");

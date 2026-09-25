@@ -87,7 +87,8 @@ public class UpdateTenantMemberCommandHandler(
                 actorExternalId,
                 targetMemberId: member.Id,
                 candidateRoleIds,
-                cancellationToken);
+                expectedScope: RoleScope.TenantManagement,
+                cancellationToken: cancellationToken);
 
             // 6. Mutate member details & roles and rotate concurrency stamp
             var beforeState = new
@@ -109,7 +110,21 @@ public class UpdateTenantMemberCommandHandler(
                 member.LastName = command.UpdateTenantMember.LastName.Trim();
             }
 
+            // Preserve role assignments from other scopes (e.g. Operational, ExternalPortal)
+            var preservedNonGovernanceAssignments = member.RoleAssignments
+                .Where(ra => ra.Role.Scope != RoleScope.TenantManagement)
+                .Select(ra => ra.RoleId)
+                .ToList();
+
             member.RoleAssignments.Clear();
+            foreach (var preservedRoleId in preservedNonGovernanceAssignments)
+            {
+                member.RoleAssignments.Add(new TenantMemberRoleAssignment
+                {
+                    TenantMemberId = member.Id,
+                    RoleId = preservedRoleId
+                });
+            }
             foreach (var roleId in candidateRoleIds)
             {
                 member.RoleAssignments.Add(new TenantMemberRoleAssignment

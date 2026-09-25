@@ -1,5 +1,6 @@
 using ERPEZ.Shared.Constants;
 using ERPEZ.TenantManagement.Domain.Entities;
+using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,13 +11,14 @@ namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
 /// </summary>
 public static class RoleSeeder
 {
-    private record RoleDefinition(string Name, string Description, string[] PermissionKeys);
+    private record RoleDefinition(string Name, string Description, RoleScope Scope, string[] PermissionKeys);
 
     private static readonly RoleDefinition[] systemRoles =
     [
         new(
             "End User",
             "Standard department end user capable of drafting and submitting planning and procurement documents.",
+            RoleScope.Operational,
             [
                 Permissions.Planning.libCreate,
                 Permissions.Planning.libUpdate,
@@ -48,6 +50,7 @@ public static class RoleSeeder
         new(
             "Planning Officer",
             "Central planning officer overseeing global dashboards, KPIs, target calibration, and evaluations.",
+            RoleScope.Operational,
             [
                 Permissions.Planning.kpiCreate,
                 Permissions.Planning.kpiView,
@@ -81,6 +84,7 @@ public static class RoleSeeder
         new(
             "Finance Officer",
             "Finance and budget officer managing agency ceilings, UACS, fund sources, and fiscal locks.",
+            RoleScope.Operational,
             [
                 Permissions.Finance.agencyMasterBudgetManage,
                 Permissions.Finance.budgetCeilingAssign,
@@ -100,6 +104,7 @@ public static class RoleSeeder
         new(
             "Procurement Officer",
             "Procurement officer consolidating PPMPs and handling bidding, BAC, RFQ, and purchase orders.",
+            RoleScope.Operational,
             [
                 Permissions.Procurement.ppmpView,
                 Permissions.Procurement.ppmpReview,
@@ -128,6 +133,7 @@ public static class RoleSeeder
         new(
             "LIB Approver",
             "Designated reviewer / approver for Line Item Budgets.",
+            RoleScope.Operational,
             [
                 Permissions.Planning.libApprove,
                 Permissions.Planning.libView
@@ -136,6 +142,7 @@ public static class RoleSeeder
         new(
             "WFP Approver",
             "Designated reviewer / approver for Work & Financial Plans.",
+            RoleScope.Operational,
             [
                 Permissions.Planning.wfpApprove,
                 Permissions.Planning.wfpView
@@ -144,6 +151,7 @@ public static class RoleSeeder
         new(
             "OPCR Approver",
             "Designated reviewer / approver for Office Performance Commitment and Reviews.",
+            RoleScope.Operational,
             [
                 Permissions.Planning.opcrApprove,
                 Permissions.Planning.opcrView
@@ -152,6 +160,7 @@ public static class RoleSeeder
         new(
             "PPMP Approver",
             "Designated reviewer / approver for Project Procurement Management Plans.",
+            RoleScope.Operational,
             [
                 Permissions.Procurement.ppmpApprove,
                 Permissions.Procurement.ppmpView,
@@ -159,12 +168,33 @@ public static class RoleSeeder
             ]
         ),
         new(
+            "Dashboard System Admin",
+            "In-tenant ERP operations administrator managing organizational delivery units, personnel, and operational role assignments.",
+            RoleScope.Operational,
+            [
+                Permissions.Admin.operationalRolesView,
+                Permissions.Admin.operationalRolesManage,
+                Permissions.Admin.orgStructureView,
+                Permissions.Admin.orgStructureManage,
+                Permissions.Admin.usersManage,
+                Permissions.Planning.fiscalYearView,
+                Permissions.Planning.fiscalYearManage,
+                Permissions.Planning.budgetCallView,
+                Permissions.Planning.budgetCallManage,
+                Permissions.Planning.workflowMatrixManage,
+                Permissions.Planning.viewGlobalDashboard
+            ]
+        ),
+        new(
             "Tenant Administrator",
             "Tenant-level administrator managing organization structures, user memberships, and workflow matrices.",
+            RoleScope.TenantManagement,
             [
                 Permissions.Admin.membersManage,
                 Permissions.Admin.rolesManage,
                 Permissions.Admin.usersManage,
+                Permissions.Admin.operationalRolesView,
+                Permissions.Admin.operationalRolesManage,
                 Permissions.Admin.orgStructureView,
                 Permissions.Admin.orgStructureManage,
                 Permissions.Admin.systemAdminView,
@@ -200,8 +230,36 @@ public static class RoleSeeder
             ]
         ),
         new(
+            "Billing Administrator",
+            "Manages organization subscription tier, invoices, receipts, and payment methods.",
+            RoleScope.TenantManagement,
+            [
+                Permissions.Admin.tenantsManage,
+                Permissions.Admin.systemAdminView,
+                Permissions.Admin.orgStructureView
+            ]
+        ),
+        new(
+            "Tenant Auditor",
+            "Read-only auditor for tenant account settings, audit logs, and compliance records.",
+            RoleScope.TenantManagement,
+            [
+                Permissions.Admin.orgStructureView,
+                Permissions.Admin.systemAdminView
+            ]
+        ),
+        new(
+            "Tenant Member",
+            "Base account membership within the tenant organization.",
+            RoleScope.TenantManagement,
+            [
+                Permissions.Admin.orgStructureView
+            ]
+        ),
+        new(
             "Supplier",
             "External vendor or contractor accessing the Supplier Portal to participate in RFQs, Direct Contracting, and submitting quotations.",
+            RoleScope.ExternalPortal,
             [
                 Permissions.Procurement.supplierView
             ]
@@ -232,16 +290,30 @@ public static class RoleSeeder
                     Description = def.Description,
                     IsSystemRole = true,
                     TenantId = null,
-                    IsAssignableToTenant = true
+                    IsAssignableToTenant = true,
+                    Scope = def.Scope
                 };
 
                 await dbContext.Roles!.AddAsync(role, cancellationToken);
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
-            else if (!role.IsAssignableToTenant)
+            else
             {
-                role.IsAssignableToTenant = true;
-                dbContext.Roles!.Update(role);
+                var needsUpdate = false;
+                if (!role.IsAssignableToTenant)
+                {
+                    role.IsAssignableToTenant = true;
+                    needsUpdate = true;
+                }
+                if (role.Scope != def.Scope)
+                {
+                    role.Scope = def.Scope;
+                    needsUpdate = true;
+                }
+                if (needsUpdate)
+                {
+                    dbContext.Roles!.Update(role);
+                }
             }
 
             // Assign permissions

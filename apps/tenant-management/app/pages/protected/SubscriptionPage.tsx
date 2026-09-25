@@ -1019,7 +1019,9 @@ export default function SubscriptionPage() {
         isOpen={isAddPaymentModalOpen}
         hasExistingMethods={hasPaymentMethod}
         onClose={() => setIsAddPaymentModalOpen(false)}
-        onAdd={addPaymentMethod}
+        onAdd={async (input) => {
+          await addPaymentMethod(input);
+        }}
         isTrial={isTrial}
         planName={planName}
         planRateText={`${formatMoney(monthlyPriceCents, currency)}/month + applicable tax`}

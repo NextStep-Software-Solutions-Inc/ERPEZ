@@ -25,8 +25,8 @@ public class GetAssignableRolesQueryHandler(
 
         var tenantId = tenantContext.TenantId.Value;
 
-        // Invariant: r.IsAssignableToTenant && !r.IsDeleted && (!r.TenantId.HasValue || r.TenantId.Value == tenantId)
-        var predicate = Role.IsAssignableToTenantPredicate(tenantId);
+        // Invariant: r.IsAssignableToTenant && !r.IsDeleted && (!scope.HasValue || r.Scope == scope.Value) && (!r.TenantId.HasValue || r.TenantId.Value == tenantId)
+        var predicate = Role.IsAssignableToTenantPredicate(tenantId, request.Scope);
 
         var roles = await unitOfWork.RoleRepository.Query()
             .AsNoTracking()
@@ -40,6 +40,7 @@ public class GetAssignableRolesQueryHandler(
                 Name = r.Name,
                 Description = r.Description,
                 IsSystemRole = r.IsSystemRole,
+                Scope = r.Scope,
                 IsAssignableToTenant = r.IsAssignableToTenant,
                 TenantId = r.TenantId,
                 PermissionKeys = r.RolePermissions.Select(rp => rp.Permission.Key).ToList(),

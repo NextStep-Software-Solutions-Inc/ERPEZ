@@ -1,5 +1,6 @@
 using ERPEZ.Shared.Persistence;
 using ERPEZ.TenantManagement.Domain.Entities;
+using ERPEZ.TenantManagement.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
@@ -12,6 +13,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Module>? Modules { get; set; }
     public DbSet<TenantSetting>? TenantSettings { get; set; }
     public DbSet<TenantSubscription>? TenantSubscriptions { get; set; }
+    public DbSet<SubscriptionPlan>? SubscriptionPlans { get; set; }
+    public DbSet<SubscriptionPlanPrice>? SubscriptionPlanPrices { get; set; }
+    public DbSet<SubscriptionPlanModule>? SubscriptionPlanModules { get; set; }
     public DbSet<Role>? Roles { get; set; }
     public DbSet<Permission>? Permissions { get; set; }
     public DbSet<RolePermission>? RolePermissions { get; set; }
@@ -109,6 +113,52 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(ts => new { ts.TenantId, ts.StartDate, ts.EndDate })
             .IsUnique();
 
+        modelBuilder.Entity<TenantSubscription>()
+            .HasOne(ts => ts.SubscriptionPlanPrice)
+            .WithMany(spp => spp.Subscriptions)
+            .HasForeignKey(ts => ts.SubscriptionPlanPriceId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // SubscriptionPlan
+        modelBuilder.Entity<SubscriptionPlan>()
+            .HasIndex(sp => sp.Code)
+            .IsUnique();
+
+        modelBuilder.Entity<SubscriptionPlan>()
+            .Property(sp => sp.Tier)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<SubscriptionPlan>()
+            .HasMany(sp => sp.Prices)
+            .WithOne(spp => spp.SubscriptionPlan)
+            .HasForeignKey(spp => spp.SubscriptionPlanId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SubscriptionPlan>()
+            .HasMany(sp => sp.Modules)
+            .WithOne(spm => spm.SubscriptionPlan)
+            .HasForeignKey(spm => spm.SubscriptionPlanId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // SubscriptionPlanPrice
+        modelBuilder.Entity<SubscriptionPlanPrice>()
+            .HasIndex(spp => spp.SubscriptionPlanId);
+
+        modelBuilder.Entity<SubscriptionPlanPrice>()
+            .HasIndex(spp => spp.SubscriptionPlanId)
+            .HasFilter("\"IsDefault\" = true")
+            .IsUnique();
+
+        modelBuilder.Entity<SubscriptionPlanPrice>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_SubscriptionPlanPrices_ValidInterval",
+                "\"EffectiveToUtc\" IS NULL OR \"EffectiveToUtc\" > \"EffectiveFromUtc\""));
+
+        // SubscriptionPlanModule
+        modelBuilder.Entity<SubscriptionPlanModule>()
+            .HasIndex(spm => new { spm.SubscriptionPlanId, spm.ModuleCode })
+            .IsUnique();
+
         // TenantMember
         modelBuilder.Entity<TenantMember>()
             .HasIndex(tm => new { tm.TenantId, tm.ExternalIdentityId })
@@ -147,6 +197,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasConversion<string>();
 
         // Role
+        modelBuilder.Entity<Role>()
+            .Property(r => r.Scope)
+            .HasDefaultValue(RoleScope.Unknown);
+
         modelBuilder.Entity<Role>()
             .HasIndex(r => new { r.TenantId, r.NormalizedName })
             .IsUnique()
