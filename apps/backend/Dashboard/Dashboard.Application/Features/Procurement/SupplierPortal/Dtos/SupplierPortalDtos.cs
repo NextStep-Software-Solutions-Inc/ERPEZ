@@ -51,6 +51,10 @@ public record SupplierBidDetailDto
     public decimal TotalAmount { get; init; }
     public DateTime? SubmittedAt { get; init; }
     public string? Remarks { get; init; }
+    public string? QuotationDocumentUrl { get; init; }
+    public string? SignatureUrl { get; init; }
+    public string? SignatoryName { get; init; }
+    public DateTime? DateSigned { get; init; }
     public List<SupplierBidItemDetailDto> Items { get; init; } = [];
 }
 

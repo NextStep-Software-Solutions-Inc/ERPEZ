@@ -16,6 +16,20 @@ export interface ApplicationDocumentDto {
   envelopeType: number
 }
 
+export interface BiddingSubmissionItemResponse {
+  id: string
+  biddingSubmissionId: string
+  procurementProjectItemId: string
+  itemName?: string | null
+  description?: string | null
+  quantity: number
+  uom: string
+  unitPrice?: number | null
+  totalPrice?: number | null
+  brand?: string | null
+  model?: string | null
+}
+
 export interface BiddingSubmissionResponse {
   id: string
   procurementProjectId: string
@@ -23,7 +37,8 @@ export interface BiddingSubmissionResponse {
   supplierName: string
   tinNumber?: string | null
   publicSupplierApplicationId?: string | null
-  originalProposedAmount: number
+  originalProposedAmount?: number | null
+  isFinancialOpened?: boolean
   bidSecurityType: string
   bidSecurityAmount?: number | null
   bidSecurityNumber?: string | null
@@ -33,6 +48,7 @@ export interface BiddingSubmissionResponse {
   remarks?: string | null
   openingRecord?: BidOpeningRecordResponse | null
   documents?: Array<ApplicationDocumentDto>
+  items?: Array<BiddingSubmissionItemResponse> | null
 }
 
 export interface BidOpeningRecordResponse {

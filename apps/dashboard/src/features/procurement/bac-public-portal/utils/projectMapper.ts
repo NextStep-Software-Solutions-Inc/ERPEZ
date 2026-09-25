@@ -1,17 +1,26 @@
-import type { PublicProject, RequiredDocument, ModeOfProcurement, ProjectStatus } from '../types/portalTypes'
+import type {
+  PublicProject,
+  RequiredDocument,
+  ModeOfProcurement,
+  ProjectStatus,
+  BackendPublicProject,
+  BackendBidNotice,
+  BackendRequiredSubmission,
+  BackendProjectItem,
+} from '../types/portalTypes'
 
-export const mapBackendProjectToFrontend = (p: any): PublicProject => {
+export const mapBackendProjectToFrontend = (p: BackendPublicProject): PublicProject => {
   const requiredDocuments: RequiredDocument[] = []
   
   if (p.requiredSubmissions) {
-    const bidNoticesMap = new Map<string, any>()
+    const bidNoticesMap = new Map<string, BackendBidNotice>()
     if (p.bidNotices) {
-      p.bidNotices.forEach((b: any) => {
+      p.bidNotices.forEach((b: BackendBidNotice) => {
         bidNoticesMap.set(b.checklistItemId, b)
       })
     }
 
-    p.requiredSubmissions.forEach((s: any) => {
+    p.requiredSubmissions.forEach((s: BackendRequiredSubmission) => {
       const matchingNotice = bidNoticesMap.get(s.checklistItemId)
       const downloadUrl = s.downloadUrl || matchingNotice?.downloadUrl
       requiredDocuments.push({
@@ -83,10 +92,12 @@ export const mapBackendProjectToFrontend = (p: any): PublicProject => {
     bidOpening: p.bidOpeningDate || p.bidOpening || undefined,
     scope: p.scopeOfWork || p.scope || '',
     requiredDocuments,
+    pricingStructure: p.pricingStructure || (mop === 'svp' && Array.isArray(p.items) && p.items.length > 0 ? 'Itemized' : 'LumpSum'),
+    procurementCategory: p.procurementCategory || 'Goods',
     items: Array.isArray(p.items)
-      ? p.items.map((i: any) => ({
+      ? p.items.map((i: BackendProjectItem) => ({
           id: i.id,
-          itemName: i.itemName,
+          itemName: i.itemName || '',
           description: i.description,
           quantity: i.quantity,
           uom: i.uom,

@@ -1,6 +1,7 @@
 using System.Linq;
 using ERPEZ.Application.Features.Procurement.AOBs.Common;
 using ERPEZ.Application.Features.Procurement.AOBs.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -32,7 +33,7 @@ public class GetAOBByIdQueryHandler(IUnitOfWork unitOfWork)
             .Include(r => r.RFQItems)
                 .ThenInclude(i => i.CPRItem)
                     .ThenInclude(ci => ci!.ConsolidatedPR)
-            .Where(r => rfqIds.Contains(r.Id))
+            .Where(r => rfqIds.Contains(r.Id) && r.Status == StatusEnum.Approved)
             .ToListAsync(cancellationToken);
 
         var metadata = await AOBReferenceResolver.ResolveAsync(

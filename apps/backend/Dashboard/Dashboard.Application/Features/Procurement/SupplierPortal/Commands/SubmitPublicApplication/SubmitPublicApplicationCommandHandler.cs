@@ -151,23 +151,26 @@ public class SubmitPublicApplicationCommandHandler(
             // Create SupplierBid for the RFQ
             var itemBidsDict = request.ItemBids?.ToDictionary(ib => ib.RFQItemId) ?? new Dictionary<Guid, PublicItemBidDto>();
 
-            // Calculate total quoted amount
+            // Calculate total quoted amount with standard financial centavo rounding
             decimal totalQuoted = 0m;
             if (request.ProposedBidAmount.HasValue && request.ProposedBidAmount.Value > 0)
             {
-                totalQuoted = request.ProposedBidAmount.Value;
+                totalQuoted = Math.Round(request.ProposedBidAmount.Value, 2, MidpointRounding.AwayFromZero);
             }
             else if (itemBidsDict.Count > 0)
             {
                 totalQuoted = rfq.RFQItems
                     .Where(item => !item.IsDeleted && itemBidsDict.ContainsKey(item.Id))
-                    .Sum(item => itemBidsDict[item.Id].UnitPrice * item.Quantity);
+                    .Sum(item => Math.Round(itemBidsDict[item.Id].UnitPrice * item.Quantity, 2, MidpointRounding.AwayFromZero));
             }
 
-            if (totalQuoted > 0 && rfq.TotalAmount > 0 && totalQuoted > rfq.TotalAmount)
+            totalQuoted = Math.Round(totalQuoted, 2, MidpointRounding.AwayFromZero);
+            var rfqCeiling = Math.Round(rfq.TotalAmount, 2, MidpointRounding.AwayFromZero);
+
+            if (totalQuoted > 0 && rfqCeiling > 0 && totalQuoted > rfqCeiling)
             {
                 throw new FluentValidation.ValidationException(
-                    $"Your total quoted bid (₱{totalQuoted:N2}) exceeds the Approved Budget for the Contract (₱{rfq.TotalAmount:N2}). Under RA 9184, bids exceeding the ABC cannot be accepted.");
+                    $"Your total quoted bid (₱{totalQuoted:N2}) exceeds the Approved Budget for the Contract (₱{rfqCeiling:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
             }
 
             var bidItems = new List<SupplierBidItem>();
@@ -189,13 +192,14 @@ public class SubmitPublicApplicationCommandHandler(
                     }
                 }
 
-                var unitPrice = itemBid?.UnitPrice ?? 0m;
+                var unitPrice = Math.Round(itemBid?.UnitPrice ?? 0m, 2, MidpointRounding.AwayFromZero);
+                var lineTotal = Math.Round(unitPrice * item.Quantity, 2, MidpointRounding.AwayFromZero);
                 bidItems.Add(new SupplierBidItem
                 {
                     Id = Guid.NewGuid(),
                     RFQItemId = item.Id,
                     UnitPrice = unitPrice,
-                    TotalPrice = unitPrice * item.Quantity,
+                    TotalPrice = lineTotal,
                     Brand = itemBid?.Brand,
                     Model = itemBid?.Model,
                     Color = itemBid?.Color,
@@ -357,11 +361,16 @@ public class SubmitPublicApplicationCommandHandler(
             });
         }
 
-        // ── 5b. ABC CEILING VALIDATION (RA 9184 Section 31) ──────────────────────
-        if (request.ProposedBidAmount.HasValue && project.ABC > 0 && request.ProposedBidAmount.Value > project.ABC)
+        // ── 5b. ABC CEILING VALIDATION (NGPA / RA 12009 Statutory Ceiling) ──────────────────────
+        if (request.ProposedBidAmount.HasValue && project.ABC > 0)
         {
-            throw new FluentValidation.ValidationException(
-                $"Your proposed bid amount (₱{request.ProposedBidAmount.Value:N2}) exceeds the Approved Budget for the Contract (₱{project.ABC:N2}). Under RA 9184, bids exceeding the ABC cannot be accepted.");
+            var roundedProposed = Math.Round(request.ProposedBidAmount.Value, 2, MidpointRounding.AwayFromZero);
+            var roundedAbc = Math.Round(project.ABC, 2, MidpointRounding.AwayFromZero);
+            if (roundedProposed > roundedAbc)
+            {
+                throw new FluentValidation.ValidationException(
+                    $"Your proposed bid amount (₱{roundedProposed:N2}) exceeds the Approved Budget for the Contract (₱{roundedAbc:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
+            }
         }
 
         // ── 6. CONDITIONAL BIDDING SUBMISSION (Competitive / Public Bidding Only) ──
@@ -399,6 +408,67 @@ public class SubmitPublicApplicationCommandHandler(
                 CreatedAt                   = DateTime.UtcNow,
                 CreatedBy                   = "PublicPortal"
             };
+
+            var itemBidsList = request.ItemBids ?? new List<PublicItemBidDto>();
+            var itemBidsDict = itemBidsList.ToDictionary(ib => ib.RFQItemId);
+
+            if (project.ConsolidatedPRId.HasValue && itemBidsDict.Count > 0)
+            {
+                var cpr = await unitOfWork.ConsolidatedPRRepository
+                    .GetCPRWithDetailsAsync(project.ConsolidatedPRId.Value, cancellationToken);
+
+                if (cpr?.ConsolidatedPRItems != null && cpr.ConsolidatedPRItems.Any())
+                {
+                    decimal totalCalculatedAmount = 0m;
+                    var submissionItems = new List<BiddingSubmissionItem>();
+
+                    foreach (var cprItem in cpr.ConsolidatedPRItems.Where(ci => !ci.IsDeleted && ci.PRItem != null))
+                    {
+                        if (itemBidsDict.TryGetValue(cprItem.Id, out var itemBid))
+                        {
+                            if (itemBid.UnitPrice < 0)
+                            {
+                                throw new FluentValidation.ValidationException($"Unit price for item '{cprItem.PRItem.Name}' cannot be negative.");
+                            }
+
+                            var qty = cprItem.PRItem.RequestedQuantity;
+                            var uom = cprItem.PRItem.PPMPItem?.Unit ?? "Unit";
+                            var unitPrice = Math.Round(itemBid.UnitPrice, 2, MidpointRounding.AwayFromZero);
+                            var lineTotal = Math.Round(unitPrice * qty, 2, MidpointRounding.AwayFromZero);
+                            totalCalculatedAmount += lineTotal;
+
+                            submissionItems.Add(new BiddingSubmissionItem
+                            {
+                                Id = Guid.NewGuid(),
+                                BiddingSubmissionId = biddingSubmission.Id,
+                                ProcurementProjectItemId = cprItem.Id,
+                                Quantity = qty,
+                                Uom = uom,
+                                UnitPrice = unitPrice,
+                                TotalPrice = lineTotal,
+                                Brand = itemBid.Brand,
+                                Model = itemBid.Model,
+                                CreatedAt = DateTime.UtcNow,
+                                CreatedBy = "PublicPortal"
+                            });
+                        }
+                    }
+
+                    if (submissionItems.Count > 0)
+                    {
+                        biddingSubmission.OriginalProposedAmount = Math.Round(totalCalculatedAmount, 2, MidpointRounding.AwayFromZero);
+                        biddingSubmission.BiddingSubmissionItems = submissionItems;
+                    }
+                }
+            }
+
+            var finalProposedAmount = Math.Round(biddingSubmission.OriginalProposedAmount, 2, MidpointRounding.AwayFromZero);
+            var projectAbcCeiling = Math.Round(project.ABC, 2, MidpointRounding.AwayFromZero);
+            if (projectAbcCeiling > 0 && finalProposedAmount > projectAbcCeiling)
+            {
+                throw new FluentValidation.ValidationException(
+                    $"Your total bid amount (₱{finalProposedAmount:N2}) exceeds the Approved Budget for the Contract (₱{projectAbcCeiling:N2}). Under the New Government Procurement Act (NGPA / RA 12009) and applicable rules, bids exceeding the ABC cannot be accepted.");
+            }
 
             await unitOfWork.BiddingSubmissionRepository.AddAsync(biddingSubmission, cancellationToken);
         }

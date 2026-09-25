@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   ArrowLeft,
   Download,
@@ -20,8 +20,7 @@ import { Button } from '@/components/ui/button'
 import type { PublicProject, ProjectStatus, ModeOfProcurement } from '../types/portalTypes'
 import { printDocument } from '../utils/printDocument'
 import { BACApplicationForm } from './BACApplicationForm'
-import api from '@/services/api'
-import { mapBackendProjectToFrontend } from '../utils/projectMapper'
+import { usePublicProject } from '../hooks/usePublicPortalApi'
 
 // Use the full BACApplicationForm component from the sibling file.
 // See documentations/bac-application-form.md for implementation details.
@@ -61,31 +60,10 @@ function formatDate(dateStr?: string) {
 export function BACProjectDetail({ project: initialProject, onBack }: BACProjectDetailProps) {
   const [showApplicationForm, setShowApplicationForm] = useState(false)
   const [selectedBidIds, setSelectedBidIds] = useState<Set<string>>(new Set())
-  const [project, setProject] = useState<PublicProject>(initialProject)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchProjectDetails = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const res = await api.get(`/api/public/projects/${initialProject.id}`)
-        if (res.data && res.data.data) {
-          const mapped = mapBackendProjectToFrontend(res.data.data)
-          setProject(mapped)
-        } else {
-          setError(res.data?.message || 'Failed to load project details.')
-        }
-      } catch (err: any) {
-        console.error('Failed to fetch project details:', err)
-        setError(err?.response?.data?.message || err?.message || 'This project is not currently available.')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchProjectDetails()
-  }, [initialProject.id])
+  const { data: fetchedProject, isLoading, error: queryError } = usePublicProject(initialProject.id)
+  const project = fetchedProject ?? initialProject
+  const error = queryError instanceof Error ? queryError.message : null
 
   if (isLoading) {
     return (
