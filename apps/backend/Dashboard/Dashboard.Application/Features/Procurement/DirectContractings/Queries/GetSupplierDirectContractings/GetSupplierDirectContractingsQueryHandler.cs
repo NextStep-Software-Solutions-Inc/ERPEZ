@@ -24,7 +24,7 @@ public class GetSupplierDirectContractingsQueryHandler(IUnitOfWork unitOfWork)
                 .ThenInclude(p => p!.ProposalItems)
                     .ThenInclude(pi => pi.CPRItem)
                         .ThenInclude(cpr => cpr.PPMPItemAllocations)
-            .Where(dc => dc.ExclusiveSupplierId == request.SupplierId
+            .Where(dc => (request.SupplierId == Guid.Empty || dc.ExclusiveSupplierId == request.SupplierId)
                          && !dc.IsDeleted
                          && dc.Status != DirectContractingStatusEnum.DRAFT)
             .OrderByDescending(dc => dc.CreatedAt)

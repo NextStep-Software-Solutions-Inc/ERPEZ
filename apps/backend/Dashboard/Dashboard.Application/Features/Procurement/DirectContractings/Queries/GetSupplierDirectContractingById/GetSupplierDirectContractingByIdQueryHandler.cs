@@ -51,7 +51,7 @@ public class GetSupplierDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork
                     .ThenInclude(pi => pi.CPRItem)
                         .ThenInclude(cpr => cpr.PPMPItemAllocations)
             .Where(dc => dc.Id == request.Id 
-                         && dc.ExclusiveSupplierId == request.SupplierId 
+                         && (request.SupplierId == Guid.Empty || dc.ExclusiveSupplierId == request.SupplierId) 
                          && !dc.IsDeleted 
                          && dc.Status != DirectContractingStatusEnum.DRAFT)
             .AsSplitQuery()

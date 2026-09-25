@@ -29,9 +29,9 @@ public class SupplierDirectContractingController(ISender mediator) : ControllerB
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<List<DirectContractingResponse>>), StatusCodes.Status200OK)]
     [HasPermission(Permissions.Procurement.supplierView)]
-    public async Task<IActionResult> GetSupplierDirectContractings([FromQuery] Guid supplierId)
+    public async Task<IActionResult> GetSupplierDirectContractings([FromQuery] Guid? supplierId = null)
     {
-        var result = await mediator.Send(new GetSupplierDirectContractingsQuery(supplierId));
+        var result = await mediator.Send(new GetSupplierDirectContractingsQuery(supplierId ?? Guid.Empty));
         return Ok(result);
     }
 
@@ -42,9 +42,9 @@ public class SupplierDirectContractingController(ISender mediator) : ControllerB
     [ProducesResponseType(typeof(ApiResponse<DirectContractingResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasPermission(Permissions.Procurement.supplierView)]
-    public async Task<IActionResult> GetSupplierDirectContractingById(Guid id, [FromQuery] Guid supplierId)
+    public async Task<IActionResult> GetSupplierDirectContractingById(Guid id, [FromQuery] Guid? supplierId = null)
     {
-        var result = await mediator.Send(new GetSupplierDirectContractingByIdQuery(id, supplierId));
+        var result = await mediator.Send(new GetSupplierDirectContractingByIdQuery(id, supplierId ?? Guid.Empty));
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
