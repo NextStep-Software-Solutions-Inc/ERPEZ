@@ -29,6 +29,25 @@ public record DirectContractingResponse
     public string CreatedBy { get; init; } = string.Empty;
     public ApprovedAttachmentResponse? ApprovedAttachment { get; init; }
     public DirectContractingProposalResponse? Proposal { get; init; }
+    public List<DirectContractingItemResponse> Items { get; init; } = [];
+}
+
+public record DirectContractingItemResponse
+{
+    public Guid Id { get; init; }
+    public Guid? CPRItemId { get; init; }
+    public Guid SourceItemId { get; init; }
+    public string ItemName { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public string Unit { get; init; } = "unit";
+    public int Quantity { get; init; }
+    public decimal UnitABC { get; init; }
+    public decimal TotalABC { get; init; }
+    public string Office { get; init; } = string.Empty;
+    public string? PRNumber { get; init; }
+    public string? PAPCode { get; init; }
+    public string? Category { get; init; }
+    public string SourceType { get; init; } = string.Empty;
 }
 
 public record ApprovedAttachmentResponse
