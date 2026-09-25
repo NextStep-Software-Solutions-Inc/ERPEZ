@@ -104,15 +104,19 @@ public sealed class CreateTenantCommandHandler(
         await unitOfWork.TenantRepository.AddAsync(tenant, cancellationToken);
 
         var fullName = currentUserService.FullName ?? "";
-        var nameParts = fullName.Split(' ', 2);
-        var firstName = nameParts[0];
+        var nameParts = fullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        var firstName = nameParts.Length > 0 ? nameParts[0] : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name : "Admin");
         var lastName = nameParts.Length > 1 ? nameParts[1] : "";
+
+        var memberEmail = !string.IsNullOrWhiteSpace(currentUserService.Email) 
+            ? currentUserService.Email 
+            : request.BillingContactEmail;
 
         var tenantMember = new TenantMember
         {
             UserId = currentUserService.UserId,
             ExternalIdentityId = currentUserService.UserId,
-            Email = currentUserService.Email ?? "",
+            Email = memberEmail,
             FirstName = firstName,
             LastName = lastName,
             Status = Status.Active

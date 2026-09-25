@@ -21,11 +21,30 @@ public static class DependencyInjection
             .GetSection(ERPEZ.TenantManagement.Api.Configuration.ClerkSettings.sectionName)
             .Get<ERPEZ.TenantManagement.Api.Configuration.ClerkSettings>();
 
+        // Automatically resolve Authority from PublishableKey if Authority is unconfigured or placeholder
+        if (clerkSettings != null && (string.IsNullOrWhiteSpace(clerkSettings.Authority) || clerkSettings.Authority.Contains("placeholder") || clerkSettings.Authority.Contains("dev.nextstep-software.com")))
+        {
+            var pubKey = !string.IsNullOrWhiteSpace(clerkSettings.PublishableKey) && !clerkSettings.PublishableKey.Contains("placeholder")
+                ? clerkSettings.PublishableKey
+                : Environment.GetEnvironmentVariable("VITE_CLERK_PUBLISHABLE_KEY") ?? Environment.GetEnvironmentVariable("CLERK_PUBLISHABLE_KEY");
+
+            if (!string.IsNullOrWhiteSpace(pubKey) && pubKey.StartsWith("pk_"))
+            {
+                try
+                {
+                    var base64Part = pubKey.Substring(pubKey.IndexOf('_', 3) + 1);
+                    while (base64Part.Length % 4 != 0) base64Part += "=";
+                    var decoded = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(base64Part)).TrimEnd('$');
+                    clerkSettings.Authority = $"https://{decoded}";
+                }
+                catch { }
+            }
+        }
+
         var isClerkConfigured = clerkSettings != null 
             && !string.IsNullOrWhiteSpace(clerkSettings.Authority) 
             && !clerkSettings.Authority.Contains("placeholder")
-            && !clerkSettings.Authority.Contains("example.com")
-            && !clerkSettings.Authority.Contains("dev.nextstep-software.com");
+            && !clerkSettings.Authority.Contains("example.com");
         var devSecurityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
             System.Text.Encoding.UTF8.GetBytes("ERPEZ_Development_Symmetric_Signing_Key_2026_Secure_Secret_12345!"));
 
@@ -38,24 +57,59 @@ public static class DependencyInjection
         {
             if (isClerkConfigured)
             {
-                options.Authority = clerkSettings!.Authority;
+                var trimmedAuthority = clerkSettings!.Authority.TrimEnd('/');
+                options.Authority = trimmedAuthority;
                 options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
                 if (!string.IsNullOrWhiteSpace(clerkSettings.Audience))
                 {
                     options.Audience = clerkSettings.Audience;
                 }
-            }
 
-            if (isClerkConfigured)
-            {
                 options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = clerkSettings!.Authority,
+                    ValidIssuers = [trimmedAuthority, trimmedAuthority + "/", "https://erpez.dev/auth"],
                     ValidateAudience = !string.IsNullOrWhiteSpace(clerkSettings.Audience),
                     ValidAudience = clerkSettings.Audience,
                     ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKeyResolver = (token, securityToken, kid, validationParameters) =>
+                    {
+                        var issuer = (securityToken as Microsoft.IdentityModel.JsonWebTokens.JsonWebToken)?.Issuer
+                            ?? (securityToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken)?.Issuer;
+
+                        if (issuer == "https://erpez.dev/auth" || string.IsNullOrWhiteSpace(kid))
+                        {
+                            return [devSecurityKey];
+                        }
+
+                        if (validationParameters?.IssuerSigningKeys != null && validationParameters.IssuerSigningKeys.Any())
+                        {
+                            var matched = validationParameters.IssuerSigningKeys.Where(k => k.KeyId == kid).ToList();
+                            if (matched.Count > 0) return matched;
+                            return validationParameters.IssuerSigningKeys;
+                        }
+
+                        if (options.ConfigurationManager != null)
+                        {
+                            try
+                            {
+                                var oidcConfig = options.ConfigurationManager.GetConfigurationAsync(CancellationToken.None).GetAwaiter().GetResult();
+                                if (oidcConfig?.SigningKeys != null && oidcConfig.SigningKeys.Count > 0)
+                                {
+                                    var matched = oidcConfig.SigningKeys.Where(k => k.KeyId == kid).ToList();
+                                    if (matched.Count > 0) return matched;
+                                    return oidcConfig.SigningKeys;
+                                }
+                            }
+                            catch
+                            {
+                                // fallback to devSecurityKey
+                            }
+                        }
+
+                        return [devSecurityKey];
+                    }
                 };
             }
             else

@@ -63,12 +63,23 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
   const isCancelledOrExpired =
     subscription?.status === "cancelled" || subscription?.status === "expired";
 
-  const statusBadgeVariant =
-    subscription?.status === "active"
-      ? "bg-emerald-500 text-white"
-      : subscription?.status === "past_due"
-      ? "bg-amber-500 text-white"
-      : "bg-slate-500 text-white";
+  const isTrial = subscription?.isTrial ?? false;
+
+  const statusBadgeVariant = isTrial
+    ? subscription?.status === "cancelled"
+      ? "bg-slate-100 text-slate-700 border-slate-300"
+      : "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold"
+    : subscription?.status === "active"
+    ? "bg-emerald-500 text-white"
+    : subscription?.status === "past_due"
+    ? "bg-amber-500 text-white"
+    : "bg-slate-500 text-white";
+
+  const statusText = isTrial
+    ? subscription?.status === "cancelled"
+      ? "CANCELED"
+      : "TRIAL ACTIVE"
+    : subscription?.status.toUpperCase() || "ACTIVE";
 
   const recentInvoices = invoices.slice(0, 3);
 
@@ -82,51 +93,83 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Wallet2 className="h-5 w-5 text-[var(--button-blue)]" />
-                <CardTitle className="text-base font-semibold">Current Plan</CardTitle>
+                <CardTitle className="text-base font-semibold">
+                  {isTrial ? "Current Plan (Free Trial)" : "Current Plan"}
+                </CardTitle>
               </div>
-              <Badge className={statusBadgeVariant}>
-                {subscription ? subscription.status.toUpperCase() : "ACTIVE"}
-              </Badge>
+              <Badge className={statusBadgeVariant}>{statusText}</Badge>
             </div>
-            <CardDescription>Authoritative active subscription details</CardDescription>
+            <CardDescription>
+              {isTrial
+                ? "You're currently using Starter at no cost during your free trial"
+                : "Authoritative active subscription details"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xl font-bold text-slate-900">
-                  {subscription?.planName || "Enterprise"}
+                  {isTrial
+                    ? `${subscription?.planName || "Starter"} — Free Trial`
+                    : subscription?.planName || "Starter"}
                 </p>
                 <p className="text-xs text-slate-500 capitalize">
                   {subscription?.billingCycle || "Monthly"} Billing Cycle
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-xl font-extrabold text-blue-600">
-                  {subscription
-                    ? `${formatMoney(subscription.amountCents, subscription.currency)}`
-                    : "$299.00"}
-                  <span className="text-xs font-normal text-slate-500">
-                    /{subscription?.billingCycle === "yearly" ? "yr" : "mo"}
-                  </span>
-                </p>
+                {isTrial ? (
+                  <div>
+                    <p className="text-xl font-extrabold text-emerald-600">$0</p>
+                    <p className="text-xs text-slate-500">during trial</p>
+                  </div>
+                ) : (
+                  <p className="text-xl font-extrabold text-blue-600">
+                    {subscription
+                      ? `${formatMoney(subscription.amountCents, subscription.currency)}`
+                      : "$299.00"}
+                    <span className="text-xs font-normal text-slate-500">
+                      /{subscription?.billingCycle === "yearly" ? "yr" : "mo"}
+                    </span>
+                  </p>
+                )}
               </div>
             </div>
 
             <dl className="grid gap-2 text-sm border-t border-slate-100 pt-3">
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Renewal Status</dt>
+                <dt className="text-muted-foreground">
+                  {isTrial ? "Continue after trial" : "Renewal Status"}
+                </dt>
                 <dd className="font-medium text-slate-800">
-                  {subscription?.autoRenew ? "Auto-Renew Enabled" : "Manual Renewal"}
+                  {isTrial
+                    ? subscription?.autoRenew
+                      ? "ON"
+                      : "OFF"
+                    : subscription?.autoRenew
+                    ? "Auto-Renew Enabled"
+                    : "Manual Renewal"}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Next Billing Date</dt>
-                <dd className="font-medium text-slate-800">
+                <dt className="text-muted-foreground">
+                  {isTrial ? "Trial Ends" : "Next Billing Date"}
+                </dt>
+                <dd className="font-semibold text-slate-800">
                   {isCancelledOrExpired
                     ? "None scheduled"
-                    : nextInvoice.dueDate}
+                    : subscription?.trialEndsAt || nextInvoice.dueDate}
                 </dd>
               </div>
+              {isTrial && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">After your trial</dt>
+                  <dd className="font-medium text-slate-800">
+                    {formatMoney(subscription?.amountCents || 29900, subscription?.currency || "USD")}/
+                    {subscription?.billingCycle === "yearly" ? "yr" : "mo"} + tax
+                  </dd>
+                </div>
+              )}
             </dl>
 
             <Button
@@ -139,21 +182,30 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
           </CardContent>
         </Card>
 
-        {/* Next Invoice Card */}
+        {/* Next Invoice / After Your Trial Card */}
         <Card className="shadow-sm border-slate-200">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-emerald-600" />
-                <CardTitle className="text-base font-semibold">Next Invoice</CardTitle>
+                <CardTitle className="text-base font-semibold">
+                  {isTrial ? "After your trial" : "Next Invoice"}
+                </CardTitle>
               </div>
               {nextInvoice.isApplicable && (
-                <Badge variant="outline" className="border-emerald-300 text-emerald-700 bg-emerald-50">
-                  Due {nextInvoice.dueDate}
+                <Badge
+                  variant="outline"
+                  className="border-emerald-300 text-emerald-700 bg-emerald-50 text-[10px]"
+                >
+                  {isTrial ? `First charge on ${nextInvoice.dueDate}` : `Due ${nextInvoice.dueDate}`}
                 </Badge>
               )}
             </div>
-            <CardDescription>Upcoming projected billing summary</CardDescription>
+            <CardDescription>
+              {isTrial
+                ? "Your first charge will occur when your free trial ends"
+                : "Upcoming projected billing summary"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {nextInvoice.isApplicable ? (
@@ -185,12 +237,18 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
                     </dd>
                   </div>
                   <div className="flex justify-between font-bold border-t border-slate-200 pt-2 text-slate-900">
-                    <dt>Total Estimated Due</dt>
+                    <dt>{isTrial ? "Estimated First Charge" : "Total Estimated Due"}</dt>
                     <dd className="text-blue-600">
                       {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
                     </dd>
                   </div>
                 </dl>
+
+                {isTrial && (
+                  <p className="text-[11px] text-slate-500">
+                    Your trial is free. You won't be charged until your trial ends.
+                  </p>
+                )}
 
                 <Button
                   variant="outline"

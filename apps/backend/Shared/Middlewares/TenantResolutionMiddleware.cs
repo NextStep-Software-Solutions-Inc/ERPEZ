@@ -49,10 +49,22 @@ public class TenantResolutionMiddleware(RequestDelegate next)
             }
         }
 
+        // 2.1 Extract query parameter candidate (?tenantId=)
+        Guid? queryCandidate = null;
+        if (context.Request.Query.TryGetValue("tenantId", out var queryVal))
+        {
+            var rawQuery = queryVal.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(rawQuery) && Guid.TryParse(rawQuery, out var parsedQuery))
+            {
+                queryCandidate = parsedQuery;
+            }
+        }
+
         // 3. Evaluate Precedence:
-        // Request header is the candidate workspace selector.
+        // Request header is the primary candidate workspace selector.
+        // Query param is secondary (for direct links or scoped queries).
         // JWT tenant claim is informational only and MUST NOT reject the request when it differs (workspace switching).
-        Guid? resolvedCandidate = headerCandidate ?? claimCandidate;
+        Guid? resolvedCandidate = headerCandidate ?? queryCandidate ?? claimCandidate;
 
         if (resolvedCandidate.HasValue)
         {

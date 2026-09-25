@@ -23,15 +23,27 @@ export function adaptTenantSubscription(
 
   if (!rawSub) {
     // Default fallback if tenant exists without explicit subscription record
+    const trialDays = 14;
+    const now = new Date();
+    const endDate = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+    const trialEndsAt = new Date(endDate).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
     return {
-      planName: "Enterprise",
+      planName: "Starter",
       status: "active",
       amountCents: 29900,
       currency,
       billingCycle: "monthly",
-      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      autoRenew: true,
+      startDate: now.toISOString(),
+      endDate,
+      autoRenew: false,
+      isTrial: true,
+      trialDaysRemaining: trialDays,
+      trialEndsAt,
+      paymentDueAt: trialEndsAt,
     };
   }
 
@@ -51,12 +63,46 @@ export function adaptTenantSubscription(
     : "monthly";
 
   // Normalize plan name
-  const planName = rawSub.plan || "Enterprise";
+  const planName = rawSub.plan || "Starter";
 
-  // Amount in cents
+  // Detect trial status:
+  // 1. rawStatus explicitly includes "trial"
+  // 2. rawSub.amount === 0 (or 0.0)
+  // 3. Plan is Starter with zero amount or not autoRenew
+  const isTrial =
+    rawStatus.includes("trial") ||
+    rawSub.amount === 0 ||
+    (planName.toLowerCase().includes("starter") && (rawSub.amount === 0 || !rawSub.autoRenew));
+
+  // Starter post-trial plan rate is $299/mo (or $2,990/year)
   const amountCents = typeof rawSub.amount === "number" && rawSub.amount > 0
     ? decimalToCents(rawSub.amount)
-    : 29900; // default fallback
+    : 29900; // Starter post-trial base rate
+
+  const startDate = rawSub.startDate || new Date().toISOString();
+  const endDate = rawSub.endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  const now = new Date();
+  const endObj = new Date(endDate);
+  const diffMs = endObj.getTime() - now.getTime();
+  const trialDaysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+
+  const trialEndsAt = !isNaN(endObj.getTime())
+    ? endObj.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Upcoming";
+
+  const gracePeriodObj = new Date(endObj.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const gracePeriodEndsAt = !isNaN(gracePeriodObj.getTime())
+    ? gracePeriodObj.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : undefined;
 
   return {
     planName,
@@ -64,9 +110,14 @@ export function adaptTenantSubscription(
     amountCents,
     currency,
     billingCycle,
-    startDate: rawSub.startDate || new Date().toISOString(),
-    endDate: rawSub.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    autoRenew: rawSub.autoRenew ?? true,
+    startDate,
+    endDate,
+    autoRenew: rawSub.autoRenew ?? false,
+    isTrial,
+    trialDaysRemaining,
+    trialEndsAt,
+    paymentDueAt: trialEndsAt,
+    gracePeriodEndsAt,
   };
 }
 
@@ -90,6 +141,7 @@ export function calculateNextInvoice(
       taxCents: 0,
       totalCents: 0,
       explanation: "No subscription currently assigned to this tenant.",
+      isTrial: false,
     };
   }
 
@@ -109,6 +161,7 @@ export function calculateNextInvoice(
         subscription.status === "cancelled"
           ? "Subscription is cancelled. No upcoming billing scheduled."
           : "Subscription has expired.",
+      isTrial: subscription.isTrial,
     };
   }
 
@@ -122,8 +175,8 @@ export function calculateNextInvoice(
     const end = new Date(subscription.endDate);
     if (!isNaN(end.getTime())) {
       dueDateStr = end.toLocaleDateString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
+        month: "long",
+        day: "numeric",
         year: "numeric",
       });
     }
@@ -141,5 +194,6 @@ export function calculateNextInvoice(
     taxRate,
     taxCents,
     totalCents,
+    isTrial: subscription.isTrial,
   };
 }
