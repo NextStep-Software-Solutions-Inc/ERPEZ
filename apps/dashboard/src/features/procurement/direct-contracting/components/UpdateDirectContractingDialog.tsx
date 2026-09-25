@@ -1,20 +1,22 @@
 import { useState } from 'react'
-import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
-import { Button } from '@/components/ui/button'
-import { ShoppingCart, Loader2 } from 'lucide-react'
-import { useBacResolutions } from '@/features/procurement/bac-resolution/handlers/hooks'
-import { useSuppliers } from '@/components/features/planning/procurement-library'
+import { Loader2, ShoppingCart } from 'lucide-react'
 import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
 import { toast } from 'sonner'
 import { useDirectContracting } from '../handlers/hooks'
 import {
-  updateDirectContractingRequest,
-  type UpdateDirectContractingPayload,
+  
+  updateDirectContractingRequest
 } from '../handlers/updateDirectContractingRequest'
 import {
-  DirectContractingForm,
-  type CreateDirectContractingFormValues,
+  
+  DirectContractingForm
 } from './DirectContractingForm'
+import type {UpdateDirectContractingPayload} from '../handlers/updateDirectContractingRequest';
+import type {CreateDirectContractingFormValues} from './DirectContractingForm';
+import { useSuppliers } from '@/components/features/planning/procurement-library'
+import { useBacResolutions } from '@/features/procurement/bac-resolution/handlers/hooks'
+import { Button } from '@/components/ui/button'
+import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 
 const useUpdateDirectContracting = createMutationHookFromTemplate(
   updateDirectContractingRequest,
@@ -38,10 +40,12 @@ export function UpdateDirectContractingDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Query entry detail
-  const { data: entryData, isLoading: isLoadingEntry } = useDirectContracting({
+  const { data: entryResponse, isLoading: isLoadingEntry } = useDirectContracting({
     pathParams: { id: editEntryId },
     enabled: open && !!editEntryId,
   })
+  const entryData = entryResponse?.data
+
 
   // Resolution options
   const { data: bacResolutions } = useBacResolutions({

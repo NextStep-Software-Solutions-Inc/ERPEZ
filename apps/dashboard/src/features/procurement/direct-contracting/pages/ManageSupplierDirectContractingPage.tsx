@@ -1,15 +1,30 @@
-import { useState, useEffect } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  CheckCircle,
+  CornerDownLeft,
+  Eye,
+  MoreVertical,
+  Search,
+  ShoppingBag,
+  Trash2,
+  Upload,
+} from 'lucide-react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import * as z from 'zod'
+import { useApproveDirectContracting, useDirectContractings, useReviewProposal } from '../handlers'
+import type { DirectContracting } from '../types'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,25 +51,9 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  MoreVertical,
-  Eye,
-  CheckCircle,
-  CornerDownLeft,
-  Trash2,
-  Search,
-  ShoppingBag,
-  Upload,
-} from 'lucide-react'
-import { useDirectContractingStore } from '@/features/procurement/direct-contracting/store/directContractingStore'
-import type { DirectContracting } from '../types'
-import { useReviewProposal, useApproveDirectContracting } from '../handlers'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import * as z from 'zod'
 import { DirectContractingItemDetails } from '@/features/procurement/supplier-portal/_components/DirectContractingItemDetails'
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -253,11 +252,38 @@ function UploadApprovalDialog(props: {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ManageSupplierDirectContractingPage() {
-  const { entries, updateEntry, fetchEntries } = useDirectContractingStore()
+  const { data: response, refetch } = useDirectContractings({
+    pathParams: {},
+    queryParams: { pageSize: 200 },
+  })
+  const [removedIds, setRemovedIds] = useState<Array<string>>([])
 
-  useEffect(() => {
-    fetchEntries()
-  }, [fetchEntries])
+  const entries: Array<DirectContracting> = useMemo(() => {
+    const statusMap: Record<string, DirectContracting['status']> = {
+      approved: 'approved',
+      draft: 'draft',
+      submitted: 'submitted',
+      'for-review': 'for-review',
+      for_review: 'for-review',
+      'submitted-to-supplier': 'submitted-to-supplier',
+      submitted_to_supplier: 'submitted-to-supplier',
+      pending_for_approval: 'for-review',
+      'pending-for-approval': 'for-review',
+      returned: 'rejected',
+      rejected: 'rejected',
+    }
+    return (response?.data ?? []).map((item) => ({
+      ...item,
+      dcName: item.dcName || item.name || '',
+      prNumber: item.prNumber || item.bacProjectTitle || '',
+      supplierName: item.supplierName || item.exclusiveSupplierName || '',
+      status:
+        statusMap[(item.status || '').toLowerCase()] ||
+        (item.status) ||
+        'draft',
+    }))
+  }, [response?.data])
+
 
   const { toast } = useToast()
 
@@ -265,7 +291,7 @@ export default function ManageSupplierDirectContractingPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [page, setPage] = useState(1)
   const pageSize = 8
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [selectedIds, setSelectedIds] = useState<Array<string>>([])
 
   // Viewing item details
   const [viewing, setViewing] = useState<string | null>(null)
@@ -288,7 +314,7 @@ export default function ManageSupplierDirectContractingPage() {
       (item.daRequirementsStatus === 'submitted' ||
         item.quotationStatus === 'submitted' ||
         ['for-review', 'approved', 'rejected'].includes(item.status)) &&
-      !item.removedFromDashboard,
+      !removedIds.includes(item.id),
   )  // Apply search + status filters
   const display = submittedItems.filter((item) => {
     const sFilter = statusFilter === 'all' ? true : item.status === statusFilter
@@ -297,12 +323,12 @@ export default function ManageSupplierDirectContractingPage() {
     if (!search) return true
     const q = search.toLowerCase()
     return (
-      item.dcNumber.toLowerCase().includes(q) ||
-      item.prNumber.toLowerCase().includes(q) ||
-      item.dcName.toLowerCase().includes(q) ||
-      (item.supplierName || '').toLowerCase().includes(q) ||
-      item.office.toLowerCase().includes(q) ||
-      item.category.toLowerCase().includes(q)
+      (item.dcNumber || '').toLowerCase().includes(q) ||
+      (item.prNumber || '').toLowerCase().includes(q) ||
+      (item.dcName || item.name || '').toLowerCase().includes(q) ||
+      (item.supplierName || item.exclusiveSupplierName || '').toLowerCase().includes(q) ||
+      (item.office || '').toLowerCase().includes(q) ||
+      (item.category || '').toLowerCase().includes(q)
     )
   })
 
@@ -363,12 +389,11 @@ export default function ManageSupplierDirectContractingPage() {
           remarks: returnRemarks
         }
       })
-      updateEntry(activeId, { status: 'rejected', remarks: returnRemarks })
       setReturnRemarks('')
       setReturnDialogOpen(false)
       setActiveId(null)
       toast({ title: 'Returned', description: 'Entry returned with remarks.' })
-      await fetchEntries()
+      await refetch()
     } catch (err) {
       console.error(err)
       toast({
@@ -398,46 +423,12 @@ export default function ManageSupplierDirectContractingPage() {
         }
       })
 
-      const basePatch: Partial<DirectContracting> = {
-        status: 'approved',
-        approvedBy: 'Current User',
-        approvedAt: new Date().toISOString().split('T')[0],
-      }
-
-      try {
-        const blobUrl = URL.createObjectURL(file)
-
-        const existing = entries.find((i) => i.id === approvalTargetId)?.approvalDocumentUrl
-        if (existing && existing.startsWith('blob:')) {
-          try {
-            URL.revokeObjectURL(existing)
-          } catch {
-            /* ignore revoke errors */
-          }
-        }
-
-        const patch: Partial<DirectContracting> = {
-          ...basePatch,
-          approvalDocumentFileName: file.name,
-          approvalDocumentUrl: blobUrl,
-        }
-
-        updateEntry(approvalTargetId, patch)
-        setApprovalTargetId(null)
-        toast({
-          title: 'Approved',
-          description: 'Entry approved and signed document uploaded (preview available).',
-        })
-      } catch (err) {
-        updateEntry(approvalTargetId, basePatch)
-        setApprovalTargetId(null)
-        toast({
-          title: 'Approved',
-          description: 'Entry approved (failed to create preview URL for uploaded file).',
-        })
-      }
-
-      await fetchEntries()
+      setApprovalTargetId(null)
+      toast({
+        title: 'Approved',
+        description: 'Entry approved and signed document uploaded.',
+      })
+      await refetch()
     } catch (err) {
       console.error(err)
       toast({
@@ -448,7 +439,7 @@ export default function ManageSupplierDirectContractingPage() {
   }
 
   const handleRemove = (id: string) => {
-    updateEntry(id, { removedFromDashboard: true })
+    setRemovedIds((prev) => [...prev, id])
     setSelectedIds((s) => s.filter((x) => x !== id))
     toast({ title: 'Removed', description: 'Entry hidden from dashboard.' })
   }

@@ -1,11 +1,4 @@
-import { useState, useMemo } from 'react'
-import { useToast } from '@/components/ui/use-toast'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useMemo, useState } from 'react'
 import {
   Calendar,
   ChevronLeft,
@@ -15,19 +8,31 @@ import {
   FileText,
   Hash,
   ListChecks,
+  Paperclip,
   Receipt,
   ShieldCheck,
   Store,
-  Paperclip,
 } from 'lucide-react'
-import { ExportComingSoonDialog } from '@/components/ExportComingSoonDialog'
-import { useConsolidatedPRStore, type ConsolidatedPRItem } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
-import { formatCurrencyPHP } from '@/utils/formatters'
-import { useDirectContractingStore, type DirectContracting } from '@/features/procurement/direct-contracting/store/directContractingStore'
 import { DARequirementsModal } from '../_components/DARequirementsModal'
-import { cn } from '@/lib/utils'
+import type { DirectContracting } from '@/features/procurement/direct-contracting/types'
 import type { DirectContractingItem, QuotationItemBid } from '../types/daItemTypes'
-import { useSubmitProposal, useChangeDirectContractingStatus } from '@/features/procurement/direct-contracting/handlers'
+import type {ConsolidatedPRItem} from '@/features/procurement/consolidated-pr/store/consolidatedPRStore';
+import { useToast } from '@/components/ui/use-toast'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ExportComingSoonDialog } from '@/components/ExportComingSoonDialog'
+import {  useConsolidatedPRStore } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
+import { formatCurrencyPHP } from '@/utils/formatters'
+import { cn } from '@/lib/utils'
+import {
+  useChangeDirectContractingStatus,
+  useDirectContracting,
+  useSubmitProposal,
+} from '@/features/procurement/direct-contracting/handlers'
 
 interface DirectContractingItemDetailsProps {
   item: DirectContracting | DirectContractingItem
@@ -43,17 +48,73 @@ function formatMonthLabel(monthValue: string): string {
 }
 
 export function DirectContractingItemDetails({ item: initialItem, onBack }: DirectContractingItemDetailsProps) {
-  const { entries, updateEntry } = useDirectContractingStore()
   const { toast } = useToast()
   
-  // Try to find in DC store first
-  const dcItemFound = entries.find(e => e.id === initialItem.id)
-  const isDC = !!dcItemFound
+  // Determine if it is a Direct Contracting request vs a legacy DA item
+  const isDC =
+    'dcNumber' in initialItem ||
+    ('modeOfProcurement' in initialItem && (initialItem as any).modeOfProcurement === 'Direct Contracting') ||
+    !('daNumber' in initialItem)
   
   // Cast to specific types for easier access
-  const dcBase = isDC ? (dcItemFound as DirectContracting) : null
-  const dciBase = !isDC ? (initialItem as DirectContractingItem) : null
-  const baseItem = dcBase || dciBase!
+  const dcBase = isDC ? (initialItem) : null
+  const dciBase = !isDC ? (initialItem) : null
+
+  // Fetch full details including items and submitted proposal
+  const { data: fetchedDCResponse } = useDirectContracting({
+    pathParams: { id: initialItem.id },
+  })
+  const fetchedDC = fetchedDCResponse?.data
+
+
+  const activeDC: DirectContracting | null = useMemo(() => {
+    if (!isDC) return null
+    if (!fetchedDC) return dcBase
+    return {
+      ...(dcBase || {}),
+      id: fetchedDC.id,
+      dcNumber: fetchedDC.dcNumber,
+      dcName: fetchedDC.name || fetchedDC.dcName || dcBase?.dcName || '',
+      bacResolutionId: fetchedDC.bacProjectId,
+      bacResolutionNumber: fetchedDC.bacProjectTitle,
+      prNumber: fetchedDC.bacProjectTitle || dcBase?.prNumber || '',
+      office: fetchedDC.exclusiveSupplierName || dcBase?.office || '',
+      category: 'Direct Contracting',
+      modeOfProcurement: 'Direct Contracting',
+      totalABC: fetchedDC.totalABC || dcBase?.totalABC || 0,
+      status: (fetchedDC.status?.toLowerCase() === 'approved' ? 'approved' :
+               fetchedDC.status?.toLowerCase() === 'pending_for_approval' ? 'for-review' :
+               fetchedDC.status?.toLowerCase() === 'returned' ? 'rejected' :
+               fetchedDC.status?.toLowerCase() === 'submitted_to_supplier' ? 'submitted-to-supplier' :
+               dcBase?.status || 'draft'),
+      supplierId: fetchedDC.exclusiveSupplierId,
+      supplierName: fetchedDC.exclusiveSupplierName,
+      items: fetchedDC.items,
+      createdAt: fetchedDC.createdAt || dcBase?.createdAt || new Date().toISOString(),
+      deadline: fetchedDC.submissionDeadline || dcBase?.deadline || '',
+      remarks: fetchedDC.reviewRemarks,
+      proposalAmount: fetchedDC.proposal?.totalProposalAmount || dcBase?.proposalAmount,
+      bidTotalAmount: fetchedDC.proposal?.totalProposalAmount || dcBase?.bidTotalAmount,
+      exclusivityProofUrl: fetchedDC.proposal?.exclusivityDocumentUrl || dcBase?.exclusivityProofUrl,
+      proposalNotes: fetchedDC.proposal?.proposalRemarks || dcBase?.proposalNotes,
+      quotationItems: fetchedDC.proposal?.proposalItems?.length
+        ? fetchedDC.proposal.proposalItems.map((pi) => ({
+            prItemId: pi.cprItemId,
+            itemName: pi.cprItemName,
+            qty: pi.quantity || 1,
+            unit: 'Item',
+            bidUnitPrice: pi.unitBid,
+            bidTotalAmount: pi.totalBid,
+            bidBrand: pi.brand,
+            bidModel: pi.model,
+            bidColor: pi.color,
+            bidBrochureUrl: pi.brochureFileUrl,
+          }))
+        : dcBase?.quotationItems,
+    }
+  }, [isDC, fetchedDC, dcBase])
+
+  const baseItem = activeDC || dciBase!
 
   const [exportOpen, setExportOpen] = useState(false)
   const [showWizardModal, setShowWizardModal] = useState(false)
@@ -74,7 +135,7 @@ export function DirectContractingItemDetails({ item: initialItem, onBack }: Dire
 
   // Resolve mock data for submitted items if they don't have it
   const resolvedItem = useMemo(() => {
-    if (!isQuotationSubmitted) return baseItem
+    if (!isQuotationSubmitted) return { ...baseItem, items: activeDC?.items }
 
     // Exclusivity document fallback
     const exclusivityProofFileName = baseItem.exclusivityProofFileName || 'Sole_Distributorship_Authorization_Certificate.pdf'
@@ -86,7 +147,24 @@ export function DirectContractingItemDetails({ item: initialItem, onBack }: Dire
     // Quotation items fallback
     let quotationItems = baseItem.quotationItems
     if (!quotationItems || quotationItems.length === 0) {
-      if (linkedPR && linkedPR.selectedPRItems.length > 0) {
+      if (activeDC?.items && activeDC.items.length > 0) {
+        quotationItems = activeDC.items.map((di) => {
+          const bidUnitPrice = di.unitABC * 0.95 // slightly discounted from ABC
+          return {
+            prItemId: di.cprItemId || di.id,
+            itemName: di.itemName,
+            qty: di.quantity,
+            unit: di.unit,
+            bidUnitPrice,
+            bidTotalAmount: di.quantity * bidUnitPrice,
+            bidBrand: 'Accredited Brand',
+            bidModel: 'Premium Series',
+            bidColor: 'Standard',
+            bidBrochureFileName: 'technical_specifications.pdf',
+            bidBrochureUrl: '#',
+          }
+        })
+      } else if (linkedPR && linkedPR.selectedPRItems.length > 0) {
         quotationItems = linkedPR.selectedPRItems.map((pi) => {
           const bidUnitPrice = pi.unitPrice * 0.95 // slightly discounted from ABC
           return {
@@ -144,6 +222,7 @@ export function DirectContractingItemDetails({ item: initialItem, onBack }: Dire
 
     return {
       ...baseItem,
+      items: activeDC?.items,
       exclusivityProofFileName,
       exclusivityProofUrl,
       proposalNotes,
@@ -157,7 +236,7 @@ export function DirectContractingItemDetails({ item: initialItem, onBack }: Dire
       bidBrochureFileName,
       bidBrochureUrl,
     }
-  }, [baseItem, isQuotationSubmitted, linkedPR])
+  }, [baseItem, isQuotationSubmitted, linkedPR, activeDC])
 
   const item = resolvedItem
   const dc = isDC ? (item as DirectContracting) : null
@@ -218,7 +297,7 @@ export function DirectContractingItemDetails({ item: initialItem, onBack }: Dire
           return
         }
       }
-      updateEntry(item.id, patch as Partial<DirectContracting>)
+      updateEntry(item.id, patch)
     } else {
       // Logic for legacy DA items if needed
     }
@@ -650,7 +729,7 @@ export function DirectContractingItemDetails({ item: initialItem, onBack }: Dire
 
               <TabsContent value="by-office" className="space-y-4">
                 {Object.entries(
-                  linkedPR.selectedPRItems.reduce<Record<string, ConsolidatedPRItem[]>>((g, it) => {
+                  linkedPR.selectedPRItems.reduce<Record<string, Array<ConsolidatedPRItem>>>((g, it) => {
                     const k = it.prOffice || '—'
                     if (!g[k]) g[k] = []
                     g[k].push(it)
@@ -762,7 +841,7 @@ export function DirectContractingItemDetails({ item: initialItem, onBack }: Dire
 
               <TabsContent value="summary" className="space-y-4">
                 {(() => {
-                  const officeGroups = linkedPR.selectedPRItems.reduce<Record<string, ConsolidatedPRItem[]>>(
+                  const officeGroups = linkedPR.selectedPRItems.reduce<Record<string, Array<ConsolidatedPRItem>>>(
                     (g, it) => {
                       const k = it.prOffice || '—'
                       if (!g[k]) g[k] = []

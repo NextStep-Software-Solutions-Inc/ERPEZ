@@ -1,31 +1,51 @@
-import { useState, useEffect, useMemo, type ComponentType } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import {  useMemo, useState } from 'react'
+import {
+  ArrowLeft, Building2, Calendar,
+  CheckCircle, Clock, Download, FileCheck, FileText, Receipt, RotateCcw, Send, ShieldCheck, ShoppingCart, Tag, UserCheck
+} from 'lucide-react'
+import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
+import {  DirectContractingStatusEnum } from '../types'
+import { useChangeDirectContractingStatus, useDirectContracting } from '../handlers'
+import type {ComponentType} from 'react';
+import type {DirectContracting} from '../types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import {
-  ShoppingCart, Send, ArrowLeft,
-  Calendar, Building2, Tag, Receipt, Download, FileText, UserCheck, FileCheck, CheckCircle
-} from 'lucide-react'
-import { toast } from 'sonner'
-import { useQueryClient } from '@tanstack/react-query'
 import { extractErrorMessage } from '@/services/utils/messages'
-import { DirectContractingStatusEnum, type DirectContracting } from '../types'
 import { useConsolidatedPRStore } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
 import { formatCurrencyPHP, formatDisplayDate } from '@/utils/formatters'
 import { cn } from '@/lib/utils'
-import { useDirectContracting, useChangeDirectContractingStatus } from '../handlers'
 
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; icon: ComponentType<{ className?: string }> }> = {
+  [DirectContractingStatusEnum.DRAFT]: { label: 'DRAFT', className: 'bg-gray-100 text-gray-700 border-gray-300', icon: ShoppingCart },
+  [DirectContractingStatusEnum.FOR_REVIEW]: { label: 'FOR REVIEW', className: 'bg-amber-100 text-amber-700 border-amber-300', icon: FileCheck },
+  [DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER]: { label: 'SUBMITTED TO SUPPLIER', className: 'bg-emerald-100 text-emerald-700 border-emerald-300', icon: CheckCircle },
+  [DirectContractingStatusEnum.PENDING_FOR_APPROVAL]: { label: 'PENDING APPROVAL', className: 'bg-sky-100 text-sky-700 border-sky-300', icon: Clock },
+  [DirectContractingStatusEnum.APPROVED]: { label: 'APPROVED', className: 'bg-green-100 text-green-700 border-green-300', icon: ShieldCheck },
+  [DirectContractingStatusEnum.RETURNED]: { label: 'RETURNED', className: 'bg-rose-100 text-rose-700 border-rose-300', icon: RotateCcw },
+  DRAFT: { label: 'DRAFT', className: 'bg-gray-100 text-gray-700 border-gray-300', icon: ShoppingCart },
+  FOR_REVIEW: { label: 'FOR REVIEW', className: 'bg-amber-100 text-amber-700 border-amber-300', icon: FileCheck },
+  'FOR-REVIEW': { label: 'FOR REVIEW', className: 'bg-amber-100 text-amber-700 border-amber-300', icon: FileCheck },
+  SUBMITTED_TO_SUPPLIER: { label: 'SUBMITTED TO SUPPLIER', className: 'bg-emerald-100 text-emerald-700 border-emerald-300', icon: CheckCircle },
+  'SUBMITTED-TO-SUPPLIER': { label: 'SUBMITTED TO SUPPLIER', className: 'bg-emerald-100 text-emerald-700 border-emerald-300', icon: CheckCircle },
+  PENDING_FOR_APPROVAL: { label: 'PENDING APPROVAL', className: 'bg-sky-100 text-sky-700 border-sky-300', icon: Clock },
+  APPROVED: { label: 'APPROVED', className: 'bg-green-100 text-green-700 border-green-300', icon: ShieldCheck },
+  RETURNED: { label: 'RETURNED', className: 'bg-rose-100 text-rose-700 border-rose-300', icon: RotateCcw },
+  REJECTED: { label: 'REJECTED', className: 'bg-rose-100 text-rose-700 border-rose-300', icon: RotateCcw },
   draft: { label: 'DRAFT', className: 'bg-gray-100 text-gray-700 border-gray-300', icon: ShoppingCart },
   submitted: { label: 'SUBMITTED', className: 'bg-blue-100 text-blue-700 border-blue-300', icon: Send },
   'for-review': { label: 'FOR REVIEW', className: 'bg-amber-100 text-amber-700 border-amber-300', icon: FileCheck },
   'submitted-to-supplier': { label: 'SUBMITTED TO SUPPLIER', className: 'bg-emerald-100 text-emerald-700 border-emerald-300', icon: CheckCircle },
+  approved: { label: 'APPROVED', className: 'bg-green-100 text-green-700 border-green-300', icon: ShieldCheck },
+  returned: { label: 'RETURNED', className: 'bg-rose-100 text-rose-700 border-rose-300', icon: RotateCcw },
+  rejected: { label: 'REJECTED', className: 'bg-rose-100 text-rose-700 border-rose-300', icon: RotateCcw },
 }
 
 interface Props {
@@ -37,67 +57,84 @@ interface Props {
 export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isManagementView = false }: Props) {
   const queryClient = useQueryClient()
   const consolidatedPRs = useConsolidatedPRStore((state) => state.consolidatedPRs)
-  const [entry, setEntry] = useState<DirectContracting>(initialEntry)
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
+  const [showConvertToDraftConfirm, setShowConvertToDraftConfirm] = useState(false)
   const [showSendToSupplierConfirm, setShowSendToSupplierConfirm] = useState(false)
 
-  const { data: item } = useDirectContracting(
-    { pathParams: { id: initialEntry.id } }
-  )
+  const {
+    data: directContractingResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useDirectContracting({
+    pathParams: { id: initialEntry.id },
+    queryParams: {},
+    enabled: !!initialEntry.id,
+  })
 
-  useEffect(() => {
-    if (item) {
-      const statusMap: Record<string, DirectContracting['status']> = {
-        'approved': 'approved',
-        'draft': 'draft',
-        'submitted': 'submitted',
-        'for-review': 'for-review',
-        'for_review': 'for-review',
-        'submitted-to-supplier': 'submitted-to-supplier',
-        'submitted_to_supplier': 'submitted-to-supplier',
-        'pending_for_approval': 'for-review',
-        'pending-for-approval': 'for-review',
-        'returned': 'rejected',
-        'rejected': 'rejected',
-      }
-      setEntry({
-        ...initialEntry,
-        id: item.id,
-        dcNumber: item.dcNumber,
-        dcName: item.name,
-        bacResolutionId: item.bacProjectId,
-        bacResolutionNumber: item.bacProjectTitle || '',
-        prNumber: item.bacProjectTitle || '',
-        office: item.exclusiveSupplierName || '',
-        category: 'General',
-        modeOfProcurement: 'Direct Contracting',
-        totalABC: item.totalABC || 0,
-        status: statusMap[(item.status || '').toLowerCase()] || 'draft',
-        supplierId: item.exclusiveSupplierId,
-        supplierName: item.exclusiveSupplierName,
-        createdAt: item.createdAt || new Date().toISOString(),
-        deadline: item.submissionDeadline || '',
-        remarks: item.reviewRemarks || '',
-      })
-    }
-  }, [item, initialEntry])
+  const item = directContractingResponse?.data ?? initialEntry
 
-  // Find linked PR items across all consolidated PRs mentioned in entry.prNumber (comma separated)
+
+
+  // Find linked PR items across all consolidated PRs mentioned in item.prNumber / bacProjectTitle (comma separated)
   const linkedItems = useMemo(() => {
-    const prNumbers = (entry.prNumber || '').split(',').map(s => s.trim())
+    const prNumbers = (item.prNumber || item.bacProjectTitle || '').split(',').map((s) => s.trim())
     return consolidatedPRs
-      .filter(cpr => prNumbers.includes(cpr.prNumber || ''))
-      .flatMap(cpr => cpr.selectedPRItems)
-  }, [entry.prNumber, consolidatedPRs])
+      .filter((cpr) => prNumbers.includes(cpr.prNumber || ''))
+      .flatMap((cpr) => cpr.selectedPRItems)
+  }, [item.prNumber, item.bacProjectTitle, consolidatedPRs])
+
+  const displayItems = useMemo(() => {
+    if (item.items && item.items.length > 0) {
+      return item.items.map((it) => ({
+        itemName: it.itemName,
+        qty: it.quantity,
+        unit: it.unit,
+        unitPrice: it.unitABC,
+        totalAmount: it.totalABC,
+      }))
+    }
+    return linkedItems
+  }, [item.items, linkedItems])
 
   const statusMutation = useChangeDirectContractingStatus()
+
+  const statusUpper = (item.status || '').toUpperCase()
+  const isDraft = statusUpper === DirectContractingStatusEnum.DRAFT || statusUpper === 'DRAFT'
+  const isForReview =
+    statusUpper === DirectContractingStatusEnum.FOR_REVIEW ||
+    statusUpper === 'FOR_REVIEW' ||
+    statusUpper === 'FOR-REVIEW'
+  const isSubmittedToSupplier =
+    statusUpper === DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER ||
+    statusUpper === 'SUBMITTED_TO_SUPPLIER' ||
+    statusUpper === 'SUBMITTED-TO-SUPPLIER'
+  const isReturned =
+    statusUpper === DirectContractingStatusEnum.RETURNED ||
+    statusUpper === 'RETURNED' ||
+    statusUpper === 'REJECTED'
+  const isApproved =
+    statusUpper === DirectContractingStatusEnum.APPROVED ||
+    statusUpper === 'APPROVED'
+
+  const status =
+    STATUS_CONFIG[statusUpper] ||
+    STATUS_CONFIG[(item.status || '').toLowerCase()] ||
+    STATUS_CONFIG[DirectContractingStatusEnum.DRAFT]
+
+  const proposalAmount = item.proposal?.totalProposalAmount ?? item.proposalAmount
+  const exclusiveSupplierName = item.exclusiveSupplierName || item.supplierName || item.office || '—'
+  const dcName = item.name || item.dcName || 'Direct Contracting Request'
+  const bacResolutionNumber = item.bacProjectTitle || item.bacResolutionNumber || 'N/A'
+  const submissionDeadline = item.submissionDeadline || item.deadline
+  const remarks = item.proposal?.proposalRemarks || item.reviewRemarks || item.remarks
 
   const handleSendToSupplier = async () => {
     try {
       await toast.promise(
         statusMutation.mutateAsync(
           {
-            pathParams: { id: entry.id },
+            pathParams: { id: item.id },
             payload: { status: DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER },
           },
           {
@@ -113,8 +150,38 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
         ),
         {
           loading: 'Submitting request to supplier...',
-          success: `Direct Contracting request ${entry.dcNumber} has been submitted to ${entry.supplierName}.`,
+          success: `Direct Contracting request ${item.dcNumber} has been submitted to ${exclusiveSupplierName}.`,
           error: (err: unknown) => extractErrorMessage(err as any) || 'Failed to submit request status.',
+        },
+      )
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleConvertToDraft = async () => {
+    try {
+      await toast.promise(
+        statusMutation.mutateAsync(
+          {
+            pathParams: { id: item.id },
+            payload: { status: DirectContractingStatusEnum.DRAFT },
+          },
+          {
+            onSuccess: async () => {
+              await queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].includes('direct-contracting'),
+              })
+              onBack()
+            },
+          },
+        ),
+        {
+          loading: 'Converting request to draft...',
+          success: `Direct Contracting request ${item.dcNumber} has been converted back to draft.`,
+          error: (err: unknown) => extractErrorMessage(err as any) || 'Failed to convert request to draft.',
         },
       )
     } catch (err) {
@@ -127,7 +194,7 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
       await toast.promise(
         statusMutation.mutateAsync(
           {
-            pathParams: { id: entry.id },
+            pathParams: { id: item.id },
             payload: { status: DirectContractingStatusEnum.FOR_REVIEW },
           },
           {
@@ -143,7 +210,7 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
         ),
         {
           loading: 'Submitting request for review...',
-          success: `Direct Contracting request ${entry.dcNumber} has been submitted for review.`,
+          success: `Direct Contracting request ${item.dcNumber} has been submitted for review.`,
           error: (err: unknown) => extractErrorMessage(err as any) || 'Failed to submit request status.',
         },
       )
@@ -151,8 +218,6 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
       console.error(err)
     }
   }
-
-  const status = STATUS_CONFIG[entry.status] || STATUS_CONFIG.draft
 
   return (
     <>
@@ -164,9 +229,9 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">{entry.dcName}</h1>
+              <h1 className="text-2xl font-bold tracking-tight">{dcName}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline">{entry.dcNumber}</Badge>
+                <Badge variant="outline">{item.dcNumber}</Badge>
                 <Badge className={cn("border", status.className)}>
                   <status.icon className="w-3 h-3 mr-1" />
                   {status.label}
@@ -176,13 +241,19 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
           </div>
 
           <div className="flex items-center gap-2">
-            {!isManagementView && entry.status === 'draft' && (
+            {!isManagementView && isDraft && (
               <Button onClick={() => setShowSubmitConfirm(true)} className="bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 transition-all">
                 <Send className="mr-2 h-4 w-4" />
                 Submit Request
               </Button>
             )}
-            {isManagementView && entry.status === 'for-review' && (
+            {!isManagementView && (isForReview || isReturned) && (
+              <Button onClick={() => setShowConvertToDraftConfirm(true)} variant="outline" className="border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-bold shadow-sm transition-all">
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Convert to Draft
+              </Button>
+            )}
+            {isManagementView && isForReview && (
               <Button onClick={() => setShowSendToSupplierConfirm(true)} className="bg-primary text-primary-foreground font-bold shadow-lg hover:bg-primary/90 transition-all">
                 <Send className="mr-2 h-4 w-4" />
                 Submit to Supplier
@@ -215,7 +286,7 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">BAC Resolution</p>
-                      <p className="font-semibold">{entry.bacResolutionNumber}</p>
+                      <p className="font-semibold">{bacResolutionNumber}</p>
                     </div>
                   </div>
 
@@ -225,7 +296,7 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Requesting Office</p>
-                      <p className="font-semibold">{entry.office}</p>
+                      <p className="font-semibold">{exclusiveSupplierName}</p>
                     </div>
                   </div>
 
@@ -235,7 +306,7 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Submission Deadline</p>
-                      <p className="font-semibold">{formatDisplayDate(entry.deadline)}</p>
+                      <p className="font-semibold">{formatDisplayDate(submissionDeadline)}</p>
                     </div>
                   </div>
 
@@ -269,20 +340,20 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {linkedItems.length > 0 ? (
-                          linkedItems.map((item, idx) => (
+                        {displayItems.length > 0 ? (
+                          displayItems.map((itemRow, idx) => (
                             <TableRow key={idx}>
-                              <TableCell className="font-medium">{item.itemName}</TableCell>
-                              <TableCell>{item.qty}</TableCell>
-                              <TableCell>{item.unit}</TableCell>
-                              <TableCell>{formatCurrencyPHP(item.unitPrice)}</TableCell>
-                              <TableCell className="font-semibold">{formatCurrencyPHP(item.totalAmount)}</TableCell>
+                              <TableCell className="font-medium">{itemRow.itemName}</TableCell>
+                              <TableCell>{itemRow.qty}</TableCell>
+                              <TableCell>{itemRow.unit}</TableCell>
+                              <TableCell>{formatCurrencyPHP(itemRow.unitPrice)}</TableCell>
+                              <TableCell className="font-semibold">{formatCurrencyPHP(itemRow.totalAmount)}</TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center py-6 text-muted-foreground italic">
-                              No items found for the linked PRs ({entry.prNumber})
+                              No items found for the linked PRs ({item.bacProjectTitle || item.prNumber || 'N/A'})
                             </TableCell>
                           </TableRow>
                         )}
@@ -292,19 +363,19 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                   <div className="flex justify-end p-2 bg-muted/20 rounded-lg">
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">Total Approved Budget (ABC)</p>
-                      <p className="text-xl font-bold text-primary">{formatCurrencyPHP(entry.totalABC)}</p>
+                      <p className="text-xl font-bold text-primary">{formatCurrencyPHP(item.totalABC)}</p>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {entry.proposalAmount && entry.status !== 'draft' && entry.status !== 'for-review' && entry.status !== 'submitted' ? (
+            {proposalAmount && !isDraft && !isForReview && (
               <Card className="border-primary/20">
                 <CardHeader className="bg-primary/5">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <UserCheck className="h-5 w-5 text-primary" />
-                    Supplier Proposal (Submitted by {entry.supplierName})
+                    Supplier Proposal (Submitted by {exclusiveSupplierName})
                   </CardTitle>
                   <CardDescription>
                     Review the prices and legal documents submitted for this proprietary acquisition.
@@ -314,15 +385,15 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div className="p-4 rounded-xl border bg-primary/5 border-primary/20">
                       <p className="text-sm text-muted-foreground mb-1 uppercase tracking-wider font-bold">Quoted Amount</p>
-                      <p className="text-3xl font-black text-primary">{formatCurrencyPHP(entry.proposalAmount || 0)}</p>
-                      {entry.proposalAmount && entry.proposalAmount > entry.totalABC && (
+                      <p className="text-3xl font-black text-primary">{formatCurrencyPHP(proposalAmount || 0)}</p>
+                      {proposalAmount > item.totalABC && (
                         <Badge color="destructive" className="mt-2">EXCEEDS ABC</Badge>
                       )}
                     </div>
                     <div className="space-y-4">
                       <div>
                         <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Remarks/Notes</p>
-                        <p className="text-sm italic p-3 bg-muted rounded-md">{entry.remarks || 'No remarks provided by supplier.'}</p>
+                        <p className="text-sm italic p-3 bg-muted rounded-md">{remarks || 'No remarks provided by supplier.'}</p>
                       </div>
                     </div>
                   </div>
@@ -336,7 +407,7 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                             <FileText className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold truncate max-w-[200px]">{entry.exclusivityProofFileName || 'Exclusivity_Proof.pdf'}</p>
+                            <p className="text-sm font-bold truncate max-w-[200px]">{item.proposal?.exclusivityDocumentUrl || item.exclusivityProofFileName || 'Exclusivity_Proof.pdf'}</p>
                             <p className="text-[10px] text-muted-foreground">Sole Distributorship Proof</p>
                           </div>
                         </div>
@@ -351,7 +422,7 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                             <FileText className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold truncate max-w-[200px]">{entry.soleDistCertFileName || 'Distributorship_Cert.pdf'}</p>
+                            <p className="text-sm font-bold truncate max-w-[200px]">{item.soleDistCertFileName || 'Distributorship_Cert.pdf'}</p>
                             <p className="text-[10px] text-muted-foreground">Manufacturer Certification</p>
                           </div>
                         </div>
@@ -363,7 +434,9 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                   </div>
                 </CardContent>
               </Card>
-            ) : (
+            )}
+
+            {!proposalAmount && !isDraft && (
               <div className="p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
                 <Send className="h-10 w-10 mb-4 opacity-20" />
                 <p className="text-lg font-medium">Proposal Pending</p>
@@ -383,11 +456,11 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                   <div className="relative pl-6 pb-6 border-l-2 border-primary/30 last:pb-0 last:border-l-transparent">
                     <div className="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-primary border-2 border-background" />
                     <p className="text-sm font-bold">Request Created</p>
-                    <p className="text-xs text-muted-foreground">{formatDisplayDate(entry.createdAt) ? new Date(formatDisplayDate(entry.createdAt)).toLocaleString() : 'N/A'}</p>
+                    <p className="text-xs text-muted-foreground">{formatDisplayDate(item.createdAt) ? new Date(formatDisplayDate(item.createdAt)).toLocaleString() : 'N/A'}</p>
                     <p className="text-xs mt-1 italic">Initialized by Procurement Office</p>
                   </div>
 
-                  {entry.status !== 'draft' && (
+                  {!isDraft && (
                     <div className="relative pl-6 pb-6 border-l-2 border-primary/30 last:pb-0 last:border-l-transparent">
                       <div className="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-primary border-2 border-background" />
                       <p className="text-sm font-bold">Submitted</p>
@@ -395,15 +468,15 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                     </div>
                   )}
 
-                  {(entry.status === 'submitted-to-supplier' || entry.status === 'approved' || entry.status === 'rejected') && (
+                  {(isSubmittedToSupplier || isApproved || isReturned) && (
                     <div className="relative pl-6 pb-6 border-l-2 border-primary/30 last:pb-0 last:border-l-transparent">
                       <div className="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-primary border-2 border-background" />
                       <p className="text-sm font-bold">Submitted to Supplier</p>
-                      <p className="text-xs text-muted-foreground">Request sent to {entry.supplierName}</p>
+                      <p className="text-xs text-muted-foreground">Request sent to {exclusiveSupplierName}</p>
                     </div>
                   )}
 
-                  {entry.proposalAmount && entry.status !== 'draft' && entry.status !== 'for-review' && entry.status !== 'submitted' && (
+                  {proposalAmount && !isDraft && !isForReview && (
                     <div className="relative pl-6 pb-6 border-l-2 border-primary/30 last:pb-0 last:border-l-transparent">
                       <div className="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-background" />
                       <p className="text-sm font-bold">Proposal Submitted</p>
@@ -421,7 +494,7 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
               <CardContent className="space-y-4 pt-0">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">UUID</p>
-                  <p className="text-[10px] break-all opacity-60">{entry.id}</p>
+                  <p className="text-[10px] break-all opacity-60">{item.id}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Workflow Version</p>
@@ -436,7 +509,7 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
         open={showSubmitConfirm}
         onOpenChange={setShowSubmitConfirm}
         title="Submit Direct Contracting Request?"
-        description={`Are you sure you want to submit the Direct Contracting request ${entry.dcNumber} for review?`}
+        description={`Are you sure you want to submit the Direct Contracting request ${item.dcNumber} for review?`}
         confirmLabel="Submit"
         onConfirm={async () => {
           setShowSubmitConfirm(false)
@@ -444,16 +517,28 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
         }}
       />
       <ConfirmAlertDialog
+        open={showConvertToDraftConfirm}
+        onOpenChange={setShowConvertToDraftConfirm}
+        title="Convert Request to Draft?"
+        description={`Are you sure you want to convert the Direct Contracting request ${item.dcNumber} back to draft? It will be editable again.`}
+        confirmLabel="Convert to Draft"
+        onConfirm={async () => {
+          setShowConvertToDraftConfirm(false)
+          await handleConvertToDraft()
+        }}
+      />
+      <ConfirmAlertDialog
         open={showSendToSupplierConfirm}
         onOpenChange={setShowSendToSupplierConfirm}
         title="Submit Request to Supplier?"
-        description={`Are you sure you want to submit this request to supplier ${entry.supplierName}?`}
+        description={`Are you sure you want to submit this request to supplier ${exclusiveSupplierName}?`}
         confirmLabel="Submit to Supplier"
         onConfirm={async () => {
           setShowSendToSupplierConfirm(false)
           await handleSendToSupplier()
         }}
       />
+
     </>
   )
 }

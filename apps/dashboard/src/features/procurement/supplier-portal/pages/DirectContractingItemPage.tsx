@@ -1,4 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
+import {
+  CheckCircle2,
+  Eye,
+  MoreVertical,
+  Search as SearchIcon,
+  ShoppingCart,
+  Upload,
+  X,
+} from 'lucide-react'
+import { DirectContractingItemDetails } from '../_components/DirectContractingItemDetails'
+import type { DirectContracting } from '@/features/procurement/direct-contracting/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,28 +21,41 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import {
-  Search as SearchIcon,
-  ShoppingCart,
-  Upload,
-  CheckCircle2,
-  Eye,
-  MoreVertical,
-  X,
-} from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
-import { useDirectContractingStore } from '@/features/procurement/direct-contracting/store/directContractingStore'
-import { DirectContractingItemDetails } from '../_components/DirectContractingItemDetails'
+import { useDirectContractings } from '@/features/procurement/direct-contracting/handlers'
 import { cn } from '@/lib/utils'
 
 export function DirectContractingItemPage() {
-  const { entries, fetchEntries } = useDirectContractingStore()
+  const { data: response } = useDirectContractings({
+    pathParams: {},
+    queryParams: { pageSize: 200 },
+  })
 
-  useEffect(() => {
-    if (fetchEntries) {
-      fetchEntries()
+  const entries: Array<DirectContracting> = useMemo(() => {
+    const statusMap: Record<string, DirectContracting['status']> = {
+      approved: 'approved',
+      draft: 'draft',
+      submitted: 'submitted',
+      'for-review': 'for-review',
+      for_review: 'for-review',
+      'submitted-to-supplier': 'submitted-to-supplier',
+      submitted_to_supplier: 'submitted-to-supplier',
+      pending_for_approval: 'for-review',
+      'pending-for-approval': 'for-review',
+      returned: 'rejected',
+      rejected: 'rejected',
     }
-  }, [fetchEntries])
+    return (response?.items ?? []).map((item) => ({
+      ...item,
+      dcName: item.dcName || item.name || '',
+      prNumber: item.prNumber || item.bacProjectTitle || '',
+      supplierName: item.supplierName || item.exclusiveSupplierName || '',
+      status:
+        statusMap[(item.status || '').toLowerCase()] ||
+        (item.status as DirectContracting['status']) ||
+        'draft',
+    }))
+  }, [response?.items])
 
   // Filters
   const [search, setSearch] = useState('')
@@ -40,7 +64,7 @@ export function DirectContractingItemPage() {
   const [viewingId, setViewingId] = useState<string | null>(null)
 
   // Row selection state
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [selectedIds, setSelectedIds] = useState<Array<string>>([])
 
   // Pagination state
   const [page, setPage] = useState(1)
@@ -143,7 +167,7 @@ export function DirectContractingItemPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
               <CardContent className="p-5 flex items-center justify-between">
                 <div>
@@ -266,10 +290,10 @@ export function DirectContractingItemPage() {
                             <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                               {item.createdAt
                                 ? new Date(item.createdAt).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                  })
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                })
                                 : '—'}
                             </TableCell>
                             <TableCell>
@@ -280,10 +304,10 @@ export function DirectContractingItemPage() {
                                   item.status === 'approved'
                                     ? "bg-emerald-100 text-emerald-800 border-emerald-300"
                                     : item.status === 'rejected'
-                                    ? "bg-red-100 text-red-800 border-red-300"
-                                    : (item.status === 'for-review' || item.proposalAmount)
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                      ? "bg-red-100 text-red-800 border-red-300"
+                                      : (item.status === 'for-review' || item.proposalAmount)
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : "bg-indigo-50 text-indigo-700 border-indigo-200"
                                 )}
                               >
                                 {item.status === 'approved' ? (
@@ -316,12 +340,12 @@ export function DirectContractingItemPage() {
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => setViewingId(item.id)}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View Details
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => setViewingId(item.id)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
                           </TableRow>

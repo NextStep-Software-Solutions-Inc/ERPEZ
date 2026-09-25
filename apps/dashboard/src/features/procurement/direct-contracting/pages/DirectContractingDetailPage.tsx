@@ -1,39 +1,39 @@
 import * as React from 'react'
 import {
+  AlertCircle,
   ArrowLeft,
   Building2,
   Clock,
   Edit,
   FileCheck,
   FileText,
-  Trash2,
+  HelpCircle,
   Receipt,
   RotateCcw,
   Send,
   ShieldCheck,
   ShoppingCart,
-  AlertCircle,
-  HelpCircle,
+  Trash2,
 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
 
+import { UpdateDirectContractingDialog } from '../components/UpdateDirectContractingDialog'
+import {
+  useChangeDirectContractingStatus,
+  useDeleteDirectContracting,
+  useDirectContracting,
+} from '../handlers'
+import { DirectContractingStatusEnum } from '../types'
+import type { AxiosError } from 'erpez-shared-lib'
 import { PageContainerDashtail } from '@/components/v2'
-import { Card, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardDescription, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import { UpdateDirectContractingDialog } from '../components/UpdateDirectContractingDialog'
 
-import {
-  useDirectContracting,
-  useChangeDirectContractingStatus,
-  useDeleteDirectContracting,
-} from '../handlers'
-import { DirectContractingStatusEnum } from '../types'
 import { extractErrorMessage } from '@/services/utils/messages'
-import type { AxiosError } from 'erpez-shared-lib'
 import { cn } from '@/lib/utils'
 
 // Lazy-loaded tab components to optimize performance and bundle size
@@ -121,7 +121,7 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
 
   // Primary Query: Direct Contracting Request
   const {
-    data: item,
+    data: directContractingResponse,
     isLoading,
     isError,
     error,
@@ -129,6 +129,8 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
   } = useDirectContracting({
     pathParams: { id },
   })
+  const item = directContractingResponse?.data
+
 
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [showSubmitConfirm, setShowSubmitConfirm] = React.useState(false)
