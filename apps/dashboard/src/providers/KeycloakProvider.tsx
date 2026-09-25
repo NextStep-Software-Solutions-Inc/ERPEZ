@@ -202,6 +202,9 @@ export function KeycloakProvider({
             setRefreshToken(keycloak.refreshToken || null)
             try {
               localStorage.setItem('erpez_auth_token', keycloak.token)
+              if (keycloak.refreshToken) {
+                localStorage.setItem('erpez_refresh_token', keycloak.refreshToken)
+              }
             } catch {}
 
             const parsed = keycloak.tokenParsed as any
@@ -224,7 +227,12 @@ export function KeycloakProvider({
               if (refreshed && keycloak.token) {
                 setToken(keycloak.token)
                 setRefreshToken(keycloak.refreshToken || null)
-                localStorage.setItem('erpez_auth_token', keycloak.token)
+                try {
+                  localStorage.setItem('erpez_auth_token', keycloak.token)
+                  if (keycloak.refreshToken) {
+                    localStorage.setItem('erpez_refresh_token', keycloak.refreshToken)
+                  }
+                } catch {}
               }
             }).catch((err) => {
               console.error('Failed to refresh Keycloak token:', err)
@@ -236,7 +244,10 @@ export function KeycloakProvider({
             setIsAuthenticated(false)
             setToken(null)
             setRefreshToken(null)
-            localStorage.removeItem('erpez_auth_token')
+            try {
+              localStorage.removeItem('erpez_auth_token')
+              localStorage.removeItem('erpez_refresh_token')
+            } catch {}
           }
 
           setIsInitialized(true)
@@ -286,10 +297,13 @@ export function KeycloakProvider({
   }
 
   const logout = () => {
+    try {
+      localStorage.removeItem('erpez_auth_token')
+      localStorage.removeItem('erpez_refresh_token')
+    } catch {}
     if (isLiveKeycloak && keycloak) {
       keycloak.logout?.()
     } else {
-      localStorage.removeItem('erpez_auth_token')
       setIsAuthenticated(false)
     }
   }
@@ -307,7 +321,12 @@ export function KeycloakProvider({
         if (refreshed && keycloak.token) {
           setToken(keycloak.token)
           setRefreshToken(keycloak.refreshToken || null)
-          localStorage.setItem('erpez_auth_token', keycloak.token)
+          try {
+            localStorage.setItem('erpez_auth_token', keycloak.token)
+            if (keycloak.refreshToken) {
+              localStorage.setItem('erpez_refresh_token', keycloak.refreshToken)
+            }
+          } catch {}
         }
         return refreshed
       } catch (err) {

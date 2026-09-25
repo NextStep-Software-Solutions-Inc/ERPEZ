@@ -596,6 +596,8 @@ public class AuthController(
 
             var accessToken = root.TryGetProperty("access_token", out var atProp) ? atProp.GetString() : null;
             var refreshToken = root.TryGetProperty("refresh_token", out var rtProp) ? rtProp.GetString() : null;
+            var expiresIn = root.TryGetProperty("expires_in", out var expProp) ? expProp.GetInt32() : 300;
+            var refreshExpiresIn = root.TryGetProperty("refresh_expires_in", out var rexpProp) ? rexpProp.GetInt32() : 1800;
 
             if (string.IsNullOrWhiteSpace(accessToken)) return null;
 
@@ -663,7 +665,7 @@ public class AuthController(
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddDays(7),
+                Expires = DateTime.UtcNow.AddSeconds(expiresIn),
                 Issuer = devIssuer,
                 Audience = devAudience,
                 SigningCredentials = credentials
@@ -678,6 +680,8 @@ public class AuthController(
                 Token = tokenString,
                 KeycloakAccessToken = accessToken,
                 RefreshToken = refreshToken,
+                ExpiresIn = expiresIn,
+                RefreshExpiresIn = refreshExpiresIn,
                 User = new
                 {
                     UserId = username,
@@ -695,6 +699,136 @@ public class AuthController(
             // Passwords and token responses are intentionally excluded from this log event.
             logger.LogWarning(ex, "Keycloak direct login failed for user {UsernameOrEmail}.", usernameOrEmail);
             return null;
+        }
+    }
+
+    public record RefreshTokenRequest(string? RefreshToken);
+
+    /// <summary>
+    /// Refreshes Keycloak Direct Grant access tokens using a valid refresh token for long-lived sessions.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("refresh")]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest? request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request?.RefreshToken))
+        {
+            return BadRequest(ApiResponse<object>.Fail("Refresh token is required."));
+        }
+
+        var keycloakUrl = configuration["Keycloak:BaseUrl"]
+            ?? configuration["Keycloak:Authority"]?.Replace("/realms/erpez", "")
+            ?? "https://keycloak.dev.nextstep-software.com";
+        var clientId = configuration["Keycloak:Audience"] ?? "web-client";
+        var realm = "erpez";
+
+        try
+        {
+            var client = httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var tokenUrl = $"{keycloakUrl.TrimEnd('/')}/realms/{realm}/protocol/openid-connect/token";
+            var tokenContent = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["client_id"] = clientId,
+                ["grant_type"] = "refresh_token",
+                ["refresh_token"] = request.RefreshToken
+            });
+
+            var res = await client.PostAsync(tokenUrl, tokenContent, cancellationToken);
+            if (!res.IsSuccessStatusCode)
+            {
+                return Unauthorized(ApiResponse<object>.Fail("Invalid or expired refresh token."));
+            }
+
+            var doc = await System.Text.Json.JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+            var root = doc.RootElement;
+
+            var accessToken = root.TryGetProperty("access_token", out var atProp) ? atProp.GetString() : null;
+            var newRefreshToken = root.TryGetProperty("refresh_token", out var rtProp) ? rtProp.GetString() : request.RefreshToken;
+            var expiresIn = root.TryGetProperty("expires_in", out var expProp) ? expProp.GetInt32() : 300;
+            var refreshExpiresIn = root.TryGetProperty("refresh_expires_in", out var rexpProp) ? rexpProp.GetInt32() : 1800;
+
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                return Unauthorized(ApiResponse<object>.Fail("Failed to retrieve access token from Keycloak."));
+            }
+
+            // Parse JWT payload from accessToken
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(accessToken);
+
+            var sub = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value ?? string.Empty;
+            var email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? string.Empty;
+            var username = jwt.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value ?? email;
+            var name = jwt.Claims.FirstOrDefault(c => c.Type == "name")?.Value ?? username;
+
+            var realmRoles = jwt.Claims.Where(c => c.Type == "realm_access" || c.Type == "role" || c.Type == ClaimTypes.Role)
+                .Select(c => c.Value).ToList();
+            var isSuperAdmin = realmRoles.Any(r => r.Contains("SuperAdmin") || r.Contains("platform_administrator"));
+
+            // Look up tenant membership for this user
+            var member = await unitOfWork.TenantMemberRepository.FindAsync(m =>
+                (m.ExternalIdentityId == sub || m.Email.ToLower() == email.ToLower() || m.UserId.ToLower() == username.ToLower()) &&
+                !m.IsDeleted, cancellationToken);
+
+            var tenantId = member?.TenantId;
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, sub),
+                new("sub", sub),
+                new("preferred_username", username),
+                new("name", name),
+                new(ClaimTypes.Name, name),
+                new(ClaimTypes.Email, email),
+                new("email", email),
+                new("is_super_admin", isSuperAdmin.ToString().ToLowerInvariant())
+            };
+
+            if (tenantId != null)
+            {
+                claims.Add(new Claim("tenant_id", tenantId.Value.ToString()));
+                claims.Add(new Claim("tenantId", tenantId.Value.ToString()));
+            }
+
+            if (realmRoles.Count > 0)
+            {
+                foreach (var role in realmRoles)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, role));
+                    claims.Add(new Claim("role", role));
+                }
+            }
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(devSigningKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddSeconds(expiresIn),
+                Issuer = devIssuer,
+                Audience = devAudience,
+                SigningCredentials = credentials
+            };
+
+            var token = handler.CreateToken(tokenDescriptor);
+            var tokenString = handler.WriteToken(token);
+
+            return Ok(ApiResponse<object>.Success(new
+            {
+                Token = tokenString,
+                KeycloakAccessToken = accessToken,
+                RefreshToken = newRefreshToken,
+                ExpiresIn = expiresIn,
+                RefreshExpiresIn = refreshExpiresIn
+            }, "Token refreshed successfully."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Token refresh operation failed.");
+            return Unauthorized(ApiResponse<object>.Fail("Token refresh failed."));
         }
     }
 }

@@ -81,6 +81,16 @@ api.interceptors.response.use(
         const refreshed = await keycloak.updateToken(TOKEN_MIN_VALIDITY_SECONDS)
 
         if (refreshed && keycloak.token) {
+          // Persist refreshed tokens to prevent stale token reuse in interceptors
+          try {
+            localStorage.setItem('erpez_auth_token', keycloak.token)
+            if (keycloak.refreshToken) {
+              localStorage.setItem('erpez_refresh_token', keycloak.refreshToken)
+            }
+          } catch {
+            // Ignore localStorage errors
+          }
+
           // Update the authorization header
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${keycloak.token}`
@@ -89,8 +99,14 @@ api.interceptors.response.use(
           return api(originalRequest)
         }
       } catch (refreshError) {
-        // If refresh fails, logout the user
+        // If refresh fails, clean up tokens and logout the user
         console.error('Token refresh failed:', refreshError)
+        try {
+          localStorage.removeItem('erpez_auth_token')
+          localStorage.removeItem('erpez_refresh_token')
+        } catch {
+          // Ignore
+        }
         keycloak.logout()
         return Promise.reject(refreshError)
       }
