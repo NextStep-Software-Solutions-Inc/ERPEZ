@@ -163,7 +163,7 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
               </div>
               {isTrial && (
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">After your trial</dt>
+                  <dt className="text-muted-foreground">Price after trial</dt>
                   <dd className="font-medium text-slate-800">
                     {formatMoney(subscription?.amountCents || 29900, subscription?.currency || "USD")}/
                     {subscription?.billingCycle === "yearly" ? "yr" : "mo"} + tax
@@ -182,28 +182,32 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
           </CardContent>
         </Card>
 
-        {/* Next Invoice / After Your Trial Card */}
+        {/* Next Invoice / Price After Trial Card */}
         <Card className="shadow-sm border-slate-200">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-emerald-600" />
                 <CardTitle className="text-base font-semibold">
-                  {isTrial ? "After your trial" : "Next Invoice"}
+                  {isTrial ? "Price after trial" : "Next Invoice"}
                 </CardTitle>
               </div>
               {nextInvoice.isApplicable && (
                 <Badge
                   variant="outline"
-                  className="border-emerald-300 text-emerald-700 bg-emerald-50 text-[10px]"
+                  className={
+                    isTrial
+                      ? "border-slate-300 text-slate-600 bg-white text-[10px]"
+                      : "border-emerald-300 text-emerald-700 bg-emerald-50 text-[10px]"
+                  }
                 >
-                  {isTrial ? `First charge on ${nextInvoice.dueDate}` : `Due ${nextInvoice.dueDate}`}
+                  {isTrial ? "After trial only" : `Due ${nextInvoice.dueDate}`}
                 </Badge>
               )}
             </div>
             <CardDescription>
               {isTrial
-                ? "Your first charge will occur when your free trial ends"
+                ? "Your first charge would occur after your free trial if you continue with Starter"
                 : "Upcoming projected billing summary"}
             </CardDescription>
           </CardHeader>
@@ -211,8 +215,12 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
             {nextInvoice.isApplicable ? (
               <>
                 <div className="flex items-center justify-between">
-                  <p className="text-2xl font-extrabold text-slate-900">
+                  <p className="text-xl font-bold text-slate-900">
                     {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
+                    <span className="text-xs font-normal text-slate-600">
+                      {" "}
+                      / {nextInvoice.billingCycle === "yearly" ? "year" : "month"}
+                    </span>
                   </p>
                   <span className="text-xs text-slate-500">
                     Includes {Math.round(nextInvoice.taxRate * 100)}% estimated tax
@@ -230,14 +238,14 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">
-                      Tax ({Math.round(nextInvoice.taxRate * 100)}% VAT)
+                      Estimated Tax ({Math.round(nextInvoice.taxRate * 100)}% VAT)
                     </dt>
                     <dd className="font-medium">
                       {formatMoney(nextInvoice.taxCents, nextInvoice.currency)}
                     </dd>
                   </div>
                   <div className="flex justify-between font-bold border-t border-slate-200 pt-2 text-slate-900">
-                    <dt>{isTrial ? "Estimated First Charge" : "Total Estimated Due"}</dt>
+                    <dt>{isTrial ? "Price after trial" : "Total Estimated Due"}</dt>
                     <dd className="text-blue-600">
                       {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
                     </dd>
@@ -246,7 +254,7 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
 
                 {isTrial && (
                   <p className="text-[11px] text-slate-500">
-                    Your trial is free. You won't be charged until your trial ends.
+                    Your trial is free. You won't be charged during your trial.
                   </p>
                 )}
 
@@ -255,7 +263,7 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
                   onClick={() => navigate("/invoice")}
                   className="w-full flex items-center justify-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
                 >
-                  View All Invoices
+                  {isTrial ? "View Billing History" : "View All Invoices"}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </>

@@ -18,7 +18,6 @@ import {
   Clock,
   Sparkles,
   Info,
-  Calendar,
 } from "lucide-react";
 import { PageContainer } from "~/components/PageContainer";
 import { Button } from "~/components/ui/button";
@@ -107,6 +106,16 @@ export default function SubscriptionPage() {
           day: "numeric",
         })
       : "October 9";
+
+  const gracePeriodEndsAt =
+    subscription?.gracePeriodEndsAt ||
+    (subscription?.endDate
+      ? new Date(new Date(subscription.endDate).getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "October 12, 2026");
 
   // Formatted next billing date for paid plans
   const nextBillingDate =
@@ -215,6 +224,43 @@ export default function SubscriptionPage() {
       description="Manage your plan, trial, billing and license"
     >
       <div className="space-y-6">
+        {/* Grace Period Banner (Displayed when payment issue arises after trial) */}
+        {status === "past_due" && (
+          <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-amber-950 text-sm">
+                      Payment issue — your access is still active
+                    </h4>
+                    <Badge className="bg-amber-200 text-amber-900 border-amber-400 text-[10px] font-bold">
+                      ACTION REQUIRED
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    We couldn't process your payment for {planName}. Update your payment method by{" "}
+                    <strong>{gracePeriodEndsAt}</strong> to keep using {planName}.
+                  </p>
+                  <p className="text-[11px] text-amber-700">
+                    Your access is still active. Amount due:{" "}
+                    <strong>{formatMoney(nextInvoice?.totalCents || 33488, currency)}</strong> (
+                    {formatMoney(nextInvoice?.subtotalCents || 29900, currency)} {planName} plan +{" "}
+                    {formatMoney(nextInvoice?.taxCents || 3588, currency)} estimated tax).
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => setIsAddPaymentModalOpen(true)}
+                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shrink-0 h-9 px-4"
+              >
+                Update Payment Method
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Card 1: Primary Subscription / Trial Card */}
         <Card className="shadow-sm border-slate-200">
           <CardHeader>
@@ -257,7 +303,7 @@ export default function SubscriptionPage() {
                     </span>
                   </div>
                   <span className="text-xs text-slate-600">
-                    Your {planName} trial ends <strong className="text-slate-900">{trialEndsAt}</strong>
+                    Your trial ends <strong className="text-slate-900">{trialEndsAt}</strong>
                   </span>
                 </div>
 
@@ -282,7 +328,7 @@ export default function SubscriptionPage() {
             {isTrial ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-4 gap-x-6 text-sm pt-1">
                 <div>
-                  <p className="text-muted-foreground text-xs">Current Cost</p>
+                  <p className="text-muted-foreground text-xs">Current cost</p>
                   <p className="font-bold text-emerald-700 mt-0.5 text-base">
                     $0{" "}
                     <span className="text-xs font-normal text-slate-500">
@@ -291,18 +337,18 @@ export default function SubscriptionPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs">Trial Ends</p>
+                  <p className="text-muted-foreground text-xs">Trial ends</p>
                   <p className="font-bold text-slate-900 mt-0.5 text-base">{trialEndsAt}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs">After Your Trial</p>
+                  <p className="text-muted-foreground text-xs">Price after trial</p>
                   <p className="font-semibold text-slate-900 mt-0.5">
                     {formatMoney(monthlyPriceCents, currency)}
                     <span className="text-xs font-normal text-muted-foreground">/month + tax</span>
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs">Continue After Trial</p>
+                  <p className="text-muted-foreground text-xs">Continue after trial</p>
                   <div className="mt-0.5">
                     <Badge
                       className={
@@ -374,11 +420,12 @@ export default function SubscriptionPage() {
                     <div className="flex items-start gap-2.5">
                       <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs font-bold text-amber-900">Payment method required</p>
+                        <p className="text-xs font-bold text-amber-900">
+                          Payment method required to continue
+                        </p>
                         <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
-                          {autoRenew && status !== "cancelled"
-                            ? `Your trial is set to continue after ${trialEndsAt}, but you need to add a payment method before then.`
-                            : `Add a payment method to continue with ${planName} after your free trial ends.`}
+                          Add a payment method before your trial ends to continue with {planName} after{" "}
+                          <strong>{trialEndsAt}</strong>.
                         </p>
                       </div>
                     </div>
@@ -405,10 +452,10 @@ export default function SubscriptionPage() {
               </div>
             )}
 
-            {/* Price After Trial / Projected Next Invoice */}
+            {/* Price After Trial Section (Refined: non-invoice framing, balanced visual weight) */}
             {nextInvoice && nextInvoice.isApplicable && (
               <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 p-3.5 rounded-lg">
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     {isTrial ? (
                       <Sparkles className="h-4 w-4 text-blue-600" />
@@ -416,26 +463,50 @@ export default function SubscriptionPage() {
                       <Receipt className="h-4 w-4 text-emerald-600" />
                     )}
                     <span className="text-xs font-semibold text-slate-700">
-                      {isTrial ? "After your trial" : "Projected Next Invoice Total"}
+                      {isTrial ? "Price after trial" : "Projected Next Invoice Total"}
                     </span>
-                    <Badge
-                      variant="outline"
-                      className="border-blue-300 text-blue-700 bg-blue-50 text-[10px] py-0"
-                    >
-                      {isTrial ? `First charge on ${trialEndsAt}` : `Due ${nextInvoice.dueDate}`}
-                    </Badge>
+                    {isTrial ? (
+                      <Badge
+                        variant="outline"
+                        className="border-slate-300 text-slate-600 bg-white text-[10px] py-0"
+                      >
+                        After trial only
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="border-blue-300 text-blue-700 bg-blue-50 text-[10px] py-0"
+                      >
+                        Due {nextInvoice.dueDate}
+                      </Badge>
+                    )}
                   </div>
-                  <p className="text-lg font-extrabold text-slate-900">
-                    {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
-                    <span className="text-xs font-normal text-slate-500 ml-2">
-                      ({formatMoney(nextInvoice.subtotalCents, nextInvoice.currency)} plan +{" "}
-                      {formatMoney(nextInvoice.taxCents, nextInvoice.currency)}{" "}
-                      {Math.round(nextInvoice.taxRate * 100)}% VAT)
-                    </span>
-                  </p>
-                  {isTrial && (
-                    <p className="text-[11px] text-slate-500">
-                      Your trial is free. You won't be charged until your trial ends.
+
+                  {isTrial ? (
+                    <div>
+                      <p className="text-base font-bold text-slate-900">
+                        {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
+                        <span className="text-xs font-normal text-slate-600">
+                          {" "}
+                          / {isYearly ? "year" : "month"}
+                        </span>
+                        <span className="text-xs font-normal text-slate-500 ml-2">
+                          ({formatMoney(nextInvoice.subtotalCents, nextInvoice.currency)} plan +{" "}
+                          {formatMoney(nextInvoice.taxCents, nextInvoice.currency)} estimated tax)
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Your trial is free. You won't be charged during your trial.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-lg font-extrabold text-slate-900">
+                      {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
+                      <span className="text-xs font-normal text-slate-500 ml-2">
+                        ({formatMoney(nextInvoice.subtotalCents, nextInvoice.currency)} plan +{" "}
+                        {formatMoney(nextInvoice.taxCents, nextInvoice.currency)}{" "}
+                        {Math.round(nextInvoice.taxRate * 100)}% VAT)
+                      </span>
                     </p>
                   )}
                 </div>
@@ -457,7 +528,7 @@ export default function SubscriptionPage() {
                     className="text-xs h-8 gap-1.5 border-slate-300 text-slate-700 hover:bg-white"
                   >
                     <Receipt className="h-3.5 w-3.5 text-emerald-600" />
-                    All Invoices
+                    {isTrial ? "Billing History" : "All Invoices"}
                   </Button>
                 </div>
               </div>
@@ -465,61 +536,73 @@ export default function SubscriptionPage() {
           </CardContent>
         </Card>
 
-        {/* Card 2: Trial Renewal / Settings */}
+        {/* Card 2: Continue after trial / Settings (Simplified without redundancy) */}
         <Card className="shadow-sm border-slate-200">
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-blue-600" />
-              <CardTitle className="text-lg">
-                {isTrial ? "Trial renewal" : "Subscription Settings"}
-              </CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-blue-600" />
+                <CardTitle className="text-lg">
+                  {isTrial ? "Continue after trial" : "Subscription Settings"}
+                </CardTitle>
+              </div>
+              {isTrial && (
+                <Badge
+                  className={
+                    autoRenew && status !== "cancelled"
+                      ? "bg-emerald-100 text-emerald-800 text-xs py-0.5 px-2.5 font-bold border-emerald-300"
+                      : "bg-slate-100 text-slate-700 text-xs py-0.5 px-2.5 font-bold border-slate-300"
+                  }
+                >
+                  {autoRenew && status !== "cancelled" ? "ON" : "OFF"}
+                </Badge>
+              )}
             </div>
-            <CardDescription>
-              {isTrial
-                ? `Continue using ${planName} after your free trial ends`
-                : "Configure your renewal preferences and automated notifications"}
+            <CardDescription className="text-xs text-slate-600 mt-1">
+              {isTrial ? (
+                autoRenew && status !== "cancelled" ? (
+                  <>
+                    Your {planName} plan will continue at{" "}
+                    <strong className="text-slate-900">
+                      {formatMoney(monthlyPriceCents, currency)}/month + applicable tax
+                    </strong>{" "}
+                    after your trial ends on <strong className="text-slate-900">{trialEndsAt}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Your {planName} access will end on{" "}
+                    <strong className="text-slate-900">{trialEndsAt}</strong>. You won't be charged when
+                    your trial ends.
+                  </>
+                )
+              ) : (
+                "Configure your renewal preferences and automated notifications"
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm text-slate-900">
-                      {isTrial ? "Continue after trial" : "Auto Renewal"}
-                    </p>
-                    <Badge
-                      className={
-                        autoRenew && status !== "cancelled"
-                          ? "bg-emerald-100 text-emerald-800 text-[10px] py-0 font-semibold"
-                          : "bg-slate-100 text-slate-700 text-[10px] py-0 font-semibold"
-                      }
-                    >
-                      {autoRenew && status !== "cancelled" ? "ON" : "OFF"}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {isTrial
-                      ? autoRenew && status !== "cancelled"
-                        ? `Your ${planName} plan will continue at ${formatMoney(monthlyPriceCents, currency)}/month + applicable tax when your free trial ends on ${trialEndsAt}.`
-                        : `Your ${planName} plan will end when your free trial ends on ${trialEndsAt}. You won't be charged when your trial ends.`
-                      : "Automatically renew your subscription at the end of each billing period"}
-                  </p>
-                  {isTrial && autoRenew && status !== "cancelled" && (
-                    <p className="text-[11px] text-slate-500 pt-0.5">
-                      {hasPaymentMethod
+            <div className="flex items-center justify-between pb-1">
+              <div className="space-y-0.5">
+                <p className="font-semibold text-sm text-slate-900">
+                  {isTrial ? "Continue after trial" : "Auto Renewal"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isTrial
+                    ? autoRenew && status !== "cancelled"
+                      ? hasPaymentMethod
                         ? "Your saved payment method will be charged when your trial ends."
-                        : "Add a payment method before your trial ends to continue with Starter."}
-                    </p>
-                  )}
-                </div>
-                <Switch
-                  checked={autoRenew && status !== "cancelled"}
-                  onCheckedChange={handleToggleAutoRenew}
-                />
+                        : "Add a payment method before your trial ends to continue with Starter."
+                      : "Your account will not continue to a paid Starter subscription when the trial ends."
+                    : "Automatically renew your subscription at the end of each billing period"}
+                </p>
               </div>
-              <Separator className="my-4" />
+              <Switch
+                checked={autoRenew && status !== "cancelled"}
+                onCheckedChange={handleToggleAutoRenew}
+              />
             </div>
+
+            <Separator className="my-3" />
 
             <div>
               <div className="flex items-center justify-between">
@@ -537,7 +620,7 @@ export default function SubscriptionPage() {
                   }}
                 />
               </div>
-              <Separator className="my-4" />
+              <Separator className="my-3" />
             </div>
 
             <div>
@@ -556,7 +639,7 @@ export default function SubscriptionPage() {
                   }}
                 />
               </div>
-              <Separator className="my-4" />
+              <Separator className="my-3" />
             </div>
 
             <div>
@@ -726,7 +809,7 @@ export default function SubscriptionPage() {
           </CardContent>
         </Card>
 
-        {/* Card 5: Trial & Subscription Actions */}
+        {/* Card 5: Trial Actions (Continue with Starter clearly visible when OFF) */}
         <Card className="shadow-sm border-slate-200">
           <CardHeader>
             <CardTitle className="text-lg">
@@ -756,7 +839,7 @@ export default function SubscriptionPage() {
               {status === "cancelled" || !autoRenew ? (
                 <Button
                   onClick={() => setIsReactivateDialogOpen(true)}
-                  className="w-full bg-emerald-600 text-white text-xs py-2.5 px-4 font-medium hover:bg-emerald-700"
+                  className="w-full bg-emerald-600 text-white text-xs py-2.5 px-4 font-semibold hover:bg-emerald-700 shadow-xs"
                 >
                   <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
                   Continue with Starter
@@ -776,7 +859,7 @@ export default function SubscriptionPage() {
                 onClick={() => navigate("/invoice")}
                 className="w-full text-xs py-2.5 px-4 text-slate-700 border-slate-300 hover:bg-slate-50"
               >
-                View Invoices
+                {isTrial ? "View Billing History" : "View Invoices"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
