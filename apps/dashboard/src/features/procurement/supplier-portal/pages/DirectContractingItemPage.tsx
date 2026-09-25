@@ -1,38 +1,165 @@
-import { useMemo, useState } from 'react'
+import * as React from 'react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import {
+  Building,
   CheckCircle2,
-  Eye,
-  MoreVertical,
-  Search as SearchIcon,
+  Clock,
+  Layers,
+  Loader2,
+  ShoppingBag,
   ShoppingCart,
   Upload,
-  X,
+  UserCheck,
 } from 'lucide-react'
-import { DirectContractingItemDetails } from '../_components/DirectContractingItemDetails'
-import type { DirectContracting } from '@/features/procurement/direct-contracting/types'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { toast } from 'sonner'
+
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
-import { useDirectContractings } from '@/features/procurement/direct-contracting/handlers'
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
+import {
+  SupplierDirectContractingTable,
+  type SupplierTableActionHandlers,
+} from '../tables'
+import { DARequirementsModal } from '../_components/DARequirementsModal'
+import { useSuppliers } from '@/components/features/planning/procurement-library/suppliers/useSuppliers'
+import { useSupplierDirectContractings } from '../handlers/supplierPortalRequests'
+import {
+  useChangeDirectContractingStatus,
+  useDirectContractings,
+  useSubmitProposal,
+} from '@/features/procurement/direct-contracting/handlers'
+import type { DirectContracting } from '@/features/procurement/direct-contracting/types'
+import { useQueryClient } from 'erpez-shared-lib'
+
 export function DirectContractingItemPage() {
-  const { data: response } = useDirectContractings({
+  const queryClient = useQueryClient()
+  const submitProposalMutation = useSubmitProposal()
+  const statusMutation = useChangeDirectContractingStatus()
+
+  // 1. URL-based Search Parameters & Navigation
+  const searchParams = useSearch({
+    from: '/v2/(procurement)/supplier-portal/direct-contracting-item/',
+  })
+  const navigate = useNavigate({
+    from: '/v2/supplier-portal/direct-contracting-item',
+  })
+
+  const { pageNumber, pageSize, status, searchQuery } = searchParams
+
+  const updateSearch = React.useCallback(
+    (updates: Partial<typeof searchParams>) => {
+      navigate({
+        search: (prev) => {
+          const next = {
+            ...prev,
+            ...updates,
+          }
+          if (!next.searchQuery || !next.searchQuery.trim()) {
+            delete (next as any).searchQuery
+          }
+          return next
+        },
+        replace: true,
+      })
+    },
+    [navigate],
+  )
+
+  // 2. Fetch Registered Suppliers for "Acting as" selector
+  const { data: suppliersData, isLoading: isLoadingSuppliers } = useSuppliers({
+    pathParams: {},
+    queryParams: {},
+  })
+  const registeredSuppliers = suppliersData?.data ?? []
+
+  const envSupplierId =
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('erpez_active_supplier_id') || undefined
+      : undefined) ||
+    (import.meta.env.VITE_TEST_SUPPLIER_ID as string) ||
+    ''
+  const [activeSupplierId, setActiveSupplierId] = React.useState<string>(envSupplierId)
+
+  React.useEffect(() => {
+    if (!activeSupplierId && registeredSuppliers.length > 0) {
+      setActiveSupplierId(registeredSuppliers[0].id)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('erpez_active_supplier_id', registeredSuppliers[0].id)
+      }
+    }
+  }, [registeredSuppliers, activeSupplierId])
+
+  const handleSelectSupplier = (id: string) => {
+    setActiveSupplierId(id)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('erpez_active_supplier_id', id)
+    }
+  }
+
+  const selectedSupplierObj = registeredSuppliers.find((s) => s.id === activeSupplierId)
+
+  // 3. Fetch Direct Contracting Items for Supplier
+  // Primary query: dedicated supplier-scoped endpoint
+  const {
+    data: supplierItems,
+    isLoading: isLoadingSupplierItems,
+    refetch: refetchSupplierItems,
+  } = useSupplierDirectContractings({
+    queryParams: {
+      supplierId: activeSupplierId,
+    }, pathParams: {},
+    enabled: Boolean(activeSupplierId),
+  })
+
+  // Fallback query: BAC direct contractings list (defense against empty backend supplier DB while developing)
+  const {
+    data: bacResponse,
+    isLoading: isLoadingBac,
+    refetch: refetchBac,
+  } = useDirectContractings({
     pathParams: {},
     queryParams: { pageSize: 200 },
   })
 
-  const entries: Array<DirectContracting> = useMemo(() => {
-    const statusMap: Record<string, DirectContracting['status']> = {
+  const isLoading = (isLoadingSupplierItems && Boolean(activeSupplierId)) || (isLoadingBac && !supplierItems?.length)
+
+  // 4. Transform and merge data defensively
+  const processedItems: DirectContracting[] = React.useMemo(() => {
+    let rawList: DirectContracting[] = []
+
+    if (supplierItems && supplierItems.length > 0) {
+      rawList = supplierItems
+    } else {
+      // Use bacResponse.data (fixing the previous response.items bug!)
+      const bacList = bacResponse?.data ?? []
+      rawList = bacList.filter((item) => {
+        // Suppliers never see internal drafts
+        if ((item.status || '').toLowerCase() === 'draft') return false
+        // If an active supplier is chosen, filter by that supplier if matched
+        if (activeSupplierId && item.exclusiveSupplierId) {
+          const isMatchingSupplier = item.exclusiveSupplierId.toLowerCase() === activeSupplierId.toLowerCase()
+          // If match found, show only that supplier's items; otherwise if user wants to see test data, show items
+          return isMatchingSupplier || bacList.every((b) => b.exclusiveSupplierId !== activeSupplierId)
+        }
+        return true
+      })
+    }
+
+    const statusMap: Record<string, string> = {
       approved: 'approved',
       draft: 'draft',
       submitted: 'submitted',
@@ -42,355 +169,325 @@ export function DirectContractingItemPage() {
       submitted_to_supplier: 'submitted-to-supplier',
       pending_for_approval: 'for-review',
       'pending-for-approval': 'for-review',
-      returned: 'rejected',
-      rejected: 'rejected',
+      returned: 'returned',
+      rejected: 'returned',
     }
-    return (response?.items ?? []).map((item) => ({
+
+    return rawList.map((item) => ({
       ...item,
       dcName: item.dcName || item.name || '',
       prNumber: item.prNumber || item.bacProjectTitle || '',
       supplierName: item.supplierName || item.exclusiveSupplierName || '',
-      status:
-        statusMap[(item.status || '').toLowerCase()] ||
-        (item.status as DirectContracting['status']) ||
-        'draft',
+      status: statusMap[(item.status || '').toLowerCase()] || item.status || 'submitted-to-supplier',
     }))
-  }, [response?.items])
+  }, [supplierItems, bacResponse?.data, activeSupplierId])
 
-  // Filters
-  const [search, setSearch] = useState('')
+  // 5. Interactive KPI Summary Counts
+  const stats = React.useMemo(() => {
+    const total = processedItems.length
+    let pending = 0
+    let submitted = 0
+    let approved = 0
+    let returned = 0
 
-  // Full-page view id (replaces modal/dialog view)
-  const [viewingId, setViewingId] = useState<string | null>(null)
+    processedItems.forEach((it) => {
+      const s = (it.status || '').toLowerCase()
+      const hasProposal = Boolean(it.proposalAmount || it.proposal)
+      if (s === 'approved') approved += 1
+      else if (s === 'returned' || s === 'rejected') returned += 1
+      else if (s === 'for-review' || s === 'pending_for_approval' || s === 'submitted' || hasProposal) submitted += 1
+      else pending += 1
+    })
 
-  // Row selection state
-  const [selectedIds, setSelectedIds] = useState<Array<string>>([])
+    return { total, pending, submitted, approved, returned }
+  }, [processedItems])
 
-  // Pagination state
-  const [page, setPage] = useState(1)
-  const pageSize = 5
+  // 6. Quotation Modal State
+  const [quotationItem, setQuotationItem] = React.useState<DirectContracting | null>(null)
+  const [isQuotationOpen, setIsQuotationOpen] = React.useState(false)
 
-  // Filtered Direct Contracting entries (submitted to supplier, for-review, approved, or rejected)
-  const dcEntries = entries.filter((e) =>
-    ['submitted-to-supplier', 'for-review', 'approved', 'rejected'].includes(e.status)
+  // 7. Table Action Handlers
+  const handlers: SupplierTableActionHandlers = React.useMemo(
+    () => ({
+      onViewDetails: (id: string) => {
+        const matched = processedItems.find((it) => it.id === id)
+        const supId = matched?.exclusiveSupplierId || activeSupplierId
+        navigate({
+          to: '/v2/supplier-portal/direct-contracting-item/$id',
+          params: { id },
+          search: supId ? { supplierId: supId } : undefined,
+        })
+      },
+      onOpenQuotation: (item: DirectContracting) => {
+        setQuotationItem(item)
+        setIsQuotationOpen(true)
+      },
+      onCopyDCNumber: (dcNumber: string) => {
+        navigator.clipboard.writeText(dcNumber)
+        toast.success(`Reference ${dcNumber} copied to clipboard.`)
+      },
+    }),
+    [navigate],
   )
 
-  // Filter based on search
-  const filtered = dcEntries.filter((it) => {
-    const q = search.trim().toLowerCase()
-    if (!q) return true
-    return (
-      it.dcNumber.toLowerCase().includes(q) ||
-      it.prNumber.toLowerCase().includes(q) ||
-      it.dcName.toLowerCase().includes(q) ||
-      (it.supplierName || '').toLowerCase().includes(q)
-    )
-  })
+  // 8. Proposal Submit Handler
+  const handleWizardSave = async (patch: Partial<DirectContracting> | any) => {
+    if (!quotationItem) return
+    if (patch.quotationStatus === 'submitted') {
+      try {
+        const payload = {
+          exclusivityProofUrl: patch.exclusivityProofUrl || '',
+          exclusivityProofFileName: patch.exclusivityProofFileName || '',
+          proposalNotes: patch.proposalNotes || '',
+          proposalAmount: patch.proposalAmount || 0,
+          bidTotalAmount: patch.bidTotalAmount || 0,
+          brand: patch.bidBrand || '',
+          model: patch.bidModel || '',
+          color: patch.bidColor || '',
+          brochureFileUrl: patch.bidBrochureUrl || '',
+          brochureFileName: patch.bidBrochureFileName || '',
+          quotationItems: patch.quotationItems?.map((q: any) => ({
+            cprItemId: q.cprItemId,
+            unitPrice: q.bidUnitPrice,
+            totalBid: q.bidTotalAmount,
+            bidTotalAmount: q.bidTotalAmount,
+            bidModel: q.bidModel,
+            bidBrand: q.bidBrand,
+            bidColor: q.bidColor,
+            bidBrochureUrl: q.bidBrochureUrl,
+            bidBrochureFileName: q.bidBrochureFileName,
+          })),
+        }
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
-  const pagedItems = filtered.slice((page - 1) * pageSize, page * pageSize)
+        await submitProposalMutation.mutateAsync({
+          pathParams: { id: quotationItem.id },
+          payload,
+        })
+        await statusMutation.mutateAsync({
+          pathParams: { id: quotationItem.id },
+          payload: { status: 'PENDING_FOR_APPROVAL' },
+        })
 
-  const allVisibleSelected = pagedItems.length > 0 && pagedItems.every((it) => selectedIds.includes(it.id))
-  const someVisibleSelected = selectedIds.length > 0 && !allVisibleSelected
+        toast.success('Your formal bid and quotation have been submitted successfully to the BAC.')
+        setIsQuotationOpen(false)
+        setQuotationItem(null)
 
-  const toggleSelectAll = (checked?: boolean) => {
-    if (checked) setSelectedIds((s) => Array.from(new Set([...s, ...pagedItems.map((it) => it.id)])))
-    else setSelectedIds((s) => s.filter((id) => !pagedItems.map((it) => it.id).includes(id)))
-  }
-
-  const toggleRowSelect = (id: string, checked?: boolean) => {
-    if (checked) setSelectedIds((s) => Array.from(new Set([...s, id])))
-    else setSelectedIds((s) => s.filter((x) => x !== id))
-  }
-
-  // If viewing an item, render the full-page details component (same pattern as RFQDetailsPage)
-  const viewingEntry = viewingId ? entries.find((it) => it.id === viewingId) ?? null : null
-  if (viewingEntry) {
-    return <DirectContractingItemDetails item={viewingEntry} onBack={() => setViewingId(null)} />
+        // Invalidate queries to refresh data
+        void queryClient.invalidateQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === 'string' &&
+            query.queryKey[0].includes('direct-contracting'),
+        })
+        refetchSupplierItems()
+        refetchBac()
+      } catch (err) {
+        console.error(err)
+        toast.error('Failed to submit quotation. Please verify all required fields.')
+      }
+    }
   }
 
   return (
-    <div className="w-full space-y-6 pb-10">
-      {/* Module Header (purple) */}
-      <Card className="bg-gradient-to-r from-violet-50 via-purple-50 to-indigo-50 border-violet-200 shadow-sm">
+    <div className="w-full space-y-6 pb-12">
+      {/* Top Header Banner with Supplier Switcher */}
+      <Card className="bg-gradient-to-r from-violet-500/10 via-purple-500/5 to-background border-violet-500/20 shadow-xs">
         <CardHeader>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="space-y-1">
-              <CardTitle className="text-3xl">Supplier Portal</CardTitle>
-              <CardDescription className="text-base">
-                Supplier-facing portal for direct contracting and RFQ interactions
-              </CardDescription>
-            </div>
-            <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
-              <ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Supplier Portal
-            </Badge>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Main Content Card */}
-      <Card>
-        <CardHeader className="bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-orange-200 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="h-12 w-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-              <ShoppingCart className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                <CardTitle className="text-3xl text-orange-900">Direct Contracting Item</CardTitle>
-                <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300 h-fit">
+              <div className="flex items-center gap-2.5">
+                <CardTitle className="text-3xl font-bold tracking-tight">
                   Supplier Portal
-                </Badge>
-                <Badge variant="outline" className="bg-indigo-100 text-indigo-700 border-indigo-300 h-fit text-xs">
-                  RA 12009
+                </CardTitle>
+                <Badge
+                  variant="outline"
+                  className="bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-300 font-semibold"
+                >
+                  <ShoppingBag className="h-3.5 w-3.5 mr-1" /> Direct Contracting
                 </Badge>
               </div>
-              <CardDescription className="text-orange-700 text-sm mt-1 leading-relaxed">
-                Record and manage direct supplier/store purchases under the RA 12009 Direct Contracting process.
-                Upload receipts, track approval status, and ensure threshold compliance.
+              <CardDescription className="text-base text-muted-foreground">
+                Review exclusive procurement invitations, upload proof of exclusivity, and submit binding price proposals under RA 12009.
               </CardDescription>
+            </div>
+
+            {/* Acting As Supplier Selector */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-2 bg-background/80 backdrop-blur border border-violet-200 dark:border-violet-900 rounded-lg px-3 py-1.5 shadow-xs">
+                <UserCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                <span className="text-xs font-semibold text-foreground whitespace-nowrap">
+                  Acting as:
+                </span>
+                {isLoadingSuppliers ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <Select value={activeSupplierId} onValueChange={handleSelectSupplier}>
+                    <SelectTrigger className="h-8 border-violet-200 dark:border-violet-800 bg-background text-xs w-[220px]">
+                      <SelectValue placeholder="Select a supplier..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {registeredSuppliers.map((sup) => (
+                        <SelectItem key={sup.id} value={sup.id} className="text-xs">
+                          {sup.name || 'Unnamed Supplier'} ({sup.status || 'Active'})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              <Badge
+                variant="outline"
+                className="h-fit px-3 py-1 font-semibold border-default-300"
+              >
+                <Building className="h-3.5 w-3.5 mr-1.5 text-primary" /> RA 12009 / Rule XVI
+              </Badge>
             </div>
           </div>
         </CardHeader>
-
-        <CardContent>
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-indigo-600 uppercase">Proprietary Requests</p>
-                  <p className="text-2xl font-bold text-indigo-900">{dcEntries.length}</p>
-                </div>
-                <div className="h-10 w-10 bg-indigo-200 rounded-full flex items-center justify-center text-indigo-700">
-                  <ShoppingCart className="h-5 w-5" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Pending Bids</p>
-                  <p className="text-2xl font-bold text-amber-900">
-                    {dcEntries.filter(e => e.status === 'submitted-to-supplier' && !e.proposalAmount).length}
-                  </p>
-                </div>
-                <div className="h-10 w-10 bg-amber-200 rounded-full flex items-center justify-center text-amber-700">
-                  <Upload className="h-5 w-5" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Submitted Proposals</p>
-                  <p className="text-2xl font-bold text-emerald-900">
-                    {dcEntries.filter(e => e.status === 'for-review' || e.status === 'approved' || e.status === 'rejected' || e.proposalAmount).length}
-                  </p>
-                </div>
-                <div className="h-10 w-10 bg-emerald-200 rounded-full flex items-center justify-center text-emerald-700">
-                  <CheckCircle2 className="h-5 w-5" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="shadow-sm border rounded-md">
-            <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 p-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <h3 className="text-xl font-semibold">Direct Contracting Items</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Direct supplier/store purchases under RA 12009 — threshold-compliant transactions
-                  </p>
-                </div>
-              </div>
-              {/* Toolbar */}
-              <div className="flex items-center gap-3 flex-wrap pt-2">
-                <div className="relative w-72">
-                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search DC number, item, or supplier..."
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value)
-                      setPage(1)
-                    }}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-0">
-              {dcEntries.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <div className="h-20 w-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <SearchIcon className="h-10 w-10 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No items found</h3>
-                  <p className="text-gray-500 text-center max-w-md">Try adjusting your filters or search term.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-slate-50 hover:bg-slate-50">
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={allVisibleSelected || (someVisibleSelected ? 'indeterminate' : false)}
-                            onCheckedChange={(v) => toggleSelectAll(!!v)}
-                            aria-label="Select all"
-                          />
-                        </TableHead>
-                        <TableHead className="font-semibold whitespace-nowrap">DC Number</TableHead>
-                        <TableHead className="font-semibold whitespace-nowrap">PR Number</TableHead>
-                        <TableHead className="font-semibold">Item Name</TableHead>
-                        <TableHead className="font-semibold whitespace-nowrap">Supplier / Store</TableHead>
-                        <TableHead className="font-semibold whitespace-nowrap">Purchase Source</TableHead>
-                        <TableHead className="font-semibold whitespace-nowrap">Purchase Date</TableHead>
-                        <TableHead className="font-semibold">Status</TableHead>
-                        <TableHead className="w-10" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pagedItems.map((item) => {
-                        return (
-                          <TableRow key={item.id} className="hover:bg-violet-50/40 transition-colors">
-                            <TableCell className="w-12">
-                              <Checkbox
-                                checked={selectedIds.includes(item.id)}
-                                onCheckedChange={(v) => toggleRowSelect(item.id, !!v)}
-                                aria-label={`Select ${item.dcNumber}`}
-                              />
-                            </TableCell>
-                            <TableCell className="font-semibold text-violet-900 whitespace-nowrap">
-                              {item.dcNumber}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                              {item.prNumber}
-                            </TableCell>
-                            <TableCell className="text-sm max-w-[200px]">
-                              <span title={item.dcName} className="line-clamp-2">
-                                {item.dcName}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground max-w-[160px]">
-                              <span title={item.supplierName} className="line-clamp-1">
-                                {item.supplierName}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs whitespace-nowrap">
-                                Accredited Supplier
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                              {item.createdAt
-                                ? new Date(item.createdAt).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                })
-                                : '—'}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  "text-xs flex items-center whitespace-nowrap px-3 py-1 font-semibold",
-                                  item.status === 'approved'
-                                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                    : item.status === 'rejected'
-                                      ? "bg-red-100 text-red-800 border-red-300"
-                                      : (item.status === 'for-review' || item.proposalAmount)
-                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                        : "bg-indigo-50 text-indigo-700 border-indigo-200"
-                                )}
-                              >
-                                {item.status === 'approved' ? (
-                                  <>
-                                    <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
-                                    Approved
-                                  </>
-                                ) : item.status === 'rejected' ? (
-                                  <>
-                                    <X className="h-3 w-3 mr-1 text-red-600" />
-                                    Rejected
-                                  </>
-                                ) : (item.status === 'for-review' || item.proposalAmount) ? (
-                                  <>
-                                    <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
-                                    Submitted
-                                  </>
-                                ) : (
-                                  <>
-                                    <ShoppingCart className="h-3 w-3 mr-1" />
-                                    Pending Quotation
-                                  </>
-                                )}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setViewingId(item.id)}>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Pagination */}
-          {filtered.length > 0 && (
-            <div className="flex items-center justify-between px-2 py-4 mt-2">
-              <div className="text-sm text-muted-foreground">
-                {selectedIds.length} of {filtered.length} row(s) selected.
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-sm text-muted-foreground">
-                  Page {page} of {totalPages}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={page <= 1}
-                    onClick={() => setPage(Math.max(1, page - 1))}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
       </Card>
+
+      {/* Interactive KPI Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Invitations */}
+        <Card
+          onClick={() => updateSearch({ status: 'all', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            !status || status === 'all'
+              ? 'ring-2 ring-violet-500/50 border-violet-500 bg-violet-500/[0.04]'
+              : 'hover:border-violet-400/40',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Invitations
+              </p>
+              <p className="text-2xl font-bold text-foreground">
+                {isLoading ? '...' : stats.total}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                All proprietary requests
+              </p>
+            </div>
+            <div className="h-11 w-11 rounded-lg bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center text-violet-700 dark:text-violet-300">
+              <Layers className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Quotations */}
+        <Card
+          onClick={() => updateSearch({ status: 'pending', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            status === 'pending'
+              ? 'ring-2 ring-amber-500/50 border-amber-500 bg-amber-500/[0.04]'
+              : 'hover:border-amber-400/40',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                Pending Quotation
+              </p>
+              <p className="text-2xl font-bold text-amber-800 dark:text-amber-300">
+                {isLoading ? '...' : stats.pending}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Requires proposal submission
+              </p>
+            </div>
+            <div className="h-11 w-11 rounded-lg bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Upload className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Proposals Submitted */}
+        <Card
+          onClick={() => updateSearch({ status: 'submitted', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            status === 'submitted'
+              ? 'ring-2 ring-sky-500/50 border-sky-500 bg-sky-500/[0.04]'
+              : 'hover:border-sky-400/40',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-sky-700 dark:text-sky-400 uppercase tracking-wider">
+                Proposals Submitted
+              </p>
+              <p className="text-2xl font-bold text-sky-800 dark:text-sky-300">
+                {isLoading ? '...' : stats.submitted}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Under review by BAC
+              </p>
+            </div>
+            <div className="h-11 w-11 rounded-lg bg-sky-100 dark:bg-sky-950/50 flex items-center justify-center text-sky-600 dark:text-sky-400">
+              <Clock className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Approved Awards */}
+        <Card
+          onClick={() => updateSearch({ status: 'approved', pageNumber: 1 })}
+          className={cn(
+            'cursor-pointer transition-all duration-200 hover:shadow-md border',
+            status === 'approved'
+              ? 'ring-2 ring-emerald-500/50 border-emerald-500 bg-emerald-500/[0.04]'
+              : 'hover:border-emerald-400/40',
+          )}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                Approved Awards
+              </p>
+              <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">
+                {isLoading ? '...' : stats.approved}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Ready for PO issuance
+              </p>
+            </div>
+            <div className="h-11 w-11 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Modular TanStack Table v8 */}
+      <SupplierDirectContractingTable
+        data={processedItems}
+        isLoading={isLoading}
+        handlers={handlers}
+        pageNumber={pageNumber}
+        pageSize={pageSize}
+        status={status}
+        searchQuery={searchQuery}
+        onPageChange={(page) => updateSearch({ pageNumber: page })}
+        onPageSizeChange={(size) => updateSearch({ pageSize: size, pageNumber: 1 })}
+        onStatusChange={(status) => updateSearch({ status, pageNumber: 1 })}
+        onSearchChange={(query) => updateSearch({ searchQuery: query || undefined, pageNumber: 1 })}
+      />
+
+      {/* Quotation Wizard Modal */}
+      {quotationItem && (
+        <DARequirementsModal
+          open={isQuotationOpen}
+          onOpenChange={(open) => {
+            setIsQuotationOpen(open)
+            if (!open) setQuotationItem(null)
+          }}
+          item={quotationItem}
+          onSave={handleWizardSave}
+        />
+      )}
     </div>
   )
 }
