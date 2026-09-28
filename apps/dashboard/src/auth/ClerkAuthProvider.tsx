@@ -48,9 +48,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // CRITICAL: In Clerk Mode, tenant context is carried in the JWT via org claims.
-    // Tenant header propagation is disabled (returns null) to avoid header-token conflict.
-    setTenantProvider(() => null);
+    setTenantProvider(() => activeTenant?.id || null);
 
     setRefreshProvider(async () => {
       try {
@@ -61,7 +59,16 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
         return false;
       }
     });
-  }, [getToken]);
+  }, [getToken, activeTenant]);
+
+  // Eagerly set raw token when signed in
+  useEffect(() => {
+    if (isSignedIn) {
+      getToken().then((token) => {
+        if (token) setRawToken(token);
+      });
+    }
+  }, [isSignedIn, getToken]);
 
   // Bootstrap tenant context from backend
   const fetchTenantContext = useCallback(async () => {
@@ -79,25 +86,44 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
         setTenantState('unavailable');
         return;
       }
+      setRawToken(token);
 
       const backendUrl = import.meta.env.VITE_ERPEZ_BACKEND_URL || 'http://localhost:5245';
       const headers = { Authorization: `Bearer ${token}` };
 
       // 1. Fetch available workspaces authorized for this identity
-      const availRes = await axios.get(`${backendUrl}/api/tenant/available`, { headers });
+      const candidateId = typeof window !== 'undefined'
+        ? (sessionStorage.getItem('erpez_candidate_tenant_id') || localStorage.getItem('erpez_tenant_id'))
+        : null;
+      const requestHeaders: Record<string, string> = { Authorization: `Bearer ${token}` };
+      if (candidateId) {
+        requestHeaders['X-Tenant-Id'] = candidateId;
+      }
+
+      const availRes = await axios.get(`${backendUrl}/api/tenant/available`, { headers: requestHeaders });
       const available: UnifiedTenantContext[] = availRes.data?.data || [];
       setAvailableTenants(available);
 
       // 2. Fetch active workspace context
-      const contextRes = await axios.get(`${backendUrl}/api/tenant/context`, { headers });
+      const contextRes = await axios.get(`${backendUrl}/api/tenant/context`, { headers: requestHeaders });
       const contextData = contextRes.data?.data;
 
-      if (contextData?.activeTenant) {
+      let resolvedTenant = contextData?.activeTenant;
+      if (!resolvedTenant && available.length > 0) {
+        resolvedTenant = available.find((t) => t.id === candidateId) || available[0];
+      }
+
+      if (resolvedTenant) {
+        try {
+          sessionStorage.setItem('erpez_candidate_tenant_id', resolvedTenant.id);
+          localStorage.setItem('erpez_tenant_id', resolvedTenant.id);
+        } catch {}
+
         setActiveTenant({
-          id: contextData.activeTenant.id,
-          externalOrgId: contextData.activeTenant.externalOrgId,
-          name: contextData.activeTenant.name,
-          slug: contextData.activeTenant.slug,
+          id: resolvedTenant.id,
+          externalOrgId: resolvedTenant.externalOrgId,
+          name: resolvedTenant.name,
+          slug: resolvedTenant.slug,
           authProvider: 'clerk',
         });
         setTenantState('resolved');

@@ -26,11 +26,6 @@ public class AcceptInvitationCommandHandler(
             throw new UnauthorizedException("You must be authenticated with Clerk to accept an invitation.");
         }
 
-        if (string.IsNullOrWhiteSpace(authenticatedEmail))
-        {
-            throw new UnauthorizedException("Authenticated identity lacks an email claim.");
-        }
-
         // 1. Compute SHA-256 hash of incoming raw invitation token
         var tokenHashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(command.InvitationToken.Trim()));
         var tokenHash = Convert.ToHexString(tokenHashBytes).ToLowerInvariant();
@@ -53,14 +48,16 @@ public class AcceptInvitationCommandHandler(
             throw new ValidationException($"Invitation cannot be accepted because member is in status '{member.Status}'.");
         }
 
-        // 5. Authenticated email consistency verification
-        if (!string.Equals(member.Email.Trim(), authenticatedEmail.Trim(), StringComparison.OrdinalIgnoreCase))
+        // 5. Authenticated email consistency verification (when email claim is present in token)
+        if (!string.IsNullOrWhiteSpace(authenticatedEmail) &&
+            !string.Equals(member.Email.Trim(), authenticatedEmail.Trim(), StringComparison.OrdinalIgnoreCase))
         {
             throw new ForbiddenException($"The authenticated account email '{authenticatedEmail}' does not match the invitation email address.");
         }
 
         // 6. Bind external identity, activate, invalidate token
         member.ExternalIdentityId = authenticatedExternalId;
+        member.UserId = authenticatedExternalId;
         member.Status = Status.Active;
         member.InvitationTokenHash = null;
         member.InvitationExpiresAtUtc = null;

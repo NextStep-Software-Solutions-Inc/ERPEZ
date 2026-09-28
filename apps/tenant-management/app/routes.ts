@@ -15,6 +15,7 @@ export default [
   route("register", "routes/auth/register.tsx"),
 
   layout("components/layout/ProtectedLayout.tsx", [
+    route("accept-invitation", "routes/protected/accept-invitation.tsx"),
     layout("components/layout/RoleLayout.tsx", [
       layout("components/layout/TenantProviderLayout.tsx", [
         layout("components/layout/TenantLayout.tsx", [

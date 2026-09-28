@@ -25,7 +25,7 @@ export default function DeletePositionDialog({
   positionId,
   onSuccess,
 }: DeletePositionDialogProps) {
-  const positionQuery = usePosition(positionId || '')
+  const positionQuery = usePosition(positionId || '', open && !!positionId)
   const position = positionQuery.data
   const deleteMutation = useDeletePosition()
 

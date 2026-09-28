@@ -67,6 +67,17 @@ public class TenantContextController(
                 string.Equals(t.ExternalOrgId, activeOrgCandidate.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
+        if (activeTenant == null && Request.Headers.TryGetValue("X-Tenant-Id", out var candidateHeader) &&
+            Guid.TryParse(candidateHeader, out var candidateGuid))
+        {
+            activeTenant = availableTenants.FirstOrDefault(t => t.Id == candidateGuid);
+        }
+
+        if (activeTenant == null && availableTenants.Count == 1)
+        {
+            activeTenant = availableTenants[0];
+        }
+
         var response = new TenantBootstrapContextResponse
         {
             ActiveTenant = activeTenant,

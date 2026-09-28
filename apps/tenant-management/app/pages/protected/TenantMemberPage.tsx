@@ -254,12 +254,23 @@ function TenantMemberPage() {
         });
     }, [user?.id, user?.email]);
 
+    const [hasCopiedLink, setHasCopiedLink] = useState(false);
+
     const copyTokenToClipboard = () => {
         if (!invitationResult?.token) return;
         navigator.clipboard.writeText(invitationResult.token);
         setHasCopiedToken(true);
         toast.success('Invitation token copied to clipboard.');
         setTimeout(() => setHasCopiedToken(false), 2000);
+    };
+
+    const copyLinkToClipboard = () => {
+        if (!invitationResult?.token) return;
+        const link = `${window.location.origin}/accept-invitation?token=${encodeURIComponent(invitationResult.token)}`;
+        navigator.clipboard.writeText(link);
+        setHasCopiedLink(true);
+        toast.success('Invitation link copied to clipboard.');
+        setTimeout(() => setHasCopiedLink(false), 2000);
     };
 
     return (
@@ -483,32 +494,59 @@ function TenantMemberPage() {
                             An invitation has been generated for <strong>{invitationResult?.email}</strong>.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-3 py-3 text-xs">
-                        <Label className="text-xs text-slate-700">Single-Use Invitation Token</Label>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                readOnly
-                                value={invitationResult?.token || ''}
-                                className="font-mono text-xs bg-slate-50"
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-9 w-9 shrink-0"
-                                onClick={copyTokenToClipboard}
-                                title="Copy token"
-                            >
-                                {hasCopiedToken ? (
-                                    <Check className="h-4 w-4 text-emerald-600" />
-                                ) : (
-                                    <Copy className="h-4 w-4" />
-                                )}
-                            </Button>
+                    <div className="space-y-4 py-3 text-xs">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs text-slate-700 font-semibold">Invitation Link</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    readOnly
+                                    value={invitationResult?.token ? `${window.location.origin}/accept-invitation?token=${encodeURIComponent(invitationResult.token)}` : ''}
+                                    className="font-mono text-xs bg-slate-50"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0 cursor-pointer"
+                                    onClick={copyLinkToClipboard}
+                                    title="Copy link"
+                                >
+                                    {hasCopiedLink ? (
+                                        <Check className="h-4 w-4 text-emerald-600" />
+                                    ) : (
+                                        <Copy className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            </div>
                         </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-xs text-slate-700 font-semibold">Single-Use Invitation Token</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    readOnly
+                                    value={invitationResult?.token || ''}
+                                    className="font-mono text-xs bg-slate-50"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0 cursor-pointer"
+                                    onClick={copyTokenToClipboard}
+                                    title="Copy token"
+                                >
+                                    {hasCopiedToken ? (
+                                        <Check className="h-4 w-4 text-emerald-600" />
+                                    ) : (
+                                        <Copy className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+
                         <p className="text-[11px] text-muted-foreground">
-                            This cryptographic token is valid for 48 hours and can only be used once to bind an
-                            authenticated account.
+                            This cryptographic invitation is valid for 48 hours and can only be used once by the invited email address.
                         </p>
                     </div>
                     <DialogFooter>

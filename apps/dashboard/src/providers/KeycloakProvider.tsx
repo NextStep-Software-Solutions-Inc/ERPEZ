@@ -514,8 +514,18 @@ export function KeycloakProvider({
 
 export function useKeycloak() {
   const context = useContext(KeycloakContext)
-  if (context === undefined) {
-    throw new Error('useKeycloak must be used within a KeycloakProvider')
+  const unified = useContext(UnifiedAuthContext)
+
+  if (context !== undefined) {
+    return context
   }
-  return context
+
+  if (unified !== undefined) {
+    return {
+      keycloak: null,
+      ...unified,
+    } as unknown as KeycloakContextType
+  }
+
+  throw new Error('useKeycloak must be used within a KeycloakProvider or UnifiedAuthProvider')
 }

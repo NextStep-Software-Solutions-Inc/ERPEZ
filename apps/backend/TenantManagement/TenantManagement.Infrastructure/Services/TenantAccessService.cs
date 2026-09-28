@@ -162,7 +162,11 @@ public class TenantAccessService(
                 403);
         }
 
-        if (!clientOriginMatcher.IsAllowed(request.ClientOrigin, tenantInfo.AllowedDomain))
+        var allowedDomain = !string.IsNullOrWhiteSpace(tenantInfo.AllowedDomain)
+            ? tenantInfo.AllowedDomain
+            : "localhost";
+
+        if (!clientOriginMatcher.IsAllowed(request.ClientOrigin, allowedDomain))
         {
             return TenantAccessResult.Fail(
                 "Client origin is not authorized for this tenant.",

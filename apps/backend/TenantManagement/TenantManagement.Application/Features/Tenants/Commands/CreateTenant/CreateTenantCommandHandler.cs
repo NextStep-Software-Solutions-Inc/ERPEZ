@@ -24,15 +24,20 @@ public sealed class CreateTenantCommandHandler(
         var tenantExist = await unitOfWork.TenantRepository.FindAsync(t => t.Name == request.Name, cancellationToken);
         if (tenantExist != null) throw new ConflictException("Tenant already exists.");
 
+        var isClerk = currentUserService.UserId?.StartsWith("user_") == true;
+        var provider = isClerk ? IdentityProvider.Clerk : IdentityProvider.Keycloak;
+
         var tenant = new Tenant
         {
             Name = request.Name,
             Description = request.Description,
-            ProvisioningState = TenantProvisioningState.Pending,
+            AuthProvider = provider,
+            ProvisioningState = TenantProvisioningState.Ready,
             TenantSetting = new()
             {
                 BillingContactEmail = request.BillingContactEmail,
                 OnPremise = request.OnPremise,
+                AllowedDomain = "localhost",
                 BaseURL = "",
                 DbConnectionString = ""
             },
@@ -40,7 +45,7 @@ public sealed class CreateTenantCommandHandler(
             {
                 DatabaseServer = "localhost",
                 DatabaseName = $"erpez_tenant_{Guid.NewGuid():N}",
-                ProvisioningState = TenantProvisioningState.Pending,
+                ProvisioningState = TenantProvisioningState.Ready,
                 RetryCount = 0
             }
         };
@@ -115,7 +120,8 @@ public sealed class CreateTenantCommandHandler(
         var tenantMember = new TenantMember
         {
             UserId = currentUserService.UserId,
-            ExternalIdentityId = currentUserService.UserId,
+            ExternalIdentityId = currentUserService.ExternalIdentityId ?? currentUserService.UserId,
+            Provider = provider,
             Email = memberEmail,
             FirstName = firstName,
             LastName = lastName,
@@ -128,6 +134,15 @@ public sealed class CreateTenantCommandHandler(
             tenantMember.RoleAssignments.Add(new TenantMemberRoleAssignment
             {
                 RoleId = adminRole.Id
+            });
+        }
+
+        var workspaceAdminRole = await unitOfWork.RoleRepository.FindAsync(r => r.NormalizedName == "DASHBOARD SYSTEM ADMIN", cancellationToken);
+        if (workspaceAdminRole != null)
+        {
+            tenantMember.RoleAssignments.Add(new TenantMemberRoleAssignment
+            {
+                RoleId = workspaceAdminRole.Id
             });
         }
 

@@ -57,7 +57,8 @@ public class ExternalIdentityNormalizerResolver(
         {
             var normalizedIss = iss.TrimEnd('/');
             var clerkAuth = configuration.GetValue<string>("Clerk:Authority")?.TrimEnd('/');
-            if (!string.IsNullOrEmpty(clerkAuth) && string.Equals(normalizedIss, clerkAuth, StringComparison.OrdinalIgnoreCase))
+            if ((!string.IsNullOrEmpty(clerkAuth) && string.Equals(normalizedIss, clerkAuth, StringComparison.OrdinalIgnoreCase)) ||
+                normalizedIss.Contains("clerk", StringComparison.OrdinalIgnoreCase))
             {
                 return Resolve(IdentityProvider.Clerk);
             }
@@ -67,6 +68,13 @@ public class ExternalIdentityNormalizerResolver(
             {
                 return Resolve(IdentityProvider.Keycloak);
             }
+        }
+
+        // 3b. Inspect sub claim format (Clerk user IDs canonically start with 'user_')
+        var sub = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue("sub");
+        if (!string.IsNullOrWhiteSpace(sub) && sub.StartsWith("user_", StringComparison.OrdinalIgnoreCase))
+        {
+            return Resolve(IdentityProvider.Clerk);
         }
 
         // 4. Fallback based on global AUTH_PROVIDER environment/config variable
