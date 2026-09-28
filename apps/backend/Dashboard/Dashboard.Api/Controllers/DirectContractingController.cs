@@ -171,21 +171,4 @@ public class DirectContractingController(ISender mediator) : ControllerBase
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
-
-    [HttpGet("{id:guid}/pdf")]
-    [HasPermission(Permissions.Procurement.bacManage)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetPdf(Guid id)
-    {
-        var query = new ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingPdf.GetDirectContractingPdfQuery(id);
-        var result = await mediator.Send(query);
-        if (!result.Succeeded || result.Data == null)
-        {
-            return NotFound(result);
-        }
-
-        Response.Headers["Content-Disposition"] = $"inline; filename=\"{result.Data.FileName}\"";
-        return File(result.Data.FileBytes, result.Data.ContentType, result.Data.FileName);
-    }
 }

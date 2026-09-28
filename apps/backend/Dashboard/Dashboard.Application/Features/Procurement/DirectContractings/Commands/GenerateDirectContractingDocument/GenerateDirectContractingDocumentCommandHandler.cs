@@ -77,6 +77,7 @@ public class GenerateDirectContractingDocumentCommandHandler(
         // 1. Resolve Line Items
         var rawItems = new List<DirectContractingItemResponse>();
         string officeName = string.Empty;
+        Guid officeId = Guid.Empty;
 
         if (dc.BACProject != null)
         {
@@ -96,6 +97,10 @@ public class GenerateDirectContractingDocumentCommandHandler(
                     if (string.IsNullOrWhiteSpace(officeName) && cprItem.PurchaseRequest?.Office?.Name != null)
                     {
                         officeName = cprItem.PurchaseRequest.Office.Name;
+                    }
+                    if (officeId == Guid.Empty && cprItem.PurchaseRequest != null && cprItem.PurchaseRequest.OfficeId != Guid.Empty)
+                    {
+                        officeId = cprItem.PurchaseRequest.OfficeId;
                     }
 
                     rawItems.Add(new DirectContractingItemResponse
@@ -152,6 +157,10 @@ public class GenerateDirectContractingDocumentCommandHandler(
                     {
                         officeName = appItem.Office.Name;
                     }
+                    if (officeId == Guid.Empty && appItem.Office != null && appItem.Office.Id != Guid.Empty)
+                    {
+                        officeId = appItem.Office.Id;
+                    }
 
                     rawItems.Add(new DirectContractingItemResponse
                     {
@@ -172,6 +181,29 @@ public class GenerateDirectContractingDocumentCommandHandler(
                     });
                 }
             }
+        }
+
+        // Fallback to active Office in DB if officeId is empty
+        if (officeId == Guid.Empty)
+        {
+            var defaultOffice = await unitOfWork.OfficeRepository.FindAsync(o => !o.IsDeleted, cancellationToken)
+                ?? await unitOfWork.OfficeRepository.FindAsync(o => true, cancellationToken);
+            if (defaultOffice != null)
+            {
+                officeId = defaultOffice.Id;
+                if (string.IsNullOrWhiteSpace(officeName))
+                {
+                    officeName = defaultOffice.Name;
+                }
+                logger.LogWarning(
+                    "Direct Contracting {DCNumber} (ID: {DCId}) items do not specify an originating office; falling back to active database office {OfficeId} ({OfficeName}).",
+                    dc.DCNumber, dc.Id, officeId, officeName);
+            }
+        }
+
+        if (officeId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Cannot generate Direct Contracting document because no valid Office could be associated with this document.");
         }
 
         // 2. Map PDF Expenditure Items & Validate ABC Limit (RA 12009 Compliance)
@@ -334,6 +366,7 @@ public class GenerateDirectContractingDocumentCommandHandler(
         {
             DocumentType = DocumentType.DirectContracting,
             Format = request.Format,
+            OfficeId = officeId,
             SourceDocumentId = dc.Id,
             StoragePath = storagePath,
             FileName = fileName,

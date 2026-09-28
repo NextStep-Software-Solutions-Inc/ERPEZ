@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Commands.GenerateDirectContractingDocument;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Dtos;
-using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingPdf;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Entities.Procurement;
@@ -129,6 +128,14 @@ public class DirectContractingDocumentGenerationTests
             IsActive = true
         });
 
+        var office = new Office
+        {
+            Id = Guid.NewGuid(),
+            Name = "Procurement Management Office",
+            IsDeleted = false
+        };
+        await unitOfWork.OfficeRepository.AddAsync(office);
+
         await unitOfWork.SaveChangesAsync();
 
         var expectedPdfBytes = Encoding.UTF8.GetBytes("%PDF-1.7 Test Content");
@@ -178,6 +185,7 @@ public class DirectContractingDocumentGenerationTests
         savedDoc.Should().NotBeNull();
         savedDoc!.DocumentType.Should().Be(DocumentType.DirectContracting);
         savedDoc.SourceDocumentId.Should().Be(dc.Id);
+        savedDoc.OfficeId.Should().Be(office.Id);
         savedDoc.GeneratedBy.Should().Be("bac.officer");
 
         rendererMock.Verify(r => r.RenderAsync(
@@ -199,6 +207,14 @@ public class DirectContractingDocumentGenerationTests
         // Arrange
         using var context = CreateInMemoryDbContext();
         var unitOfWork = CreateUnitOfWork(context);
+
+        var office = new Office
+        {
+            Id = Guid.NewGuid(),
+            Name = "Procurement Office",
+            IsDeleted = false
+        };
+        await unitOfWork.OfficeRepository.AddAsync(office);
 
         var supplier = new Supplier { Id = Guid.NewGuid(), Name = "Sole Supplier" };
         await unitOfWork.SupplierRepository.AddAsync(supplier);

@@ -327,23 +327,6 @@ public class DocumentController(IMediator mediator,
         return Ok(result);
     }
 
-    [HttpGet("direct-contracting/{id:guid}/pdf")]
-    [HasPermission(Permissions.Procurement.bacManage)]
-    public async Task<IActionResult> GetDirectContractingPdf(
-        Guid id,
-        CancellationToken cancellationToken = default)
-    {
-        var query = new ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingPdf.GetDirectContractingPdfQuery(id);
-        var result = await mediator.Send(query, cancellationToken);
-        if (!result.Succeeded || result.Data == null)
-        {
-            return NotFound(result);
-        }
-
-        Response.Headers["Content-Disposition"] = $"inline; filename=\"{result.Data.FileName}\"";
-        return File(result.Data.FileBytes, result.Data.ContentType, result.Data.FileName);
-    }
-
     [HttpGet("{documentId:guid}/download")]
     [Authorize]
     public async Task<IActionResult> Download(
