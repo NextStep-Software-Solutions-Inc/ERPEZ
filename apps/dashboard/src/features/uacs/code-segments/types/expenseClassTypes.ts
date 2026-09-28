@@ -18,6 +18,10 @@ export interface CreateExpenseClassPayload {
   isActive: boolean;
 }
 
-export interface UpdateExpenseClassPayload extends CreateExpenseClassPayload {
-  id: string;
+export interface UpdateExpenseClassPayload {
+  name: string;
+  code: string;
+  description?: string;
+  type: number;
+  isActive: boolean;
 }

@@ -17,5 +17,7 @@ public enum DocumentType
     NoticeOfAward,
     Rfq,
     Aob,
-    DirectContracting
+    DirectContracting,
+    Contract,
+    NoticeToProceed
 }

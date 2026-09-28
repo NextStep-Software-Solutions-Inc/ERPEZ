@@ -168,6 +168,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly INoticeOfAwardRepository noticeOfAwardRepository;
     private readonly INoticeOfAwardMilestoneRepository noticeOfAwardMilestoneRepository;
     private readonly INoticeOfAwardActivityRepository noticeOfAwardActivityRepository;
+    private readonly IContractRepository contractRepository;
+    private readonly INoticeToProceedRepository noticeToProceedRepository;
     private readonly IBiddingSubmissionRepository biddingSubmissionRepository;
     private readonly IBiddingEvaluationRepository biddingEvaluationRepository;
     private readonly IBiddingAwardRecommendationRepository biddingAwardRecommendationRepository;
@@ -332,6 +334,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         noticeOfAwardRepository = new NoticeOfAwardRepository(context, sieveProcessor);
         noticeOfAwardMilestoneRepository = new NoticeOfAwardMilestoneRepository(context, sieveProcessor);
         noticeOfAwardActivityRepository = new NoticeOfAwardActivityRepository(context, sieveProcessor);
+        contractRepository = new ContractRepository(context, sieveProcessor);
+        noticeToProceedRepository = new NoticeToProceedRepository(context, sieveProcessor);
         biddingSubmissionRepository = new BiddingSubmissionRepository(context, sieveProcessor);
         biddingEvaluationRepository = new BiddingEvaluationRepository(context, sieveProcessor);
         biddingAwardRecommendationRepository = new BiddingAwardRecommendationRepository(context, sieveProcessor);
@@ -491,6 +495,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public INoticeOfAwardRepository NoticeOfAwardRepository => noticeOfAwardRepository;
     public INoticeOfAwardMilestoneRepository NoticeOfAwardMilestoneRepository => noticeOfAwardMilestoneRepository;
     public INoticeOfAwardActivityRepository NoticeOfAwardActivityRepository => noticeOfAwardActivityRepository;
+    public IContractRepository ContractRepository => contractRepository;
+    public INoticeToProceedRepository NoticeToProceedRepository => noticeToProceedRepository;
     public IBiddingSubmissionRepository BiddingSubmissionRepository => biddingSubmissionRepository;
     public IBiddingEvaluationRepository BiddingEvaluationRepository => biddingEvaluationRepository;
     public IBiddingAwardRecommendationRepository BiddingAwardRecommendationRepository => biddingAwardRecommendationRepository;

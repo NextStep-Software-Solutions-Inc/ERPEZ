@@ -48,6 +48,10 @@ export interface SupplierBidDetailDto {
   totalAmount: number
   submittedAt?: string
   remarks?: string
+  quotationDocumentUrl?: string
+  signatureUrl?: string
+  signatoryName?: string
+  dateSigned?: string
   items: SupplierBidItemDetailDto[]
 }
 
@@ -78,6 +82,10 @@ export interface SubmitSupplierBidPayload {
   paymentTerms?: string
   warrantyTerms?: string
   remarks?: string
+  quotationDocumentUrl?: string
+  signatureUrl?: string
+  signatoryName?: string
+  dateSigned?: string
   items: Array<{
     rfqItemId: string
     unitPrice: number

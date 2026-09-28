@@ -138,9 +138,9 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                         row.RelativeItem(5).Column(left =>
                         {
                             left.Item().Text("The Manager").Bold().FontSize(8.5f);
-                            left.Item().PaddingTop(2).Text(primarySupplier.SupplierName).Bold().FontSize(9);
+                            left.Item().PaddingTop(2).Text(!string.IsNullOrWhiteSpace(primarySupplier.SupplierName) ? primarySupplier.SupplierName : "").Bold().FontSize(9);
                             left.Item().Text("Business/Trade/Store Name").FontSize(7.5f).Italic();
-                            left.Item().PaddingTop(2).Text(primarySupplier.Address).FontSize(8);
+                            left.Item().PaddingTop(2).Text(!string.IsNullOrWhiteSpace(primarySupplier.Address) ? primarySupplier.Address : "").FontSize(8);
                             left.Item().BorderBottom(0.5f).BorderColor(Colors.Black).Text("Address").FontSize(7.5f).Italic();
                         });
 
@@ -230,7 +230,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                             table.Cell().Element(TableDataCell).Column(oc =>
                             {
-                                if (!string.IsNullOrWhiteSpace(item.OfferedSpecifications))
+                                if (!request.IsBlankTemplate && !string.IsNullOrWhiteSpace(item.OfferedSpecifications))
                                 {
                                     oc.Item().Text(item.OfferedSpecifications).FontSize(8);
                                 }
@@ -239,7 +239,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                             table.Cell().Element(TableDataCell).Column(qc =>
                             {
-                                if (item.QuotedUnitPrice.HasValue && item.QuotedUnitPrice.Value > 0)
+                                if (!request.IsBlankTemplate && item.QuotedUnitPrice.HasValue && item.QuotedUnitPrice.Value > 0)
                                 {
                                     qc.Item().AlignRight().Text(item.QuotedUnitPrice.Value.ToString("N2", phCulture)).Bold().FontSize(8);
                                 }
@@ -254,6 +254,10 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                     col.Item().PaddingTop(16).AlignRight().Column(sigCol =>
                     {
+                        if (!request.IsBlankTemplate && !string.IsNullOrWhiteSpace(request.SignatoryName))
+                        {
+                            sigCol.Item().Width(220).AlignCenter().Text(request.SignatoryName).Bold().FontSize(8.5f);
+                        }
                         sigCol.Item().Width(220).BorderBottom(1).BorderColor(Colors.Black).Text("");
                         sigCol.Item().Width(220).AlignCenter().Text("Printed Name/Signature").FontSize(7.5f);
                     });
@@ -279,9 +283,10 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                     {
                         r.RelativeItem().Column(sc =>
                         {
-                            sc.Item().Text(primarySupplier.SupplierName).Bold().FontSize(8.5f);
+                            sc.Item().Text(!string.IsNullOrWhiteSpace(primarySupplier.SupplierName) ? primarySupplier.SupplierName : "_________________________________").Bold().FontSize(8.5f);
                             sc.Item().Text($"RFQ No. : {request.RFQNumber}").Bold().FontSize(8);
-                            sc.Item().Text($"BAC RES. No: {request.BacResolutionNumber}").FontSize(7.5f);
+                            var bacResDisplay = !string.IsNullOrWhiteSpace(request.BacResolutionNumber) ? request.BacResolutionNumber : "_______________";
+                            sc.Item().Text($"BAC RES. No: {bacResDisplay}").FontSize(7.5f);
                             sc.Item().Text($"PR No.: {request.PRNumber}").FontSize(7.5f);
                         });
 
@@ -289,7 +294,10 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                         {
                             rc.Item().AlignRight().Text(!string.IsNullOrWhiteSpace(primarySupplier.ContactNumber) ? primarySupplier.ContactNumber : primarySupplier.Email).FontSize(8);
                             rc.Item().AlignRight().BorderBottom(0.5f).BorderColor(Colors.Black).Text("Cellphone/Contact No./address/E-mail").FontSize(7).Italic();
-                            rc.Item().PaddingTop(8).AlignRight().Text($"Date: {request.Date}").FontSize(8);
+                            var dateSignedDisplay = (!request.IsBlankTemplate && !string.IsNullOrWhiteSpace(request.DateSigned))
+                                ? request.DateSigned
+                                : "";
+                            rc.Item().PaddingTop(8).AlignRight().Text($"Date: {dateSignedDisplay}").FontSize(8);
                             rc.Item().AlignRight().BorderBottom(0.5f).BorderColor(Colors.Black).Text("Date").FontSize(7).Italic();
                         });
                     });
@@ -297,13 +305,26 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                 page.Content().PaddingTop(40).Column(col =>
                 {
-                    // Verification Stamp / Signatures area
-                    col.Item().AlignRight().PaddingRight(20).Border(1.5f).BorderColor(Colors.Blue.Medium).Width(180).Height(80).Padding(6).Column(sc =>
+                    if (!request.IsBlankTemplate && !string.IsNullOrWhiteSpace(request.DateSigned))
                     {
-                        sc.Item().AlignCenter().Text("RECEIVED & VERIFIED").Bold().FontSize(8).FontColor(Colors.Blue.Medium);
-                        sc.Item().PaddingTop(16).AlignCenter().Text(request.BacSecName).FontSize(7.5f).FontColor(Colors.Blue.Medium);
-                        sc.Item().AlignCenter().Text(request.Date).FontSize(7).FontColor(Colors.Blue.Medium);
-                    });
+                        // Verification Stamp for submitted & verified bids
+                        col.Item().AlignRight().PaddingRight(20).Border(1.5f).BorderColor(Colors.Blue.Medium).Width(180).Height(80).Padding(6).Column(sc =>
+                        {
+                            sc.Item().AlignCenter().Text("RECEIVED & VERIFIED").Bold().FontSize(8).FontColor(Colors.Blue.Medium);
+                            sc.Item().PaddingTop(16).AlignCenter().Text(request.BacSecName).FontSize(7.5f).FontColor(Colors.Blue.Medium);
+                            sc.Item().AlignCenter().Text(request.DateSigned).FontSize(7).FontColor(Colors.Blue.Medium);
+                        });
+                    }
+                    else
+                    {
+                        // Open receiving acknowledgment box for blank canvas or unsubmitted canvass document
+                        col.Item().AlignRight().PaddingRight(20).Border(1).BorderColor(Colors.Grey.Lighten1).Width(180).Height(80).Padding(6).Column(sc =>
+                        {
+                            sc.Item().AlignCenter().Text("BAC SECRETARIAT").FontSize(8).FontColor(Colors.Grey.Darken1);
+                            sc.Item().PaddingTop(12).AlignCenter().Text("Received by: ____________________").FontSize(7.5f).FontColor(Colors.Grey.Darken1);
+                            sc.Item().PaddingTop(6).AlignCenter().Text("Date: ____________________").FontSize(7.5f).FontColor(Colors.Grey.Darken1);
+                        });
+                    }
                 });
 
                 RenderStandardFooter(page);

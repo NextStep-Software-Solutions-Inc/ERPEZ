@@ -1,7 +1,6 @@
 /**
- * Manage NTP List Toolbar (Manager/Approver View)
- * Provides search and filtering for NTP list - NO CREATE button
- * Used by ManageNTPListPage for managers who can only approve/return
+ * Manage NTP List Toolbar (Manager/Admin View)
+ * Provides search and filtering for NTP list
  */
 
 import { useState } from 'react'
@@ -14,12 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { NTPStatus } from '../types/ntpTypes'
 
 export interface ManageNTPListToolbarProps {
   onSearch: (query: string) => void
-  onStatusFilter: (status: NTPStatus | 'All') => void
-  selectedStatus?: NTPStatus | 'All'
+  onStatusFilter: (status: string) => void
+  selectedStatus?: string
   searchQuery?: string
 }
 
@@ -37,28 +35,28 @@ export function ManageNTPListToolbar({
   }
 
   return (
-    <div className="flex gap-2 flex-col sm:flex-row sm:items-center justify-between mb-6">
+    <div className="flex gap-2 flex-col sm:flex-row sm:items-center justify-between mb-4">
       <div className="flex gap-2 flex-col sm:flex-row sm:items-center flex-1">
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search NTP number or supplier..."
+            placeholder="Search NTP, Contract, Supplier, Project..."
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-8"
+            className="pl-8 text-xs h-9"
           />
         </div>
 
-        <Select value={selectedStatus} onValueChange={(value) => onStatusFilter(value as NTPStatus | 'All')}>
-          <SelectTrigger className="w-[150px]">
+        <Select value={selectedStatus} onValueChange={(value) => onStatusFilter(value)}>
+          <SelectTrigger className="w-[160px] text-xs h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="All">All Status</SelectItem>
-            <SelectItem value="Draft">Draft</SelectItem>
-            <SelectItem value="For Approval">For Approval</SelectItem>
-            <SelectItem value="Approved">Approved</SelectItem>
-            <SelectItem value="Returned">Returned</SelectItem>
+            <SelectItem value="All" className="text-xs">All Status</SelectItem>
+            <SelectItem value="Draft" className="text-xs">Draft</SelectItem>
+            <SelectItem value="Issued" className="text-xs">Issued</SelectItem>
+            <SelectItem value="Received" className="text-xs">Received (Conforme)</SelectItem>
+            <SelectItem value="Cancelled" className="text-xs">Cancelled</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -37,8 +37,20 @@ public class UpdateProcurementProjectStatusCommandHandler(IUnitOfWork unitOfWork
             return ApiResponse<Unit>.Fail($"Cannot transition from '{currentStatusEnum}' status to '{newStatusEnum}'.");
         }
 
-        // Business Rule: Small Value Procurement (SVP) projects submitted or approved/posted for suppliers must have an associated RFQ
-        if (newStatusEnum is StatusEnum.Submitted or StatusEnum.Approved)
+        var resolutions = await unitOfWork.BACResolutionRepository.ToListAsync(
+            unitOfWork.BACResolutionRepository.Query(r => r.ProcurementProjectId == project.Id),
+            cancellationToken);
+
+        // Under RA 12009 (NGPA), Mode Recommendation BAC Resolutions (procurement-mode-recommendation)
+        // represent the pre-procurement phase where the BAC recommends the modality to the HoPE.
+        // An RFQ cannot and must not be required before this mode recommendation is approved,
+        // because the legal authority to issue an RFQ stems from the approved BAC Resolution.
+        // Only post-canvassing Award Recommendations (award-recommendation) require completed RFQs.
+        var isModeRecommendation = resolutions.Count == 0 || resolutions.Any(r =>
+            string.Equals(r.ResolutionType, "procurement-mode-recommendation", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrEmpty(r.ResolutionType));
+
+        if (!isModeRecommendation && newStatusEnum is StatusEnum.Approved)
         {
             var mode = project.ProcurementModeId.HasValue 
                 ? await unitOfWork.ProcurementModeRepository.GetByIdAsync(project.ProcurementModeId.Value, cancellationToken)
@@ -49,13 +61,13 @@ public class UpdateProcurementProjectStatusCommandHandler(IUnitOfWork unitOfWork
                                           mode.Name.Contains("53.9", StringComparison.OrdinalIgnoreCase)))
                         || (project.ContractNo != null && project.ContractNo.Contains("SVP", StringComparison.OrdinalIgnoreCase));
 
-            if (isSvp)
+            if (isSvp && project.ConsolidatedPRId.HasValue)
             {
-                var hasRfq = project.ConsolidatedPRId.HasValue && await unitOfWork.RFQRepository.Query()
+                var hasRfq = await unitOfWork.RFQRepository.Query()
                     .AnyAsync(r => r.ConsolidatedPRId == project.ConsolidatedPRId.Value && !r.IsDeleted, cancellationToken);
                 if (!hasRfq)
                 {
-                    return ApiResponse<Unit>.Fail("Cannot submit or approve project: Small Value Procurement projects must have an associated Request for Quotation (RFQ) before submitting or posting.");
+                    return ApiResponse<Unit>.Fail("Cannot approve award for Small Value Procurement project: An associated Request for Quotation (RFQ) with completed quotations is required.");
                 }
             }
         }
@@ -64,9 +76,6 @@ public class UpdateProcurementProjectStatusCommandHandler(IUnitOfWork unitOfWork
 
         unitOfWork.ProcurementProjectRepository.Update(project);
 
-        var resolutions = await unitOfWork.BACResolutionRepository.ToListAsync(
-            unitOfWork.BACResolutionRepository.Query(r => r.ProcurementProjectId == project.Id),
-            cancellationToken);
         foreach (var res in resolutions)
         {
             res.Status = newStatusEnum.ToString();

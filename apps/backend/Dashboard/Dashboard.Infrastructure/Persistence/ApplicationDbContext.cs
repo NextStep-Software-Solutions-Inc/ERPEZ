@@ -1,5 +1,6 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Infrastructure.Persistence.Configurations;
 using ERPEZ.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
@@ -205,8 +206,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<NoticeOfAwardMilestone>? NoticeOfAwardMilestones { get; set; }
     public DbSet<NoticeOfAwardActivity>? NoticeOfAwardActivities { get; set; }
 
+    // Contract (RA 12009)
+    public DbSet<Contract>? Contracts { get; set; }
+    public DbSet<NoticeToProceed>? NoticeToProceeds { get; set; }
+
     // Public Bidding Evaluation & Award Ecosystem
     public DbSet<BiddingSubmission>? BiddingSubmissions { get; set; }
+    public DbSet<BiddingSubmissionItem>? BiddingSubmissionItems { get; set; }
     public DbSet<BidOpeningRecord>? BidOpeningRecords { get; set; }
     public DbSet<BiddingEvaluation>? BiddingEvaluations { get; set; }
     public DbSet<BiddingEvaluatedBid>? BiddingEvaluatedBids { get; set; }
@@ -2426,13 +2432,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(o => o.OPCRConsolidationId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<ProcurementProject>(e =>
-        {
-            e.HasIndex(p => p.ConsolidatedPRId)
-                .IsUnique()
-                .HasFilter("\"IsDeleted\" = false");
-        });
-
         modelBuilder.Entity<BACResolution>(e =>
         {
             e.HasOne(r => r.ProcurementProject)
@@ -3490,6 +3489,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasPrecision(18, 2);
         });
 
+        // BiddingSubmissionItem
+        modelBuilder.Entity<BiddingSubmissionItem>(entity =>
+        {
+            entity.HasOne(i => i.BiddingSubmission)
+                .WithMany(s => s.BiddingSubmissionItems)
+                .HasForeignKey(i => i.BiddingSubmissionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(i => new { i.BiddingSubmissionId, i.ProcurementProjectItemId });
+
+            entity.Property(i => i.UnitPrice)
+                .HasPrecision(18, 2);
+
+            entity.Property(i => i.TotalPrice)
+                .HasPrecision(18, 2);
+
+            entity.Property(i => i.Quantity)
+                .HasPrecision(18, 4);
+        });
+
         // BidOpeningRecord
         modelBuilder.Entity<BidOpeningRecord>(entity =>
         {
@@ -3610,6 +3629,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(s => s.BACResolutionId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
+
+        // Contract (RA 12009 Section 66)
+        modelBuilder.ApplyConfiguration(new ContractConfiguration());
+
+        // Notice to Proceed (RA 12009 Section 66)
+        modelBuilder.ApplyConfiguration(new NoticeToProceedConfiguration());
     }
 
     private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)

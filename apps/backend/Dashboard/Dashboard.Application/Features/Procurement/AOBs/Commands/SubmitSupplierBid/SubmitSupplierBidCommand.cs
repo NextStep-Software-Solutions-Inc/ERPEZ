@@ -15,5 +15,9 @@ public record SubmitSupplierBidCommand : IRequest<ApiResponse<Guid>>
     public string? PaymentTerms { get; init; }
     public string? WarrantyTerms { get; init; }
     public string? Remarks { get; init; }
+    public string? QuotationDocumentUrl { get; init; }
+    public string? SignatureUrl { get; init; }
+    public string? SignatoryName { get; init; }
+    public DateTime? DateSigned { get; init; }
     public required List<SupplierBidItemDto> Items { get; init; } = [];
 }

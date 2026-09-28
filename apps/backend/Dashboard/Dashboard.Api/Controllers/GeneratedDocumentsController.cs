@@ -276,6 +276,22 @@ public class DocumentController(IMediator mediator,
         return Ok(result);
     }
 
+    [HttpPost("notice-to-proceed/{ntpId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateNoticeToProceed(
+        Guid ntpId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.NoticeToProceeds.Commands.GenerateNoticeToProceedDocument.GenerateNoticeToProceedDocumentCommand
+        {
+            NoticeToProceedId = ntpId,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpPost("rfq/{rfqId:guid}/generate")]
     [HasPermission(Permissions.Procurement.rfqManage)]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateRfq(

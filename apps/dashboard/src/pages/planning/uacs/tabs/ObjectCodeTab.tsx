@@ -14,29 +14,99 @@ import { useState, useMemo } from 'react'
 import { useAtom } from 'jotai'
 import { fiscalYearAtom } from '@/features/uacs/code-segments/atoms/fiscalYearAtom'
 import { showInactiveCodesAtom } from '@/features/uacs/code-segments/atoms/showInactiveCodesAtom'
+import { ExpenseClass } from '@/features/uacs/code-segments/types/commonTypes'
 import type { ObjectCode } from '@/features/uacs/code-segments/types/objectCodeTypes'
 import type { MetaActions } from '@/types/global'
-import { flattenedMockObjectCodes } from '@/features/uacs/utils/mockData'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { getObjectCodesRequest } from '@/features/uacs/code-segments/handlers/getObjectCodesRequest'
+import { getExpenseClassesRequest } from '@/features/uacs/code-segments/handlers/getExpenseClassesRequest'
+import { autoTagExpenseClass } from '@/features/uacs/rules/utils/autoTaggingRules'
 
+const useObjectCodes = createQueryHookFromTemplate(getObjectCodesRequest)
+const useExpenseClasses = createQueryHookFromTemplate(getExpenseClassesRequest)
 
 export function ObjectCodeTab() {
+  const [activeTab, setActiveTab] = useState<'table' | 'hierarchy'>('table')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [search, setSearch] = useState('')
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<ObjectCode | undefined>()
   const [deletingItem, setDeletingItem] = useState<ObjectCode | undefined>()
   const [selectedParent, setSelectedParent] = useState<ObjectCode | undefined>()
-  const [hierarchySearch, setHierarchySearch] = useState('')
   const [selectedFY] = useAtom(fiscalYearAtom)
   const [showInactive] = useAtom(showInactiveCodesAtom)
 
   const actions: MetaActions = ['write', 'delete']
 
+  // Sieve filter for server-side search (used for Table View)
+  const sieveFilters = useMemo(() => {
+    if (!search.trim()) return undefined
+    return `Name@=*${search.trim()}|Code@=*${search.trim()}`
+  }, [search])
+
+  // Fetch object codes from API:
+  // For Table View: paginated server-side with pageSize
+  // For Hierarchy View: load all items (pageSize: 5000) to build the complete hierarchy without missing relationships
+  const queryPageSize = activeTab === 'hierarchy' ? 5000 : pageSize
+  const { data: apiResponse, isLoading, error } = useObjectCodes({
+    pathParams: {},
+    queryParams: {
+      pageNumber: activeTab === 'hierarchy' ? 1 : page,
+      pageSize: queryPageSize,
+      ...(activeTab === 'table' && sieveFilters ? { filters: sieveFilters } : {}),
+    },
+  })
+
+  // Fetch expense classes to map IDs to ExpenseClass enum for display
+  const { data: expenseClassesResponse } = useExpenseClasses({
+    pathParams: {},
+    queryParams: { pageNumber: 1, pageSize: 100 },
+  })
+
+  const expenseClassLookup = useMemo(() => {
+    const map = new Map<string, ExpenseClass>()
+    const expenseClasses = expenseClassesResponse?.data || []
+    for (const ec of expenseClasses) {
+      if (ec.id && ec.code) {
+        map.set(ec.id, ec.code.toUpperCase() as ExpenseClass)
+      }
+    }
+    return map
+  }, [expenseClassesResponse])
+
+  // Map API response to frontend ObjectCode type with accurate expense class resolution
+  const mappedData: ObjectCode[] = useMemo(() => {
+    const rawList = apiResponse?.data || []
+    return rawList.map((raw) => {
+      const lookupClass = raw.expenseClassId ? expenseClassLookup.get(raw.expenseClassId) : undefined
+      const autoClass = autoTagExpenseClass(raw.code)
+      const parentAutoClass = raw.parent?.code ? autoTagExpenseClass(raw.parent.code) : undefined
+      const expenseClass = (lookupClass || autoClass || parentAutoClass || 'OTHER') as ExpenseClass
+
+      return {
+        id: raw.id,
+        code: raw.code,
+        name: raw.name,
+        description: '',
+        isActive: raw.isActive,
+        fiscalYear: selectedFY,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        expenseClass,
+        expenseClassId: raw.expenseClassId,
+        parentId: raw.parent?.id,
+        isSubsidiary: !!raw.parent,
+      }
+    })
+  }, [apiResponse, expenseClassLookup, selectedFY])
+
   const filteredData = useMemo(() => {
-    return flattenedMockObjectCodes.filter((item) => {
-      if (item.fiscalYear !== selectedFY) return false
+    return mappedData.filter((item) => {
       if (!showInactive && !item.isActive) return false
       return true
     })
-  }, [selectedFY, showInactive])
+  }, [mappedData, showInactive])
 
   const columns = useMemo(
     () =>
@@ -47,9 +117,34 @@ export function ObjectCodeTab() {
     []
   )
 
+  const handleSearch = (value: string) => {
+    setSearch(value)
+    setPage(1)
+  }
+
   const handleAddChild = (parentItem: ObjectCode) => {
     setSelectedParent(parentItem)
     setAddDialogOpen(true)
+  }
+
+  if (isLoading && !apiResponse) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center text-muted-foreground">Loading object codes...</div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center text-red-500">Error loading object codes</div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -66,7 +161,11 @@ export function ObjectCodeTab() {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="table" className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={(val) => setActiveTab(val as 'table' | 'hierarchy')}
+            className="w-full"
+          >
             <TabsList className="grid w-[300px] grid-cols-2">
               <TabsTrigger value="table">Table View</TabsTrigger>
               <TabsTrigger value="hierarchy">
@@ -78,10 +177,20 @@ export function ObjectCodeTab() {
             <TabsContent value="table" className="space-y-4">
               <TemplateTable<ObjectCode>
                 columns={columns}
-                data={filteredData.filter((item) => !item.parentId)}
+                data={filteredData}
                 actions={actions}
                 readonly={false}
-                fixedPageSize={10}
+                manualPagination={true}
+                pageCount={apiResponse?.totalPages || 1}
+                pageIndex={page - 1}
+                pageSize={pageSize}
+                totalCount={apiResponse?.totalCount || 0}
+                onPaginationChange={({ pageIndex, pageSize: newPageSize }) => {
+                  setPage(pageIndex + 1)
+                  if (newPageSize !== pageSize) {
+                    setPageSize(newPageSize)
+                  }
+                }}
                 toolbar={(table) => (
                   <CodeSegmentToolbar
                     table={table}
@@ -89,6 +198,8 @@ export function ObjectCodeTab() {
                     searchColumn="name"
                     onAdd={() => setAddDialogOpen(true)}
                     addLabel="Add Object Code"
+                    onSearch={handleSearch}
+                    searchValue={search}
                   />
                 )}
               />
@@ -100,15 +211,15 @@ export function ObjectCodeTab() {
                   <div className="flex flex-row space-x-2 flex-1 min-w-0">
                     <Input
                       placeholder="Search Object Code Hierarchy..."
-                      value={(hierarchySearch as string) || ''}
-                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => setHierarchySearch(event.target.value)}
+                      value={search}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => handleSearch(event.target.value)}
                       className="flex-1 min-w-0 max-w-sm"
                     />
-                    {(hierarchySearch as string) && (
+                    {search && (
                       <Button
                         type="button"
                         variant="ghost"
-                        onClick={() => setHierarchySearch('')}
+                        onClick={() => handleSearch('')}
                         className="h-10 flex-shrink-0"
                       >
                         Clear
@@ -118,11 +229,8 @@ export function ObjectCodeTab() {
                 </div>
               </div>
               <ObjectCodeHierarchyViewer
-                items={filteredData.filter((item) => 
-                  !hierarchySearch || 
-                  item.name.toLowerCase().includes((hierarchySearch as string).toLowerCase()) ||
-                  item.code.includes(hierarchySearch as string)
-                )}
+                items={filteredData}
+                searchQuery={search}
                 onEdit={setEditingItem}
                 onDelete={setDeletingItem}
                 onAddChild={handleAddChild}
@@ -154,3 +262,4 @@ export function ObjectCodeTab() {
     </>
   )
 }
+

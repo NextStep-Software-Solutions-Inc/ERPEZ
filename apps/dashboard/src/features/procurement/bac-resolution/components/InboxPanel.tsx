@@ -510,7 +510,7 @@ export function InboxPanel({
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            Public Bidding
+            Competitive Bidding
           </button>
           <button
             type="button"
@@ -531,7 +531,7 @@ export function InboxPanel({
           <div className="flex flex-wrap items-center gap-1.5 pt-1">
             {activeModeFilter !== 'all' && (
               <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700 border border-indigo-200">
-                Mode: {activeModeFilter === 'public-bidding' ? 'Public Bidding' : 'Alternative'}
+                Mode: {activeModeFilter === 'public-bidding' ? 'Competitive Bidding' : 'Alternative'}
                 <button
                   type="button"
                   onClick={() => handleSetModeFilter('all')}

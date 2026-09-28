@@ -97,7 +97,7 @@ export function BacResolutionCard({
           {isReadyForScheduling && (
             <span
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold border border-teal-300 text-teal-700 bg-teal-50 shadow-2xs shrink-0"
-              title="Approved Consolidated PR with Public Bidding — ready for calendar scheduling"
+              title="Approved Consolidated PR with Competitive Bidding — ready for calendar scheduling"
             >
               <CalendarRange className="h-2.5 w-2.5 text-teal-600" />
               Ready for Scheduling
@@ -177,7 +177,7 @@ export function BacResolutionCard({
         <div className="flex items-center gap-1.5 flex-wrap">
           {isPB ? (
             <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 font-medium text-indigo-700 text-[10px] border border-indigo-200/60">
-              Public Bidding
+              Competitive Bidding
             </span>
           ) : modeLabel ? (
             <span

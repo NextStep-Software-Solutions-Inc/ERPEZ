@@ -46,6 +46,8 @@ import {
 import GroupedExpenditureItemsView from '@/features/planning/line-item-budgeting/line-item-budget-details/components/GroupedExpenditureItemsView'
 import { groupExpenditureItems } from '@/features/planning/line-item-budgeting/line-item-budget-details/utils/groupExpenditureData'
 import type { LineItemBudgetDetails } from '@/features/planning/line-item-budgeting/line-item-budget-details/types/types'
+import { ViewLineItemBudgetDetailsDialog } from '@/features/planning/line-item-budgeting/line-item-budget-details/components/ViewLineItemBudgetDetailsDialog'
+import { EditLineItemBudgetDetailsDialog } from '@/features/planning/line-item-budgeting/line-item-budget-details/components/EditLineItemBudgetDetailsDialog'
 import { updateLIBStatusRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/updateLIBStatusRequest'
 import { generateLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/generateLIBDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
@@ -162,6 +164,12 @@ export default function LIBDetailPage({
   const [deletingOrphanItemId, setDeletingOrphanItemId] = useState<
     string | null
   >(null)
+  const [viewingOrphanItem, setViewingOrphanItem] = useState<LineItemBudgetDetails | null>(
+    null,
+  )
+  const [editingOrphanItem, setEditingOrphanItem] = useState<LineItemBudgetDetails | null>(
+    null,
+  )
 
   const handleExport = async (format: 'Excel' | 'Pdf') => {
     if (!libId) return
@@ -814,6 +822,8 @@ export default function LIBDetailPage({
                     data={groupExpenditureItems(
                       lib.orphanDetails as unknown as LineItemBudgetDetails[],
                     )}
+                    onViewItem={(item) => setViewingOrphanItem(item)}
+                    onEditItem={(item) => setEditingOrphanItem(item)}
                     onDeleteItem={async (item: LineItemBudgetDetails) => {
                       setDeletingOrphanItemId(item.id)
                       try {
@@ -1196,6 +1206,33 @@ export default function LIBDetailPage({
           })
         }
         isLoading={isApprovalLoading}
+      />
+
+      {/* View Line Item Details Dialog */}
+      <ViewLineItemBudgetDetailsDialog
+        item={viewingOrphanItem}
+        open={!!viewingOrphanItem}
+        onOpenChange={(open) => !open && setViewingOrphanItem(null)}
+        onEdit={(item) => setEditingOrphanItem(item)}
+        readOnly={lib?.status === 'Approved' || lib?.status === 'Submitted'}
+      />
+
+      {/* Edit Line Item Dialog */}
+      <EditLineItemBudgetDetailsDialog
+        item={editingOrphanItem}
+        open={!!editingOrphanItem}
+        onOpenChange={(open) => !open && setEditingOrphanItem(null)}
+        libId={libId}
+        onSuccess={() => {
+          void refetch()
+          void queryClient.invalidateQueries({
+            predicate: (query) =>
+              typeof query.queryKey[0] === 'string' &&
+              (query.queryKey[0].startsWith('/line-item-budget-details') ||
+                query.queryKey[0].includes('/libs') ||
+                query.queryKey[0].includes('/lib-activities')),
+          })
+        }}
       />
     </div>
   )

@@ -32,7 +32,7 @@ public static class ProcurementActivityTypeSeeder
         ("approval-resolution",    "APPR", "Approval of BAC Resolution",                 "Approval of BAC resolution by the Head of the Procuring Entity",     5,  7,    8,  null),
         ("notice-of-award",        "NOA",  "Issuance of Notice of Award (NOA)",          "Issuance of Notice of Award to the winning bidder",                  3,  3,    9,  ProcurementActivitySystemRole.NoticeOfAward),
         ("contract-signing",       "CS",   "Contract Signing",                           "Signing of the contract between the agency and the winning bidder", 10, 10,   10, ProcurementActivitySystemRole.ContractSigning),
-        ("notice-to-proceed",      "NTP",  "Issuance of Notice to Proceed (NTP)",        "Issuance of Notice to Proceed to the contractor/supplier",          7,  7,    11, ProcurementActivitySystemRole.NoticeToProceed),
+        ("notice-to-proceed",      "NTP",  "Issuance of Notice to Proceed (NTP)",        "Issuance of Notice to Proceed to the contractor/supplier (RA 12009 Sec. 66)", 0,  3,    11, ProcurementActivitySystemRole.NoticeToProceed),
     ];
 
     public static async Task SeedAsync(IUnitOfWork unitOfWork)

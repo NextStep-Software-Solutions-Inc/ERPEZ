@@ -1,11 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState } from 'react'
 import { Search, Filter, Building2, ChevronRight, CalendarDays, Banknote, Clock, TrendingUp, FileText, Users, CheckCircle2, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { ModeOfProcurement, ProjectStatus, PublicProject } from '../types/portalTypes'
-import api from '@/services/api'
-import { mapBackendProjectToFrontend } from '../utils/projectMapper'
+import { usePublicPortalStats, usePublicProjects } from '../hooks/usePublicPortalApi'
 
 interface BACPublicPortalLandingProps {
   onViewProject: (project: PublicProject) => void
@@ -46,59 +45,10 @@ function daysUntil(dateStr?: string) {
 export function BACPublicPortalLanding({ onViewProject }: BACPublicPortalLandingProps) {
   const [search, setSearch] = useState('')
   const [mopFilter, setMopFilter] = useState<ModeOfProcurement | 'all'>('all')
-  const [projects, setProjects] = useState<PublicProject[]>([])
-  const [stats, setStats] = useState({ total: 0, publicBidding: 0, svp: 0, closingSoon: 0, closed: 0 })
-  const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await api.get('/api/public/projects/stats')
-        if (res.data && res.data.data) {
-          const s = res.data.data
-          setStats({
-            total: s.activeProjects || 0,
-            publicBidding: s.publicBidding || 0,
-            svp: s.smallValueProcurement || 0,
-            closingSoon: s.closingSoon || 0,
-            closed: s.closed || 0,
-          })
-        }
-      } catch (err) {
-        console.error('Failed to fetch stats:', err)
-      }
-    }
-    fetchStats()
-  }, [])
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setIsLoading(true)
-      try {
-        let modeParam = ''
-        if (mopFilter === 'public-bidding') {
-          modeParam = 'Public Bidding'
-        } else if (mopFilter === 'svp') {
-          modeParam = 'Small Value Procurement'
-        }
-
-        const params: any = {}
-        if (search) params.search = search
-        if (modeParam) params.mode = modeParam
-
-        const res = await api.get('/api/public/projects', { params })
-        if (res.data && res.data.data) {
-          const mapped = res.data.data.map(mapBackendProjectToFrontend)
-          setProjects(mapped)
-        }
-      } catch (err) {
-        console.error('Failed to fetch projects:', err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchProjects()
-  }, [search, mopFilter])
+  const { data: stats = { total: 0, publicBidding: 0, svp: 0, closingSoon: 0, closed: 0 } } =
+    usePublicPortalStats()
+  const { data: projects = [], isLoading } = usePublicProjects(search, mopFilter)
 
   const filtered = projects
 

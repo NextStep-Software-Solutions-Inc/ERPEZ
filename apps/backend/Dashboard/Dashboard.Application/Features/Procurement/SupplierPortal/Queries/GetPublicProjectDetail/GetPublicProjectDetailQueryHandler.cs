@@ -161,6 +161,8 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
                 ABC                    = rfq.TotalAmount,
                 ModeOfProcurement      = rfq.ModeOfProcurement?.Name ?? "Small Value Procurement (SVP)",
                 Status                 = status,
+                PricingStructure       = "Itemized",
+                ProcurementCategory    = "Goods",
                 ScopeOfWork            = rfq.Purpose ?? rfq.Description,
                 NonRefundableBidderFee = null,
                 DeliveryPeriodDays     = deliveryDays,
@@ -264,11 +266,8 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
         }
         else if (project.ConsolidatedPRId.HasValue)
         {
-            var cpr = await unitOfWork.ConsolidatedPRRepository.Query()
-                .Include(c => c.ConsolidatedPRItems)
-                    .ThenInclude(ci => ci.PRItem)
-                        .ThenInclude(pi => pi.PPMPItem)
-                .FirstOrDefaultAsync(c => c.Id == project.ConsolidatedPRId.Value, cancellationToken);
+            var cpr = await unitOfWork.ConsolidatedPRRepository
+                .GetCPRWithDetailsAsync(project.ConsolidatedPRId.Value, cancellationToken);
 
             if (cpr?.ConsolidatedPRItems != null && cpr.ConsolidatedPRItems.Any())
             {
@@ -298,6 +297,30 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
 
         var effectiveStatus = isProjectClosed ? "Closed" : (isProjectClosingSoon ? "ClosingSoon" : "Open");
 
+        var categoryName = project.BiddingDocument?.ProcurementCategory?.Name
+            ?? project.ProcurementMode?.ProcurementCategory?.Name
+            ?? "Goods";
+
+        string pricingStructure;
+        if (categoryName.Contains("Consulting", StringComparison.OrdinalIgnoreCase))
+        {
+            pricingStructure = "Consulting";
+        }
+        else if (project.ProjectDocumentChecklists.Any(c => 
+            (c.MasterDocumentType?.Name != null && (c.MasterDocumentType.Name.Contains("Price Schedule") || c.MasterDocumentType.Name.Contains("Bill of Quantities") || c.MasterDocumentType.Name.Contains("BOQ"))) ||
+            (c.CustomDocumentName != null && (c.CustomDocumentName.Contains("Price Schedule") || c.CustomDocumentName.Contains("Bill of Quantities") || c.CustomDocumentName.Contains("BOQ")))))
+        {
+            pricingStructure = projectItems.Count > 0 ? "Itemized" : "LumpSum";
+        }
+        else if (projectItems.Count > 0 && !categoryName.Contains("Consulting", StringComparison.OrdinalIgnoreCase))
+        {
+            pricingStructure = "Itemized";
+        }
+        else
+        {
+            pricingStructure = "LumpSum";
+        }
+
         var dto = new PublicProjectDetailDto
         {
             Id                     = project.Id,
@@ -306,6 +329,8 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
             ABC                    = project.ABC,
             ModeOfProcurement      = project.ProcurementMode?.Name ?? string.Empty,
             Status                 = effectiveStatus,
+            PricingStructure       = pricingStructure,
+            ProcurementCategory    = categoryName,
             ScopeOfWork            = project.ScopeOfWork,
             NonRefundableBidderFee = project.NonRefundableBidderFee,
             DeliveryPeriodDays     = project.DeliveryPeriodDays,

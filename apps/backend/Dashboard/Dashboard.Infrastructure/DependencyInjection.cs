@@ -184,14 +184,21 @@ public static class DependencyInjection
         // Notice of Award — PDF (RA 12009 NGPA Compliant)
         services.AddScoped<IDocumentRenderer<NoticeOfAwardDataDto>, NoticeOfAwardPdfRenderer>();
 
-        // RFQ — PDF
+        // RFQ — PDF and Excel
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos.RfqDataDto>, RfqPdfRenderer>();
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos.RfqDataDto>, RfqExcelRenderer>();
 
         // AOB / Abstract of Quotation — PDF
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.AOBs.Dtos.AobDataDto>, AobPdfRenderer>();
 
         // Direct Contracting — PDF (RA 12009 NGPA Compliant)
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.DirectContractings.Dtos.DirectContractingPdfDataDto>, DirectContractingPdfRenderer>();
+
+        // Contract Agreement — PDF (RA 12009 NGPA Compliant)
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.Contracts.Dtos.ContractDataDto>, ContractPdfRenderer>();
+
+        // Notice to Proceed — PDF (RA 12009 Sec. 66 / GPPB Res. 03-2025)
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.NoticeToProceeds.Dtos.NoticeToProceedDataDto>, NoticeToProceedPdfRenderer>();
 
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config

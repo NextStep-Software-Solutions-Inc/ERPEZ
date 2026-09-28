@@ -33,6 +33,10 @@ public record RFQSupplierBidDto
     public int? ValidityPeriodDays { get; init; }
     public string? EvaluatedBy { get; init; }
     public DateTime? EvaluatedAt { get; init; }
+    public string? QuotationDocumentUrl { get; init; }
+    public string? SignatureUrl { get; init; }
+    public string? SignatoryName { get; init; }
+    public DateTime? DateSigned { get; init; }
     public List<RFQBidDocumentDto> Documents { get; init; } = [];
     public List<RFQBidItemDetailDto> Items { get; init; } = [];
 }
@@ -205,6 +209,20 @@ public class GetRFQSupplierBidsQueryHandler(IUnitOfWork unitOfWork)
                 }
             }
 
+            // Collect attached official quotation document if submitted manually or routed
+            if (!string.IsNullOrEmpty(b.QuotationDocumentUrl) && seenUrls.Add(b.QuotationDocumentUrl))
+            {
+                documents.Add(new RFQBidDocumentDto
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Signed RFQ Quotation Document",
+                    Type = "PDF",
+                    Size = 0,
+                    UploadedAt = b.SubmittedAt ?? b.CreatedAt,
+                    Url = b.QuotationDocumentUrl
+                });
+            }
+
             return new RFQSupplierBidDto
             {
                 Id = b.Id,
@@ -232,6 +250,10 @@ public class GetRFQSupplierBidsQueryHandler(IUnitOfWork unitOfWork)
                 ValidityPeriodDays = b.ValidityPeriodDays,
                 EvaluatedBy = b.UpdatedBy,
                 EvaluatedAt = b.UpdatedAt,
+                QuotationDocumentUrl = b.QuotationDocumentUrl,
+                SignatureUrl = b.SignatureUrl,
+                SignatoryName = b.SignatoryName,
+                DateSigned = b.DateSigned,
                 Documents = documents,
                 Items = b.SupplierBidItems.Select(i =>
                 {

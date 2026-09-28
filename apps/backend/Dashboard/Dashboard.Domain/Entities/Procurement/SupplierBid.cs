@@ -40,6 +40,14 @@ public class SupplierBid : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Remarks { get; set; }
 
+    public string? QuotationDocumentUrl { get; set; }
+
+    public string? SignatureUrl { get; set; }
+
+    public string? SignatoryName { get; set; }
+
+    public DateTime? DateSigned { get; set; }
+
     // Navigation properties
     public virtual RFQ RFQ { get; set; } = null!;
     public virtual Supplier Supplier { get; set; } = null!;

@@ -21,15 +21,15 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
 
         if (request.RFQIds != null && request.RFQIds.Count > 0)
         {
-            var existingRfqIds = await unitOfWork.RFQRepository.Query()
-                .Where(r => request.RFQIds.Contains(r.Id))
+            var existingApprovedRfqIds = await unitOfWork.RFQRepository.Query()
+                .Where(r => request.RFQIds.Contains(r.Id) && r.Status == StatusEnum.Approved)
                 .Select(r => r.Id)
                 .ToListAsync(cancellationToken);
 
-            var missingIds = request.RFQIds.Except(existingRfqIds).ToList();
-            if (missingIds.Count > 0)
+            var invalidOrUnapprovedIds = request.RFQIds.Except(existingApprovedRfqIds).ToList();
+            if (invalidOrUnapprovedIds.Count > 0)
             {
-                return ApiResponse<Guid>.Fail($"The following RFQ ID(s) do not exist: {string.Join(", ", missingIds)}");
+                return ApiResponse<Guid>.Fail($"Only approved RFQs can be linked to an AOB. The following RFQ ID(s) do not exist or are not approved: {string.Join(", ", invalidOrUnapprovedIds)}");
             }
         }
 

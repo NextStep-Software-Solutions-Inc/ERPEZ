@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle, ChevronLeft, ChevronRight, Lock, AlertTriangle } from 'lucide-react'
 import { BidDetailsViewer } from '../components/BidDetailsViewer'
+import { SupplierRFQPreviewDialog } from '../dialogs/SupplierRFQPreviewDialog'
 import { BidMatrixItemHeader, BidMatrixItemSubheaders } from './BidMatrixItemHeader'
 import { BidMatrixSupplierRow } from './BidMatrixSupplierRow'
 import { BidMatrixKpiCards } from './BidMatrixKpiCards'
@@ -63,6 +64,7 @@ export function BidEvaluationMatrix({
     supplierName: '',
     bid: null,
   })
+  const [previewingSupplier, setPreviewingSupplier] = useState<Supplier | null>(null)
 
   const suppliers = useMemo(() => {
     return bidMatrix.suppliers || []
@@ -333,6 +335,7 @@ export function BidEvaluationMatrix({
                       suppliersCount={suppliers.length}
                       formatPHP={formatPHP}
                       onViewBidDetails={handleViewBidDetails}
+                      onPreviewSubmittedRFQ={(sup) => setPreviewingSupplier(sup)}
                     />
                   )
                 })}
@@ -402,6 +405,19 @@ export function BidEvaluationMatrix({
             brochureFileUrl: viewingBidDetails.bid.brochureFileUrl,
             isWinner: viewingBidDetails.bid.isWinner,
           }}
+        />
+      )}
+
+      {previewingSupplier && (
+        <SupplierRFQPreviewDialog
+          open={!!previewingSupplier}
+          onOpenChange={(open) => {
+            if (!open) {
+              setPreviewingSupplier(null)
+            }
+          }}
+          supplier={previewingSupplier}
+          bidMatrix={bidMatrix}
         />
       )}
     </>

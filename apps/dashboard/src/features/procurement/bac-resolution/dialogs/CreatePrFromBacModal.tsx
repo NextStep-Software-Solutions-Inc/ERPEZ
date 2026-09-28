@@ -130,7 +130,7 @@ export function CreatePrFromBacModal({
         status: 'approved',
         approvalOrigin: 'APPROVED_VIA_BAC',
         bacResolutionNumber: resolution.bacResolutionNumber,
-        modeOfProcurement: context?.modeOfProcurement || 'Public Bidding',
+        modeOfProcurement: context?.modeOfProcurement || 'Competitive Bidding',
         officeCode: 'OFF-01',
         officeName: context?.officeName || 'ICT Office',
         headerDetails: {
@@ -142,7 +142,7 @@ export function CreatePrFromBacModal({
           appItemId: resolution.appItemId || undefined,
           bacResolutionId: resolution.id,
           bacResolutionNumber: resolution.bacResolutionNumber,
-          modeOfProcurement: context?.modeOfProcurement || 'Public Bidding',
+          modeOfProcurement: context?.modeOfProcurement || 'Competitive Bidding',
           sourceType: resolution.sourceType || 'APP_ITEM',
         },
         items: prItems,
@@ -267,7 +267,7 @@ export function CreatePrFromBacModal({
                 <Tag className="h-3.5 w-3.5 text-blue-600" /> Mode of Procurement:
               </span>
               <p className="font-semibold text-default-900 mt-0.5">
-                {context?.modeOfProcurement || 'Public Bidding'}
+                {context?.modeOfProcurement || 'Competitive Bidding'}
               </p>
             </div>
 

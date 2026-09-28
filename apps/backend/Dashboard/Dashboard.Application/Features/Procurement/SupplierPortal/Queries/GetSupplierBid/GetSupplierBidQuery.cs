@@ -37,6 +37,10 @@ public class GetSupplierBidQueryHandler(IUnitOfWork unitOfWork)
             TotalAmount = bid.TotalAmount,
             SubmittedAt = bid.SubmittedAt,
             Remarks = bid.Remarks,
+            QuotationDocumentUrl = bid.QuotationDocumentUrl,
+            SignatureUrl = bid.SignatureUrl,
+            SignatoryName = bid.SignatoryName,
+            DateSigned = bid.DateSigned,
             Items = bid.SupplierBidItems.Select(i => new SupplierBidItemDetailDto
             {
                 Id = i.Id,

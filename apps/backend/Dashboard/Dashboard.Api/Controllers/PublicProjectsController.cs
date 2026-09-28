@@ -135,9 +135,12 @@ public class PublicProjectsController(ISender mediator) : ControllerBase
             return NotFound(ApiResponse<object>.Fail("Approved RFQ not found."));
         }
 
-        // Check if already generated
+        // Check if a public blank RFQ document was already generated (excluding supplier-specific documents)
         var existingDoc = await unitOfWork.GeneratedDocumentRepository.FindAsync(
-            d => d.SourceDocumentId == id && d.DocumentType == DocumentType.Rfq && !d.IsDeleted,
+            d => d.SourceDocumentId == id 
+                && d.DocumentType == DocumentType.Rfq 
+                && !d.IsDeleted 
+                && !d.FileName.Contains("_Supplier_"),
             cancellationToken);
 
         Guid documentId;
@@ -151,6 +154,7 @@ public class PublicProjectsController(ISender mediator) : ControllerBase
             {
                 RFQId = id,
                 Format = ExportFormat.Pdf,
+                BlankTemplate = true,
                 GeneratedBy = "PublicPortal"
             }, cancellationToken);
 

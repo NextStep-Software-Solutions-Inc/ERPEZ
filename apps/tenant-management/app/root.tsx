@@ -2,10 +2,11 @@ import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration }
 import type { Route } from './+types/root'
 import stylesheet from './app.css?url'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Toaster } from 'sonner'
 import { KeycloakProvider } from './providers/KeycloakProvider'
 import { AuthProvider } from './providers/AuthProvider'
+import { initConsoleSecurityWarning } from 'erpez-shared-lib'
 
 export const links: Route.LinksFunction = () => [
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -51,6 +52,10 @@ export default function App() {
         },
       })
   )
+
+  useEffect(() => {
+    initConsoleSecurityWarning()
+  }, [])
 
   return (
     <QueryClientProvider client={queryClient}>

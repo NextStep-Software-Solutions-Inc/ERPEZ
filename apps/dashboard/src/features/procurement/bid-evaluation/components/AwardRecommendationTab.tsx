@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   DollarSign,
   ExternalLink,
-  FileCheck2,
   FileText,
   Link as LinkIcon,
   RefreshCw,

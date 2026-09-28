@@ -86,11 +86,8 @@ export function AwardRecommendationDialog({
       await recommendAwardMutation.mutateAsync({
         projectId,
         data: {
-          biddingEvaluatedBidId: winningBid.id,
           biddingPostQualificationId: winningBid.postQualification.id,
-          awardedAmount: winningBid.evaluatedBidPrice, // Authoritative evaluated amount
-          justification: justification.trim() ? justification.trim() : null,
-          remarks: remarks.trim() ? remarks.trim() : null,
+          remarks: [justification.trim(), remarks.trim()].filter(Boolean).join(' | ') || null,
         },
       })
       onOpenChange(false)
