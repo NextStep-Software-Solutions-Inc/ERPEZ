@@ -1,21 +1,46 @@
 import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
 import type { BackendDirectContractingItem } from '../types'
-import type { QuotationItemBid } from '@/features/procurement/supplier-portal/types/daItemTypes'
+import type { QuotationItemBid } from '@/features/procurement/supplier-portal/types/direct-contracting-item-type'
 import api from '@/services/api'
 
 const endpoint = '/direct-contracting/:id/proposal'
 
+export interface ProposalItemPayload {
+  cprItemId: string
+  prItemId?: string
+  unitBid: number
+  bidUnitPrice?: number
+  totalBid?: number
+  bidTotalAmount?: number
+  brand?: string
+  bidBrand?: string
+  model?: string
+  bidModel?: string
+  color?: string
+  bidColor?: string
+  brochureFileUrl?: string
+  bidBrochureUrl?: string
+  bidBrochureFileName?: string
+}
+
 export interface SubmitProposalPayload {
+  supplierId?: string
+  exclusivityDocumentUrl?: string
   exclusivityProofUrl: string
-  exclusivityProofFileName: string
+  exclusivityProofFileName?: string
+  proposalRemarks?: string
   proposalNotes: string
   proposalAmount: number
   bidTotalAmount: number
-  brand: string
-  model: string
-  brochureUrls: string[]
-  bidAmounts: number[]
-  quotationItems: QuotationItemBid[]
+  brand?: string
+  model?: string
+  color?: string
+  brochureFileUrl?: string
+  brochureFileName?: string
+  brochureUrls?: string[]
+  bidAmounts?: number[]
+  proposalItems?: ProposalItemPayload[]
+  quotationItems: Array<QuotationItemBid | ProposalItemPayload>
 }
 
 export const submitProposalRequest: MutationBlueprintFromTemplate<
@@ -29,9 +54,13 @@ export const submitProposalRequest: MutationBlueprintFromTemplate<
     if (!payload) {
       throw new Error('Payload is required.')
     }
-    const response = await api.post<{ succeeded: boolean; data: BackendDirectContractingItem }>(finalUrl, payload)
-    if (!response.data?.succeeded || !response.data.data) {
-      throw new Error('Failed to submit proposal.')
+    const response = await api.post<{
+      succeeded: boolean
+      message?: string
+      data: BackendDirectContractingItem
+    }>(finalUrl, payload)
+    if (!response.data?.succeeded) {
+      throw new Error(response.data?.message || 'Failed to submit proposal.')
     }
     return response.data.data
   },

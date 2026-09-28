@@ -19,9 +19,13 @@ export const changeDirectContractingStatusRequest: MutationBlueprintFromTemplate
     if (!payload) {
       throw new Error('Payload is required.')
     }
-    const response = await api.patch<{ succeeded: boolean; data: BackendDirectContractingItem }>(finalUrl, payload)
-    if (!response.data?.succeeded || !response.data.data) {
-      throw new Error('Failed to change status.')
+    const response = await api.patch<{
+      succeeded: boolean
+      message?: string
+      data: BackendDirectContractingItem
+    }>(finalUrl, payload)
+    if (!response.data?.succeeded) {
+      throw new Error(response.data?.message || 'Failed to change status.')
     }
     return response.data.data
   },
