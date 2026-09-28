@@ -36,18 +36,17 @@ import { DARequirementsModal } from '../_components/DARequirementsModal'
 import { useSuppliers } from '@/components/features/planning/procurement-library/suppliers/useSuppliers'
 import { useSupplierDirectContractings } from '../handlers/supplierPortalRequests'
 import {
-  useChangeDirectContractingStatus,
   useDirectContractings,
   useSubmitProposal,
 } from '@/features/procurement/direct-contracting/handlers'
 import type { DirectContracting } from '@/features/procurement/direct-contracting/types'
+import type { DirectContractingItem } from '../types/direct-contracting-item-type'
 import { useQueryClient } from 'erpez-shared-lib'
 import React from 'react'
 
 export function DirectContractingItemPage() {
   const queryClient = useQueryClient()
   const submitProposalMutation = useSubmitProposal()
-  const statusMutation = useChangeDirectContractingStatus()
 
   // 1. URL-based Search Parameters & Navigation
   const searchParams = useSearch({
@@ -68,7 +67,7 @@ export function DirectContractingItemPage() {
             ...updates,
           }
           if (!next.searchQuery || !next.searchQuery.trim()) {
-            delete (next as any).searchQuery
+            next.searchQuery = undefined
           }
           return next
         },
@@ -108,8 +107,6 @@ export function DirectContractingItemPage() {
       localStorage.setItem('erpez_active_supplier_id', id)
     }
   }
-
-  const selectedSupplierObj = registeredSuppliers.find((s) => s.id === activeSupplierId)
 
   // 3. Fetch Direct Contracting Items for Supplier
   // Primary query: dedicated supplier-scoped endpoint
@@ -230,13 +227,40 @@ export function DirectContractingItemPage() {
   )
 
   // 8. Proposal Submit Handler
-  const handleWizardSave = async (patch: Partial<DirectContracting> | any) => {
+  const handleWizardSave = async (
+    patch: Partial<DirectContracting> | Partial<DirectContractingItem>,
+  ) => {
     if (!quotationItem) return
     if (patch.quotationStatus === 'submitted') {
       try {
+        const mappedItems = (patch.quotationItems || []).map((q) => {
+          const itemId = q.cprItemId || q.prItemId || ''
+          const unitBid = Number(q.bidUnitPrice) || 0
+          return {
+            cprItemId: itemId,
+            prItemId: itemId,
+            unitBid,
+            bidUnitPrice: unitBid,
+            totalBid: q.bidTotalAmount,
+            bidTotalAmount: q.bidTotalAmount,
+            brand: q.bidBrand,
+            bidBrand: q.bidBrand,
+            model: q.bidModel,
+            bidModel: q.bidModel,
+            color: q.bidColor,
+            bidColor: q.bidColor,
+            brochureFileUrl: q.bidBrochureUrl,
+            bidBrochureUrl: q.bidBrochureUrl,
+            bidBrochureFileName: q.bidBrochureFileName,
+          }
+        })
+
         const payload = {
+          supplierId: quotationItem.exclusiveSupplierId || activeSupplierId || undefined,
+          exclusivityDocumentUrl: patch.exclusivityProofUrl || '',
           exclusivityProofUrl: patch.exclusivityProofUrl || '',
           exclusivityProofFileName: patch.exclusivityProofFileName || '',
+          proposalRemarks: patch.proposalNotes || '',
           proposalNotes: patch.proposalNotes || '',
           proposalAmount: patch.proposalAmount || 0,
           bidTotalAmount: patch.bidTotalAmount || 0,
@@ -245,26 +269,13 @@ export function DirectContractingItemPage() {
           color: patch.bidColor || '',
           brochureFileUrl: patch.bidBrochureUrl || '',
           brochureFileName: patch.bidBrochureFileName || '',
-          quotationItems: patch.quotationItems?.map((q: any) => ({
-            cprItemId: q.cprItemId,
-            unitPrice: q.bidUnitPrice,
-            totalBid: q.bidTotalAmount,
-            bidTotalAmount: q.bidTotalAmount,
-            bidModel: q.bidModel,
-            bidBrand: q.bidBrand,
-            bidColor: q.bidColor,
-            bidBrochureUrl: q.bidBrochureUrl,
-            bidBrochureFileName: q.bidBrochureFileName,
-          })),
+          proposalItems: mappedItems,
+          quotationItems: mappedItems,
         }
 
         await submitProposalMutation.mutateAsync({
           pathParams: { id: quotationItem.id },
           payload,
-        })
-        await statusMutation.mutateAsync({
-          pathParams: { id: quotationItem.id },
-          payload: { status: 'PENDING_FOR_APPROVAL' },
         })
 
         toast.success('Your formal bid and quotation have been submitted successfully to the BAC.')
@@ -277,11 +288,12 @@ export function DirectContractingItemPage() {
             typeof query.queryKey[0] === 'string' &&
             query.queryKey[0].includes('direct-contracting'),
         })
-        refetchSupplierItems()
-        refetchBac()
+        void refetchSupplierItems()
+        void refetchBac()
       } catch (err) {
         console.error(err)
-        toast.error('Failed to submit quotation. Please verify all required fields.')
+        const errMsg = err instanceof Error ? err.message : 'Failed to submit quotation. Please verify all required fields.'
+        toast.error(errMsg)
       }
     }
   }
