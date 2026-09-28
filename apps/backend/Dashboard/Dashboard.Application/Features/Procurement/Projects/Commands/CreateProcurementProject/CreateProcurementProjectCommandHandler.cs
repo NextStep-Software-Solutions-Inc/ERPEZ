@@ -18,7 +18,7 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(CreateProcurementProjectCommand request, CancellationToken cancellationToken)
     {
-        string projectTitle = request.Title ?? string.Empty;
+        string projectTitle = request.Title?.Trim() ?? string.Empty;
         decimal projectABC = request.ABC ?? 0;
         Guid? procurementModeId = null;
         var appItems = new List<APPItem>();
@@ -85,7 +85,7 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             // Authoritative Hydration from DB
             if (!string.IsNullOrWhiteSpace(request.Title))
             {
-                projectTitle = request.Title;
+                projectTitle = request.Title.Trim();
             }
             else if (appItems.Count == 1)
             {
@@ -168,9 +168,22 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             }
 
             // Authoritative Hydration from DB
-            projectTitle = !string.IsNullOrWhiteSpace(consolidatedPr.Description)
-                ? consolidatedPr.Description
-                : (!string.IsNullOrWhiteSpace(consolidatedPr.CPRNumber) ? consolidatedPr.CPRNumber : (request.Title ?? "Consolidated PR Project"));
+            if (!string.IsNullOrWhiteSpace(request.Title))
+            {
+                projectTitle = request.Title.Trim();
+            }
+            else if (!string.IsNullOrWhiteSpace(consolidatedPr.Description))
+            {
+                projectTitle = consolidatedPr.Description;
+            }
+            else if (!string.IsNullOrWhiteSpace(consolidatedPr.CPRNumber))
+            {
+                projectTitle = consolidatedPr.CPRNumber;
+            }
+            else
+            {
+                projectTitle = "Consolidated PR Project";
+            }
 
             decimal expectedCprAbc = consolidatedPr.TotalAmount;
             if (request.ABC.HasValue && request.ABC.Value > 0 && Math.Abs(Math.Round(request.ABC.Value, 2) - Math.Round(expectedCprAbc, 2)) >= 0.01m)
