@@ -13,6 +13,8 @@ import { reviewProposalRequest } from './reviewProposalRequest'
 import { approveDirectContractingRequest } from './approveDirectContractingRequest'
 import { deleteDirectContractingRequest } from './deleteDirectContractingRequest'
 import { getEligibleBacProjectsRequest } from './getEligibleBacProjectsRequest'
+import { generateDirectContractingDocumentRequest } from './generateDirectContractingDocumentRequest'
+import { downloadDirectContractingDocumentRequest } from './downloadDirectContractingDocumentRequest'
 
 const queryKeys = [
   ['direct-contractings'],
@@ -113,5 +115,13 @@ export const useApproveDirectContracting = makeMutationWithRefresh(
 
 export const useDeleteDirectContracting = createMutationHookFromTemplate(
   deleteDirectContractingRequest,
+)
+
+export const useGenerateDirectContractingDocument = createMutationHookFromTemplate(
+  generateDirectContractingDocumentRequest,
+)
+
+export const useDownloadDirectContractingDocument = createMutationHookFromTemplate(
+  downloadDirectContractingDocumentRequest,
 )
 

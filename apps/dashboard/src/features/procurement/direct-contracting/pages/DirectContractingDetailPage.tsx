@@ -4,10 +4,12 @@ import {
   ArrowLeft,
   Building2,
   Clock,
+  Download,
   Edit,
   FileCheck,
   FileText,
   HelpCircle,
+  Loader2,
   Receipt,
   RotateCcw,
   Send,
@@ -23,6 +25,8 @@ import {
   useChangeDirectContractingStatus,
   useDeleteDirectContracting,
   useDirectContracting,
+  useDownloadDirectContractingDocument,
+  useGenerateDirectContractingDocument,
 } from '../handlers'
 import { DirectContractingStatusEnum } from '../types'
 import type { AxiosError } from 'erpez-shared-lib'
@@ -32,6 +36,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 import { extractErrorMessage } from '@/services/utils/messages'
 import { cn } from '@/lib/utils'
@@ -127,7 +137,7 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
     error,
     refetch,
   } = useDirectContracting({
-    pathParams: { id },
+    pathParams: { id }, queryParams: {},
   })
   const item = directContractingResponse?.data
 
@@ -136,9 +146,63 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
   const [showSubmitConfirm, setShowSubmitConfirm] = React.useState(false)
   const [showConvertToDraftConfirm, setShowConvertToDraftConfirm] = React.useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
+  const [isExporting, setIsExporting] = React.useState<boolean>(false)
 
   const statusMutation = useChangeDirectContractingStatus()
   const deleteMutation = useDeleteDirectContracting()
+  const { mutateAsync: generateDocument } = useGenerateDirectContractingDocument()
+  const { mutateAsync: downloadDocument } = useDownloadDirectContractingDocument()
+
+  const handleExport = async (format: 'Excel' | 'Pdf') => {
+    if (!id) return
+    setIsExporting(true)
+
+    const exportPromise = (async () => {
+      const genResponse = await generateDocument({
+        pathParams: { id },
+        queryParams: { format },
+      })
+
+      const documentId = genResponse.data
+      if (!documentId) {
+        throw new Error('No document ID returned from generation API')
+      }
+
+      const downloadResponse = await downloadDocument({
+        pathParams: { documentId },
+      })
+
+      const blob = downloadResponse.blob
+
+      const fileExtension = format === 'Excel' ? 'xlsx' : 'pdf'
+      const filename = item?.dcNumber
+        ? `Direct_Contracting_${item.dcNumber}.${fileExtension}`
+        : `Direct_Contracting_${id}.${fileExtension}`
+
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(link.href)
+    })()
+
+    toast.promise(exportPromise, {
+      loading: `Generating and downloading ${format} document...`,
+      success: `${format} document downloaded successfully!`,
+      error: (err) =>
+        err instanceof Error ? err.message : `Failed to export document.`,
+    })
+
+    try {
+      await exportPromise
+    } catch (err) {
+      console.error('Export failed:', err)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const handleSubmitForReview = async () => {
     try {
@@ -257,6 +321,31 @@ export function DirectContractingDetailPage({ id, tab }: DirectContractingDetail
             >
               <Edit className="h-4 w-4" /> Edit Request
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {isExporting ? 'Exporting...' : 'Export'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('Excel')}>
+                  Export as Excel (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('Pdf')}>
+                  Export as PDF (.pdf)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {item.status === DirectContractingStatusEnum.FOR_REVIEW || item.status === DirectContractingStatusEnum.RETURNED ? (
               <Button
                 size="sm"

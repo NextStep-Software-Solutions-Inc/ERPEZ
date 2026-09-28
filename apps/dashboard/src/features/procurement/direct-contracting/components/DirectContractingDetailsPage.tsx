@@ -2,14 +2,19 @@ import { useMemo, useState } from 'react'
 import type { ComponentType } from 'react'
 import {
   AlertTriangle, ArrowLeft, Building2, Calendar,
-  CheckCircle, Clock, Download, FileCheck, FileText, Receipt, RotateCcw, Send, ShieldCheck, ShoppingCart, Tag, UserCheck
+  CheckCircle, Clock, Download, FileCheck, FileText, Loader2, Receipt, RotateCcw, Send, ShieldCheck, ShoppingCart, Tag, UserCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import type { AxiosError } from 'erpez-shared-lib'
 import { DirectContractingStatusEnum } from '../types'
 import type { DirectContracting } from '../types'
-import { generateAndDownloadDirectContractingDocument, useChangeDirectContractingStatus, useDirectContracting } from '../handlers'
+import {
+  useChangeDirectContractingStatus,
+  useDirectContracting,
+  useDownloadDirectContractingDocument,
+  useGenerateDirectContractingDocument,
+} from '../handlers'
 import { getBacStatusBadgeConfig } from './DirectContractingForm'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,6 +29,12 @@ import { formatCurrencyPHP, formatDisplayDate } from '@/utils/formatters'
 import { cn } from '@/lib/utils'
 
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; icon: ComponentType<{ className?: string }> }> = {
   [DirectContractingStatusEnum.DRAFT]: { label: 'DRAFT', className: 'bg-gray-100 text-gray-700 border-gray-300', icon: ShoppingCart },
@@ -58,7 +69,9 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [showConvertToDraftConfirm, setShowConvertToDraftConfirm] = useState(false)
   const [showSendToSupplierConfirm, setShowSendToSupplierConfirm] = useState(false)
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const { mutateAsync: generateDocument } = useGenerateDirectContractingDocument()
+  const { mutateAsync: downloadDocument } = useDownloadDirectContractingDocument()
 
   const {
     data: directContractingResponse,
@@ -233,6 +246,56 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
     }
   }
 
+  const handleExport = async (format: 'Excel' | 'Pdf') => {
+    if (!item?.id) return
+    setIsExporting(true)
+
+    const exportPromise = (async () => {
+      const genResponse = await generateDocument({
+        pathParams: { id: item.id },
+        queryParams: { format },
+      })
+
+      const documentId = genResponse.data
+      if (!documentId) {
+        throw new Error('No document ID returned from generation API')
+      }
+
+      const downloadResponse = await downloadDocument({
+        pathParams: { documentId },
+      })
+
+      const blob = downloadResponse.blob
+
+      const fileExtension = format === 'Excel' ? 'xlsx' : 'pdf'
+      const filename = item?.dcNumber
+        ? `Direct_Contracting_${item.dcNumber}.${fileExtension}`
+        : `Direct_Contracting_${item.id}.${fileExtension}`
+
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(link.href)
+    })()
+
+    toast.promise(exportPromise, {
+      loading: `Generating and downloading ${format} document...`,
+      success: `${format} document downloaded successfully!`,
+      error: (err) =>
+        err instanceof Error ? err.message : `Failed to export document.`,
+    })
+
+    try {
+      await exportPromise
+    } catch (err) {
+      console.error('Export failed:', err)
+    } finally {
+      setIsExporting(false)
+    }
+  }
   const handleInitialSubmit = async () => {
     if (!isBacApproved) {
       toast.error(`Cannot submit Direct Contracting request for review until the linked BAC Resolution is Approved (current BAC status: ${item.bacProjectStatus || 'Unapproved'}).`)
@@ -332,34 +395,29 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
                 Submit to Supplier
               </Button>
             )}
-            <Button
-              variant="outline"
-              disabled={isGeneratingPdf}
-              onClick={async () => {
-                try {
-                  setIsGeneratingPdf(true)
-                  await toast.promise(
-                    generateAndDownloadDirectContractingDocument({
-                      directContractingId: item.id,
-                      format: 'Pdf',
-                      filename: `Direct_Contracting_${item.dcNumber || 'Resolution'}.pdf`,
-                    }),
-                    {
-                      loading: 'Generating official RA 12009 Direct Contracting document...',
-                      success: 'Direct Contracting document downloaded successfully.',
-                      error: (err: unknown) => extractErrorMessage(err as AxiosError) || 'Failed to generate document.',
-                    }
-                  )
-                } catch (err) {
-                  console.error(err)
-                } finally {
-                  setIsGeneratingPdf(false)
-                }
-              }}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {isGeneratingPdf ? 'Generating...' : 'Print Direct Contracting Request'}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  {isExporting ? 'Exporting...' : 'Export Document'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('Excel')}>
+                  Export as Excel (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('Pdf')}>
+                  Export as PDF (.pdf)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
