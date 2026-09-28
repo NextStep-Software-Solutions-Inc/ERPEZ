@@ -4,6 +4,9 @@ import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
 import { PERMISSIONS } from '@/constants/permissions'
 
 export const Route = createFileRoute('/v2/(procurement)/supplier-portal/rfq-item/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    rfqId: typeof search.rfqId === 'string' ? search.rfqId : undefined,
+  }),
   component: SupplierPortalRFQItemRoute,
 })
 

@@ -102,6 +102,17 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
     })
   }
 
+  const isAllSelected = templates.length > 0 && templates.every((d) => selectedBidIds.has(d.id))
+  const isSomeSelected = templates.some((d) => selectedBidIds.has(d.id)) && !isAllSelected
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedBidIds(new Set())
+    } else {
+      setSelectedBidIds(new Set(templates.map((d) => d.id)))
+    }
+  }
+
   const selectedBidNotices = templates.filter((d) => selectedBidIds.has(d.id))
 
   if (showApplicationForm) {
@@ -280,18 +291,56 @@ export function BACProjectDetail({ project: initialProject, onBack }: BACProject
         {/* Bid Notices — full width, same size as Project Details */}
         {templates.length > 0 && (
           <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center gap-2">
-              <Download className="h-4 w-4 text-blue-600" />
-              <h2 className="font-semibold text-slate-800">Bid Notices</h2>
-              <span className="ml-auto text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
-                {templates.length} file{templates.length > 1 ? 's' : ''}
-              </span>
+            <div className="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Download className="h-4 w-4 text-blue-600" />
+                <h2 className="font-semibold text-slate-800">Bid Notices</h2>
+                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
+                  {templates.length} file{templates.length > 1 ? 's' : ''}
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={toggleSelectAll}
+                className="h-8 px-3 text-xs font-semibold border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800 gap-2 transition-all shadow-xs"
+              >
+                <div
+                  className={`h-4 w-4 rounded border-2 shrink-0 flex items-center justify-center transition-colors ${
+                    isAllSelected
+                      ? 'bg-blue-600 border-blue-600'
+                      : isSomeSelected
+                      ? 'bg-blue-500 border-blue-500'
+                      : 'border-slate-300 bg-white'
+                  }`}
+                >
+                  {isAllSelected && (
+                    <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 12 12">
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                  {isSomeSelected && (
+                    <span className="h-0.5 w-2 bg-white rounded-full inline-block" />
+                  )}
+                </div>
+                <span>{isAllSelected ? 'Deselect All' : 'Select All'}</span>
+              </Button>
             </div>
             <div className="p-6 space-y-2">
-              <p className="text-xs text-slate-500 pb-2">
-                Download, fill out, and prepare the following bid documents before submitting your application.
-                <span className="font-medium text-blue-600 ml-1">Select the documents you need to submit.</span>
-              </p>
+              <div className="flex items-center justify-between pb-2 flex-wrap gap-2">
+                <p className="text-xs text-slate-500">
+                  Download, fill out, and prepare the following bid documents before submitting your application.
+                  <span className="font-medium text-blue-600 ml-1">Select the documents you need to submit.</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                >
+                  {isAllSelected ? 'Clear all selections' : `Select all (${templates.length})`}
+                </button>
+              </div>
               {templates.map((doc) => {
                 const isSelected = selectedBidIds.has(doc.id)
                 return (

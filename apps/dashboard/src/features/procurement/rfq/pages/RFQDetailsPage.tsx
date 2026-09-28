@@ -54,7 +54,9 @@ import {
   CornerDownLeft,
   FileSpreadsheet,
   ChevronDown,
+  RefreshCw,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/components/ui/use-toast'
 import {
   Select,
@@ -117,6 +119,53 @@ export function RFQDetailsPage({
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedFund, setSelectedFund] = useState<string>('all')
   const [previewingSupplierRFQ, setPreviewingSupplierRFQ] = useState<any | null>(null)
+  const queryClient = useQueryClient()
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const invalidateRFQQueries = async () => {
+    try {
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (k) =>
+              typeof k === 'string' &&
+              (k.includes('rfq') ||
+                k.includes('rfqs') ||
+                k.includes('consolidated-pr') ||
+                k.includes(rfqId)),
+          ),
+      })
+      void queryClient.invalidateQueries({ queryKey: ['rfqs'] })
+      void queryClient.invalidateQueries({ queryKey: ['rfq', rfqId] })
+      void queryClient.invalidateQueries({ queryKey: ['/rfqs'] })
+      void queryClient.invalidateQueries({ queryKey: [`/rfqs/${rfqId}`] })
+      void queryClient.invalidateQueries({ queryKey: ['/rfqs/summary'] })
+      void queryClient.invalidateQueries({ queryKey: ['/consolidated-prs'] })
+      void queryClient.invalidateQueries({ queryKey: ['/consolidated-pr/items-for-rfq'] })
+    } catch (err) {
+      console.warn('Failed to invalidate queries:', err)
+    }
+  }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await invalidateRFQQueries()
+      await loadRFQ(false)
+      toast({
+        title: 'RFQ Refreshed',
+        description: 'Latest RFQ details, supplier quotes, and item data loaded.',
+      })
+    } catch (err) {
+      toast({
+        title: 'Refresh failed',
+        description: 'Failed to reload RFQ data.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   const rfqBidMatrix = useMemo<BidMatrix>(() => ({
     id: rfq?.id || '',
@@ -311,8 +360,28 @@ export function RFQDetailsPage({
 
   const displayStatus = normalizeStatus(rfq?.status, rfq?.remarks)
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading RFQ details...</div>
-  if (!rfq) return <div className="p-8 text-center text-destructive">RFQ not found</div>
+  if (isLoading) {
+    return (
+      <div className="p-12 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <p className="text-sm text-muted-foreground">Loading RFQ details...</p>
+      </div>
+    )
+  }
+
+  if (!rfq) {
+    return (
+      <div className="p-12 flex flex-col items-center justify-center gap-3">
+        <div className="text-destructive font-medium text-lg">RFQ not found</div>
+        <p className="text-sm text-muted-foreground">The requested RFQ could not be loaded or may have been deleted.</p>
+        {onBack && (
+          <Button variant="outline" size="sm" onClick={onBack} className="gap-2 mt-2">
+            <ChevronLeft className="h-4 w-4" /> Back to RFQ List
+          </Button>
+        )}
+      </div>
+    )
+  }
 
   const toggleBrochure = async (itemId: string, v: boolean) => {
     const item = rfq.items.find((it: any) => it.id === itemId)
@@ -336,6 +405,7 @@ export function RFQDetailsPage({
         isBrochureRequired: v,
         greenSpecification: greenSpecs[itemId] !== undefined ? greenSpecs[itemId] : (item.greenSpecification || ''),
       }])
+      await invalidateRFQQueries()
       loadRFQ(true)
     } catch (err) {
       console.error('Failed to toggle brochure requirement:', err)
@@ -356,6 +426,7 @@ export function RFQDetailsPage({
       isBrochureRequired: !!item.isRequiredBrochure,
       greenSpecification: value,
     }])
+    await invalidateRFQQueries()
     loadRFQ(true)
   }
 
@@ -368,6 +439,7 @@ export function RFQDetailsPage({
     await removeRFQItem(rfqId, itemToDelete)
     toast({ title: 'Item removed', description: 'Item removed from RFQ' })
     setItemToDelete(null)
+    await invalidateRFQQueries()
     loadRFQ()
   }
   const handleAddConsolidatedPR = async (items: RFQItem[]) => {
@@ -382,6 +454,7 @@ export function RFQDetailsPage({
       title: 'Items added',
       description: `${items.length} item(s) added to RFQ from consolidated PR(s)`,
     })
+    await invalidateRFQQueries()
     loadRFQ()
   }
 
@@ -1068,6 +1141,7 @@ export function RFQDetailsPage({
           title: 'RFQ Submitted',
           description: `${rfq.rfqNumber} has been submitted successfully for BAC review.`,
         })
+        await invalidateRFQQueries()
         loadRFQ()
       }
     } catch (e: any) {
@@ -1213,6 +1287,18 @@ export function RFQDetailsPage({
                     {quotationIsReturned ? 'Revise Quotation' : 'Set Quotation'}
                   </Button>
                 )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing || isLoading}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+                title="Refresh RFQ Details"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -1866,8 +1952,9 @@ export function RFQDetailsPage({
         rfqId={rfqId}
         supplierId={supplierId}
         initialRFQ={rfq}
-        onSuccess={() => {
+        onSuccess={async () => {
           setShowQuotationModal(false)
+          await invalidateRFQQueries()
           loadRFQ()
         }}
       />
@@ -1902,8 +1989,9 @@ export function RFQDetailsPage({
         open={showEditModal}
         onOpenChange={setShowEditModal}
         initialRFQ={rfq}
-        onSuccess={() => {
+        onSuccess={async () => {
           setShowEditModal(false)
+          await invalidateRFQQueries()
           loadRFQ()
         }}
       />
