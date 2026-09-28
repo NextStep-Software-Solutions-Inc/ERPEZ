@@ -64,40 +64,54 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
 
         if (dc.BACProject != null)
         {
-            if (dc.BACProject.SourceType == ProcurementProjectSourceType.ConsolidatedPR && dc.BACProject.ConsolidatedPR != null)
+            var isCpr = dc.BACProject.ConsolidatedPRId.HasValue 
+                || dc.BACProject.ConsolidatedPR != null 
+                || dc.BACProject.SourceType == ProcurementProjectSourceType.ConsolidatedPR;
+
+            if (isCpr)
             {
-                foreach (var cprItem in dc.BACProject.ConsolidatedPR.ConsolidatedPRItems.Where(ci => !ci.IsDeleted))
+                var cpr = dc.BACProject.ConsolidatedPR;
+                var cprId = dc.BACProject.ConsolidatedPRId ?? cpr?.Id;
+                if ((cpr == null || cpr.ConsolidatedPRItems == null || cpr.ConsolidatedPRItems.Count == 0 || cpr.ConsolidatedPRItems.Any(ci => ci.PRItem == null)) && cprId.HasValue)
                 {
-                    var prItem = cprItem.PRItem;
-                    if (prItem == null || prItem.IsDeleted) continue;
+                    cpr = await unitOfWork.ConsolidatedPRRepository.GetCPRWithDetailsAsync(cprId.Value, cancellationToken);
+                }
 
-                    var ppmpItem = prItem.PPMPItem;
-                    int quantity = prItem.RequestedQuantity;
-                    decimal unitPrice = prItem.UnitCost;
-                    decimal totalAmount = prItem.Amount > 0 ? prItem.Amount : (quantity * unitPrice);
-
-                    var canonicalId = prItem.PPMPItemId ?? cprItem.Id;
-
-                    items.Add(new DirectContractingItemResponse
+                if (cpr != null)
+                {
+                    foreach (var cprItem in cpr.ConsolidatedPRItems.Where(ci => !ci.IsDeleted))
                     {
-                        Id = canonicalId,
-                        CPRItemId = canonicalId,
-                        SourceItemId = cprItem.Id,
-                        ItemName = prItem.Name,
-                        Description = prItem.Description ?? ppmpItem?.Description,
-                        Unit = ppmpItem?.Unit ?? "unit",
-                        Quantity = quantity,
-                        UnitABC = unitPrice,
-                        TotalABC = totalAmount,
-                        Office = cprItem.PurchaseRequest?.Office?.Name ?? string.Empty,
-                        PRNumber = cprItem.PurchaseRequest?.PRNumber,
-                        PAPCode = ppmpItem?.PAPCode,
-                        Category = ppmpItem?.ProjectType.ToString() ?? (prItem.IsNonCSE ? "Non-CSE" : "CSE"),
-                        SourceType = "ConsolidatedPR"
-                    });
+                        var prItem = cprItem.PRItem;
+                        if (prItem == null || prItem.IsDeleted) continue;
+
+                        var ppmpItem = prItem.PPMPItem;
+                        int quantity = prItem.RequestedQuantity;
+                        decimal unitPrice = prItem.UnitCost;
+                        decimal totalAmount = prItem.Amount > 0 ? prItem.Amount : (quantity * unitPrice);
+
+                        var canonicalId = prItem.PPMPItemId ?? cprItem.Id;
+
+                        items.Add(new DirectContractingItemResponse
+                        {
+                            Id = canonicalId,
+                            CPRItemId = canonicalId,
+                            SourceItemId = cprItem.Id,
+                            ItemName = prItem.Name,
+                            Description = prItem.Description ?? ppmpItem?.Description,
+                            Unit = ppmpItem?.Unit ?? "unit",
+                            Quantity = quantity,
+                            UnitABC = unitPrice,
+                            TotalABC = totalAmount,
+                            Office = cprItem.PurchaseRequest?.Office?.Name ?? string.Empty,
+                            PRNumber = cprItem.PurchaseRequest?.PRNumber,
+                            PAPCode = ppmpItem?.PAPCode,
+                            Category = ppmpItem?.ProjectType.ToString() ?? (prItem.IsNonCSE ? "Non-CSE" : "CSE"),
+                            SourceType = "ConsolidatedPR"
+                        });
+                    }
                 }
             }
-            else if (dc.BACProject.SourceType == ProcurementProjectSourceType.APPItem)
+            else if (dc.BACProject.SourceType == ProcurementProjectSourceType.APPItem || dc.BACProject.APPItem != null || (dc.BACProject.APPItemLinks != null && dc.BACProject.APPItemLinks.Count > 0))
             {
                 var appItemList = new List<APPItem>();
                 if (dc.BACProject.APPItemLinks != null && dc.BACProject.APPItemLinks.Count > 0)

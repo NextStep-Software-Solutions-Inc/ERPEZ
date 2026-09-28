@@ -330,7 +330,14 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                         {item.items.map((reqItem, idx) => (
                           <TableRow key={reqItem.id || reqItem.cprItemId || idx}>
                             <TableCell className="max-w-[280px]">
-                              <div className="font-semibold text-sm text-foreground">{reqItem.itemName}</div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-sm text-foreground">{reqItem.itemName}</span>
+                                {reqItem.prNumber && (
+                                  <Badge variant="outline" className="text-[10px] font-mono py-0 px-1.5 bg-muted/40 text-muted-foreground border-border/60">
+                                    PR: {reqItem.prNumber}
+                                  </Badge>
+                                )}
+                              </div>
                               {reqItem.description && (
                                 <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
                                   {reqItem.description}
@@ -344,7 +351,6 @@ export function ProposalQuotationTab({ item, onSwitchToSupplierTab }: ProposalQu
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               <div className="font-medium text-foreground">{reqItem.office || 'Procuring Entity'}</div>
-                              {reqItem.prNumber && <div className="text-[11px] text-muted-foreground">PR: {reqItem.prNumber}</div>}
                               {reqItem.papCode && <div className="text-[11px] text-muted-foreground">PAP: {reqItem.papCode}</div>}
                             </TableCell>
                             <TableCell className="text-center text-xs font-semibold text-foreground">

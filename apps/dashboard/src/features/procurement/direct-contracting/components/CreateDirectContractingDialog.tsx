@@ -66,7 +66,7 @@ export function CreateDirectContractingDialog({
     pathParams: {},
     queryParams: {
       pageSize: 200,
-      filters: 'Status==Approved,IsBlacklisted==false',
+      filters: 'Status==Approved',
     },
     enabled: open,
   })

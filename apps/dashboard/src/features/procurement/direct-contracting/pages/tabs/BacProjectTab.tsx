@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import {
   FileText,
   User,
   AlertCircle,
   RotateCcw,
+  Eye,
 } from 'lucide-react'
+import { ConsolidatedPrItemDetailsModal, type ConsolidatedPrItemDetails } from '@/features/procurement/bac-resolution/dialogs/ConsolidatedPrItemDetailsModal'
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -34,6 +37,9 @@ export function BacProjectTab({
   fallbackTitle,
   fallbackAbc = 0,
 }: BacProjectTabProps) {
+  const [selectedCprItem, setSelectedCprItem] = useState<ConsolidatedPrItemDetails | null>(null)
+  const [isCprModalOpen, setIsCprModalOpen] = useState(false)
+
   const {
     data: bacProjectResponse,
     isLoading,
@@ -47,6 +53,8 @@ export function BacProjectTab({
   })
 
   const bacProject = bacProjectResponse?.data
+  const cprItems =
+    ((bacProject?.consolidatedPR as any)?.items as ConsolidatedPrItemDetails[] | undefined) || []
 
   if (isLoading) {
     return (
@@ -279,6 +287,125 @@ export function BacProjectTab({
           </CardContent>
         </Card>
       )}
+
+      {/* Linked Consolidated Purchase Request (CPR) Line Items Table */}
+      {(cprItems.length > 0 || bacProject.sourceType === 'ConsolidatedPR') && (
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3 border-b bg-muted/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-semibold">
+                  Linked Consolidated PR Line Items
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Itemized specifications and delivery allocation schedule from Consolidated PR
+                </CardDescription>
+              </div>
+              {((bacProject.consolidatedPR as any)?.cprNumber || (bacProject.consolidatedPR as any)?.prNumber) && (
+                <Badge variant="outline" className="text-xs bg-background font-mono">
+                  {(bacProject.consolidatedPR as any)?.cprNumber || (bacProject.consolidatedPR as any)?.prNumber}
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4">
+            {cprItems.length > 0 ? (
+              <div className="rounded-md border overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead className="font-semibold text-xs w-10 text-center">#</TableHead>
+                      <TableHead className="font-semibold text-xs">Item Description & Specs</TableHead>
+                      <TableHead className="font-semibold text-xs">Originating PR</TableHead>
+                      <TableHead className="font-semibold text-xs">Office</TableHead>
+                      <TableHead className="font-semibold text-xs text-center">Qty / Unit</TableHead>
+                      <TableHead className="font-semibold text-xs text-right">Unit Cost</TableHead>
+                      <TableHead className="font-semibold text-xs text-right">Total ABC</TableHead>
+                      <TableHead className="font-semibold text-xs text-center w-16">Details</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {cprItems.map((cItem, idx) => (
+                      <TableRow
+                        key={cItem.id || idx}
+                        onClick={() => {
+                          setSelectedCprItem(cItem)
+                          setIsCprModalOpen(true)
+                        }}
+                        className="hover:bg-muted/40 cursor-pointer transition-colors"
+                      >
+                        <TableCell className="text-xs font-semibold text-muted-foreground text-center">
+                          {idx + 1}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-semibold text-sm text-foreground">
+                            {cItem.itemName}
+                          </div>
+                          {cItem.description && (
+                            <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                              {cItem.description}
+                            </div>
+                          )}
+                          {cItem.category && (
+                            <Badge variant="secondary" className="text-[10px] py-0 px-1.5 mt-1 font-normal">
+                              {cItem.category}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {cItem.prNumber ? (
+                            <Badge variant="outline" className="font-mono text-[10px] bg-muted/40">
+                              {cItem.prNumber}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {cItem.officeName || '—'}
+                        </TableCell>
+                        <TableCell className="text-center text-xs font-medium">
+                          {cItem.quantity} {cItem.unit || 'unit'}
+                        </TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground">
+                          {formatCurrencyPHP(cItem.unitPrice || 0)}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatCurrencyPHP(cItem.totalAmount || 0)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedCprItem(cItem)
+                              setIsCprModalOpen(true)
+                            }}
+                          >
+                            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="py-6 px-4 text-center border border-dashed rounded-lg bg-muted/10 text-muted-foreground text-xs">
+                No itemized line items found for this Consolidated PR.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <ConsolidatedPrItemDetailsModal
+        open={isCprModalOpen}
+        onOpenChange={setIsCprModalOpen}
+        item={selectedCprItem}
+      />
     </div>
   )
 }

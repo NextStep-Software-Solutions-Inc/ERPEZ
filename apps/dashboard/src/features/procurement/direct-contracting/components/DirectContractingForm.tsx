@@ -465,20 +465,47 @@ export function DirectContractingForm({
                                 <SelectValue placeholder="Select the exclusive supplier..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {filteredSuppliers.map((s) => (
-                                    <SelectItem key={s.id} value={s.id}>
-                                        <div className="flex items-center justify-between gap-3 w-full py-0.5 text-left">
-                                            <span className="font-medium text-foreground">
-                                                {s.name}
-                                            </span>
-                                            {s.philGEPSNumber && (
-                                                <span className="text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 shrink-0">
-                                                    PhilGEPS: {s.philGEPSNumber}
+                                {filteredSuppliers.map((s) => {
+                                    const isBlocked = Boolean(s.isBlacklisted)
+                                    return (
+                                        <SelectItem key={s.id} value={s.id} disabled={isBlocked}>
+                                            <div className="flex items-center justify-between gap-3 w-full py-0.5 text-left">
+                                                <span
+                                                    className={cn(
+                                                        'font-medium',
+                                                        isBlocked
+                                                            ? 'text-muted-foreground line-through opacity-70'
+                                                            : 'text-foreground',
+                                                    )}
+                                                >
+                                                    {s.name}
                                                 </span>
-                                            )}
-                                        </div>
-                                    </SelectItem>
-                                ))}
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    {isBlocked ? (
+                                                        <Badge
+                                                            variant="destructive"
+                                                            className="text-[10px] py-0 px-1.5 font-semibold bg-rose-600 hover:bg-rose-600 text-white"
+                                                        >
+                                                            Blocked
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-[10px] py-0 px-1.5 text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 font-medium"
+                                                        >
+                                                            Active
+                                                        </Badge>
+                                                    )}
+                                                    {s.philGEPSNumber && (
+                                                        <span className="text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 shrink-0">
+                                                            PhilGEPS: {s.philGEPSNumber}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </SelectItem>
+                                    )
+                                })}
                             </SelectContent>
                         </Select>
                         <FieldInfo field={field} />
