@@ -538,4 +538,47 @@ public class TenantAccessServiceTests : IDisposable
         result.HttpStatusCode.Should().Be(403);
         result.ErrorCode.Should().Be("ORIGIN_REQUIRED");
     }
+
+    [Fact]
+    public async Task EvaluateAccessAsync_WhenProviderMismatch_Returns403ProviderMismatch()
+    {
+        // Arrange
+        var tenantId = Guid.NewGuid();
+        var user = CreateUser("user-clerk");
+
+        dbContext.Tenants!.Add(new Tenant
+        {
+            Id = tenantId,
+            Name = "Clerk Tenant",
+            IsDisabled = false,
+            ProvisioningState = TenantProvisioningState.Ready,
+            AuthProvider = IdentityProvider.Clerk,
+            TenantSetting = new TenantSetting
+            {
+                TenantId = tenantId,
+                AllowedDomain = "app.erpez.com"
+            }
+        });
+
+        // Member is registered under Keycloak rather than Clerk
+        dbContext.TenantMembers!.Add(new TenantMember
+        {
+            TenantId = tenantId,
+            ExternalIdentityId = "user-clerk",
+            Provider = IdentityProvider.Keycloak,
+            Status = Status.Active,
+            IsDeleted = false
+        });
+        await dbContext.SaveChangesAsync();
+
+        var request = new TenantAccessRequest(user, tenantId, "app.erpez.com", new Uri("https://app.erpez.com"));
+
+        // Act
+        var result = await accessService.EvaluateAccessAsync(request);
+
+        // Assert
+        result.IsAllowed.Should().BeFalse();
+        result.HttpStatusCode.Should().Be(403);
+        result.ErrorCode.Should().Be("PROVIDER_MISMATCH");
+    }
 }

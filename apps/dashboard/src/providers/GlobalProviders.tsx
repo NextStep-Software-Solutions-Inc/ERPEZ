@@ -1,6 +1,6 @@
 import { Provider as JotaiProvider } from 'jotai'
 import { useEffect, type ReactNode } from 'react'
-import { KeycloakProvider } from '@/providers/KeycloakProvider'
+import { UnifiedAuthProvider } from '@/auth/UnifiedAuthProvider'
 import { DevRoleSwitcher } from '@/components/DevRoleSwitcher'
 import { initConsoleSecurityWarning } from 'erpez-shared-lib'
 
@@ -43,10 +43,10 @@ export default function GlobalProviders({ children }: GlobalProvidersProps) {
   return (
     <JotaiProvider>
       <TenantContextInitializer />
-      <KeycloakProvider>
+      <UnifiedAuthProvider>
         {children}
         {import.meta.env.VITE_ENABLE_DEV_PERSONAS === 'true' && <DevRoleSwitcher />}
-      </KeycloakProvider>
+      </UnifiedAuthProvider>
     </JotaiProvider>
   )
 }

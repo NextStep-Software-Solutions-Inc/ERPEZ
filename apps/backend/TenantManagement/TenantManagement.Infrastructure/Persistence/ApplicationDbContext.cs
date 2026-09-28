@@ -26,6 +26,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<TenantInvoiceItem>? TenantInvoiceItems { get; set; }
     public DbSet<TenantPaymentMethod>? TenantPaymentMethods { get; set; }
     public DbSet<TenantOperationalDatabase>? TenantOperationalDatabases { get; set; }
+    public DbSet<WebhookInboxRecord>? WebhookInbox { get; set; }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
@@ -344,6 +345,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<TenantPaymentMethod>()
             .Property(pm => pm.Type)
             .HasConversion<string>();
+
+        // WebhookInboxRecord
+        modelBuilder.Entity<WebhookInboxRecord>(b =>
+        {
+            b.ToTable("WebhookInbox");
+            b.HasKey(w => w.Id);
+            b.HasIndex(w => w.SvixMessageId).IsUnique();
+            b.HasIndex(w => new { w.Provider, w.ProviderEventId });
+            b.HasIndex(w => new { w.Status, w.LeaseExpiresAtUtc });
+            b.Property(w => w.Provider).HasConversion<string>();
+            b.Property(w => w.Status).HasConversion<string>();
+        });
 
         base.OnModelCreating(modelBuilder);
     }

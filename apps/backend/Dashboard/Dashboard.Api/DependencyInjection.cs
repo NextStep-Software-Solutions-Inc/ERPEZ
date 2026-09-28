@@ -36,7 +36,7 @@ public static class DependencyInjection
             });
 
         services.AddEndpointsApiExplorer();
-        services.AddJwtAuthentication(configuration);
+        services.AddJwtAuthentication(configuration, env);
 
         // Dynamic Authorization & Tenant Services
         var connectionString = configuration.GetConnectionString("DefaultConnection");

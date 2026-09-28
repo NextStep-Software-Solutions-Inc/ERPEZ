@@ -69,7 +69,7 @@ public class TenantAccessService(
             .AsNoTracking()
             .Where(tm => tm.TenantId == request.TenantId &&
                          (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId))
-            .Select(tm => new { tm.Status, tm.IsDeleted })
+            .Select(tm => new { tm.Status, tm.IsDeleted, tm.Provider })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (member == null)
@@ -98,6 +98,7 @@ public class TenantAccessService(
                 t.Name,
                 t.IsDisabled,
                 t.ProvisioningState,
+                t.AuthProvider,
                 AllowedDomain = t.TenantSetting != null ? t.TenantSetting.AllowedDomain : string.Empty
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -108,6 +109,15 @@ public class TenantAccessService(
                 "The specified tenant does not exist.",
                 "TENANT_NOT_FOUND",
                 404);
+        }
+
+        // Model A Enforcement: IdentityProvider must match
+        if (member.Provider != tenantInfo.AuthProvider)
+        {
+            return TenantAccessResult.Fail(
+                "Caller's identity provider does not match the tenant's authentication provider.",
+                "PROVIDER_MISMATCH",
+                403);
         }
 
         // 5. Tenant Disabled Check

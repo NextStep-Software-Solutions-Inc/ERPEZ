@@ -2,6 +2,15 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import type { ReactNode } from 'react'
 import type Keycloak from 'keycloak-js'
 import keycloak from '@/auth/keycloak'
+import { setTokenProvider, setTenantProvider, setRefreshProvider } from '@/auth/authBridge'
+import { UnifiedAuthContext } from '@/auth/UnifiedAuthContext'
+import type {
+  UnifiedAuthContextType,
+  UnifiedTenantContext,
+  UnifiedUser,
+  AuthState,
+  TenantState,
+} from '@/auth/types'
 
 export interface DevUser {
   userId: string
@@ -110,7 +119,83 @@ export function KeycloakProvider({
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [activeDevUser, setActiveDevUser] = useState<string>('dev_planner')
 
+  // Unified multi-tenant abstraction state
+  const [activeTenant, setActiveTenant] = useState<UnifiedTenantContext | null>(null)
+  const [availableTenants, setAvailableTenants] = useState<UnifiedTenantContext[]>([])
+  const [tenantState, setTenantState] = useState<TenantState>('loading')
+
   const backendUrl = import.meta.env.VITE_ERPEZ_BACKEND_URL || 'http://localhost:5245'
+
+  // Register token & candidate tenant provider with unified auth bridge
+  useEffect(() => {
+    setTokenProvider(async () => token)
+    setTenantProvider(() => activeTenant?.id || tenantId || null)
+    setRefreshProvider((minValidity) => updateToken(minValidity))
+  }, [token, activeTenant?.id, tenantId])
+
+  const fetchTenantContext = useCallback(async (candidateId?: string | null) => {
+    if (!token) return
+    try {
+      setTenantState('loading')
+      const targetId = candidateId || tenantId
+      const headers: Record<string, string> = { Authorization: `Bearer ${token}` }
+      if (targetId) {
+        headers['X-Tenant-Id'] = targetId
+      }
+
+      // 1. Fetch available workspaces authorized for this identity
+      const availRes = await fetch(`${backendUrl}/api/tenant/available`, { headers })
+      if (availRes.ok) {
+        const json = await availRes.json()
+        const avail: UnifiedTenantContext[] = json?.data || []
+        setAvailableTenants(avail)
+      }
+
+      // 2. Fetch active workspace context
+      const ctxRes = await fetch(`${backendUrl}/api/tenant/context`, { headers })
+      if (ctxRes.ok) {
+        const json = await ctxRes.json()
+        const data = json?.data
+        if (data?.activeTenant) {
+          setActiveTenant({
+            id: data.activeTenant.id,
+            externalOrgId: data.activeTenant.externalOrgId,
+            name: data.activeTenant.name,
+            slug: data.activeTenant.slug,
+            authProvider: 'keycloak',
+          })
+          setTenantState('resolved')
+        } else {
+          setActiveTenant(null)
+          setTenantState('unavailable')
+        }
+      } else if (ctxRes.status === 403) {
+        setTenantState('forbidden')
+      } else {
+        setTenantState('unavailable')
+      }
+    } catch {
+      setTenantState('unavailable')
+    }
+  }, [token, tenantId, backendUrl])
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchTenantContext()
+    }
+  }, [isAuthenticated, token, fetchTenantContext])
+
+  const switchTenant = useCallback(
+    async (newTenantId: string) => {
+      setTenantId(newTenantId)
+      try {
+        sessionStorage.setItem('erpez_candidate_tenant_id', newTenantId)
+        localStorage.setItem('erpez_tenant_id', newTenantId)
+      } catch {}
+      await fetchTenantContext(newTenantId)
+    },
+    [fetchTenantContext]
+  )
 
   const loginAsDevUser = useCallback(async (username: string) => {
     if (typeof window === 'undefined') return false
@@ -351,6 +436,51 @@ export function KeycloakProvider({
     )
   }
 
+  const authState: AuthState = !isInitialized ? 'loading' : isAuthenticated ? 'authenticated' : 'unauthenticated'
+  const unifiedUser: UnifiedUser | null = isAuthenticated
+    ? {
+        id: userName || '',
+        username: userName || '',
+        email: email || '',
+        displayName: `${firstName || ''} ${lastName || ''}`.trim() || userName || 'User',
+        roles,
+      }
+    : null
+
+  const unifiedValue: UnifiedAuthContextType = {
+    authState,
+    tenantState,
+    authReady: authState === 'authenticated',
+    tenantContextReady: tenantState === 'resolved',
+    user: unifiedUser,
+    activeTenant,
+    availableTenants,
+    switchTenant,
+    getToken: async () => token,
+    logout: async () => {
+      logout()
+    },
+    provider: 'keycloak',
+
+    isAuthenticated,
+    isInitialized,
+    token,
+    refreshToken,
+    userName,
+    email,
+    firstName,
+    lastName,
+    role: roles[0] || null,
+    roles,
+    tenantId: activeTenant?.id || tenantId,
+    isSuperAdmin,
+    activeDevUser,
+    login,
+    register,
+    updateToken,
+    switchDevUser,
+  }
+
   return (
     <KeycloakContext.Provider
       value={{
@@ -365,7 +495,7 @@ export function KeycloakProvider({
         lastName,
         role: roles[0] || null,
         roles,
-        tenantId,
+        tenantId: activeTenant?.id || tenantId,
         isSuperAdmin,
         activeDevUser,
         login,
@@ -375,7 +505,9 @@ export function KeycloakProvider({
         switchDevUser,
       }}
     >
-      {children}
+      <UnifiedAuthContext.Provider value={unifiedValue}>
+        {children}
+      </UnifiedAuthContext.Provider>
     </KeycloakContext.Provider>
   )
 }

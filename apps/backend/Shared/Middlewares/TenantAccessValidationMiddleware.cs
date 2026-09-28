@@ -49,6 +49,18 @@ public class TenantAccessValidationMiddleware(RequestDelegate next)
             return;
         }
 
+        // 1.1 Identity-scoped control plane endpoints (exempt from candidate tenant requirement)
+        var isIdentityScopedRoute = path.Equals("/api/tenant/context", StringComparison.OrdinalIgnoreCase) ||
+                                    path.Equals("/api/tenant/available", StringComparison.OrdinalIgnoreCase) ||
+                                    path.Equals("/tenants/context", StringComparison.OrdinalIgnoreCase) ||
+                                    path.Equals("/tenants/available", StringComparison.OrdinalIgnoreCase);
+
+        if (isIdentityScopedRoute)
+        {
+            await next(context);
+            return;
+        }
+
         Guid? candidateTenantId = null;
         if (context.Items.TryGetValue(TenantResolutionMiddleware.candidateTenantItemKey, out var itemVal) &&
             itemVal is Guid guidVal)

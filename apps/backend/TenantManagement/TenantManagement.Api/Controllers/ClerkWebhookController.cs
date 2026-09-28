@@ -1,28 +1,31 @@
-using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Api.Configuration;
-using ERPEZ.TenantManagement.Domain.Enums;
-using ERPEZ.TenantManagement.Domain.Interfaces;
+using ERPEZ.TenantManagement.Application.Common.Interfaces;
+using ERPEZ.TenantManagement.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace ERPEZ.TenantManagement.Api.Controllers;
 
 [Route("api/webhooks/clerk")]
+[Route("webhooks/clerk")]
 [ApiController]
 public class ClerkWebhookController(
-    IUnitOfWork unitOfWork,
+    IWebhookInboxService inboxService,
     IOptions<ClerkSettings> clerkSettings,
+    IConfiguration configuration,
+    IServiceProvider serviceProvider,
     ILogger<ClerkWebhookController> logger) : ControllerBase
 {
     private readonly ClerkSettings settings = clerkSettings.Value;
 
     /// <summary>
-    /// Ingests and processes Clerk identity lifecycle webhooks (e.g. user.created, user.updated, user.deleted).
+    /// Ingests and processes Clerk organization and membership lifecycle webhooks into the durable inbox.
     /// </summary>
     [AllowAnonymous]
     [HttpPost]
@@ -34,129 +37,48 @@ public class ClerkWebhookController(
             payload = await reader.ReadToEndAsync(cancellationToken);
         }
 
-        // Verify Svix webhook signature if secret is configured
-        if (!string.IsNullOrWhiteSpace(settings.WebhookSecret) && !settings.WebhookSecret.Contains("placeholder"))
+        var secret = settings.WebhookSecret ?? configuration["Clerk:WebhookSecret"];
+        var svixId = Request.Headers["svix-id"].FirstOrDefault();
+        var svixTimestamp = Request.Headers["svix-timestamp"].FirstOrDefault();
+        var svixSignature = Request.Headers["svix-signature"].FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(svixId))
         {
-            if (!VerifySvixSignature(payload, Request.Headers, settings.WebhookSecret))
+            return BadRequest(ApiResponse<object>.Fail("Missing required 'svix-id' header."));
+        }
+
+        // Verify Svix cryptographic signature if configured
+        if (!string.IsNullOrWhiteSpace(secret) && !secret.Contains("placeholder"))
+        {
+            if (!SvixWebhookVerifier.VerifySignature(payload, svixId, svixTimestamp ?? string.Empty, svixSignature ?? string.Empty, secret))
             {
-                logger.LogWarning("Invalid Clerk webhook signature received.");
-                return Unauthorized(ApiResponse<object>.Fail("Invalid webhook signature."));
+                logger.LogWarning("Invalid Clerk webhook signature received for svix-id {SvixId}.", svixId);
+                return BadRequest(ApiResponse<object>.Fail("Invalid webhook signature."));
             }
         }
 
-        try
+        // Transactionally ingest into durable WebhookInbox
+        var status = await inboxService.IngestAsync(svixId, payload, cancellationToken);
+        if (status == WebhookIngestionStatus.Duplicate)
         {
-            using var jsonDoc = JsonDocument.Parse(payload);
-            var root = jsonDoc.RootElement;
-            var eventType = root.GetProperty("type").GetString();
+            return Ok(ApiResponse<object>.Success("Webhook already processed."));
+        }
 
-            if (root.TryGetProperty("data", out var data))
+        // Best-effort immediate background execution
+        _ = Task.Run(async () =>
+        {
+            try
             {
-                var userId = data.GetProperty("id").GetString();
-                if (string.IsNullOrWhiteSpace(userId))
-                {
-                    return Ok(ApiResponse<object>.Success("No user ID in webhook data."));
-                }
-
-                switch (eventType)
-                {
-                    case "user.created":
-                    case "user.updated":
-                        await SyncUserProfileAsync(userId, data, cancellationToken);
-                        break;
-
-                    case "user.deleted":
-                        await HandleUserDeletedAsync(userId, cancellationToken);
-                        break;
-
-                    default:
-                        logger.LogInformation("Unhandled Clerk webhook event type: {EventType}", eventType);
-                        break;
-                }
+                using var scope = serviceProvider.CreateScope();
+                var scopedInbox = scope.ServiceProvider.GetRequiredService<IWebhookInboxService>();
+                await scopedInbox.ProcessPendingBatchAsync(10, CancellationToken.None);
             }
-
-            return Ok(ApiResponse<object>.Success("Webhook processed successfully."));
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error processing Clerk webhook payload.");
-            return StatusCode(500, ApiResponse<object>.Fail("Error processing webhook."));
-        }
-    }
-
-    private async Task SyncUserProfileAsync(string clerkUserId, JsonElement data, CancellationToken ct)
-    {
-        var members = await unitOfWork.TenantMemberRepository.Query()
-            .Where(m => m.ExternalIdentityId == clerkUserId && !m.IsDeleted)
-            .ToListAsync(ct);
-
-        if (members.Count == 0)
-        {
-            return;
-        }
-
-        var firstName = data.TryGetProperty("first_name", out var fn) ? fn.GetString() : null;
-        var lastName = data.TryGetProperty("last_name", out var ln) ? ln.GetString() : null;
-
-        string? email = null;
-        if (data.TryGetProperty("email_addresses", out var emails) && emails.ValueKind == JsonValueKind.Array && emails.GetArrayLength() > 0)
-        {
-            var firstEmailObj = emails[0];
-            if (firstEmailObj.TryGetProperty("email_address", out var emailProp))
+            catch (Exception ex)
             {
-                email = emailProp.GetString();
+                logger.LogError(ex, "Background processing of webhook batch failed");
             }
-        }
+        });
 
-        foreach (var member in members)
-        {
-            if (!string.IsNullOrWhiteSpace(firstName)) member.FirstName = firstName;
-            if (!string.IsNullOrWhiteSpace(lastName)) member.LastName = lastName;
-            if (!string.IsNullOrWhiteSpace(email)) member.Email = email.Trim().ToLowerInvariant();
-            member.ConcurrencyStamp = Guid.NewGuid();
-        }
-
-        await unitOfWork.SaveChangesAsync(ct);
-        logger.LogInformation("Synchronized profile for Clerk user {UserId} across {Count} tenant memberships.", clerkUserId, members.Count);
-    }
-
-    private async Task HandleUserDeletedAsync(string clerkUserId, CancellationToken ct)
-    {
-        var members = await unitOfWork.TenantMemberRepository.Query()
-            .Where(m => m.ExternalIdentityId == clerkUserId && !m.IsDeleted)
-            .ToListAsync(ct);
-
-        foreach (var member in members)
-        {
-            member.Status = Status.Disabled;
-            member.ConcurrencyStamp = Guid.NewGuid();
-        }
-
-        await unitOfWork.SaveChangesAsync(ct);
-        logger.LogInformation("Deactivated {Count} tenant memberships for deleted Clerk user {UserId}.", members.Count, clerkUserId);
-    }
-
-    private static bool VerifySvixSignature(string payload, IHeaderDictionary headers, string secret)
-    {
-        if (!headers.TryGetValue("svix-id", out var svixId) ||
-            !headers.TryGetValue("svix-timestamp", out var svixTimestamp) ||
-            !headers.TryGetValue("svix-signature", out var svixSignature))
-        {
-            return false;
-        }
-
-        var secretBytes = secret.StartsWith("whsec_")
-            ? Convert.FromBase64String(secret["whsec_".Length..])
-            : Encoding.UTF8.GetBytes(secret);
-
-        var signedPayload = $"{svixId}.{svixTimestamp}.{payload}";
-        using var hmac = new HMACSHA256(secretBytes);
-        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(signedPayload));
-        var expectedSig = $"v1,{Convert.ToBase64String(hash)}";
-
-        var signatures = svixSignature.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return signatures.Any(sig => CryptographicOperations.FixedTimeEquals(
-            Encoding.UTF8.GetBytes(sig),
-            Encoding.UTF8.GetBytes(expectedSig)));
+        return Accepted(ApiResponse<object>.Success("Webhook accepted for processing."));
     }
 }

@@ -1,5 +1,6 @@
 using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Middlewares;
+using ERPEZ.Shared.Security;
 using ERPEZ.TenantManagement.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
@@ -45,89 +46,10 @@ public static class DependencyInjection
             && !string.IsNullOrWhiteSpace(clerkSettings.Authority) 
             && !clerkSettings.Authority.Contains("placeholder")
             && !clerkSettings.Authority.Contains("example.com");
-        var devSecurityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-            System.Text.Encoding.UTF8.GetBytes("ERPEZ_Development_Symmetric_Signing_Key_2026_Secure_Secret_12345!"));
-
-        services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            if (isClerkConfigured)
-            {
-                var trimmedAuthority = clerkSettings!.Authority.TrimEnd('/');
-                options.Authority = trimmedAuthority;
-                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-                if (!string.IsNullOrWhiteSpace(clerkSettings.Audience))
-                {
-                    options.Audience = clerkSettings.Audience;
-                }
-
-                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuers = [trimmedAuthority, trimmedAuthority + "/", "https://erpez.dev/auth"],
-                    ValidateAudience = !string.IsNullOrWhiteSpace(clerkSettings.Audience),
-                    ValidAudience = clerkSettings.Audience,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKeyResolver = (token, securityToken, kid, validationParameters) =>
-                    {
-                        var issuer = (securityToken as Microsoft.IdentityModel.JsonWebTokens.JsonWebToken)?.Issuer
-                            ?? (securityToken as System.IdentityModel.Tokens.Jwt.JwtSecurityToken)?.Issuer;
-
-                        if (issuer == "https://erpez.dev/auth" || string.IsNullOrWhiteSpace(kid))
-                        {
-                            return [devSecurityKey];
-                        }
-
-                        if (validationParameters?.IssuerSigningKeys != null && validationParameters.IssuerSigningKeys.Any())
-                        {
-                            var matched = validationParameters.IssuerSigningKeys.Where(k => k.KeyId == kid).ToList();
-                            if (matched.Count > 0) return matched;
-                            return validationParameters.IssuerSigningKeys;
-                        }
-
-                        if (options.ConfigurationManager != null)
-                        {
-                            try
-                            {
-                                var oidcConfig = options.ConfigurationManager.GetConfigurationAsync(CancellationToken.None).GetAwaiter().GetResult();
-                                if (oidcConfig?.SigningKeys != null && oidcConfig.SigningKeys.Count > 0)
-                                {
-                                    var matched = oidcConfig.SigningKeys.Where(k => k.KeyId == kid).ToList();
-                                    if (matched.Count > 0) return matched;
-                                    return oidcConfig.SigningKeys;
-                                }
-                            }
-                            catch
-                            {
-                                // fallback to devSecurityKey
-                            }
-                        }
-
-                        return [devSecurityKey];
-                    }
-                };
-            }
-            else
-            {
-                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-                {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateLifetime = false,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = devSecurityKey
-                };
-            }
-        });
+        services.AddDualIdPAuthentication(builder.Configuration, builder.Environment);
         services.AddEndpointsApiExplorer();
         services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
-        services.AddAuthorization();
         services.AddResponseCaching();
         services.AddResponseCompression();
         services.AddCorsPolicies(builder.Configuration);
