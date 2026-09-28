@@ -1,27 +1,30 @@
-import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
 import { Link } from '@tanstack/react-router'
 import {
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Trash2,
-  Send,
-  Copy,
-  CheckCircle,
   AlertCircle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Calendar,
+  CheckCircle,
+  Copy,
+  Edit,
+  Eye,
   FileCheck,
+  FileText,
+  MoreHorizontal,
+  RotateCcw,
+  Send,
   ShieldCheck,
   ShoppingCart,
-  Calendar,
-  FileText,
-  RotateCcw,
+  Trash2,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import type { ColumnDef } from '@tanstack/react-table'
 
-import { Button } from '@/components/ui/button'
+import { getBacStatusBadgeConfig } from '../components/DirectContractingForm'
+import type { DirectContracting, TableActionHandlers } from './types'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
@@ -31,12 +34,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { formatCurrencyPHP, formatDateV2 } from '@/utils/formatters'
 import { cn } from '@/lib/utils'
-
-import type { DirectContracting, TableActionHandlers } from './types'
-
-const columnHelper = createColumnHelper<DirectContracting>()
+import { formatCurrencyPHP, formatDateV2 } from '@/utils/formatters'
 
 export function renderStatusBadge(status: string) {
   const normalized = (status || '').toLowerCase()
@@ -117,9 +116,9 @@ export function renderStatusBadge(status: string) {
 
 export function getDirectContractingColumns(
   handlers: TableActionHandlers,
-): ColumnDef<DirectContracting, any>[] {
+): Array<ColumnDef<DirectContracting>> {
   return [
-    columnHelper.display({
+    {
       id: 'select',
       header: ({ table }) => (
         <Checkbox
@@ -145,9 +144,10 @@ export function getDirectContractingColumns(
       ),
       enableSorting: false,
       enableHiding: false,
-    }),
-    columnHelper.accessor('dcNumber', {
+    },
+    {
       id: 'dcNumber',
+      accessorKey: 'dcNumber',
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -185,6 +185,7 @@ export function getDirectContractingColumns(
       },
       cell: ({ row }) => {
         const dc = row.original
+        const bacCfg = getBacStatusBadgeConfig(dc.bacProjectStatus || 'Approved')
         return (
           <div className="space-y-1 py-1 max-w-sm sm:max-w-md">
             <div className="flex items-center gap-2">
@@ -207,18 +208,28 @@ export function getDirectContractingColumns(
             >
               {dc.name || dc.dcName}
             </Link>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
               <FileText className="h-3 w-3 text-muted-foreground/70 shrink-0" />
               <span className="truncate">
                 {dc.bacProjectTitle || 'BAC Project Ref'}
               </span>
+              <Badge
+                variant="outline"
+                className={cn(
+                  'text-[10px] py-0 px-1.5 font-semibold shrink-0 border',
+                  bacCfg.className,
+                )}
+              >
+                {bacCfg.label}
+              </Badge>
             </div>
           </div>
         )
       },
-    }),
-    columnHelper.accessor('supplierName', {
+    },
+    {
       id: 'supplier',
+      accessorKey: 'supplierName',
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -254,9 +265,10 @@ export function getDirectContractingColumns(
           </div>
         )
       },
-    }),
-    columnHelper.accessor('totalABC', {
+    },
+    {
       id: 'totalABC',
+      accessorKey: 'totalABC',
       header: ({ column }) => (
         <div className="text-right w-full">
           <Button
@@ -284,9 +296,10 @@ export function getDirectContractingColumns(
           </div>
         )
       },
-    }),
-    columnHelper.accessor('submissionDeadline', {
+    },
+    {
       id: 'deadline',
+      accessorKey: 'submissionDeadline',
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -321,9 +334,10 @@ export function getDirectContractingColumns(
           </div>
         )
       },
-    }),
-    columnHelper.accessor('status', {
+    },
+    {
       id: 'status',
+      accessorKey: 'status',
       header: 'Status',
       filterFn: (row, _columnId, filterValue: string) => {
         if (!filterValue || filterValue === 'all') return true
@@ -352,8 +366,8 @@ export function getDirectContractingColumns(
         const status = (row.original.status || 'draft').toLowerCase()
         return renderStatusBadge(status)
       },
-    }),
-    columnHelper.display({
+    },
+    {
       id: 'actions',
       enableHiding: false,
       cell: ({ row }) => {
@@ -391,11 +405,23 @@ export function getDirectContractingColumns(
                 <DropdownMenuItem onClick={() => handlers.onEdit(dc.id)}>
                   <Edit className="mr-2 h-4 w-4 text-muted-foreground" /> Edit Request
                 </DropdownMenuItem>
-                {(dc.status || '').toUpperCase() === 'DRAFT' && (
-                  <DropdownMenuItem onClick={() => handlers.onPromptSubmit(dc.id)}>
-                    <Send className="mr-2 h-4 w-4 text-sky-600" /> Submit for Review
-                  </DropdownMenuItem>
-                )}
+                {(dc.status || '').toUpperCase() === 'DRAFT' && (() => {
+                  const bacCfg = getBacStatusBadgeConfig(dc.bacProjectStatus || 'Approved')
+                  return (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (!bacCfg.isApproved) {
+                          toast.error(`Cannot submit Direct Contracting request for review until the linked BAC Resolution is Approved (current BAC status: ${dc.bacProjectStatus || 'Unapproved'}).`)
+                          return
+                        }
+                        handlers.onPromptSubmit(dc.id)
+                      }}
+                      className={cn(!bacCfg.isApproved && 'opacity-50')}
+                    >
+                      <Send className="mr-2 h-4 w-4 text-sky-600" /> Submit for Review
+                    </DropdownMenuItem>
+                  )
+                })()}
                 {((dc.status || '').toUpperCase() === 'FOR_REVIEW' || (dc.status || '').toUpperCase() === 'FOR-REVIEW') && (
                   <DropdownMenuItem onClick={() => handlers.onPromptConvertToDraft?.(dc.id)}>
                     <RotateCcw className="mr-2 h-4 w-4 text-amber-600" /> Convert to Draft
@@ -413,6 +439,6 @@ export function getDirectContractingColumns(
           </div>
         )
       },
-    }),
+    },
   ]
 }

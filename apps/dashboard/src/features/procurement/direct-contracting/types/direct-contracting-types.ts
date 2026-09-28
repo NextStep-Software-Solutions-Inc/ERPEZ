@@ -1,4 +1,14 @@
-import type { QuotationItemBid } from '@/features/procurement/supplier-portal/types/daItemTypes'
+import type {
+  DirectContractingItemDetails,
+  DirectContractingProposalItemDetails,
+  QuotationItemBid,
+} from '@/features/procurement/supplier-portal/types/direct-contracting-item-type'
+
+export type {
+  DirectContractingItemDetails,
+  DirectContractingProposalItemDetails,
+  QuotationItemBid,
+}
 
 /**
  * Direct Contracting Types
@@ -94,7 +104,7 @@ export type DirectContracting = {
     fileId: string
   }
   proposal?: DirectContractingProposal
-  items?: DirectContractingItem[]
+  items?: Array<DirectContractingItem>
 
   // Store & Supplier Portal / Legacy convenience fields
   bacResolutionId?: string
@@ -122,7 +132,7 @@ export type DirectContracting = {
   proposalNotes?: string
   quotationStatus?: 'draft' | 'submitted'
   quotationSubmittedAt?: string
-  quotationItems?: QuotationItemBid[]
+  quotationItems?: Array<QuotationItemBid>
   bidTotalAmount?: number
   bidUnitPrice?: number
   proposalUnitPrice?: number
@@ -163,21 +173,7 @@ export type DirectContractingProposal = {
   proposalRemarks?: string
   totalProposalAmount: number
   submittedAt: string
-  proposalItems: {
-    id: string
-    proposalId: string
-    cprItemId: string
-    cprItemName: string
-    quantity?: number
-    unitABC: number
-    totalABC: number
-    unitBid: number
-    totalBid: number
-    brand?: string
-    model?: string
-    color?: string
-    brochureFileUrl?: string
-  }[]
+  proposalItems: Array<DirectContractingProposalItemDetails>
 }
 
 export type DirectContractingSummary = {

@@ -1,11 +1,21 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { Textarea } from '@/components/ui/textarea'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileCheck,
+  FileText,
+  Paperclip,
+  Pencil,
+  Save,
+  Send,
+  Upload,
+  X,
+} from 'lucide-react'
+
+import { ItemBidSpecModal } from './ItemBidSpecModal'
+import type { DirectContractingItem, DirectContractingItemDetails, QuotationItemBid } from '../types/direct-contracting-item-type'
+import type { DirectContracting } from '@/features/procurement/direct-contracting/types'
+import type { ConsolidatedPRItem } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,30 +26,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  AlertCircle,
-  CheckCircle2,
-  FileCheck,
-  FileText,
-  Save,
-  Send,
-  X,
-  Upload,
-  Pencil,
-  Paperclip,
-} from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
-import { useConsolidatedPRStore, type ConsolidatedPRItem } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
-import { ItemBidSpecModal } from './ItemBidSpecModal'
+import { Separator } from '@/components/ui/separator'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/components/ui/use-toast'
+import { useConsolidatedPRStore } from '@/features/procurement/consolidated-pr/store/consolidatedPRStore'
+import { useDirectContracting } from '@/features/procurement/direct-contracting/handlers'
 import { cn } from '@/lib/utils'
-import type { DirectContractingItem, QuotationItemBid } from '../types/daItemTypes'
-import type { DirectContracting } from '@/features/procurement/direct-contracting/types'
 
 interface DARequirementsModalProps {
   open: boolean
   onOpenChange: (v: boolean) => void
-  item: DirectContracting | DirectContractingItem
+  item: DirectContracting | DirectContractingItem | DirectContractingItemDetails
   onSave: (patch: Partial<DirectContracting> | Partial<DirectContractingItem>) => void
 }
 
@@ -55,13 +58,20 @@ export type RowBidState = {
 export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequirementsModalProps) {
   const { toast } = useToast()
 
+  const inlineItems = 'items' in item && Array.isArray(item.items) && item.items.length > 0 ? item.items : null
+  const { data: fetchedDetail } = useDirectContracting({
+    pathParams: { id: item.id },
+    queryParams: {},
+    enabled: open && Boolean(item.id) && !inlineItems,
+  })
+
   // Use fields consistently for both types
-  const dcNumber = 'dcNumber' in item ? item.dcNumber : ('daNumber' in item ? item.daNumber : '')
-  const itemName = 'dcName' in item ? item.dcName : ('itemName' in item ? item.itemName : '')
+  const dcNumber = ('dcNumber' in item && item.dcNumber ? item.dcNumber : ('daNumber' in item ? item.daNumber : '')) || ''
+  const itemName = ('dcName' in item && item.dcName ? item.dcName : ('itemName' in item ? item.itemName : '')) || ''
   const prNumber = item.prNumber
   const quantity = ('quantity' in item ? item.quantity : ('totalItems' in item ? item.totalItems : 0)) || 0
   const unit = ('unit' in item ? item.unit : 'Items') || 'Items'
-  const totalAmount = 'totalABC' in item ? item.totalABC : ('totalAmount' in item ? item.totalAmount : 0)
+  const totalAmount = ('totalABC' in item && item.totalABC !== undefined ? item.totalABC : ('totalAmount' in item ? item.totalAmount : 0)) || 0
   const status = item.proposalAmount ? 'submitted' : (item.daRequirementsStatus || 'draft')
 
   const isSubmitted = status === 'submitted' || item.status === 'for-review' || item.status === 'approved' || item.status === 'rejected'
@@ -73,13 +83,14 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
 
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const exclusivityRef = useRef<HTMLInputElement>(null)
-  const blobUrls = useRef<string[]>([])
+  const blobUrls = useRef<Array<string>>([])
 
   // Drag and Drop hover state
   const [isDragging, setIsDragging] = useState(false)
 
   // ── Step 2 state & logic (RFQ-style quotation per item) ──
-  const dcItems = 'items' in item && Array.isArray(item.items) && item.items.length > 0 ? item.items : null
+  const fetchedItems = fetchedDetail?.data.items
+  const dcItems = inlineItems ?? (Array.isArray(fetchedItems) && fetchedItems.length > 0 ? fetchedItems : null)
   const hasDCItems = !!dcItems
 
   const consolidatedPRs = useConsolidatedPRStore((s) => s.consolidatedPRs)
@@ -87,7 +98,7 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
     () => consolidatedPRs.find((pr) => pr.id === item.prNumber || pr.prNumber === item.prNumber) ?? null,
     [consolidatedPRs, item.prNumber],
   )
-  const prItems: ConsolidatedPRItem[] = linkedPR?.selectedPRItems ?? []
+  const prItems: Array<ConsolidatedPRItem> = linkedPR?.selectedPRItems ?? []
   const hasPRItems = !hasDCItems && prItems.length > 0
 
   const buildInitialRows = (): Record<string, RowBidState> => {
@@ -200,7 +211,7 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
 
   const totalQuotation = Object.keys(rows).reduce((sum, key) => sum + rowTotal(key), 0)
 
-  const buildQuotationItems = (): QuotationItemBid[] => {
+  const buildQuotationItems = (): Array<QuotationItemBid> => {
     if (hasDCItems) {
       return dcItems.map((di) => {
         const key = di.cprItemId || di.id
@@ -374,7 +385,7 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
     !hasLineItemExceededABC &&
     !hasTotalExceededABC
 
-  const buildPatch = (status: 'draft' | 'submitted'): Partial<DirectContracting> | Partial<DirectContractingItem> => {
+  const buildPatch = (nextStatus: 'draft' | 'submitted'): Partial<DirectContracting> | Partial<DirectContractingItem> => {
     const quotationItems = buildQuotationItems()
     const isDC = 'dcNumber' in item
 
@@ -396,11 +407,11 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
         bidBrochureUrl: rows['single']?.brochureUrl,
         bidBrochureFileName: rows['single']?.brochureFileName,
       } : {}),
-      daRequirementsStatus: status,
-      quotationStatus: status,
+      daRequirementsStatus: nextStatus,
+      quotationStatus: nextStatus,
     }
 
-    if (status === 'submitted') {
+    if (nextStatus === 'submitted') {
       if (isDC) {
         return {
           ...basePatch,
@@ -591,7 +602,7 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayRows.map(({ key, name, specs, qty, unit, unitABC, office, prNumber }) => {
+                  {displayRows.map(({ key, name, specs, qty, unit: rowUnit, unitABC, office, prNumber: rowPrNumber }) => {
                     const r = rows[key] ?? { unitPrice: '', model: '', brand: '', color: '' }
                     const total = rowTotal(key)
                     const isExceeded = unitABC > 0 && Number(r.unitPrice) > unitABC
@@ -609,14 +620,14 @@ export function DARequirementsModal({ open, onOpenChange, item, onSave }: DARequ
                         </TableCell>
                         <TableCell className="text-xs">
                           <div className="font-medium text-foreground">{office}</div>
-                          {prNumber && (
+                          {rowPrNumber && (
                             <span className="text-[10px] text-muted-foreground font-mono">
-                              PR: {prNumber}
+                              PR: {rowPrNumber}
                             </span>
                           )}
                         </TableCell>
                         <TableCell className="text-center text-xs whitespace-nowrap">
-                          <span className="font-semibold">{qty}</span> {unit}
+                          <span className="font-semibold">{qty}</span> {rowUnit}
                         </TableCell>
                         <TableCell className="text-right font-mono text-xs text-muted-foreground">
                           ₱{unitABC.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
