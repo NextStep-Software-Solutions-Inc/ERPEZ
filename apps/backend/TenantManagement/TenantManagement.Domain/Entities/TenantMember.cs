@@ -12,11 +12,18 @@ public class TenantMember : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string UserId { get; set; } = string.Empty;
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public ERPEZ.Shared.Enums.IdentityProvider Provider { get; set; } = ERPEZ.Shared.Enums.IdentityProvider.Keycloak;
+
     /// <summary>
-    /// Clerk subject identifier (sub claim, e.g., user_2...) representing the user's federated identity.
+    /// Federated subject identifier (sub claim, e.g. Clerk user_2... or Keycloak sub GUID).
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public string ExternalIdentityId { get; set; } = string.Empty;
+
+    public DateTime? LastReconciledAtUtc { get; set; }
+
+    public long ProjectionVersion { get; set; } = 1;
 
     [Sieve(CanFilter = true, CanSort = true)]
     public string Email { get; set; } = string.Empty;

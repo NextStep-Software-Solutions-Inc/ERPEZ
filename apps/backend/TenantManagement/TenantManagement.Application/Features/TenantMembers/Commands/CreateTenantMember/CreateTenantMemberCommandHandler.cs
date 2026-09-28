@@ -73,7 +73,11 @@ public class CreateTenantMemberCommandHandler(
             expectedScope: RoleScope.TenantManagement,
             cancellationToken: cancellationToken);
 
-        // 4. Generate cryptographically secure invitation token (32 bytes Base64Url)
+        // 4. Retrieve tenant to ensure Model A Cardinality alignment
+        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(tenantId, cancellationToken)
+            ?? throw new NotFoundException($"Tenant '{tenantId}' was not found.");
+
+        // 5. Generate cryptographically secure invitation token (32 bytes Base64Url)
         var tokenBytes = RandomNumberGenerator.GetBytes(32);
         var rawInvitationToken = Convert.ToBase64String(tokenBytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
         var tokenHashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawInvitationToken));
@@ -83,6 +87,7 @@ public class CreateTenantMemberCommandHandler(
         var tenantMember = new TenantMember
         {
             TenantId = tenantId,
+            Provider = tenant.AuthProvider,
             UserId = normalizedEmail,
             ExternalIdentityId = string.Empty,
             Email = normalizedEmail,
@@ -93,6 +98,11 @@ public class CreateTenantMemberCommandHandler(
             InvitationTokenHash = invitationTokenHash,
             InvitationExpiresAtUtc = expiresAt
         };
+
+        if (tenantMember.Provider != tenant.AuthProvider)
+        {
+            throw new InvalidOperationException($"Cannot add a {tenantMember.Provider} member to a {tenant.AuthProvider} tenant.");
+        }
 
         foreach (var roleId in rolesToAssign)
         {

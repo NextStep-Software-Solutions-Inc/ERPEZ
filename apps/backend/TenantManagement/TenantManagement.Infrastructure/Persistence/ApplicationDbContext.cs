@@ -73,6 +73,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsUnique();
 
         modelBuilder.Entity<Tenant>()
+            .Property(t => t.AuthProvider)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Tenant>()
+            .Property(t => t.MembershipProjectionStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Tenant>()
+            .HasIndex(t => new { t.AuthProvider, t.ExternalOrgId })
+            .IsUnique()
+            .HasFilter("\"ExternalOrgId\" IS NOT NULL");
+
+        modelBuilder.Entity<Tenant>()
             .HasMany(t => t.Modules)
             .WithMany(m => m.Tenants)
             .UsingEntity(tm => tm.ToTable("TenantModule"));
@@ -161,7 +174,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // TenantMember
         modelBuilder.Entity<TenantMember>()
-            .HasIndex(tm => new { tm.TenantId, tm.ExternalIdentityId })
+            .Property(tm => tm.Provider)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TenantMember>()
+            .HasIndex(tm => new { tm.TenantId, tm.Provider, tm.ExternalIdentityId })
             .IsUnique()
             .HasFilter("\"ExternalIdentityId\" != '' AND \"IsDeleted\" = false");
 

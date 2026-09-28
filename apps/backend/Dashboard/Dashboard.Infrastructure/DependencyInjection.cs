@@ -56,6 +56,9 @@ public static class DependencyInjection
                 sp.GetService<Microsoft.Extensions.Hosting.IHostEnvironment>()));
         services.AddSingleton<ERPEZ.Shared.Security.IClientOriginParser, ERPEZ.Shared.Security.ClientOriginParser>();
         services.AddSingleton<ERPEZ.Shared.Security.IClientOriginMatcher, ERPEZ.Shared.Security.ClientOriginMatcher>();
+        services.AddSingleton<ERPEZ.Shared.Interfaces.IExternalIdentityNormalizer, ERPEZ.Shared.Security.ClerkIdentityNormalizer>();
+        services.AddSingleton<ERPEZ.Shared.Interfaces.IExternalIdentityNormalizer, ERPEZ.Shared.Security.KeycloakIdentityNormalizer>();
+        services.AddSingleton<ERPEZ.Shared.Security.IExternalIdentityNormalizerResolver, ERPEZ.Shared.Security.ExternalIdentityNormalizerResolver>();
 
         services.AddScoped<ERPEZ.Shared.Services.TenantRequestContext>();
         services.AddScoped<ERPEZ.Shared.Interfaces.ITenantContextService>(sp => sp.GetRequiredService<ERPEZ.Shared.Services.TenantRequestContext>());
