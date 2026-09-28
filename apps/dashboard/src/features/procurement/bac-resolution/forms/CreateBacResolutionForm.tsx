@@ -257,7 +257,7 @@ export const CreateBacResolutionForm = forwardRef<
         pathParams: {},
         queryParams: {
           pageSize: 200,
-          clauseType: pickerModalType || undefined,
+          filters: pickerModalType || undefined,
         },
         enabled: pickerModalType !== null,
       })
