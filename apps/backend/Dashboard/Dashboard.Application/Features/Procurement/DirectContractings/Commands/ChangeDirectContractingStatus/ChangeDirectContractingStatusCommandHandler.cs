@@ -2,6 +2,7 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.DirectContractings.Commands.ChangeDirectContractingStatus;
 
@@ -10,7 +11,10 @@ public class ChangeDirectContractingStatusCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(ChangeDirectContractingStatusCommand command, CancellationToken cancellationToken)
     {
-        var dc = await unitOfWork.DirectContractingRepository.GetByIdAsync(command.Id, cancellationToken);
+        var dc = await unitOfWork.DirectContractingRepository.Query()
+            .Include(x => x.BACProject)
+                .ThenInclude(p => p.BACResolutions)
+            .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, cancellationToken);
         if (dc == null)
         {
             return ApiResponse<Unit>.Fail("Direct Contracting request not found.");
@@ -37,6 +41,32 @@ public class ChangeDirectContractingStatusCommandHandler(IUnitOfWork unitOfWork)
         if (!IsValidTransition(oldStatus, command.Status))
         {
             return ApiResponse<Unit>.Fail($"Cannot transition Direct Contracting request from status '{oldStatus}' to '{command.Status}'.");
+        }
+
+        if (command.Status == DirectContractingStatusEnum.FOR_REVIEW ||
+            command.Status == DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER)
+        {
+            var activeResolutions = dc.BACProject?.BACResolutions
+                .Where(r => !r.IsDeleted)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList() ?? [];
+
+            var hasApprovedResolution = activeResolutions.Any(r =>
+                string.Equals(r.Status, "Approved", StringComparison.OrdinalIgnoreCase));
+            var isProjectApproved = string.Equals(dc.BACProject?.Status, "Approved", StringComparison.OrdinalIgnoreCase);
+
+            if (!hasApprovedResolution && !isProjectApproved)
+            {
+                var effectiveBacStatus = activeResolutions.FirstOrDefault()?.Status
+                    ?? (!string.IsNullOrWhiteSpace(dc.BACProject?.Status) ? dc.BACProject.Status : "Unapproved");
+
+                var actionLabel = command.Status == DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER
+                    ? "sent to the supplier"
+                    : "submitted for review";
+
+                return ApiResponse<Unit>.Fail(
+                    $"Direct Contracting request cannot be {actionLabel} until the linked BAC Resolution is Approved (current BAC status: {effectiveBacStatus}).");
+            }
         }
 
         dc.Status = command.Status;

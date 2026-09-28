@@ -20,6 +20,7 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
     {
         var dbQuery = unitOfWork.DirectContractingRepository.Query()
             .Include(dc => dc.BACProject)
+                .ThenInclude(p => p.BACResolutions)
             .Include(dc => dc.ExclusiveSupplier)
             .Include(dc => dc.Proposal)
                 .ThenInclude(p => p!.ProposalItems)
@@ -43,7 +44,15 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
             BACProjectId = c.BACProjectId,
             BACProjectTitle = c.BACProject != null ? c.BACProject.Title : string.Empty,
             BACProjectABC = c.BACProject != null ? c.BACProject.ABC : 0,
-            BACProjectStatus = c.BACProject != null ? c.BACProject.Status : string.Empty,
+            BACProjectStatus = c.BACProject != null
+                ? (c.BACProject.BACResolutions.Any(r => !r.IsDeleted && r.Status == "Approved")
+                    ? "Approved"
+                    : (c.BACProject.BACResolutions
+                        .Where(r => !r.IsDeleted)
+                        .OrderByDescending(r => r.CreatedAt)
+                        .Select(r => r.Status)
+                        .FirstOrDefault() ?? c.BACProject.Status))
+                : string.Empty,
             ExclusiveSupplierId = c.ExclusiveSupplierId,
             ExclusiveSupplierName = c.ExclusiveSupplier != null ? c.ExclusiveSupplier.Name : string.Empty,
             ExclusiveSupplierEmail = c.ExclusiveSupplier != null ? c.ExclusiveSupplier.Email : string.Empty,

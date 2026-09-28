@@ -49,8 +49,12 @@ public class SubmitDirectContractingProposalCommandHandler(IUnitOfWork unitOfWor
             return ApiResponse<Guid>.Fail($"Cannot submit a proposal for a DC request with status '{directContracting.Status}'.");
         }
 
-        // 2. Validate Supplier is the assigned exclusive supplier
-        if (directContracting.ExclusiveSupplierId != request.SupplierId)
+        // 2. Validate Supplier is the assigned exclusive supplier (defaulting to ExclusiveSupplierId if Guid.Empty)
+        var effectiveSupplierId = request.SupplierId != Guid.Empty
+            ? request.SupplierId
+            : directContracting.ExclusiveSupplierId;
+
+        if (directContracting.ExclusiveSupplierId != effectiveSupplierId)
         {
             return ApiResponse<Guid>.Fail("Only the exclusive supplier assigned to this request can submit a proposal.");
         }

@@ -19,6 +19,8 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
     {
         var dc = await unitOfWork.DirectContractingRepository.Query()
             .Include(dc => dc.BACProject)
+                .ThenInclude(p => p.BACResolutions)
+            .Include(dc => dc.BACProject)
                 .ThenInclude(p => p.ConsolidatedPR)
                     .ThenInclude(c => c!.ConsolidatedPRItems)
                         .ThenInclude(ci => ci.PRItem)
@@ -147,6 +149,15 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
             }
         }
 
+        var activeResolutions = dc.BACProject?.BACResolutions
+            .Where(r => !r.IsDeleted)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToList() ?? [];
+
+        var effectiveBacStatus = activeResolutions.Any(r => string.Equals(r.Status, "Approved", StringComparison.OrdinalIgnoreCase))
+            ? "Approved"
+            : (activeResolutions.FirstOrDefault()?.Status ?? (dc.BACProject != null ? dc.BACProject.Status : string.Empty));
+
         var response = new DirectContractingResponse
         {
             Id = dc.Id,
@@ -155,7 +166,7 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
             BACProjectId = dc.BACProjectId,
             BACProjectTitle = dc.BACProject != null ? dc.BACProject.Title : string.Empty,
             BACProjectABC = dc.BACProject != null ? dc.BACProject.ABC : 0,
-            BACProjectStatus = dc.BACProject != null ? dc.BACProject.Status : string.Empty,
+            BACProjectStatus = effectiveBacStatus,
             ExclusiveSupplierId = dc.ExclusiveSupplierId,
             ExclusiveSupplierName = dc.ExclusiveSupplier != null ? dc.ExclusiveSupplier.Name : string.Empty,
             ExclusiveSupplierEmail = dc.ExclusiveSupplier != null ? dc.ExclusiveSupplier.Email : string.Empty,
