@@ -11,10 +11,11 @@ import {
     SelectItem,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { UserCheck, FileCheck, FileText, Building2 } from 'lucide-react'
+import { AlertTriangle, Building2, CheckCircle2, Clock, FileCheck, FileText, UserCheck } from 'lucide-react'
 import FieldInfo from '@/components/FieldInfo'
 import { BacProject } from '../../bac-resolution'
 import { SupplierListItem } from '@/components/features/planning/procurement-library/suppliers/types'
+import { cn } from '@/lib/utils'
 
 export interface BacProjectMetadata {
     id: string
@@ -26,10 +27,53 @@ export interface BacProjectMetadata {
     isConsolidatedPR: boolean
     prNumbers: string[]
     office: string
-    status?: string
+    status: string
+    isApproved: boolean
+}
+
+interface ExtendedBacProjectFields {
+    linkedConsolidatedPrs?: Array<{ prNumber?: string; cprNumber?: string }>
+    officeName?: string
+    bacResolutions?: Array<{ status?: string }>
+}
+
+export function getBacStatusBadgeConfig(status?: string): {
+    label: string
+    className: string
+    isApproved: boolean
+} {
+    const raw = (status || 'Draft').trim()
+    const normalized = raw.toLowerCase().replace(/[_-]/g, ' ')
+    if (normalized === 'approved' || normalized === 'posted' || normalized === 'routed to portal') {
+        return {
+            label: 'BAC: APPROVED',
+            className: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800',
+            isApproved: true,
+        }
+    }
+    if (normalized.includes('approval') || normalized.includes('review') || normalized === 'pending') {
+        return {
+            label: `BAC: ${raw.toUpperCase()}`,
+            className: 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
+            isApproved: false,
+        }
+    }
+    if (normalized === 'returned' || normalized === 'rejected') {
+        return {
+            label: `BAC: ${raw.toUpperCase()}`,
+            className: 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800',
+            isApproved: false,
+        }
+    }
+    return {
+        label: `BAC: ${raw.toUpperCase()}`,
+        className: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700',
+        isApproved: false,
+    }
 }
 
 export function extractBacProjectMeta(r: BacProject): BacProjectMetadata {
+    const ext = r as BacProject & ExtendedBacProjectFields
     const resolutionNumber =
         r.resolutionNumber ||
         (r.title && r.title.startsWith('RES-') ? r.title : '') ||
@@ -54,14 +98,13 @@ export function extractBacProjectMeta(r: BacProject): BacProjectMetadata {
     })}`
 
     let prNumbers: string[] = []
-    const anyR = r as any
     if (
-        Array.isArray(anyR.linkedConsolidatedPrs) &&
-        anyR.linkedConsolidatedPrs.length > 0
+        Array.isArray(ext.linkedConsolidatedPrs) &&
+        ext.linkedConsolidatedPrs.length > 0
     ) {
-        prNumbers = anyR.linkedConsolidatedPrs
-            .map((pr: any) => pr?.prNumber || pr?.cprNumber)
-            .filter(Boolean)
+        prNumbers = ext.linkedConsolidatedPrs
+            .map((pr) => pr?.prNumber || pr?.cprNumber)
+            .filter((val): val is string => Boolean(val))
     } else if (r.consolidatedPR?.prNumber) {
         prNumbers = [r.consolidatedPR.prNumber]
     } else if (r.consolidatedPR?.selectedPRItems?.length) {
@@ -77,12 +120,22 @@ export function extractBacProjectMeta(r: BacProject): BacProjectMetadata {
         r.consolidatedPR?.endUser ||
         r.consolidatedPR?.selectedPRItems?.[0]?.prOffice ||
         r.appItem?.officeName ||
-        anyR.officeName ||
+        ext.officeName ||
         (r.endUserRepresentativeId ? `Rep: ${r.endUserRepresentativeId}` : 'N/A')
 
     const isConsolidatedPR =
         r.sourceType === 'ConsolidatedPR' || String(r.sourceType) === '0'
     const sourceTypeLabel = isConsolidatedPR ? 'Consolidated PR' : 'APP Item'
+
+    const resolutionsList = Array.isArray(ext.bacResolutions) ? ext.bacResolutions : []
+    const hasApprovedRes = resolutionsList.some(
+        (res) => (res?.status || '').toLowerCase() === 'approved',
+    )
+    const effectiveStatus = hasApprovedRes
+        ? 'Approved'
+        : resolutionsList[0]?.status || r.status || 'Draft'
+
+    const badgeCfg = getBacStatusBadgeConfig(effectiveStatus)
 
     return {
         id: r.id,
@@ -94,7 +147,8 @@ export function extractBacProjectMeta(r: BacProject): BacProjectMetadata {
         isConsolidatedPR,
         prNumbers,
         office,
-        status: r.status,
+        status: effectiveStatus,
+        isApproved: badgeCfg.isApproved,
     }
 }
 
@@ -246,6 +300,9 @@ export function DirectContractingForm({
                     const selectedMeta = selectedRes
                         ? extractBacProjectMeta(selectedRes)
                         : null
+                    const selectedBadge = selectedMeta
+                        ? getBacStatusBadgeConfig(selectedMeta.status)
+                        : null
 
                     return (
                         <div>
@@ -258,14 +315,23 @@ export function DirectContractingForm({
                                 disabled={isEdit}
                             >
                                 <SelectTrigger className="mt-1.5 h-auto min-h-10 py-2">
-                                    <SelectValue placeholder="Select approved resolution...">
-                                        {selectedMeta ? (
+                                    <SelectValue placeholder="Select BAC resolution...">
+                                        {selectedMeta && selectedBadge ? (
                                             <div className="flex items-center justify-between gap-3 w-full pr-2 text-xs">
                                                 <div className="flex items-center gap-2 truncate">
                                                     <FileCheck className="h-3.5 w-3.5 text-primary shrink-0" />
                                                     <span className="font-semibold text-foreground">
                                                         {selectedMeta.resolutionNumber}
                                                     </span>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            'text-[10px] py-0 px-1.5 font-semibold shrink-0 border',
+                                                            selectedBadge.className,
+                                                        )}
+                                                    >
+                                                        {selectedBadge.label}
+                                                    </Badge>
                                                     <span className="text-muted-foreground/60">—</span>
                                                     <span className="text-muted-foreground truncate">
                                                         {selectedMeta.title}
@@ -282,6 +348,7 @@ export function DirectContractingForm({
                                     {filteredResolutions.length > 0 ? (
                                         filteredResolutions.map((r) => {
                                             const meta = extractBacProjectMeta(r)
+                                            const badgeCfg = getBacStatusBadgeConfig(meta.status)
                                             return (
                                                 <SelectItem
                                                     key={r.id}
@@ -289,13 +356,22 @@ export function DirectContractingForm({
                                                     className="py-2.5 px-3 cursor-pointer border-b border-border/30 last:border-b-0 focus:bg-muted/70 rounded-md my-0.5"
                                                 >
                                                     <div className="flex flex-col gap-1.5 w-full whitespace-normal text-left">
-                                                        {/* Top: Resolution Number + Source Tag + ABC Badge */}
+                                                        {/* Top: Resolution Number + BAC Status Badge + Source Tag + ABC Badge */}
                                                         <div className="flex items-center justify-between gap-2 w-full">
-                                                            <div className="flex items-center gap-2 min-w-0">
+                                                            <div className="flex items-center gap-2 min-w-0 flex-wrap">
                                                                 <FileCheck className="h-4 w-4 text-primary shrink-0" />
                                                                 <span className="font-semibold text-sm text-foreground truncate">
                                                                     {meta.resolutionNumber}
                                                                 </span>
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className={cn(
+                                                                        'text-[10px] py-0 px-1.5 font-semibold shrink-0 border',
+                                                                        badgeCfg.className,
+                                                                    )}
+                                                                >
+                                                                    {badgeCfg.label}
+                                                                </Badge>
                                                                 <Badge
                                                                     variant="soft"
                                                                     color={
@@ -358,7 +434,7 @@ export function DirectContractingForm({
                                         })
                                     ) : (
                                         <SelectItem value="none" disabled>
-                                            No approved resolutions available
+                                            No BAC resolutions available
                                         </SelectItem>
                                     )}
                                 </SelectContent>
@@ -418,6 +494,7 @@ export function DirectContractingForm({
                     )
                     if (!selectedResolutionId || !selectedRes) return null
                     const meta = extractBacProjectMeta(selectedRes)
+                    const badgeCfg = getBacStatusBadgeConfig(meta.status)
 
                     return (
                         <div className="rounded-xl border border-primary/20 bg-primary/[0.03] dark:bg-primary/[0.06] p-4 space-y-3 transition-all animate-in fade-in-50 duration-200">
@@ -428,10 +505,24 @@ export function DirectContractingForm({
                                         <FileCheck className="h-4 w-4" />
                                     </div>
                                     <div className="min-w-0">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-bold text-sm text-foreground truncate">
                                                 {meta.resolutionNumber}
                                             </span>
+                                            <Badge
+                                                variant="outline"
+                                                className={cn(
+                                                    'text-[10px] py-0 px-1.5 font-semibold shrink-0 border',
+                                                    badgeCfg.className,
+                                                )}
+                                            >
+                                                {badgeCfg.isApproved ? (
+                                                    <CheckCircle2 className="h-3 w-3 mr-1 inline" />
+                                                ) : (
+                                                    <Clock className="h-3 w-3 mr-1 inline" />
+                                                )}
+                                                {badgeCfg.label}
+                                            </Badge>
                                             <Badge
                                                 variant="soft"
                                                 color={meta.isConsolidatedPR ? 'secondary' : 'info'}
@@ -477,6 +568,15 @@ export function DirectContractingForm({
                                     </span>
                                 </div>
                             </div>
+
+                            {!meta.isApproved && (
+                                <div className="flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 p-2.5 text-xs text-amber-800 dark:text-amber-300">
+                                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                    <span>
+                                        <strong>BAC Resolution Not Yet Approved ({meta.status}):</strong> You may draft this Direct Contracting request now, but it cannot be submitted for review or sent to the supplier until the BAC Resolution is <strong>Approved</strong>.
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     )
                 }}

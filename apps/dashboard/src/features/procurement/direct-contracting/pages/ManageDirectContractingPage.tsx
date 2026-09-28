@@ -5,10 +5,11 @@ import {
   ShoppingBag,
   ShoppingCart
 } from 'lucide-react'
-import {  DirectContractingStatusEnum } from '../types'
+import { DirectContractingStatusEnum } from '../types'
 import { DirectContractingDetailsPage } from '../components/DirectContractingDetailsPage'
+import { getBacStatusBadgeConfig } from '../components/DirectContractingForm'
 import { useChangeDirectContractingStatus, useDirectContractings } from '../handlers'
-import type {DirectContracting} from '../types';
+import type { DirectContracting } from '../types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
@@ -25,11 +26,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   'submitted-to-supplier': { label: 'SUBMITTED TO SUPPLIER', className: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
   submitted: { label: 'SUBMITTED', className: 'bg-blue-100 text-blue-700 border-blue-300' },
 }
-//   •  DRAFT  ➔  FOR_REVIEW                                                                                                                                                      
-//   •  FOR_REVIEW  ➔  SUBMITTED_TO_SUPPLIER  or  RETURNED                                                                                                                        
-//   •  SUBMITTED_TO_SUPPLIER  ➔  PENDING_FOR_APPROVAL                                                                                                                            
-//   •  PENDING_FOR_APPROVAL  ➔  APPROVED  or  RETURNED                                                                                                                           
-//   •  RETURNED  ➔  DRAFT  or  FOR_REVIEW    
+
 export function ManageDirectContractingPage() {
   const { toast } = useToast()
   const { data: response, refetch } = useDirectContractings({
@@ -60,7 +57,6 @@ export function ManageDirectContractingPage() {
       status: statusMap[(item.status || '').toLowerCase()] || (item.status) || 'draft',
     }))
   }, [response?.data])
-
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -241,6 +237,7 @@ export function ManageDirectContractingPage() {
                   <TableBody>
                     {paged.map((entry) => {
                       const cfg = STATUS_CONFIG[entry.status] || { label: entry.status, className: '' }
+                      const bacCfg = getBacStatusBadgeConfig(entry.bacProjectStatus || 'Approved')
                       return (
                         <TableRow key={entry.id} className="hover:bg-muted/40 transition-colors">
                           <TableCell onClick={(e) => e.stopPropagation()} className="w-12">
@@ -258,7 +255,10 @@ export function ManageDirectContractingPage() {
                           <TableCell className="text-sm">{entry.supplierName || '—'}</TableCell>
                           <TableCell className="text-right font-semibold">{formatCurrencyPHP(entry.totalABC)}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={cn('text-xs font-semibold', cfg.className)}>{cfg.label}</Badge>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge variant="outline" className={cn('text-xs font-semibold', cfg.className)}>{cfg.label}</Badge>
+                              <Badge variant="outline" className={cn('text-[10px] font-semibold border', bacCfg.className)}>{bacCfg.label}</Badge>
+                            </div>
                           </TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
@@ -271,8 +271,17 @@ export function ManageDirectContractingPage() {
                                 </DropdownMenuItem>
                                 {entry.status === 'for-review' && (
                                   <DropdownMenuItem
-                                    className="text-primary font-bold"
-                                    onClick={() => setConfirmSubmitToSupplierId(entry.id)}
+                                    className={cn("text-primary font-bold", !bacCfg.isApproved && "opacity-50")}
+                                    onClick={() => {
+                                      if (!bacCfg.isApproved) {
+                                        toast({
+                                          title: 'BAC Resolution Not Yet Approved',
+                                          description: `Cannot send Direct Contracting request to supplier until the linked BAC Resolution is Approved (current BAC status: ${entry.bacProjectStatus || 'Unapproved'}).`,
+                                        })
+                                        return
+                                      }
+                                      setConfirmSubmitToSupplierId(entry.id)
+                                    }}
                                   >
                                     <Send className="mr-2 h-4 w-4" /> Submit to Supplier
                                   </DropdownMenuItem>
@@ -324,7 +333,6 @@ export function ManageDirectContractingPage() {
             toast({ title: 'Submitted to Supplier', description: 'Request has been forwarded to the supplier.' })
             await refetch()
           } catch (err) {
-
             console.error(err)
             toast({ title: 'Error', description: 'Failed to submit request to supplier.' })
           } finally {

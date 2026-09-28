@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import {
   Building,
@@ -7,7 +6,6 @@ import {
   Layers,
   Loader2,
   ShoppingBag,
-  ShoppingCart,
   Upload,
   UserCheck,
 } from 'lucide-react'
@@ -44,6 +42,7 @@ import {
 } from '@/features/procurement/direct-contracting/handlers'
 import type { DirectContracting } from '@/features/procurement/direct-contracting/types'
 import { useQueryClient } from 'erpez-shared-lib'
+import React from 'react'
 
 export function DirectContractingItemPage() {
   const queryClient = useQueryClient()
