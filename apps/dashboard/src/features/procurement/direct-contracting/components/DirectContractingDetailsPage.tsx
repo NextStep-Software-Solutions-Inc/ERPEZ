@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { AxiosError } from 'erpez-shared-lib'
 import { DirectContractingStatusEnum } from '../types'
 import type { DirectContracting } from '../types'
-import { useChangeDirectContractingStatus, useDirectContracting } from '../handlers'
+import { generateAndDownloadDirectContractingDocument, useChangeDirectContractingStatus, useDirectContracting } from '../handlers'
 import { getBacStatusBadgeConfig } from './DirectContractingForm'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -58,6 +58,7 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [showConvertToDraftConfirm, setShowConvertToDraftConfirm] = useState(false)
   const [showSendToSupplierConfirm, setShowSendToSupplierConfirm] = useState(false)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
   const {
     data: directContractingResponse,
@@ -333,15 +334,31 @@ export function DirectContractingDetailsPage({ entry: initialEntry, onBack, isMa
             )}
             <Button
               variant="outline"
-              onClick={() => {
-                toast.info('Preparing your Direct Contracting request document for printing...')
-                setTimeout(() => {
-                  window.print()
-                }, 400)
+              disabled={isGeneratingPdf}
+              onClick={async () => {
+                try {
+                  setIsGeneratingPdf(true)
+                  await toast.promise(
+                    generateAndDownloadDirectContractingDocument({
+                      directContractingId: item.id,
+                      format: 'Pdf',
+                      filename: `Direct_Contracting_${item.dcNumber || 'Resolution'}.pdf`,
+                    }),
+                    {
+                      loading: 'Generating official RA 12009 Direct Contracting document...',
+                      success: 'Direct Contracting document downloaded successfully.',
+                      error: (err: unknown) => extractErrorMessage(err as AxiosError) || 'Failed to generate document.',
+                    }
+                  )
+                } catch (err) {
+                  console.error(err)
+                } finally {
+                  setIsGeneratingPdf(false)
+                }
               }}
             >
               <Download className="mr-2 h-4 w-4" />
-              Print Direct Contracting Request
+              {isGeneratingPdf ? 'Generating...' : 'Print Direct Contracting Request'}
             </Button>
           </div>
         </div>

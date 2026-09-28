@@ -152,4 +152,40 @@ public class DirectContractingController(ISender mediator) : ControllerBase
         });
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
+
+    [HttpPost("{id:guid}/generate")]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GenerateDocument(
+        Guid id,
+        [FromQuery] ERPEZ.Domain.Enums.ExportFormat format = ERPEZ.Domain.Enums.ExportFormat.Pdf)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.DirectContractings.Commands.GenerateDirectContractingDocument.GenerateDirectContractingDocumentCommand
+        {
+            DirectContractingId = id,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpGet("{id:guid}/pdf")]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPdf(Guid id)
+    {
+        var query = new ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingPdf.GetDirectContractingPdfQuery(id);
+        var result = await mediator.Send(query);
+        if (!result.Succeeded || result.Data == null)
+        {
+            return NotFound(result);
+        }
+
+        Response.Headers["Content-Disposition"] = $"inline; filename=\"{result.Data.FileName}\"";
+        return File(result.Data.FileBytes, result.Data.ContentType, result.Data.FileName);
+    }
 }

@@ -190,6 +190,9 @@ public static class DependencyInjection
         // AOB / Abstract of Quotation — PDF
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.AOBs.Dtos.AobDataDto>, AobPdfRenderer>();
 
+        // Direct Contracting — PDF (RA 12009 NGPA Compliant)
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.DirectContractings.Dtos.DirectContractingPdfDataDto>, DirectContractingPdfRenderer>();
+
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()

@@ -310,6 +310,40 @@ public class DocumentController(IMediator mediator,
         return Ok(result);
     }
 
+    [HttpPost("direct-contracting/{id:guid}/generate")]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateDirectContracting(
+        Guid id,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.DirectContractings.Commands.GenerateDirectContractingDocument.GenerateDirectContractingDocumentCommand
+        {
+            DirectContractingId = id,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("direct-contracting/{id:guid}/pdf")]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    public async Task<IActionResult> GetDirectContractingPdf(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingPdf.GetDirectContractingPdfQuery(id);
+        var result = await mediator.Send(query, cancellationToken);
+        if (!result.Succeeded || result.Data == null)
+        {
+            return NotFound(result);
+        }
+
+        Response.Headers["Content-Disposition"] = $"inline; filename=\"{result.Data.FileName}\"";
+        return File(result.Data.FileBytes, result.Data.ContentType, result.Data.FileName);
+    }
+
     [HttpGet("{documentId:guid}/download")]
     [Authorize]
     public async Task<IActionResult> Download(
