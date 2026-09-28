@@ -1,21 +1,22 @@
-import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
 import { Link } from '@tanstack/react-router'
 import {
-  ArrowUpDown,
-  ArrowUp,
   ArrowDown,
-  MoreHorizontal,
-  Eye,
-  Copy,
-  CheckCircle2,
-  X,
-  Upload,
+  ArrowUp,
+  ArrowUpDown,
   Calendar,
+  CheckCircle2,
+  Copy,
+  Eye,
   Layers,
+  MoreHorizontal,
+  Upload,
+  X,
 } from 'lucide-react'
+import type { ColumnDef } from '@tanstack/react-table'
 
-import { Button } from '@/components/ui/button'
+import type { DirectContracting, SupplierTableActionHandlers } from './types'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
@@ -26,11 +27,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { formatCurrencyPHP, formatDateV2 } from '@/utils/formatters'
-import { cn } from '@/lib/utils'
-
-import type { DirectContracting, SupplierTableActionHandlers } from './types'
-
-const columnHelper = createColumnHelper<DirectContracting>()
 
 export function renderSupplierStatusBadge(item: DirectContracting) {
   const status = (item.status || '').toLowerCase()
@@ -85,9 +81,9 @@ export function renderSupplierStatusBadge(item: DirectContracting) {
 
 export function getSupplierDirectContractingColumns(
   handlers: SupplierTableActionHandlers,
-): ColumnDef<DirectContracting, any>[] {
+): Array<ColumnDef<DirectContracting>> {
   return [
-    columnHelper.display({
+    {
       id: 'select',
       header: ({ table }) => (
         <Checkbox
@@ -111,10 +107,10 @@ export function getSupplierDirectContractingColumns(
       enableSorting: false,
       enableHiding: false,
       size: 40,
-    }),
-
-    columnHelper.accessor((row) => row.dcNumber, {
+    },
+    {
       id: 'dcNumber',
+      accessorFn: (row) => row.dcNumber,
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -150,10 +146,10 @@ export function getSupplierDirectContractingColumns(
           </div>
         )
       },
-    }),
-
-    columnHelper.accessor((row) => row.bacProjectTitle || row.prNumber || '', {
+    },
+    {
       id: 'prNumber',
+      accessorFn: (row) => row.bacProjectTitle || row.prNumber || '',
       header: 'PR & BAC Project',
       cell: ({ row }) => {
         const title = row.original.bacProjectTitle || row.original.prNumber || '—'
@@ -165,10 +161,10 @@ export function getSupplierDirectContractingColumns(
           </div>
         )
       },
-    }),
-
-    columnHelper.accessor((row) => row.dcName || row.name || '', {
+    },
+    {
       id: 'dcName',
+      accessorFn: (row) => row.dcName || row.name || '',
       header: 'Item Description',
       cell: ({ row }) => {
         const name = row.original.dcName || row.original.name || '—'
@@ -185,10 +181,10 @@ export function getSupplierDirectContractingColumns(
           </div>
         )
       },
-    }),
-
-    columnHelper.accessor((row) => row.totalABC, {
+    },
+    {
       id: 'totalABC',
+      accessorFn: (row) => row.totalABC,
       header: ({ column }) => (
         <div className="text-right">
           <Button
@@ -224,10 +220,10 @@ export function getSupplierDirectContractingColumns(
           </div>
         )
       },
-    }),
-
-    columnHelper.accessor((row) => row.submissionDeadline || row.deadline || '', {
+    },
+    {
       id: 'deadline',
+      accessorFn: (row) => row.submissionDeadline || row.deadline || '',
       header: 'Deadline',
       cell: ({ row }) => {
         const deadline = row.original.submissionDeadline || row.original.deadline
@@ -239,15 +235,14 @@ export function getSupplierDirectContractingColumns(
           </div>
         )
       },
-    }),
-
-    columnHelper.accessor((row) => row.status, {
+    },
+    {
       id: 'status',
+      accessorFn: (row) => row.status,
       header: 'Status',
       cell: ({ row }) => renderSupplierStatusBadge(row.original),
-    }),
-
-    columnHelper.display({
+    },
+    {
       id: 'actions',
       enableHiding: false,
       cell: ({ row }) => {
@@ -303,6 +298,6 @@ export function getSupplierDirectContractingColumns(
           </div>
         )
       },
-    }),
+    },
   ]
 }

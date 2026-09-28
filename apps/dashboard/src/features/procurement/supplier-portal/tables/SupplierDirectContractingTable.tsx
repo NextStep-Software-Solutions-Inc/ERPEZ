@@ -20,9 +20,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
   RotateCcw,
-  Check,
-  Upload,
-  Layers,
 } from 'lucide-react'
 
 import {
