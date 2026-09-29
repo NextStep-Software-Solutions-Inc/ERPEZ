@@ -19,12 +19,13 @@ public sealed class CreateTenantCommandHandler(
 {
     public async Task<ApiResponse<Guid>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(currentUserService.UserId)) throw new UnauthorizedAccessException("Current user is not authenticated.");
+        var currentUserId = currentUserService.UserId;
+        if (string.IsNullOrWhiteSpace(currentUserId)) throw new UnauthorizedAccessException("Current user is not authenticated.");
 
         var tenantExist = await unitOfWork.TenantRepository.FindAsync(t => t.Name == request.Name, cancellationToken);
         if (tenantExist != null) throw new ConflictException("Tenant already exists.");
 
-        var isClerk = currentUserService.UserId?.StartsWith("user_") == true;
+        var isClerk = currentUserId.StartsWith("user_");
         var provider = isClerk ? IdentityProvider.Clerk : IdentityProvider.Keycloak;
 
         var tenant = new Tenant
@@ -117,10 +118,14 @@ public sealed class CreateTenantCommandHandler(
             ? currentUserService.Email 
             : request.BillingContactEmail;
 
+        var externalIdentityId = !string.IsNullOrWhiteSpace(currentUserService.ExternalIdentityId)
+            ? currentUserService.ExternalIdentityId
+            : currentUserId;
+
         var tenantMember = new TenantMember
         {
-            UserId = currentUserService.UserId,
-            ExternalIdentityId = currentUserService.ExternalIdentityId ?? currentUserService.UserId,
+            UserId = currentUserId,
+            ExternalIdentityId = externalIdentityId,
             Provider = provider,
             Email = memberEmail,
             FirstName = firstName,
