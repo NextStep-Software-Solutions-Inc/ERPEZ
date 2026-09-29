@@ -23,10 +23,12 @@ import { useTenant } from "~/providers/TenantProvider";
 import { createQueryHookFromTemplate, createMutationHookFromTemplate } from "erpez-shared-lib";
 import { getTenantLicenseRequest } from "~/features/license/handlers/getTenantLicenseRequest";
 import { activateLicenseRequest } from "~/features/license/handlers/activateLicenseRequest";
+import { claimTrialLicenseRequest } from "~/features/license/handlers/claimTrialLicenseRequest";
 import { toast } from "sonner";
 
 const useTenantLicense = createQueryHookFromTemplate(getTenantLicenseRequest);
 const useActivateLicense = createMutationHookFromTemplate(activateLicenseRequest);
+const useClaimTrialLicense = createMutationHookFromTemplate(claimTrialLicenseRequest);
 
 export default function LicenseManagementPage() {
     const { tenant } = useTenant();
@@ -42,7 +44,24 @@ export default function LicenseManagementPage() {
     });
 
     const activateMutation = useActivateLicense();
+    const claimTrialMutation = useClaimTrialLicense();
     const license = licenseResponse?.data;
+
+    const handleClaimTrial = async () => {
+        try {
+            await claimTrialMutation.mutateAsync({
+                pathParams: {},
+                payload: {
+                    tenantId: activeTenantId,
+                    allowedDomain: currentHostname,
+                },
+            });
+            toast.success("30-Day Free Trial License successfully provisioned!");
+            await refetch();
+        } catch {
+            // Error toast handled by axios interceptor
+        }
+    };
 
     const isDomainValid = useMemo(() => {
         if (!license?.allowedDomain) return true;
@@ -213,10 +232,21 @@ export default function LicenseManagementPage() {
                                     </div>
                                 </>
                             ) : (
-                                <div className="text-center py-10 border border-dashed rounded-lg text-slate-500 text-xs">
+                                <div className="text-center py-10 border border-dashed rounded-lg text-slate-500 text-xs space-y-3">
                                     <FileKey className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                                    No cryptographic license key currently activated for this tenant.
-                                    Use the offline activation form to activate a license.
+                                    <p className="font-medium text-slate-700">No cryptographic license key currently activated for this tenant.</p>
+                                    <p className="text-[11px] text-slate-500">You can claim a 30-day full-access free trial license or activate an existing subscription key below.</p>
+                                    <div className="pt-2">
+                                        <Button
+                                            type="button"
+                                            onClick={handleClaimTrial}
+                                            disabled={claimTrialMutation.isPending}
+                                            className="btn-blue text-xs font-semibold"
+                                        >
+                                            {claimTrialMutation.isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                                            Claim 30-Day Free Trial License
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                         </CardContent>

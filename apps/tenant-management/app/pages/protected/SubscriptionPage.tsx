@@ -82,8 +82,8 @@ export default function SubscriptionPage() {
       license?.key?.startsWith("TRIAL") ||
       (planName.toLowerCase().includes("starter") && (sub?.amount === 0 || !sub?.autoRenew)));
 
-  const daysRemaining = subscription?.trialDaysRemaining ?? (license?.remainingDays || 14);
-  const totalTrialDays = 14;
+  const daysRemaining = subscription?.trialDaysRemaining ?? (license?.remainingDays || 30);
+  const totalTrialDays = 30;
   const elapsedDays = Math.max(0, totalTrialDays - daysRemaining);
   const trialProgressPercent = Math.min(100, Math.max(7, Math.round((elapsedDays / totalTrialDays) * 100)));
 
@@ -315,7 +315,7 @@ export default function SubscriptionPage() {
                     />
                   </div>
                   <div className="flex justify-between text-[11px] text-slate-500 font-medium">
-                    <span>14-day free trial</span>
+                    <span>30-day free trial</span>
                     <span>
                       {daysRemaining > 0 ? `${daysRemaining} days remaining` : "Ends today"}
                     </span>
@@ -736,7 +736,7 @@ export default function SubscriptionPage() {
               <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-3 flex items-center gap-2.5 text-xs text-blue-800">
                 <Info className="h-4 w-4 text-blue-600 shrink-0" />
                 <span className="font-semibold">
-                  Your 14-day free trial is unaffected by this selection.
+                  Your 30-day free trial is unaffected by this selection.
                 </span>
               </div>
             )}

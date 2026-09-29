@@ -67,8 +67,8 @@ public sealed class CreateTenantCommandHandler(
             if (defaultModule != null) tenant.Modules.Add(defaultModule);
         }
 
-        // 14-day Free Trial Subscription
-        var trialDays = 14;
+        // 30-day Free Trial Subscription
+        var trialDays = 30;
         var trialExpiry = DateTime.UtcNow.AddDays(trialDays);
         var subscription = new TenantSubscription
         {
@@ -83,7 +83,7 @@ public sealed class CreateTenantCommandHandler(
         };
         tenant.TenantSubscriptions.Add(subscription);
 
-        // Generate matching 14-day Trial License Key
+        // Generate matching 30-day Trial License Key
         if (licenseService != null)
         {
             var keyString = licenseService.GenerateKeyString("TRIAL", request.BillingContactEmail, trialExpiry, Plan.Starter);

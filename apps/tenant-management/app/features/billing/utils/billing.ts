@@ -23,7 +23,7 @@ export function adaptTenantSubscription(
 
   if (!rawSub) {
     // Default fallback if tenant exists without explicit subscription record
-    const trialDays = 14;
+    const trialDays = 30;
     const now = new Date();
     const endDate = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
     const trialEndsAt = new Date(endDate).toLocaleDateString("en-US", {
@@ -80,7 +80,7 @@ export function adaptTenantSubscription(
     : 29900; // Starter post-trial base rate
 
   const startDate = rawSub.startDate || new Date().toISOString();
-  const endDate = rawSub.endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+  const endDate = rawSub.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const now = new Date();
   const endObj = new Date(endDate);
