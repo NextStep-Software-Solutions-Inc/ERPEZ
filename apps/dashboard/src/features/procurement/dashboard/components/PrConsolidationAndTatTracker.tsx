@@ -1,12 +1,12 @@
+import { AlertTriangle, Clock } from 'lucide-react'
+import type { ConsolidationProgress, TatDataPoint } from '../types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Clock, AlertTriangle } from 'lucide-react'
-import type { ConsolidationProgress, TatDataPoint } from '../types'
 import { cn } from '@/lib/utils'
 
 interface Props {
   consolidation: ConsolidationProgress | null
-  tatData: TatDataPoint[]
+  tatData: Array<TatDataPoint>
   fiscalYear: number
   isLoading?: boolean
 }
@@ -222,7 +222,7 @@ function StatCard({
 
 /** Insight callout */
 function InsightCallout({ aboveThreshold, stalledPct }: {
-  aboveThreshold: TatDataPoint[]
+  aboveThreshold: Array<TatDataPoint>
   stalledPct: number
 }) {
   if (aboveThreshold.length === 0) return null
@@ -400,7 +400,7 @@ export function PrConsolidationAndTatTracker({ consolidation, tatData, fiscalYea
 
 interface Props {
   consolidation: ConsolidationProgress | null
-  tatData: TatDataPoint[]
+  tatData: Array<TatDataPoint>
   fiscalYear: number
   isLoading?: boolean
 }

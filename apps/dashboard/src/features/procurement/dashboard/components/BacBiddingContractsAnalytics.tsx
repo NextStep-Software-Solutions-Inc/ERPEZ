@@ -1,19 +1,19 @@
 import { BarChart2 } from 'lucide-react'
-import type { RfqStatusItem, AobQueueItem, PoFulfillmentData, ContractItem } from '../types'
 import { RfqClosingAndAobPanel } from './RfqClosingAndAobPanel'
 import { PoFulfillmentDonut } from './PoFulfillmentDonut'
 import { ContractLifecycle } from './ContractLifecycle'
+import type { AobQueueItem, ContractItem, PoFulfillmentData, RfqStatusItem } from '../types'
 
 interface Props {
-  rfqList: RfqStatusItem[]
-  aobItems: AobQueueItem[]
+  rfqList: Array<RfqStatusItem>
+  aobItems: Array<AobQueueItem>
   poFulfillment: PoFulfillmentData | null
-  contracts: ContractItem[]
+  contracts: Array<ContractItem>
   isLoading?: boolean
 }
 
 // Count RFQs closing in <= 3 days as "urgent"
-function countUrgent(rfqList: RfqStatusItem[]): number {
+function countUrgent(rfqList: Array<RfqStatusItem>): number {
   return rfqList.filter((r) => r.daysRemaining <= 3).length
 }
 

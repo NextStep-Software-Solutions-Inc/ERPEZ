@@ -1,11 +1,11 @@
+import { Zap } from 'lucide-react'
+import { SmartTaskCard } from './SmartTaskCard'
+import type { ProcurementTask } from '../types'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Zap } from 'lucide-react'
-import type { ProcurementTask } from '../types'
-import { SmartTaskCard } from './SmartTaskCard'
 
 interface Props {
-  tasks: ProcurementTask[]
+  tasks: Array<ProcurementTask>
   isLoading?: boolean
 }
 

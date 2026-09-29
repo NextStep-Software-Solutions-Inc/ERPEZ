@@ -1,4 +1,4 @@
-import { Star, Building2 } from 'lucide-react'
+import { Building2, Star } from 'lucide-react'
 import type { ApproveNOAMetadata } from '../../types'
 import { formatCurrencyAbbr } from '@/utils/formatters'
 
