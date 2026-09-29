@@ -11,6 +11,7 @@ using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantById;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantsByMe;
+using ERPEZ.TenantManagement.Domain.Constants;
 using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -29,6 +30,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> CreateTenant([FromBody] CreateTenantCommand command)
         {
             var tenant = await mediator.Send(command);
@@ -57,6 +59,10 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         {
             if (!await CanAccessTenantAsync(
                     id,
+                    PlatformPermissions.tenantsView,
+                    PlatformPermissions.tenantsManage,
+                    TenantPermissions.workspaceView,
+                    TenantPermissions.workspaceManage,
                     Permissions.Admin.systemAdminView,
                     Permissions.Admin.systemAdminManage,
                     Permissions.Admin.tenantsManage))
@@ -88,6 +94,8 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         {
             if (!await CanAccessTenantAsync(
                     id,
+                    PlatformPermissions.tenantsManage,
+                    TenantPermissions.workspaceManage,
                     Permissions.Admin.systemAdminManage,
                     Permissions.Admin.tenantsManage))
             {
@@ -113,6 +121,8 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         {
             if (!await CanAccessTenantAsync(
                     id,
+                    PlatformPermissions.tenantsManage,
+                    TenantPermissions.workspaceManage,
                     Permissions.Admin.systemAdminManage,
                     Permissions.Admin.tenantsManage))
             {

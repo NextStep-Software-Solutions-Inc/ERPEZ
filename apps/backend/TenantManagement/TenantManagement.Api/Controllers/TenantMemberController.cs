@@ -32,7 +32,7 @@ public class TenantMembersController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<RoleSummaryDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAssignableGovernanceRoles()
     {
-        var result = await mediator.Send(new GetAssignableRolesQuery(RoleScope.TenantManagement));
+        var result = await mediator.Send(new GetAssignableRolesQuery(RoleScope.Tenant));
         return Ok(result);
     }
     [HttpPost]

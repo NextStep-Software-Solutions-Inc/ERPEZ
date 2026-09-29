@@ -13,7 +13,7 @@ public interface IRoleAssignmentValidator
         string actorExternalIdentityId,
         Guid? targetMemberId,
         IEnumerable<Guid> requestedRoleIds,
-        RoleScope expectedScope = RoleScope.TenantManagement,
+        RoleScope expectedScope = RoleScope.Tenant,
         CancellationToken cancellationToken = default);
 
     void ValidateSelfLockout(

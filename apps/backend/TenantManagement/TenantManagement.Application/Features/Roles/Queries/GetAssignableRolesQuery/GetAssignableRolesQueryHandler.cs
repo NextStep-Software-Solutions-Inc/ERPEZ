@@ -2,6 +2,7 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
 using ERPEZ.TenantManagement.Application.Features.Roles.Dtos;
+using ERPEZ.TenantManagement.Domain.Constants;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -30,11 +31,18 @@ public class GetAssignableRolesQueryHandler(
 
         var roles = await unitOfWork.RoleRepository.Query()
             .AsNoTracking()
-            .Include(r => r.RolePermissions).ThenInclude(rp => rp.Permission)
             .Where(predicate)
             .OrderBy(r => r.IsSystemRole ? 0 : 1)
             .ThenBy(r => r.Name)
-            .Select(r => new RoleSummaryDto
+            .ToListAsync(cancellationToken);
+
+        var dtos = roles.Select(r =>
+        {
+            var perms = r.IsSystemRole
+                ? TenantManagementPermissionsRegistry.GetPermissionsForRole(r.Name).ToList()
+                : (r.Permissions ?? []);
+
+            return new RoleSummaryDto
             {
                 Id = r.Id,
                 Name = r.Name,
@@ -43,11 +51,11 @@ public class GetAssignableRolesQueryHandler(
                 Scope = r.Scope,
                 IsAssignableToTenant = r.IsAssignableToTenant,
                 TenantId = r.TenantId,
-                PermissionKeys = r.RolePermissions.Select(rp => rp.Permission.Key).ToList(),
-                PermissionDisplayNames = r.RolePermissions.Select(rp => rp.Permission.DisplayName).ToList()
-            })
-            .ToListAsync(cancellationToken);
+                PermissionKeys = perms,
+                PermissionDisplayNames = perms
+            };
+        }).ToList();
 
-        return ApiResponse<IReadOnlyList<RoleSummaryDto>>.Success(roles, "Assignable roles retrieved successfully.");
+        return ApiResponse<IReadOnlyList<RoleSummaryDto>>.Success(dtos, "Assignable roles retrieved successfully.");
     }
 }

@@ -18,6 +18,7 @@ import { navigationLinks } from "~/config/navigationLinks"
 import { Link, useLocation, } from "react-router"
 import * as LucideIcons from "lucide-react"
 import { useWorkspace } from "~/providers/TenantProvider"
+import { usePermissions } from "~/hooks/usePermissions"
 
 export const data = {
   tenant: "Tenant Company",
@@ -32,6 +33,7 @@ const getIcon = (iconName: string) => {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
   const { workspace } = useWorkspace()
+  const { hasPermission } = usePermissions()
   const dashboardUrl = import.meta.env.VITE_ERP_DASHBOARD_URL || "http://localhost:3000"
 
   return (
@@ -53,35 +55,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         )}
       </SidebarHeader>
       <SidebarContent>
-        {navigationLinks.map((item) => (
-          <SidebarGroup key={item.title}>
-            <SidebarGroupLabel>{item.title}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {item.items.map((link) => {
-                  const isActive = location.pathname === `/${link.url}`
+        {navigationLinks.map((item) => {
+          const visibleItems = item.items.filter(
+            (link) => !link.permission || hasPermission(link.permission)
+          );
+          if (visibleItems.length === 0) return null;
 
-                  return (
-                    <SidebarMenuItem key={link.title}>
-                      <SidebarMenuButton asChild>
-                        <Link
-                          to={`/${link.url}`}
-                          className={`transition-colors py-6 flex items-center gap-2 ${isActive
-                            ? "text-white font-semibold rounded-lg bg-linear-to-l from-(--button-green)/70 to-(--button-blue)/70 p-4"
-                            : "text-gray-700 "
-                            }`}
-                        >
-                          {getIcon(link.icon)}
-                          {link.title}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+          return (
+            <SidebarGroup key={item.title}>
+              <SidebarGroupLabel>{item.title}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {visibleItems.map((link) => {
+                    const isActive = location.pathname === `/${link.url}`
+
+                    return (
+                      <SidebarMenuItem key={link.title}>
+                        <SidebarMenuButton asChild>
+                          <Link
+                            to={`/${link.url}`}
+                            className={`transition-colors py-6 flex items-center gap-2 ${isActive
+                              ? "text-white font-semibold rounded-lg bg-linear-to-l from-(--button-green)/70 to-(--button-blue)/70 p-4"
+                              : "text-gray-700 "
+                              }`}
+                          >
+                            {getIcon(link.icon)}
+                            {link.title}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
       <SidebarFooter>
         <AppSidebarFooter />

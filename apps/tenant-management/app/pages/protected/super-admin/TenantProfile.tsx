@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { PageContainer } from "~/components/PageContainer";
 import type { Tenant } from "~/features/tenant/type/Tenant";
 import { planLabel, statusLabel } from "~/lib/tenant";
@@ -10,8 +11,9 @@ import { toggleTenantStatusRequest } from "~/features/tenant/handlers/toggleTena
 import { LicenseManagementModal } from "~/features/license/components/LicenseManagementModal";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
-import { KeyRound, ShieldCheck, ShieldAlert, Copy, Check, Server, Lock, Database } from "lucide-react";
+import { KeyRound, ShieldCheck, ShieldAlert, Copy, Check, Server, Lock, Database, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { useTenant } from "~/providers/TenantProvider";
 
 const { useQueryClient } = erpSharedLib;
 const useTenantLicense = createQueryHookFromTemplate(getTenantLicenseRequest);
@@ -23,6 +25,8 @@ interface TenantProfileProps {
 }
 
 function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
+    const navigate = useNavigate();
+    const { startSpectating } = useTenant();
     const queryClient = useQueryClient();
     const [copied, setCopied] = useState(false);
     const [isDisabled, setIsDisabled] = useState(tenant.isDisabled ?? false);
@@ -67,6 +71,18 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
             backTo={true}
             actions={
                 <div className="flex items-center gap-3">
+                    <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-amber-600 hover:bg-amber-700 text-white font-semibold gap-1.5 shadow-xs"
+                        onClick={() => {
+                            startSpectating({ id: tenant.id, name: tenant.name });
+                            navigate('/overview');
+                        }}
+                    >
+                        <Eye className="h-4 w-4" />
+                        Spectate Workspace
+                    </Button>
                     <Button
                         variant={isDisabled ? "default" : "destructive"}
                         size="sm"

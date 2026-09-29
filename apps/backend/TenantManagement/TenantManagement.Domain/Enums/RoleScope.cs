@@ -4,6 +4,7 @@ namespace ERPEZ.TenantManagement.Domain.Enums;
 /// Architectural domain classification for functional roles.
 /// RoleScope determines which application surface manages and displays a role.
 /// Invariant: Scope is a taxonomy filter and does not confer authorization by itself.
+/// Converted to string in database persistence.
 /// </summary>
 public enum RoleScope
 {
@@ -13,20 +14,12 @@ public enum RoleScope
     Unknown = 0,
 
     /// <summary>
-    /// SaaS account governance, billing, subscription, and organization profile management.
-    /// Managed strictly via Tenant Management App.
+    /// Platform administration, tenant fleet oversight, and global system configuration.
     /// </summary>
-    TenantManagement = 1,
+    Platform = 1,
 
     /// <summary>
-    /// Internal ERP operations, planning, procurement, budgeting, and document approval workflows.
-    /// Managed strictly via ERP Dashboard App.
+    /// SaaS account governance, workspace settings, billing, subscription, and member management.
     /// </summary>
-    Operational = 2,
-
-    /// <summary>
-    /// External third-party actors (e.g., registered bidders, contractors, suppliers).
-    /// Managed strictly via Supplier / Vendor Portal.
-    /// </summary>
-    ExternalPortal = 3
+    Tenant = 2
 }

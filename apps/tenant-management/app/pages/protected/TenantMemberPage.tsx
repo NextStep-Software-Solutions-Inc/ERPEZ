@@ -20,6 +20,7 @@ import { revokeTenantMemberInvitationRequest } from '~/features/tenant-member/ha
 import { deleteTenantMemberRequest } from '~/features/tenant-member/handlers/deleteTenantMemberRequest';
 import { useTenant } from '~/providers/TenantProvider';
 import { useClerkAuth } from '~/providers/ClerkAuthProvider';
+import { usePermissions } from '~/hooks/usePermissions';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -35,6 +36,7 @@ import {
 } from '~/components/ui/dialog';
 import { UserPlus, Loader2, Copy, Check, Users, ArrowUpRight, AlertCircle, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { RolesManagementView } from '~/components/features/roles/RolesManagementView';
 
 const useTenantMembers = createQueryHookFromTemplate(getTenantMembersRequest);
 const useAssignableRoles = createQueryHookFromTemplate(getAssignableRolesRequest);
@@ -48,6 +50,10 @@ function TenantMemberPage() {
     const navigate = useNavigate();
     const { tenant } = useTenant();
     const { user } = useClerkAuth();
+    const { hasPermission } = usePermissions();
+    const canManageMembers = hasPermission('tenant.members.manage');
+
+    const [activeTab, setActiveTab] = useState<'members' | 'roles'>('members');
 
     // Invite Modal State
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -96,8 +102,8 @@ function TenantMemberPage() {
             email: m.email || '',
             userId: m.userId,
             externalIdentityId: m.externalIdentityId,
-            role: m.role || (m.roles && m.roles[0]) || 'End User',
-            roles: m.roles && m.roles.length > 0 ? m.roles : (m.role ? [m.role] : ['End User']),
+            role: m.role || (m.roles && m.roles[0]) || 'Tenant Member',
+            roles: m.roles && m.roles.length > 0 ? m.roles : (m.role ? [m.role] : ['Tenant Member']),
             roleIds: m.roleIds || [],
             status: m.status || 'Active',
             concurrencyStamp: m.concurrencyStamp || '',
@@ -251,8 +257,9 @@ function TenantMemberPage() {
             onDelete: (member) => setDeletingMember(member),
             currentUserId: user?.id,
             currentUserEmail: user?.email,
+            canManage: canManageMembers,
         });
-    }, [user?.id, user?.email]);
+    }, [user?.id, user?.email, canManageMembers]);
 
     const [hasCopiedLink, setHasCopiedLink] = useState(false);
 
@@ -278,18 +285,51 @@ function TenantMemberPage() {
             title="Members"
             description={`Manage members of ${tenant?.name || 'this workspace'}, assign workspace roles, and govern access permissions.`}
             actions={
-                <Button
-                    onClick={handleOpenInvite}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                >
-                    <UserPlus className="h-4 w-4" />
-                    Invite Member
-                </Button>
+                canManageMembers ? (
+                    <Button
+                        onClick={handleOpenInvite}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                    >
+                        <UserPlus className="h-4 w-4" />
+                        Invite Member
+                    </Button>
+                ) : null
             }
         >
             <div className="space-y-6">
-                {/* Plan Seat Usage Indicator Banner */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('members')}
+                        className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+                            activeTab === 'members'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                    >
+                        <Users className="w-3.5 h-3.5" />
+                        Workspace Members ({data.length})
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('roles')}
+                        className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+                            activeTab === 'roles'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                    >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        Roles & Permissions ({assignableRoles.length})
+                    </button>
+                </div>
+
+                {activeTab === 'roles' ? (
+                    <RolesManagementView />
+                ) : (
+                    <>
+                        {/* Plan Seat Usage Indicator Banner */}
+                        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-blue-600" />
@@ -371,6 +411,8 @@ function TenantMemberPage() {
                     readonly
                     toolbar={(table) => <Toolbar table={table} />}
                 />
+                    </>
+                )}
             </div>
 
             {/* Invite Member Dialog */}
@@ -455,7 +497,7 @@ function TenantMemberPage() {
                                     ))}
                                 </div>
                                 <p className="text-[11px] text-muted-foreground">
-                                    If no roles are selected, the default End User role will be assigned.
+                                    If no roles are selected, the default Tenant Member role will be assigned.
                                 </p>
                             </div>
                         </div>

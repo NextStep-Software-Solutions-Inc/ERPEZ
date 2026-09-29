@@ -1,3 +1,4 @@
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Commands.ActivateLicense;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Commands.GenerateLicenseKey;
@@ -6,6 +7,7 @@ using ERPEZ.TenantManagement.Application.Features.Licenses.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Queries.GetLicenseKeys;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Queries.GetTenantLicense;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Queries.ValidateLicense;
+using ERPEZ.TenantManagement.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +20,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers;
 public class LicensesController(ISender mediator) : ControllerBase
 {
     [HttpPost("generate")]
+    [HasPermission(PlatformPermissions.licensesManage)]
     [ProducesResponseType(typeof(ApiResponse<LicenseKeyDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GenerateLicense([FromBody] GenerateLicenseKeyCommand command)
     {
@@ -26,6 +29,7 @@ public class LicensesController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(PlatformPermissions.licensesManage)]
     [ProducesResponseType(typeof(PaginatedApiResponse<LicenseKeyDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLicenses([FromQuery] GetLicenseKeysQuery query)
     {
@@ -34,6 +38,7 @@ public class LicensesController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("tenant/{tenantId}")]
+    [HasPermission(TenantPermissions.licensesView)]
     [ProducesResponseType(typeof(ApiResponse<LicenseKeyDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTenantLicense(Guid tenantId, [FromQuery] string? currentDomain)
     {
@@ -42,6 +47,7 @@ public class LicensesController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("activate")]
+    [HasPermission(TenantPermissions.licensesManage)]
     [ProducesResponseType(typeof(ApiResponse<LicenseKeyDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ActivateLicense([FromBody] ActivateLicenseCommand command)
     {
@@ -50,6 +56,7 @@ public class LicensesController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("validate")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<LicenseValidationResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ValidateLicense([FromBody] ValidateLicenseQuery query)
     {
@@ -58,6 +65,7 @@ public class LicensesController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("{id}/revoke")]
+    [HasPermission(PlatformPermissions.licensesManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RevokeLicense(Guid id, [FromQuery] string? reason)
     {

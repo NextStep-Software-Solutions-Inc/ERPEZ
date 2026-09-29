@@ -168,6 +168,26 @@ public class WebhookInboxService(
 
         switch (eventType)
         {
+            case "user.created":
+                await HandleUserCreatedAsync(dataElem, record.ProviderEventId, ct);
+                break;
+
+            case "user.updated":
+                await HandleUserUpdatedAsync(dataElem, record.ProviderEventId, ct);
+                break;
+
+            case "user.deleted":
+                await HandleUserDeletedAsync(dataElem, record.ProviderEventId, ct);
+                break;
+
+            case "invitation.accepted":
+                await HandleInvitationAcceptedAsync(dataElem, record.ProviderEventId, ct);
+                break;
+
+            case "invitation.revoked":
+                await HandleInvitationRevokedAsync(dataElem, record.ProviderEventId, ct);
+                break;
+
             case "organization.deleted":
                 await HandleOrganizationDeletedAsync(dataElem, record.ProviderEventId, ct);
                 break;
@@ -337,6 +357,264 @@ public class WebhookInboxService(
 
             await dbContext.SaveChangesAsync(ct);
             logger.LogInformation("Marked member {UserId} inactive in tenant {TenantId} due to organizationMembership.deleted", externalUserId, tenant.Id);
+        }
+    }
+
+    private async Task HandleUserCreatedAsync(JsonElement data, string eventId, CancellationToken ct)
+    {
+        var externalUserId = data.TryGetProperty("id", out var idElem) ? idElem.GetString() : null;
+        if (string.IsNullOrWhiteSpace(externalUserId)) return;
+
+        var firstName = data.TryGetProperty("first_name", out var fElem) ? fElem.GetString() : null;
+        var lastName = data.TryGetProperty("last_name", out var lElem) ? lElem.GetString() : null;
+
+        var email = string.Empty;
+        var primaryEmailId = data.TryGetProperty("primary_email_address_id", out var peElem) ? peElem.GetString() : null;
+        if (data.TryGetProperty("email_addresses", out var emailsElem) && emailsElem.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var emailItem in emailsElem.EnumerateArray())
+            {
+                var id = emailItem.TryGetProperty("id", out var iElem) ? iElem.GetString() : null;
+                var address = emailItem.TryGetProperty("email_address", out var aElem) ? aElem.GetString() : null;
+                if (!string.IsNullOrWhiteSpace(address))
+                {
+                    if (id == primaryEmailId || string.IsNullOrWhiteSpace(email))
+                    {
+                        email = address;
+                    }
+                }
+            }
+        }
+
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+
+        if (data.TryGetProperty("public_metadata", out var metaElem) && metaElem.ValueKind == JsonValueKind.Object)
+        {
+            if (metaElem.TryGetProperty("tenantId", out var tenantElem) &&
+                Guid.TryParse(tenantElem.GetString(), out var tenantId))
+            {
+                var tenant = await dbContext.Tenants!.FirstOrDefaultAsync(t => t.Id == tenantId, ct);
+                if (tenant != null)
+                {
+                    var member = await dbContext.TenantMembers!
+                        .Include(m => m.RoleAssignments)
+                        .FirstOrDefaultAsync(tm => tm.TenantId == tenantId &&
+                                                   !tm.IsDeleted &&
+                                                   (tm.ExternalIdentityId == externalUserId ||
+                                                    (!string.IsNullOrWhiteSpace(normalizedEmail) && tm.Email.ToLower() == normalizedEmail)), ct);
+
+                    var roleIdsToAssign = new List<Guid>();
+                    if (metaElem.TryGetProperty("roleIds", out var roleIdsElem) && roleIdsElem.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var rIdElem in roleIdsElem.EnumerateArray())
+                        {
+                            if (Guid.TryParse(rIdElem.GetString(), out var rGuid))
+                            {
+                                roleIdsToAssign.Add(rGuid);
+                            }
+                        }
+                    }
+
+                    if (member == null)
+                    {
+                        member = new TenantMember
+                        {
+                            TenantId = tenantId,
+                            Provider = IdentityProvider.Clerk,
+                            ExternalIdentityId = externalUserId,
+                            UserId = externalUserId,
+                            Email = normalizedEmail,
+                            FirstName = !string.IsNullOrWhiteSpace(firstName) ? firstName : (normalizedEmail.Split('@').FirstOrDefault() ?? "User"),
+                            LastName = lastName ?? string.Empty,
+                            Status = Status.Active,
+                            LastReconciledAtUtc = DateTime.UtcNow,
+                            ProjectionVersion = 1,
+                            ConcurrencyStamp = Guid.NewGuid()
+                        };
+
+                        if (roleIdsToAssign.Count == 0)
+                        {
+                            var defaultRole = await dbContext.Roles!
+                                .FirstOrDefaultAsync(r => r.NormalizedName == "TENANT MEMBER", ct);
+                            if (defaultRole != null)
+                            {
+                                roleIdsToAssign.Add(defaultRole.Id);
+                            }
+                        }
+
+                        foreach (var roleId in roleIdsToAssign.Distinct())
+                        {
+                            member.RoleAssignments.Add(new TenantMemberRoleAssignment
+                            {
+                                RoleId = roleId
+                            });
+                        }
+
+                        dbContext.TenantMembers!.Add(member);
+                        logger.LogInformation("Created new TenantMember {Email} for tenant {TenantId} from Clerk user.created webhook",
+                            normalizedEmail, tenantId);
+                    }
+                    else
+                    {
+                        member.ExternalIdentityId = externalUserId;
+                        member.UserId = externalUserId;
+                        if (!string.IsNullOrWhiteSpace(firstName)) member.FirstName = firstName;
+                        if (!string.IsNullOrWhiteSpace(lastName)) member.LastName = lastName;
+                        if (!string.IsNullOrWhiteSpace(normalizedEmail)) member.Email = normalizedEmail;
+                        member.Status = Status.Active;
+                        member.InvitationTokenHash = null;
+                        member.InvitationExpiresAtUtc = null;
+                        member.LastReconciledAtUtc = DateTime.UtcNow;
+                        member.ProjectionVersion += 1;
+                        member.ConcurrencyStamp = Guid.NewGuid();
+
+                        foreach (var roleId in roleIdsToAssign.Distinct())
+                        {
+                            if (!member.RoleAssignments.Any(ra => ra.RoleId == roleId))
+                            {
+                                member.RoleAssignments.Add(new TenantMemberRoleAssignment
+                                {
+                                    TenantMemberId = member.Id,
+                                    RoleId = roleId
+                                });
+                            }
+                        }
+
+                        logger.LogInformation("Activated existing TenantMember {Email} for tenant {TenantId} from Clerk user.created webhook",
+                            member.Email, tenantId);
+                    }
+
+                    tenant.LastSuccessfulWebhookProcessingAtUtc = DateTime.UtcNow;
+                    tenant.LastProcessedEventId = eventId;
+                    await dbContext.SaveChangesAsync(ct);
+                }
+                else
+                {
+                    logger.LogWarning("Tenant {TenantId} not found for Clerk user.created webhook", tenantId);
+                }
+            }
+            else if (metaElem.TryGetProperty("platformRole", out var pRoleElem))
+            {
+                var platformRole = pRoleElem.GetString();
+                logger.LogInformation("Platform user {ExternalUserId} ({Email}) created with role {PlatformRole} via Clerk user.created webhook",
+                    externalUserId, normalizedEmail, platformRole);
+            }
+        }
+    }
+
+    private async Task HandleUserUpdatedAsync(JsonElement data, string eventId, CancellationToken ct)
+    {
+        var externalUserId = data.TryGetProperty("id", out var idElem) ? idElem.GetString() : null;
+        if (string.IsNullOrWhiteSpace(externalUserId)) return;
+
+        var firstName = data.TryGetProperty("first_name", out var fElem) ? fElem.GetString() : null;
+        var lastName = data.TryGetProperty("last_name", out var lElem) ? lElem.GetString() : null;
+
+        var members = await dbContext.TenantMembers!
+            .Where(m => m.ExternalIdentityId == externalUserId && !m.IsDeleted)
+            .ToListAsync(ct);
+
+        foreach (var member in members)
+        {
+            if (!string.IsNullOrWhiteSpace(firstName)) member.FirstName = firstName;
+            if (!string.IsNullOrWhiteSpace(lastName)) member.LastName = lastName;
+            member.LastReconciledAtUtc = DateTime.UtcNow;
+            member.ProjectionVersion += 1;
+        }
+
+        if (members.Count > 0)
+        {
+            await dbContext.SaveChangesAsync(ct);
+            logger.LogInformation("Updated {Count} tenant member records for Clerk user {UserId}", members.Count, externalUserId);
+        }
+    }
+
+    private async Task HandleUserDeletedAsync(JsonElement data, string eventId, CancellationToken ct)
+    {
+        var externalUserId = data.TryGetProperty("id", out var idElem) ? idElem.GetString() : null;
+        if (string.IsNullOrWhiteSpace(externalUserId)) return;
+
+        var members = await dbContext.TenantMembers!
+            .Where(m => m.ExternalIdentityId == externalUserId && !m.IsDeleted)
+            .ToListAsync(ct);
+
+        foreach (var member in members)
+        {
+            member.Status = Status.Inactive;
+            member.LastReconciledAtUtc = DateTime.UtcNow;
+            member.ProjectionVersion += 1;
+        }
+
+        if (members.Count > 0)
+        {
+            await dbContext.SaveChangesAsync(ct);
+            logger.LogInformation("Marked {Count} tenant member records as Inactive for deleted Clerk user {UserId}", members.Count, externalUserId);
+        }
+    }
+
+    private async Task HandleInvitationAcceptedAsync(JsonElement data, string eventId, CancellationToken ct)
+    {
+        var email = data.TryGetProperty("email_address", out var emElem) ? emElem.GetString() : null;
+        var invitationId = data.TryGetProperty("id", out var idElem) ? idElem.GetString() : null;
+
+        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(invitationId)) return;
+
+        var normalizedEmail = email?.Trim().ToLowerInvariant();
+
+        Guid? tenantId = null;
+        if (data.TryGetProperty("public_metadata", out var metaElem) &&
+            metaElem.TryGetProperty("tenantId", out var tElem) &&
+            Guid.TryParse(tElem.GetString(), out var parsedTenantId))
+        {
+            tenantId = parsedTenantId;
+        }
+
+        var query = dbContext.TenantMembers!.Where(m => !m.IsDeleted && m.Status == Status.Pending);
+        if (tenantId.HasValue)
+        {
+            query = query.Where(m => m.TenantId == tenantId.Value);
+        }
+
+        var member = await query.FirstOrDefaultAsync(m =>
+            (!string.IsNullOrWhiteSpace(invitationId) && m.ExternalIdentityId == invitationId) ||
+            (!string.IsNullOrWhiteSpace(normalizedEmail) && m.Email.ToLower() == normalizedEmail), ct);
+
+        if (member != null)
+        {
+            member.Status = Status.Active;
+            member.InvitationTokenHash = null;
+            member.InvitationExpiresAtUtc = null;
+            member.LastReconciledAtUtc = DateTime.UtcNow;
+            member.ProjectionVersion += 1;
+            member.ConcurrencyStamp = Guid.NewGuid();
+            await dbContext.SaveChangesAsync(ct);
+            logger.LogInformation("Activated member {Email} for tenant {TenantId} via invitation.accepted webhook",
+                member.Email, member.TenantId);
+        }
+    }
+
+    private async Task HandleInvitationRevokedAsync(JsonElement data, string eventId, CancellationToken ct)
+    {
+        var email = data.TryGetProperty("email_address", out var emElem) ? emElem.GetString() : null;
+        var invitationId = data.TryGetProperty("id", out var idElem) ? idElem.GetString() : null;
+
+        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(invitationId)) return;
+
+        var normalizedEmail = email?.Trim().ToLowerInvariant();
+
+        var member = await dbContext.TenantMembers!
+            .FirstOrDefaultAsync(m => !m.IsDeleted && m.Status == Status.Pending &&
+                ((!string.IsNullOrWhiteSpace(invitationId) && m.ExternalIdentityId == invitationId) ||
+                 (!string.IsNullOrWhiteSpace(normalizedEmail) && m.Email.ToLower() == normalizedEmail)), ct);
+
+        if (member != null)
+        {
+            member.Status = Status.Cancelled;
+            member.InvitationTokenHash = null;
+            member.InvitationExpiresAtUtc = null;
+            member.ConcurrencyStamp = Guid.NewGuid();
+            await dbContext.SaveChangesAsync(ct);
+            logger.LogInformation("Cancelled pending member invitation {Email} via invitation.revoked webhook", member.Email);
         }
     }
 }

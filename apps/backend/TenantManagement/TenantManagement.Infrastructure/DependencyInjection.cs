@@ -62,6 +62,7 @@ public static class DependencyInjection
         services.AddSingleton<ERPEZ.Shared.Security.IExternalIdentityNormalizerResolver, ERPEZ.Shared.Security.ExternalIdentityNormalizerResolver>();
         services.AddScoped<IExternalTenantResolver, ExternalTenantResolver>();
         services.AddHttpClient<IClerkMembershipReader, ClerkMembershipReader>();
+        services.AddHttpClient<IClerkInvitationService, ClerkInvitationService>();
         services.AddScoped<IWebhookInboxService, WebhookInboxService>();
         services.AddSingleton<ISecretEncryptionService, AesGcmSecretEncryptionService>();
         services.AddScoped<ITenantDatabaseProvisioner, TenantDatabaseProvisioner>();
@@ -87,7 +88,6 @@ public static class DependencyInjection
         services.AddScoped<ITenantSubscriptionRepository, TenantSubscriptionRepository>();
         services.AddScoped<ITenantMemberRepository, TenantMemberRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
-        services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<ILicenseKeyRepository, LicenseKeyRepository>();
         services.AddScoped<ITenantAuditRepository, TenantAuditRepository>();
         services.AddScoped<ITenantAuditService, TenantAuditService>();
@@ -129,7 +129,6 @@ public static class DependencyInjection
                 seeder.SeedAsync().GetAwaiter().GetResult();
 
             // Run RBAC Seeders & Migration
-            PermissionCatalogSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
             RoleSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
             TenantMemberMigrationSeeder.MigrateLegacyRolesAsync(dbContext).GetAwaiter().GetResult();
             DevTenantAndMemberSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();

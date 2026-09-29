@@ -13,6 +13,8 @@ export type RoleSummary = {
   isSystemRole: boolean;
   isAssignableToTenant: boolean;
   tenantId?: string;
+  permissionKeys?: string[];
+  permissionDisplayNames?: string[];
 };
 
 export const getAssignableRolesRequest: QueryBlueprintFromTemplate<

@@ -22,8 +22,9 @@ public class Role : BaseEntity
     public bool IsSystemRole { get; set; }
 
     /// <summary>
-    /// Domain scope classification (TenantManagement, Operational, ExternalPortal).
+    /// Domain scope classification (Platform or Tenant).
     /// Defaults to Unknown (fail-closed) as a safety net; application code must explicitly define Scope.
+    /// Converted to string in database persistence.
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public RoleScope Scope { get; set; } = RoleScope.Unknown;
@@ -32,15 +33,20 @@ public class Role : BaseEntity
     public Guid? TenantId { get; set; }
 
     /// <summary>
-    /// Deny-by-default assignability. Only explicitly approved operational system roles
+    /// Deny-by-default assignability. Only explicitly approved system roles
     /// and validated tenant-custom roles have this flag set to true.
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsAssignableToTenant { get; set; } = false;
 
+    /// <summary>
+    /// For tenant-custom roles: store the list of granted atomic permission keys.
+    /// System roles resolve their permissions directly from the in-code registry.
+    /// </summary>
+    public virtual List<string> Permissions { get; set; } = [];
+
     // Navigation properties
     public virtual Tenant? Tenant { get; set; }
-    public virtual List<RolePermission> RolePermissions { get; set; } = [];
     public virtual List<TenantMemberRoleAssignment> MemberAssignments { get; set; } = [];
 
     /// <summary>

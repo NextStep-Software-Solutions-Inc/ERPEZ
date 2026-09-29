@@ -17,8 +17,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<SubscriptionPlanPrice>? SubscriptionPlanPrices { get; set; }
     public DbSet<SubscriptionPlanModule>? SubscriptionPlanModules { get; set; }
     public DbSet<Role>? Roles { get; set; }
-    public DbSet<Permission>? Permissions { get; set; }
-    public DbSet<RolePermission>? RolePermissions { get; set; }
     public DbSet<TenantMemberRoleAssignment>? TenantMemberRoleAssignments { get; set; }
     public DbSet<LicenseKey>? LicenseKeys { get; set; }
     public DbSet<TenantAuditLog>? TenantAuditLogs { get; set; }
@@ -82,6 +80,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasConversion<string>();
 
         modelBuilder.Entity<Tenant>()
+            .Property(t => t.ProvisioningState)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Tenant>()
             .HasIndex(t => new { t.AuthProvider, t.ExternalOrgId })
             .IsUnique()
             .HasFilter("\"ExternalOrgId\" IS NOT NULL");
@@ -126,6 +128,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<TenantSubscription>()
             .HasIndex(ts => new { ts.TenantId, ts.StartDate, ts.EndDate })
             .IsUnique();
+
+        modelBuilder.Entity<TenantSubscription>()
+            .Property(ts => ts.Plan)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TenantSubscription>()
+            .Property(ts => ts.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TenantSubscription>()
+            .Property(ts => ts.BillingCycle)
+            .HasConversion<string>();
 
         modelBuilder.Entity<TenantSubscription>()
             .HasOne(ts => ts.SubscriptionPlanPrice)
@@ -217,6 +231,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // Role
         modelBuilder.Entity<Role>()
             .Property(r => r.Scope)
+            .HasConversion<string>()
             .HasDefaultValue(RoleScope.Unknown);
 
         modelBuilder.Entity<Role>()
@@ -234,31 +249,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Role>()
-            .HasMany(r => r.RolePermissions)
-            .WithOne(rp => rp.Role)
-            .HasForeignKey(rp => rp.RoleId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Role>()
             .HasMany(r => r.MemberAssignments)
             .WithOne(ma => ma.Role)
             .HasForeignKey(ma => ma.RoleId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // Permission
-        modelBuilder.Entity<Permission>()
-            .HasIndex(p => p.Key)
-            .IsUnique();
-
-        modelBuilder.Entity<Permission>()
-            .HasMany(p => p.RolePermissions)
-            .WithOne(rp => rp.Permission)
-            .HasForeignKey(rp => rp.PermissionId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // RolePermission composite key
-        modelBuilder.Entity<RolePermission>()
-            .HasKey(rp => new { rp.RoleId, rp.PermissionId });
 
         // TenantMemberRoleAssignment composite key
         modelBuilder.Entity<TenantMemberRoleAssignment>()

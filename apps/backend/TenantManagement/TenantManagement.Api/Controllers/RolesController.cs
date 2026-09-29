@@ -6,6 +6,7 @@ using ERPEZ.TenantManagement.Application.Features.Roles.Commands.DeleteTenantRol
 using ERPEZ.TenantManagement.Application.Features.Roles.Commands.UpdateTenantRole;
 using ERPEZ.TenantManagement.Application.Features.Roles.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Roles.Queries.GetAssignableRolesQuery;
+using ERPEZ.TenantManagement.Application.Features.Roles.Queries.GetTenantPermissionsQuery;
 using MediatR;
 using ERPEZ.TenantManagement.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -19,6 +20,17 @@ namespace ERPEZ.TenantManagement.Api.Controllers;
 public class RolesController(ISender mediator) : ControllerBase
 {
     /// <summary>
+    /// Returns the complete catalog of assignable tenant permissions grouped by functional category.
+    /// </summary>
+    [HttpGet("permissions")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<PermissionCategoryDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPermissions()
+    {
+        var result = await mediator.Send(new GetTenantPermissionsQuery());
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Consumes assignable roles for the current tenant to populate member assignment controls.
     /// Protected by Admin.membersManage. Derives tenant strictly from server context.
     /// Internal filter ensures only TenantManagement scoped roles are returned.
@@ -28,7 +40,7 @@ public class RolesController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<RoleSummaryDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAssignableRoles()
     {
-        var result = await mediator.Send(new GetAssignableRolesQuery(RoleScope.TenantManagement));
+        var result = await mediator.Send(new GetAssignableRolesQuery(RoleScope.Tenant));
         return Ok(result);
     }
 

@@ -1,6 +1,8 @@
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Enums;
+using ERPEZ.Shared.Interfaces;
 using ERPEZ.TenantManagement.Application.Common.Interfaces;
+using ERPEZ.TenantManagement.Domain.Constants;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -831,4 +833,88 @@ public class AuthController(
             return Unauthorized(ApiResponse<object>.Fail("Token refresh failed."));
         }
     }
+
+    /// <summary>
+    /// Returns the resolved set of permissions for the authenticated caller under the current tenant context.
+    /// Platform permissions are included if the caller holds a Platform role.
+    /// </summary>
+    [Authorize]
+    [HttpGet("me/permissions")]
+    public async Task<IActionResult> GetMyPermissions(
+        [FromServices] IUserAuthorizationService authService,
+        [FromServices] ITenantContextService tenantContext,
+        [FromServices] ICurrentUserService currentUserService,
+        CancellationToken cancellationToken)
+    {
+        var externalId = currentUserService.ExternalIdentityId ?? currentUserService.UserId;
+        if (string.IsNullOrWhiteSpace(externalId))
+        {
+            return Unauthorized(ApiResponse<object>.Fail("Authenticated user identity is required."));
+        }
+
+        var permissions = await authService.GetPermissionsAsync(externalId, tenantContext.TenantId, cancellationToken);
+        return Ok(ApiResponse<IReadOnlySet<string>>.Success(permissions, "Permissions retrieved successfully."));
+    }
+
+    /// <summary>
+    /// Invites an administrator or operator to the platform using Clerk user invitations.
+    /// Does not use Clerk organizations.
+    /// Attaches platform role metadata so it is automatically granted upon signup.
+    /// </summary>
+    [HttpPost("invite-platform-user")]
+    [Authorize(Policy = PlatformPermissions.usersManage)]
+    public async Task<IActionResult> InvitePlatformUser(
+        [FromBody] InvitePlatformUserRequest request,
+        [FromServices] IClerkInvitationService clerkInvitationService,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            return BadRequest(ApiResponse<object>.Fail("Email is required."));
+        }
+
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var platformRole = request.PlatformRole;
+        if (string.IsNullOrWhiteSpace(platformRole))
+        {
+            platformRole = "Platform Administrator";
+        }
+
+        var metadata = new Dictionary<string, object>
+        {
+            ["platformRole"] = platformRole,
+            ["isSuperAdmin"] = platformRole == "Platform Administrator",
+            ["invitationType"] = "platform_user"
+        };
+
+        if (!string.IsNullOrWhiteSpace(request.FirstName))
+        {
+            metadata["firstName"] = request.FirstName.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.LastName))
+        {
+            metadata["lastName"] = request.LastName.Trim();
+        }
+
+        var result = await clerkInvitationService.CreateInvitationAsync(
+            normalizedEmail,
+            metadata,
+            notify: true,
+            ignoreExisting: true,
+            ct: ct);
+
+        if (result == null)
+        {
+            return BadRequest(ApiResponse<object>.Fail("Failed to generate Clerk platform invitation."));
+        }
+
+        return Ok(ApiResponse<ClerkInvitationResult>.Success(result, "Platform user invited successfully via Clerk."));
+    }
 }
+
+public record InvitePlatformUserRequest(
+    string Email,
+    string PlatformRole,
+    string? FirstName = null,
+    string? LastName = null);

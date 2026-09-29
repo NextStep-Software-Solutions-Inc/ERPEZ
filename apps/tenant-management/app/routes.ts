@@ -27,6 +27,7 @@ export default [
           route("license-management", "routes/protected/license-management.tsx"),
           route("package-download", "routes/protected/package-download.tsx"),
           route("tenant-member", "routes/protected/tenant-member.tsx"),
+          route("roles", "routes/protected/roles.tsx"),
         ]),
       route("register-tenant", "routes/protected/register-tenant.tsx"),
       route("plan", "routes/protected/plan.tsx"),

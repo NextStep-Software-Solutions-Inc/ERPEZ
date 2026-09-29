@@ -1,6 +1,7 @@
 using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.TenantManagement.Domain.Constants;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -21,7 +22,7 @@ public class RoleAssignmentValidator(
         string actorExternalIdentityId,
         Guid? targetMemberId,
         IEnumerable<Guid> requestedRoleIds,
-        RoleScope expectedScope = RoleScope.TenantManagement,
+        RoleScope expectedScope = RoleScope.Tenant,
         CancellationToken cancellationToken = default)
     {
         var roleIdList = requestedRoleIds.Distinct().ToList();
@@ -29,7 +30,6 @@ public class RoleAssignmentValidator(
 
         // 1. Load roles and verify existence
         var roles = await dbContext.Roles!
-            .Include(r => r.RolePermissions).ThenInclude(rp => rp.Permission)
             .Where(r => roleIdList.Contains(r.Id))
             .ToListAsync(cancellationToken);
 
@@ -70,24 +70,18 @@ public class RoleAssignmentValidator(
 
         switch (expectedScope)
         {
-            case RoleScope.TenantManagement:
-                if (!actorPermissions.Contains(Permissions.Admin.membersManage))
+            case RoleScope.Tenant:
+                if (!actorPermissions.Contains(TenantPermissions.membersManage) &&
+                    !actorPermissions.Contains(Permissions.Admin.membersManage))
                 {
-                    throw new ForbiddenException("You do not have permission to manage tenant governance roles.");
+                    throw new ForbiddenException("You do not have permission to manage tenant members and roles.");
                 }
                 break;
 
-            case RoleScope.Operational:
-                if (!actorPermissions.Contains(Permissions.Admin.operationalRolesManage))
+            case RoleScope.Platform:
+                if (!actorPermissions.Contains(PlatformPermissions.usersManage))
                 {
-                    throw new ForbiddenException("You do not have permission to manage ERP operational roles.");
-                }
-                break;
-
-            case RoleScope.ExternalPortal:
-                if (!actorPermissions.Contains(Permissions.Procurement.supplierManage))
-                {
-                    throw new ForbiddenException("You do not have permission to manage supplier portal roles.");
+                    throw new ForbiddenException("You do not have permission to manage platform roles.");
                 }
                 break;
 

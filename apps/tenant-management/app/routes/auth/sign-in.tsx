@@ -1,4 +1,4 @@
-import { ArrowLeft, KeyRound, Building, Sparkles, UserCheck } from "lucide-react";
+import { ArrowLeft, KeyRound } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { Button } from "~/components/ui/button";
@@ -13,7 +13,7 @@ export function meta() {
 }
 
 export default function SignInPage() {
-  const { isAuthenticated, isSuperAdmin, login, switchDevUser, activeDevUser, isClerkLive } = useClerkAuth();
+  const { isAuthenticated, isSuperAdmin, login, isClerkLive } = useClerkAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,15 +25,6 @@ export default function SignInPage() {
       }
     }
   }, [isAuthenticated, isSuperAdmin, navigate]);
-
-  const handleDevLogin = async (username: string) => {
-    await switchDevUser(username);
-    if (username === "dev_superadmin") {
-      navigate("/super-admin/overview");
-    } else {
-      navigate("/overview");
-    }
-  };
 
   return (
     <div className="flex h-screen w-full">
@@ -73,83 +64,6 @@ export default function SignInPage() {
               >
                 Sign In with Clerk
               </Button>
-            )}
-
-            {import.meta.env.DEV && (
-              <div className="pt-6 border-t border-gray-200 dark:border-gray-800 space-y-3">
-                <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  <span>Development Personas</span>
-                  <span className="text-[10px] lowercase text-blue-500">1-click test</span>
-                </div>
-
-                <div className="grid gap-2">
-                  <button
-                    onClick={() => handleDevLogin("dev_admin")}
-                    className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all ${
-                      activeDevUser === "dev_admin"
-                        ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200"
-                        : "border-gray-200 dark:border-gray-800 hover:bg-white dark:hover:bg-slate-800/80"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-1.5 rounded-md bg-orange-100 dark:bg-orange-950 text-orange-600">
-                        <Building className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold">Tenant Administrator</div>
-                        <div className="text-[11px] text-muted-foreground">admin@erpez.dev</div>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 dark:bg-orange-950/60 px-2 py-0.5 rounded-full">
-                      Admin
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => handleDevLogin("dev_superadmin")}
-                    className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all ${
-                      activeDevUser === "dev_superadmin"
-                        ? "border-rose-500 bg-rose-50/50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200"
-                        : "border-gray-200 dark:border-gray-800 hover:bg-white dark:hover:bg-slate-800/80"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-1.5 rounded-md bg-rose-100 dark:bg-rose-950 text-rose-600">
-                        <Sparkles className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold">Super Administrator</div>
-                        <div className="text-[11px] text-muted-foreground">superadmin@erpez.dev</div>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-full">
-                      Global Bypass
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => handleDevLogin("dev_planner")}
-                    className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all ${
-                      activeDevUser === "dev_planner"
-                        ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200"
-                        : "border-gray-200 dark:border-gray-800 hover:bg-white dark:hover:bg-slate-800/80"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-950 text-blue-600">
-                        <UserCheck className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold">Planning Officer</div>
-                        <div className="text-[11px] text-muted-foreground">planner@erpez.dev</div>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full">
-                      Member
-                    </span>
-                  </button>
-                </div>
-              </div>
             )}
           </div>
         </div>
