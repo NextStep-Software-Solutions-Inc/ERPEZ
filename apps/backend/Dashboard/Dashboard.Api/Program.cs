@@ -21,10 +21,6 @@ builder
 
 await builder.AddInfrastructureServices();
 ERPEZ.TenantManagement.Infrastructure.DependencyInjection.AddInfrastructureServices(builder);
-builder.Services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssembly(typeof(ERPEZ.TenantManagement.Application.Features.Roles.Commands.AssignOperationalRoles.AssignOperationalRolesCommand).Assembly);
-});
 
 var app = builder.Build();
 
