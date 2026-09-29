@@ -1,5 +1,6 @@
 import type { Route } from "./+types/license-management";
 import LicenseManagementPage from "~/pages/protected/LicenseManagement";
+import RoutePermissionGuard from "~/components/layout/RoutePermissionGuard";
 
 export function meta({ }: Route.MetaArgs) {
     return [
@@ -9,5 +10,9 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 export default function LicenseManagement() {
-    return <LicenseManagementPage />;
+    return (
+        <RoutePermissionGuard permission="tenant.licenses.view">
+            <LicenseManagementPage />
+        </RoutePermissionGuard>
+    );
 }

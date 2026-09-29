@@ -2,8 +2,14 @@ import { CheckCircle, Clock } from "lucide-react"
 import { Card, CardContent } from "~/components/ui/card"
 import { buildActivities } from "~/data/overview/activityActions"
 
-const activities = buildActivities()
-function OverviewRecentActivity() {
+import { useTenant } from "~/providers/TenantProvider"
+import { planLabel } from "~/lib/tenant"
+
+function OverviewRecentActivity({ planName: planProp }: { planName?: string }) {
+    const { tenant } = useTenant();
+    const planName = planProp || planLabel(tenant?.tenantSubscription?.plan);
+    const activities = buildActivities(planName);
+
     return (
         <div className="pt-8">
             <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>

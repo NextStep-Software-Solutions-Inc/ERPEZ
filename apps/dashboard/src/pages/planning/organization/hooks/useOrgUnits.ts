@@ -218,9 +218,9 @@ export function useDeleteOrgUnit() {
     mutationFn: (id: string) => deleteOrgUnit(id),
     onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: ['orgUnits'] })
-      qc.invalidateQueries({ queryKey: ['orgUnit'] })
+      qc.removeQueries({ queryKey: ['orgUnit'] })
       if (id) {
-        qc.invalidateQueries({ queryKey: ['orgUnit', id] })
+        qc.removeQueries({ queryKey: ['orgUnit', id] })
       }
       qc.invalidateQueries({
         predicate: (q) => typeof q.queryKey[0] === 'string' && q.queryKey[0].startsWith('/offices'),
@@ -266,11 +266,11 @@ export function useVacantPositions() {
   })
 }
 
-export function usePosition(id?: string) {
+export function usePosition(id?: string, enabled = true) {
   return useQuery<Position | null, Error>({
     queryKey: ['position', id],
     queryFn: () => (id ? fetchPositionById(id) : Promise.resolve(null)),
-    enabled: !!id,
+    enabled: !!id && enabled,
   })
 }
 
@@ -317,9 +317,9 @@ export function useDeletePosition() {
     mutationFn: (id: string) => deletePosition(id),
     onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: ['positions'] })
-      qc.invalidateQueries({ queryKey: ['position'] })
+      qc.removeQueries({ queryKey: ['position'] })
       if (id) {
-        qc.invalidateQueries({ queryKey: ['position', id] })
+        qc.removeQueries({ queryKey: ['position', id] })
       }
       qc.invalidateQueries({ queryKey: ['positionsStatistics'] })
       qc.invalidateQueries({ queryKey: ['orgUnits'] })
@@ -513,9 +513,9 @@ export function useDeletePerson() {
     onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: ['personnel'] })
       qc.invalidateQueries({ queryKey: ['personnelPositions'] })
-      qc.invalidateQueries({ queryKey: ['personnelPosition'] })
+      qc.removeQueries({ queryKey: ['personnelPosition'] })
       if (id) {
-        qc.invalidateQueries({ queryKey: ['personnelPosition', id] })
+        qc.removeQueries({ queryKey: ['personnelPosition', id] })
       }
       qc.invalidateQueries({ queryKey: ['positions'] })
       qc.invalidateQueries({ queryKey: ['positionsStatistics'] })

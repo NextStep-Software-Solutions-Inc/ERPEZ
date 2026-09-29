@@ -1,6 +1,7 @@
 using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.TenantManagement.Domain.Constants;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -21,6 +22,7 @@ public class RoleAssignmentValidator(
         string actorExternalIdentityId,
         Guid? targetMemberId,
         IEnumerable<Guid> requestedRoleIds,
+        RoleScope expectedScope = RoleScope.Tenant,
         CancellationToken cancellationToken = default)
     {
         var roleIdList = requestedRoleIds.Distinct().ToList();
@@ -28,7 +30,6 @@ public class RoleAssignmentValidator(
 
         // 1. Load roles and verify existence
         var roles = await dbContext.Roles!
-            .Include(r => r.RolePermissions).ThenInclude(rp => rp.Permission)
             .Where(r => roleIdList.Contains(r.Id))
             .ToListAsync(cancellationToken);
 
@@ -37,7 +38,7 @@ public class RoleAssignmentValidator(
             throw new ValidationException("One or more specified roles do not exist.");
         }
 
-        // 2. Enforce universal assignability predicate on each role
+        // 2. Enforce universal assignability, tenancy, and scope predicate on each role
         foreach (var r in roles)
         {
             if (r.IsDeleted)
@@ -50,54 +51,57 @@ public class RoleAssignmentValidator(
                 throw new ValidationException($"Role '{r.Name}' is not assignable to tenant members.");
             }
 
+            // Cross-tenant boundary: custom roles of another tenant are strictly forbidden
             if (r.TenantId.HasValue && r.TenantId.Value != tenantId)
             {
                 throw new ForbiddenException($"Cross-tenant role assignment forbidden for role '{r.Name}'.");
             }
+
+            // Scope Guard: Fails closed on Unknown (0) or mismatched scopes
+            if (r.Scope == RoleScope.Unknown || r.Scope != expectedScope)
+            {
+                throw new ForbiddenException(
+                    $"Domain isolation violation: Cannot assign role '{r.Name}' (Scope: {r.Scope}) via an endpoint expecting Scope: {expectedScope}.");
+            }
         }
 
-        // 3. Determine if actor is an active Tenant Administrator in THIS tenant
-        var isTenantAdmin = await dbContext.TenantMembers!
-            .AnyAsync(tm => tm.TenantId == tenantId &&
-                            tm.ExternalIdentityId == actorExternalIdentityId &&
-                            tm.Status == Status.Active &&
-                            !tm.IsDeleted &&
-                            tm.RoleAssignments.Any(ra => ra.Role.NormalizedName == "TENANT ADMINISTRATOR"),
-                      cancellationToken);
+        // 3. Verify actor assignment authority based on expected scope
+        var actorPermissions = await authService.GetPermissionsAsync(actorExternalIdentityId, tenantId, cancellationToken);
 
-        // 4. If not Tenant Administrator, enforce explicit membersManage check and permission delegation boundaries
-        if (!isTenantAdmin)
+        switch (expectedScope)
         {
-            var actorPermissions = await authService.GetPermissionsAsync(actorExternalIdentityId, tenantId, cancellationToken);
+            case RoleScope.Tenant:
+                if (!actorPermissions.Contains(TenantPermissions.membersManage) &&
+                    !actorPermissions.Contains(Permissions.Admin.membersManage))
+                {
+                    throw new ForbiddenException("You do not have permission to manage tenant members and roles.");
+                }
+                break;
 
-            if (!actorPermissions.Contains(Permissions.Admin.membersManage))
-            {
-                throw new ForbiddenException("You do not have permission to manage tenant members.");
-            }
+            case RoleScope.Platform:
+                if (!actorPermissions.Contains(PlatformPermissions.usersManage))
+                {
+                    throw new ForbiddenException("You do not have permission to manage platform roles.");
+                }
+                break;
 
-            var requiredPermissions = roles
-                .SelectMany(r => r.RolePermissions)
-                .Select(rp => rp.Permission.Key)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var missing = requiredPermissions
-                .Except(actorPermissions, StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
-
-            if (missing != null)
-            {
-                throw new ForbiddenException($"Privilege escalation denied: actor lacks permission '{missing}'.");
-            }
+            default:
+                throw new ForbiddenException($"Role scope '{expectedScope}' is not assignable.");
         }
 
-        // 5. Self-lockout check on roles
+        // 4. Target member boundary and self-lockout check
         if (targetMemberId.HasValue)
         {
             var targetMember = await dbContext.TenantMembers!
                 .Include(tm => tm.RoleAssignments).ThenInclude(ra => ra.Role)
-                .FirstOrDefaultAsync(tm => tm.Id == targetMemberId.Value && tm.TenantId == tenantId, cancellationToken);
+                .FirstOrDefaultAsync(tm => tm.Id == targetMemberId.Value && tm.TenantId == tenantId && !tm.IsDeleted, cancellationToken);
 
-            if (targetMember != null && string.Equals(targetMember.ExternalIdentityId, actorExternalIdentityId, StringComparison.OrdinalIgnoreCase))
+            if (targetMember == null)
+            {
+                throw new ValidationException("Target member does not exist or does not belong to this tenant.");
+            }
+
+            if (string.Equals(targetMember.ExternalIdentityId, actorExternalIdentityId, StringComparison.OrdinalIgnoreCase))
             {
                 var hadAdmin = targetMember.RoleAssignments.Any(ra => ra.Role.NormalizedName == "TENANT ADMINISTRATOR");
                 var willRetainAdmin = roles.Any(r => r.NormalizedName == "TENANT ADMINISTRATOR");

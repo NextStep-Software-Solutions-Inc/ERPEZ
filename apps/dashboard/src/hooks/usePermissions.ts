@@ -25,14 +25,14 @@ export function usePermissions() {
       activeDevUser || 'default',
     ],
     queryFn: async () => {
-      if (!isAuthenticated || !token) {
+      if (!isAuthenticated || !token || !tenantId) {
         return []
       }
       const res = await api.get('/auth/me/permissions')
       return res.data?.data || []
     },
     staleTime: 60 * 1000,
-    enabled: typeof window !== 'undefined' && !!isAuthenticated && !!token,
+    enabled: typeof window !== 'undefined' && !!isAuthenticated && !!token && !!tenantId,
   })
 
   const status: PermissionStatus = isLoading
@@ -43,7 +43,7 @@ export function usePermissions() {
         ? 'success'
         : 'idle'
 
-  const isLoaded = status === 'success'
+  const isLoaded = status === 'success' && !!tenantId
 
   // Fail closed: only evaluate if permissions successfully loaded
   const hasPermission = (permission: string): boolean => {

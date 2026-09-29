@@ -19,7 +19,7 @@ public class GetPositionByIdQueryHandler(IUnitOfWork unitOfWork)
         var position = await unitOfWork.PositionRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken);
 
         if (position == null)
-            throw new NotFoundException($"Position with ID '{request.Id}' not found.");
+            return ApiResponse<PositionResponse>.Fail($"Position with ID '{request.Id}' not found.");
 
         var response = new PositionResponse
         {

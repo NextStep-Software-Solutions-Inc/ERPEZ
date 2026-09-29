@@ -16,7 +16,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
             .SetBasePath(Path.GetFullPath(Path.Combine(basePath, "../Dashboard.Api")))
             .AddJsonFile("appsettings.json", optional: true, true)
             .AddJsonFile($"appsettings.{evironment}.json", optional: true, true)
-            .AddUserSecrets(Assembly.Load("Dashboard.Api"))
+            .AddUserSecrets(Assembly.Load("Dashboard.Api"), optional: true)
             .Build();
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");

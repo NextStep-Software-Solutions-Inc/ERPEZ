@@ -1,6 +1,8 @@
 using System.Text.Json;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.Shared.Models;
+using ERPEZ.Shared.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 
@@ -17,58 +19,102 @@ public class TenantAccessValidationMiddleware(RequestDelegate next)
         HttpContext context,
         ITenantAccessService accessService,
         ITenantConnectionResolver connectionResolver,
-        ITenantRequestContext requestContext)
+        ITenantRequestContext requestContext,
+        IClientOriginParser originParser)
     {
+        var endpoint = context.GetEndpoint();
+        var isAllowAnonymous = endpoint?.Metadata.GetMetadata<IAllowAnonymous>() != null;
+        var path = context.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
+
+        // Skip tenant validation for purely public/discovery routes and platform-plane routes
+        var isPlatformRoute = path.StartsWith("/api/platform");
+        var isPublicInfrastructureRoute = path.StartsWith("/swagger") ||
+                                          path.StartsWith("/health") ||
+                                          path.StartsWith("/auth/dev");
+
+        if (isAllowAnonymous || isPublicInfrastructureRoute || isPlatformRoute)
+        {
+            await next(context);
+            return;
+        }
+
+        // Formal authorization failure precedence:
+        // 1. Invalid / missing JWT -> 401 Unauthorized
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            var err = ApiResponse<object>.Fail("Authentication credentials missing or invalid.");
+            await context.Response.WriteAsync(JsonSerializer.Serialize(err));
+            return;
+        }
+
+        // 1.1 Identity-scoped control plane endpoints (exempt from candidate tenant requirement)
+        var isIdentityScopedRoute = path.Equals("/api/tenant/context", StringComparison.OrdinalIgnoreCase) ||
+                                    path.Equals("/api/tenant/available", StringComparison.OrdinalIgnoreCase) ||
+                                    path.Equals("/tenants/context", StringComparison.OrdinalIgnoreCase) ||
+                                    path.Equals("/tenants/available", StringComparison.OrdinalIgnoreCase);
+
+        if (isIdentityScopedRoute)
+        {
+            await next(context);
+            return;
+        }
+
+        Guid? candidateTenantId = null;
+        if (context.Items.TryGetValue(TenantResolutionMiddleware.candidateTenantItemKey, out var itemVal) &&
+            itemVal is Guid guidVal)
+        {
+            candidateTenantId = guidVal;
+        }
+
+        // 2. Missing / malformed X-Tenant-Id -> 400 Bad Request
+        if (!candidateTenantId.HasValue)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "application/json";
+            var err = ApiResponse<object>.Fail("Active tenant context is required. Please specify a tenant.");
+            await context.Response.WriteAsync(JsonSerializer.Serialize(err));
+            return;
+        }
+
         try
         {
-            var endpoint = context.GetEndpoint();
-            var isAllowAnonymous = endpoint?.Metadata.GetMetadata<IAllowAnonymous>() != null;
-            var path = context.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
+            // Extract API host and client origin
+            var apiHost = context.Request.Host.Host;
+            var originHeader = context.Request.Headers.Origin.FirstOrDefault();
+            Uri? clientOrigin = null;
 
-            // Skip tenant validation for purely public/discovery routes when no candidate is supplied
-            var isPublicInfrastructureRoute = path.StartsWith("/swagger") ||
-                                              path.StartsWith("/health") ||
-                                              path.StartsWith("/auth/dev");
-
-            Guid? candidateTenantId = null;
-            if (context.Items.TryGetValue(TenantResolutionMiddleware.candidateTenantItemKey, out var itemVal) &&
-                itemVal is Guid guidVal)
+            if (!string.IsNullOrWhiteSpace(originHeader))
             {
-                candidateTenantId = guidVal;
-            }
-
-            if (!candidateTenantId.HasValue)
-            {
-                if (isAllowAnonymous || isPublicInfrastructureRoute)
+                if (!originParser.TryParse(originHeader, out clientOrigin))
                 {
-                    await next(context);
-                    return;
-                }
-
-                // Authenticated request attempting to access operational resources without a tenant
-                if (context.User?.Identity?.IsAuthenticated == true)
-                {
-                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     context.Response.ContentType = "application/json";
-                    var err = ApiResponse<object>.Fail("Active tenant context is required. Please specify a tenant.");
+                    var err = ApiResponse<object>.Fail("Client origin header is malformed.");
                     await context.Response.WriteAsync(JsonSerializer.Serialize(err));
                     return;
                 }
-
-                // Unauthenticated: let UseAuthentication / UseAuthorization challenge with 401
-                await next(context);
-                return;
             }
+
+            var accessRequest = new TenantAccessRequest(
+                context.User,
+                candidateTenantId.Value,
+                apiHost,
+                clientOrigin);
 
             // Candidate tenant provided: execute authoritative access evaluation
             var accessResult = await accessService.EvaluateAccessAsync(
-                context.User,
-                candidateTenantId.Value,
-                context.Request.Host.Host,
+                accessRequest,
                 context.RequestAborted);
 
             if (!accessResult.IsAllowed)
             {
+                if (context.RequestAborted.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 context.Response.StatusCode = accessResult.HttpStatusCode;
                 context.Response.ContentType = "application/json";
                 var err = ApiResponse<object>.Fail(accessResult.FailureReason ?? "Access denied.");
@@ -83,6 +129,11 @@ public class TenantAccessValidationMiddleware(RequestDelegate next)
 
             if (connectionInfo == null || string.IsNullOrWhiteSpace(connectionInfo.ConnectionString))
             {
+                if (context.RequestAborted.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
                 context.Response.ContentType = "application/json";
                 var err = ApiResponse<object>.Fail("Operational database connection could not be established for this tenant.");
@@ -97,7 +148,7 @@ public class TenantAccessValidationMiddleware(RequestDelegate next)
         }
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
-            // Client canceled or aborted the HTTP request; terminate pipeline gracefully
+            // Client closed connection or aborted the HTTP request before completion. Exit gracefully.
         }
     }
 }

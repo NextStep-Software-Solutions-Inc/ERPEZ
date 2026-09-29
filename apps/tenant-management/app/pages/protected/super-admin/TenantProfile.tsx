@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { PageContainer } from "~/components/PageContainer";
 import type { Tenant } from "~/features/tenant/type/Tenant";
 import { planLabel, statusLabel } from "~/lib/tenant";
@@ -10,8 +11,9 @@ import { toggleTenantStatusRequest } from "~/features/tenant/handlers/toggleTena
 import { LicenseManagementModal } from "~/features/license/components/LicenseManagementModal";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
-import { KeyRound, ShieldCheck, ShieldAlert, Copy, Check, Server, Lock, Database } from "lucide-react";
+import { KeyRound, ShieldCheck, ShieldAlert, Copy, Check, Server, Lock, Database, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { useTenant } from "~/providers/TenantProvider";
 
 const { useQueryClient } = erpSharedLib;
 const useTenantLicense = createQueryHookFromTemplate(getTenantLicenseRequest);
@@ -23,6 +25,8 @@ interface TenantProfileProps {
 }
 
 function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
+    const navigate = useNavigate();
+    const { startSpectating } = useTenant();
     const queryClient = useQueryClient();
     const [copied, setCopied] = useState(false);
     const [isDisabled, setIsDisabled] = useState(tenant.isDisabled ?? false);
@@ -68,6 +72,18 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
             actions={
                 <div className="flex items-center gap-3">
                     <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-amber-600 hover:bg-amber-700 text-white font-semibold gap-1.5 shadow-xs"
+                        onClick={() => {
+                            startSpectating({ id: tenant.id, name: tenant.name });
+                            navigate('/overview');
+                        }}
+                    >
+                        <Eye className="h-4 w-4" />
+                        Spectate Workspace
+                    </Button>
+                    <Button
                         variant={isDisabled ? "default" : "destructive"}
                         size="sm"
                         onClick={handleToggleStatus}
@@ -102,11 +118,11 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                             <div className="flex items-center gap-3">
                                 <h1 className="text-2xl font-semibold">{tenant.name}</h1>
                                 <Badge className={isDisabled ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"}>
-                                    {isDisabled ? "Access Disabled" : "Active & Allowed"}
+                                    Platform: {isDisabled ? "Access Disabled" : "Active & Allowed"}
                                 </Badge>
                             </div>
                             <div className="flex gap-2 mt-2">
-                                <span className="px-2 py-1 rounded bg-gray-100 text-sm">{displayPlan}</span>
+                                <span className="px-2.5 py-1 rounded bg-gray-100 text-sm font-medium">Plan: {displayPlan}</span>
                                 {(() => {
                                     const statusColor =
                                         displayStatus === "Active"
@@ -115,7 +131,7 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                                                 ? "bg-yellow-100 text-yellow-700"
                                                 : "bg-red-100 text-red-700";
                                     return (
-                                        <span className={`px-2 py-1 rounded text-sm ${statusColor}`}>{displayStatus}</span>
+                                        <span className={`px-2.5 py-1 rounded text-sm font-medium ${statusColor}`}>Subscription: {displayStatus}</span>
                                     );
                                 })()}
                                 {tenant.tenantSetting?.onPremise && (

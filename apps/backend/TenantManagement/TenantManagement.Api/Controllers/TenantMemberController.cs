@@ -12,6 +12,9 @@ using ERPEZ.TenantManagement.Application.Features.TenantMembers.Queries.GetTenan
 using ERPEZ.TenantManagement.Application.Features.TenantMembers.Queries.GetTenantMembersQuery;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using ERPEZ.TenantManagement.Application.Features.Roles.Dtos;
+using ERPEZ.TenantManagement.Application.Features.Roles.Queries.GetAssignableRolesQuery;
+using ERPEZ.TenantManagement.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.TenantManagement.Api.Controllers;
@@ -20,6 +23,18 @@ namespace ERPEZ.TenantManagement.Api.Controllers;
 [ApiController]
 public class TenantMembersController(ISender mediator) : ControllerBase
 {
+    /// <summary>
+    /// Returns assignable governance roles for tenant account administration (Org Admin, Billing Admin, Auditor, Tenant Member).
+    /// Hardcoded internal filter: RoleScope == TenantManagement.
+    /// </summary>
+    [HttpGet("assignable-roles")]
+    [HasPermission(Permissions.Admin.membersManage)]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<RoleSummaryDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAssignableGovernanceRoles()
+    {
+        var result = await mediator.Send(new GetAssignableRolesQuery(RoleScope.Tenant));
+        return Ok(result);
+    }
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<CreateTenantMemberResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

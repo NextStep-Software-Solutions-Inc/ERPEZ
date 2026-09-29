@@ -19,6 +19,7 @@ using ERPEZ.Infrastructure.Services.DocumentGeneration;
 using ERPEZ.Infrastructure.Services.Renderers.Pdf;
 using ERPEZ.Infrastructure.Services.Renderers.Excel;
 using ERPEZ.Infrastructure.Services.DocumentGeneration.Storage;
+using ERPEZ.Shared.Configuration;
 using SharedCurrentUserService     = ERPEZ.Shared.Interfaces.ICurrentUserService;
 using SharedCurrentUserServiceImpl = ERPEZ.Shared.Services.CurrentUserService;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
@@ -36,9 +37,28 @@ public static class DependencyInjection
         var services = builder.Services;
         var env      = builder.Environment;
 
+        // Authoritative encryption configuration validation during host startup
+        using (var loggerFactory = LoggerFactory.Create(b => b.AddConfiguration(builder.Configuration.GetSection("Logging"))))
+        {
+            var startupLogger = loggerFactory.CreateLogger(nameof(EncryptionConfigurationValidator));
+            EncryptionConfigurationValidator.Validate(builder.Configuration, builder.Environment, startupLogger);
+        }
+
+        services.AddSingleton<ERPEZ.Shared.Interfaces.ISecretEncryptionService, ERPEZ.Shared.Services.AesGcmSecretEncryptionService>();
+
         // ── Tenant Routing & Context ────────────────────────────────────────────────
         services.Configure<ERPEZ.Shared.Configuration.TenantRoutingOptions>(
             builder.Configuration.GetSection(ERPEZ.Shared.Configuration.TenantRoutingOptions.sectionName));
+
+        services.AddSingleton<ERPEZ.Shared.Security.IApiHostValidator>(sp =>
+            new ERPEZ.Shared.Security.ApiHostValidator(
+                sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ERPEZ.Shared.Configuration.TenantRoutingOptions>>(),
+                sp.GetService<Microsoft.Extensions.Hosting.IHostEnvironment>()));
+        services.AddSingleton<ERPEZ.Shared.Security.IClientOriginParser, ERPEZ.Shared.Security.ClientOriginParser>();
+        services.AddSingleton<ERPEZ.Shared.Security.IClientOriginMatcher, ERPEZ.Shared.Security.ClientOriginMatcher>();
+        services.AddSingleton<ERPEZ.Shared.Interfaces.IExternalIdentityNormalizer, ERPEZ.Shared.Security.ClerkIdentityNormalizer>();
+        services.AddSingleton<ERPEZ.Shared.Interfaces.IExternalIdentityNormalizer, ERPEZ.Shared.Security.KeycloakIdentityNormalizer>();
+        services.AddSingleton<ERPEZ.Shared.Security.IExternalIdentityNormalizerResolver, ERPEZ.Shared.Security.ExternalIdentityNormalizerResolver>();
 
         services.AddScoped<ERPEZ.Shared.Services.TenantRequestContext>();
         services.AddScoped<ERPEZ.Shared.Interfaces.ITenantContextService>(sp => sp.GetRequiredService<ERPEZ.Shared.Services.TenantRequestContext>());

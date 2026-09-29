@@ -6,20 +6,20 @@ export type ActivityItem = {
   time: string;
 };
 
-export function buildActivities(): ActivityItem[] {
+export function buildActivities(planName: string = "Starter"): ActivityItem[] {
   return [
     {
       id: "created",
       type: "success",
       title: "Account created",
-      message: "Welcome to ERP X21. Your trial has started.",
+      message: "Welcome to ERPEZ. Workspace successfully provisioned.",
       time: "Just now",
     },
     {
       id: "activated",
       type: "info",
-      title: "Trial activated",
-      message: "Your 14-day free trial is now active.",
+      title: "Workspace active",
+      message: `${planName} plan operational.`,
       time: "Just now",
     },
   ];

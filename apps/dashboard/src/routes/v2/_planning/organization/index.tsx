@@ -47,7 +47,13 @@ const searchSchema = z.object({
 
   // Tab selection
   tab: z
-    .enum(['structural-management', 'staffing-and-plantilla', 'personnel-reporting', 'settings'])
+    .enum([
+      'structural-management',
+      'staffing-and-plantilla',
+      'personnel-reporting',
+      'operational-roles',
+      'settings',
+    ])
     .optional()
     .default('structural-management'),
 })

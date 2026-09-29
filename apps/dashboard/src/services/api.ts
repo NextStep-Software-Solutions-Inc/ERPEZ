@@ -7,7 +7,7 @@ import type {
   PaginationResponse,
   AxiosResponse,
 } from 'erpez-shared-lib'
-import keycloak from '@/auth/keycloak'
+import { getAuthToken, getCandidateTenantId, refreshAuthToken } from '@/auth/authBridge'
 
 const BLACKLISTED_CODES = ['ERR_CANCELED']
 const WHITELISTED_METHODS = ['post', 'put', 'patch', 'delete']
@@ -15,36 +15,44 @@ const WHITELISTED_METHODS = ['post', 'put', 'patch', 'delete']
 export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL)
 api.defaults.timeout = 30000 // 30s timeout to allow database operations and debugging without premature frontend timeouts
 
-// Request interceptor to add Keycloak/Dev token and Tenant ID
+// Request interceptor to add IdP token and Tenant ID via unified auth bridge
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     let token: string | null = null
-    let tenantId = '00000000-0000-0000-0000-000000000001'
 
-    if (typeof window !== 'undefined') {
+    try {
+      token = await getAuthToken()
+    } catch {
+      // Ignore bridge errors
+    }
+
+    if (!token && typeof window !== 'undefined') {
       try {
         const storedToken = localStorage.getItem('erpez_auth_token')
         if (storedToken && storedToken.startsWith('ey')) {
           token = storedToken
         } else if (storedToken) {
           localStorage.removeItem('erpez_auth_token')
-        } else if (keycloak?.token) {
-          token = keycloak.token
         }
-        tenantId = localStorage.getItem('erpez_tenant_id') || tenantId
       } catch {
         // Ignore localStorage access errors
       }
-    } else if (keycloak?.token) {
-      token = keycloak.token
     }
 
     if (token && token.startsWith('ey')) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    if (tenantId) {
-      config.headers['X-Tenant-Id'] = tenantId
+
+    // Tenant Header Propagation:
+    // In Keycloak mode, candidate tenant ID is attached as X-Tenant-Id.
+    // In Clerk mode, bridge returns null (org context is encoded in session token).
+    const candidateTenant = getCandidateTenantId()
+    if (candidateTenant) {
+      config.headers['X-Tenant-Id'] = candidateTenant
+    } else {
+      delete config.headers['X-Tenant-Id']
     }
+
     return config
   },
   (error) => {
@@ -67,7 +75,7 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any
 
-    // Handle 401 errors with token refresh
+    // Handle 401 errors with token refresh via unified bridge
     if (
       error.response?.status === 401 &&
       originalRequest &&
@@ -76,22 +84,16 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        // Try to refresh the token
-        const TOKEN_MIN_VALIDITY_SECONDS = 5
-        const refreshed = await keycloak.updateToken(TOKEN_MIN_VALIDITY_SECONDS)
-
-        if (refreshed && keycloak.token) {
-          // Update the authorization header
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${keycloak.token}`
+        const refreshed = await refreshAuthToken(5)
+        if (refreshed) {
+          const freshToken = await getAuthToken()
+          if (freshToken && originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${freshToken}`
           }
-          // Retry the original request
           return api(originalRequest)
         }
       } catch (refreshError) {
-        // If refresh fails, logout the user
         console.error('Token refresh failed:', refreshError)
-        keycloak.logout()
         return Promise.reject(refreshError)
       }
     }

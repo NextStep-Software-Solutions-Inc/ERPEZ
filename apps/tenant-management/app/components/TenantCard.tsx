@@ -4,7 +4,8 @@ import { Button } from "~/components/ui/button";
 import { useNavigate } from "react-router";
 import { type Tenant } from "~/features/tenant/type/Tenant";
 import { planLabel, statusLabel } from "~/lib/tenant";
-
+import { Eye } from "lucide-react";
+import { useTenant } from "~/providers/TenantProvider";
 
 interface TenantCardProps {
     id?: string;
@@ -38,6 +39,7 @@ export function TenantCard({
     onToggleStatus,
 }: TenantCardProps) {
     const navigate = useNavigate();
+    const { startSpectating } = useTenant();
     const isTenantDisabled = isDisabledProp ?? tenant?.isDisabled ?? false;
     const allowedDomain = tenant?.allowedDomain ?? tenant?.tenantSetting?.allowedDomain;
     const name = tenant?.name ?? nameProp ?? "Unnamed";
@@ -128,11 +130,26 @@ export function TenantCard({
                             className={`flex-1 text-xs ${isTenantDisabled ? "text-emerald-700 border-emerald-300 hover:bg-emerald-50" : "text-red-700 border-red-300 hover:bg-red-50"}`}
                             onClick={() => onToggleStatus(id, !isTenantDisabled)}
                         >
-                            {isTenantDisabled ? "Allow Tenant" : "Disallow / Disable"}
+                            {isTenantDisabled ? "Allow" : "Disable"}
+                        </Button>
+                    )}
+                    {id && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="text-xs bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200 font-semibold gap-1"
+                            onClick={() => {
+                                startSpectating({ id, name });
+                                navigate('/overview');
+                            }}
+                            title="Spectate and manage this workspace"
+                        >
+                            <Eye className="w-3.5 h-3.5 text-amber-700" />
+                            Spectate
                         </Button>
                     )}
                     <Button variant="default" size="sm" className="flex-1 text-xs" onClick={() => navigate(`/super-admin/tenant/${id}`)}>
-                        View Profile
+                        Profile
                     </Button>
                 </div>
             </CardContent>

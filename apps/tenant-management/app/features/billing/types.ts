@@ -89,6 +89,11 @@ export interface SubscriptionAdapter {
   startDate: string;
   endDate: string;
   autoRenew: boolean;
+  isTrial: boolean;
+  trialDaysRemaining: number;
+  trialEndsAt: string;
+  paymentDueAt?: string;
+  gracePeriodEndsAt?: string;
 }
 
 export interface NextInvoiceProjection {
@@ -102,4 +107,5 @@ export interface NextInvoiceProjection {
   taxCents: number;
   totalCents: number;
   explanation?: string;
+  isTrial?: boolean;
 }

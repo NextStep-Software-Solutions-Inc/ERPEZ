@@ -26,6 +26,11 @@ var app = builder.Build();
 
 app.UseApiMiddlewares();
 
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/", () => Results.Redirect("/swagger")).AllowAnonymous();
+}
+
 app.MapControllers();
 
 app.Run();

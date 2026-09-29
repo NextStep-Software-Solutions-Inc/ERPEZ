@@ -21,6 +21,7 @@ export interface MemberActionHandlers {
     onDelete?: (member: TenantMember) => void;
     currentUserId?: string;
     currentUserEmail?: string;
+    canManage?: boolean;
 }
 
 export function createColumns(handlers?: MemberActionHandlers): ColumnDef<TenantMember>[] {
@@ -200,61 +201,65 @@ export function createColumns(handlers?: MemberActionHandlers): ColumnDef<Tenant
                                 View Details
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem
-                                onClick={() => handlers?.onEditMember?.(member)}
-                                className="cursor-pointer"
-                            >
-                                <Edit2 className="mr-2 h-4 w-4 text-blue-600" />
-                                Edit Member
-                            </DropdownMenuItem>
+                            {handlers?.canManage !== false && (
+                                <>
+                                    <DropdownMenuItem
+                                        onClick={() => handlers?.onEditMember?.(member)}
+                                        className="cursor-pointer"
+                                    >
+                                        <Edit2 className="mr-2 h-4 w-4 text-blue-600" />
+                                        Edit Member
+                                    </DropdownMenuItem>
 
-                            <DropdownMenuItem
-                                onClick={() => handlers?.onEditRoles?.(member)}
-                                className="cursor-pointer"
-                            >
-                                <Shield className="mr-2 h-4 w-4 text-slate-600" />
-                                Edit Roles
-                            </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => handlers?.onEditRoles?.(member)}
+                                        className="cursor-pointer"
+                                    >
+                                        <Shield className="mr-2 h-4 w-4 text-slate-600" />
+                                        Edit Roles
+                                    </DropdownMenuItem>
 
-                            {member.status === "Pending" ? (
-                                <DropdownMenuItem
-                                    onClick={() => handlers?.onRevokeInvitation?.(member)}
-                                    className="cursor-pointer text-amber-600 focus:text-amber-600"
-                                >
-                                    <Ban className="mr-2 h-4 w-4" />
-                                    Revoke Invitation
-                                </DropdownMenuItem>
-                            ) : (
-                                <DropdownMenuItem
-                                    onClick={() => handlers?.onToggleStatus?.(member)}
-                                    disabled={isSelf}
-                                    className="cursor-pointer"
-                                >
-                                    {member.status === "Active" ? (
-                                        <>
-                                            <UserX className="mr-2 h-4 w-4 text-red-500" />
-                                            Deactivate Member
-                                        </>
+                                    {member.status === "Pending" ? (
+                                        <DropdownMenuItem
+                                            onClick={() => handlers?.onRevokeInvitation?.(member)}
+                                            className="cursor-pointer text-amber-600 focus:text-amber-600"
+                                        >
+                                            <Ban className="mr-2 h-4 w-4" />
+                                            Revoke Invitation
+                                        </DropdownMenuItem>
                                     ) : (
-                                        <>
-                                            <UserCheck className="mr-2 h-4 w-4 text-green-500" />
-                                            Activate Member
-                                        </>
+                                        <DropdownMenuItem
+                                            onClick={() => handlers?.onToggleStatus?.(member)}
+                                            disabled={isSelf}
+                                            className="cursor-pointer"
+                                        >
+                                            {member.status === "Active" ? (
+                                                <>
+                                                    <UserX className="mr-2 h-4 w-4 text-red-500" />
+                                                    Deactivate Member
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <UserCheck className="mr-2 h-4 w-4 text-green-500" />
+                                                    Activate Member
+                                                </>
+                                            )}
+                                        </DropdownMenuItem>
                                     )}
-                                </DropdownMenuItem>
+
+                                    <DropdownMenuSeparator />
+
+                                    <DropdownMenuItem
+                                        onClick={() => handlers?.onDelete?.(member)}
+                                        disabled={isSelf}
+                                        variant="destructive"
+                                        className="cursor-pointer"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Member
+                                    </DropdownMenuItem>
+                                </>
                             )}
-
-                            <DropdownMenuSeparator />
-
-                            <DropdownMenuItem
-                                onClick={() => handlers?.onDelete?.(member)}
-                                disabled={isSelf}
-                                variant="destructive"
-                                className="cursor-pointer"
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Member
-                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 );

@@ -9,5 +9,6 @@ public enum TenantProvisioningState
     Ready = 1,
     Failed = 2,
     Disabled = 3,
-    Maintenance = 4
+    Maintenance = 4,
+    Pending = 5
 }

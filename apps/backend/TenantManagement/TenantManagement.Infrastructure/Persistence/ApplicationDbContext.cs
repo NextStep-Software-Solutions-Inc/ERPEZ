@@ -1,5 +1,6 @@
 using ERPEZ.Shared.Persistence;
 using ERPEZ.TenantManagement.Domain.Entities;
+using ERPEZ.TenantManagement.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
@@ -12,15 +13,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Module>? Modules { get; set; }
     public DbSet<TenantSetting>? TenantSettings { get; set; }
     public DbSet<TenantSubscription>? TenantSubscriptions { get; set; }
+    public DbSet<SubscriptionPlan>? SubscriptionPlans { get; set; }
+    public DbSet<SubscriptionPlanPrice>? SubscriptionPlanPrices { get; set; }
+    public DbSet<SubscriptionPlanModule>? SubscriptionPlanModules { get; set; }
     public DbSet<Role>? Roles { get; set; }
-    public DbSet<Permission>? Permissions { get; set; }
-    public DbSet<RolePermission>? RolePermissions { get; set; }
     public DbSet<TenantMemberRoleAssignment>? TenantMemberRoleAssignments { get; set; }
     public DbSet<LicenseKey>? LicenseKeys { get; set; }
     public DbSet<TenantAuditLog>? TenantAuditLogs { get; set; }
     public DbSet<TenantInvoice>? TenantInvoices { get; set; }
     public DbSet<TenantInvoiceItem>? TenantInvoiceItems { get; set; }
     public DbSet<TenantPaymentMethod>? TenantPaymentMethods { get; set; }
+    public DbSet<TenantOperationalDatabase>? TenantOperationalDatabases { get; set; }
+    public DbSet<WebhookInboxRecord>? WebhookInbox { get; set; }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
@@ -68,6 +72,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsUnique();
 
         modelBuilder.Entity<Tenant>()
+            .Property(t => t.AuthProvider)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Tenant>()
+            .Property(t => t.MembershipProjectionStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Tenant>()
+            .Property(t => t.ProvisioningState)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Tenant>()
+            .HasIndex(t => new { t.AuthProvider, t.ExternalOrgId })
+            .IsUnique()
+            .HasFilter("\"ExternalOrgId\" IS NOT NULL");
+
+        modelBuilder.Entity<Tenant>()
             .HasMany(t => t.Modules)
             .WithMany(m => m.Tenants)
             .UsingEntity(tm => tm.ToTable("TenantModule"));
@@ -92,14 +113,87 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(ts => ts.TenantId)
             .IsUnique();
 
+        // TenantOperationalDatabase
+        modelBuilder.Entity<TenantOperationalDatabase>()
+            .HasIndex(tod => tod.TenantId)
+            .IsUnique();
+
+        modelBuilder.Entity<Tenant>()
+            .HasOne(t => t.OperationalDatabase)
+            .WithOne(tod => tod.Tenant)
+            .HasForeignKey<TenantOperationalDatabase>(tod => tod.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // TenantSubscription
         modelBuilder.Entity<TenantSubscription>()
             .HasIndex(ts => new { ts.TenantId, ts.StartDate, ts.EndDate })
             .IsUnique();
 
+        modelBuilder.Entity<TenantSubscription>()
+            .Property(ts => ts.Plan)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TenantSubscription>()
+            .Property(ts => ts.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TenantSubscription>()
+            .Property(ts => ts.BillingCycle)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TenantSubscription>()
+            .HasOne(ts => ts.SubscriptionPlanPrice)
+            .WithMany(spp => spp.Subscriptions)
+            .HasForeignKey(ts => ts.SubscriptionPlanPriceId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // SubscriptionPlan
+        modelBuilder.Entity<SubscriptionPlan>()
+            .HasIndex(sp => sp.Code)
+            .IsUnique();
+
+        modelBuilder.Entity<SubscriptionPlan>()
+            .Property(sp => sp.Tier)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<SubscriptionPlan>()
+            .HasMany(sp => sp.Prices)
+            .WithOne(spp => spp.SubscriptionPlan)
+            .HasForeignKey(spp => spp.SubscriptionPlanId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SubscriptionPlan>()
+            .HasMany(sp => sp.Modules)
+            .WithOne(spm => spm.SubscriptionPlan)
+            .HasForeignKey(spm => spm.SubscriptionPlanId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // SubscriptionPlanPrice
+        modelBuilder.Entity<SubscriptionPlanPrice>()
+            .HasIndex(spp => spp.SubscriptionPlanId);
+
+        modelBuilder.Entity<SubscriptionPlanPrice>()
+            .HasIndex(spp => spp.SubscriptionPlanId)
+            .HasFilter("\"IsDefault\" = true")
+            .IsUnique();
+
+        modelBuilder.Entity<SubscriptionPlanPrice>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_SubscriptionPlanPrices_ValidInterval",
+                "\"EffectiveToUtc\" IS NULL OR \"EffectiveToUtc\" > \"EffectiveFromUtc\""));
+
+        // SubscriptionPlanModule
+        modelBuilder.Entity<SubscriptionPlanModule>()
+            .HasIndex(spm => new { spm.SubscriptionPlanId, spm.ModuleCode })
+            .IsUnique();
+
         // TenantMember
         modelBuilder.Entity<TenantMember>()
-            .HasIndex(tm => new { tm.TenantId, tm.ExternalIdentityId })
+            .Property(tm => tm.Provider)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TenantMember>()
+            .HasIndex(tm => new { tm.TenantId, tm.Provider, tm.ExternalIdentityId })
             .IsUnique()
             .HasFilter("\"ExternalIdentityId\" != '' AND \"IsDeleted\" = false");
 
@@ -136,6 +230,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // Role
         modelBuilder.Entity<Role>()
+            .Property(r => r.Scope)
+            .HasConversion<string>()
+            .HasDefaultValue(RoleScope.Unknown);
+
+        modelBuilder.Entity<Role>()
             .HasIndex(r => new { r.TenantId, r.NormalizedName })
             .IsUnique()
             .HasFilter("\"TenantId\" IS NOT NULL AND \"IsDeleted\" = false");
@@ -150,31 +249,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Role>()
-            .HasMany(r => r.RolePermissions)
-            .WithOne(rp => rp.Role)
-            .HasForeignKey(rp => rp.RoleId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Role>()
             .HasMany(r => r.MemberAssignments)
             .WithOne(ma => ma.Role)
             .HasForeignKey(ma => ma.RoleId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // Permission
-        modelBuilder.Entity<Permission>()
-            .HasIndex(p => p.Key)
-            .IsUnique();
-
-        modelBuilder.Entity<Permission>()
-            .HasMany(p => p.RolePermissions)
-            .WithOne(rp => rp.Permission)
-            .HasForeignKey(rp => rp.PermissionId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // RolePermission composite key
-        modelBuilder.Entity<RolePermission>()
-            .HasKey(rp => new { rp.RoleId, rp.PermissionId });
 
         // TenantMemberRoleAssignment composite key
         modelBuilder.Entity<TenantMemberRoleAssignment>()
@@ -261,6 +339,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<TenantPaymentMethod>()
             .Property(pm => pm.Type)
             .HasConversion<string>();
+
+        // WebhookInboxRecord
+        modelBuilder.Entity<WebhookInboxRecord>(b =>
+        {
+            b.ToTable("WebhookInbox");
+            b.HasKey(w => w.Id);
+            b.HasIndex(w => w.SvixMessageId).IsUnique();
+            b.HasIndex(w => new { w.Provider, w.ProviderEventId });
+            b.HasIndex(w => new { w.Status, w.LeaseExpiresAtUtc });
+            b.Property(w => w.Provider).HasConversion<string>();
+            b.Property(w => w.Status).HasConversion<string>();
+        });
 
         base.OnModelCreating(modelBuilder);
     }

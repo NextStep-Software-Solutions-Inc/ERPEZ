@@ -1,5 +1,6 @@
 using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Middlewares;
+using ERPEZ.Shared.Security;
 using ERPEZ.TenantManagement.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
@@ -12,29 +13,43 @@ public static class DependencyInjection
     {
         var services = builder.Services;
         services.AddControllers();
-        var devSecurityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-            System.Text.Encoding.UTF8.GetBytes("ERPEZ_Development_Symmetric_Signing_Key_2026_Secure_Secret_12345!"));
+        services.AddHttpClient();
 
-        services.AddAuthentication(options =>
+        // Bind Clerk settings
+        services.Configure<ERPEZ.TenantManagement.Api.Configuration.ClerkSettings>(
+            builder.Configuration.GetSection(ERPEZ.TenantManagement.Api.Configuration.ClerkSettings.sectionName));
+        var clerkSettings = builder.Configuration
+            .GetSection(ERPEZ.TenantManagement.Api.Configuration.ClerkSettings.sectionName)
+            .Get<ERPEZ.TenantManagement.Api.Configuration.ClerkSettings>();
+
+        // Automatically resolve Authority from PublishableKey if Authority is unconfigured or placeholder
+        if (clerkSettings != null && (string.IsNullOrWhiteSpace(clerkSettings.Authority) || clerkSettings.Authority.Contains("placeholder") || clerkSettings.Authority.Contains("dev.nextstep-software.com")))
         {
-            options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            var pubKey = !string.IsNullOrWhiteSpace(clerkSettings.PublishableKey) && !clerkSettings.PublishableKey.Contains("placeholder")
+                ? clerkSettings.PublishableKey
+                : Environment.GetEnvironmentVariable("VITE_CLERK_PUBLISHABLE_KEY") ?? Environment.GetEnvironmentVariable("CLERK_PUBLISHABLE_KEY");
+
+            if (!string.IsNullOrWhiteSpace(pubKey) && pubKey.StartsWith("pk_"))
             {
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ValidateLifetime = false,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = devSecurityKey
-            };
-        });
+                try
+                {
+                    var base64Part = pubKey.Substring(pubKey.IndexOf('_', 3) + 1);
+                    while (base64Part.Length % 4 != 0) base64Part += "=";
+                    var decoded = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(base64Part)).TrimEnd('$');
+                    clerkSettings.Authority = $"https://{decoded}";
+                }
+                catch { }
+            }
+        }
+
+        var isClerkConfigured = clerkSettings != null 
+            && !string.IsNullOrWhiteSpace(clerkSettings.Authority) 
+            && !clerkSettings.Authority.Contains("placeholder")
+            && !clerkSettings.Authority.Contains("example.com");
+        services.AddDualIdPAuthentication(builder.Configuration, builder.Environment);
         services.AddEndpointsApiExplorer();
         services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
-        services.AddAuthorization();
         services.AddResponseCaching();
         services.AddResponseCompression();
         services.AddCorsPolicies(builder.Configuration);

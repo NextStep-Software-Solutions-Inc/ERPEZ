@@ -31,7 +31,11 @@ public class GetMyTenantsQueryHandler(
         var lookupSubject = !string.IsNullOrWhiteSpace(externalSubject) ? externalSubject : currentUserService.UserId;
         Expression<Func<Tenant, bool>> customFilter;
 
-        if (string.IsNullOrWhiteSpace(lookupSubject))
+        if (currentUserService.IsSuperAdmin)
+        {
+            customFilter = t => !t.IsDeleted && !t.IsDisabled;
+        }
+        else if (string.IsNullOrWhiteSpace(lookupSubject))
         {
             var defaultId = Guid.Parse("00000000-0000-0000-0000-000000000001");
             customFilter = t => t.Id == defaultId;

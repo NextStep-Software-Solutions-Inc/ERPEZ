@@ -17,14 +17,37 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
     public string? UserId => ExternalIdentityId;
 
     public string? Email => httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email)
-        ?? httpContextAccessor.HttpContext?.User?.FindFirstValue("email");
+        ?? httpContextAccessor.HttpContext?.User?.FindFirstValue("email")
+        ?? httpContextAccessor.HttpContext?.User?.FindFirstValue("primary_email_address");
 
     public string? Username => httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Name)
         ?? httpContextAccessor.HttpContext?.User?.FindFirstValue("preferred_username")
         ?? httpContextAccessor.HttpContext?.User?.FindFirstValue("username");
 
-    public string? FullName => httpContextAccessor.HttpContext?.User?.FindFirstValue("name")
-        ?? httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.GivenName);
+    public string? FullName
+    {
+        get
+        {
+            var user = httpContextAccessor.HttpContext?.User;
+            if (user == null) return null;
+
+            var name = user.FindFirstValue("name") 
+                ?? user.FindFirstValue("full_name") 
+                ?? user.FindFirstValue(ClaimTypes.GivenName);
+
+            if (!string.IsNullOrWhiteSpace(name)) return name;
+
+            var firstName = user.FindFirstValue("first_name") ?? user.FindFirstValue(ClaimTypes.GivenName);
+            var lastName = user.FindFirstValue("last_name") ?? user.FindFirstValue(ClaimTypes.Surname);
+
+            if (!string.IsNullOrWhiteSpace(firstName) || !string.IsNullOrWhiteSpace(lastName))
+            {
+                return $"{firstName} {lastName}".Trim();
+            }
+
+            return null;
+        }
+    }
 
     public bool IsAuthenticated => httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
 
@@ -35,13 +58,14 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
             var user = httpContextAccessor.HttpContext?.User;
             if (user == null) return false;
 
-            var claimVal = user.FindFirstValue("is_super_admin") ?? user.FindFirstValue("super_admin");
+            var claimVal = user.FindFirstValue("is_super_admin") 
+                ?? user.FindFirstValue("super_admin");
             if (bool.TryParse(claimVal, out var isSuper) && isSuper)
             {
                 return true;
             }
 
-            return user.IsInRole("SuperAdmin");
+            return user.IsInRole("SuperAdmin") || user.IsInRole("Platform Administrator");
         }
     }
 
@@ -63,8 +87,15 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
 
             var roleClaims = user.FindAll(ClaimTypes.Role).Select(c => c.Value);
             var customRoleClaims = user.FindAll("role").Select(c => c.Value);
+            var rolesClaims = user.FindAll("roles").Select(c => c.Value);
+            var orgRoleClaims = user.FindAll("org_role").Select(c => c.Value);
 
-            return roleClaims.Concat(customRoleClaims).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            return roleClaims
+                .Concat(customRoleClaims)
+                .Concat(rolesClaims)
+                .Concat(orgRoleClaims)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
     }
 

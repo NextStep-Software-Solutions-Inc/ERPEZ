@@ -33,7 +33,7 @@ public abstract class ValidatorTestBase<TValidator, TCommand>
     protected void AssertValidationFails(TCommand command, params string[] expectedErrorMessages)
     {
         var result = validator.TestValidate(command);
-        result.ShouldHaveAnyValidationError();
+        result.IsValid.Should().BeFalse();
 
         foreach (var expectedMessage in expectedErrorMessages)
         {

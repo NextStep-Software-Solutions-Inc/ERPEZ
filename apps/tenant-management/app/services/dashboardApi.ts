@@ -18,7 +18,7 @@ export const dashboardApi = createAxiosInstance(
 dashboardApi.interceptors.request.use(
   (config) => {
     let token: string | null = null;
-    let tenantId = '00000000-0000-0000-0000-000000000001';
+    let tenantId: string | null = null;
 
     if (typeof window !== 'undefined') {
       try {
@@ -26,7 +26,7 @@ dashboardApi.interceptors.request.use(
         if (storedToken && storedToken.startsWith('ey')) {
           token = storedToken;
         }
-        tenantId = localStorage.getItem('erpez_tenant_id') || tenantId;
+        tenantId = localStorage.getItem('erpez_tenant_id');
       } catch {
         // Ignore
       }

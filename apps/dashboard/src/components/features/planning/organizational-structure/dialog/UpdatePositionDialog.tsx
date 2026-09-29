@@ -27,16 +27,17 @@ interface UpdatePositionDialogProps {
 }
 
 function UpdatePositionDialog({ open, onOpenChange, positionId }: UpdatePositionDialogProps) {
-  if (!positionId) {
-    // nothing to edit until an id is provided
-    return null
-  }
-  // fetch the position for header/context
-  const positionQuery = usePosition(positionId)
+  // fetch the position for header/context only when dialog is open and has an ID
+  const positionQuery = usePosition(positionId, open && !!positionId)
   const position = positionQuery.data
 
   const [isDirty, setIsDirty] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
+
+  if (!positionId) {
+    // nothing to edit until an id is provided
+    return null
+  }
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen && isDirty) {
