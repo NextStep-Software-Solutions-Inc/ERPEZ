@@ -469,14 +469,6 @@ export function RFQDetailsPage({
   const canEdit = !isSupplierPortal && (rfq?.status === 'draft' || rfq?.status === 'returned')
   const canSubmit = canEdit && (rfq?.items?.length || 0) > 0
 
-  // Supplier portal quotation state helpers
-  const quotationIsPending =
-    !rfq.quotationStatus || rfq.quotationStatus === 'draft'
-  const quotationIsSubmitted =
-    rfq.quotationStatus === 'submitted' && !rfq.quotationApprovalStatus
-  const quotationIsApproved = rfq.quotationApprovalStatus === 'approved'
-  const quotationIsReturned = rfq.quotationApprovalStatus === 'returned'
-
   // Authoritative calculations for supplier bid & comparison
   const totalRFQAmount = rfq.items.reduce(
     (s: number, it: any) => s + (it.totalAmount || ((it.quantity || 0) * (it.unitPrice || 0)) || 0),
@@ -485,6 +477,17 @@ export function RFQDetailsPage({
   const hasAnyBid = rfq.items.some(
     (it: any) => it.bidUnitPrice !== undefined && it.bidUnitPrice !== null && it.bidUnitPrice > 0
   )
+
+  // Supplier portal quotation state helpers
+  const quotationIsPending =
+    !rfq.quotationStatus ||
+    rfq.quotationStatus === 'draft' ||
+    rfq.quotationStatus === 'pending' ||
+    (rfq.quotationStatus === 'submitted' && !hasAnyBid)
+  const quotationIsSubmitted =
+    rfq.quotationStatus === 'submitted' && hasAnyBid && !rfq.quotationApprovalStatus
+  const quotationIsApproved = rfq.quotationApprovalStatus === 'approved'
+  const quotationIsReturned = rfq.quotationApprovalStatus === 'returned'
   const isCompleteBid =
     rfq.items.length > 0 &&
     rfq.items.every((it: any) => it.bidUnitPrice !== undefined && it.bidUnitPrice !== null && it.bidUnitPrice > 0)
