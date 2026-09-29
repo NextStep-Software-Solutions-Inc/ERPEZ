@@ -77,7 +77,7 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
                     cpr = await unitOfWork.ConsolidatedPRRepository.GetCPRWithDetailsAsync(cprId.Value, cancellationToken);
                 }
 
-                if (cpr != null)
+                if (cpr?.ConsolidatedPRItems != null)
                 {
                     foreach (var cprItem in cpr.ConsolidatedPRItems.Where(ci => !ci.IsDeleted))
                     {
