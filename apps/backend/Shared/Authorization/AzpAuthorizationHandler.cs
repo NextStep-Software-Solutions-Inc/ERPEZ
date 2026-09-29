@@ -35,8 +35,24 @@ public class AzpAuthorizationHandler(IConfiguration configuration) : Authorizati
             ];
         }
 
+        var aspnetEnv = configuration["ASPNETCORE_ENVIRONMENT"] ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        var isDevelopment = string.Equals(aspnetEnv, "Development", StringComparison.OrdinalIgnoreCase);
+
         var normalizedAzp = azp.TrimEnd('/');
-        var isAllowed = allowedParties.Any(party => string.Equals(party.TrimEnd('/'), normalizedAzp, StringComparison.OrdinalIgnoreCase));
+        var isAllowed = isDevelopment || allowedParties.Any(party =>
+        {
+            var p = party.TrimEnd('/');
+            if (p == "*" || p.Equals("any", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            if (p.StartsWith("*."))
+            {
+                var suffix = p[1..];
+                return normalizedAzp.EndsWith(suffix, StringComparison.OrdinalIgnoreCase);
+            }
+            return string.Equals(p, normalizedAzp, StringComparison.OrdinalIgnoreCase);
+        });
 
         if (isAllowed)
         {
