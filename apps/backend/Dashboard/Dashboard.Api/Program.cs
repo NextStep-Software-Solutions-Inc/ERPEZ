@@ -20,7 +20,6 @@ builder
     .AddApplicationServices();
 
 await builder.AddInfrastructureServices();
-ERPEZ.TenantManagement.Infrastructure.DependencyInjection.AddInfrastructureServices(builder);
 
 var app = builder.Build();
 

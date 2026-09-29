@@ -39,16 +39,11 @@ public class PermissionAuthorizationHandler(
 
         // 3. Resolve Tenant Context
         var activeTenantId = tenantContext.TenantId;
-        if (!activeTenantId.HasValue)
-        {
-            // Fail closed: Tenant must be resolved for functional RBAC operations
-            return;
-        }
 
         // 4. Validate Permission via cached Authorization Service
         var hasPermission = await authorizationService.HasPermissionAsync(
             externalIdentityId, 
-            activeTenantId.Value, 
+            activeTenantId, 
             requirement.Permission);
 
         if (hasPermission)

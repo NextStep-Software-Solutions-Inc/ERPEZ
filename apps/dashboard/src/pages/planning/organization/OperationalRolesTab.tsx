@@ -28,9 +28,12 @@ import {
   type OperationalRoleSummary,
 } from '@/services/api/operationalRoles'
 import { toast } from 'sonner'
+import { LicenseStatusCard } from '@/components/ams/LicenseStatusCard'
+import { AmsRolesManagementView } from '@/components/ams/AmsRolesManagementView'
 
 export default function OperationalRolesTab() {
   const queryClient = useQueryClient()
+  const [viewMode, setViewMode] = useState<'assignments' | 'roles'>('assignments')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
@@ -102,26 +105,53 @@ export default function OperationalRolesTab() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner / Explanation */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border border-primary/20 bg-primary/5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold text-lg text-slate-900">
-              ERP Operational Role Governance
-            </h3>
-          </div>
-          <p className="text-sm text-slate-600 max-w-2xl">
-            Operational roles (such as <strong>LIB Approver</strong>,{' '}
-            <strong>Planning Officer</strong>,{' '}
-            <strong>Procurement Officer</strong>, and{' '}
-            <strong>Dashboard System Admin</strong>) grant workflow and
-            functional execution permissions strictly inside this tenant
-            workspace. Tenant management governance roles are separated in the
-            account portal.
-          </p>
-        </div>
+      {/* License & Capacity Engine Card */}
+      <LicenseStatusCard />
+
+      {/* View Mode Toggle */}
+      <div className="flex items-center gap-2 border-b pb-2">
+        <Button
+          variant={viewMode === 'assignments' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('assignments')}
+          className="text-xs"
+        >
+          <UserCheck className="w-3.5 h-3.5 mr-1.5" /> Personnel Role Assignments
+        </Button>
+        <Button
+          variant={viewMode === 'roles' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('roles')}
+          className="text-xs"
+        >
+          <Shield className="w-3.5 h-3.5 mr-1.5" /> AMS Roles & Permissions Catalog
+        </Button>
       </div>
+
+      {viewMode === 'roles' ? (
+        <AmsRolesManagementView />
+      ) : (
+        <>
+          {/* Top Banner / Explanation */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border border-primary/20 bg-primary/5">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg text-slate-900">
+                  ERP Operational Role Governance
+                </h3>
+              </div>
+              <p className="text-sm text-slate-600 max-w-2xl">
+                Operational roles (such as <strong>LIB Approver</strong>,{' '}
+                <strong>Planning Officer</strong>,{' '}
+                <strong>Procurement Officer</strong>, and{' '}
+                <strong>Dashboard System Admin</strong>) grant workflow and
+                functional execution permissions strictly inside this tenant
+                workspace. Tenant management governance roles are separated in the
+                account portal.
+              </p>
+            </div>
+          </div>
 
       {/* Toolbar / Search */}
       <div className="flex items-center justify-between gap-4">
@@ -337,6 +367,8 @@ export default function OperationalRolesTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  )
+    </>
+  )}
+</div>
+)
 }

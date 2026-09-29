@@ -14,12 +14,14 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using ERPEZ.Api.Attributes;
 
 namespace ERPEZ.Api.Controllers;
 
 [Route("purchase-requests")]
 [ApiController]
 [Authorize]
+[RequireModule("pms")]
 public class PurchaseRequestController(ISender mediator) : ControllerBase
 {
     [HttpPost]

@@ -55,6 +55,9 @@ public static class MiddlewareExtensions
         // 7. Authorization (after authentication)
         app.UseAuthorization();
 
+        // 7.1 Keycloak Just-In-Time User Provisioning into Dashboard DB
+        app.UseMiddleware<ERPEZ.Infrastructure.Middlewares.KeycloakUserProvisioningMiddleware>();
+
         // 8. Response caching/compression (after auth, before endpoints)
         app.UseResponseCaching();
         app.UseResponseCompression();
