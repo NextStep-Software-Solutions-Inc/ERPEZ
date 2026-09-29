@@ -80,7 +80,7 @@ export interface FunnelStage {
   bgColor: string
   borderColor: string
   totalCount: number
-  subItems: FunnelSubItem[]
+  subItems: Array<FunnelSubItem>
 }
 
 // ============================================================================
@@ -167,11 +167,11 @@ export interface PoUacsItem {
 
 export interface PoFulfillmentData {
   poCount: number
-  segments: PoFulfillmentSegment[]
+  segments: Array<PoFulfillmentSegment>
   totalPOValue: number
   avgDeliveryDays: number
   overdueCount: number
-  uacsBreakdown: PoUacsItem[]
+  uacsBreakdown: Array<PoUacsItem>
 }
 
 // ============================================================================
@@ -276,16 +276,16 @@ export interface ProcurementTask {
 export interface ProcurementDashboardState {
   filters: DashboardFilters
   kpiSummary: ProcurementKPISummary | null
-  alerts: AlertItem[]
-  funnelData: FunnelStage[]
-  tatData: TatDataPoint[]
+  alerts: Array<AlertItem>
+  funnelData: Array<FunnelStage>
+  tatData: Array<TatDataPoint>
   consolidationProgress: ConsolidationProgress | null
-  rfqStatusList: RfqStatusItem[]
-  aobQueueItems: AobQueueItem[]
+  rfqStatusList: Array<RfqStatusItem>
+  aobQueueItems: Array<AobQueueItem>
   poFulfillment: PoFulfillmentData | null
-  contracts: ContractItem[]
-  tasks: ProcurementTask[]
-  departments: Department[]
+  contracts: Array<ContractItem>
+  tasks: Array<ProcurementTask>
+  departments: Array<Department>
   isLoading: boolean
 }
 
