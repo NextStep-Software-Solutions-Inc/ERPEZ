@@ -16,7 +16,9 @@ import {
     Globe,
     Mail,
     AlertTriangle,
-    Loader2
+    Loader2,
+    Download,
+    ShoppingCart
 } from "lucide-react";
 import { PageContainer } from "~/components/PageContainer";
 import { useTenant } from "~/providers/TenantProvider";
@@ -24,6 +26,7 @@ import { createQueryHookFromTemplate, createMutationHookFromTemplate } from "erp
 import { getTenantLicenseRequest } from "~/features/license/handlers/getTenantLicenseRequest";
 import { activateLicenseRequest } from "~/features/license/handlers/activateLicenseRequest";
 import { claimTrialLicenseRequest } from "~/features/license/handlers/claimTrialLicenseRequest";
+import { PurchaseLicenseModal } from "~/features/license/components/PurchaseLicenseModal";
 import { toast } from "sonner";
 
 const useTenantLicense = createQueryHookFromTemplate(getTenantLicenseRequest);
@@ -61,6 +64,41 @@ export default function LicenseManagementPage() {
         } catch {
             // Error toast handled by axios interceptor
         }
+    };
+
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+
+    const handleDownloadLicFile = () => {
+        if (!license) return;
+        const certPayload = {
+            product: "ERPez Sovereign On-Premise",
+            version: "2.0",
+            key: license.key,
+            prefix: license.prefix,
+            tenantId: license.tenantId,
+            boundEmail: license.boundEmail,
+            plan: license.plan,
+            allowedDomain: license.allowedDomain,
+            maxTenants: license.maxTenants,
+            maxUsers: license.maxUsers,
+            issuedAt: license.issuedAt,
+            expiresAt: license.expiresAt,
+            isAirGapped: license.isAirGapped,
+            signature: license.signature || "HMAC_VERIFIED",
+        };
+
+        const blob = new Blob([JSON.stringify(certPayload, null, 2)], {
+            type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `erpez_${(license.plan || "license").toLowerCase()}_license.lic`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success("Cryptographic .lic certificate downloaded!");
     };
 
     const isDomainValid = useMemo(() => {
@@ -152,13 +190,24 @@ export default function LicenseManagementPage() {
                                     <FileKey className="h-5 w-5 text-blue-600" />
                                     <CardTitle className="text-lg">Active License</CardTitle>
                                 </div>
-                                {license ? (
-                                    <Badge className={license.isExpired ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}>
-                                        {license.isExpired ? "Expired" : "Active Key"}
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="outline" className="text-slate-500">No License Active</Badge>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setIsPurchaseModalOpen(true)}
+                                        className="h-8 gap-1.5 text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
+                                    >
+                                        <ShoppingCart className="h-3.5 w-3.5" />
+                                        Buy License
+                                    </Button>
+                                    {license ? (
+                                        <Badge className={license.isExpired ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}>
+                                            {license.isExpired ? "Expired" : "Active Key"}
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="text-slate-500">No License Active</Badge>
+                                    )}
+                                </div>
                             </div>
                             <CardDescription>
                                 1 Subscription = 1 Cryptographic Key bound to authorized email and domain constraints.
@@ -177,6 +226,16 @@ export default function LicenseManagementPage() {
                                             />
                                             <Button variant="outline" size="icon" onClick={handleCopyKey} title="Copy Key">
                                                 {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleDownloadLicFile}
+                                                title="Download .lic certificate"
+                                                className="gap-1.5 text-xs text-slate-700 border-slate-200 hover:bg-slate-100"
+                                            >
+                                                <Download className="h-3.5 w-3.5 text-blue-600" />
+                                                <span>Download .lic</span>
                                             </Button>
                                         </div>
                                     </div>
@@ -235,16 +294,25 @@ export default function LicenseManagementPage() {
                                 <div className="text-center py-10 border border-dashed rounded-lg text-slate-500 text-xs space-y-3">
                                     <FileKey className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                                     <p className="font-medium text-slate-700">No cryptographic license key currently activated for this tenant.</p>
-                                    <p className="text-[11px] text-slate-500">You can claim a 30-day full-access free trial license or activate an existing subscription key below.</p>
-                                    <div className="pt-2">
+                                    <p className="text-[11px] text-slate-500">You can buy an on-premise license key or claim a 30-day full-access free trial license below.</p>
+                                    <div className="pt-2 flex items-center justify-center gap-3">
                                         <Button
                                             type="button"
+                                            onClick={() => setIsPurchaseModalOpen(true)}
+                                            className="btn-blue text-xs font-semibold gap-1.5"
+                                        >
+                                            <ShoppingCart className="h-3.5 w-3.5" />
+                                            Buy On-Premise License
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
                                             onClick={handleClaimTrial}
                                             disabled={claimTrialMutation.isPending}
-                                            className="btn-blue text-xs font-semibold"
+                                            className="text-xs font-semibold border-slate-300"
                                         >
                                             {claimTrialMutation.isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                                            Claim 30-Day Free Trial License
+                                            Claim 30-Day Free Trial
                                         </Button>
                                     </div>
                                 </div>
@@ -305,6 +373,13 @@ export default function LicenseManagementPage() {
                     </Card>
                 </div>
             </div>
+
+            {/* Purchase On-Premise License Modal */}
+            <PurchaseLicenseModal
+                isOpen={isPurchaseModalOpen}
+                onClose={() => setIsPurchaseModalOpen(false)}
+                onSuccess={() => refetch()}
+            />
         </PageContainer>
     );
 }

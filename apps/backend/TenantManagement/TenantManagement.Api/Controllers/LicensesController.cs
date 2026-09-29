@@ -3,6 +3,7 @@ using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Commands.ActivateLicense;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Commands.ClaimTrialLicense;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Commands.GenerateLicenseKey;
+using ERPEZ.TenantManagement.Application.Features.Licenses.Commands.PurchaseLicense;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Commands.RevokeLicenseKey;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Licenses.Queries.GetLicenseKeys;
@@ -60,6 +61,15 @@ public class LicensesController(ISender mediator) : ControllerBase
     [HasPermission(TenantPermissions.licensesManage)]
     [ProducesResponseType(typeof(ApiResponse<LicenseKeyDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ClaimTrialLicense([FromBody] ClaimTrialLicenseCommand command)
+    {
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("purchase")]
+    [HasPermission(TenantPermissions.billingManage)]
+    [ProducesResponseType(typeof(ApiResponse<LicenseKeyDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> PurchaseLicense([FromBody] PurchaseLicenseCommand command)
     {
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
