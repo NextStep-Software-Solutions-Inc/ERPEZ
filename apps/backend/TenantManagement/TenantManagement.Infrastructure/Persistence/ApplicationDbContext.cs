@@ -235,6 +235,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasDefaultValue(RoleScope.Unknown);
 
         modelBuilder.Entity<Role>()
+            .Property(r => r.Permissions)
+            .HasDefaultValueSql("'{}'::text[]");
+
+        modelBuilder.Entity<Role>()
             .HasIndex(r => new { r.TenantId, r.NormalizedName })
             .IsUnique()
             .HasFilter("\"TenantId\" IS NOT NULL AND \"IsDeleted\" = false");
