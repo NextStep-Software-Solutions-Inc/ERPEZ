@@ -15,7 +15,7 @@ import {
   Eye
 } from 'lucide-react'
 import { formatCurrencyPHP } from '@/utils/formatters'
-import type { DirectContracting } from '../store/directContractingStore'
+import type { DirectContracting } from '../types'
 
 interface Props {
   open: boolean

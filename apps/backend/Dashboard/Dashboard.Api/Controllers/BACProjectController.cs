@@ -173,6 +173,16 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("projects/eligible-for-direct-contracting")]
+    [HttpGet("projects/unlinked-direct-contracting")]
+    [ProducesResponseType(typeof(PaginatedApiResponse<ProcurementProjectResponse>), StatusCodes.Status200OK)]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    public async Task<IActionResult> GetEligibleProjectsForDirectContracting([FromQuery] GetProcurementProjectsQuery query)
+    {
+        var result = await mediator.Send(query with { UnlinkedDirectContracting = true });
+        return Ok(result);
+    }
+
     //[Authorize(Roles = "BAC_Officer")]
     [HttpGet("projects/{id}")]
     [ProducesResponseType(typeof(ApiResponse<ProcurementProjectDetailResponse>), StatusCodes.Status200OK)]

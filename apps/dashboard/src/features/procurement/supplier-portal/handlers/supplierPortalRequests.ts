@@ -165,3 +165,63 @@ export const submitSupplierBidRequest: MutationBlueprintFromTemplate<
     return response.data.data
   },
 }
+
+// -------------------------------------------------------------
+// Direct Contracting Supplier Portal Endpoints
+// -------------------------------------------------------------
+import type { DirectContracting } from '@/features/procurement/direct-contracting/types'
+import type {
+  DirectContractingItem,
+  DirectContractingItemDetails,
+} from '../types/direct-contracting-item-type'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+
+const supplierDCListEndpoint = '/api/supplier/direct-contracting'
+const supplierDCDetailEndpoint = '/api/supplier/direct-contracting/:id'
+
+export interface SupplierDirectContractingQueryParams {
+  supplierId?: string
+}
+
+export interface SupplierDirectContractingDetailParams {
+  id: string
+  supplierId?: string
+}
+
+export const getSupplierDirectContractingsRequest: QueryBlueprintFromTemplate<
+  typeof supplierDCListEndpoint,
+  Array<DirectContracting & DirectContractingItem>,
+  SupplierDirectContractingQueryParams
+> = {
+  endpoint: supplierDCListEndpoint,
+  key: ({ url, queryParams }) => [url, queryParams],
+  fetcher: async ({ finalUrl, signal }) => {
+    const response = await api.get<{
+      data?: Array<DirectContracting & DirectContractingItem>
+      items?: Array<DirectContracting & DirectContractingItem>
+    }>(finalUrl, { signal })
+    return response.data?.data || response.data?.items || []
+  },
+}
+
+export const getSupplierDirectContractingByIdRequest: QueryBlueprintFromTemplate<
+  typeof supplierDCDetailEndpoint,
+  DirectContracting & DirectContractingItemDetails,
+  SupplierDirectContractingDetailParams
+> = {
+  endpoint: supplierDCDetailEndpoint,
+  key: ({ url, queryParams }) => [url, queryParams],
+  fetcher: async ({ finalUrl, signal }) => {
+    const response = await api.get<{ data: DirectContracting & DirectContractingItemDetails }>(finalUrl, { signal })
+    return response.data.data
+  },
+}
+
+export const useSupplierDirectContractings = createQueryHookFromTemplate(
+  getSupplierDirectContractingsRequest
+)
+
+export const useSupplierDirectContracting = createQueryHookFromTemplate(
+  getSupplierDirectContractingByIdRequest
+)
+

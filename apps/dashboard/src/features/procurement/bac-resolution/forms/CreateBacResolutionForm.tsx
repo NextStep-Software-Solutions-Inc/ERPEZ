@@ -197,6 +197,10 @@ export const CreateBacResolutionForm = forwardRef<
     const [selectedConsolidatedPr, setSelectedConsolidatedPr] =
       useState<EligibleConsolidatedPR | null>(null)
 
+    const [isTitleManuallyEdited, setIsTitleManuallyEdited] = useState(
+      Boolean(initialValues?.title),
+    )
+
     // Clause state:
     const [whereasClauses, setWhereasClauses] = useState<
       { resolutionClauseId: string; order: number }[]
@@ -253,7 +257,7 @@ export const CreateBacResolutionForm = forwardRef<
         pathParams: {},
         queryParams: {
           pageSize: 200,
-          clauseType: pickerModalType || undefined,
+          filters: pickerModalType || undefined,
         },
         enabled: pickerModalType !== null,
       })
@@ -566,7 +570,7 @@ export const CreateBacResolutionForm = forwardRef<
             appItemId: currentAppItems[0]?.id,
             appItemIds: currentAppItems.map((i) => i.id),
             consolidatedPRId: currentConsolidatedPr?.id,
-            title: value.title,
+            title: value.title?.trim() || derivedTitle || undefined,
             abc:
               currentInheritedAbc > 0
                 ? Math.round((currentInheritedAbc + Number.EPSILON) * 100) / 100
@@ -615,11 +619,11 @@ export const CreateBacResolutionForm = forwardRef<
 
     // Sync title & ABC when source selection changes
     useEffect(() => {
-      if (derivedTitle) {
+      if (derivedTitle && !isTitleManuallyEdited) {
         form.setFieldValue('title', derivedTitle)
       }
       form.setFieldValue('abc', inheritedAbc)
-    }, [derivedTitle, inheritedAbc, form])
+    }, [derivedTitle, inheritedAbc, form, isTitleManuallyEdited])
 
     // Update parent canProceed status based on step requirements
     useEffect(() => {
@@ -867,6 +871,7 @@ export const CreateBacResolutionForm = forwardRef<
               setSelectedAppIds([])
               setSelectedAppItems([])
               setSelectedConsolidatedPr(null)
+              setIsTitleManuallyEdited(false)
               setSelectedProcurementModeId(null)
             }}
           />
@@ -877,15 +882,33 @@ export const CreateBacResolutionForm = forwardRef<
           <SourceRecordPickerStep
             sourceType={selectedSourceType}
             selectedAppIds={selectedAppIds}
-            onToggleAppId={handleToggleAppId}
-            onSelectAllApps={handleSelectAllApps}
-            onDeselectAllApps={handleDeselectAllApps}
+            onToggleAppId={(appId) => {
+              setIsTitleManuallyEdited(false)
+              handleToggleAppId(appId)
+            }}
+            onSelectAllApps={() => {
+              setIsTitleManuallyEdited(false)
+              handleSelectAllApps()
+            }}
+            onDeselectAllApps={() => {
+              setIsTitleManuallyEdited(false)
+              handleDeselectAllApps()
+            }}
             selectedAppItems={selectedAppItems}
-            onSetSelectedAppItems={setSelectedAppItems}
+            onSetSelectedAppItems={(items) => {
+              setIsTitleManuallyEdited(false)
+              setSelectedAppItems(items)
+            }}
             selectedConsolidatedPr={selectedConsolidatedPr}
-            onSelectConsolidatedPr={setSelectedConsolidatedPr}
+            onSelectConsolidatedPr={(pr) => {
+              setIsTitleManuallyEdited(false)
+              setSelectedConsolidatedPr(pr)
+            }}
             selectedProcurementModeId={selectedProcurementModeId}
-            onSelectProcurementModeId={setSelectedProcurementModeId}
+            onSelectProcurementModeId={(modeId) => {
+              setIsTitleManuallyEdited(false)
+              setSelectedProcurementModeId(modeId)
+            }}
           />
         )}
 
@@ -1113,7 +1136,10 @@ export const CreateBacResolutionForm = forwardRef<
                           id={field.name}
                           value={field.state.value}
                           onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
+                          onChange={(e) => {
+                            setIsTitleManuallyEdited(true)
+                            field.handleChange(e.target.value)
+                          }}
                           placeholder="Procurement Project Title"
                           disabled={isLoading || isSubmitting}
                         />

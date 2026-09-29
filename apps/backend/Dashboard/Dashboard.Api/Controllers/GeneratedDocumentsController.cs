@@ -326,6 +326,23 @@ public class DocumentController(IMediator mediator,
         return Ok(result);
     }
 
+    [HttpPost("direct-contracting/{id:guid}/generate")]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateDirectContracting(
+        Guid id,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.DirectContractings.Commands.GenerateDirectContractingDocument.GenerateDirectContractingDocumentCommand
+        {
+            DirectContractingId = id,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{documentId:guid}/download")]
     [Authorize]
     public async Task<IActionResult> Download(

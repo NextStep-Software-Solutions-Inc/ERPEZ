@@ -1,5 +1,11 @@
 import React, { useState, useMemo } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { FileText, Layers, ShoppingCart, Users, Loader2 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
@@ -24,8 +30,8 @@ export default function ManageSupplierPortalPage() {
     pathParams: {},
     queryParams: {
       pageSize: 100,
-      forSupplierPortal: true,
     },
+    enabled: true,
   })
 
   // 2. Fetch RFQs (Internal / Alternative Methods) - only Approved RFQs for BAC evaluator
@@ -33,8 +39,9 @@ export default function ManageSupplierPortalPage() {
     pathParams: {},
     queryParams: {
       pageSize: 100,
-      status: 'Approved',
+      filters: `status=Approved`,
     },
+    enabled: true,
   })
 
   const isLoading = isLoadingProjects || isLoadingRFQs
@@ -53,12 +60,17 @@ export default function ManageSupplierPortalPage() {
             p.status.toLowerCase() === 'forapproval')
         if (isDraftOrSubmitted) return false
 
-        const mopName = (p.consolidatedPR?.modeOfProcurementName || p.type || '').toLowerCase()
+        const mopName = (
+          p.consolidatedPR?.modeOfProcurementName ||
+          p.type ||
+          ''
+        ).toLowerCase()
         const isSvp =
           mopName.includes('svp') ||
           mopName.includes('small value') ||
           mopName.includes('53.9') ||
-          (p.consolidatedPR?.cprNumber && p.consolidatedPR.cprNumber.toLowerCase().includes('svp'))
+          (p.consolidatedPR?.cprNumber &&
+            p.consolidatedPR.cprNumber.toLowerCase().includes('svp'))
 
         // Business Rule: hasApprovedRfq is required for Small Value Procurement (SVP) display.
         // Public Bidding projects are governed by PBD / ITB notices and do NOT require an RFQ.
@@ -71,7 +83,8 @@ export default function ManageSupplierPortalPage() {
                 (r: any) =>
                   r.status === 'Approved' ||
                   r.status === 3 ||
-                  (typeof r.status === 'string' && r.status.toLowerCase() === 'approved'),
+                  (typeof r.status === 'string' &&
+                    r.status.toLowerCase() === 'approved'),
               ))
           return !!hasApprovedRfq
         }
@@ -79,21 +92,28 @@ export default function ManageSupplierPortalPage() {
         return true
       })
       .map((p: any) => {
-        const mopName = p.consolidatedPR?.modeOfProcurementName || 'Public Bidding'
+        const mopName =
+          p.consolidatedPR?.modeOfProcurementName || 'Public Bidding'
         const schedules = p.biddingActivitySchedules || []
-        const latestSchedule = schedules.length > 0 ? schedules[schedules.length - 1] : null
+        const latestSchedule =
+          schedules.length > 0 ? schedules[schedules.length - 1] : null
         const datePosted = schedules[0]?.startDate || new Date().toISOString()
-        const deadline = latestSchedule?.endDate || latestSchedule?.startDate || ''
+        const deadline =
+          latestSchedule?.endDate || latestSchedule?.startDate || ''
 
         let status = p.status || 'Active'
-        if (typeof status === 'string' && status.toLowerCase() === 'submitted') {
+        if (
+          typeof status === 'string' &&
+          status.toLowerCase() === 'submitted'
+        ) {
           status = 'ForApproval'
         }
 
         return {
           id: p.id,
           source: 'bac' as const,
-          sourceNumber: p.consolidatedPR?.cprNumber || (p.id ? p.id.substring(0, 8) : ''),
+          sourceNumber:
+            p.consolidatedPR?.cprNumber || (p.id ? p.id.substring(0, 8) : ''),
           title: p.title || 'Untitled Project',
           status: status as any,
           type: mopName,
@@ -105,11 +125,15 @@ export default function ManageSupplierPortalPage() {
       })
 
     // 2. Identify Standalone RFQs (RFQs not already part of any BAC project)
-    const projectCprIds = new Set(rawProjects.map((p: any) => p.consolidatedPRId).filter(Boolean))
+    const projectCprIds = new Set(
+      rawProjects.map((p: any) => p.consolidatedPRId).filter(Boolean),
+    )
     const projectIds = new Set(rawProjects.map((p: any) => p.id))
-    
+
     const standaloneRfqs = rawRfqs.filter((r: any) => {
-      const isLinkedToProject = (r.consolidatedPRId && projectCprIds.has(r.consolidatedPRId)) || projectIds.has(r.id)
+      const isLinkedToProject =
+        (r.consolidatedPRId && projectCprIds.has(r.consolidatedPRId)) ||
+        projectIds.has(r.id)
       const isApproved =
         r.status === 'Approved' ||
         r.status === 3 ||
@@ -166,8 +190,17 @@ export default function ManageSupplierPortalPage() {
       if (typeFilter !== 'all') {
         if (typeFilter === 'rfq' && project.source !== 'rfq') return false
         if (typeFilter === 'bac' && project.source !== 'bac') return false
-        if (typeFilter === 'SVP' && !project.type.toLowerCase().includes('svp') && !project.type.toLowerCase().includes('small value')) return false
-        if (typeFilter === 'Public Bidding' && !project.type.toLowerCase().includes('public')) return false
+        if (
+          typeFilter === 'SVP' &&
+          !project.type.toLowerCase().includes('svp') &&
+          !project.type.toLowerCase().includes('small value')
+        )
+          return false
+        if (
+          typeFilter === 'Public Bidding' &&
+          !project.type.toLowerCase().includes('public')
+        )
+          return false
       }
 
       const query = globalFilter.trim().toLowerCase()
@@ -176,7 +209,8 @@ export default function ManageSupplierPortalPage() {
       return (
         project.title.toLowerCase().includes(query) ||
         project.id.toLowerCase().includes(query) ||
-        (project.sourceNumber && project.sourceNumber.toLowerCase().includes(query)) ||
+        (project.sourceNumber &&
+          project.sourceNumber.toLowerCase().includes(query)) ||
         project.type.toLowerCase().includes(query) ||
         project.status.toLowerCase().includes(query)
       )
@@ -193,7 +227,10 @@ export default function ManageSupplierPortalPage() {
     const publicBiddingList = projects.filter(
       (p) => p.type.toLowerCase().includes('public') || p.source === 'bac',
     )
-    const totalApplicants = projects.reduce((count, p) => count + (p.applicantCount ?? 0), 0)
+    const totalApplicants = projects.reduce(
+      (count, p) => count + (p.applicantCount ?? 0),
+      0,
+    )
 
     return {
       totalProjects: projects.length,
@@ -211,7 +248,8 @@ export default function ManageSupplierPortalPage() {
             <div className="space-y-2">
               <CardTitle className="text-3xl">Manage Supplier Portal</CardTitle>
               <CardDescription className="text-base">
-                View active opportunities and manage supplier quotation bids and applications across all procurement methods.
+                View active opportunities and manage supplier quotation bids and
+                applications across all procurement methods.
               </CardDescription>
             </div>
             <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
@@ -227,8 +265,12 @@ export default function ManageSupplierPortalPage() {
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Total Opportunities</p>
-                  <p className="mt-4 text-3xl font-bold text-slate-900">{stats.totalProjects}</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                    Total Opportunities
+                  </p>
+                  <p className="mt-4 text-3xl font-bold text-slate-900">
+                    {stats.totalProjects}
+                  </p>
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
                   <FileText className="h-5 w-5" />
@@ -238,8 +280,12 @@ export default function ManageSupplierPortalPage() {
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Internal RFQs / SVP</p>
-                  <p className="mt-4 text-3xl font-bold text-violet-900">{stats.svpProjects}</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                    Internal RFQs / SVP
+                  </p>
+                  <p className="mt-4 text-3xl font-bold text-violet-900">
+                    {stats.svpProjects}
+                  </p>
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
                   <Layers className="h-5 w-5" />
@@ -249,8 +295,12 @@ export default function ManageSupplierPortalPage() {
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Public Bidding</p>
-                  <p className="mt-4 text-3xl font-bold text-sky-900">{stats.publicBiddingProjects}</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                    Public Bidding
+                  </p>
+                  <p className="mt-4 text-3xl font-bold text-sky-900">
+                    {stats.publicBiddingProjects}
+                  </p>
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
                   <ShoppingCart className="h-5 w-5" />
@@ -260,8 +310,12 @@ export default function ManageSupplierPortalPage() {
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Total Submissions</p>
-                  <p className="mt-4 text-3xl font-bold text-emerald-900">{stats.totalApplicants}</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                    Total Submissions
+                  </p>
+                  <p className="mt-4 text-3xl font-bold text-emerald-900">
+                    {stats.totalApplicants}
+                  </p>
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
                   <Users className="h-5 w-5" />
@@ -275,9 +329,12 @@ export default function ManageSupplierPortalPage() {
       <Card>
         <CardHeader>
           <CardTitle>Opportunities & Submissions</CardTitle>
-          <CardDescription>Select an RFQ or BAC project to review supplier bids and applications</CardDescription>
+          <CardDescription>
+            Select an RFQ or BAC project to review supplier bids and
+            applications
+          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="py-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
               <Loader2 className="h-5 w-5 animate-spin" />

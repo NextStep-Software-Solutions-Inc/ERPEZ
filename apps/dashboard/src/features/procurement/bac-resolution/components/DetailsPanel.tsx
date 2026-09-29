@@ -22,7 +22,9 @@ import {
   Clock,
   CalendarRange,
   AlertTriangle,
+  Eye,
 } from 'lucide-react'
+import { ConsolidatedPrItemDetailsModal, type ConsolidatedPrItemDetails } from '../dialogs/ConsolidatedPrItemDetailsModal'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -88,6 +90,8 @@ export function DetailsPanel({
   const [activeTab, setActiveTab] = useState('overview')
   const [approveOpen, setApproveOpen] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
+  const [selectedCprItem, setSelectedCprItem] = useState<ConsolidatedPrItemDetails | null>(null)
+  const [isCprModalOpen, setIsCprModalOpen] = useState(false)
 
   const { mutateAsync: approveBacResolution, isPending: isApproving } =
     useApproveBacResolution()
@@ -272,8 +276,10 @@ export function DetailsPanel({
         description?: string
         modeOfProcurementName?: string
         modeOfProcurement?: string
+        items?: ConsolidatedPrItemDetails[]
       }
     | undefined
+  const cprItems = consolidatedPR?.items || []
   const cprNumber = consolidatedPR?.cprNumber || consolidatedPR?.prNumber
   const cprDescription = consolidatedPR?.description
   const cprProcurementMode =
@@ -921,33 +927,177 @@ export function DetailsPanel({
                   )}
                 </>
               ) : (
-                <div className="rounded-xl border border-default-200 p-4 bg-white space-y-3 shadow-2xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-base text-primary flex items-center gap-1.5">
-                      <FileText className="h-4 w-4" />
-                      {cprNumber || 'Consolidated Purchase Request'}
-                    </span>
-                    {cprProcurementMode && (
-                      <Badge className="bg-purple-600 text-white text-[10px] rounded-full px-2.5">
-                        {cprProcurementMode}
-                      </Badge>
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-default-200 p-4 bg-white dark:bg-card space-y-3 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-base text-primary flex items-center gap-1.5">
+                        <FileText className="h-4 w-4" />
+                        {cprNumber || 'Consolidated Purchase Request'}
+                      </span>
+                      {cprProcurementMode && (
+                        <Badge className="bg-purple-600 text-white text-[10px] rounded-full px-2.5">
+                          {cprProcurementMode}
+                        </Badge>
+                      )}
+                    </div>
+                    {cprDescription && (
+                      <p className="text-xs text-foreground font-medium leading-relaxed">
+                        {cprDescription}
+                      </p>
                     )}
+                    <div className="pt-2 border-t border-default-100 flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        Approved Budget (ABC):
+                      </span>
+                      <span className="font-bold text-emerald-700 text-sm">
+                        ₱
+                        {abc.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
                   </div>
-                  {cprDescription && (
-                    <p className="text-xs text-foreground font-medium leading-relaxed">
-                      {cprDescription}
-                    </p>
-                  )}
-                  <div className="pt-2 border-t border-default-100 flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      Approved Budget (ABC):
-                    </span>
-                    <span className="font-bold text-emerald-700 text-sm">
-                      ₱
-                      {abc.toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                      })}
-                    </span>
+
+                  {/* Consolidated PR Itemized Table */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground block text-[10px] font-bold uppercase tracking-wider">
+                        CONSOLIDATED PR LINE ITEMS ({cprItems.length})
+                      </span>
+                      {cprNumber && (
+                        <Badge
+                          variant="outline"
+                          className="text-primary border-primary/30 text-[10px]"
+                        >
+                          {cprNumber}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {cprItems.length > 0 ? (
+                      <div className="rounded-lg border border-default-200 overflow-hidden bg-white dark:bg-card">
+                        <table className="w-full text-xs">
+                          <thead className="bg-default-50 dark:bg-muted/40 border-b border-default-200">
+                            <tr>
+                              <th className="p-2.5 text-left font-bold text-default-700 w-10">
+                                #
+                              </th>
+                              <th className="p-2.5 text-left font-bold text-default-700">
+                                Item Description & Specifications
+                              </th>
+                              <th className="p-2.5 text-left font-bold text-default-700">
+                                Originating PR
+                              </th>
+                              <th className="p-2.5 text-left font-bold text-default-700">
+                                Requesting Office
+                              </th>
+                              <th className="p-2.5 text-center font-bold text-default-700">
+                                Qty & Unit
+                              </th>
+                              <th className="p-2.5 text-right font-bold text-default-700">
+                                Unit Cost
+                              </th>
+                              <th className="p-2.5 text-right font-bold text-default-700">
+                                Total ABC
+                              </th>
+                              <th className="p-2.5 text-center font-bold text-default-700 w-16">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-default-100">
+                            {cprItems.map((cItem, idx) => (
+                              <tr
+                                key={cItem.id || idx}
+                                onClick={() => {
+                                  setSelectedCprItem(cItem)
+                                  setIsCprModalOpen(true)
+                                }}
+                                className="hover:bg-muted/40 cursor-pointer transition-colors"
+                              >
+                                <td className="p-2.5 font-semibold text-muted-foreground text-center">
+                                  {idx + 1}
+                                </td>
+                                <td className="p-2.5">
+                                  <div className="font-semibold text-foreground">
+                                    {cItem.itemName}
+                                  </div>
+                                  {cItem.description && (
+                                    <div className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                                      {cItem.description}
+                                    </div>
+                                  )}
+                                  {cItem.category && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-[9px] py-0 px-1 mt-1 font-normal"
+                                    >
+                                      {cItem.category}
+                                    </Badge>
+                                  )}
+                                </td>
+                                <td className="p-2.5">
+                                  {cItem.prNumber ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="font-mono text-[10px] bg-muted/30"
+                                    >
+                                      {cItem.prNumber}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </td>
+                                <td className="p-2.5 text-default-600">
+                                  {cItem.officeName || '—'}
+                                </td>
+                                <td className="p-2.5 text-center font-medium">
+                                  {cItem.quantity} {cItem.unit || 'unit'}
+                                </td>
+                                <td className="p-2.5 text-right text-muted-foreground">
+                                  ₱{cItem.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="p-2.5 text-right font-bold text-emerald-700 dark:text-emerald-400">
+                                  ₱{cItem.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="p-2.5 text-center">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setSelectedCprItem(cItem)
+                                      setIsCprModalOpen(true)
+                                    }}
+                                  >
+                                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="bg-default-50/70 dark:bg-muted/30 border-t border-default-200 text-xs font-semibold">
+                            <tr>
+                              <td colSpan={4} className="p-2.5 text-muted-foreground">
+                                Total Items: {cprItems.length}
+                              </td>
+                              <td colSpan={2} className="p-2.5 text-right text-muted-foreground">
+                                Aggregate Project ABC:
+                              </td>
+                              <td className="p-2.5 text-right font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+                                ₱{cprItems.reduce((acc, it) => acc + (it.totalAmount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                              </td>
+                              <td></td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="py-6 px-4 text-center border border-dashed rounded-lg bg-muted/10 text-muted-foreground text-xs">
+                        No line items found in this Consolidated Purchase Request.
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1217,6 +1367,12 @@ export function DetailsPanel({
           />
         </>
       )}
+
+      <ConsolidatedPrItemDetailsModal
+        open={isCprModalOpen}
+        onOpenChange={setIsCprModalOpen}
+        item={selectedCprItem}
+      />
     </div>
   )
 }

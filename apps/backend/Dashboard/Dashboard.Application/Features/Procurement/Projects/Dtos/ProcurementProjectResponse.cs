@@ -302,7 +302,33 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
             ModeOfProcurementName = c.ConsolidatedPR.ConsolidatedPRItems
                 .Where(ci => ci.ProcurementMode != null)
                 .Select(ci => ci.ProcurementMode!.Name)
-                .FirstOrDefault() ?? string.Empty
+                .FirstOrDefault() ?? string.Empty,
+            Items = c.ConsolidatedPR.ConsolidatedPRItems
+                .Where(ci => !ci.IsDeleted)
+                .Select(ci => new ConsolidatedPRItemSummaryResponse
+                {
+                    Id = ci.Id,
+                    PRItemId = ci.PRItemId,
+                    ItemName = ci.PRItem != null ? ci.PRItem.Name : string.Empty,
+                    Description = ci.PRItem != null ? (ci.PRItem.Description ?? (ci.PRItem.PPMPItem != null ? ci.PRItem.PPMPItem.Description : null)) : null,
+                    Category = ci.PRItem != null && ci.PRItem.PPMPItem != null ? ci.PRItem.PPMPItem.ProjectType.ToString() : (ci.PRItem != null && ci.PRItem.IsNonCSE ? "Non-CSE" : "CSE"),
+                    StockNo = ci.PRItem != null ? ci.PRItem.StockNo : null,
+                    Unit = ci.PRItem != null && ci.PRItem.PPMPItem != null ? ci.PRItem.PPMPItem.Unit : "unit",
+                    Quantity = ci.PRItem != null ? ci.PRItem.RequestedQuantity : 0,
+                    UnitPrice = ci.PRItem != null ? ci.PRItem.UnitCost : 0,
+                    TotalAmount = ci.PRItem != null ? (ci.PRItem.Amount > 0 ? ci.PRItem.Amount : (ci.PRItem.RequestedQuantity * ci.PRItem.UnitCost)) : 0,
+                    PRNumber = ci.PurchaseRequest != null ? ci.PurchaseRequest.PRNumber : (ci.PRItem != null && ci.PRItem.PurchaseRequest != null ? ci.PRItem.PurchaseRequest.PRNumber : null),
+                    PurchaseRequestId = ci.PurchaseRequestId,
+                    OfficeName = ci.PurchaseRequest != null && ci.PurchaseRequest.Office != null ? ci.PurchaseRequest.Office.Name : (ci.PRItem != null && ci.PRItem.PurchaseRequest != null && ci.PRItem.PurchaseRequest.Office != null ? ci.PRItem.PurchaseRequest.Office.Name : null),
+                    ProcurementModeId = ci.ProcurementModeId,
+                    ProcurementModeName = ci.ProcurementMode != null ? ci.ProcurementMode.Name : null,
+                    AllowPartial = ci.AllowPartial,
+                    MonthlyQuantities = ci.PRItem != null && ci.PRItem.PPMPItem != null && ci.PRItem.PPMPItem.PPMPItemAllocations != null
+                        ? ci.PRItem.PPMPItem.PPMPItemAllocations
+                            .Where(a => !a.IsDeleted)
+                            .ToDictionary(a => a.AllocationMonth.ToString(), a => a.Quantity)
+                        : new Dictionary<string, int>()
+                }).ToList()
         } : null,
         ABC = c.ABC,
         Status = c.Status,
@@ -428,6 +454,28 @@ public record ConsolidatedPRSummaryResponse
     public bool HasRFQ { get; init; }
     public bool HasApprovedRFQ { get; init; }
     public int RFQCount { get; init; }
+    public List<ConsolidatedPRItemSummaryResponse> Items { get; init; } = new();
+}
+
+public record ConsolidatedPRItemSummaryResponse
+{
+    public Guid Id { get; init; }
+    public Guid PRItemId { get; init; }
+    public string ItemName { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public string? Category { get; init; }
+    public string? StockNo { get; init; }
+    public string Unit { get; init; } = string.Empty;
+    public int Quantity { get; init; }
+    public decimal UnitPrice { get; init; }
+    public decimal TotalAmount { get; init; }
+    public string? PRNumber { get; init; }
+    public Guid? PurchaseRequestId { get; init; }
+    public string? OfficeName { get; init; }
+    public Guid? ProcurementModeId { get; init; }
+    public string? ProcurementModeName { get; init; }
+    public bool AllowPartial { get; init; }
+    public Dictionary<string, int> MonthlyQuantities { get; init; } = new();
 }
 
 public record ProjectUserResponse

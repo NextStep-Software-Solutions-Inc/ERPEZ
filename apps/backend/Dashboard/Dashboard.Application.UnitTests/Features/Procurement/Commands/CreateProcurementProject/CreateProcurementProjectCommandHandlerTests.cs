@@ -19,12 +19,14 @@ public class CreateProcurementProjectCommandHandlerTests
     private readonly Mock<IAPPRepository> mockAppRepo = new();
     private readonly Mock<IAPPItemRepository> mockAppItemRepo = new();
     private readonly Mock<IProcurementProjectRepository> mockProjectRepo = new();
+    private readonly Mock<IConsolidatedPRRepository> mockCprRepo = new();
 
     public CreateProcurementProjectCommandHandlerTests()
     {
         mockUnitOfWork.Setup(u => u.APPRepository).Returns(mockAppRepo.Object);
         mockUnitOfWork.Setup(u => u.APPItemRepository).Returns(mockAppItemRepo.Object);
         mockUnitOfWork.Setup(u => u.ProcurementProjectRepository).Returns(mockProjectRepo.Object);
+        mockUnitOfWork.Setup(u => u.ConsolidatedPRRepository).Returns(mockCprRepo.Object);
     }
 
     [Fact]
@@ -268,6 +270,146 @@ public class CreateProcurementProjectCommandHandlerTests
         Assert.Equal(0, items[0].Order);
         Assert.Equal(clauseId2, items[1].BACResolutionWhereasClauseId);
         Assert.Equal(1, items[1].Order);
+    }
+
+    [Fact]
+    public async Task Handle_ConsolidatedPRSource_WithCustomTitle_UsesCustomTitle()
+    {
+        var cprId = Guid.NewGuid();
+        var consolidatedPr = new ConsolidatedPR
+        {
+            Id = cprId,
+            CPRNumber = "CPR-2026-001",
+            Description = "Default Consolidated PR Description",
+            TotalAmount = 500000m
+        };
+
+        mockCprRepo
+            .Setup(r => r.GetByIdAsync(cprId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(consolidatedPr);
+
+        mockCprRepo
+            .Setup(r => r.GetCPRWithDetailsAsync(cprId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(consolidatedPr);
+
+        mockProjectRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<ProcurementProject, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProcurementProject?)null);
+
+        ProcurementProject? savedProject = null;
+        mockProjectRepo
+            .Setup(r => r.AddAsync(It.IsAny<ProcurementProject>(), It.IsAny<CancellationToken>()))
+            .Callback<ProcurementProject, CancellationToken>((p, _) => savedProject = p)
+            .Returns(Task.CompletedTask);
+
+        var handler = new CreateProcurementProjectCommandHandler(mockUnitOfWork.Object);
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.ConsolidatedPR,
+            ConsolidatedPRId = cprId,
+            Title = "My Custom Consolidated Project Title",
+            ResolutionNumber = "BAC-RES-2026-100"
+        };
+
+        var response = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(response.Succeeded);
+        Assert.NotNull(savedProject);
+        Assert.Equal("My Custom Consolidated Project Title", savedProject!.Title);
+    }
+
+    [Fact]
+    public async Task Handle_ConsolidatedPRSource_WithoutCustomTitle_FallsBackToDescription()
+    {
+        var cprId = Guid.NewGuid();
+        var consolidatedPr = new ConsolidatedPR
+        {
+            Id = cprId,
+            CPRNumber = "CPR-2026-001",
+            Description = "Default Consolidated PR Description",
+            TotalAmount = 500000m
+        };
+
+        mockCprRepo
+            .Setup(r => r.GetByIdAsync(cprId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(consolidatedPr);
+
+        mockCprRepo
+            .Setup(r => r.GetCPRWithDetailsAsync(cprId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(consolidatedPr);
+
+        mockProjectRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<ProcurementProject, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProcurementProject?)null);
+
+        ProcurementProject? savedProject = null;
+        mockProjectRepo
+            .Setup(r => r.AddAsync(It.IsAny<ProcurementProject>(), It.IsAny<CancellationToken>()))
+            .Callback<ProcurementProject, CancellationToken>((p, _) => savedProject = p)
+            .Returns(Task.CompletedTask);
+
+        var handler = new CreateProcurementProjectCommandHandler(mockUnitOfWork.Object);
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.ConsolidatedPR,
+            ConsolidatedPRId = cprId,
+            Title = "",
+            ResolutionNumber = "BAC-RES-2026-101"
+        };
+
+        var response = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(response.Succeeded);
+        Assert.NotNull(savedProject);
+        Assert.Equal("Default Consolidated PR Description", savedProject!.Title);
+    }
+
+    [Fact]
+    public async Task Handle_AppItemSource_WithCustomTitle_UsesCustomTitle()
+    {
+        var appId = Guid.NewGuid();
+        var appItemId = Guid.NewGuid();
+        var appItem = new APPItem
+        {
+            Id = appItemId,
+            APPId = appId,
+            EstimatedBudgetOverride = 100000m,
+            Remarks = "Auto remarks"
+        };
+
+        mockAppRepo
+            .Setup(r => r.GetByIdAsync(appId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new APP { Id = appId, APPNumber = "APP-2026-001" });
+
+        mockAppItemRepo
+            .Setup(r => r.GetWithDetailsAsync(appItemId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(appItem);
+
+        mockProjectRepo
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<ProcurementProject, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProcurementProject?)null);
+
+        ProcurementProject? savedProject = null;
+        mockProjectRepo
+            .Setup(r => r.AddAsync(It.IsAny<ProcurementProject>(), It.IsAny<CancellationToken>()))
+            .Callback<ProcurementProject, CancellationToken>((p, _) => savedProject = p)
+            .Returns(Task.CompletedTask);
+
+        var handler = new CreateProcurementProjectCommandHandler(mockUnitOfWork.Object);
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPId = appId,
+            APPItemId = appItemId,
+            Title = "Custom App Project Title",
+            ResolutionNumber = "BAC-RES-2026-102"
+        };
+
+        var response = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(response.Succeeded);
+        Assert.NotNull(savedProject);
+        Assert.Equal("Custom App Project Title", savedProject!.Title);
     }
 
     [Fact]

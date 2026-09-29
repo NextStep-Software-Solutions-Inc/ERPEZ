@@ -60,6 +60,15 @@ public class GetProcurementProjectByIdQueryHandler(IUnitOfWork unitOfWork)
             return ApiResponse<ProcurementProjectDetailResponse>.Fail("Procurement project not found.");
         }
 
+        if (entity.ConsolidatedPRId.HasValue && (entity.ConsolidatedPR == null || entity.ConsolidatedPR.ConsolidatedPRItems == null || entity.ConsolidatedPR.ConsolidatedPRItems.Count == 0 || entity.ConsolidatedPR.ConsolidatedPRItems.Any(ci => ci.PRItem == null)))
+        {
+            var cprWithDetails = await unitOfWork.ConsolidatedPRRepository.GetCPRWithDetailsAsync(entity.ConsolidatedPRId.Value, cancellationToken);
+            if (cprWithDetails != null)
+            {
+                entity.ConsolidatedPR = cprWithDetails;
+            }
+        }
+
         var projectDto = ProcurementProjectDetailResponse.DetailProjection.Compile()(entity);
         return ApiResponse<ProcurementProjectDetailResponse>.Success(projectDto);
     }
