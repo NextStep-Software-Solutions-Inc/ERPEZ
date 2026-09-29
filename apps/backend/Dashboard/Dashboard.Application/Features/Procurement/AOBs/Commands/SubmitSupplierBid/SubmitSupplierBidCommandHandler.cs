@@ -1,13 +1,15 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Commands.SubmitSupplierBid;
 
-public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
+public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork, IFileStorageService? fileStorageService = null)
     : IRequestHandler<SubmitSupplierBidCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(SubmitSupplierBidCommand request, CancellationToken cancellationToken)
@@ -70,6 +72,43 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
             var lineTotal = item.UnitPrice * rfqItem.Quantity;
             totalBidAmount += lineTotal;
 
+            var brochureUrl = item.BrochureFileUrl;
+            var brochureId = item.BrochureFileId;
+
+            // Automatically promote brochure from temp to permanent storage so it is not purged by TempFileCleanupService
+            if (fileStorageService != null)
+            {
+                if (brochureId.HasValue && brochureId.Value != Guid.Empty)
+                {
+                    try
+                    {
+                        var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(brochureId.Value, cancellationToken);
+                        brochureUrl = promotedUrl;
+                    }
+                    catch
+                    {
+                        // File may already be promoted
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(brochureUrl))
+                {
+                    var match = Regex.Match(brochureUrl, @"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
+                    if (match.Success && Guid.TryParse(match.Value, out var parsedId))
+                    {
+                        brochureId = parsedId;
+                        try
+                        {
+                            var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(parsedId, cancellationToken);
+                            brochureUrl = promotedUrl;
+                        }
+                        catch
+                        {
+                            // File may already be promoted
+                        }
+                    }
+                }
+            }
+
             processedBidItems.Add(new SupplierBidItem
             {
                 RFQItemId = item.RFQItemId,
@@ -78,8 +117,8 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
                 Brand = item.Brand,
                 Model = item.Model,
                 Color = item.Color,
-                BrochureFileId = item.BrochureFileId,
-                BrochureFileUrl = item.BrochureFileUrl,
+                BrochureFileId = brochureId,
+                BrochureFileUrl = brochureUrl,
                 IsResponsive = item.IsResponsive,
                 DisqualificationReason = item.DisqualificationReason,
                 QualityScore = item.QualityScore
@@ -91,6 +130,27 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
             .Include(sb => sb.SupplierBidItems)
             .FirstOrDefaultAsync(sb => sb.RFQId == request.RFQId && sb.SupplierId == request.SupplierId, cancellationToken);
 
+        var cleanQuotationDoc = !string.IsNullOrWhiteSpace(request.QuotationDocumentUrl) ? request.QuotationDocumentUrl.Trim() : null;
+        if (fileStorageService != null && !string.IsNullOrWhiteSpace(cleanQuotationDoc))
+        {
+            var match = Regex.Match(cleanQuotationDoc, @"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
+            if (match.Success && Guid.TryParse(match.Value, out var parsedDocId))
+            {
+                try
+                {
+                    var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(parsedDocId, cancellationToken);
+                    cleanQuotationDoc = promotedUrl;
+                }
+                catch
+                {
+                    // File may already be promoted
+                }
+            }
+        }
+
+        var cleanSignatory = !string.IsNullOrWhiteSpace(request.SignatoryName) ? request.SignatoryName.Trim() : null;
+        var cleanSignature = !string.IsNullOrWhiteSpace(request.SignatureUrl) ? request.SignatureUrl.Trim() : null;
+
         if (existingBid != null)
         {
             existingBid.SubmissionType = request.SubmissionType;
@@ -100,9 +160,6 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
             existingBid.PaymentTerms = request.PaymentTerms;
             existingBid.WarrantyTerms = request.WarrantyTerms;
             existingBid.Remarks = request.Remarks;
-            var cleanSignatory = !string.IsNullOrWhiteSpace(request.SignatoryName) ? request.SignatoryName.Trim() : null;
-            var cleanQuotationDoc = !string.IsNullOrWhiteSpace(request.QuotationDocumentUrl) ? request.QuotationDocumentUrl.Trim() : null;
-            var cleanSignature = !string.IsNullOrWhiteSpace(request.SignatureUrl) ? request.SignatureUrl.Trim() : null;
 
             existingBid.QuotationDocumentUrl = cleanQuotationDoc ?? existingBid.QuotationDocumentUrl;
             existingBid.SignatureUrl = cleanSignature ?? existingBid.SignatureUrl;
@@ -128,10 +185,6 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
         }
         else
         {
-            var cleanSignatory = !string.IsNullOrWhiteSpace(request.SignatoryName) ? request.SignatoryName.Trim() : null;
-            var cleanQuotationDoc = !string.IsNullOrWhiteSpace(request.QuotationDocumentUrl) ? request.QuotationDocumentUrl.Trim() : null;
-            var cleanSignature = !string.IsNullOrWhiteSpace(request.SignatureUrl) ? request.SignatureUrl.Trim() : null;
-
             var newBid = new SupplierBid
             {
                 RFQId = request.RFQId,

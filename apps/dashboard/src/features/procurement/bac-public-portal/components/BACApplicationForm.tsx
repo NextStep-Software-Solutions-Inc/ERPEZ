@@ -145,7 +145,7 @@ export function BACApplicationForm({
   const generateQuotationPdfBlob = async (): Promise<Blob> => {
     const payload = {
       companyName: formValues.supplierName?.trim() || 'Prospective Supplier',
-      contactPerson: formValues.contactPerson?.trim() || formValues.supplierName?.trim() || 'Authorized Representative',
+      contactPerson: formValues.supplierName?.trim() || 'Authorized Representative',
       emailAddress: formValues.email?.trim() || '',
       contactNumber: formValues.contactNumber?.trim() || '',
       tinNumber: formValues.tinNumber?.trim() || '',
@@ -182,7 +182,7 @@ export function BACApplicationForm({
       const link = document.createElement('a')
       link.href = url
       const safeName = (formValues.supplierName || 'Quotation').replace(/[^a-zA-Z0-9_-]/g, '_')
-      link.download = `RFQ_${project.projectNumber || 'Quotation'}_${safeName}.pdf`
+      link.download = `RFQ_${project.referenceNo || 'Quotation'}_${safeName}.pdf`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -1341,59 +1341,76 @@ export function BACApplicationForm({
                             </div>
                           </div>
 
-                          {/* Template & Pre-Filled Quotation Download Buttons */}
-                          <div className="flex items-center gap-2 shrink-0">
-                            {/* Pre-Filled PDF Button (when quotation item and prices entered) */}
-                            {((doc.name.toLowerCase().includes('quotation') || doc.name.toLowerCase().includes('rfq')) || (isRfq && isItemized)) &&
-                              totalQuotedBid > 0 &&
-                              !isOverAbc && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleDownloadFilledQuotation()
-                                  }}
-                                  disabled={isGeneratingQuotation}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
-                                  title="Download RFQ quotation pre-filled with your entered prices and details"
-                                >
-                                  {isGeneratingQuotation ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  ) : (
-                                    <Download className="h-3.5 w-3.5" />
-                                  )}
-                                  Download Pre-Filled PDF
-                                </button>
-                              )}
+                          {/* Download Buttons: Display ONLY on Price Quotation; remove from Mayor's permit, PhilGEPS, and OSS */}
+                          {(() => {
+                            const lowerName = doc.name.toLowerCase()
+                            const isQuotationDoc =
+                              (lowerName.includes('quotation') ||
+                               lowerName.includes('rfq') ||
+                               lowerName.includes('price proposal') ||
+                               lowerName.includes('financial') ||
+                               lowerName.includes('bid form')) &&
+                              !lowerName.includes('permit') &&
+                              !lowerName.includes('philgeps') &&
+                              !lowerName.includes('omnibus') &&
+                              !lowerName.includes('sworn statement') &&
+                              !lowerName.includes('oss')
 
-                            {/* Download Blank Template Button */}
-                            {(doc.downloadUrl || doc.viewerDocId) &&
-                              (doc.viewerDocId ? (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    printDocument(doc.viewerDocId!)
-                                  }}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0"
-                                >
-                                  <Download className="h-3.5 w-3.5" />
-                                  Download Template
-                                </button>
-                              ) : (
-                                <a
-                                  href={doc.downloadUrl ?? '#'}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  download
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-sm"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <Download className="h-3.5 w-3.5" />
-                                  Download Template
-                                </a>
-                              ))}
-                          </div>
+                            if (!isQuotationDoc) return null
+
+                            return (
+                              <div className="flex items-center gap-2 shrink-0">
+                                {/* Pre-Filled PDF Button (when quotation item and prices entered) */}
+                                {totalQuotedBid > 0 && !isOverAbc && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDownloadFilledQuotation()
+                                    }}
+                                    disabled={isGeneratingQuotation}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
+                                    title="Download RFQ quotation pre-filled with your entered prices and details"
+                                  >
+                                    {isGeneratingQuotation ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      <Download className="h-3.5 w-3.5" />
+                                    )}
+                                    Download Pre-Filled PDF
+                                  </button>
+                                )}
+
+                                {/* Download Blank Template Button */}
+                                {(doc.downloadUrl || doc.viewerDocId) &&
+                                  (doc.viewerDocId ? (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        printDocument(doc.viewerDocId!)
+                                      }}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0"
+                                    >
+                                      <Download className="h-3.5 w-3.5" />
+                                      Download Template
+                                    </button>
+                                  ) : (
+                                    <a
+                                      href={doc.downloadUrl ?? '#'}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      download
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-sm"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Download className="h-3.5 w-3.5" />
+                                      Download Template
+                                    </a>
+                                  ))}
+                              </div>
+                            )
+                          })()}
                         </div>
 
                         {/* Upload Slot */}
@@ -1559,7 +1576,7 @@ export function BACApplicationForm({
                   const link = document.createElement('a')
                   link.href = previewPdfUrl
                   const safeName = (formValues.supplierName || 'Quotation').replace(/[^a-zA-Z0-9_-]/g, '_')
-                  link.download = `RFQ_${project.projectNumber || 'Quotation'}_${safeName}.pdf`
+                  link.download = `RFQ_${project.referenceNo || 'Quotation'}_${safeName}.pdf`
                   document.body.appendChild(link)
                   link.click()
                   document.body.removeChild(link)

@@ -30,7 +30,6 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import {
-  MoreVertical,
   ChevronLeft,
   Search as SearchIcon,
   Calendar,
@@ -82,6 +81,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { generateAndDownloadRfqDocument } from '../utils/generateRfqDocumentRequest'
+import { DocumentPreviewModal } from '../components/DocumentPreviewModal'
 import { SupplierRFQPreviewDialog } from '@/features/procurement/aob/dialogs/SupplierRFQPreviewDialog'
 import type { BidMatrix } from '@/features/procurement/aob/types/aobTypes'
 import api from '@/services/api'
@@ -121,6 +121,12 @@ export function RFQDetailsPage({
   const [previewingSupplierRFQ, setPreviewingSupplierRFQ] = useState<any | null>(null)
   const queryClient = useQueryClient()
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [previewModalState, setPreviewModalState] = useState<{
+    open: boolean
+    url: string | null
+    title?: string
+    fileName?: string
+  }>({ open: false, url: null })
 
   const invalidateRFQQueries = async () => {
     try {
@@ -169,6 +175,7 @@ export function RFQDetailsPage({
 
   const rfqBidMatrix = useMemo<BidMatrix>(() => ({
     id: rfq?.id || '',
+    aobId: rfq?.id || '',
     aobNumber: rfq?.rfqNumber || 'RFQ',
     description: rfq?.description || rfq?.purpose || '',
     openingDate: rfq?.deadline || '',
@@ -621,11 +628,8 @@ export function RFQDetailsPage({
 
   // Render rows from filtered items (separated from filtering logic)
   const itemRows = filteredItems.map(({ it, idx }: any) => {
-    const mockMonths = monthsList
+    const mockMonths: string[] = monthsList
     const monthIndex: number | null = getMonthIndexForItem(it, idx)
-
-    // month label uses resolved month index or 'Unknown' when null
-    const monthLabel = monthIndex !== null ? mockMonths[monthIndex] : 'Unknown'
 
     // Build a month-by-month quantity array: place quantity only at the resolved month index if known.
     let monthlyQty = new Array(12)
@@ -830,7 +834,7 @@ export function RFQDetailsPage({
           <div className="text-sm font-semibold text-destructive">
             ₱{overAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} over
           </div>
-          <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5 uppercase tracking-wide font-semibold">
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-red-300 bg-red-50 text-red-700 uppercase tracking-wide font-semibold">
             Exceeds ABC
           </Badge>
         </div>
@@ -860,6 +864,15 @@ export function RFQDetailsPage({
         </Badge>
       </div>
     )
+  }
+
+  const handlePreviewBrochure = (url: string, name?: string) => {
+    setPreviewModalState({
+      open: true,
+      url,
+      title: name ? name.replace(/\.pdf$/i, '') : 'Product Brochure',
+      fileName: name || 'Brochure.pdf',
+    })
   }
 
   // Precomputed hierarchical comparison rows for Supplier Portal
@@ -934,15 +947,16 @@ export function RFQDetailsPage({
             )}
             {it.bidBrochureUrl && (
               <div className="pt-1">
-                <a
-                  href={it.bidBrochureUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={() => handlePreviewBrochure(it.bidBrochureUrl, `${it.bidBrand || it.itemName || 'Brochure'}.pdf`)}
+                  className="h-auto p-0 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
                 >
                   <FileText className="h-3.5 w-3.5" />
                   Brochure
-                </a>
+                </Button>
               </div>
             )}
           </div>
@@ -1181,20 +1195,21 @@ export function RFQDetailsPage({
     }
   }
 
-  const handleDownloadSupplierTemplate = async (format: 'Pdf' | 'Excel' = 'Pdf') => {
+  const handleDownloadSupplierTemplate = async (format?: 'Pdf' | 'Excel' | unknown) => {
     if (!rfq?.id) return
-    const ext = format === 'Excel' ? 'xlsx' : 'pdf'
+    const resolvedFormat: 'Pdf' | 'Excel' = format === 'Excel' ? 'Excel' : 'Pdf'
+    const ext = resolvedFormat === 'Excel' ? 'xlsx' : 'pdf'
     try {
       await generateAndDownloadRfqDocument({
         rfqId: rfq.id,
-        format,
+        format: resolvedFormat,
         supplierId: supplierId || undefined,
         blankTemplate: true,
         filename: `RFQ_${rfq.rfqNumber || rfq.id}_Template.${ext}`,
       })
       toast({
-        title: `Template Downloaded (${format})`,
-        description: `RFQ ${format} template is ready for offline routing/signing.`,
+        title: `Template Downloaded (${resolvedFormat})`,
+        description: `RFQ ${resolvedFormat} template is ready for offline routing/signing.`,
       })
     } catch (err: any) {
       toast({
@@ -1608,15 +1623,35 @@ export function RFQDetailsPage({
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                  onClick={handleDownloadSupplierTemplate}
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download RFQ Template
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Download RFQ Template
+                      <ChevronDown className="h-3 w-3 ml-0.5 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      onClick={() => handleDownloadSupplierTemplate('Pdf')}
+                      className="gap-2 cursor-pointer text-xs"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-red-500" />
+                      Download PDF Template
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleDownloadSupplierTemplate('Excel')}
+                      className="gap-2 cursor-pointer text-xs"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                      Download Excel Template
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {rfq.quotationStatus === 'submitted' && (
                   <Button
                     size="sm"
@@ -2002,6 +2037,15 @@ export function RFQDetailsPage({
         onOpenChange={(open) => !open && setPreviewingSupplierRFQ(null)}
         supplier={previewingSupplierRFQ}
         bidMatrix={rfqBidMatrix}
+      />
+
+      {/* Document / Brochure Preview Modal */}
+      <DocumentPreviewModal
+        open={previewModalState.open}
+        onOpenChange={(open) => setPreviewModalState((prev) => ({ ...prev, open }))}
+        url={previewModalState.url}
+        title={previewModalState.title}
+        fileName={previewModalState.fileName}
       />
     </div>
   )

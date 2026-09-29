@@ -1,16 +1,22 @@
 import api from '@/services/api'
 
+export interface DocumentBlobResult {
+  blobUrl: string
+  blob: Blob
+  contentType: string
+  isPdf: boolean
+  isImage: boolean
+  fileName: string
+}
+
 /**
- * Previews or downloads an uploaded supplier document securely using authenticated API client.
- * 
- * - For PDFs and images: opens an in-memory blob URL in a new tab for native inline preview.
- * - For Word, Excel, ZIP, etc.: triggers browser download with the document name.
+ * Fetches document data and creates a secure authenticated in-memory Blob URL.
  */
-export async function previewDocument(
+export async function fetchDocumentBlob(
   url?: string,
   documentName?: string,
   declaredType?: string,
-): Promise<void> {
+): Promise<DocumentBlobResult> {
   if (!url || url.trim() === '') {
     throw new Error('Document URL is missing.')
   }
@@ -19,8 +25,14 @@ export async function previewDocument(
 
   // 1. Direct blob or data URLs
   if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
-    window.open(trimmed, '_blank')
-    return
+    return {
+      blobUrl: trimmed,
+      blob: new Blob([]),
+      contentType: 'application/pdf',
+      isPdf: true,
+      isImage: false,
+      fileName: documentName || 'document.pdf',
+    }
   }
 
   // 2. Extract UUID if present (raw UUID or /files/download/{uuid} or /files/{uuid}/download)
@@ -58,11 +70,6 @@ export async function previewDocument(
     documentName?.toLowerCase().endsWith('.pdf')
   const isImage = contentType.startsWith('image/')
 
-  if (isPdf || isImage) {
-    window.open(blobUrl, '_blank')
-    return
-  }
-
   // Determine proper filename with extension for non-inline documents
   let fileName = documentName || 'document'
   const disposition = response.headers['content-disposition'] as string | undefined
@@ -75,11 +82,39 @@ export async function previewDocument(
     fileName = `${fileName}.${declaredType.toLowerCase()}`
   }
 
+  return {
+    blobUrl,
+    blob,
+    contentType,
+    isPdf,
+    isImage,
+    fileName,
+  }
+}
+
+/**
+ * Previews or downloads an uploaded supplier document securely using authenticated API client.
+ * 
+ * - For PDFs and images: opens an in-memory blob URL in a new tab for native inline preview.
+ * - For Word, Excel, ZIP, etc.: triggers browser download with the document name.
+ */
+export async function previewDocument(
+  url?: string,
+  documentName?: string,
+  declaredType?: string,
+): Promise<void> {
+  const result = await fetchDocumentBlob(url, documentName, declaredType)
+
+  if (result.isPdf || result.isImage) {
+    window.open(result.blobUrl, '_blank')
+    return
+  }
+
   const link = document.createElement('a')
-  link.href = blobUrl
-  link.download = fileName
+  link.href = result.blobUrl
+  link.download = result.fileName
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+  setTimeout(() => URL.revokeObjectURL(result.blobUrl), 1000)
 }

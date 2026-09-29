@@ -56,6 +56,7 @@ import {
   generateAndDownloadRfqDocument,
   getSupplierRfqPdfBlobUrl,
 } from '../utils/generateRfqDocumentRequest'
+import { DocumentPreviewModal } from './DocumentPreviewModal'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -337,6 +338,12 @@ export function SetQuotationModal({
   const [isDownloadingFilled, setIsDownloadingFilled] = useState(false)
   const [isPreviewing, setIsPreviewing] = useState(false)
   const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null)
+  const [docPreviewModalState, setDocPreviewModalState] = useState<{
+    open: boolean
+    url: string | null
+    title?: string
+    fileName?: string
+  }>({ open: false, url: null })
   const [isUploadingSignature, setIsUploadingSignature] = useState(false)
   const [isUploadingManualDoc, setIsUploadingManualDoc] = useState(false)
 
@@ -476,7 +483,7 @@ export function SetQuotationModal({
 
     for (const item of filteredItems) {
       const normalizedName = (item.itemName || '').trim().toLowerCase()
-      const normalizedUnit = (item.unit || (item as any).unitOfMeasure || 'pcs').trim().toLowerCase()
+      const normalizedUnit = (item.unitOfMeasure || (item as any).unit || 'pcs').trim().toLowerCase()
       const unitABC = Number(item.unitPrice || 0)
       const groupKey = `${normalizedName}___${unitABC}___${normalizedUnit}`
 
@@ -484,7 +491,7 @@ export function SetQuotationModal({
         groups[groupKey] = {
           groupKey,
           itemName: item.itemName,
-          unit: item.unit || (item as any).unitOfMeasure || 'pcs',
+          unit: item.unitOfMeasure || (item as any).unit || 'pcs',
           unitPrice: unitABC,
           totalQuantity: 0,
           totalABCAmount: 0,
@@ -840,6 +847,16 @@ export function SetQuotationModal({
     }
   }
 
+  const handlePreviewDocument = (url?: string, name?: string) => {
+    if (!url) return
+    setDocPreviewModalState({
+      open: true,
+      url,
+      title: name ? name.replace(/\.pdf$/i, '') : 'Document Preview',
+      fileName: name || 'Document.pdf',
+    })
+  }
+
   const handleManualDocumentUpload = async (file: File) => {
     setIsUploadingManualDoc(true)
     try {
@@ -889,6 +906,7 @@ export function SetQuotationModal({
       supplierId || '00000000-0000-0000-0000-000000000001'
     await submitBidMutation({
       pathParams: { rfqId: rfq.id },
+      queryParams: { rfqId: rfq.id },
       payload: {
         rfqId: rfq.id,
         supplierId: targetSupplierId,
@@ -1022,6 +1040,7 @@ export function SetQuotationModal({
         supplierId || '00000000-0000-0000-0000-000000000001'
       await submitBidMutation({
         pathParams: { rfqId: rfq.id },
+        queryParams: { rfqId: rfq.id },
         payload: {
           rfqId: rfq.id,
           supplierId: targetSupplierId,
@@ -1212,14 +1231,13 @@ export function SetQuotationModal({
                 <div className="flex items-center justify-between p-3 bg-white border border-indigo-100 rounded-md">
                   <div className="flex items-center gap-2 text-xs font-medium text-indigo-900">
                     <FileText className="w-4 h-4 text-indigo-600" />
-                    <a
-                      href={quotationDocumentUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="hover:underline max-w-[280px] truncate"
+                    <button
+                      type="button"
+                      onClick={() => handlePreviewDocument(quotationDocumentUrl, quotationDocumentName || 'Attached_Signed_RFQ.pdf')}
+                      className="hover:underline max-w-[280px] truncate text-left text-blue-600 font-medium cursor-pointer"
                     >
                       {quotationDocumentName || 'Attached_Signed_RFQ.pdf'}
-                    </a>
+                    </button>
                     <Badge variant="secondary" className="text-[10px] bg-indigo-100 text-indigo-800">
                       Attached
                     </Badge>
@@ -1540,15 +1558,14 @@ export function SetQuotationModal({
                             {group.bidBrochureUrl ? (
                               <div className="flex items-center gap-2">
                                 <FileText className="h-4 w-4 text-blue-600 shrink-0" />
-                                <a
-                                  href={group.bidBrochureUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-600 hover:underline max-w-[120px] truncate block"
+                                <button
+                                  type="button"
+                                  onClick={() => handlePreviewDocument(group.bidBrochureUrl, group.bidBrochureFileName || 'Brochure.pdf')}
+                                  className="text-xs text-blue-600 hover:underline max-w-[120px] truncate block text-left cursor-pointer"
                                   title={group.bidBrochureFileName || 'Brochure'}
                                 >
                                   {group.bidBrochureFileName || 'View Brochure'}
-                                </a>
+                                </button>
                                 {!isSubmitted && (
                                   <Button
                                     variant="ghost"
@@ -1681,7 +1698,7 @@ export function SetQuotationModal({
                           <TableCell className="text-center font-bold text-slate-800 text-sm">
                             {item.quantity}
                           </TableCell>
-                          <TableCell className="text-slate-600 font-medium">{item.unit || (item as any).unitOfMeasure || 'pcs'}</TableCell>
+                          <TableCell className="text-slate-600 font-medium">{item.unitOfMeasure || (item as any).unit || 'pcs'}</TableCell>
                           <TableCell>
                             {item.bidModel || item.bidBrand || item.bidColor ? (
                               <div className="text-xs space-y-0.5">
@@ -1750,15 +1767,14 @@ export function SetQuotationModal({
                             {item.bidBrochureUrl ? (
                               <div className="flex items-center gap-2">
                                 <FileText className="h-4 w-4 text-blue-600 shrink-0" />
-                                <a
-                                  href={item.bidBrochureUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-600 hover:underline max-w-[120px] truncate block"
+                                <button
+                                  type="button"
+                                  onClick={() => handlePreviewDocument(item.bidBrochureUrl, item.bidBrochureFileName || 'Brochure.pdf')}
+                                  className="text-xs text-blue-600 hover:underline max-w-[120px] truncate block text-left cursor-pointer"
                                   title={item.bidBrochureFileName || 'Brochure'}
                                 >
                                   {item.bidBrochureFileName || 'View Brochure'}
-                                </a>
+                                </button>
                                 {!isSubmitted && (
                                   <Button
                                     variant="ghost"
@@ -2164,6 +2180,15 @@ export function SetQuotationModal({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Uploaded Brochure / Document Preview Modal */}
+      <DocumentPreviewModal
+        open={docPreviewModalState.open}
+        onOpenChange={(open) => setDocPreviewModalState((prev) => ({ ...prev, open }))}
+        url={docPreviewModalState.url}
+        title={docPreviewModalState.title}
+        fileName={docPreviewModalState.fileName}
+      />
     </>
   )
 }

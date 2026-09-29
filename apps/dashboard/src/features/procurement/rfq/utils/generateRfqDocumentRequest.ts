@@ -11,13 +11,17 @@ export interface GenerateRFQDocumentPayload {
 }
 
 export async function generateAndDownloadRfqDocument(payload: GenerateRFQDocumentPayload): Promise<void> {
-  const { rfqId, format = 'Pdf', supplierId, blankTemplate = false, filename } = payload
+  const { rfqId, supplierId, blankTemplate = false, filename } = payload
+  const format: RFQDocumentFormat = payload.format === 'Excel' ? 'Excel' : 'Pdf'
 
   // Step 1: Trigger generation — returns a documentId (Guid)
   let generateResponse: any
+  const primaryEndpoint = supplierId ? `/api/supplier/rfqs/${rfqId}/generate` : `/rfqs/${rfqId}/generate`
+  const fallbackEndpoint = supplierId ? `/rfqs/${rfqId}/generate` : `/api/supplier/rfqs/${rfqId}/generate`
+
   try {
     generateResponse = await api.post<{ data: string }>(
-      `/rfqs/${rfqId}/generate`,
+      primaryEndpoint,
       null,
       {
         params: {
@@ -28,10 +32,10 @@ export async function generateAndDownloadRfqDocument(payload: GenerateRFQDocumen
       }
     )
   } catch (err: any) {
-    if (err?.response?.status === 403) {
-      // Fallback to supplier portal endpoint for external supplier accounts
+    if (err?.response?.status === 403 || err?.response?.status === 404) {
+      // Fallback endpoint
       generateResponse = await api.post<{ data: string }>(
-        `/api/supplier/rfqs/${rfqId}/generate`,
+        fallbackEndpoint,
         null,
         {
           params: {
@@ -87,10 +91,13 @@ export async function getSupplierRfqPdfBlobUrl(
   supplierId?: string,
   blankTemplate: boolean = false
 ): Promise<string> {
+  const primaryEndpoint = supplierId ? `/api/supplier/rfqs/${rfqId}/generate` : `/rfqs/${rfqId}/generate`
+  const fallbackEndpoint = supplierId ? `/rfqs/${rfqId}/generate` : `/api/supplier/rfqs/${rfqId}/generate`
+
   let generateResponse: any
   try {
     generateResponse = await api.post<{ data: string }>(
-      `/rfqs/${rfqId}/generate`,
+      primaryEndpoint,
       null,
       {
         params: {
@@ -101,10 +108,10 @@ export async function getSupplierRfqPdfBlobUrl(
       }
     )
   } catch (err: any) {
-    if (err?.response?.status === 403) {
-      // Fallback to supplier portal endpoint for external supplier accounts
+    if (err?.response?.status === 403 || err?.response?.status === 404) {
+      // Fallback endpoint
       generateResponse = await api.post<{ data: string }>(
-        `/api/supplier/rfqs/${rfqId}/generate`,
+        fallbackEndpoint,
         null,
         {
           params: {
