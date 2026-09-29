@@ -16,7 +16,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
             .SetBasePath(Path.GetFullPath(Path.Combine(basePath, "../TenantManagement.Api")))
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
             .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
-            .AddUserSecrets("ffbf3e68-ee2c-440d-a99c-23760f25344e")
+            .AddUserSecrets(Assembly.Load("TenantManagement.Api"), optional: true)
             .AddEnvironmentVariables()
             .Build();
 
