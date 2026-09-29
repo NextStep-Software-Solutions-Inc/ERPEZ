@@ -102,4 +102,30 @@ public class SupplierPortalController(ISender mediator) : ControllerBase
         var result = await mediator.Send(command, cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
+
+    /// <summary>
+    /// Generate RFQ document (filled quotation offer or blank template) for supplier bidding
+    /// </summary>
+    [HttpPost("{rfqId}/generate")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [HasPermission(Permissions.Procurement.supplierView)]
+    public async Task<IActionResult> GenerateSupplierRFQDocument(
+        Guid rfqId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        [FromQuery] Guid? supplierId = null,
+        [FromQuery] bool blankTemplate = false,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new GenerateRFQDocumentCommand
+        {
+            RFQId = rfqId,
+            SupplierId = supplierId,
+            BlankTemplate = blankTemplate,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "SupplierPortal"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
 }

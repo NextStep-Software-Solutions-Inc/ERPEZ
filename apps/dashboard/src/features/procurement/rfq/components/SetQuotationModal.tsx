@@ -36,6 +36,7 @@ import {
   Layers,
   ListFilter,
   Calendar,
+  Eye,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -51,7 +52,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-import { generateAndDownloadRfqDocument } from '../utils/generateRfqDocumentRequest'
+import {
+  generateAndDownloadRfqDocument,
+  getSupplierRfqPdfBlobUrl,
+} from '../utils/generateRfqDocumentRequest'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -330,6 +334,9 @@ export function SetQuotationModal({
   const [warrantyTerms, setWarrantyTerms] = useState('')
   const [remarks, setRemarks] = useState('')
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false)
+  const [isDownloadingFilled, setIsDownloadingFilled] = useState(false)
+  const [isPreviewing, setIsPreviewing] = useState(false)
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null)
   const [isUploadingSignature, setIsUploadingSignature] = useState(false)
   const [isUploadingManualDoc, setIsUploadingManualDoc] = useState(false)
 
@@ -877,36 +884,39 @@ export function SetQuotationModal({
     }
   }
 
+  const saveQuotationDraftSilently = async () => {
+    const targetSupplierId =
+      supplierId || '00000000-0000-0000-0000-000000000001'
+    await submitBidMutation({
+      pathParams: { rfqId: rfq.id },
+      payload: {
+        rfqId: rfq.id,
+        supplierId: targetSupplierId,
+        submissionType,
+        status: 'DRAFT',
+        signatoryName: signatoryName.trim() || undefined,
+        signatureUrl,
+        quotationDocumentUrl,
+        deliveryPeriod: deliveryPeriod.trim() || undefined,
+        paymentTerms: paymentTerms.trim() || undefined,
+        warrantyTerms: warrantyTerms.trim() || undefined,
+        remarks: remarks.trim() || undefined,
+        items: items.map((i) => ({
+          rfqItemId: i.id,
+          unitPrice: i.bidUnitPrice || 0,
+          brand: i.bidBrand,
+          model: i.bidModel,
+          color: i.bidColor,
+          brochureFileUrl: i.bidBrochureUrl,
+          isResponsive: true,
+        })),
+      },
+    })
+  }
+
   const handleSaveDraft = async () => {
     try {
-      const targetSupplierId =
-        supplierId || '00000000-0000-0000-0000-000000000001'
-      await submitBidMutation({
-        pathParams: { rfqId: rfq.id },
-        payload: {
-          rfqId: rfq.id,
-          supplierId: targetSupplierId,
-          submissionType,
-          status: 'DRAFT',
-          signatoryName: signatoryName.trim() || undefined,
-          signatureUrl,
-          quotationDocumentUrl,
-          deliveryPeriod: deliveryPeriod.trim() || undefined,
-          paymentTerms: paymentTerms.trim() || undefined,
-          warrantyTerms: warrantyTerms.trim() || undefined,
-          remarks: remarks.trim() || undefined,
-          items: items.map((i) => ({
-            rfqItemId: i.id,
-            unitPrice: i.bidUnitPrice || 0,
-            brand: i.bidBrand,
-            model: i.bidModel,
-            color: i.bidColor,
-            brochureFileUrl: i.bidBrochureUrl,
-            isResponsive: true,
-          })),
-        },
-      })
-
+      await saveQuotationDraftSilently()
       toast({
         title: 'Draft saved',
         description: 'Your quotation has been saved as draft.',
@@ -919,6 +929,54 @@ export function SetQuotationModal({
         description: err?.message || 'Could not save quotation draft.',
         variant: 'destructive',
       })
+    }
+  }
+
+  const handleDownloadFilledQuotation = async (format: 'Pdf' | 'Excel' = 'Pdf') => {
+    if (!rfq?.id) return
+    setIsDownloadingFilled(true)
+    const ext = format === 'Excel' ? 'xlsx' : 'pdf'
+    const targetSupplierId = supplierId || '00000000-0000-0000-0000-000000000001'
+    try {
+      await saveQuotationDraftSilently()
+      await generateAndDownloadRfqDocument({
+        rfqId: rfq.id,
+        format,
+        supplierId: targetSupplierId,
+        blankTemplate: false,
+        filename: `RFQ_${rfq.rfqNumber || rfq.id}_Quotation.${ext}`,
+      })
+      toast({
+        title: `Quotation Downloaded (${format})`,
+        description: `Your pre-filled RFQ ${format} quotation is downloaded and ready for review/signing.`,
+      })
+    } catch (err: any) {
+      toast({
+        title: 'Download Failed',
+        description: err?.message || 'Could not generate pre-filled RFQ quotation.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsDownloadingFilled(false)
+    }
+  }
+
+  const handlePreviewFilledQuotation = async () => {
+    if (!rfq?.id) return
+    setIsPreviewing(true)
+    const targetSupplierId = supplierId || '00000000-0000-0000-0000-000000000001'
+    try {
+      await saveQuotationDraftSilently()
+      const url = await getSupplierRfqPdfBlobUrl(rfq.id, targetSupplierId, false)
+      setPreviewPdfUrl(url)
+    } catch (err: any) {
+      toast({
+        title: 'Preview Failed',
+        description: err?.message || 'Could not generate quotation preview.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsPreviewing(false)
     }
   }
 
@@ -1068,35 +1126,68 @@ export function SetQuotationModal({
               </div>
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isDownloadingTemplate}
-                  className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                >
-                  {isDownloadingTemplate ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5" />
-                  )}
-                  Download RFQ Template
-                  <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => handleDownloadTemplate('Pdf')} className="gap-2 cursor-pointer text-xs">
-                  <FileText className="w-3.5 h-3.5 text-red-500" />
-                  Download PDF Template (.pdf)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDownloadTemplate('Excel')} className="gap-2 cursor-pointer text-xs">
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                  Download Excel Template (.xlsx)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePreviewFilledQuotation}
+                disabled={isPreviewing || isDownloadingFilled || isDownloadingTemplate}
+                className="gap-1.5 text-xs h-8 border-slate-300 text-slate-700 hover:bg-slate-50"
+              >
+                {isPreviewing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Eye className="w-3.5 h-3.5" />
+                )}
+                Preview Quotation
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isDownloadingTemplate || isDownloadingFilled}
+                    className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                  >
+                    {isDownloadingTemplate || isDownloadingFilled ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    Download RFQ
+                    <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Blank Templates
+                  </div>
+                  <DropdownMenuItem onClick={() => handleDownloadTemplate('Pdf')} className="gap-2 cursor-pointer text-xs">
+                    <FileText className="w-3.5 h-3.5 text-red-500" />
+                    Blank PDF Template (.pdf)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDownloadTemplate('Excel')} className="gap-2 cursor-pointer text-xs">
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    Blank Excel Template (.xlsx)
+                  </DropdownMenuItem>
+
+                  <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1.5">
+                    Pre-Filled Quotations (With Prices)
+                  </div>
+                  <DropdownMenuItem onClick={() => handleDownloadFilledQuotation('Pdf')} className="gap-2 cursor-pointer text-xs">
+                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                    Pre-Filled PDF Quotation (.pdf)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDownloadFilledQuotation('Excel')} className="gap-2 cursor-pointer text-xs">
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+                    Pre-Filled Excel Quotation (.xlsx)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           {/* Manual Routed RFQ Document Upload Card */}
@@ -1112,7 +1203,9 @@ export function SetQuotationModal({
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Please attach the scanned copy of the official RFQ with your printed prices, authorized signature, and company stamp.
+                Step 1: Download your pre-filled quotation PDF (or blank template). Print and sign/stamp with your authorized representative.
+                <br />
+                Step 2: Upload the signed and stamped copy below before submitting your bid.
               </p>
 
               {quotationDocumentUrl ? (
@@ -1159,21 +1252,39 @@ export function SetQuotationModal({
                       accept=".pdf,.jpg,.jpeg,.png"
                       className="hidden"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => manualDocInputRef.current?.click()}
-                      disabled={isUploadingManualDoc}
-                      className="gap-2 text-xs h-8 border-indigo-300 text-indigo-800 hover:bg-indigo-100"
-                    >
-                      {isUploadingManualDoc ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Upload className="w-3.5 h-3.5" />
-                      )}
-                      {isUploadingManualDoc ? 'Uploading Document...' : 'Select Scanned RFQ File (PDF / Images)'}
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadFilledQuotation('Pdf')}
+                        disabled={isDownloadingFilled}
+                        className="gap-2 text-xs h-8 border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100"
+                      >
+                        {isDownloadingFilled ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5 text-emerald-600" />
+                        )}
+                        1. Download Pre-Filled Quotation (PDF)
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        onClick={() => manualDocInputRef.current?.click()}
+                        disabled={isUploadingManualDoc}
+                        className="gap-2 text-xs h-8 bg-indigo-700 hover:bg-indigo-800 text-white"
+                      >
+                        {isUploadingManualDoc ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="w-3.5 h-3.5" />
+                        )}
+                        {isUploadingManualDoc ? 'Uploading Document...' : '2. Upload Signed & Stamped RFQ (PDF)'}
+                      </Button>
+                    </div>
                   </div>
                 )
               )}
@@ -2012,6 +2123,47 @@ export function SetQuotationModal({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Quotation PDF Preview Dialog */}
+      <Dialog open={!!previewPdfUrl} onOpenChange={(open) => !open && setPreviewPdfUrl(null)}>
+        <DialogContent className="max-w-4xl w-[95vw] h-[85vh] flex flex-col p-4">
+          <DialogHeader className="flex flex-row items-center justify-between pb-2 border-b">
+            <div>
+              <DialogTitle className="text-base font-bold text-slate-800">
+                Official RFQ Quotation Preview
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500 mt-0.5">
+                Review your pre-filled quotation with entered prices, brands, and commercial terms.
+              </DialogDescription>
+            </div>
+            {previewPdfUrl && (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  const link = document.createElement('a')
+                  link.href = previewPdfUrl
+                  link.download = `RFQ_${rfq.rfqNumber || rfq.id}_Quotation.pdf`
+                  document.body.appendChild(link)
+                  link.click()
+                  document.body.removeChild(link)
+                }}
+              >
+                <Download className="h-4 w-4" /> Download PDF
+              </Button>
+            )}
+          </DialogHeader>
+          <div className="flex-1 w-full bg-slate-100 rounded-lg overflow-hidden border border-slate-200 mt-2">
+            {previewPdfUrl && (
+              <iframe
+                src={`${previewPdfUrl}#toolbar=1&navpanes=0`}
+                title="RFQ Quotation Preview"
+                className="w-full h-full border-0"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

@@ -22,7 +22,15 @@ import {
   ShieldCheck,
   Paperclip,
   Check,
+  Eye,
 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import api from '@/services/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -131,6 +139,73 @@ export function BACApplicationForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [result, setResult] = useState<SubmissionResult | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const [isGeneratingQuotation, setIsGeneratingQuotation] = useState(false)
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null)
+
+  const generateQuotationPdfBlob = async (): Promise<Blob> => {
+    const payload = {
+      companyName: formValues.supplierName?.trim() || 'Prospective Supplier',
+      contactPerson: formValues.contactPerson?.trim() || formValues.supplierName?.trim() || 'Authorized Representative',
+      emailAddress: formValues.email?.trim() || '',
+      contactNumber: formValues.contactNumber?.trim() || '',
+      tinNumber: formValues.tinNumber?.trim() || '',
+      businessAddress: formValues.address?.trim() || '',
+      checklistItemIds: [],
+      proposedBidAmount: totalQuotedBid,
+      deliveryPeriod: formValues.deliveryPeriod || project.deliveryPeriod || '',
+      paymentTerms: formValues.paymentTerms || '',
+      warrantyTerms: formValues.warrantyTerms || '',
+      validityPeriodDays: formValues.validityPeriodDays || 60,
+      remarks: formValues.remarks || '',
+      itemBids: (project.items || []).map((it) => ({
+        rfqItemId: it.id,
+        unitPrice: Number(formValues.itemBids[it.id]?.unitPrice || 0),
+        brand: formValues.itemBids[it.id]?.brand || '',
+        model: formValues.itemBids[it.id]?.model || '',
+      })),
+    }
+
+    const response = await api.post(
+      `/api/public/projects/${project.id}/generate-quotation`,
+      payload,
+      { responseType: 'blob' }
+    )
+
+    return new Blob([response.data], { type: 'application/pdf' })
+  }
+
+  const handleDownloadFilledQuotation = async () => {
+    setIsGeneratingQuotation(true)
+    try {
+      const blob = await generateQuotationPdfBlob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      const safeName = (formValues.supplierName || 'Quotation').replace(/[^a-zA-Z0-9_-]/g, '_')
+      link.download = `RFQ_${project.projectNumber || 'Quotation'}_${safeName}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err: any) {
+      console.error('Failed to generate filled quotation:', err)
+    } finally {
+      setIsGeneratingQuotation(false)
+    }
+  }
+
+  const handlePreviewFilledQuotation = async () => {
+    setIsGeneratingQuotation(true)
+    try {
+      const blob = await generateQuotationPdfBlob()
+      const url = URL.createObjectURL(blob)
+      setPreviewPdfUrl(url)
+    } catch (err: any) {
+      console.error('Failed to preview filled quotation:', err)
+    } finally {
+      setIsGeneratingQuotation(false)
+    }
+  }
 
   const requiredUploads = project.requiredDocuments
 
@@ -802,6 +877,37 @@ export function BACApplicationForm({
                       )}
                     </div>
 
+                    {!isOverAbc && totalQuotedBid > 0 && (
+                      <div className="mt-4 pt-3.5 border-t border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="text-xs text-blue-900 leading-relaxed max-w-xl">
+                          <strong>Official RFQ Quotation Document:</strong> You can download or preview your pre-filled quotation based on your entered prices. Print, sign/stamp (or digitally sign), and upload it under the checklist below.
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePreviewFilledQuotation}
+                            disabled={isGeneratingQuotation}
+                            className="gap-1.5 text-xs bg-white text-slate-700 hover:bg-slate-50 border-slate-300"
+                          >
+                            {isGeneratingQuotation ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+                            Preview Quotation
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleDownloadFilledQuotation}
+                            disabled={isGeneratingQuotation}
+                            className="gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                          >
+                            {isGeneratingQuotation ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                            Download Pre-Filled PDF
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
                     {isOverAbc && (
                       <div className="mt-3.5 pt-3 border-t border-red-200 text-xs text-red-700 flex items-start gap-2">
                         <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -1235,33 +1341,59 @@ export function BACApplicationForm({
                             </div>
                           </div>
 
-                          {/* Download Template Button */}
-                          {(doc.downloadUrl || doc.viewerDocId) &&
-                            (doc.viewerDocId ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  printDocument(doc.viewerDocId!)
-                                }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0"
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                                Download Template
-                              </button>
-                            ) : (
-                              <a
-                                href={doc.downloadUrl ?? '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-sm"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                                Download Template
-                              </a>
-                            ))}
+                          {/* Template & Pre-Filled Quotation Download Buttons */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* Pre-Filled PDF Button (when quotation item and prices entered) */}
+                            {((doc.name.toLowerCase().includes('quotation') || doc.name.toLowerCase().includes('rfq')) || (isRfq && isItemized)) &&
+                              totalQuotedBid > 0 &&
+                              !isOverAbc && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDownloadFilledQuotation()
+                                  }}
+                                  disabled={isGeneratingQuotation}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
+                                  title="Download RFQ quotation pre-filled with your entered prices and details"
+                                >
+                                  {isGeneratingQuotation ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Download className="h-3.5 w-3.5" />
+                                  )}
+                                  Download Pre-Filled PDF
+                                </button>
+                              )}
+
+                            {/* Download Blank Template Button */}
+                            {(doc.downloadUrl || doc.viewerDocId) &&
+                              (doc.viewerDocId ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    printDocument(doc.viewerDocId!)
+                                  }}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0"
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                  Download Template
+                                </button>
+                              ) : (
+                                <a
+                                  href={doc.downloadUrl ?? '#'}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors shrink-0 shadow-sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                  Download Template
+                                </a>
+                              ))}
+                          </div>
                         </div>
 
                         {/* Upload Slot */}
@@ -1406,6 +1538,48 @@ export function BACApplicationForm({
           </div>
         </>
       )}
+
+      {/* Quotation PDF Preview Dialog */}
+      <Dialog open={!!previewPdfUrl} onOpenChange={(open) => !open && setPreviewPdfUrl(null)}>
+        <DialogContent className="max-w-4xl w-[95vw] h-[85vh] flex flex-col p-4">
+          <DialogHeader className="flex flex-row items-center justify-between pb-2 border-b">
+            <div>
+              <DialogTitle className="text-base font-bold text-slate-800">
+                Official RFQ Quotation Preview
+              </DialogTitle>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Review your pre-filled quotation before printing/signing and uploading.
+              </p>
+            </div>
+            {previewPdfUrl && (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  const link = document.createElement('a')
+                  link.href = previewPdfUrl
+                  const safeName = (formValues.supplierName || 'Quotation').replace(/[^a-zA-Z0-9_-]/g, '_')
+                  link.download = `RFQ_${project.projectNumber || 'Quotation'}_${safeName}.pdf`
+                  document.body.appendChild(link)
+                  link.click()
+                  document.body.removeChild(link)
+                }}
+              >
+                <Download className="h-4 w-4" /> Download PDF
+              </Button>
+            )}
+          </DialogHeader>
+          <div className="flex-1 w-full bg-slate-100 rounded-lg overflow-hidden border border-slate-200 mt-2">
+            {previewPdfUrl && (
+              <iframe
+                src={`${previewPdfUrl}#toolbar=1&navpanes=0`}
+                title="Quotation Preview"
+                className="w-full h-full border-0"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

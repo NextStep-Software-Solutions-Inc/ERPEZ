@@ -14,17 +14,38 @@ export async function generateAndDownloadRfqDocument(payload: GenerateRFQDocumen
   const { rfqId, format = 'Pdf', supplierId, blankTemplate = false, filename } = payload
 
   // Step 1: Trigger generation — returns a documentId (Guid)
-  const generateResponse = await api.post<{ data: string }>(
-    `/rfqs/${rfqId}/generate`,
-    null,
-    {
-      params: {
-        format,
-        supplierId: supplierId || undefined,
-        blankTemplate,
-      },
+  let generateResponse: any
+  try {
+    generateResponse = await api.post<{ data: string }>(
+      `/rfqs/${rfqId}/generate`,
+      null,
+      {
+        params: {
+          format,
+          supplierId: supplierId || undefined,
+          blankTemplate,
+        },
+      }
+    )
+  } catch (err: any) {
+    if (err?.response?.status === 403) {
+      // Fallback to supplier portal endpoint for external supplier accounts
+      generateResponse = await api.post<{ data: string }>(
+        `/api/supplier/rfqs/${rfqId}/generate`,
+        null,
+        {
+          params: {
+            format,
+            supplierId: supplierId || undefined,
+            blankTemplate,
+          },
+        }
+      )
+    } else {
+      throw err
     }
-  )
+  }
+
   const documentId: string = (generateResponse.data as any)?.data ?? generateResponse.data
 
   if (!documentId) {
@@ -66,17 +87,38 @@ export async function getSupplierRfqPdfBlobUrl(
   supplierId?: string,
   blankTemplate: boolean = false
 ): Promise<string> {
-  const generateResponse = await api.post<{ data: string }>(
-    `/rfqs/${rfqId}/generate`,
-    null,
-    {
-      params: {
-        format: 'Pdf',
-        supplierId: supplierId || undefined,
-        blankTemplate,
-      },
+  let generateResponse: any
+  try {
+    generateResponse = await api.post<{ data: string }>(
+      `/rfqs/${rfqId}/generate`,
+      null,
+      {
+        params: {
+          format: 'Pdf',
+          supplierId: supplierId || undefined,
+          blankTemplate,
+        },
+      }
+    )
+  } catch (err: any) {
+    if (err?.response?.status === 403) {
+      // Fallback to supplier portal endpoint for external supplier accounts
+      generateResponse = await api.post<{ data: string }>(
+        `/api/supplier/rfqs/${rfqId}/generate`,
+        null,
+        {
+          params: {
+            format: 'Pdf',
+            supplierId: supplierId || undefined,
+            blankTemplate,
+          },
+        }
+      )
+    } else {
+      throw err
     }
-  )
+  }
+
   const documentId: string = (generateResponse.data as any)?.data ?? generateResponse.data
 
   if (!documentId) {
