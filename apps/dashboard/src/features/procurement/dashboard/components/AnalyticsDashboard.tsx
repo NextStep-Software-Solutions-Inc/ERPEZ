@@ -15,9 +15,20 @@ import type { ProcurementDashboardAnalytics } from '../types/dashboardV2'
 interface AnalyticsDashboardProps {
   data?: ProcurementDashboardAnalytics
   isLoading?: boolean
+  selectedOffice?: string
+  onSelectOffice?: (officeName: string, officeId?: string) => void
+  selectedMode?: string
+  onSelectMode?: (modeName: string) => void
 }
 
-export function AnalyticsDashboard({ data, isLoading }: AnalyticsDashboardProps) {
+export function AnalyticsDashboard({
+  data,
+  isLoading,
+  selectedOffice,
+  onSelectOffice,
+  selectedMode,
+  onSelectMode,
+}: AnalyticsDashboardProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -59,8 +70,16 @@ export function AnalyticsDashboard({ data, isLoading }: AnalyticsDashboardProps)
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <MonthlyPRChart data={d.monthlyPRCount} />
         <MonthlyPOValueChart data={d.monthlyPOValue} />
-        <ModeDistributionChart data={d.modeDistribution} />
-        <TopOfficesChart data={d.topSpendingOffices} />
+        <ModeDistributionChart
+          data={d.modeDistribution}
+          selectedMode={selectedMode}
+          onSelectMode={onSelectMode}
+        />
+        <TopOfficesChart
+          data={d.topSpendingOffices}
+          selectedOffice={selectedOffice}
+          onSelectOffice={onSelectOffice}
+        />
         <ContractStatusChart data={d.contractStatusDist} />
         <TopSuppliersChart data={d.topSuppliers} />
         <OverdueTrendChart data={d.overdueTrend} />

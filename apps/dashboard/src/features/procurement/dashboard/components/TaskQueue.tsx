@@ -3,6 +3,7 @@ import { SmartTaskCard } from './SmartTaskCard'
 import type { ProcurementTask } from '../types'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { CardInfoTooltip } from './CardInfoTooltip'
 
 interface Props {
   tasks: Array<ProcurementTask>
@@ -37,7 +38,10 @@ export function TaskQueue({ tasks, isLoading }: Props) {
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <Zap className="h-5 w-5 text-amber-500" />
-          <h2 className="text-lg font-semibold text-gray-900">Smart Task Queue</h2>
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-1.5">
+          <span>Smart Task Queue</span>
+          <CardInfoTooltip infoKey="panel-task-queue" />
+        </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (

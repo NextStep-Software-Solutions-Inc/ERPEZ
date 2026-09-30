@@ -24,12 +24,20 @@ import type { ProcurementDashboardSummary } from '../types/dashboardV2'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { CardInfoTooltip } from './CardInfoTooltip'
 
 interface ProcurementFunnelV2Props {
   summary?: ProcurementDashboardSummary
+  trendData?: Array<{
+    month: string
+    requests: number
+    bidding: number
+    award: number
+    ordering: number
+  }>
 }
 
-export function ProcurementFunnelV2({ summary }: ProcurementFunnelV2Props) {
+export function ProcurementFunnelV2({ summary, trendData = [] }: ProcurementFunnelV2Props) {
   const [viewMode, setViewMode] = useState<'funnel' | 'trend'>('funnel')
 
   if (!summary) return null
@@ -81,21 +89,15 @@ export function ProcurementFunnelV2({ summary }: ProcurementFunnelV2Props) {
     },
   ]
 
-  const trendData = [
-    { month: 'Jan', requests: 12, bidding: 8, award: 6, ordering: 5 },
-    { month: 'Feb', requests: 15, bidding: 11, award: 9, ordering: 8 },
-    { month: 'Mar', requests: 18, bidding: 14, award: 12, ordering: 10 },
-    { month: 'Apr', requests: 22, bidding: 17, award: 15, ordering: 13 },
-    { month: 'May', requests: 20, bidding: 16, award: 14, ordering: 12 },
-    { month: 'Jun', requests: 25, bidding: 20, award: 18, ordering: 16 },
-  ]
-
   return (
     <Card className="border border-border shadow-xs mb-6">
       <CardHeader className="p-4 pb-2 border-b border-border/50 flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-sm font-semibold tracking-wide flex items-center gap-2">
-            <span>PROCUREMENT PIPELINE LIFECYCLE</span>
+            <span className="flex items-center gap-1.5">
+              <span>PROCUREMENT PIPELINE LIFECYCLE</span>
+              <CardInfoTooltip infoKey="panel-procurement-funnel" />
+            </span>
             <Badge variant="outline" className="text-[10px] font-normal">
               PR → CPR → RFQ → BAC/AOB → NOA → Contract → PO/NTP
             </Badge>
@@ -107,7 +109,7 @@ export function ProcurementFunnelV2({ summary }: ProcurementFunnelV2Props) {
 
         <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-lg">
           <Button
-            variant={viewMode === 'funnel' ? 'secondary' : 'ghost'}
+            variant={viewMode === 'funnel' ? 'outline' : 'ghost'}
             size="sm"
             className="h-7 px-2.5 text-xs gap-1"
             onClick={() => setViewMode('funnel')}
@@ -116,7 +118,7 @@ export function ProcurementFunnelV2({ summary }: ProcurementFunnelV2Props) {
             Pipeline Stages
           </Button>
           <Button
-            variant={viewMode === 'trend' ? 'secondary' : 'ghost'}
+            variant={viewMode === 'trend' ? 'outline' : 'ghost'}
             size="sm"
             className="h-7 px-2.5 text-xs gap-1"
             onClick={() => setViewMode('trend')}
@@ -203,7 +205,7 @@ export function ProcurementFunnelV2({ summary }: ProcurementFunnelV2Props) {
               </div>
             </div>
           </div>
-        ) : (
+        ) : trendData.length > 0 ? (
           <div className="h-[260px] w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -218,6 +220,12 @@ export function ProcurementFunnelV2({ summary }: ProcurementFunnelV2Props) {
                 <Bar dataKey="ordering" name="Ordering" fill="#a855f7" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-[260px] w-full flex flex-col items-center justify-center text-xs text-muted-foreground">
+            <TrendingUp className="w-8 h-8 text-muted-foreground/30 mb-2" />
+            <p className="font-semibold text-foreground">No Monthly Trend Data Available</p>
+            <p className="text-muted-foreground mt-1">Monthly pipeline throughput records will appear here as procurement activities progress.</p>
           </div>
         )}
       </CardContent>

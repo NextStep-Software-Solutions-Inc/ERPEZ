@@ -1,3 +1,4 @@
+import { CardInfoTooltip } from "./CardInfoTooltip"
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -18,7 +19,6 @@ import {
 } from 'lucide-react'
 import type { ProcurementDashboardSummary } from '../types/dashboardV2'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 
 interface KPIStripV2Props {
   summary?: ProcurementDashboardSummary
@@ -109,6 +109,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
   const kpis = [
     {
       title: 'Active PRs',
+      infoKey: 'kpi-total-pr',
       value: s.totalActivePRs.toLocaleString(),
       subValue: formatCurrency(s.totalPRAmount),
       delta: s.prChangeYoY,
@@ -118,6 +119,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Consolidation Rate',
+      infoKey: 'kpi-consolidated-pr',
       value: `${s.consolidatedPRsRate}%`,
       subValue: `${s.consolidation.consolidated} of ${s.consolidation.total} PRs`,
       delta: s.consolidationChangeYoY,
@@ -127,6 +129,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Active RFQs',
+      infoKey: 'kpi-active-rfq',
       value: s.activeRFQs.toLocaleString(),
       subValue: 'Quotations underway',
       delta: s.rfqChangeYoY,
@@ -136,6 +139,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Pending BAC Res.',
+      infoKey: 'kpi-pending-bac',
       value: s.pendingBACResolutions.toLocaleString(),
       subValue: 'Awaiting resolution',
       delta: s.bacChangeYoY,
@@ -146,6 +150,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'NOAs Issued',
+      infoKey: 'kpi-noa-issued',
       value: s.totalNOACount.toLocaleString(),
       subValue: formatCurrency(s.totalNOAAmount),
       delta: null,
@@ -155,6 +160,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Total PO Value',
+      infoKey: 'kpi-total-po',
       value: formatCurrency(s.totalPOValue),
       subValue: `${s.totalPOCount} purchase orders`,
       delta: s.poValueChangeYoY,
@@ -164,6 +170,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Active Contracts',
+      infoKey: 'kpi-active-contracts',
       value: s.activeContracts.toLocaleString(),
       subValue: 'Executed agreements',
       delta: s.contractChangeYoY,
@@ -173,6 +180,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Direct Contracting',
+      infoKey: 'kpi-direct-contracting',
       value: s.directContractingCount.toLocaleString(),
       subValue: formatCurrency(s.directContractingAmount),
       delta: null,
@@ -182,6 +190,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Direct Acquisition',
+      infoKey: 'kpi-direct-acquisition',
       value: s.directAcquisitionCount.toLocaleString(),
       subValue: formatCurrency(s.directAcquisitionAmount),
       delta: null,
@@ -191,6 +200,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Overdue Items',
+      infoKey: 'kpi-overdue-deliveries',
       value: s.overdueItemsCount.toLocaleString(),
       subValue: `${s.overduePRCount} PRs · ${s.rfqsClosingIn3Days} RFQs`,
       delta: null,
@@ -201,6 +211,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Avg Procurement TAT',
+      infoKey: 'kpi-avg-tat',
       value: `${s.avgProcurementTatDays}d`,
       subValue: 'PR to PO cycle',
       delta: null,
@@ -211,6 +222,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Savings Rate',
+      infoKey: 'kpi-savings-rate',
       value: `${s.savingsRate}%`,
       subValue: 'ABC vs Awarded',
       delta: s.savingsRateChangeYoY,
@@ -220,6 +232,7 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
     },
     {
       title: 'Budget Utilization',
+      infoKey: 'kpi-budget-utilization',
       value: `${s.budgetUtilizationRate}%`,
       subValue: 'PO / PPMP Budget',
       delta: null,
@@ -237,8 +250,11 @@ export function KPIStripV2({ summary, isLoading }: KPIStripV2Props) {
           <Card key={idx} className="relative overflow-hidden border border-border/80 shadow-xs hover:shadow-md transition-shadow">
             <CardContent className="p-3.5 flex flex-col justify-between h-full">
               <div className="flex items-center justify-between gap-1 mb-2">
-                <span className="text-[11px] font-medium text-muted-foreground line-clamp-1">{kpi.title}</span>
-                <div className={`p-1.5 rounded-md ${kpi.bgColor} ${kpi.color}`}>
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-[11px] font-medium text-muted-foreground truncate">{kpi.title}</span>
+                  <CardInfoTooltip infoKey={kpi.infoKey} iconClassName="w-3 h-3" />
+                </div>
+                <div className={`p-1.5 rounded-md ${kpi.bgColor} ${kpi.color} shrink-0`}>
                   <Icon className="w-3.5 h-3.5" />
                 </div>
               </div>

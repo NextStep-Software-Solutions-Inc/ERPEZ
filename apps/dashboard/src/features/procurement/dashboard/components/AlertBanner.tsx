@@ -1,4 +1,5 @@
 import { AlertCircle, AlertTriangle, CheckCircle2, Clock, TrendingUp } from 'lucide-react'
+import { CardInfoTooltip } from './CardInfoTooltip'
 import type { ProcurementDashboardSummary } from '../types/dashboardV2'
 
 interface AlertBannerProps {
@@ -61,7 +62,10 @@ export function AlertBanner({ summary }: AlertBannerProps) {
       <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-xl p-3.5 flex items-center gap-3 mb-6">
         <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
         <div>
-          <span className="font-semibold text-sm">All Procurement Operations On Track</span>
+          <span className="font-semibold text-sm inline-flex items-center gap-1.5">
+            <span>All Procurement Operations On Track</span>
+            <CardInfoTooltip infoKey="panel-alert-banner" iconClassName="w-3 h-3" />
+          </span>
           <span className="text-xs text-muted-foreground ml-2">No overdue PRs, closing RFQs, or pending NTP bottlenecks detected.</span>
         </div>
       </div>

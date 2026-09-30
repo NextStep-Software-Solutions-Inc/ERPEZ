@@ -1,7 +1,8 @@
-import { AlertTriangle, ArrowRight, Calendar, Clock, ShieldAlert } from 'lucide-react'
+import { Calendar, ShieldAlert } from 'lucide-react'
 import type { ProcurementContractRisk } from '../types/dashboardV2'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { CardInfoTooltip } from './CardInfoTooltip'
 
 interface ContractRiskPanelProps {
   data?: ProcurementContractRisk
@@ -28,7 +29,10 @@ export function ContractRiskPanel({ data, isLoading }: ContractRiskPanelProps) {
         <div>
           <CardTitle className="text-sm font-semibold tracking-wide flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-amber-500" />
-            <span>CONTRACT RISK & EXPIRATION TIMELINE HORIZON</span>
+            <span className="flex items-center gap-1.5">
+              <span>CONTRACT RISK & EXPIRATION TIMELINE HORIZON</span>
+              <CardInfoTooltip infoKey="panel-contract-risk" />
+            </span>
           </CardTitle>
           <CardDescription className="text-xs">
             Early surveillance of bilateral contract delivery deadlines and renewal milestones across 30, 60, and 90-day windows

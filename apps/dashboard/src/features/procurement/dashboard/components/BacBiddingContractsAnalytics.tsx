@@ -1,4 +1,5 @@
 import { BarChart2 } from 'lucide-react'
+import { CardInfoTooltip } from './CardInfoTooltip'
 import { RfqClosingAndAobPanel } from './RfqClosingAndAobPanel'
 import { PoFulfillmentDonut } from './PoFulfillmentDonut'
 import { ContractLifecycle } from './ContractLifecycle'
@@ -31,8 +32,9 @@ export function BacBiddingContractsAnalytics({
       {/* Section header */}
       <div className="flex items-center gap-2 mb-4">
         <BarChart2 className="h-5 w-5 text-gray-500" />
-        <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500">
-          BAC, Bidding &amp; Contracts Analytics
+        <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+          <span>BAC, Bidding &amp; Contracts Analytics</span>
+          <CardInfoTooltip infoKey="panel-bac-bidding-analytics" />
         </h2>
       </div>
 

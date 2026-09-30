@@ -1,7 +1,8 @@
-import { AlertCircle, ArrowRight, Clock, FileText, ShieldAlert } from 'lucide-react'
+import { CheckCircle2, Clock, FileText, ShieldAlert } from 'lucide-react'
 import type { ProcurementBottleneck } from '../types/dashboardV2'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { CardInfoTooltip } from './CardInfoTooltip'
 
 interface BottleneckDetectionPanelProps {
   data?: ProcurementBottleneck
@@ -13,17 +14,43 @@ export function BottleneckDetectionPanel({ data, isLoading }: BottleneckDetectio
     return <div className="h-48 bg-muted/40 animate-pulse rounded-xl mb-6" />
   }
 
-  const stages = data?.stages || [
-    { stage: 'PR → CPR creation', stalledCount: 2, avgStalledDays: 8.5, thresholdDays: 7, isWorstBottleneck: false },
-    { stage: 'CPR → RFQ issuance', stalledCount: 0, avgStalledDays: 0, thresholdDays: 5, isWorstBottleneck: false },
-    { stage: 'RFQ → AOB completion', stalledCount: 1, avgStalledDays: 4.0, thresholdDays: 3, isWorstBottleneck: false },
-    { stage: 'AOB → BAC Resolution', stalledCount: 0, avgStalledDays: 0, thresholdDays: 5, isWorstBottleneck: false },
-    { stage: 'BAC Res. → NOA', stalledCount: 0, avgStalledDays: 0, thresholdDays: 5, isWorstBottleneck: false },
-    { stage: 'NOA → Contract execution', stalledCount: 3, avgStalledDays: 14.2, thresholdDays: 10, isWorstBottleneck: true },
-    { stage: 'Contract → NTP issuance', stalledCount: 1, avgStalledDays: 4.5, thresholdDays: 3, isWorstBottleneck: false },
-  ]
-
+  const stages = data?.stages || []
   const topItems = data?.topStalledItems || []
+
+  if (!data || stages.length === 0) {
+    return (
+      <Card className="border border-border shadow-xs mb-6">
+        <CardHeader className="p-4 pb-2 border-b border-border/50 flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-sm font-semibold tracking-wide flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span className="flex items-center gap-1.5">
+                <span>BOTTLENECK DETECTION &amp; AGING PIPELINE CHECKPOINTS</span>
+                <CardInfoTooltip infoKey="panel-bottleneck-detection" />
+              </span>
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Automated statutory threshold surveillance identifying where procurement workflow documents stall
+            </CardDescription>
+          </div>
+          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]">
+            SLA Compliant
+          </Badge>
+        </CardHeader>
+        <CardContent className="p-6 text-center">
+          <div className="flex flex-col items-center justify-center space-y-2 py-4">
+            <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-full">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <p className="text-sm font-semibold text-foreground">No Workflow Bottlenecks Detected</p>
+            <p className="text-xs text-muted-foreground max-w-md">
+              All procurement workflow stages and documents are executing within statutory SLA thresholds.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="border border-border shadow-xs mb-6">
@@ -31,7 +58,10 @@ export function BottleneckDetectionPanel({ data, isLoading }: BottleneckDetectio
         <div>
           <CardTitle className="text-sm font-semibold tracking-wide flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-rose-500" />
-            <span>BOTTLENECK DETECTION & AGING PIPELINE CHECKPOINTS</span>
+            <span className="flex items-center gap-1.5">
+              <span>BOTTLENECK DETECTION & AGING PIPELINE CHECKPOINTS</span>
+              <CardInfoTooltip infoKey="panel-bottleneck-detection" />
+            </span>
           </CardTitle>
           <CardDescription className="text-xs">
             Automated statutory threshold surveillance identifying where procurement workflow documents stall

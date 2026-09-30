@@ -5,7 +5,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { AlertCircle, Clock, ShoppingCart } from 'lucide-react'
-import type { PoFulfillmentData } from '../types'
+import type { PoFulfillmentData, PoFulfillmentSegment } from '../types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
