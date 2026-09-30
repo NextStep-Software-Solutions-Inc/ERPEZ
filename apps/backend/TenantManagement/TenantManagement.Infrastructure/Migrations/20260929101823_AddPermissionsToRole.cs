@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 
@@ -12,21 +12,9 @@ namespace ERP_EZ.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "RolePermissions",
-                schema: "public");
-
-            migrationBuilder.DropTable(
-                name: "Permissions",
-                schema: "public");
-
-            migrationBuilder.AddColumn<List<string>>(
-                name: "Permissions",
-                schema: "public",
-                table: "Roles",
-                type: "text[]",
-                nullable: false,
-                defaultValueSql: "'{}'::text[]");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.\"RolePermissions\" CASCADE;");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS public.\"Permissions\" CASCADE;");
+            migrationBuilder.Sql("ALTER TABLE public.\"Roles\" ADD COLUMN IF NOT EXISTS \"Permissions\" text[] NOT NULL DEFAULT ('{}'::text[]);");
         }
 
         /// <inheritdoc />

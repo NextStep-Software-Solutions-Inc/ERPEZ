@@ -30,7 +30,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-        [HasPermission(Permissions.Admin.tenantsManage)]
+        // [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> CreateTenant([FromBody] CreateTenantCommand command)
         {
             var tenant = await mediator.Send(command);
