@@ -130,24 +130,40 @@ export function RFQDetailsPage({
 
   const invalidateRFQQueries = async () => {
     try {
-      await queryClient.invalidateQueries({
-        predicate: (query) =>
-          query.queryKey.some(
-            (k) =>
-              typeof k === 'string' &&
-              (k.includes('rfq') ||
-                k.includes('rfqs') ||
-                k.includes('consolidated-pr') ||
-                k.includes(rfqId)),
-          ),
-      })
-      void queryClient.invalidateQueries({ queryKey: ['rfqs'] })
-      void queryClient.invalidateQueries({ queryKey: ['rfq', rfqId] })
-      void queryClient.invalidateQueries({ queryKey: ['/rfqs'] })
-      void queryClient.invalidateQueries({ queryKey: [`/rfqs/${rfqId}`] })
-      void queryClient.invalidateQueries({ queryKey: ['/rfqs/summary'] })
-      void queryClient.invalidateQueries({ queryKey: ['/consolidated-prs'] })
-      void queryClient.invalidateQueries({ queryKey: ['/consolidated-pr/items-for-rfq'] })
+      await Promise.all([
+        // Invalidate queries directly relevant to this RFQ (active refetch)
+        queryClient.invalidateQueries({
+          predicate: (query) =>
+            query.queryKey.some(
+              (k) =>
+                typeof k === 'string' &&
+                (k.includes(`/rfqs/${rfqId}`) || k === rfqId),
+            ),
+          refetchType: 'active',
+        }),
+        // Invalidate RFQ summary counters (active refetch)
+        queryClient.invalidateQueries({
+          queryKey: ['/rfqs/summary'],
+          refetchType: 'active',
+        }),
+        // Mark RFQ list and related CPR queries as stale without triggering immediate network cascades
+        queryClient.invalidateQueries({
+          queryKey: ['rfqs'],
+          refetchType: 'none',
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['/rfqs'],
+          refetchType: 'none',
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['/consolidated-prs'],
+          refetchType: 'none',
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['/consolidated-pr/items-for-rfq'],
+          refetchType: 'none',
+        }),
+      ])
     } catch (err) {
       console.warn('Failed to invalidate queries:', err)
     }
