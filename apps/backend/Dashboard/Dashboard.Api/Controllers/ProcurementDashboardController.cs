@@ -6,6 +6,9 @@ using ERPEZ.Application.Features.Procurement.Dashboard.Queries.GetDashboardBottl
 using ERPEZ.Application.Features.Procurement.Dashboard.Queries.GetDashboardScorecard;
 using ERPEZ.Application.Features.Procurement.Dashboard.Queries.GetDashboardSummary;
 using ERPEZ.Application.Features.Procurement.Dashboard.Queries.GetContractRisk;
+using ERPEZ.Application.Features.Procurement.Dashboard.Queries.GetBudgetBurnAnalytics;
+using ERPEZ.Application.Features.Procurement.Dashboard.Queries.GetSupplierPerformanceDetail;
+using ERPEZ.Application.Features.Procurement.Dashboard.Queries.GetProcurementAuditTrail;
 using ERPEZ.Application.Features.Procurement.Dashboard.Queries.Reports;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -144,6 +147,37 @@ public class ProcurementDashboardController(ISender mediator) : ControllerBase
             Status = status
         });
 
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpGet("budget-burn")]
+    [ProducesResponseType(typeof(ApiResponse<BudgetBurnAnalyticsDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetBudgetBurn(
+        [FromQuery] int fiscalYear,
+        [FromQuery] Guid? officeId = null)
+    {
+        var result = await mediator.Send(new GetBudgetBurnAnalyticsQuery
+        {
+            FiscalYear = fiscalYear == 0 ? DateTime.UtcNow.Year : fiscalYear,
+            OfficeId = officeId
+        });
+
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpGet("supplier-performance/{supplierId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<SupplierPerformanceDetailDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSupplierPerformance([FromRoute] Guid supplierId)
+    {
+        var result = await mediator.Send(new GetSupplierPerformanceDetailQuery(supplierId));
+        return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    [HttpGet("audit-trail")]
+    [ProducesResponseType(typeof(ApiResponse<List<ProcurementAuditLogItemDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAuditTrail([FromQuery] int limit = 20)
+    {
+        var result = await mediator.Send(new GetProcurementAuditTrailQuery(limit));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
