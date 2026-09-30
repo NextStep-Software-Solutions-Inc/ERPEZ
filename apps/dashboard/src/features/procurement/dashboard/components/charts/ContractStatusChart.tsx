@@ -23,7 +23,7 @@ export function ContractStatusChart({ data }: ContractStatusChartProps) {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={data as any}
               dataKey="percentage"
               nameKey="status"
               cx="50%"

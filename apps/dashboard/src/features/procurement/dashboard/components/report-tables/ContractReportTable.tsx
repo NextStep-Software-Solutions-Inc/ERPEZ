@@ -17,7 +17,7 @@ function formatPHP(amount: number) {
 
 export function ContractReportTable({ filters }: ContractReportTableProps) {
   const [pageNumber, setPageNumber] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
 
   const { data, isLoading } = useContractReport({

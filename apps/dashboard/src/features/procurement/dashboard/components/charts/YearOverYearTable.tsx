@@ -1,7 +1,6 @@
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import type { YearOverYearSummary } from '../../types/dashboardV2'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 
 interface YearOverYearTableProps {
   data: YearOverYearSummary
