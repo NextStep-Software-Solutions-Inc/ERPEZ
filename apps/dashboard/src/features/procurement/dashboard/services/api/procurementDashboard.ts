@@ -15,6 +15,9 @@ import type {
   ProcurementHealthScorecard,
   RFQReportItem,
   ReportPaginationParams,
+  BudgetBurnAnalytics,
+  SupplierPerformanceDetail,
+  ProcurementAuditLogItem,
 } from '../../types/dashboardV2'
 import { api } from '@/services/api'
 
@@ -57,6 +60,21 @@ export const ProcurementDashboardApi = {
 
   getContractRisk: async (params: DashboardFiltersV2) => {
     const res = await api.get<ApiBackendResponse<ProcurementContractRisk>>('/procurement/dashboard/contract-risk', { params })
+    return res.data.data
+  },
+
+  getBudgetBurn: async (params: { fiscalYear: number; officeId?: string }) => {
+    const res = await api.get<ApiBackendResponse<BudgetBurnAnalytics>>('/procurement/dashboard/budget-burn', { params })
+    return res.data.data
+  },
+
+  getSupplierPerformance: async (supplierId: string) => {
+    const res = await api.get<ApiBackendResponse<SupplierPerformanceDetail>>(`/procurement/dashboard/supplier-performance/${supplierId}`)
+    return res.data.data
+  },
+
+  getAuditTrail: async (limit: number = 20) => {
+    const res = await api.get<ApiBackendResponse<Array<ProcurementAuditLogItem>>>('/procurement/dashboard/audit-trail', { params: { limit } })
     return res.data.data
   },
 

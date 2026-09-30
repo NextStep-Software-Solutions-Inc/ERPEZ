@@ -32,6 +32,28 @@ export const useProcurementContractRisk = (filters: DashboardFiltersV2) =>
     staleTime: 60_000,
   })
 
+export const useProcurementBudgetBurn = (filters: { fiscalYear: number; officeId?: string }) =>
+  useQuery({
+    queryKey: ['proc-dashboard-budget-burn', filters],
+    queryFn: () => ProcurementDashboardApi.getBudgetBurn(filters),
+    staleTime: 60_000,
+  })
+
+export const useSupplierPerformance = (supplierId: string | null, enabled: boolean = true) =>
+  useQuery({
+    queryKey: ['proc-supplier-performance', supplierId],
+    queryFn: () => (supplierId ? ProcurementDashboardApi.getSupplierPerformance(supplierId) : null),
+    enabled: Boolean(supplierId) && enabled,
+    staleTime: 120_000,
+  })
+
+export const useProcurementAuditTrail = (limit: number = 20) =>
+  useQuery({
+    queryKey: ['proc-audit-trail', limit],
+    queryFn: () => ProcurementDashboardApi.getAuditTrail(limit),
+    staleTime: 30_000,
+  })
+
 // ── Analytics Tab Query (Lazy: only runs when Analytics tab is active) ─────────
 
 export const useProcurementDashboardAnalytics = (filters: DashboardFiltersV2, enabled: boolean) =>

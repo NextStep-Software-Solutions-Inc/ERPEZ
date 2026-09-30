@@ -96,6 +96,74 @@ export interface ProcurementHealthScorecard {
   avgNoaIssuanceTatDays: number
   contractExecutionRatePct: number
   supplierConcentrationPct: number
+
+  // GPPB APCPI Pillars
+  apcpiCompetitiveBiddingRate?: number
+  apcpiAlternativeModesRate?: number
+  apcpiThresholdComplianceRate?: number
+  apcpiBacSecretariatEfficiencyScore?: number
+  apcpiPlanningAdherenceScore?: number
+  apcpiAverageBiddersPerProject?: number
+  apcpiOpportunityPostingRate?: number
+  apcpiTurnaroundEfficiencyScore?: number
+  apcpiDisputeResolutionRate?: number
+  apcpiObserverAttendanceRate?: number
+  apcpiOverallComplianceLevel?: number
+}
+
+// ── Budget Burn & APP Tracking ────────────────────────────────────────────────
+
+export interface BudgetBurnAnalytics {
+  approvedAppBudget: number
+  totalCommittedContracts: number
+  totalPendingCommitments: number
+  unencumberedBalance: number
+  budgetBurnPercentage: number
+  unprogrammedPRCount: number
+  unprogrammedPRTotalAmount: number
+  budgetOverrunPRCount: number
+}
+
+// ── Vendor Performance & Risk ─────────────────────────────────────────────────
+
+export interface SupplierDeliveryItem {
+  contractId: string
+  contractNumber: string
+  title: string
+  amount: number
+  status: string
+  completionDate?: string
+  wasDelayed: boolean
+  delayDays: number
+}
+
+export interface SupplierPerformanceDetail {
+  supplierId: string
+  supplierName: string
+  businessPermitNo: string
+  philGEPSNumber?: string
+  isBlocked: boolean
+  isGppbBlacklisted: boolean
+  onTimeDeliveryRate: number
+  qualityAcceptanceRate: number
+  totalContractsAwarded: number
+  totalAwardedAmount: number
+  liquidatedDamagesIncidentsCount: number
+  totalLiquidatedDamagesAmount: number
+  recentDeliveries: Array<SupplierDeliveryItem>
+}
+
+// ── Audit Log Trail ───────────────────────────────────────────────────────────
+
+export interface ProcurementAuditLogItem {
+  id: string
+  actorName: string
+  role: string
+  action: string
+  entityName: string
+  documentNumber: string
+  timestamp: string
+  notes?: string
 }
 
 // ── Bottleneck Detection ──────────────────────────────────────────────────────
@@ -163,6 +231,7 @@ export interface ProcurementModeShare {
 }
 
 export interface OfficeSpendingItem {
+  officeId?: string
   officeName: string
   amount: number
   prCount: number
@@ -175,6 +244,7 @@ export interface ContractStatusShare {
 }
 
 export interface SupplierConcentration {
+  supplierId?: string
   supplierName: string
   totalAwarded: number
   contractCount: number
