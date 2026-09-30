@@ -155,10 +155,11 @@ function createItemBidColumns(
       cell: (info) => {
         const item = info.row.original
         const unitABC = item.abcUnitPrice ?? (item.quantity > 0 ? item.abc / item.quantity : item.abc)
+        const unitSingular = (item.unit || 'unit').replace(/s$/, '')
         return (
           <div className="text-right">
-            <div className="font-bold text-sm text-gray-900">{formatPHP(item.abc)}</div>
-            <div className="text-[11px] text-muted-foreground">{formatPHP(unitABC)} / unit</div>
+            <div className="font-bold text-sm text-gray-900 whitespace-nowrap">{formatPHP(item.abc)}</div>
+            <div className="text-[11px] text-muted-foreground whitespace-nowrap">{formatPHP(unitABC)} / {unitSingular}</div>
           </div>
         )
       },
@@ -210,13 +211,14 @@ function createItemBidColumns(
       cell: (info) => {
         const item = info.row.original
         const unitBid = item.winnerBid?.unitBid ?? item.winnerBid?.unitPrice
+        const unitSingular = (item.unit || 'unit').replace(/s$/, '')
         return (
           <div className="text-right">
-            <div className="font-bold text-sm text-gray-900">
+            <div className="font-bold text-sm text-gray-900 whitespace-nowrap">
               {unitBid != null ? formatPHP(unitBid) : '-'}
             </div>
-            <div className="text-[11px] text-muted-foreground">
-              per {item.unit || 'unit'}
+            <div className="text-[11px] text-muted-foreground whitespace-nowrap">
+              per {unitSingular}
             </div>
           </div>
         )
@@ -230,9 +232,11 @@ function createItemBidColumns(
         const item = info.row.original
         const totalBid = item.winnerBid?.totalBid ?? (item.winnerBid?.unitBid ? item.winnerBid.unitBid * item.quantity : null)
         const exceedsABC = totalBid != null && totalBid > item.abc
+        const baseUnit = (item.unit || 'unit').replace(/s$/, '')
+        const unitLabel = item.quantity === 1 ? baseUnit : `${baseUnit}s`
         return (
           <div className="text-right">
-            <div className={`font-bold text-sm ${exceedsABC ? 'text-red-600' : 'text-emerald-700'}`}>
+            <div className={`font-bold text-sm whitespace-nowrap ${exceedsABC ? 'text-red-600' : 'text-emerald-700'}`}>
               {totalBid != null ? formatPHP(totalBid) : '-'}
             </div>
             {exceedsABC ? (
@@ -240,8 +244,8 @@ function createItemBidColumns(
                 Over ABC
               </Badge>
             ) : (
-              <div className="text-[11px] text-emerald-700 font-medium">
-                {item.quantity} {item.quantity === 1 ? (item.unit || 'unit') : `${item.unit || 'unit'}s`}
+              <div className="text-[11px] text-emerald-700 font-medium whitespace-nowrap">
+                {item.quantity} {unitLabel}
               </div>
             )}
           </div>
@@ -251,18 +255,18 @@ function createItemBidColumns(
     columnHelper.display({
       id: 'savings',
       header: () => <div className="text-center font-bold">Budget Savings</div>,
-      size: 150,
+      size: 160,
       cell: (info) => {
         const item = info.row.original
-        if (!item.winnerSupplier) return <div className="text-right text-gray-400 text-sm">-</div>
+        if (!item.winnerSupplier) return <div className="text-right text-gray-400 text-sm whitespace-nowrap">-</div>
 
         if (item.savingsAmount > 0) {
           return (
             <div className="text-right">
-              <div className="font-bold text-sm text-emerald-600">
+              <div className="font-bold text-sm text-emerald-600 whitespace-nowrap">
                 +{formatPHP(item.savingsAmount)}
               </div>
-              <div className="text-[11px] text-emerald-700 font-semibold">
+              <div className="text-[11px] text-emerald-700 font-semibold whitespace-nowrap">
                 ({item.savingsPercentage.toFixed(1)}% saved)
               </div>
             </div>
@@ -270,17 +274,17 @@ function createItemBidColumns(
         } else if (item.savingsAmount === 0) {
           return (
             <div className="text-right">
-              <div className="font-medium text-xs text-gray-600">₱0.00</div>
-              <div className="text-[10px] text-gray-400">(0.0%)</div>
+              <div className="font-medium text-xs text-gray-600 whitespace-nowrap">₱0.00</div>
+              <div className="text-[10px] text-gray-400 whitespace-nowrap">(0.0%)</div>
             </div>
           )
         } else {
           return (
             <div className="text-right">
-              <div className="font-bold text-sm text-red-600">
+              <div className="font-bold text-sm text-red-600 whitespace-nowrap">
                 -{formatPHP(Math.abs(item.savingsAmount))}
               </div>
-              <div className="text-[11px] text-red-600 font-semibold">
+              <div className="text-[11px] text-red-600 font-semibold whitespace-nowrap">
                 ({Math.abs(item.savingsPercentage).toFixed(1)}% over)
               </div>
             </div>
