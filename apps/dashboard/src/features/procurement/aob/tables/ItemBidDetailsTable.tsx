@@ -154,7 +154,7 @@ function createItemBidColumns(
       size: 130,
       cell: (info) => {
         const item = info.row.original
-        const unitABC = item.quantity > 0 ? item.abc / item.quantity : item.abc
+        const unitABC = item.abcUnitPrice ?? (item.quantity > 0 ? item.abc / item.quantity : item.abc)
         return (
           <div className="text-right">
             <div className="font-bold text-sm text-gray-900">{formatPHP(item.abc)}</div>
@@ -211,8 +211,13 @@ function createItemBidColumns(
         const item = info.row.original
         const unitBid = item.winnerBid?.unitBid ?? item.winnerBid?.unitPrice
         return (
-          <div className="text-right font-medium text-sm">
-            {unitBid != null ? formatPHP(unitBid) : '-'}
+          <div className="text-right">
+            <div className="font-bold text-sm text-gray-900">
+              {unitBid != null ? formatPHP(unitBid) : '-'}
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              per {item.unit || 'unit'}
+            </div>
           </div>
         )
       },
@@ -230,10 +235,14 @@ function createItemBidColumns(
             <div className={`font-bold text-sm ${exceedsABC ? 'text-red-600' : 'text-emerald-700'}`}>
               {totalBid != null ? formatPHP(totalBid) : '-'}
             </div>
-            {exceedsABC && (
+            {exceedsABC ? (
               <Badge variant="soft" className="text-[10px] bg-red-100 text-red-800">
                 Over ABC
               </Badge>
+            ) : (
+              <div className="text-[11px] text-emerald-700 font-medium">
+                {item.quantity} {item.quantity === 1 ? (item.unit || 'unit') : `${item.unit || 'unit'}s`}
+              </div>
             )}
           </div>
         )
@@ -360,7 +369,10 @@ export function ItemBidDetailsTable({
 
       const secondPlace = sortedBids.find((b) => b.supplierId !== winnerSupplierId && b.isResponsive)
 
-      const abc = item.approvedBudgetForContract || (item.abcUnitPrice ? item.abcUnitPrice * item.quantity : 0)
+      const abc = item.totalABC
+        || (item.abcUnitPrice ? item.abcUnitPrice * item.quantity : 0)
+        || item.approvedBudgetForContract
+        || 0
       const awardedTotal = winnerBid?.totalBid ?? (winnerBid?.unitBid ? winnerBid.unitBid * item.quantity : 0)
 
       const savingsAmount = winnerSupplier ? abc - awardedTotal : 0
@@ -478,27 +490,31 @@ export function ItemBidDetailsTable({
           {/* Summary Stats Cards */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {/* 1. Total Line Items */}
-            <div className="p-4 bg-blue-50/70 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900/50">
-              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
-                Total Line Items
+            <div className="p-4 bg-blue-50/70 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900/50 flex flex-col justify-between h-full">
+              <div>
+                <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Total Line Items
+                </div>
+                <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">
+                  {totalItems}
+                </div>
               </div>
-              <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">
-                {totalItems}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 Total ABC: {formatPHP(totalABC)}
               </div>
             </div>
 
             {/* 2. Items Awarded */}
-            <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-900/50">
-              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
-                Items Awarded
+            <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-900/50 flex flex-col justify-between h-full">
+              <div>
+                <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Items Awarded
+                </div>
+                <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+                  {awardedCount} of {totalItems}
+                </div>
               </div>
-              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
-                {awardedCount} of {totalItems}
-              </div>
-              <div className="mt-1">
+              <div className="mt-2">
                 {allAwarded ? (
                   <Badge variant="soft" className="bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
                     100% Completed
@@ -512,35 +528,39 @@ export function ItemBidDetailsTable({
             </div>
 
             {/* 3. Winning Suppliers */}
-            <div className="p-4 bg-purple-50/70 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-900/50">
-              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
-                Winning Suppliers
+            <div className="p-4 bg-purple-50/70 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-900/50 flex flex-col justify-between h-full">
+              <div>
+                <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Winning Suppliers
+                </div>
+                <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">
+                  {uniqueWinningSuppliers.size}
+                </div>
               </div>
-              <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">
-                {uniqueWinningSuppliers.size}
-              </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate" title={winningSuppliersSubtitle}>
+              <div className="text-xs text-gray-600 dark:text-gray-400 mt-2 truncate" title={winningSuppliersSubtitle}>
                 {winningSuppliersSubtitle}
               </div>
             </div>
 
             {/* 4. Total Award Amount & Savings */}
-            <div className="p-4 bg-amber-50/70 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900/50">
-              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
-                Total Award Amount
-              </div>
-              <div className="text-xl font-bold text-amber-700 dark:text-amber-400">
-                {formatPHP(totalAwardAmount)}
+            <div className="p-4 bg-amber-50/70 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900/50 flex flex-col justify-between h-full">
+              <div>
+                <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Total Award Amount
+                </div>
+                <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
+                  {formatPHP(totalAwardAmount)}
+                </div>
               </div>
               {totalAwardedABC > 0 && totalAwardAmount > 0 ? (
-                <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 mt-1">
+                <div className={`text-xs font-semibold ${totalSavings >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'} flex items-center gap-1 mt-2`}>
                   <TrendingDown className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>
-                    Savings: {formatPHP(totalSavings)} ({totalSavingsPercent.toFixed(1)}% vs ABC)
+                    Savings: {totalSavings >= 0 ? '' : '-'}{formatPHP(Math.abs(totalSavings))} ({totalSavingsPercent.toFixed(1)}% vs ABC)
                   </span>
                 </div>
               ) : (
-                <div className="text-xs text-muted-foreground mt-1">Awaiting winner selection</div>
+                <div className="text-xs text-muted-foreground mt-2">Awaiting winner selection</div>
               )}
             </div>
           </div>
@@ -621,6 +641,7 @@ export function ItemBidDetailsTable({
                           style={{
                             width: cell.column.getSize(),
                           }}
+                          className="py-3.5 align-middle"
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
