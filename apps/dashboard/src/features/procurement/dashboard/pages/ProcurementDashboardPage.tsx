@@ -1,13 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   BarChart3,
   FileSpreadsheet,
   LayoutDashboard,
-  ShieldAlert,
   ShoppingCart,
-  Sparkles,
-  Workflow,
 } from 'lucide-react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 
 // Hooks
 import {
@@ -45,13 +43,73 @@ import { PageContainerDashtail } from '@/components/v2/PageContainerDashtail'
 
 export default function ProcurementDashboardPage() {
   const currentYear = new Date().getFullYear()
-  const [filters, setFilters] = useState<DashboardFiltersV2>({
-    fiscalYear: currentYear,
-  })
+  const search = useSearch({ from: '/v2/(procurement)/procurement-dashboard/' }) as any
+  const navigate = useNavigate()
+
+  const activeTab: 'overview' | 'analytics' | 'reports' = search?.tab ?? 'overview'
+
+  const filters: DashboardFiltersV2 = useMemo(() => ({
+    fiscalYear: search?.fiscalYear ?? currentYear,
+    officeId: search?.officeId,
+    quarter: search?.quarter,
+    procurementMode: search?.procurementMode,
+    dateFrom: search?.dateFrom,
+    dateTo: search?.dateTo,
+    status: search?.status,
+  }), [
+    search?.fiscalYear,
+    search?.officeId,
+    search?.quarter,
+    search?.procurementMode,
+    search?.dateFrom,
+    search?.dateTo,
+    search?.status,
+    currentYear,
+  ])
+
   const [selectedOfficeName, setSelectedOfficeName] = useState<string | undefined>()
-  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'reports'>('overview')
-  const [overviewSubTab, setOverviewSubTab] = useState<'summary' | 'operations' | 'risk'>('summary')
   const [scorecardViewMode, setScorecardViewMode] = useState<'standard' | 'apcpi'>('standard')
+
+  // URL-driven navigation handlers
+  const updateFilters = (newFilters: DashboardFiltersV2) => {
+    navigate({
+      to: '.',
+      search: (prev: any) => {
+        const next = {
+          ...prev,
+          fiscalYear: newFilters.fiscalYear,
+          officeId: newFilters.officeId,
+          quarter: newFilters.quarter,
+          procurementMode: newFilters.procurementMode,
+          dateFrom: newFilters.dateFrom,
+          dateTo: newFilters.dateTo,
+          status: newFilters.status,
+        }
+        Object.keys(next).forEach((key) => {
+          if (next[key] === undefined || next[key] === null || next[key] === '') {
+            delete next[key]
+          }
+        })
+        return next
+      },
+    })
+  }
+
+  const handleTabChange = (newTab: 'overview' | 'analytics' | 'reports') => {
+    navigate({
+      to: '.',
+      search: (prev: any) => {
+        const next = {
+          ...prev,
+          tab: newTab === 'overview' ? undefined : newTab,
+        }
+        if (next.tab === undefined) {
+          delete next.tab
+        }
+        return next
+      },
+    })
+  }
 
   // Overview Queries (React Query)
   const summaryQuery = useProcurementDashboardSummary(filters)
@@ -74,23 +132,23 @@ export default function ProcurementDashboardPage() {
   const handleSelectOffice = (officeName: string, officeId?: string) => {
     if (selectedOfficeName === officeName) {
       setSelectedOfficeName(undefined)
-      setFilters((prev) => ({ ...prev, officeId: undefined }))
+      updateFilters({ ...filters, officeId: undefined })
     } else {
       setSelectedOfficeName(officeName)
-      setFilters((prev) => ({ ...prev, officeId }))
+      updateFilters({ ...filters, officeId })
     }
   }
 
   const handleSelectMode = (modeName: string) => {
     if (filters.procurementMode === modeName) {
-      setFilters((prev) => ({ ...prev, procurementMode: undefined }))
+      updateFilters({ ...filters, procurementMode: undefined })
     } else {
-      setFilters((prev) => ({ ...prev, procurementMode: modeName }))
+      updateFilters({ ...filters, procurementMode: modeName })
     }
   }
 
   const handleJumpToReports = () => {
-    setActiveTab('reports')
+    handleTabChange('reports')
   }
 
   // Synthesize task and BAC analytics items from live contract risk & summary
@@ -262,13 +320,13 @@ export default function ProcurementDashboardPage() {
         {/* Global Multi-Axis Filter Bar with Active Selection Pills */}
         <GlobalFilterBar
           filters={filters}
-          onChange={setFilters}
+          onChange={updateFilters}
           onJumpToReports={handleJumpToReports}
           activeOfficeName={selectedOfficeName}
         />
 
-        {/* Tabbed Navigation: Single Combined Row for Main Tabs & Sub-Tabs */}
-        <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="w-full">
+        {/* Tabbed Navigation: Single Combined Row for Main Tabs */}
+        <Tabs value={activeTab} onValueChange={(val) => handleTabChange(val as any)} className="w-full">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
             {/* Left: Main Tabs */}
             <TabsList className="h-9 bg-muted/80 p-0.5 inline-flex rounded-xl">
@@ -285,124 +343,71 @@ export default function ProcurementDashboardPage() {
                 Reports
               </TabsTrigger>
             </TabsList>
-
-            {/* Right: Sub-Tabs for Overview */}
-            {activeTab === "overview" && (
-              <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/40">
-                <button
-                  type="button"
-                  onClick={() => setOverviewSubTab("summary")}
-                  className={`flex items-center gap-1.5 text-xs font-semibold h-7.5 px-3 rounded-md transition-all ${
-                    overviewSubTab === "summary"
-                      ? "bg-background text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                  Summary
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOverviewSubTab("operations")}
-                  className={`flex items-center gap-1.5 text-xs font-semibold h-7.5 px-3 rounded-md transition-all ${
-                    overviewSubTab === "operations"
-                      ? "bg-background text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Workflow className="w-3.5 h-3.5 text-indigo-500" />
-                  Operations
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOverviewSubTab("risk")}
-                  className={`flex items-center gap-1.5 text-xs font-semibold h-7.5 px-3 rounded-md transition-all ${
-                    overviewSubTab === "risk"
-                      ? "bg-background text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
-                  Risk & Compliance
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* TAB 1: OVERVIEW & OPERATIONS */}
+          {/* TAB 1: CONSOLIDATED OVERVIEW & OPERATIONS */}
           <TabsContent value="overview" className="space-y-6 focus-visible:outline-none">
-            {overviewSubTab === "summary" && (
-              <div className="space-y-6">
-                {/* 1. Alert Banner (5 Alert Types) */}
-                <AlertBanner summary={summary} />
+            {/* 1. Alert Banner (5 Alert Types) */}
+            <AlertBanner summary={summary} />
 
-                {/* 2. Expanded KPI Strip (13 Cards with YoY Deltas) */}
-                <KPIStripV2 summary={summary} isLoading={summaryQuery.isLoading} />
+            {/* 2. Expanded KPI Strip (13 Cards with YoY Deltas) */}
+            <KPIStripV2 summary={summary} isLoading={summaryQuery.isLoading} />
 
-                {/* 3. APP & PPMP Budget Burn Utilization Gauge */}
-                <AppBudgetBurnGauge
-                  data={budgetBurn}
-                  isLoading={budgetBurnQuery.isLoading}
-                  onFilterUnprogrammed={handleJumpToReports}
-                />
+            {/* 3. APP & PPMP Budget Burn Utilization Gauge */}
+            <AppBudgetBurnGauge
+              data={budgetBurn}
+              isLoading={budgetBurnQuery.isLoading}
+              onFilterUnprogrammed={handleJumpToReports}
+            />
 
-                {/* 4. Procurement Pipeline Lifecycle Funnel + Direct Methods Lane */}
-                <ProcurementFunnelV2 summary={summary} trendData={funnelTrendData} />
-              </div>
-            )}
+            {/* 4. Procurement Pipeline Lifecycle Funnel + Direct Methods Lane */}
+            <ProcurementFunnelV2 summary={summary} trendData={funnelTrendData} />
 
-            {overviewSubTab === "operations" && (
-              <div className="space-y-6">
-                {/* 5. Procurement Health & Compliance Scorecard (12 Metric Tiles + GPPB APCPI 4 Pillars) */}
-                <ProcurementHealthScorecard
-                  data={scorecard}
-                  isLoading={scorecardQuery.isLoading}
-                  viewMode={scorecardViewMode}
-                  onViewModeChange={setScorecardViewMode}
-                />
+            {/* 5. Procurement Health & Compliance Scorecard (12 Metric Tiles + GPPB APCPI 4 Pillars) */}
+            <ProcurementHealthScorecard
+              data={scorecard}
+              isLoading={scorecardQuery.isLoading}
+              viewMode={scorecardViewMode}
+              onViewModeChange={setScorecardViewMode}
+            />
 
-                {scorecardViewMode === 'standard' ? (
-                  <>
-                    {/* 6. PR Consolidation & Division Turnaround Time (TAT) Tracker */}
-                    <PrConsolidationAndTatTracker
-                      consolidation={summary?.consolidation || null}
-                      tatData={liveTatData}
-                      fiscalYear={filters.fiscalYear}
-                      isLoading={summaryQuery.isLoading}
-                    />
-
-                    {/* 7. Bottleneck Detection & Aging Pipeline Checkpoints Panel */}
-                    <BottleneckDetectionPanel data={bottleneck} isLoading={bottleneckQuery.isLoading} />
-
-                    {/* 8. Smart Task Queue */}
-                    <TaskQueue tasks={tasks} isLoading={summaryQuery.isLoading} />
-                  </>
-                ) : (
-                  /* GPPB Statutory Compliance & Observer Audit Panel (Dedicated compliance view, distinct from operational TAT) */
-                  <GppbStatutoryCompliancePanel
-                    scorecard={scorecard}
-                    summary={summary}
-                    isLoading={scorecardQuery.isLoading}
-                  />
-                )}
-              </div>
-            )}
-
-            {overviewSubTab === "risk" && (
-              <div className="space-y-6">
-                {/* 8. BAC, Bidding & Contracts Analytics (3-column layout) */}
-                <BacBiddingContractsAnalytics
-                  rfqList={rfqStatusList}
-                  aobItems={aobQueueItems}
-                  poFulfillment={poFulfillment}
-                  contracts={contractsList}
+            {/* 6. Operations & Compliance Block */}
+            {scorecardViewMode === 'standard' ? (
+              <>
+                {/* 6a. PR Consolidation & Division Turnaround Time (TAT) Tracker */}
+                <PrConsolidationAndTatTracker
+                  consolidation={summary?.consolidation || null}
+                  tatData={liveTatData}
+                  fiscalYear={filters.fiscalYear}
                   isLoading={summaryQuery.isLoading}
                 />
 
-                {/* 9. Contract Risk & Expiration Timeline Horizon */}
-                <ContractRiskPanel data={contractRisk} isLoading={contractRiskQuery.isLoading} />
-              </div>
+                {/* 6b. Bottleneck Detection & Aging Pipeline Checkpoints Panel */}
+                <BottleneckDetectionPanel data={bottleneck} isLoading={bottleneckQuery.isLoading} />
+              </>
+            ) : (
+              /* 6c. GPPB Statutory Compliance & Observer Audit Panel */
+              <GppbStatutoryCompliancePanel
+                scorecard={scorecard}
+                summary={summary}
+                isLoading={scorecardQuery.isLoading}
+              />
             )}
+
+            {/* 7. BAC, Bidding & Contracts Analytics (3-column layout) */}
+            <BacBiddingContractsAnalytics
+              rfqList={rfqStatusList}
+              aobItems={aobQueueItems}
+              poFulfillment={poFulfillment}
+              contracts={contractsList}
+              isLoading={summaryQuery.isLoading}
+            />
+
+            {/* 8. Contract Risk & Expiration Timeline Horizon */}
+            <ContractRiskPanel data={contractRisk} isLoading={contractRiskQuery.isLoading} />
+
+            {/* 9. Smart Task Queue */}
+            <TaskQueue tasks={tasks} isLoading={summaryQuery.isLoading} />
           </TabsContent>
 
           {/* TAB 2: ADVANCED ANALYTICS */}
@@ -426,7 +431,7 @@ export default function ProcurementDashboardPage() {
         {/* Live Collapsible Audit Log Rail */}
         <ProcurementAuditActivityRail
           onSelectDocument={() => {
-            setActiveTab('reports')
+            handleTabChange('reports')
           }}
         />
       </div>
