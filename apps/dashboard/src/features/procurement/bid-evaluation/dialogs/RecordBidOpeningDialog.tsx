@@ -40,6 +40,7 @@ interface RecordBidOpeningDialogProps {
   projectId: string
   submission: BiddingSubmissionResponse | null
   biddingActivityScheduleId?: string | null
+  isReadOnly?: boolean
 }
 
 export function RecordBidOpeningDialog({
@@ -48,6 +49,7 @@ export function RecordBidOpeningDialog({
   projectId,
   submission,
   biddingActivityScheduleId,
+  isReadOnly = false,
 }: RecordBidOpeningDialogProps) {
   const recordOpeningMutation = useRecordBidOpening()
 
@@ -108,7 +110,7 @@ export function RecordBidOpeningDialog({
   const secondEnvelopeDocs = (submission.documents || []).filter((d) => d.envelopeType === 2)
 
   const handleEnvelope1Change = (val: 'Passed' | 'Failed') => {
-    if (isAlreadyOpened) {
+    if (isAlreadyOpened || isReadOnly) {
       return
     }
     setEnvelope1Result(val)
@@ -124,13 +126,17 @@ export function RecordBidOpeningDialog({
   }
 
   const handleOpenSecondEnvelope = () => {
-    if (envelope1Result !== 'Passed') return
+    if (envelope1Result !== 'Passed' || isReadOnly) return
     setEnvelope2Opened(true)
     setValidationError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isReadOnly) {
+      onOpenChange(false)
+      return
+    }
     setValidationError(null)
 
     if (envelope1Result === 'Pending') {
@@ -214,13 +220,30 @@ export function RecordBidOpeningDialog({
                   Sequential Pass/Fail examination for Envelope 1 (Eligibility & Technical) and unsealing of Envelope 2 (Financial).
                 </DialogDescription>
               </div>
-              <Badge variant="outline" className="font-semibold bg-white shadow-sm border-primary/20 text-primary">
-                Session Recording
-              </Badge>
+              {isReadOnly ? (
+                <Badge variant="outline" className="font-semibold bg-amber-50 text-amber-800 border-amber-300 flex items-center gap-1">
+                  <Lock className="h-3 w-3" />
+                  Record Locked (View Only)
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="font-semibold bg-white shadow-sm border-primary/20 text-primary">
+                  Session Recording
+                </Badge>
+              )}
             </div>
           </DialogHeader>
 
           <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+            {isReadOnly && (
+              <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+                <Lock className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-xs font-bold">Record Locked (View Only)</AlertTitle>
+                <AlertDescription className="text-xs">
+                  An award recommendation has already been established for this project. In compliance with Philippine Procurement Law (RA 9184 / RA 12009), bid opening records are preserved for audit trail integrity and cannot be modified.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Bidder Summary Header Card */}
             <div className="p-4 rounded-lg bg-default-50 border border-default-200 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               <div>
@@ -331,18 +354,18 @@ export function RecordBidOpeningDialog({
                 <RadioGroup
                   value={envelope1Result}
                   onValueChange={(val) => handleEnvelope1Change(val as 'Passed' | 'Failed')}
-                  disabled={isAlreadyOpened}
+                  disabled={isAlreadyOpened || isReadOnly}
                   className="grid grid-cols-2 gap-3"
                 >
                   <label
                     htmlFor="env1-pass"
-                    className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-3 rounded-md border transition-colors ${
                       envelope1Result === 'Passed'
                         ? 'border-success bg-success/5 shadow-sm ring-1 ring-success'
                         : 'border-default-200 hover:bg-default-50'
-                    } ${isAlreadyOpened ? 'opacity-80 cursor-not-allowed' : ''}`}
+                    } ${isAlreadyOpened || isReadOnly ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
-                    <RadioGroupItem value="Passed" id="env1-pass" disabled={isAlreadyOpened} />
+                    <RadioGroupItem value="Passed" id="env1-pass" disabled={isAlreadyOpened || isReadOnly} />
                     <div>
                       <div className="text-xs font-bold text-default-900 flex items-center gap-1.5">
                         <CheckCircle2 className="h-4 w-4 text-success" />
@@ -356,13 +379,13 @@ export function RecordBidOpeningDialog({
 
                   <label
                     htmlFor="env1-fail"
-                    className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-3 rounded-md border transition-colors ${
                       envelope1Result === 'Failed'
                         ? 'border-destructive bg-destructive/5 shadow-sm ring-1 ring-destructive'
                         : 'border-default-200 hover:bg-default-50'
-                    } ${isAlreadyOpened ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    } ${isAlreadyOpened || isReadOnly ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
-                    <RadioGroupItem value="Failed" id="env1-fail" disabled={isAlreadyOpened} />
+                    <RadioGroupItem value="Failed" id="env1-fail" disabled={isAlreadyOpened || isReadOnly} />
                     <div>
                       <div className="text-xs font-bold text-default-900 flex items-center gap-1.5">
                         <XCircle className="h-4 w-4 text-destructive" />
@@ -423,8 +446,9 @@ export function RecordBidOpeningDialog({
                     id="disqual-reason"
                     value={disqualificationReason}
                     onChange={(e) => setDisqualificationReason(e.target.value)}
+                    disabled={isReadOnly}
                     placeholder="Specify missing eligibility requirements, defective bid security, expired licenses, etc."
-                    className="text-xs border-destructive/40 focus:border-destructive"
+                    className={`text-xs border-destructive/40 focus:border-destructive ${isReadOnly ? 'bg-default-100 cursor-not-allowed' : ''}`}
                     rows={3}
                     required
                   />
@@ -520,16 +544,18 @@ export function RecordBidOpeningDialog({
                         The bidder satisfies all eligibility & technical requirements. Envelope 2 is ready to be unsealed.
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      color="primary"
-                      size="sm"
-                      onClick={handleOpenSecondEnvelope}
-                      className="gap-1.5 text-xs font-bold shrink-0 shadow-sm"
-                    >
-                      <Unlock className="h-3.5 w-3.5" />
-                      Open Second Envelope
-                    </Button>
+                    {!isReadOnly && (
+                      <Button
+                        type="button"
+                        color="primary"
+                        size="sm"
+                        onClick={handleOpenSecondEnvelope}
+                        className="gap-1.5 text-xs font-bold shrink-0 shadow-sm"
+                      >
+                        <Unlock className="h-3.5 w-3.5" />
+                        Open Second Envelope
+                      </Button>
+                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground italic border-t border-default-100 pt-2">
                     Notice: Envelope 2 remains sealed until you explicitly click &ldquo;Open Second Envelope&rdquo;. The As-Read Bid Amount field will be revealed upon unsealing.
@@ -610,7 +636,7 @@ export function RecordBidOpeningDialog({
                           <Label htmlFor="as-read-amount" className="text-xs font-bold text-default-900">
                             As-Read Bid Amount (₱) <span className="text-destructive">*</span>
                           </Label>
-                          {submission.originalProposedAmount !== null && submission.originalProposedAmount !== undefined && (
+                          {!isReadOnly && submission.originalProposedAmount !== null && submission.originalProposedAmount !== undefined && (
                             <button
                               type="button"
                               onClick={() => {
@@ -634,10 +660,11 @@ export function RecordBidOpeningDialog({
                             min="0.01"
                             value={asReadBidAmount}
                             onChange={(e) => setAsReadBidAmount(e.target.value)}
+                            disabled={isReadOnly}
                             placeholder="0.00"
-                            className="pl-7 text-xs font-mono font-bold"
+                            className={`pl-7 text-xs font-mono font-bold ${isReadOnly ? 'bg-default-100 cursor-not-allowed text-default-900' : ''}`}
                             required
-                            autoFocus
+                            autoFocus={!isReadOnly}
                           />
                         </div>
                         <p className="text-[11px] text-muted-foreground">
@@ -656,8 +683,9 @@ export function RecordBidOpeningDialog({
                           id="remarks"
                           value={remarks}
                           onChange={(e) => setRemarks(e.target.value)}
+                          disabled={isReadOnly}
                           placeholder={hasDiscrepancy ? "Explain variance (e.g. As-read from Bid Form Page 1)..." : "e.g. As-read matches financial bid letter."}
-                          className={`text-xs ${hasDiscrepancy && !remarks.trim() ? 'border-amber-400 focus-visible:ring-amber-400' : ''}`}
+                          className={`text-xs ${isReadOnly ? 'bg-default-100 cursor-not-allowed text-default-900' : ''} ${hasDiscrepancy && !remarks.trim() ? 'border-amber-400 focus-visible:ring-amber-400' : ''}`}
                         />
                       </div>
                     </div>
@@ -707,29 +735,41 @@ export function RecordBidOpeningDialog({
 
           {/* Footer */}
           <DialogFooter className="p-4 bg-default-50 border-t border-default-200 flex items-center justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={recordOpeningMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              color="primary"
-              className="gap-1.5 font-semibold"
-              disabled={recordOpeningMutation.isPending}
-            >
-              {recordOpeningMutation.isPending ? (
-                'Recording...'
-              ) : (
-                <>
-                  <FileText className="h-4 w-4" />
-                  Save Bid Opening Record
-                </>
-              )}
-            </Button>
+            {isReadOnly ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Close
+              </Button>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={recordOpeningMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  color="primary"
+                  className="gap-1.5 font-semibold"
+                  disabled={recordOpeningMutation.isPending}
+                >
+                  {recordOpeningMutation.isPending ? (
+                    'Recording...'
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4" />
+                      Save Bid Opening Record
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

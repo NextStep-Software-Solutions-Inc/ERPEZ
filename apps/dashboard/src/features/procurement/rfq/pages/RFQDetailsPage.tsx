@@ -30,7 +30,6 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import {
-  MoreVertical,
   ChevronLeft,
   Search as SearchIcon,
   Calendar,
@@ -54,7 +53,9 @@ import {
   CornerDownLeft,
   FileSpreadsheet,
   ChevronDown,
+  RefreshCw,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/components/ui/use-toast'
 import {
   Select,
@@ -80,6 +81,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { generateAndDownloadRfqDocument } from '../utils/generateRfqDocumentRequest'
+import { DocumentPreviewModal } from '../components/DocumentPreviewModal'
 import { SupplierRFQPreviewDialog } from '@/features/procurement/aob/dialogs/SupplierRFQPreviewDialog'
 import type { BidMatrix } from '@/features/procurement/aob/types/aobTypes'
 import api from '@/services/api'
@@ -117,9 +119,79 @@ export function RFQDetailsPage({
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedFund, setSelectedFund] = useState<string>('all')
   const [previewingSupplierRFQ, setPreviewingSupplierRFQ] = useState<any | null>(null)
+  const queryClient = useQueryClient()
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [previewModalState, setPreviewModalState] = useState<{
+    open: boolean
+    url: string | null
+    title?: string
+    fileName?: string
+  }>({ open: false, url: null })
+
+  const invalidateRFQQueries = async () => {
+    try {
+      await Promise.all([
+        // Invalidate queries directly relevant to this RFQ (active refetch)
+        queryClient.invalidateQueries({
+          predicate: (query) =>
+            query.queryKey.some(
+              (k) =>
+                typeof k === 'string' &&
+                (k.includes(`/rfqs/${rfqId}`) || k === rfqId),
+            ),
+          refetchType: 'active',
+        }),
+        // Invalidate RFQ summary counters (active refetch)
+        queryClient.invalidateQueries({
+          queryKey: ['/rfqs/summary'],
+          refetchType: 'active',
+        }),
+        // Mark RFQ list and related CPR queries as stale without triggering immediate network cascades
+        queryClient.invalidateQueries({
+          queryKey: ['rfqs'],
+          refetchType: 'none',
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['/rfqs'],
+          refetchType: 'none',
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['/consolidated-prs'],
+          refetchType: 'none',
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['/consolidated-pr/items-for-rfq'],
+          refetchType: 'none',
+        }),
+      ])
+    } catch (err) {
+      console.warn('Failed to invalidate queries:', err)
+    }
+  }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await invalidateRFQQueries()
+      await loadRFQ(false)
+      toast({
+        title: 'RFQ Refreshed',
+        description: 'Latest RFQ details, supplier quotes, and item data loaded.',
+      })
+    } catch (err) {
+      toast({
+        title: 'Refresh failed',
+        description: 'Failed to reload RFQ data.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   const rfqBidMatrix = useMemo<BidMatrix>(() => ({
     id: rfq?.id || '',
+    aobId: rfq?.id || '',
     aobNumber: rfq?.rfqNumber || 'RFQ',
     description: rfq?.description || rfq?.purpose || '',
     openingDate: rfq?.deadline || '',
@@ -311,8 +383,28 @@ export function RFQDetailsPage({
 
   const displayStatus = normalizeStatus(rfq?.status, rfq?.remarks)
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading RFQ details...</div>
-  if (!rfq) return <div className="p-8 text-center text-destructive">RFQ not found</div>
+  if (isLoading) {
+    return (
+      <div className="p-12 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <p className="text-sm text-muted-foreground">Loading RFQ details...</p>
+      </div>
+    )
+  }
+
+  if (!rfq) {
+    return (
+      <div className="p-12 flex flex-col items-center justify-center gap-3">
+        <div className="text-destructive font-medium text-lg">RFQ not found</div>
+        <p className="text-sm text-muted-foreground">The requested RFQ could not be loaded or may have been deleted.</p>
+        {onBack && (
+          <Button variant="outline" size="sm" onClick={onBack} className="gap-2 mt-2">
+            <ChevronLeft className="h-4 w-4" /> Back to RFQ List
+          </Button>
+        )}
+      </div>
+    )
+  }
 
   const toggleBrochure = async (itemId: string, v: boolean) => {
     const item = rfq.items.find((it: any) => it.id === itemId)
@@ -336,6 +428,7 @@ export function RFQDetailsPage({
         isBrochureRequired: v,
         greenSpecification: greenSpecs[itemId] !== undefined ? greenSpecs[itemId] : (item.greenSpecification || ''),
       }])
+      await invalidateRFQQueries()
       loadRFQ(true)
     } catch (err) {
       console.error('Failed to toggle brochure requirement:', err)
@@ -356,6 +449,7 @@ export function RFQDetailsPage({
       isBrochureRequired: !!item.isRequiredBrochure,
       greenSpecification: value,
     }])
+    await invalidateRFQQueries()
     loadRFQ(true)
   }
 
@@ -368,6 +462,7 @@ export function RFQDetailsPage({
     await removeRFQItem(rfqId, itemToDelete)
     toast({ title: 'Item removed', description: 'Item removed from RFQ' })
     setItemToDelete(null)
+    await invalidateRFQQueries()
     loadRFQ()
   }
   const handleAddConsolidatedPR = async (items: RFQItem[]) => {
@@ -382,20 +477,13 @@ export function RFQDetailsPage({
       title: 'Items added',
       description: `${items.length} item(s) added to RFQ from consolidated PR(s)`,
     })
+    await invalidateRFQQueries()
     loadRFQ()
   }
 
   const totalAmount = rfq.items.reduce((s: number, it: any) => s + (it.totalAmount || 0), 0)
   const canEdit = !isSupplierPortal && (rfq?.status === 'draft' || rfq?.status === 'returned')
   const canSubmit = canEdit && (rfq?.items?.length || 0) > 0
-
-  // Supplier portal quotation state helpers
-  const quotationIsPending =
-    !rfq.quotationStatus || rfq.quotationStatus === 'draft'
-  const quotationIsSubmitted =
-    rfq.quotationStatus === 'submitted' && !rfq.quotationApprovalStatus
-  const quotationIsApproved = rfq.quotationApprovalStatus === 'approved'
-  const quotationIsReturned = rfq.quotationApprovalStatus === 'returned'
 
   // Authoritative calculations for supplier bid & comparison
   const totalRFQAmount = rfq.items.reduce(
@@ -405,6 +493,17 @@ export function RFQDetailsPage({
   const hasAnyBid = rfq.items.some(
     (it: any) => it.bidUnitPrice !== undefined && it.bidUnitPrice !== null && it.bidUnitPrice > 0
   )
+
+  // Supplier portal quotation state helpers
+  const quotationIsPending =
+    !rfq.quotationStatus ||
+    rfq.quotationStatus === 'draft' ||
+    rfq.quotationStatus === 'pending' ||
+    (rfq.quotationStatus === 'submitted' && !hasAnyBid)
+  const quotationIsSubmitted =
+    rfq.quotationStatus === 'submitted' && hasAnyBid && !rfq.quotationApprovalStatus
+  const quotationIsApproved = rfq.quotationApprovalStatus === 'approved'
+  const quotationIsReturned = rfq.quotationApprovalStatus === 'returned'
   const isCompleteBid =
     rfq.items.length > 0 &&
     rfq.items.every((it: any) => it.bidUnitPrice !== undefined && it.bidUnitPrice !== null && it.bidUnitPrice > 0)
@@ -548,11 +647,8 @@ export function RFQDetailsPage({
 
   // Render rows from filtered items (separated from filtering logic)
   const itemRows = filteredItems.map(({ it, idx }: any) => {
-    const mockMonths = monthsList
+    const mockMonths: string[] = monthsList
     const monthIndex: number | null = getMonthIndexForItem(it, idx)
-
-    // month label uses resolved month index or 'Unknown' when null
-    const monthLabel = monthIndex !== null ? mockMonths[monthIndex] : 'Unknown'
 
     // Build a month-by-month quantity array: place quantity only at the resolved month index if known.
     let monthlyQty = new Array(12)
@@ -757,7 +853,7 @@ export function RFQDetailsPage({
           <div className="text-sm font-semibold text-destructive">
             ₱{overAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} over
           </div>
-          <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5 uppercase tracking-wide font-semibold">
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-red-300 bg-red-50 text-red-700 uppercase tracking-wide font-semibold">
             Exceeds ABC
           </Badge>
         </div>
@@ -787,6 +883,15 @@ export function RFQDetailsPage({
         </Badge>
       </div>
     )
+  }
+
+  const handlePreviewBrochure = (url: string, name?: string) => {
+    setPreviewModalState({
+      open: true,
+      url,
+      title: name ? name.replace(/\.pdf$/i, '') : 'Product Brochure',
+      fileName: name || 'Brochure.pdf',
+    })
   }
 
   // Precomputed hierarchical comparison rows for Supplier Portal
@@ -861,15 +966,16 @@ export function RFQDetailsPage({
             )}
             {it.bidBrochureUrl && (
               <div className="pt-1">
-                <a
-                  href={it.bidBrochureUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={() => handlePreviewBrochure(it.bidBrochureUrl, `${it.bidBrand || it.itemName || 'Brochure'}.pdf`)}
+                  className="h-auto p-0 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
                 >
                   <FileText className="h-3.5 w-3.5" />
                   Brochure
-                </a>
+                </Button>
               </div>
             )}
           </div>
@@ -1068,6 +1174,7 @@ export function RFQDetailsPage({
           title: 'RFQ Submitted',
           description: `${rfq.rfqNumber} has been submitted successfully for BAC review.`,
         })
+        await invalidateRFQQueries()
         loadRFQ()
       }
     } catch (e: any) {
@@ -1107,20 +1214,21 @@ export function RFQDetailsPage({
     }
   }
 
-  const handleDownloadSupplierTemplate = async (format: 'Pdf' | 'Excel' = 'Pdf') => {
+  const handleDownloadSupplierTemplate = async (format?: 'Pdf' | 'Excel' | unknown) => {
     if (!rfq?.id) return
-    const ext = format === 'Excel' ? 'xlsx' : 'pdf'
+    const resolvedFormat: 'Pdf' | 'Excel' = format === 'Excel' ? 'Excel' : 'Pdf'
+    const ext = resolvedFormat === 'Excel' ? 'xlsx' : 'pdf'
     try {
       await generateAndDownloadRfqDocument({
         rfqId: rfq.id,
-        format,
+        format: resolvedFormat,
         supplierId: supplierId || undefined,
         blankTemplate: true,
         filename: `RFQ_${rfq.rfqNumber || rfq.id}_Template.${ext}`,
       })
       toast({
-        title: `Template Downloaded (${format})`,
-        description: `RFQ ${format} template is ready for offline routing/signing.`,
+        title: `Template Downloaded (${resolvedFormat})`,
+        description: `RFQ ${resolvedFormat} template is ready for offline routing/signing.`,
       })
     } catch (err: any) {
       toast({
@@ -1213,6 +1321,18 @@ export function RFQDetailsPage({
                     {quotationIsReturned ? 'Revise Quotation' : 'Set Quotation'}
                   </Button>
                 )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing || isLoading}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+                title="Refresh RFQ Details"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -1522,15 +1642,35 @@ export function RFQDetailsPage({
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                  onClick={handleDownloadSupplierTemplate}
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download RFQ Template
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Download RFQ Template
+                      <ChevronDown className="h-3 w-3 ml-0.5 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      onClick={() => handleDownloadSupplierTemplate('Pdf')}
+                      className="gap-2 cursor-pointer text-xs"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-red-500" />
+                      Download PDF Template
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleDownloadSupplierTemplate('Excel')}
+                      className="gap-2 cursor-pointer text-xs"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                      Download Excel Template
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {rfq.quotationStatus === 'submitted' && (
                   <Button
                     size="sm"
@@ -1866,8 +2006,9 @@ export function RFQDetailsPage({
         rfqId={rfqId}
         supplierId={supplierId}
         initialRFQ={rfq}
-        onSuccess={() => {
+        onSuccess={async () => {
           setShowQuotationModal(false)
+          await invalidateRFQQueries()
           loadRFQ()
         }}
       />
@@ -1902,8 +2043,9 @@ export function RFQDetailsPage({
         open={showEditModal}
         onOpenChange={setShowEditModal}
         initialRFQ={rfq}
-        onSuccess={() => {
+        onSuccess={async () => {
           setShowEditModal(false)
+          await invalidateRFQQueries()
           loadRFQ()
         }}
       />
@@ -1914,6 +2056,15 @@ export function RFQDetailsPage({
         onOpenChange={(open) => !open && setPreviewingSupplierRFQ(null)}
         supplier={previewingSupplierRFQ}
         bidMatrix={rfqBidMatrix}
+      />
+
+      {/* Document / Brochure Preview Modal */}
+      <DocumentPreviewModal
+        open={previewModalState.open}
+        onOpenChange={(open) => setPreviewModalState((prev) => ({ ...prev, open }))}
+        url={previewModalState.url}
+        title={previewModalState.title}
+        fileName={previewModalState.fileName}
       />
     </div>
   )

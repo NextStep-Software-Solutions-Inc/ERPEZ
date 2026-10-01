@@ -120,9 +120,9 @@ public class GetRFQSupplierBidsQueryHandler(IUnitOfWork unitOfWork)
                     SupplierId = unbidded.SupplierId,
                     Supplier = unbidded.Supplier!,
                     SubmissionType = isPublic ? "PublicPortal" : "Electronic",
-                    Status = "Submitted",
+                    Status = "Draft",
                     SubmittedAt = unbidded.InvitedAt != default ? unbidded.InvitedAt : unbidded.CreatedAt,
-                    Remarks = isPublic ? $"Applied via BAC Public Portal ({unbidded.Supplier?.Name})" : "Invited RFQ Submission",
+                    Remarks = isPublic ? $"Applied via BAC Public Portal ({unbidded.Supplier?.Name})" : "Invited RFQ Submission (Draft)",
                     TotalAmount = 0m,
                     SupplierBidItems = rfq.RFQItems.Where(i => !i.IsDeleted).Select(item => new ERPEZ.Domain.Entities.Procurement.SupplierBidItem
                     {

@@ -11,20 +11,45 @@ export interface GenerateRFQDocumentPayload {
 }
 
 export async function generateAndDownloadRfqDocument(payload: GenerateRFQDocumentPayload): Promise<void> {
-  const { rfqId, format = 'Pdf', supplierId, blankTemplate = false, filename } = payload
+  const { rfqId, supplierId, blankTemplate = false, filename } = payload
+  const format: RFQDocumentFormat = payload.format === 'Excel' ? 'Excel' : 'Pdf'
 
   // Step 1: Trigger generation — returns a documentId (Guid)
-  const generateResponse = await api.post<{ data: string }>(
-    `/rfqs/${rfqId}/generate`,
-    null,
-    {
-      params: {
-        format,
-        supplierId: supplierId || undefined,
-        blankTemplate,
-      },
+  let generateResponse: any
+  const primaryEndpoint = supplierId ? `/api/supplier/rfqs/${rfqId}/generate` : `/rfqs/${rfqId}/generate`
+  const fallbackEndpoint = supplierId ? `/rfqs/${rfqId}/generate` : `/api/supplier/rfqs/${rfqId}/generate`
+
+  try {
+    generateResponse = await api.post<{ data: string }>(
+      primaryEndpoint,
+      null,
+      {
+        params: {
+          format,
+          supplierId: supplierId || undefined,
+          blankTemplate,
+        },
+      }
+    )
+  } catch (err: any) {
+    if (err?.response?.status === 403 || err?.response?.status === 404) {
+      // Fallback endpoint
+      generateResponse = await api.post<{ data: string }>(
+        fallbackEndpoint,
+        null,
+        {
+          params: {
+            format,
+            supplierId: supplierId || undefined,
+            blankTemplate,
+          },
+        }
+      )
+    } else {
+      throw err
     }
-  )
+  }
+
   const documentId: string = (generateResponse.data as any)?.data ?? generateResponse.data
 
   if (!documentId) {
@@ -66,17 +91,41 @@ export async function getSupplierRfqPdfBlobUrl(
   supplierId?: string,
   blankTemplate: boolean = false
 ): Promise<string> {
-  const generateResponse = await api.post<{ data: string }>(
-    `/rfqs/${rfqId}/generate`,
-    null,
-    {
-      params: {
-        format: 'Pdf',
-        supplierId: supplierId || undefined,
-        blankTemplate,
-      },
+  const primaryEndpoint = supplierId ? `/api/supplier/rfqs/${rfqId}/generate` : `/rfqs/${rfqId}/generate`
+  const fallbackEndpoint = supplierId ? `/rfqs/${rfqId}/generate` : `/api/supplier/rfqs/${rfqId}/generate`
+
+  let generateResponse: any
+  try {
+    generateResponse = await api.post<{ data: string }>(
+      primaryEndpoint,
+      null,
+      {
+        params: {
+          format: 'Pdf',
+          supplierId: supplierId || undefined,
+          blankTemplate,
+        },
+      }
+    )
+  } catch (err: any) {
+    if (err?.response?.status === 403 || err?.response?.status === 404) {
+      // Fallback endpoint
+      generateResponse = await api.post<{ data: string }>(
+        fallbackEndpoint,
+        null,
+        {
+          params: {
+            format: 'Pdf',
+            supplierId: supplierId || undefined,
+            blankTemplate,
+          },
+        }
+      )
+    } else {
+      throw err
     }
-  )
+  }
+
   const documentId: string = (generateResponse.data as any)?.data ?? generateResponse.data
 
   if (!documentId) {

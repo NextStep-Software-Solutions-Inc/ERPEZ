@@ -310,17 +310,30 @@ export function ProjectChecklistTab({
                 onValueChange={onSelectedProjectChange}
               >
                 <SelectTrigger
-                  className="w-full max-w-xl h-9 bg-background font-medium text-xs [&>span]:line-clamp-1 [&>span]:text-left"
+                  className="w-full max-w-xl min-h-[46px] h-auto py-1.5 px-3 bg-background font-medium text-xs [&>span]:w-full [&>span]:min-w-0 [&>span]:block [&>span]:line-clamp-none overflow-hidden"
                   title={currentProject.title}
                 >
-                  <SelectValue />
+                  <SelectValue placeholder="Select a procurement project...">
+                    <div className="flex flex-col gap-0.5 text-left min-w-0 w-full overflow-hidden pr-2">
+                      <span className="font-semibold text-foreground truncate block text-xs">
+                        {currentProject.title}
+                      </span>
+                      <span className="text-2xs text-muted-foreground truncate block">
+                        REF: {currentProject.refNumber} • {currentProject.category}
+                      </span>
+                    </div>
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="max-w-xl">
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id} className="text-xs">
-                      <div className="flex flex-col gap-0.5 py-0.5">
-                        <span className="font-semibold text-foreground">{project.title}</span>
-                        <span className="text-2xs text-muted-foreground">REF: {project.refNumber} • {project.category}</span>
+                      <div className="flex flex-col gap-0.5 py-0.5 min-w-0">
+                        <span className="font-semibold text-foreground whitespace-normal break-words leading-snug">
+                          {project.title}
+                        </span>
+                        <span className="text-2xs text-muted-foreground">
+                          REF: {project.refNumber} • {project.category}
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
@@ -406,7 +419,7 @@ export function ProjectChecklistTab({
               onValueChange={setSelectedProfileId}
               disabled={!isDraft || isApplyingProfile}
             >
-              <SelectTrigger className="w-full max-w-md h-9 bg-background font-medium text-xs [&>span]:line-clamp-1 [&>span]:text-left">
+              <SelectTrigger className="w-full max-w-md h-9 bg-background font-medium text-xs [&>span]:truncate [&>span]:min-w-0 [&>span]:text-left overflow-hidden">
                 <SelectValue placeholder="Select a reusable profile blueprint..." />
               </SelectTrigger>
               <SelectContent>
