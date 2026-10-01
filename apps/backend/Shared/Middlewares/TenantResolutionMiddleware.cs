@@ -25,12 +25,11 @@ public class TenantResolutionMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(
         HttpContext context,
-        IExternalIdentityNormalizerResolver? normalizerResolver = null,
-        IExternalTenantResolver? externalTenantResolver = null)
+        IExternalIdentityNormalizerResolver? normalizerResolver = null)
     {
         normalizerResolver ??= context.RequestServices?.GetService<IExternalIdentityNormalizerResolver>()
             ?? new ExternalIdentityNormalizerResolver([new ClerkIdentityNormalizer(), new KeycloakIdentityNormalizer()], new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
-        externalTenantResolver ??= context.RequestServices?.GetService<IExternalTenantResolver>();
+        var externalTenantResolver = context.RequestServices?.GetService<IExternalTenantResolver>();
 
         // 1. Extract header candidate (X-Tenant-Id)
         Guid? headerCandidate = null;
