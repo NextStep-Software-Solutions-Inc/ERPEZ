@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearch, useNavigate } from '@tanstack/react-router'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
@@ -21,7 +22,28 @@ export function RFQPage() {
   const [editingRFQ, setEditingRFQ] = useState<RFQ | null>(null)
   const { rfqs, totalCount, summary, fetchRFQs, fetchRFQSummary, fetchRFQById, removeRFQ } = useRFQStore()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [viewing, setViewing] = useState<string | null>(null)
+  const searchParams = useSearch({ strict: false }) as { rfqId?: string }
+  const navigate = useNavigate()
+  const viewing = searchParams?.rfqId ?? null
+
+  const handleViewDetails = (id: string) => {
+    navigate({
+      to: '/v2/request-for-quotation-rfq',
+      search: (prev: any) => ({ ...prev, rfqId: id }),
+    })
+  }
+
+  const handleBackToList = () => {
+    navigate({
+      to: '/v2/request-for-quotation-rfq',
+      search: (prev: any) => {
+        const next = { ...prev }
+        delete next.rfqId
+        return next
+      },
+    })
+  }
+
   // ID of the row whose Edit action is currently fetching GET /rfqs/{id};
   // keeps the action button visually responsive during the request.
   const [loadingEditId, setLoadingEditId] = useState<string | null>(null)
@@ -41,17 +63,19 @@ export function RFQPage() {
     status: true,
   }
 
-  // Re-fetch whenever page, search, or any filter changes.
+  // Re-fetch whenever page, search, viewing, or any filter changes.
   useEffect(() => {
-    fetchRFQs({
-      pageNumber: page,
-      pageSize,
-      search: search || undefined,
-      status: statusFilter === 'all' ? undefined : statusFilter,
-      mode: modeFilter === 'all' ? undefined : modeFilter,
-    })
-    fetchRFQSummary()
-  }, [page, search, statusFilter, modeFilter, fetchRFQs, fetchRFQSummary])
+    if (!viewing) {
+      fetchRFQs({
+        pageNumber: page,
+        pageSize,
+        search: search || undefined,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        mode: modeFilter === 'all' ? undefined : modeFilter,
+      })
+      fetchRFQSummary()
+    }
+  }, [page, search, statusFilter, modeFilter, viewing, fetchRFQs, fetchRFQSummary])
 
   // Badge color/variant map keyed by normalized status string.
   const STATUS_BADGE_CONFIG: Record<string, { color?: any; variant?: any }> = {
@@ -99,7 +123,7 @@ export function RFQPage() {
   // The supplier-facing equivalent is RFQItemPage (/supplier-portal/rfq-item),
   // which passes isSupplierPortal={true}.
   if (viewing) {
-    return <RFQDetailsPage rfqId={viewing} onBack={() => setViewing(null)} isSupplierPortal={false} />
+    return <RFQDetailsPage rfqId={viewing} onBack={handleBackToList} isSupplierPortal={false} />
   }
 
   const toggleSelectAll = (checked?: boolean) => {
@@ -413,7 +437,7 @@ export function RFQPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setViewing(r.id)}>
+                              <DropdownMenuItem onClick={() => handleViewDetails(r.id)}>
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
@@ -479,7 +503,7 @@ export function RFQPage() {
         onSuccess={(rfqId) => {
           setOpen(false)
           setEditingRFQ(null)
-          if (rfqId) setViewing(rfqId)
+          if (rfqId) handleViewDetails(rfqId)
         }}
         initialRFQ={editingRFQ}
       />

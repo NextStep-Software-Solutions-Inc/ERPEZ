@@ -157,6 +157,17 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             var cprWithDetails = await unitOfWork.ConsolidatedPRRepository.GetCPRWithDetailsAsync(request.ConsolidatedPRId.Value, cancellationToken);
             if (cprWithDetails != null)
             {
+                var distinctCprModes = cprWithDetails.ConsolidatedPRItems
+                    .Where(ci => !ci.IsDeleted && ci.ProcurementModeId.HasValue)
+                    .Select(ci => ci.ProcurementModeId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                if (distinctCprModes.Count > 0)
+                {
+                    procurementModeId = distinctCprModes[0];
+                }
+
                 var appItemIds = cprWithDetails.ConsolidatedPRItems
                     .Where(ci => !ci.IsDeleted)
                     .SelectMany(ci => ci.PRItem.PPMPItem?.APPItems ?? Enumerable.Empty<APPItem>())
