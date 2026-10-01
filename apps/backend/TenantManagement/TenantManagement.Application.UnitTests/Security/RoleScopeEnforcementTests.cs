@@ -216,4 +216,38 @@ public class RoleScopeEnforcementTests : IDisposable
         result.Data.Should().ContainSingle(r => r.Name == "Tenant Administrator");
         result.Data.Should().NotContain(r => r.Name == "Platform Administrator");
     }
+
+    [Theory]
+    [InlineData("TenantManagement", RoleScope.Tenant)]
+    [InlineData("Operational", RoleScope.Tenant)]
+    [InlineData("Tenant", RoleScope.Tenant)]
+    [InlineData("Platform", RoleScope.Platform)]
+    [InlineData("ExternalPortal", RoleScope.Unknown)]
+    [InlineData("Unknown", RoleScope.Unknown)]
+    [InlineData("NonExistentScope", RoleScope.Unknown)]
+    public void RoleScopeConverter_ConvertsLegacyAndCurrentScopes_Correctly(string rawDbValue, RoleScope expectedScope)
+    {
+        // Arrange
+        var roleProperty = dbContext.Model.FindEntityType(typeof(Role))?.FindProperty(nameof(Role.Scope));
+        var converter = roleProperty?.GetValueConverter();
+
+        // Assert
+        converter.Should().NotBeNull();
+        var convertedFromDb = converter!.ConvertFromProvider(rawDbValue);
+        convertedFromDb.Should().Be(expectedScope);
+    }
+
+    [Fact]
+    public void RoleScopeConverter_ConvertsEnumToString_ForPersistence()
+    {
+        // Arrange
+        var roleProperty = dbContext.Model.FindEntityType(typeof(Role))?.FindProperty(nameof(Role.Scope));
+        var converter = roleProperty?.GetValueConverter();
+
+        // Assert
+        converter.Should().NotBeNull();
+        converter!.ConvertToProvider(RoleScope.Tenant).Should().Be("Tenant");
+        converter.ConvertToProvider(RoleScope.Platform).Should().Be("Platform");
+        converter.ConvertToProvider(RoleScope.Unknown).Should().Be("Unknown");
+    }
 }

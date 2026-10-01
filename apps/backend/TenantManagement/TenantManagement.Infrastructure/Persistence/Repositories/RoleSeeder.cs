@@ -64,6 +64,16 @@ public static class RoleSeeder
 
     public static async Task SeedAsync(ApplicationDbContext dbContext, CancellationToken cancellationToken = default)
     {
+        if (dbContext.Database.IsRelational())
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE \"Roles\" SET \"Scope\" = 'Tenant' WHERE \"Scope\" IN ('TenantManagement', 'Operational');",
+                cancellationToken);
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "UPDATE \"Roles\" SET \"Scope\" = 'Unknown' WHERE \"Scope\" = 'ExternalPortal';",
+                cancellationToken);
+        }
+
         var existingRoles = await dbContext.Roles!
             .Where(r => r.IsSystemRole && r.TenantId == null)
             .ToListAsync(cancellationToken);
