@@ -397,7 +397,10 @@ export function PRDetailsPage({
       // Handle legacy grouped APR structure (optimistic items added before server sync)
       if (group.aprGroup && group.aprGroup.items) {
         return group.aprGroup.items.flatMap((aprItem): UpdatePurchaseRequestItemPayload[] => {
-          const monthsMap = aprItem.monthlyQuantities || (aprItem.month ? { [aprItem.month]: aprItem.quantity } : {})
+          const effectiveMonth = aprItem.month || (aprItem.monthlyQuantities && Object.keys(aprItem.monthlyQuantities)[0]) || 'January'
+          const monthsMap = (aprItem.monthlyQuantities && Object.keys(aprItem.monthlyQuantities).length > 0)
+            ? aprItem.monthlyQuantities
+            : { [effectiveMonth]: aprItem.quantity }
           return Object.entries(monthsMap).filter(([, qty]) => qty > 0).map(([m, qty]) => ({
             aprItemId: aprItem.itemId || aprItem.id,
             name: aprItem.itemName,

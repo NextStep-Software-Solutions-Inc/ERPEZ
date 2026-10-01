@@ -5,7 +5,7 @@ import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
 import { PERMISSIONS } from '@/constants/permissions'
 
 const purchaseRequestsPrSearchSchema = z.object({
-  tab: z.enum(['non-cse']).catch('non-cse'),
+  tab: z.enum(['non-cse', 'out-of-stock', 'manage-pr']).catch('non-cse'),
 })
 
 export const Route = createFileRoute('/v2/(procurement)/purchase-requests-pr/')({

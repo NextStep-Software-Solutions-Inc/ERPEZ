@@ -38,13 +38,15 @@
 
             foreach (var itemRequest in request.Items)
             {
-                if (itemRequest.PPMPItemId.HasValue)
+                Guid? resolvedPpmpItemId = itemRequest.PPMPItemId;
+
+                if (request.PRType == PRType.NonCSE && itemRequest.PPMPItemId.HasValue)
                 {
                     var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
                         itemRequest.PPMPItemId.Value, cancellationToken)
                         ?? throw new NotFoundException($"PPMP Item with ID {itemRequest.PPMPItemId} not found.");
 
-                    if (request.PRType == PRType.NonCSE && ppmpItem.CSEItemId.HasValue)
+                    if (ppmpItem.CSEItemId.HasValue)
                         throw new ValidationException($"Item '{ppmpItem.Name}' is a CSE item and cannot be added to a Non-CSE PR.");
 
                     var itemOfficeId = ppmpItem.PPMPExpenditureItem?.PPMP?.OfficeId
@@ -61,13 +63,42 @@
                     if (!isAppApproved)
                         throw new ValidationException($"Item '{ppmpItem.Name}' has not been consolidated into an approved Annual Procurement Plan (APP).");
 
-                    if (request.PRType == PRType.NonCSE && ppmpItem.NonCSEItemId == null)
+                    if (ppmpItem.NonCSEItemId == null)
                         throw new ValidationException($"Item '{ppmpItem.Name}' is not an approved Non-CSE item.");
 
                     await ValidatePPMPItemBudget(ppmpItem.Id, itemRequest.RequestedMonth, itemRequest.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, null, cancellationToken);
                 }
+                else if (request.PRType == PRType.OutOfStockCSE && itemRequest.APRItemId.HasValue)
+                {
+                    var aprItem = await unitOfWork.APRItemRepository.GetByIdAsync(
+                        itemRequest.APRItemId.Value, cancellationToken)
+                        ?? throw new NotFoundException($"APR Item with ID {itemRequest.APRItemId} not found.");
 
-                prItems.Add(BuildPRItem(itemRequest));
+                    var apr = await unitOfWork.APRRepository.GetByIdAsync(aprItem.APRId, cancellationToken)
+                        ?? throw new NotFoundException($"APR with ID {aprItem.APRId} not found.");
+
+                    if (apr.OfficeId != request.OfficeId)
+                        throw new ValidationException($"Item '{itemRequest.Name}' belongs to an APR from another office and cannot be added to this Purchase Request.");
+
+                    if (apr.Status != StatusEnum.Approved)
+                        throw new ValidationException($"Item '{itemRequest.Name}' belongs to an APR that is not approved.");
+
+                    var existingPRItems = await unitOfWork.PRItemRepository.FindAllAsync(
+                        i => i.APRItemId == aprItem.Id &&
+                            !i.PurchaseRequest.IsDeleted &&
+                            i.PurchaseRequest.Status != StatusEnum.Returned,
+                        cancellationToken);
+
+                    var totalReserved = existingPRItems.Sum(i => i.RequestedQuantity);
+                    var available = (int)aprItem.QuantityRequested - totalReserved;
+
+                    if (itemRequest.RequestedQuantity > available)
+                        throw new ValidationException($"Requested quantity {itemRequest.RequestedQuantity} for '{itemRequest.Name}' exceeds available APR deficit ({available}).");
+
+                    resolvedPpmpItemId ??= aprItem.PPMPItemId;
+                }
+
+                prItems.Add(BuildPRItem(itemRequest, resolvedPpmpItemId));
                 totalAmount += itemRequest.RequestedQuantity * itemRequest.UnitCost;
             }
 
@@ -157,9 +188,9 @@
             }
         }
 
-        private static PRItem BuildPRItem(PRItemRequest req) => new()
+        private static PRItem BuildPRItem(PRItemRequest req, Guid? resolvedPpmpItemId = null) => new()
         {
-            PPMPItemId        = req.PPMPItemId,
+            PPMPItemId        = resolvedPpmpItemId ?? req.PPMPItemId,
             APRItemId         = req.APRItemId,
             Name              = req.Name,
             Description       = req.Description,

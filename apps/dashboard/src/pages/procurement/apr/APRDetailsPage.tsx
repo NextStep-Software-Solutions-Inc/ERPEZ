@@ -602,6 +602,21 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                   Returned for Revisions
                 </span>
               )}
+              {isApproved && (
+                <Button
+                  size="sm"
+                  className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
+                  onClick={() =>
+                    navigate({
+                      to: '/v2/purchase-requests-pr',
+                      search: { tab: 'out-of-stock' },
+                    })
+                  }
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Create PR for Out-of-Stock Items
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -703,15 +718,30 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
 
               {/* Approved Actions for Requesting User */}
               {isApproved && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-xs rounded-xl h-9 px-4"
-                  onClick={() => window.print()}
-                >
-                  <Printer className="h-3.5 w-3.5" />
-                  Print / Export APR
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
+                    onClick={() =>
+                      navigate({
+                        to: '/v2/purchase-requests-pr',
+                        search: { tab: 'out-of-stock' },
+                      })
+                    }
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Create PR for Out-of-Stock Items
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs rounded-xl h-9 px-4"
+                    onClick={() => window.print()}
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                    Print / Export APR
+                  </Button>
+                </>
               )}
             </>
           )}

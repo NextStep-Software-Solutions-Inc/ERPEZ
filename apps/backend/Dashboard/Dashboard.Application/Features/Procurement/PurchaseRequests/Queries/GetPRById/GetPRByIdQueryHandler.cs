@@ -113,8 +113,10 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                                         ? i.Description 
                                         : (!string.IsNullOrWhiteSpace(i.PPMPItem?.Description) 
                                             ? i.PPMPItem.Description 
-                                            : i.PPMPItem?.NonCSEItem?.Description),
-                    StockNo           = i.StockNo,
+                                            : (!string.IsNullOrWhiteSpace(i.PPMPItem?.NonCSEItem?.Description)
+                                                ? i.PPMPItem.NonCSEItem.Description
+                                                : i.APRItem?.Description)),
+                    StockNo           = i.StockNo ?? i.APRItem?.ItemCode,
                     IsNonCSE          = i.IsNonCSE,
                     UnitCost          = i.UnitCost,
                     RequestedQuantity = i.RequestedQuantity,
@@ -122,35 +124,46 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                     RequestedMonth    = i.RequestedMonth,
                     Category          = i.PPMPItem?.NonCSEItem?.ItemCategory?.Name 
                                         ?? i.PPMPItem?.CSEItem?.ItemCategory?.Name 
+                                        ?? i.APRItem?.PPMPItem?.CSEItem?.ItemCategory?.Name
+                                        ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.Name
                                         ?? i.PPMPItem?.ProjectType.ToString() 
-                                        ?? string.Empty,
+                                        ?? (i.APRItemId.HasValue ? "Out-of-Stock CSE" : string.Empty),
                     Fund              = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.FundSource?.Name
                                         ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSource?.Name
+                                        ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSource?.Name
                                         ?? pr.FundSource?.Name 
                                         ?? string.Empty,
                     PPMPId            = i.PPMPItem?.PPMPExpenditureItem?.PPMPId 
                                         ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMPId,
                     PPMPNumber        = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.PPMPNumber 
                                         ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.PPMPNumber,
-                    Unit              = i.PPMPItem?.Unit 
+                    Unit              = i.APRItem?.Unit
+                                        ?? i.PPMPItem?.Unit 
                                         ?? i.PPMPItem?.NonCSEItem?.UOM?.Name 
                                         ?? i.PPMPItem?.CSEItem?.UOM?.Name 
+                                        ?? i.APRItem?.PPMPItem?.Unit
+                                        ?? i.APRItem?.PPMPItem?.CSEItem?.UOM?.Name
                                         ?? "unit",
                     OfficeName        = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.Office?.Name
                                         ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Office?.Name
+                                        ?? i.APRItem?.APR?.Office?.Name
                                         ?? pr.Office?.Name,
                     ProcurementModeId = i.ConsolidatedPRItems?.OrderByDescending(ci => ci.CreatedAt).FirstOrDefault(ci => !ci.IsDeleted && ci.ProcurementModeId.HasValue)?.ProcurementModeId
                                         ?? i.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
                                             .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
                                             .ThenByDescending(ai => ai.CreatedAt)
                                             .FirstOrDefault()?.ProcurementModeId
-                                        ?? (i.PPMPItem?.ProcurementModeId != Guid.Empty ? i.PPMPItem?.ProcurementModeId : null),
+                                        ?? (i.PPMPItem?.ProcurementModeId is Guid pmId && pmId != Guid.Empty ? (Guid?)pmId : null)
+                                        ?? i.APRItem?.APPItem?.ProcurementModeId
+                                        ?? (i.APRItem?.PPMPItem?.ProcurementModeId is Guid aprPmId && aprPmId != Guid.Empty ? (Guid?)aprPmId : null),
                     ProcurementModeName = i.ConsolidatedPRItems?.OrderByDescending(ci => ci.CreatedAt).FirstOrDefault(ci => !ci.IsDeleted && ci.ProcurementMode != null)?.ProcurementMode?.Name
                                           ?? i.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
                                               .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
                                               .ThenByDescending(ai => ai.CreatedAt)
                                               .FirstOrDefault()?.ProcurementMode?.Name
                                           ?? i.PPMPItem?.ProcurementMode?.Name
+                                          ?? i.APRItem?.APPItem?.ProcurementMode?.Name
+                                          ?? i.APRItem?.PPMPItem?.ProcurementMode?.Name
                 }).ToList(),
             BacResolutions = bacResolutions
         };

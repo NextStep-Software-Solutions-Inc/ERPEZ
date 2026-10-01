@@ -847,6 +847,131 @@ describe('Purchase Request Enhancements (BE & FE)', () => {
       expect(nonDraftItem.procurementModeName).toBe('Small Value Procurement')
     })
   })
+
+  describe('[TASK-11] PR Creation from Out-of-Stock APR and PR Consolidation', () => {
+    it('accurately builds update payload from out-of-stock APR items without dropping items', () => {
+      const aprGroupItem: PRItem = {
+        id: 'group-uuid-1',
+        itemId: 'group-uuid-1',
+        itemName: 'APR #APR-2026-0001 (Accounting Office)',
+        category: 'Consolidated APR',
+        quantity: 1,
+        unitOfMeasure: 'group',
+        unitPrice: 50000,
+        totalAmount: 50000,
+        aprGroup: {
+          aprId: 'apr-guid-1',
+          aprNumber: 'APR-2026-0001',
+          officeName: 'Accounting Office',
+          totalAmount: 50000,
+          items: [
+            {
+              id: 'local-item-1',
+              itemId: 'apr-item-guid-101',
+              itemName: 'Ballpen (Black)',
+              category: 'Office Supplies',
+              quantity: 50,
+              unitOfMeasure: 'box',
+              unitPrice: 200,
+              totalAmount: 10000,
+              source: 'apr',
+              month: undefined, // Simulates backend item where month is undefined
+              monthlyQuantities: {}, // Simulates empty monthlyQuantities
+            },
+            {
+              id: 'local-item-2',
+              itemId: 'apr-item-guid-102',
+              itemName: 'A4 Copy Paper',
+              category: 'Paper Products',
+              quantity: 100,
+              unitOfMeasure: 'ream',
+              unitPrice: 400,
+              totalAmount: 40000,
+              source: 'apr',
+              month: 'February',
+              monthlyQuantities: { February: 100 },
+            },
+          ],
+        },
+      }
+
+      const payload = buildPayloadItems([aprGroupItem])
+
+      expect(payload).toHaveLength(2)
+      expect(payload[0]).toEqual({
+        aprItemId: 'apr-item-guid-101',
+        name: 'Ballpen (Black)',
+        description: '',
+        unitCost: 200,
+        requestedQuantity: 50,
+        stockNo: '',
+        isNonCSE: false,
+        requestedMonth: 'January', // Falls back safely to January
+      })
+      expect(payload[1]).toEqual({
+        aprItemId: 'apr-item-guid-102',
+        name: 'A4 Copy Paper',
+        description: '',
+        unitCost: 400,
+        requestedQuantity: 100,
+        stockNo: '',
+        isNonCSE: false,
+        requestedMonth: 'February',
+      })
+    })
+
+    it('maps source PRs for PR consolidation using GUID for id and prNumber for display', () => {
+      const mockEligiblePrs = [
+        {
+          purchaseRequestId: 'pr-guid-999',
+          prNumber: 'PR-2026-0001',
+          officeId: 'off-guid-1',
+          officeName: 'Finance Division',
+          prType: 'OutOfStockCSE',
+          totalAmount: 50000,
+          items: [
+            {
+              name: 'Ballpen (Black)',
+              unit: 'box',
+              totalQuantity: 50,
+              unitPrice: 200,
+              fund: 'General Fund',
+              category: 'Office Supplies',
+            },
+          ],
+        },
+      ]
+
+      const sourcePRs = mockEligiblePrs.map((pr) => ({
+        id: pr.purchaseRequestId,
+        prNumber: pr.prNumber || pr.purchaseRequestId,
+        office: pr.officeName || pr.officeId,
+        month: 'Jan',
+        fund: pr.items[0]?.fund || '',
+        category: pr.items[0]?.category || '',
+        type: pr.prType?.toLowerCase() === 'non-cse' ? ('non-cse' as const) : ('out-of-stock' as const),
+        items: pr.items.map((item) => ({
+          name: item.name,
+          unit: item.unit,
+          qty: item.totalQuantity,
+          unitPrice: item.unitPrice,
+          totalRequired: item.totalQuantity,
+          currentTotal: item.totalQuantity,
+          deficit: item.totalQuantity,
+        })),
+      }))
+
+      // The id must be the purchaseRequestId GUID
+      expect(sourcePRs[0].id).toBe('pr-guid-999')
+      // The prNumber must be human-readable
+      expect(sourcePRs[0].prNumber).toBe('PR-2026-0001')
+
+      // Mutation payload must contain the GUID, not the PR number
+      const selected = [sourcePRs[0]]
+      const payload = { purchaseRequestIds: Array.from(new Set(selected.map((p) => p.id))) }
+      expect(payload.purchaseRequestIds).toEqual(['pr-guid-999'])
+    })
+  })
 })
 
 

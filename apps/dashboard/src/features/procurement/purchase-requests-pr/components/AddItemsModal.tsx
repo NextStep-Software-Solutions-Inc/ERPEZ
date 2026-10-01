@@ -710,7 +710,7 @@ export function AddItemsModal({
             const recomputedDeficit = Math.max(0, editedNeeded - totalGot)
 
             const requestedQuantity = recomputedDeficit > 0 ? recomputedDeficit : originalOut
-            const requestedMonth = it.month ?? (it.monthlyQuantities && Object.keys(it.monthlyQuantities).length > 0 ? Object.keys(it.monthlyQuantities)[0] : undefined)
+            const requestedMonth = it.month ?? (it.monthlyQuantities && Object.keys(it.monthlyQuantities).length > 0 ? Object.keys(it.monthlyQuantities)[0] : 'January')
 
             return {
               id: generateUUID(),
@@ -722,6 +722,7 @@ export function AddItemsModal({
               unitPrice: it.unitPrice,
               totalAmount: requestedQuantity * (it.unitPrice || 0),
               month: requestedMonth,
+              monthlyQuantities: { [requestedMonth]: requestedQuantity },
               fund: it.fund,
               source: 'apr' as const,
               aprId: apr.id,
