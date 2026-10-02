@@ -75,9 +75,7 @@ import {
   Eye,
   ExternalLink,
   Loader2,
-  ShoppingBag,
   Boxes,
-  Package,
   FilePlus,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -93,7 +91,7 @@ import { PurchaseRequest, PRItem, PRStatus } from '../types'
 import type { UpdatePurchaseRequestItemPayload, PRBacResolutionApi } from '../types/apiTypes'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
 import { AddItemsModal } from './AddItemsModal'
-import { AddNonCSEItemModal, IndependentItemShoppingModal, FALLBACK_NON_CSE_ITEMS, FALLBACK_PROCUREMENT_MODES } from './IndependentItemShoppingModal'
+import { AddNonCSEItemModal, FALLBACK_NON_CSE_ITEMS, FALLBACK_PROCUREMENT_MODES } from './IndependentItemShoppingModal'
 import { EditPRModal } from './EditPRModal'
 import { ReturnPRModal } from './ReturnPRModal'
 import { ApprovePRModal } from './ApprovePRModal'
@@ -324,10 +322,10 @@ export function PRDetailsPage({
         )
         const catalogMatch =
           (nonCseCatalogResponse?.data ?? []).find(
-            (c) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
+            (c: any) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
           ) ??
           FALLBACK_NON_CSE_ITEMS.find(
-            (c) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
+            (c: any) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
           )
 
         const itemCategory =
@@ -368,10 +366,18 @@ export function PRDetailsPage({
           ppmpDocName: i.ppmpNumber
             ? `${i.ppmpNumber} — ${i.officeName || apiData.officeName || ''}`
             : undefined,
-          aprId: i.aprId || existingLocalItem?.aprId,
-          aprItemId: i.aprItemId,
-          aprNumber: i.aprNumber || existingLocalItem?.aprNumber,
-          aprOffice: i.aprOfficeName || i.officeName || existingLocalItem?.aprOffice,
+          aprId: i.aprId || existingLocalItem?.aprId || (i as any)?.aprItemId || (i as any)?.aprItem?.aprId,
+          aprItemId: i.aprItemId || (i as any)?.aprItem?.id,
+          aprNumber: i.aprNumber || existingLocalItem?.aprNumber || (i as any)?.aprItem?.apr?.aprNumber || (i as any)?.apr?.aprNumber,
+          aprOffice:
+            i.aprOfficeName ||
+            i.officeName ||
+            (i as any)?.aprItem?.apr?.office?.name ||
+            (i as any)?.apr?.office?.name ||
+            existingLocalItem?.aprOffice ||
+            apiData.officeName ||
+            base.headerDetails?.officeName ||
+            'General Administration',
         })
       }
     }
@@ -393,11 +399,11 @@ export function PRDetailsPage({
         description: apiData.description ?? '',
         purpose: apiData.purpose ?? '',
         date: apiData.requestedDate,
-        uacs: apiData.uacsCode ?? base.headerDetails.uacs ?? '',
-        fundCluster: apiData.fundSource ?? base.headerDetails.fundCluster ?? '',
-        procurementCategoryName: apiData.procurementCategory ?? base.headerDetails.procurementCategoryName ?? '',
-        officeId: apiData.officeId ?? base.headerDetails.officeId,
-        officeName: apiData.officeName ?? base.headerDetails.officeName,
+        uacs: apiData.uacsCode ?? base.headerDetails?.uacs ?? '',
+        fundCluster: apiData.fundSource ?? base.headerDetails?.fundCluster ?? '',
+        procurementCategoryName: apiData.procurementCategory ?? base.headerDetails?.procurementCategoryName ?? '',
+        officeId: apiData.officeId ?? base.headerDetails?.officeId,
+        officeName: apiData.officeName ?? base.headerDetails?.officeName,
       },
       items: deduplicatedItems,
     }
@@ -851,13 +857,14 @@ export function PRDetailsPage({
 
   const openDeleteAPRGroupDialog = (
     aprGroupNumber: string,
+    displayName: string,
     items: PRItem[],
   ) => {
     const itemIds = items.map((i) => i.id)
     setDeleteConfirmDialog({
       isOpen: true,
       ppmpId: aprGroupNumber,
-      ppmpName: `APR #${aprGroupNumber}`,
+      ppmpName: displayName || `APR #${aprGroupNumber}`,
       itemIds,
       type: 'apr',
     })
@@ -1891,7 +1898,7 @@ export function PRDetailsPage({
                                 openDeletePPMPDialog(
                                   ppmpId,
                                   items[0]?.ppmpDocName ?? (ppmpId === 'independent-items' ? 'Independent Items' : 'Office PPMP'),
-                                  items.map((it) => it.id),
+                                  items,
                                 )
                               }}
                             >
@@ -2138,16 +2145,18 @@ export function PRDetailsPage({
             <div className="space-y-3">
               <div className="space-y-4">
                 {groupedAPRs.map((groupItem) => {
-                    const aprId = groupItem.aprGroup!.id || groupItem.aprGroup!.aprId || ''
+                    const aprId = groupItem.aprGroup?.id || groupItem.aprGroup?.aprId || groupItem.aprId || groupItem.id || ''
                     const isExpanded = expandedPPMPs.has(aprId)
-                    const nested: PRItem[] = (groupItem.aprGroup!.items ||
-                      []) as PRItem[]
+                    const nested: PRItem[] = (groupItem.aprGroup?.items || [groupItem]) as PRItem[]
                     const aprTotal =
-                      groupItem.totalAmount ||
+                      groupItem.aprGroup?.totalAmount ??
+                      groupItem.totalAmount ??
                       nested.reduce(
                         (s: number, ni: PRItem) => s + (ni.totalAmount || 0),
                         0,
                       )
+                    const aprNumber = groupItem.aprGroup?.aprNumber || groupItem.aprNumber || 'APR'
+                    const officeName = groupItem.aprGroup?.officeName || groupItem.aprOffice || pr.headerDetails?.officeName || 'General Administration'
 
                     return (
                       <div
@@ -2163,8 +2172,7 @@ export function PRDetailsPage({
                           />
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold truncate">
-                              {groupItem.aprGroup!.aprNumber} •{' '}
-                              {groupItem.aprGroup!.officeName}
+                              {aprNumber} • {officeName}
                             </div>
                             <div className="text-xs truncate text-slate-600">
                               {nested.length} item(s)
@@ -2185,9 +2193,9 @@ export function PRDetailsPage({
                                 className="h-8 p-0 text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  openDeleteAPRDialog(
-                                    aprId,
-                                    `${groupItem.aprGroup!.aprNumber} • ${groupItem.aprGroup!.officeName}`,
+                                  openDeleteAPRGroupDialog(
+                                    aprNumber,
+                                    `${aprNumber} • ${officeName}`,
                                     nested,
                                   )
                                 }}
@@ -2284,12 +2292,12 @@ export function PRDetailsPage({
                                                   const val = Number.isNaN(v) ? 0 : v
 
                                                   const hasWrapper = pr.items.some((pi) => pi.id === groupItem.id && Boolean(pi.aprGroup))
-                                                  const updatedItems = hasWrapper
+                                                  const updatedItems: PRItem[] = hasWrapper
                                                     ? pr.items.map((pi) => {
                                                         if (pi.id !== groupItem.id) return pi
-                                                        const updatedAprGroup = {
-                                                          ...pi.aprGroup!,
-                                                          items: (pi.aprGroup!.items || []).map(
+                                                        const updatedAprGroup: PRItem['aprGroup'] = {
+                                                          ...(pi.aprGroup || {}),
+                                                          items: (pi.aprGroup?.items || []).map(
                                                             (inner: PRItem) => {
                                                               if (inner.id !== ni.id) return inner
                                                               const prevMonthly =
@@ -2415,15 +2423,15 @@ export function PRDetailsPage({
                                             onClick={(e) => {
                                               e.stopPropagation()
                                               const hasWrapper = pr.items.some((pi) => pi.id === groupItem.id && Boolean(pi.aprGroup))
-                                              const updatedItems = hasWrapper
+                                              const updatedItems: PRItem[] = hasWrapper
                                                 ? pr.items.map((pi) => {
                                                     if (pi.id !== groupItem.id) return pi
-                                                    const remaining = (pi.aprGroup!.items || []).filter((inner) => inner.id !== ni.id)
+                                                    const remaining = (pi.aprGroup?.items || []).filter((inner) => inner.id !== ni.id)
                                                     const newTotal = remaining.reduce((s, it) => s + (it.totalAmount || 0), 0)
                                                     const newQty = remaining.reduce((s, it) => s + (it.quantity || 0), 0)
                                                     return {
                                                       ...pi,
-                                                      aprGroup: { ...pi.aprGroup!, items: remaining },
+                                                      aprGroup: { ...(pi.aprGroup || {}), items: remaining },
                                                       quantity: newQty,
                                                       totalAmount: newTotal,
                                                     }
