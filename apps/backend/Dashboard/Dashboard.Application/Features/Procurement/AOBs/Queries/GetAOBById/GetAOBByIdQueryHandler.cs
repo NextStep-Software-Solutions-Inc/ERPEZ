@@ -54,6 +54,7 @@ public class GetAOBByIdQueryHandler(IUnitOfWork unitOfWork)
             ApprovedAt = aob.ApprovedAt,
             SignedDocumentUrl = aob.SignedDocumentUrl,
             Remarks = aob.Remarks,
+            RFQNumber = rfqs.Count > 0 ? string.Join(", ", rfqs.Select(r => r.RFQNumber).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct()) : null,
             BacResolutionNumber = metadata.BacResolutionNumber,
             PRNumber = metadata.PRNumber,
             PAPCode = metadata.PAPCode,
