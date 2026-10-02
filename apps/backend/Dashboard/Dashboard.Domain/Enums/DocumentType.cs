@@ -19,5 +19,6 @@ public enum DocumentType
     Aob,
     DirectContracting,
     Contract,
-    NoticeToProceed
+    NoticeToProceed,
+    PurchaseOrder
 }

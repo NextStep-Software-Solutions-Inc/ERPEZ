@@ -40,6 +40,7 @@ import {
 import { useGetAOBById } from '@/features/procurement/aob/handlers/getAOBByIdRequest'
 import { getBidMatrixRequest } from '@/features/procurement/aob/handlers/getBidMatrixRequest'
 import { downloadPurchaseOrderBlob } from '../utils/downloadPurchaseOrderBlob'
+import { printPurchaseOrder } from '../utils/printPurchaseOrder'
 import { toast } from 'sonner'
 
 const useBidMatrix = createQueryHookFromTemplate(getBidMatrixRequest)
@@ -207,10 +208,7 @@ export function PurchaseOrderDetailsPage({
             variant="outline"
             size="sm"
             className="gap-2 h-8"
-            onClick={() => {
-              const blob = new Blob([JSON.stringify(fullPo, null, 2)], { type: 'application/json' })
-              downloadPurchaseOrderBlob({ blob, filename: `${purchaseOrder.poNumber || 'PO'}.json` })
-            }}
+            onClick={() => printPurchaseOrder(fullPo)}
           >
             <Printer className="h-4 w-4" />
             Print PO

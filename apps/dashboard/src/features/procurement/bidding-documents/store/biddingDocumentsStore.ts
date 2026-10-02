@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { useBiddingScheduleStore } from '../../bidding-schedule/store/biddingScheduleStore'
 import {
   buildPreviewPages,
   getOverallProgress,
@@ -298,6 +299,22 @@ export const useBiddingDocumentsStore = create<
             })
           }),
         }))
+
+        const scheduleStore = useBiddingScheduleStore.getState()
+        const document = get().documents.find((item) => item.id === documentId)
+        if (!document) {
+          return
+        }
+
+        const schedule = scheduleStore.getScheduleByResolutionId(
+          document.bacResolutionId,
+        )
+        if (schedule && schedule.status === 'confirmed') {
+          scheduleStore.lockSchedule({
+            scheduleId: schedule.id,
+            lockedBy: postedBy,
+          })
+        }
       },
     }),
     {

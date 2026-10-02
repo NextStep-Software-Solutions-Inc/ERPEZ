@@ -17,6 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PurchaseOrderSupportingDocumentCard } from './PurchaseOrderSupportingDocumentCard'
 import { PurchaseOrderDocumentPreviewCard } from './PurchaseOrderDocumentPreviewCard'
+import { GeneratedPurchaseOrderPreviewCard } from './GeneratedPurchaseOrderPreviewCard'
 import { PurchaseOrderStatusBadge } from './PurchaseOrderStatusBadge'
 import { AobEvaluationTab } from './AobEvaluationTab'
 import {
@@ -313,23 +314,28 @@ export function PurchaseOrderDetailsShell({
 
   // Documents card content
   const renderDocumentsCard = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Supporting Documents */}
-      <PurchaseOrderSupportingDocumentCard
-        supportingDocument={supportingDoc}
-        fileName={purchaseOrder.poNumber ? `${purchaseOrder.poNumber}-BID-supporting.pdf` : undefined}
-      />
+    <div className="space-y-6">
+      {/* Generated Purchase Order Preview (COA GAM Appendix 61) */}
+      <GeneratedPurchaseOrderPreviewCard purchaseOrder={purchaseOrder} />
 
-      {/* Official PO Document preview */}
-      <PurchaseOrderDocumentPreviewCard
-        file={purchaseOrder.signedDocument ?? (purchaseOrder as any).signedDocumentUrl ?? null}
-        fileName={purchaseOrder.signedDocumentFileName ?? (purchaseOrder.poNumber ? `${purchaseOrder.poNumber}-signed.pdf` : undefined)}
-        title="Purchase Order Document"
-        description="Preview and download the official Purchase Order document."
-        emptyDescription="The official purchase order document has not been uploaded yet."
-        previewTitle="Purchase order preview"
-        downloadLabel="Download PO Document"
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Supporting Documents */}
+        <PurchaseOrderSupportingDocumentCard
+          supportingDocument={supportingDoc}
+          fileName={purchaseOrder.poNumber ? `${purchaseOrder.poNumber}-BID-supporting.pdf` : undefined}
+        />
+
+        {/* Official Signed PO Document preview */}
+        <PurchaseOrderDocumentPreviewCard
+          file={purchaseOrder.signedDocument ?? (purchaseOrder as any).signedDocumentUrl ?? null}
+          fileName={purchaseOrder.signedDocumentFileName ?? (purchaseOrder.poNumber ? `${purchaseOrder.poNumber}-signed.pdf` : undefined)}
+          title="Uploaded Signed PO Document"
+          description="Preview and download the physical signed Purchase Order document uploaded upon approval."
+          emptyDescription="The official signed purchase order document has not been uploaded yet."
+          previewTitle="Purchase order preview"
+          downloadLabel="Download Signed PO"
+        />
+      </div>
     </div>
   )
 
@@ -371,28 +377,21 @@ export function PurchaseOrderDetailsShell({
         </Card>
       )}
 
-      {/* When in SVP / AOB mode: Render 4 Workflow Tabs */}
+      {/* SVP / AOB mode: Exactly 3 Workflow Tabs */}
       {isAob ? (
         <Tabs
           value={activeTab}
           onValueChange={onTabChange}
           className="w-full space-y-6"
         >
-          <div className="border-b border-slate-200 dark:border-slate-800 pb-1">
-            <TabsList className="bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl h-auto flex flex-wrap gap-1 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-start border-b border-slate-200 dark:border-slate-800 pb-1">
+            <TabsList className="bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl h-auto inline-flex flex-wrap justify-start gap-1 border border-slate-200 dark:border-slate-700 w-auto">
               <TabsTrigger
                 value="po-details"
                 className="gap-2 px-4 py-2 font-medium rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-xs text-sm"
               >
                 <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 PO Details
-              </TabsTrigger>
-              <TabsTrigger
-                value="line-items"
-                className="gap-2 px-4 py-2 font-medium rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-xs text-sm"
-              >
-                <ListChecks className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                Line Items ({lineItems.length})
               </TabsTrigger>
               <TabsTrigger
                 value="aob-matrix"
@@ -413,9 +412,6 @@ export function PurchaseOrderDetailsShell({
 
           <TabsContent value="po-details" className="mt-0 space-y-6">
             {renderDetailsCard()}
-          </TabsContent>
-
-          <TabsContent value="line-items" className="mt-0 space-y-6">
             {renderLineItemsCard()}
           </TabsContent>
 
@@ -433,12 +429,40 @@ export function PurchaseOrderDetailsShell({
           </TabsContent>
         </Tabs>
       ) : (
-        /* Standard Non-AOB Stacked Layout */
-        <div className="space-y-6">
-          {renderDetailsCard()}
-          {renderLineItemsCard()}
-          {renderDocumentsCard()}
-        </div>
+        /* Standard Non-AOB Layout: PO Details and Documents */
+        <Tabs
+          value={activeTab === 'aob-matrix' ? 'po-details' : activeTab}
+          onValueChange={onTabChange}
+          className="w-full space-y-6"
+        >
+          <div className="flex items-center justify-start border-b border-slate-200 dark:border-slate-800 pb-1">
+            <TabsList className="bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl h-auto inline-flex flex-wrap justify-start gap-1 border border-slate-200 dark:border-slate-700 w-auto">
+              <TabsTrigger
+                value="po-details"
+                className="gap-2 px-4 py-2 font-medium rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-xs text-sm"
+              >
+                <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                PO Details
+              </TabsTrigger>
+              <TabsTrigger
+                value="documents"
+                className="gap-2 px-4 py-2 font-medium rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-xs text-sm"
+              >
+                <FileCheck2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                Documents & Previews
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="po-details" className="mt-0 space-y-6">
+            {renderDetailsCard()}
+            {renderLineItemsCard()}
+          </TabsContent>
+
+          <TabsContent value="documents" className="mt-0 space-y-6">
+            {renderDocumentsCard()}
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   )
