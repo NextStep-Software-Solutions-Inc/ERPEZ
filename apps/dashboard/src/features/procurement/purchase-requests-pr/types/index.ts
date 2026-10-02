@@ -60,7 +60,7 @@ export interface PRItem {
   itemName: string
   category: string
   quantity: number
-  unitOfMeasure: string
+  unitOfMeasure?: string
   unitPrice: number
   totalAmount: number
   description?: string
