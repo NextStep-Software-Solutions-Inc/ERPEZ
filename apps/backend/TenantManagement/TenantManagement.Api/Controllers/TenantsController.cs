@@ -26,11 +26,14 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         ICurrentUserService currentUser,
         IUserAuthorizationService authorizationService) : ControllerBase
     {
+        /// <summary>
+        /// Creates a new tenant workspace.
+        /// Self-registration endpoint: Accessible by any authenticated identity to provision an initial workspace.
+        /// </summary>
         [HttpPost]
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-        [HasPermission(Permissions.Admin.tenantsManage)]
         public async Task<IActionResult> CreateTenant([FromBody] CreateTenantCommand command)
         {
             var tenant = await mediator.Send(command);
