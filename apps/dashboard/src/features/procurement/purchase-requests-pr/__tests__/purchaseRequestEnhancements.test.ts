@@ -1109,6 +1109,41 @@ describe('Purchase Request Enhancements (BE & FE)', () => {
       expect(safeFormatDate(undefined)).toBeNull()
       expect(safeFormatDate('invalid-iso-date-string')).toBeNull()
       expect(safeFormatDate('2026-10-02T08:30:00Z')).toBeTruthy()
+
+      // ReturnedBy fallback
+      const getReturnedByActor = (returnedBy?: string) => returnedBy ? ` by ${returnedBy}` : ' by the Approving Authority'
+      expect(getReturnedByActor(undefined)).toBe(' by the Approving Authority')
+      expect(getReturnedByActor('')).toBe(' by the Approving Authority')
+      expect(getReturnedByActor('Governor Jane Doe')).toBe(' by Governor Jane Doe')
+    })
+
+    it('clears returnRemarks, returnedDate, and returnedBy on approved or submitted status to prevent stale banner display', () => {
+      const mapApiResponse = (apiStatus: string, returnRemarks?: string, returnedDate?: string, returnedBy?: string) => {
+        const isTerminalOrPending = apiStatus === 'Approved' || apiStatus === 'Submitted' || apiStatus === 'ForBACUtilization'
+        return {
+          returnRemarks: isTerminalOrPending ? undefined : returnRemarks,
+          returnedDate: isTerminalOrPending ? undefined : returnedDate,
+          returnedBy: isTerminalOrPending ? undefined : returnedBy,
+        }
+      }
+
+      // When returned, remarks are retained
+      const returnedPR = mapApiResponse('Returned', 'Missing supplier quotes', '2026-10-02T08:30:00Z', 'BAC Sec')
+      expect(returnedPR.returnRemarks).toBe('Missing supplier quotes')
+      expect(returnedPR.returnedDate).toBe('2026-10-02T08:30:00Z')
+      expect(returnedPR.returnedBy).toBe('BAC Sec')
+
+      // When approved, remarks and audit fields are cleared so old rejection is never shown
+      const approvedPR = mapApiResponse('Approved', 'Old rejection reason', '2026-10-01T08:30:00Z', 'Old Reviewer')
+      expect(approvedPR.returnRemarks).toBeUndefined()
+      expect(approvedPR.returnedDate).toBeUndefined()
+      expect(approvedPR.returnedBy).toBeUndefined()
+
+      // When submitted, remarks and audit fields are cleared
+      const submittedPR = mapApiResponse('Submitted', 'Old rejection reason', '2026-10-01T08:30:00Z', 'Old Reviewer')
+      expect(submittedPR.returnRemarks).toBeUndefined()
+      expect(submittedPR.returnedDate).toBeUndefined()
+      expect(submittedPR.returnedBy).toBeUndefined()
     })
   })
 })

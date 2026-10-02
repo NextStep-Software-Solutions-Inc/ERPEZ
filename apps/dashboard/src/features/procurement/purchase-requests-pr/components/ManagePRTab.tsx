@@ -127,6 +127,10 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
         updatedAt: apiPr.createdDate ? String(apiPr.createdDate) : '',
         dateSubmitted: apiPr.requestedDate ? String(apiPr.requestedDate) : (apiPr.createdDate ? String(apiPr.createdDate) : ''),
         createdBy: '',
+        remarks: (apiPr.status === 'Approved' || apiPr.status === 'Submitted' || apiPr.status === 'ForBACUtilization') ? undefined : apiPr.returnRemarks,
+        returnRemarks: (apiPr.status === 'Approved' || apiPr.status === 'Submitted' || apiPr.status === 'ForBACUtilization') ? undefined : apiPr.returnRemarks,
+        returnedDate: (apiPr.status === 'Approved' || apiPr.status === 'Submitted' || apiPr.status === 'ForBACUtilization') ? undefined : apiPr.returnedDate,
+        returnedBy: (apiPr.status === 'Approved' || apiPr.status === 'Submitted' || apiPr.status === 'ForBACUtilization') ? undefined : apiPr.returnedBy,
       } as PurchaseRequest
     })
   }, [prResponse, officesMap])
@@ -153,7 +157,10 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
       return 'returned'
     }
     try {
-      if (p.remarks && p.remarks.toString().trim().length > 0) {
+      if (
+        (p.remarks && p.remarks.toString().trim().length > 0) ||
+        (p.returnRemarks && p.returnRemarks.toString().trim().length > 0)
+      ) {
         return 'returned' as PRStatus
       }
     } catch {

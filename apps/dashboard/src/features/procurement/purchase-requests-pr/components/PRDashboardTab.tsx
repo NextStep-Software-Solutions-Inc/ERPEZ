@@ -121,6 +121,10 @@ export function PRDashboardTab({
       createdAt: item.createdDate,
       updatedAt: item.createdDate,
       createdBy: '',
+      remarks: (item.status === 'Approved' || item.status === 'Submitted' || item.status === 'ForBACUtilization') ? undefined : item.returnRemarks,
+      returnRemarks: (item.status === 'Approved' || item.status === 'Submitted' || item.status === 'ForBACUtilization') ? undefined : item.returnRemarks,
+      returnedDate: (item.status === 'Approved' || item.status === 'Submitted' || item.status === 'ForBACUtilization') ? undefined : item.returnedDate,
+      returnedBy: (item.status === 'Approved' || item.status === 'Submitted' || item.status === 'ForBACUtilization') ? undefined : item.returnedBy,
     } as PurchaseRequest))
   }, [prListResponse])
 
@@ -233,7 +237,10 @@ export function PRDashboardTab({
       return 'returned'
     }
     try {
-      if ((p as any).remarks && (p as any).remarks.toString().trim().length > 0) {
+      if (
+        ((p as any).remarks && (p as any).remarks.toString().trim().length > 0) ||
+        ((p as any).returnRemarks && (p as any).returnRemarks.toString().trim().length > 0)
+      ) {
         return 'returned' as PRStatus
       }
     } catch {
