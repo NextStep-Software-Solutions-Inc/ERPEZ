@@ -263,9 +263,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(ma => ma.RoleId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // TenantMemberRoleAssignment composite key
-        modelBuilder.Entity<TenantMemberRoleAssignment>()
-            .HasKey(ra => new { ra.TenantMemberId, ra.RoleId });
+        // TenantMemberRoleAssignment composite key and query filter matching soft-deleted Role and TenantMember
+        modelBuilder.Entity<TenantMemberRoleAssignment>(b =>
+        {
+            b.HasKey(ra => new { ra.TenantMemberId, ra.RoleId });
+            b.HasQueryFilter(ra => !ra.Role.IsDeleted && !ra.TenantMember.IsDeleted);
+        });
 
         // LicenseKey
         modelBuilder.Entity<LicenseKey>()

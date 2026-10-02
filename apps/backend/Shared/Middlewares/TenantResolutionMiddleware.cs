@@ -25,12 +25,11 @@ public class TenantResolutionMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(
         HttpContext context,
-        IExternalIdentityNormalizerResolver? normalizerResolver = null,
-        IExternalTenantResolver? externalTenantResolver = null)
+        IExternalIdentityNormalizerResolver? normalizerResolver = null)
     {
         normalizerResolver ??= context.RequestServices?.GetService<IExternalIdentityNormalizerResolver>()
             ?? new ExternalIdentityNormalizerResolver([new ClerkIdentityNormalizer(), new KeycloakIdentityNormalizer()], new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
-        externalTenantResolver ??= context.RequestServices?.GetService<IExternalTenantResolver>();
+        var externalTenantResolver = context.RequestServices?.GetService<IExternalTenantResolver>();
 
         // 1. Extract header candidate (X-Tenant-Id)
         Guid? headerCandidate = null;
@@ -68,7 +67,8 @@ public class TenantResolutionMiddleware(RequestDelegate next)
         var isIdentityScopedRoute = path.Equals("/api/tenant/context", StringComparison.OrdinalIgnoreCase) ||
                                     path.Equals("/api/tenant/available", StringComparison.OrdinalIgnoreCase) ||
                                     path.Equals("/tenants/context", StringComparison.OrdinalIgnoreCase) ||
-                                    path.Equals("/tenants/available", StringComparison.OrdinalIgnoreCase);
+                                    path.Equals("/tenants/available", StringComparison.OrdinalIgnoreCase) ||
+                                    (path.Equals("/tenants", StringComparison.OrdinalIgnoreCase) && HttpMethods.IsPost(context.Request.Method));
 
         if (context.User?.Identity?.IsAuthenticated == true)
         {
