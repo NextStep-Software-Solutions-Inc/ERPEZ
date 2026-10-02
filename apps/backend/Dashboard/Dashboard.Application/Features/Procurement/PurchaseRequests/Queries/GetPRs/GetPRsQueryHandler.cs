@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Dtos;
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -34,9 +35,9 @@ public class GetPRsQueryHandler(IUnitOfWork unitOfWork)
                 CreatedDate   = DateOnly.FromDateTime(pr.CreatedAt),
                 OfficeId      = pr.OfficeId,
                 OfficeName    = pr.Office != null ? pr.Office.Name : string.Empty,
-                ReturnRemarks = pr.ReturnRemarks,
-                ReturnedDate  = pr.ReturnedDate,
-                ReturnedBy    = pr.ReturnedBy
+                ReturnRemarks = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted) ? null : pr.ReturnRemarks,
+                ReturnedDate  = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted) ? null : pr.ReturnedDate,
+                ReturnedBy    = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted) ? null : pr.ReturnedBy
             };
 
         var (items, totalCount) = await unitOfWork.PurchaseRequestRepository

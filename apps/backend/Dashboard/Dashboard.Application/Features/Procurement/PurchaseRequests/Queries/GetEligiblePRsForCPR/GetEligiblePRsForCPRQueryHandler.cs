@@ -36,7 +36,7 @@ public class GetEligiblePRsForCPRQueryHandler(IUnitOfWork unitOfWork)
                 PurchaseRequestId: pr.Id,
                 PRNumber:          pr.PRNumber,
                 OfficeId:          pr.OfficeId,
-                OfficeName:        pr.Office.Name,
+                OfficeName:        pr.Office != null ? pr.Office.Name : string.Empty,
                 PRType:            pr.PRType == PRType.NonCSE ? "Non-CSE" : "Out of Stock",
                 TotalAmount:       pr.TotalAmount,
                 Items: pr.PRItems

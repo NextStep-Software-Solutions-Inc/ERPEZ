@@ -17,15 +17,10 @@ public class UpdatePRStatusCommandHandler(IUnitOfWork unitOfWork)
 
         if (command.Status == ERPEZ.Domain.Enums.StatusEnum.Returned)
         {
-            if (!string.IsNullOrWhiteSpace(command.Remarks))
-            {
-                pr.ReturnRemarks = command.Remarks;
-            }
+            pr.ReturnRemarks = string.IsNullOrWhiteSpace(command.Remarks) ? null : command.Remarks.Trim();
             pr.ReturnedDate = DateTime.UtcNow;
-            if (!string.IsNullOrWhiteSpace(command.ActorName))
-            {
-                pr.ReturnedBy = command.ActorName;
-            }
+            pr.ReturnedBy = string.IsNullOrWhiteSpace(command.ActorName) ? null : command.ActorName.Trim();
+            pr.ApprovedDate = null;
         }
         else if (command.Status == ERPEZ.Domain.Enums.StatusEnum.Approved)
         {
@@ -40,6 +35,7 @@ public class UpdatePRStatusCommandHandler(IUnitOfWork unitOfWork)
             pr.ReturnRemarks = null;
             pr.ReturnedDate = null;
             pr.ReturnedBy = null;
+            pr.ApprovedDate = null;
         }
 
         unitOfWork.PurchaseRequestRepository.Update(pr);

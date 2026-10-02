@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,86 +11,41 @@ namespace ERPEZ.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_PRItems_APRItems_APRItemId",
-                schema: "procurement",
-                table: "PRItems");
+            migrationBuilder.Sql(@"
+                ALTER TABLE procurement.""PurchaseRequests"" ADD COLUMN IF NOT EXISTS ""ReturnRemarks"" text;
+                ALTER TABLE procurement.""PurchaseRequests"" ADD COLUMN IF NOT EXISTS ""ReturnedBy"" text;
+                ALTER TABLE procurement.""PurchaseRequests"" ADD COLUMN IF NOT EXISTS ""ReturnedDate"" timestamp with time zone;
 
-            migrationBuilder.AddColumn<string>(
-                name: "ReturnRemarks",
-                schema: "procurement",
-                table: "PurchaseRequests",
-                type: "text",
-                nullable: true);
+                CREATE INDEX IF NOT EXISTS ""IX_PurchaseRequests_OfficeId_PRType_Status"" 
+                ON procurement.""PurchaseRequests"" (""OfficeId"", ""PRType"", ""Status"") 
+                WHERE ""IsDeleted"" = false;
 
-            migrationBuilder.AddColumn<string>(
-                name: "ReturnedBy",
-                schema: "procurement",
-                table: "PurchaseRequests",
-                type: "text",
-                nullable: true);
+                ALTER TABLE procurement.""PRItems"" DROP CONSTRAINT IF EXISTS ""FK_PRItems_APRItems_APRItemId"";
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "ReturnedDate",
-                schema: "procurement",
-                table: "PurchaseRequests",
-                type: "timestamp with time zone",
-                nullable: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PurchaseRequests_OfficeId_PRType_Status",
-                schema: "procurement",
-                table: "PurchaseRequests",
-                columns: new[] { "OfficeId", "PRType", "Status" },
-                filter: "\"IsDeleted\" = false");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_PRItems_APRItems_APRItemId",
-                schema: "procurement",
-                table: "PRItems",
-                column: "APRItemId",
-                principalSchema: "procurement",
-                principalTable: "APRItems",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM pg_constraint WHERE conname = 'FK_PRItems_APRItems_APRItemId'
+                    ) THEN
+                        ALTER TABLE procurement.""PRItems""
+                        ADD CONSTRAINT ""FK_PRItems_APRItems_APRItemId""
+                        FOREIGN KEY (""APRItemId"") REFERENCES procurement.""APRItems"" (""Id"")
+                        ON DELETE RESTRICT;
+                    END IF;
+                END $$;
+            ");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_PRItems_APRItems_APRItemId",
-                schema: "procurement",
-                table: "PRItems");
-
-            migrationBuilder.DropIndex(
-                name: "IX_PurchaseRequests_OfficeId_PRType_Status",
-                schema: "procurement",
-                table: "PurchaseRequests");
-
-            migrationBuilder.DropColumn(
-                name: "ReturnRemarks",
-                schema: "procurement",
-                table: "PurchaseRequests");
-
-            migrationBuilder.DropColumn(
-                name: "ReturnedBy",
-                schema: "procurement",
-                table: "PurchaseRequests");
-
-            migrationBuilder.DropColumn(
-                name: "ReturnedDate",
-                schema: "procurement",
-                table: "PurchaseRequests");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_PRItems_APRItems_APRItemId",
-                schema: "procurement",
-                table: "PRItems",
-                column: "APRItemId",
-                principalSchema: "procurement",
-                principalTable: "APRItems",
-                principalColumn: "Id");
+            migrationBuilder.Sql(@"
+                ALTER TABLE procurement.""PRItems"" DROP CONSTRAINT IF EXISTS ""FK_PRItems_APRItems_APRItemId"";
+                DROP INDEX IF EXISTS procurement.""IX_PurchaseRequests_OfficeId_PRType_Status"";
+                ALTER TABLE procurement.""PurchaseRequests"" DROP COLUMN IF EXISTS ""ReturnRemarks"";
+                ALTER TABLE procurement.""PurchaseRequests"" DROP COLUMN IF EXISTS ""ReturnedBy"";
+                ALTER TABLE procurement.""PurchaseRequests"" DROP COLUMN IF EXISTS ""ReturnedDate"";
+            ");
         }
     }
 }

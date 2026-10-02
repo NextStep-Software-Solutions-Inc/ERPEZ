@@ -98,13 +98,19 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
             RequestedDate       = pr.RequestedDate,
             TotalAmount         = pr.TotalAmount,
             OfficeId            = pr.OfficeId,
-            OfficeName          = pr.Office.Name,
+            OfficeName          = pr.Office != null ? pr.Office.Name : string.Empty,
             UACSCode            = pr.UACSCodeCombination?.CombinationCode,
             FundSource          = pr.FundSource?.Name,
             ProcurementCategory = pr.ProcurementCategory?.Name,
-            ReturnRemarks       = pr.ReturnRemarks,
-            ReturnedDate        = pr.ReturnedDate,
-            ReturnedBy          = pr.ReturnedBy,
+            ReturnRemarks       = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted)
+                                    ? null
+                                    : (string.IsNullOrWhiteSpace(pr.ReturnRemarks) ? null : pr.ReturnRemarks.Trim()),
+            ReturnedDate        = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted)
+                                    ? null
+                                    : pr.ReturnedDate,
+            ReturnedBy          = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted)
+                                    ? null
+                                    : (string.IsNullOrWhiteSpace(pr.ReturnedBy) ? null : pr.ReturnedBy.Trim()),
             Items = activeItems
                 .Select(i => new PRItemDetailResponse
                 {
