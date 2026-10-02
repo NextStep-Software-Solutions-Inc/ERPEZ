@@ -10,7 +10,6 @@ import {
 } from '../utils/printPurchaseOrder'
 import { downloadPurchaseOrderPdf } from '../handlers/generatePurchaseOrderDocumentRequest'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useUnifiedAuth } from '@/auth/UnifiedAuthContext'
 import { toast } from 'sonner'
 
 type GeneratedPurchaseOrderPreviewCardProps = {
@@ -22,25 +21,18 @@ export function GeneratedPurchaseOrderPreviewCard({
 }: GeneratedPurchaseOrderPreviewCardProps) {
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false)
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
-  const { activeTenant } = useUnifiedAuth()
-
-  const rawAgency = activeTenant?.name?.trim()
-  const agencyName =
-    rawAgency && !rawAgency.toLowerCase().includes('ustp')
-      ? rawAgency
-      : rawAgency || 'Agency Name'
 
   const poHtml = useMemo(
-    () => generatePurchaseOrderPrintHTML(purchaseOrder, { entityName: agencyName }),
-    [purchaseOrder, agencyName]
+    () => generatePurchaseOrderPrintHTML(purchaseOrder),
+    [purchaseOrder]
   )
 
   const handlePrint = () => {
-    printPurchaseOrder(purchaseOrder, { entityName: agencyName })
+    printPurchaseOrder(purchaseOrder)
   }
 
   const handleDownloadHtml = () => {
-    downloadPurchaseOrderHtml(purchaseOrder, { entityName: agencyName })
+    downloadPurchaseOrderHtml(purchaseOrder)
   }
 
   const handleDownloadPdf = async () => {

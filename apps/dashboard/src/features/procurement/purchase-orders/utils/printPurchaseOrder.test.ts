@@ -139,17 +139,31 @@ describe('printPurchaseOrder utilities', () => {
       expect(html).toContain('Dr. Jane Doe, HOPE')
       expect(html).toContain('Funds Available :')
 
-      // Agency Name fallback & Logo
+      // Agency Name fallback & No Logo
       expect(html).toContain('<h2>Agency Name</h2>')
-      expect(html).toContain('po-header-logo-container')
-      expect(html).toContain('po-header-logo-svg')
+      expect(html).not.toContain('po-header-logo-container')
+      expect(html).not.toContain('po-header-logo-svg')
     })
 
-    it('renders specific agency name when passed via options', () => {
-      const html = generatePurchaseOrderPrintHTML(mockPo, {
-        entityName: 'Cooperative Development Authority',
+    it('filters out SuperAdmin Workspace and USTP to fallback to Agency Name', () => {
+      const htmlSuperAdmin = generatePurchaseOrderPrintHTML(mockPo, {
+        entityName: 'SuperAdmin Workspace',
       })
-      expect(html).toContain('<h2>Cooperative Development Authority</h2>')
+      expect(htmlSuperAdmin).toContain('<h2>Agency Name</h2>')
+      expect(htmlSuperAdmin).not.toContain('SuperAdmin')
+
+      const htmlUstp = generatePurchaseOrderPrintHTML(mockPo, {
+        entityName: 'USTP',
+      })
+      expect(htmlUstp).toContain('<h2>Agency Name</h2>')
+      expect(htmlUstp).not.toContain('<h2>USTP</h2>')
+    })
+
+    it('renders specific valid agency name when passed via options', () => {
+      const html = generatePurchaseOrderPrintHTML(mockPo, {
+        entityName: 'Department of Science and Technology',
+      })
+      expect(html).toContain('<h2>Department of Science and Technology</h2>')
       expect(html).not.toContain('<h2>Agency Name</h2>')
     })
   })

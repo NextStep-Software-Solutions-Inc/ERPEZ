@@ -39,16 +39,12 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
                 {
                     col.Item().AlignRight().Text("Appendix 61").FontSize(8.5f).Italic();
 
-                    var logoBytes = LoadDefaultLogo();
-                    if (logoBytes != null && logoBytes.Length > 0)
-                    {
-                        col.Item().AlignCenter().Height(36).Image(logoBytes);
-                    }
-
-                    col.Item().PaddingTop(2).AlignCenter().Text("PURCHASE ORDER").Bold().FontSize(12.5f);
+                    col.Item().AlignCenter().Text("PURCHASE ORDER").Bold().FontSize(12.5f);
 
                     var entityName = !string.IsNullOrWhiteSpace(request.ProcuringEntityName) &&
-                                     !request.ProcuringEntityName.Equals("USTP", StringComparison.OrdinalIgnoreCase)
+                                     !request.ProcuringEntityName.Equals("USTP", StringComparison.OrdinalIgnoreCase) &&
+                                     !request.ProcuringEntityName.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
+                                     !request.ProcuringEntityName.Contains("Workspace", StringComparison.OrdinalIgnoreCase)
                         ? request.ProcuringEntityName
                         : "Agency Name";
 
@@ -56,7 +52,8 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
                         .Text(entityName)
                         .Bold().FontSize(11.5f);
 
-                    if (!string.IsNullOrWhiteSpace(request.ProcuringEntityOffice))
+                    if (!string.IsNullOrWhiteSpace(request.ProcuringEntityOffice) &&
+                        !request.ProcuringEntityOffice.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase))
                     {
                         col.Item().AlignCenter().Text(request.ProcuringEntityOffice).FontSize(8.5f);
                     }

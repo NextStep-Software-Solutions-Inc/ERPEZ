@@ -15,8 +15,7 @@ namespace ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.Generat
 public class GeneratePurchaseOrderDocumentCommandHandler(
     IUnitOfWork unitOfWork,
     IDocumentRendererService rendererService,
-    IDocumentStorageService storageService,
-    ERPEZ.Shared.Interfaces.ITenantContextService tenantContext)
+    IDocumentStorageService storageService)
     : IRequestHandler<GeneratePurchaseOrderDocumentCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(
@@ -28,7 +27,7 @@ public class GeneratePurchaseOrderDocumentCommandHandler(
             ?? throw new NotFoundException("Purchase Order not found.");
 
         var dataDto = await PurchaseOrderDataResolver.ResolveDataDtoAsync(
-            purchaseOrder, unitOfWork, tenantContext, cancellationToken);
+            purchaseOrder, unitOfWork, cancellationToken);
 
         // Render document (QuestPDF)
         var bytes = await rendererService.RenderAsync(
