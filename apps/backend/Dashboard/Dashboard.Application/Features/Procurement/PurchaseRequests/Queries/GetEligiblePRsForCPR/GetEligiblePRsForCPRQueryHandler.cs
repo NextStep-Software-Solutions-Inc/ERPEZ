@@ -47,9 +47,15 @@ public class GetEligiblePRsForCPRQueryHandler(IUnitOfWork unitOfWork)
                         Description:       i.Description,
                         Category:          i.PPMPItem?.NonCSEItem?.Name
                                         ?? i.PPMPItem?.CSEItem?.Name
+                                        ?? i.APRItem?.PPMPItem?.CSEItem?.Name
+                                        ?? i.APRItem?.PPMPItem?.NonCSEItem?.Name
+                                        ?? (i.APRItemId.HasValue ? "Out of Stock CSE" : string.Empty),
+                        Fund:              i.PPMPItem?.PPMPExpenditureItem?.PPMP?.FundSource?.Name
+                                        ?? pr.FundSource?.Name 
                                         ?? string.Empty,
-                        Fund:              pr.FundSource?.Name ?? string.Empty,
-                        Unit:              i.PPMPItem?.Unit ?? string.Empty,
+                        Unit:              i.PPMPItem?.Unit 
+                                        ?? i.APRItem?.Unit 
+                                        ?? "unit",
                         UnitPrice:         i.UnitCost,
                         TotalQuantity:     i.RequestedQuantity,
                         TotalAmount:       i.Amount,

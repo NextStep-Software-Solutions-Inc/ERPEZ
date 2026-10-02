@@ -50,7 +50,7 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
         if (authoritativeProject == null)
         {
             var appItemIds = activeItems
-                .SelectMany(i => i.PPMPItem?.APPItems ?? Enumerable.Empty<ERPEZ.Domain.Entities.Planning.APPItem>())
+                .SelectMany(i => (i.PPMPItem?.APPItems ?? i.APRItem?.PPMPItem?.APPItems ?? Enumerable.Empty<ERPEZ.Domain.Entities.Planning.APPItem>()))
                 .Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
                 .Select(ai => ai.Id)
                 .Distinct()
@@ -75,15 +75,15 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
             .ThenByDescending(r => r.CreatedAt)
             .Select(r => new ConsolidatedPRBacResolutionResponse(
                 Id:                   r.Id,
-                ProcurementProjectId: authoritativeProject.Id,
-                ProjectTitle:         authoritativeProject.Title,
+                ProcurementProjectId: authoritativeProject?.Id ?? Guid.Empty,
+                ProjectTitle:         authoritativeProject?.Title ?? string.Empty,
                 ResolutionNumber:     r.ResolutionNumber,
                 ResolutionType:       r.ResolutionType,
                 DateResolved:         r.DateResolved,
                 Status:               r.Status,
                 ResolvedLocation:     r.ResolvedLocation,
-                ABC:                  authoritativeProject.ABC,
-                SourceType:           authoritativeProject.SourceType.ToString()
+                ABC:                  authoritativeProject?.ABC ?? 0,
+                SourceType:           authoritativeProject?.SourceType.ToString() ?? string.Empty
             ))
             .ToList() ?? [];
 
@@ -118,16 +118,23 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                     PPMPItemId        = i.PPMPItemId,
                     APRItemId         = i.APRItemId,
                     APRId             = i.APRItem?.APRId,
-                    APRNumber         = i.APRItem?.APR?.APRNumber,
-                    APROfficeName     = i.APRItem?.APR?.Office?.Name,
-                    Name              = i.Name,
+                    APRNumber         = i.APRItem?.APR?.APRNumber ?? (i.APRItemId.HasValue ? "APR" : null),
+                    APROfficeName     = i.APRItem?.APR?.Office?.Name 
+                                        ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMP?.Office?.Name 
+                                        ?? pr.Office?.Name 
+                                        ?? string.Empty,
+                    Name              = i.Name ?? string.Empty,
                     Description       = !string.IsNullOrWhiteSpace(i.Description) 
                                         ? i.Description 
                                         : (!string.IsNullOrWhiteSpace(i.PPMPItem?.Description) 
                                             ? i.PPMPItem.Description 
                                             : (!string.IsNullOrWhiteSpace(i.PPMPItem?.NonCSEItem?.Description)
                                                 ? i.PPMPItem.NonCSEItem.Description
-                                                : i.APRItem?.Description)),
+                                                : (!string.IsNullOrWhiteSpace(i.APRItem?.Description)
+                                                    ? i.APRItem.Description
+                                                    : (!string.IsNullOrWhiteSpace(i.APRItem?.PPMPItem?.Description)
+                                                        ? i.APRItem.PPMPItem.Description
+                                                        : null)))),
                     StockNo           = i.StockNo ?? i.APRItem?.ItemCode,
                     IsNonCSE          = i.IsNonCSE,
                     UnitCost          = i.UnitCost,
@@ -137,18 +144,24 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                     Category          = i.PPMPItem?.NonCSEItem?.ItemCategory?.Name 
                                         ?? i.PPMPItem?.CSEItem?.ItemCategory?.Name 
                                         ?? i.APRItem?.PPMPItem?.CSEItem?.ItemCategory?.Name
+                                        ?? i.APRItem?.PPMPItem?.NonCSEItem?.ItemCategory?.Name
                                         ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.Name
-                                        ?? i.PPMPItem?.ProjectType.ToString() 
+                                        ?? (i.PPMPItem != null ? i.PPMPItem.ProjectType.ToString() : null)
                                         ?? (i.APRItemId.HasValue ? "Out-of-Stock CSE" : string.Empty),
                     Fund              = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.FundSource?.Name
                                         ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSource?.Name
                                         ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSource?.Name
+                                        ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMP?.FundSource?.Name
                                         ?? pr.FundSource?.Name 
                                         ?? string.Empty,
                     PPMPId            = i.PPMPItem?.PPMPExpenditureItem?.PPMPId 
-                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMPId,
+                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMPId
+                                        ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMPId
+                                        ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMPId,
                     PPMPNumber        = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.PPMPNumber 
-                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.PPMPNumber,
+                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.PPMPNumber
+                                        ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMP?.PPMPNumber
+                                        ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.PPMPNumber,
                     Unit              = i.APRItem?.Unit
                                         ?? i.PPMPItem?.Unit 
                                         ?? i.PPMPItem?.NonCSEItem?.UOM?.Name 
@@ -159,7 +172,9 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                     OfficeName        = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.Office?.Name
                                         ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Office?.Name
                                         ?? i.APRItem?.APR?.Office?.Name
-                                        ?? pr.Office?.Name,
+                                        ?? i.APRItem?.PPMPItem?.PPMPExpenditureItem?.PPMP?.Office?.Name
+                                        ?? pr.Office?.Name
+                                        ?? string.Empty,
                     ProcurementModeId = i.ConsolidatedPRItems?.OrderByDescending(ci => ci.CreatedAt).FirstOrDefault(ci => !ci.IsDeleted && ci.ProcurementModeId.HasValue)?.ProcurementModeId
                                         ?? i.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
                                             .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
@@ -167,15 +182,23 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                                             .FirstOrDefault()?.ProcurementModeId
                                         ?? (i.PPMPItem?.ProcurementModeId is Guid pmId && pmId != Guid.Empty ? (Guid?)pmId : null)
                                         ?? i.APRItem?.APPItem?.ProcurementModeId
+                                        ?? i.APRItem?.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                                            .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
+                                            .ThenByDescending(ai => ai.CreatedAt)
+                                            .FirstOrDefault()?.ProcurementModeId
                                         ?? (i.APRItem?.PPMPItem?.ProcurementModeId is Guid aprPmId && aprPmId != Guid.Empty ? (Guid?)aprPmId : null),
                     ProcurementModeName = i.ConsolidatedPRItems?.OrderByDescending(ci => ci.CreatedAt).FirstOrDefault(ci => !ci.IsDeleted && ci.ProcurementMode != null)?.ProcurementMode?.Name
-                                          ?? i.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
-                                              .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
-                                              .ThenByDescending(ai => ai.CreatedAt)
-                                              .FirstOrDefault()?.ProcurementMode?.Name
-                                          ?? i.PPMPItem?.ProcurementMode?.Name
-                                          ?? i.APRItem?.APPItem?.ProcurementMode?.Name
-                                          ?? i.APRItem?.PPMPItem?.ProcurementMode?.Name
+                                           ?? i.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                                               .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
+                                               .ThenByDescending(ai => ai.CreatedAt)
+                                               .FirstOrDefault()?.ProcurementMode?.Name
+                                           ?? i.PPMPItem?.ProcurementMode?.Name
+                                           ?? i.APRItem?.APPItem?.ProcurementMode?.Name
+                                           ?? i.APRItem?.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                                               .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
+                                               .ThenByDescending(ai => ai.CreatedAt)
+                                               .FirstOrDefault()?.ProcurementMode?.Name
+                                           ?? i.APRItem?.PPMPItem?.ProcurementMode?.Name
                 }).ToList(),
             BacResolutions = bacResolutions
         };
