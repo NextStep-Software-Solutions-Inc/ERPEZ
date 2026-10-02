@@ -109,7 +109,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new UpdatePRStatusCommand(id, dto.NewStatus), cancellationToken);
+            new UpdatePRStatusCommand(id, dto.NewStatus, dto.Remarks, dto.ActorName), cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

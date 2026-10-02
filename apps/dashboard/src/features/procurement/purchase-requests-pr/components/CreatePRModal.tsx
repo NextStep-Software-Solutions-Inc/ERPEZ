@@ -92,6 +92,8 @@ interface CreatePRModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   prType: 'non-cse' | 'out-of-stock' | 'consolidated'
+  initialOfficeId?: string
+  initialPurpose?: string
   onSuccess?: (pr: PurchaseRequest) => void
 }
 
@@ -99,6 +101,8 @@ export function CreatePRModal({
   open,
   onOpenChange,
   prType,
+  initialOfficeId,
+  initialPurpose,
   onSuccess,
 }: CreatePRModalProps) {
   const createPRMutation = useCreatePurchaseRequest()
@@ -132,9 +136,9 @@ export function CreatePRModal({
     date: new Date(),
     prNumber: '',
     procurementCategoryId: '',
-    officeId: '',
+    officeId: initialOfficeId || '',
     description: null,
-    purpose: '',
+    purpose: initialPurpose || (prType === 'out-of-stock' ? 'Procurement of out-of-stock CSE items from approved APR' : ''),
     torAttachment: null,
   }
 

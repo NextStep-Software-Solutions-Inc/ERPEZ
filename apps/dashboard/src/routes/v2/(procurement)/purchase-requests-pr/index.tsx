@@ -6,6 +6,8 @@ import { PERMISSIONS } from '@/constants/permissions'
 
 const purchaseRequestsPrSearchSchema = z.object({
   tab: z.enum(['non-cse', 'out-of-stock', 'manage-pr']).catch('non-cse'),
+  aprId: z.string().optional(),
+  officeId: z.string().optional(),
 })
 
 export const Route = createFileRoute('/v2/(procurement)/purchase-requests-pr/')({

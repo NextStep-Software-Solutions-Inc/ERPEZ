@@ -15,6 +15,33 @@ public class UpdatePRStatusCommandHandler(IUnitOfWork unitOfWork)
 
         pr.Status = command.Status;
 
+        if (command.Status == ERPEZ.Domain.Enums.StatusEnum.Returned)
+        {
+            if (!string.IsNullOrWhiteSpace(command.Remarks))
+            {
+                pr.ReturnRemarks = command.Remarks;
+            }
+            pr.ReturnedDate = DateTime.UtcNow;
+            if (!string.IsNullOrWhiteSpace(command.ActorName))
+            {
+                pr.ReturnedBy = command.ActorName;
+            }
+        }
+        else if (command.Status == ERPEZ.Domain.Enums.StatusEnum.Approved)
+        {
+            pr.ApprovedDate = DateTime.UtcNow;
+            pr.ReturnRemarks = null;
+            pr.ReturnedDate = null;
+            pr.ReturnedBy = null;
+        }
+        else if (command.Status == ERPEZ.Domain.Enums.StatusEnum.Submitted)
+        {
+            pr.SubmittedDate = DateTime.UtcNow;
+            pr.ReturnRemarks = null;
+            pr.ReturnedDate = null;
+            pr.ReturnedBy = null;
+        }
+
         unitOfWork.PurchaseRequestRepository.Update(pr);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

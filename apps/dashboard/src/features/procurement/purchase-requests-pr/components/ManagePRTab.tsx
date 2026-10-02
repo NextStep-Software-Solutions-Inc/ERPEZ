@@ -38,7 +38,7 @@ import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
 import { ApprovePRModal } from './ApprovePRModal'
 import { ReturnPRModal } from './ReturnPRModal'
-import { useToast } from '@/components/ui/use-toast'
+import { toast } from 'sonner'
 import { PurchaseRequest, PRStatus, PRType } from '../types'
 import { usePurchaseRequests, useUpdatePurchaseRequestStatus } from '../handlers/hooks'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
@@ -72,7 +72,6 @@ interface ManagePRTabProps {
 
 export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
   const { setIsManagePRView, updatePurchaseRequest } = usePurchaseRequestStore()
-  const { toast } = useToast()
 
   useEffect(() => {
     setIsManagePRView(true)
@@ -144,13 +143,20 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
   const [page, setPage] = useState(1)
   const pageSize = 5 // match purchase request tab
 
-  // Helper: displayStatus prefers 'returned' when remarks exist to ensure consistency
+  // Helper: displayStatus respects approved, submitted, for-bac-utilization ground truth
   const getDisplayStatus = (p: PurchaseRequest) => {
+    if (!p) return 'draft'
+    if (p.status === 'approved' || p.status === 'submitted' || p.status === 'for-bac-utilization') {
+      return p.status
+    }
+    if (p.status === 'returned') {
+      return 'returned'
+    }
     try {
-      if (p && p.remarks && p.remarks.toString().trim().length > 0) {
+      if (p.remarks && p.remarks.toString().trim().length > 0) {
         return 'returned' as PRStatus
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     return p.status
@@ -473,7 +479,8 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                             {pr.status === 'submitted' && (
                               <>
                                 <DropdownMenuItem
-                                  onClick={() => {
+                                  onSelect={(e) => {
+                                    e.preventDefault()
                                     setSelectedPR(pr)
                                     setApproveOpen(true)
                                   }}
@@ -483,7 +490,8 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                                 </DropdownMenuItem>
 
                                 <DropdownMenuItem
-                                  onClick={() => {
+                                  onSelect={(e) => {
+                                    e.preventDefault()
                                     setSelectedPR(pr)
                                     setReturnOpen(true)
                                   }}
@@ -555,11 +563,13 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
             updatePurchaseRequest(selectedPR.id, {
               status: 'approved',
               signedPdfUrl,
+              remarks: undefined,
               updatedAt: new Date().toISOString()
             })
-            toast({ title: 'Purchase Request approved', description: `${selectedPR.headerDetails.prNumber} approved successfully.` })
+            toast.success(`${selectedPR.headerDetails.prNumber} approved successfully.`)
           } catch (error) {
-            toast({ title: 'Approval failed', description: 'Failed to approve PR', variant: 'destructive' })
+            toast.error('Failed to approve PR')
+            throw error
           }
         }}
       />
@@ -579,9 +589,15 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
               queryParams: { id: selectedPR.id },
               payload: { prId: selectedPR.id, newStatus: 'Returned', remarks }
             })
-            toast({ title: 'Purchase Request returned', description: `${selectedPR.headerDetails.prNumber} was returned.` })
+            updatePurchaseRequest(selectedPR.id, {
+              status: 'returned',
+              remarks,
+              updatedAt: new Date().toISOString()
+            })
+            toast.success(`${selectedPR.headerDetails.prNumber} was returned.`)
           } catch (error) {
-            toast({ title: 'Return failed', description: 'Failed to return PR', variant: 'destructive' })
+            toast.error('Failed to return PR')
+            throw error
           }
         }}
       />

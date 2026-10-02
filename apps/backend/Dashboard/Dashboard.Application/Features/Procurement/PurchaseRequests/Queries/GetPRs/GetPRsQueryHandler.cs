@@ -33,7 +33,10 @@ public class GetPRsQueryHandler(IUnitOfWork unitOfWork)
                 RequestedDate = pr.RequestedDate,
                 CreatedDate   = DateOnly.FromDateTime(pr.CreatedAt),
                 OfficeId      = pr.OfficeId,
-                OfficeName    = pr.Office != null ? pr.Office.Name : string.Empty
+                OfficeName    = pr.Office != null ? pr.Office.Name : string.Empty,
+                ReturnRemarks = pr.ReturnRemarks,
+                ReturnedDate  = pr.ReturnedDate,
+                ReturnedBy    = pr.ReturnedBy
             };
 
         var (items, totalCount) = await unitOfWork.PurchaseRequestRepository

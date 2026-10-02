@@ -108,6 +108,11 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
   const baseConsolidatedItems: ConsolidatedAPRItem[] = useMemo(() => {
     if (!rawResponse) return []
     const data: APRDetailDto = (rawResponse as any).data || rawResponse
+    const statusLower = (data.status || '').toLowerCase()
+    const isOutOfStockStatus =
+      statusLower === 'approved' ||
+      statusLower === 'outofstock' ||
+      statusLower === 'partiallyavailable'
 
     return (data.items || []).map((item, idx) => ({
       id: item.id || `item-${idx}`,
@@ -130,6 +135,8 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       quantityVariancePercent: 0,
       budgetVariance: 0,
       budgetVariancePercent: 0,
+      isOutOfStock: isOutOfStockStatus,
+      outOfStockQuantity: item.quantityRequested ?? 1,
       bacMilestones: item.milestones && item.milestones.length > 0 ? {
         advertisementDate: item.milestones[0]?.scheduledDate,
         submissionDate: item.milestones[1]?.scheduledDate,
@@ -160,6 +167,8 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       requestDate: data.requestDate || new Date().toISOString().split('T')[0],
       fiscalYear: data.fiscalYear || new Date().getFullYear(),
       status: data.status || APRStatus.DRAFT,
+      officeId: data.officeId,
+      officeName: data.officeName,
       procuringEntity: 'Procurement Service - DBM',
       requestingEntity: data.officeName || 'Innovation and Technology Solutions Division',
       requestedBy: 'Procurement Officer',
@@ -606,10 +615,15 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                 <Button
                   size="sm"
                   className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
+                  disabled={consolidatedItems.length === 0}
                   onClick={() =>
                     navigate({
                       to: '/v2/purchase-requests-pr',
-                      search: { tab: 'out-of-stock' },
+                      search: {
+                        tab: 'out-of-stock',
+                        aprId: apr.id,
+                        officeId: apr.officeId,
+                      } as any,
                     })
                   }
                 >
@@ -722,10 +736,15 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                   <Button
                     size="sm"
                     className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
+                    disabled={consolidatedItems.length === 0}
                     onClick={() =>
                       navigate({
                         to: '/v2/purchase-requests-pr',
-                        search: { tab: 'out-of-stock' },
+                        search: {
+                          tab: 'out-of-stock',
+                          aprId: apr.id,
+                          officeId: apr.officeId,
+                        } as any,
                       })
                     }
                   >

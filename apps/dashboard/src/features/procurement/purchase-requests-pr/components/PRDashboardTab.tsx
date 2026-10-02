@@ -223,13 +223,20 @@ export function PRDashboardTab({
     console.log('Returned PR', id)
   }
 
-  // Helper: displayStatus prefers 'returned' when remarks exist to ensure consistency across views
+  // Helper: displayStatus respects approved, submitted, for-bac-utilization ground truth
   const getDisplayStatus = (p: PurchaseRequest) => {
+    if (!p) return 'draft'
+    if (p.status === 'approved' || p.status === 'submitted' || p.status === 'for-bac-utilization') {
+      return p.status
+    }
+    if (p.status === 'returned') {
+      return 'returned'
+    }
     try {
-      if (p && (p as any).remarks && (p as any).remarks.toString().trim().length > 0) {
+      if ((p as any).remarks && (p as any).remarks.toString().trim().length > 0) {
         return 'returned' as PRStatus
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     return p.status

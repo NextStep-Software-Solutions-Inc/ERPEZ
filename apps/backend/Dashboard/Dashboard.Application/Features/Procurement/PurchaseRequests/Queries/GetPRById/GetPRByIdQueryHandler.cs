@@ -102,12 +102,18 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
             UACSCode            = pr.UACSCodeCombination?.CombinationCode,
             FundSource          = pr.FundSource?.Name,
             ProcurementCategory = pr.ProcurementCategory?.Name,
+            ReturnRemarks       = pr.ReturnRemarks,
+            ReturnedDate        = pr.ReturnedDate,
+            ReturnedBy          = pr.ReturnedBy,
             Items = activeItems
                 .Select(i => new PRItemDetailResponse
                 {
                     Id                = i.Id,
                     PPMPItemId        = i.PPMPItemId,
                     APRItemId         = i.APRItemId,
+                    APRId             = i.APRItem?.APRId,
+                    APRNumber         = i.APRItem?.APR?.APRNumber,
+                    APROfficeName     = i.APRItem?.APR?.Office?.Name,
                     Name              = i.Name,
                     Description       = !string.IsNullOrWhiteSpace(i.Description) 
                                         ? i.Description 
