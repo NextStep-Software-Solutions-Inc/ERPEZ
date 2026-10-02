@@ -219,10 +219,15 @@ public class RoleScopeEnforcementTests : IDisposable
 
     [Theory]
     [InlineData("TenantManagement", RoleScope.Tenant)]
+    [InlineData("tenantmanagement", RoleScope.Tenant)]
     [InlineData("Operational", RoleScope.Tenant)]
+    [InlineData("operational", RoleScope.Tenant)]
     [InlineData("Tenant", RoleScope.Tenant)]
+    [InlineData(" tenant ", RoleScope.Tenant)]
     [InlineData("Platform", RoleScope.Platform)]
+    [InlineData("PLATFORM", RoleScope.Platform)]
     [InlineData("ExternalPortal", RoleScope.Unknown)]
+    [InlineData("externalportal", RoleScope.Unknown)]
     [InlineData("Unknown", RoleScope.Unknown)]
     [InlineData("NonExistentScope", RoleScope.Unknown)]
     public void RoleScopeConverter_ConvertsLegacyAndCurrentScopes_Correctly(string rawDbValue, RoleScope expectedScope)

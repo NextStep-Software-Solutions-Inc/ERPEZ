@@ -374,12 +374,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             return RoleScope.Unknown;
         }
 
-        return value switch
+        return value.Trim().ToLowerInvariant() switch
         {
-            "TenantManagement" or "Operational" or "Tenant" => RoleScope.Tenant,
-            "Platform" => RoleScope.Platform,
-            "ExternalPortal" => RoleScope.Unknown,
-            _ => Enum.TryParse<RoleScope>(value, true, out var parsed) ? parsed : RoleScope.Unknown
+            "tenantmanagement" or "operational" or "tenant" => RoleScope.Tenant,
+            "platform" => RoleScope.Platform,
+            "externalportal" => RoleScope.Unknown,
+            _ => Enum.TryParse<RoleScope>(value.Trim(), true, out var parsed) ? parsed : RoleScope.Unknown
         };
     }
 }

@@ -67,10 +67,10 @@ public static class RoleSeeder
         if (dbContext.Database.IsRelational())
         {
             await dbContext.Database.ExecuteSqlRawAsync(
-                "UPDATE \"Roles\" SET \"Scope\" = 'Tenant' WHERE \"Scope\" IN ('TenantManagement', 'Operational');",
+                "UPDATE \"Roles\" SET \"Scope\" = 'Tenant' WHERE LOWER(\"Scope\") IN ('tenantmanagement', 'operational', 'tenant');",
                 cancellationToken);
             await dbContext.Database.ExecuteSqlRawAsync(
-                "UPDATE \"Roles\" SET \"Scope\" = 'Unknown' WHERE \"Scope\" = 'ExternalPortal';",
+                "UPDATE \"Roles\" SET \"Scope\" = 'Unknown' WHERE LOWER(\"Scope\") = 'externalportal' OR \"Scope\" IS NULL;",
                 cancellationToken);
         }
 
