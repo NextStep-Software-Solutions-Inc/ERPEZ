@@ -11,9 +11,6 @@ import {
 import {
   ChevronLeft,
   Printer,
-  Send,
-  RotateCcw,
-  CheckCircle,
   MoreVertical,
   Loader2,
   Pencil,
@@ -203,47 +200,6 @@ export function PurchaseOrderDetailsPage({
         </Button>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {canSubmit && (
-            <Button
-              variant="default"
-              size="sm"
-              className="gap-2 h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-xs font-medium"
-              onClick={() => setIsSubmitConfirmOpen(true)}
-              disabled={submitMutation.isPending}
-            >
-              {submitMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              <span>{normalizedStatus === 'returned' ? 'Resubmit for Approval' : 'Submit for Approval'}</span>
-            </Button>
-          )}
-
-          {canForApproval && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 h-8 text-amber-700 border-amber-300 hover:bg-amber-50"
-                onClick={() => setIsReturnOpen(true)}
-                disabled={returnMutation.isPending}
-              >
-                <RotateCcw className="h-4 w-4" />
-                <span>Return</span>
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                className="gap-2 h-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-medium"
-                onClick={() => setIsApproveOpen(true)}
-                disabled={approveMutation.isPending}
-              >
-                <CheckCircle className="h-4 w-4" />
-                <span>Approve</span>
-              </Button>
-            </>
-          )}
 
           {canSubmit && (
             <Button
