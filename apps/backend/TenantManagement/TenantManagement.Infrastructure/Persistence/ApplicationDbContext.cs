@@ -2,6 +2,7 @@ using ERPEZ.Shared.Persistence;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
 
@@ -229,9 +230,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasConversion<string>();
 
         // Role
+        var roleScopeConverter = new ValueConverter<RoleScope, string>(
+            v => v.ToString(),
+            v => ParseRoleScope(v));
+
         modelBuilder.Entity<Role>()
             .Property(r => r.Scope)
-            .HasConversion<string>()
+            .HasConversion(roleScopeConverter)
             .HasDefaultValue(RoleScope.Unknown);
 
         modelBuilder.Entity<Role>()
@@ -360,5 +365,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         });
 
         base.OnModelCreating(modelBuilder);
+    }
+
+    private static RoleScope ParseRoleScope(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return RoleScope.Unknown;
+        }
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "tenantmanagement" or "operational" or "tenant" => RoleScope.Tenant,
+            "platform" => RoleScope.Platform,
+            "externalportal" => RoleScope.Unknown,
+            _ => Enum.TryParse<RoleScope>(value.Trim(), true, out var parsed) ? parsed : RoleScope.Unknown
+        };
     }
 }

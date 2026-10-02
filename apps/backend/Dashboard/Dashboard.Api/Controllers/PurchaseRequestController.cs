@@ -109,7 +109,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new UpdatePRStatusCommand(id, dto.NewStatus), cancellationToken);
+            new UpdatePRStatusCommand(id, dto.NewStatus, dto.Remarks, dto.ActorName), cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
@@ -135,13 +135,25 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
-    [HttpGet("{id}/eligible-aprs")]
+    [HttpGet("eligible-aprs")]
+    [ProducesResponseType(typeof(ApiResponse<List<EligibleAPRResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetEligibleAPRsByOffice(
+        [FromQuery] Guid officeId,
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetEligibleAPRs.GetEligibleAPRsQuery(OfficeId: officeId), cancellationToken);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpGet("{id:guid}/eligible-aprs")]
     [ProducesResponseType(typeof(ApiResponse<List<EligibleAPRResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasPermission(Permissions.Procurement.prManage)]
     public async Task<IActionResult> GetEligibleAPRs(Guid id, CancellationToken cancellationToken)
     {
-        var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetEligibleAPRs.GetEligibleAPRsQuery(id), cancellationToken);
+        var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetEligibleAPRs.GetEligibleAPRsQuery(PurchaseRequestId: id), cancellationToken);
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 }

@@ -81,13 +81,19 @@ export function SelectAPPForm({
 
   const filteredApps = useMemo(() => {
     return apps.filter((app: any) => {
-      if (fiscalYearId && (app.fiscalYearId === fiscalYearId || app.FiscalYear?.id === fiscalYearId)) {
+      const matchesFiscalYearId =
+        fiscalYearId &&
+        (String(app.fiscalYearId || '').toLowerCase() === fiscalYearId.toLowerCase() ||
+          String(app.fiscalYear?.id || '').toLowerCase() === fiscalYearId.toLowerCase() ||
+          String(app.FiscalYear?.id || '').toLowerCase() === fiscalYearId.toLowerCase())
+
+      if (matchesFiscalYearId) {
         // match
       } else {
         const fy =
           app.FiscalYear?.year ||
           app.fiscalYear?.year ||
-          app.fiscalYear ||
+          (typeof app.fiscalYear === 'number' ? app.fiscalYear : undefined) ||
           (app.fiscalYearName ? parseInt(app.fiscalYearName, 10) : undefined)
         if (fy && fy !== fiscalYear) return false
       }

@@ -36,7 +36,7 @@ type ApprovePRFormData = z.infer<typeof approvePRSchema>
 interface ApprovePRModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onApprove: (signedPdfUrl: string) => void
+  onApprove: (signedPdfUrl: string) => void | Promise<void>
 }
 
 export function ApprovePRModal({ open, onOpenChange, onApprove }: ApprovePRModalProps) {
@@ -82,7 +82,7 @@ export function ApprovePRModal({ open, onOpenChange, onApprove }: ApprovePRModal
         signedPdfUrl = URL.createObjectURL(data.pdfFile)
       }
 
-      onApprove(signedPdfUrl)
+      await onApprove(signedPdfUrl)
       setFileSelected(null)
       form.reset()
       onOpenChange(false)
@@ -93,7 +93,7 @@ export function ApprovePRModal({ open, onOpenChange, onApprove }: ApprovePRModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent onCloseAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-green-600">
             <CheckCircle className="h-5 w-5" />

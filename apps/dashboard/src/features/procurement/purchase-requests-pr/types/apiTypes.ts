@@ -96,6 +96,9 @@ export interface PurchaseRequestListItem {
   totalAmount: number
   requestedDate: string
   createdDate: string
+  returnRemarks?: string
+  returnedDate?: string
+  returnedBy?: string
 }
 
 // ─── GET /purchase-requests/{id} ──────────────────────────────────────────────
@@ -106,6 +109,9 @@ export interface PurchaseRequestDetailItemApi {
   ppmpItemId?: string | null
   /** Source APR item ID — only set for Out-of-Stock CSE items */
   aprItemId?: string
+  aprId?: string
+  aprNumber?: string
+  aprOfficeName?: string
   name: string
   description: string
   stockNo: string
@@ -152,6 +158,9 @@ export interface PurchaseRequestDetailApi {
   /** BE field name is fundSource (maps from FundSource.Name) */
   fundSource: string
   procurementCategory: string
+  returnRemarks?: string
+  returnedDate?: string
+  returnedBy?: string
   items: PurchaseRequestDetailItemApi[]
   bacResolutions?: PRBacResolutionApi[]
 }
