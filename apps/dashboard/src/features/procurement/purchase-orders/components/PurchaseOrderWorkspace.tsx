@@ -57,6 +57,8 @@ type PurchaseOrderWorkspaceProps = {
   mode: PurchaseOrderMode
   role: PurchaseOrderRole
   defaultFilter?: PurchaseOrderListFilter
+  initialModeTab?: 'all' | 'svp' | 'public-bidding' | 'direct-acquisition'
+  onModeTabChange?: (tab: 'all' | 'svp' | 'public-bidding' | 'direct-acquisition') => void
 }
 
 export function PurchaseOrderWorkspace({
@@ -65,10 +67,25 @@ export function PurchaseOrderWorkspace({
   mode,
   role,
   defaultFilter = 'all',
+  initialModeTab,
+  onModeTabChange,
 }: PurchaseOrderWorkspaceProps) {
   const [search, setSearch] = useState('')
   const [activeFilter, setActiveFilter] = useState<PurchaseOrderListFilter>(defaultFilter)
-  const [selectedModeTab, setSelectedModeTab] = useState<'all' | 'svp' | 'public-bidding' | 'direct-acquisition'>('all')
+  const [selectedModeTab, setSelectedModeTab] = useState<'all' | 'svp' | 'public-bidding' | 'direct-acquisition'>(
+    initialModeTab || 'all'
+  )
+
+  useEffect(() => {
+    if (initialModeTab && initialModeTab !== selectedModeTab) {
+      setSelectedModeTab(initialModeTab)
+    }
+  }, [initialModeTab])
+
+  const handleTabChange = (val: 'all' | 'svp' | 'public-bidding' | 'direct-acquisition') => {
+    setSelectedModeTab(val)
+    onModeTabChange?.(val)
+  }
 
   const effectiveMode = mode === 'all' ? selectedModeTab : mode
 
@@ -323,7 +340,7 @@ export function PurchaseOrderWorkspace({
             <div className="border-b pb-4">
               <Tabs
                 value={selectedModeTab}
-                onValueChange={(val) => setSelectedModeTab(val as any)}
+                onValueChange={(val) => handleTabChange(val as any)}
                 className="w-full"
               >
                 <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl">

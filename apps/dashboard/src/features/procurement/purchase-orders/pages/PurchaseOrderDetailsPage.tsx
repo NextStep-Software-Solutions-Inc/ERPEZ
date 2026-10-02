@@ -72,12 +72,12 @@ export function PurchaseOrderDetailsPage({
   const [activeTab, setActiveTab] = useState<string>('po-details')
 
   const poMode = (purchaseOrder?.source || purchaseOrder?.procurementMode || '').toString().toLowerCase()
-  const backRoute =
+  const backMode: 'svp' | 'public-bidding' | 'direct-acquisition' =
     poMode.includes('public')
-      ? '/v2/po-public-bidding'
+      ? 'public-bidding'
       : poMode.includes('direct')
-        ? '/v2/po-direct-acquisition'
-        : '/v2/po-svp'
+        ? 'direct-acquisition'
+        : 'svp'
 
   const sourceDocType = (purchaseOrder?.sourceDocumentType || '').toUpperCase()
   const sourceDocId = purchaseOrder?.sourceDocumentId
@@ -112,7 +112,7 @@ export function PurchaseOrderDetailsPage({
       <div className="space-y-4 pb-10">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <Link to={backRoute}>
+            <Link to="/v2/purchase-orders" search={{ mode: backMode }}>
               <ChevronLeft className="h-4 w-4" />
               Back
             </Link>
@@ -177,7 +177,7 @@ export function PurchaseOrderDetailsPage({
       await deleteMutation.mutateAsync(purchaseOrder.id)
       toast.success('Purchase Order deleted successfully!')
       setIsDeleteOpen(false)
-      navigate({ to: backRoute as any })
+      navigate({ to: '/v2/purchase-orders', search: { mode: backMode } as any })
     } catch (err: any) {
       toast.error(err?.message || 'Failed to delete Purchase Order.')
     }
@@ -193,7 +193,7 @@ export function PurchaseOrderDetailsPage({
           className="gap-2 hover:bg-slate-100 dark:hover:bg-slate-800"
           asChild
         >
-          <Link to={backRoute}>
+          <Link to="/v2/purchase-orders" search={{ mode: backMode }}>
             <ChevronLeft className="h-4 w-4" />
             Back
           </Link>
