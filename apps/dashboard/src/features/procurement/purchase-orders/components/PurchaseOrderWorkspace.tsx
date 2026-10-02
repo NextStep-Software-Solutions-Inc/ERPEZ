@@ -564,6 +564,7 @@ export function PurchaseOrderWorkspace({
         }}
         onSubmit={handleApproveConfirm}
         isSubmitting={approveMutation.isPending}
+        poNumber={purchaseOrders.find((p) => p.id === selectedPurchaseOrderId)?.poNumber}
       />
     </div>
   )

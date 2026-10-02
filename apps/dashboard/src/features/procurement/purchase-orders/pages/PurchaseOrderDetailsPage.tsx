@@ -303,6 +303,7 @@ export function PurchaseOrderDetailsPage({
         onOpenChange={setIsApproveOpen}
         onSubmit={handleApprove}
         isSubmitting={approveMutation.isPending}
+        poNumber={purchaseOrder.poNumber}
       />
     </div>
   )
