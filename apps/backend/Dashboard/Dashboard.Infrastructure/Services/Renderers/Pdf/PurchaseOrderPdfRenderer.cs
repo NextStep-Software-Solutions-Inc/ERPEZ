@@ -39,12 +39,29 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
                 {
                     col.Item().AlignRight().Text("Appendix 61").FontSize(8.5f).Italic();
 
-                    col.Item().AlignCenter().Text("PURCHASE ORDER").Bold().FontSize(12.5f);
+                    var logoBytes = LoadDefaultLogo();
+                    if (logoBytes != null && logoBytes.Length > 0)
+                    {
+                        col.Item().AlignCenter().Height(36).Image(logoBytes);
+                    }
+
+                    col.Item().PaddingTop(2).AlignCenter().Text("PURCHASE ORDER").Bold().FontSize(12.5f);
+
+                    var entityName = !string.IsNullOrWhiteSpace(request.ProcuringEntityName) &&
+                                     !request.ProcuringEntityName.Equals("USTP", StringComparison.OrdinalIgnoreCase)
+                        ? request.ProcuringEntityName
+                        : "Agency Name";
+
                     col.Item().PaddingTop(1).AlignCenter()
-                        .Text(!string.IsNullOrWhiteSpace(request.ProcuringEntityName) ? request.ProcuringEntityName : "USTP")
+                        .Text(entityName)
                         .Bold().FontSize(11.5f);
 
-                    col.Item().PaddingTop(3).AlignCenter().MaxWidth(180).LineHorizontal(1.5f).LineColor(Colors.Black);
+                    if (!string.IsNullOrWhiteSpace(request.ProcuringEntityOffice))
+                    {
+                        col.Item().AlignCenter().Text(request.ProcuringEntityOffice).FontSize(8.5f);
+                    }
+
+                    col.Item().PaddingTop(3).AlignCenter().MaxWidth(200).LineHorizontal(1.5f).LineColor(Colors.Black);
                 });
 
                 // ── Body Content ───────────────────────────────────────────

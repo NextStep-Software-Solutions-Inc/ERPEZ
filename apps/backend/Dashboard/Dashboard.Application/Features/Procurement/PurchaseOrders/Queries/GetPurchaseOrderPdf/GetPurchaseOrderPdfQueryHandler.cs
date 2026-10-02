@@ -13,7 +13,8 @@ namespace ERPEZ.Application.Features.Procurement.PurchaseOrders.Queries.GetPurch
 
 public class GetPurchaseOrderPdfQueryHandler(
     IUnitOfWork unitOfWork,
-    IDocumentRendererService rendererService)
+    IDocumentRendererService rendererService,
+    ERPEZ.Shared.Interfaces.ITenantContextService tenantContext)
     : IRequestHandler<GetPurchaseOrderPdfQuery, ApiResponse<PurchaseOrderPdfFileResult>>
 {
     public async Task<ApiResponse<PurchaseOrderPdfFileResult>> Handle(
@@ -25,7 +26,7 @@ public class GetPurchaseOrderPdfQueryHandler(
             ?? throw new NotFoundException("Purchase Order not found.");
 
         var dataDto = await PurchaseOrderDataResolver.ResolveDataDtoAsync(
-            purchaseOrder, unitOfWork, cancellationToken);
+            purchaseOrder, unitOfWork, tenantContext, cancellationToken);
 
         var bytes = await rendererService.RenderAsync(
             dataDto,

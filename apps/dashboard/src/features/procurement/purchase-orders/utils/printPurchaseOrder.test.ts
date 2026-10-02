@@ -138,6 +138,19 @@ describe('printPurchaseOrder utilities', () => {
       expect(html).toContain('Very truly yours,')
       expect(html).toContain('Dr. Jane Doe, HOPE')
       expect(html).toContain('Funds Available :')
+
+      // Agency Name fallback & Logo
+      expect(html).toContain('<h2>Agency Name</h2>')
+      expect(html).toContain('po-header-logo-container')
+      expect(html).toContain('po-header-logo-svg')
+    })
+
+    it('renders specific agency name when passed via options', () => {
+      const html = generatePurchaseOrderPrintHTML(mockPo, {
+        entityName: 'Cooperative Development Authority',
+      })
+      expect(html).toContain('<h2>Cooperative Development Authority</h2>')
+      expect(html).not.toContain('<h2>Agency Name</h2>')
     })
   })
 })

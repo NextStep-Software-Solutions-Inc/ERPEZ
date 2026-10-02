@@ -16,7 +16,7 @@ public class PurchaseOrderDataDto
     public string SourceDocumentType { get; set; } = string.Empty;
     public string SourceDocumentNumber { get; set; } = string.Empty;
 
-    public string ProcuringEntityName { get; set; } = "USTP";
+    public string ProcuringEntityName { get; set; } = "Agency Name";
     public string ProcuringEntityOffice { get; set; } = string.Empty;
 
     public Guid SupplierId { get; set; }

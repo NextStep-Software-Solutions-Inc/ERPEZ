@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Printer, Download, Eye, Maximize2, FileDown, Loader2 } from 'lucide-react'
@@ -10,6 +10,7 @@ import {
 } from '../utils/printPurchaseOrder'
 import { downloadPurchaseOrderPdf } from '../handlers/generatePurchaseOrderDocumentRequest'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useUnifiedAuth } from '@/auth/UnifiedAuthContext'
 import { toast } from 'sonner'
 
 type GeneratedPurchaseOrderPreviewCardProps = {
@@ -21,14 +22,25 @@ export function GeneratedPurchaseOrderPreviewCard({
 }: GeneratedPurchaseOrderPreviewCardProps) {
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false)
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
-  const poHtml = generatePurchaseOrderPrintHTML(purchaseOrder)
+  const { activeTenant } = useUnifiedAuth()
+
+  const rawAgency = activeTenant?.name?.trim()
+  const agencyName =
+    rawAgency && !rawAgency.toLowerCase().includes('ustp')
+      ? rawAgency
+      : rawAgency || 'Agency Name'
+
+  const poHtml = useMemo(
+    () => generatePurchaseOrderPrintHTML(purchaseOrder, { entityName: agencyName }),
+    [purchaseOrder, agencyName]
+  )
 
   const handlePrint = () => {
-    printPurchaseOrder(purchaseOrder)
+    printPurchaseOrder(purchaseOrder, { entityName: agencyName })
   }
 
   const handleDownloadHtml = () => {
-    downloadPurchaseOrderHtml(purchaseOrder)
+    downloadPurchaseOrderHtml(purchaseOrder, { entityName: agencyName })
   }
 
   const handleDownloadPdf = async () => {
@@ -37,9 +49,10 @@ export function GeneratedPurchaseOrderPreviewCard({
       await downloadPurchaseOrderPdf(purchaseOrder.id, `${purchaseOrder.poNumber || 'PO'}.pdf`)
       toast.success('Official Purchase Order PDF downloaded successfully!')
     } catch (err: any) {
-      console.warn('Server PDF download unavailable, falling back to browser print:', err)
-      toast.info('Opening print preview to save as PDF...')
-      printPurchaseOrder(purchaseOrder)
+      console.error('Failed to download official PO PDF:', err)
+      toast.error(
+        err?.message || 'Failed to download server-rendered PDF. You can also use Print / Save PDF.'
+      )
     } finally {
       setIsDownloadingPdf(false)
     }

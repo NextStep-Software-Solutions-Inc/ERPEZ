@@ -41,6 +41,7 @@ import { useGetAOBById } from '@/features/procurement/aob/handlers/getAOBByIdReq
 import { getBidMatrixRequest } from '@/features/procurement/aob/handlers/getBidMatrixRequest'
 import { downloadPurchaseOrderBlob } from '../utils/downloadPurchaseOrderBlob'
 import { printPurchaseOrder } from '../utils/printPurchaseOrder'
+import { useUnifiedAuth } from '@/auth/UnifiedAuthContext'
 import { toast } from 'sonner'
 
 const useBidMatrix = createQueryHookFromTemplate(getBidMatrixRequest)
@@ -60,6 +61,13 @@ export function PurchaseOrderDetailsPage({
   purchaseOrderId,
 }: PurchaseOrderDetailsPageProps) {
   const navigate = useNavigate()
+  const { activeTenant } = useUnifiedAuth()
+
+  const rawAgency = activeTenant?.name?.trim()
+  const agencyName =
+    rawAgency && !rawAgency.toLowerCase().includes('ustp')
+      ? rawAgency
+      : rawAgency || 'Agency Name'
 
   const { data: purchaseOrder, isLoading } = useGetPurchaseOrderById(purchaseOrderId)
   const { data: lineItems = [] } = useGetPurchaseOrderItems(purchaseOrderId)
@@ -208,7 +216,7 @@ export function PurchaseOrderDetailsPage({
             variant="outline"
             size="sm"
             className="gap-2 h-8"
-            onClick={() => printPurchaseOrder(fullPo)}
+            onClick={() => printPurchaseOrder(fullPo, { entityName: agencyName })}
           >
             <Printer className="h-4 w-4" />
             Print PO

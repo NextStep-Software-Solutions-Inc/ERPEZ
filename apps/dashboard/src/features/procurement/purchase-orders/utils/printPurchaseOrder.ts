@@ -206,6 +206,7 @@ export function numberToPhilippinePesoWords(amount: number): string {
 
 export type GeneratePOHTMLOptions = {
   entityName?: string
+  logoUrl?: string
 }
 
 /**
@@ -218,7 +219,11 @@ export function generatePurchaseOrderPrintHTML(
   const lineItems: PurchaseOrderLineItem[] =
     purchaseOrder.lineItems ?? purchaseOrder.items ?? []
 
-  const entityName = options?.entityName || 'USTP'
+  const rawEntity = options?.entityName?.trim()
+  const entityName =
+    rawEntity && !rawEntity.toLowerCase().includes('ustp')
+      ? rawEntity
+      : rawEntity || 'Agency Name'
   const poNumber = purchaseOrder.poNumber || 'PO-DRAFT'
   const poDate = formatDate(purchaseOrder.date)
   const modeOfProcurement = mapProcurementMode(
@@ -284,6 +289,21 @@ export function generatePurchaseOrderPrintHTML(
     .po-title-section {
       text-align: center;
       margin-bottom: 12px;
+    }
+    .po-header-logo-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .po-header-logo-img {
+      max-height: 48px;
+      max-width: 140px;
+      object-fit: contain;
+    }
+    .po-header-logo-svg {
+      display: block;
+      margin: 0 auto;
     }
     .po-title-section h1 {
       font-size: 13pt;
@@ -455,6 +475,25 @@ export function generatePurchaseOrderPrintHTML(
 
   <!-- Header -->
   <div class="po-title-section">
+    <div class="po-header-logo-container">
+      ${
+        options?.logoUrl
+          ? `<img src="${escapeHtml(options.logoUrl)}" alt="Agency Logo" class="po-header-logo-img" onerror="this.style.display='none'" />`
+          : `<svg class="po-header-logo-svg" width="46" height="46" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="46" stroke="#1e293b" stroke-width="2.5" fill="#f8fafc" />
+              <circle cx="50" cy="50" r="41" stroke="#1e293b" stroke-width="1.2" stroke-dasharray="2 2" fill="none" />
+              <circle cx="50" cy="50" r="32" stroke="#1e293b" stroke-width="1.5" fill="#ffffff" />
+              <path d="M50 24 L52 30 L58 31 L53 35 L55 41 L50 37 L45 41 L47 35 L42 31 L48 30 Z" fill="#1e293b" />
+              <path d="M42 45 C42 45 42 62 50 67 C58 62 58 45 58 45 Z" fill="#f1f5f9" stroke="#1e293b" stroke-width="1.8" />
+              <path d="M50 48 L50 64" stroke="#1e293b" stroke-width="1.2" />
+              <path d="M44 54 L56 54" stroke="#1e293b" stroke-width="1.2" />
+              <path d="M34 68 C38 73 45 76 50 76 C55 76 62 73 66 68" stroke="#1e293b" stroke-width="1.8" stroke-linecap="round" />
+              <polygon points="50,11 51.5,14.5 55,14.5 52,17 53.5,20.5 50,18 46.5,20.5 48,17 45,14.5 48.5,14.5" fill="#1e293b" />
+              <polygon points="21,50 22.5,53.5 26,53.5 23,56 24.5,59.5 21,57 17.5,59.5 19,56 16,53.5 19.5,53.5" fill="#1e293b" />
+              <polygon points="79,50 80.5,53.5 84,53.5 81,56 82.5,59.5 79,57 75.5,59.5 77,56 74,53.5 77.5,53.5" fill="#1e293b" />
+            </svg>`
+      }
+    </div>
     <h1>PURCHASE ORDER</h1>
     <h2>${escapeHtml(entityName)}</h2>
   </div>

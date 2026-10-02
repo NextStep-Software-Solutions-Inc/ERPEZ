@@ -224,7 +224,7 @@ public static class DependencyInjection
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.NoticeToProceeds.Dtos.NoticeToProceedDataDto>, NoticeToProceedPdfRenderer>();
 
         // Purchase Order — PDF (COA GAM Appendix 61)
-        // services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.PurchaseOrders.DTOs.PurchaseOrderDataDto>, PurchaseOrderPdfRenderer>();
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.PurchaseOrders.DTOs.PurchaseOrderDataDto>, PurchaseOrderPdfRenderer>();
 
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
