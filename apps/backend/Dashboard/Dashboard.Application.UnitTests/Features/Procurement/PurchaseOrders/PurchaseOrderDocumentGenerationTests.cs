@@ -34,7 +34,7 @@ public class PurchaseOrderDocumentGenerationTests
             TypeOfPO = "SVP",
             SourceDocumentType = "AOB",
             SourceDocumentNumber = "AOB-2023-0891",
-            ProcuringEntityName = "Cooperative Development Authority",
+            ProcuringEntityName = "Agency Name",
             ProcuringEntityOffice = "Procurement Services Unit",
 
             SupplierId = Guid.NewGuid(),

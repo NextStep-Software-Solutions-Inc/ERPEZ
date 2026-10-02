@@ -20,6 +20,7 @@ import { PurchaseOrderDocumentPreviewCard } from './PurchaseOrderDocumentPreview
 import { GeneratedPurchaseOrderPreviewCard } from './GeneratedPurchaseOrderPreviewCard'
 import { PurchaseOrderStatusBadge } from './PurchaseOrderStatusBadge'
 import { AobEvaluationTab } from './AobEvaluationTab'
+import { PurchaseOrderReadinessCard } from './PurchaseOrderReadinessCard'
 import {
   Calendar,
   Truck,
@@ -32,7 +33,6 @@ import {
   Building2,
   CalendarCheck,
   ArrowRight,
-  ListChecks,
   Layers,
   FileCheck2,
 } from 'lucide-react'
@@ -49,6 +49,12 @@ type PurchaseOrderDetailsShellProps = {
     bidMatrix?: BidMatrix | null
     isLoading?: boolean
   }
+  onOpenSubmit?: () => void
+  onOpenApprove?: () => void
+  onOpenReturn?: () => void
+  isSubmitting?: boolean
+  canSubmit?: boolean
+  canForApproval?: boolean
 }
 
 export function PurchaseOrderDetailsShell({
@@ -57,6 +63,12 @@ export function PurchaseOrderDetailsShell({
   onTabChange,
   isAob = false,
   aobData,
+  onOpenSubmit,
+  onOpenApprove,
+  onOpenReturn,
+  isSubmitting = false,
+  canSubmit = false,
+  canForApproval = false,
 }: PurchaseOrderDetailsShellProps) {
   const src = (purchaseOrder.source || purchaseOrder.procurementMode || '').toString().toLowerCase()
   const sourceLabel =
@@ -68,7 +80,6 @@ export function PurchaseOrderDetailsShell({
 
   const lineItems = purchaseOrder.lineItems ?? purchaseOrder.items ?? []
   const supportingDoc = purchaseOrder.supportingDocumentUrl ?? (purchaseOrder as any).bidSupportingDocument
-  const statusLower = (purchaseOrder.status || '').toLowerCase().replace(/[-_]/g, '')
 
   // Detail tiles card content
   const renderDetailsCard = () => (
@@ -365,17 +376,16 @@ export function PurchaseOrderDetailsShell({
         </CardHeader>
       </Card>
 
-      {/* Return reason (if returned) */}
-      {statusLower === 'returned' && purchaseOrder.returnReason && (
-        <Card className="border-0 shadow-lg overflow-hidden border-l-4 border-l-red-400">
-          <CardHeader className="pb-2 bg-gradient-to-r from-red-50/60 to-red-100/30 dark:from-red-950/20 dark:to-red-900/10 border-b border-red-200 dark:border-red-800/40">
-            <CardTitle className="text-base font-bold text-red-700 dark:text-red-300">Return Remarks</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <p className="text-sm text-slate-700 dark:text-slate-300">{purchaseOrder.returnReason}</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Workflow & Submission Readiness Card — matches LIB implementation */}
+      <PurchaseOrderReadinessCard
+        purchaseOrder={purchaseOrder}
+        onOpenSubmit={onOpenSubmit}
+        onOpenApprove={onOpenApprove}
+        onOpenReturn={onOpenReturn}
+        isSubmitting={isSubmitting}
+        canSubmit={canSubmit}
+        canForApproval={canForApproval}
+      />
 
       {/* SVP / AOB mode: Exactly 3 Workflow Tabs */}
       {isAob ? (

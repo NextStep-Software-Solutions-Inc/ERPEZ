@@ -30,7 +30,6 @@ import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import {
   useGetPurchaseOrderById,
   useGetPurchaseOrderItems,
-  useUpdatePurchaseOrder,
   useDeletePurchaseOrder,
   useSubmitPurchaseOrderForApproval,
   useApprovePurchaseOrder,
@@ -39,7 +38,6 @@ import {
 } from '../handlers'
 import { useGetAOBById } from '@/features/procurement/aob/handlers/getAOBByIdRequest'
 import { getBidMatrixRequest } from '@/features/procurement/aob/handlers/getBidMatrixRequest'
-import { downloadPurchaseOrderBlob } from '../utils/downloadPurchaseOrderBlob'
 import { printPurchaseOrder } from '../utils/printPurchaseOrder'
 import { toast } from 'sonner'
 
@@ -73,6 +71,7 @@ export function PurchaseOrderDetailsPage({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isReturnOpen, setIsReturnOpen] = useState(false)
   const [isApproveOpen, setIsApproveOpen] = useState(false)
+  const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<string>('po-details')
 
   const poMode = (purchaseOrder?.source || purchaseOrder?.procurementMode || '').toString().toLowerCase()
@@ -203,7 +202,61 @@ export function PurchaseOrderDetailsPage({
           </Link>
         </Button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {canSubmit && (
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-2 h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-xs font-medium"
+              onClick={() => setIsSubmitConfirmOpen(true)}
+              disabled={submitMutation.isPending}
+            >
+              {submitMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              <span>{normalizedStatus === 'returned' ? 'Resubmit for Approval' : 'Submit for Approval'}</span>
+            </Button>
+          )}
+
+          {canForApproval && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 h-8 text-amber-700 border-amber-300 hover:bg-amber-50"
+                onClick={() => setIsReturnOpen(true)}
+                disabled={returnMutation.isPending}
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span>Return</span>
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-2 h-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-medium"
+                onClick={() => setIsApproveOpen(true)}
+                disabled={approveMutation.isPending}
+              >
+                <CheckCircle className="h-4 w-4" />
+                <span>Approve</span>
+              </Button>
+            </>
+          )}
+
+          {canSubmit && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 h-8"
+              onClick={() => setIsEditOpen(true)}
+            >
+              <Pencil className="h-4 w-4" />
+              <span>Edit PO</span>
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"
@@ -211,60 +264,27 @@ export function PurchaseOrderDetailsPage({
             onClick={() => printPurchaseOrder(fullPo)}
           >
             <Printer className="h-4 w-4" />
-            Print PO
+            <span>Print PO</span>
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {canSubmit && (
-                <>
-                  <DropdownMenuItem onSelect={() => setIsEditOpen(true)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit PO
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={handleSubmitForApproval}
-                    disabled={submitMutation.isPending}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Submit for Approval
-                  </DropdownMenuItem>
-                  {normalizedStatus === 'draft' && (
-                    <DropdownMenuItem
-                      onSelect={() => setIsDeleteOpen(true)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete PO
-                    </DropdownMenuItem>
-                  )}
-                </>
-              )}
-              {canForApproval && (
-                <>
-                  <DropdownMenuItem
-                    onSelect={() => setIsReturnOpen(true)}
-                    disabled={returnMutation.isPending}
-                  >
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Return
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={() => setIsApproveOpen(true)}
-                    disabled={approveMutation.isPending}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Approve
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {normalizedStatus === 'draft' && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => setIsDeleteOpen(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete PO
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 
@@ -277,6 +297,25 @@ export function PurchaseOrderDetailsPage({
           aob,
           bidMatrix,
           isLoading: isAobLoading,
+        }}
+        onOpenSubmit={() => setIsSubmitConfirmOpen(true)}
+        onOpenApprove={() => setIsApproveOpen(true)}
+        onOpenReturn={() => setIsReturnOpen(true)}
+        isSubmitting={submitMutation.isPending}
+        canSubmit={canSubmit}
+        canForApproval={canForApproval}
+      />
+
+      <ConfirmAlertDialog
+        open={isSubmitConfirmOpen}
+        onOpenChange={setIsSubmitConfirmOpen}
+        title="Submit Purchase Order for Approval?"
+        description={`Are you sure you want to submit purchase order "${purchaseOrder.poNumber || ''}" for approval? Once submitted, it will be sent for review and approval by the Head of the Procuring Entity (HOPE).`}
+        confirmLabel="Submit for Approval"
+        loading={submitMutation.isPending}
+        onConfirm={async () => {
+          await handleSubmitForApproval()
+          setIsSubmitConfirmOpen(false)
         }}
       />
 
