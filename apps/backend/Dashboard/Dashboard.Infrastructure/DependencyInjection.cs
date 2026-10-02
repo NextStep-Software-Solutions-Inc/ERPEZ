@@ -60,10 +60,13 @@ public static class DependencyInjection
         services.AddSingleton<ERPEZ.Shared.Interfaces.IExternalIdentityNormalizer, ERPEZ.Shared.Security.KeycloakIdentityNormalizer>();
         services.AddSingleton<ERPEZ.Shared.Security.IExternalIdentityNormalizerResolver, ERPEZ.Shared.Security.ExternalIdentityNormalizerResolver>();
 
+        services.AddMemoryCache();
         services.AddScoped<ERPEZ.Shared.Services.TenantRequestContext>();
         services.AddScoped<ERPEZ.Shared.Interfaces.ITenantContextService>(sp => sp.GetRequiredService<ERPEZ.Shared.Services.TenantRequestContext>());
         services.AddScoped<ERPEZ.Shared.Interfaces.ITenantRequestContext>(sp => sp.GetRequiredService<ERPEZ.Shared.Services.TenantRequestContext>());
         services.AddScoped<ERPEZ.Shared.Interfaces.ITenantConnectionProvider, ERPEZ.Shared.Services.TenantConnectionProvider>();
+        services.AddScoped<ERPEZ.Shared.Interfaces.ITenantConnectionResolver, ERPEZ.Shared.Services.CachedTenantConnectionResolver>();
+        services.AddScoped<ERPEZ.Shared.Interfaces.ITenantAccessService, ERPEZ.Shared.Services.CachedTenantAccessService>();
 
         // ── Current User ────────────────────────────────────────────────────────────
         // Fully qualified — avoids the alias collision that caused CS0246/CS0311
@@ -219,6 +222,9 @@ public static class DependencyInjection
 
         // Notice to Proceed — PDF (RA 12009 Sec. 66 / GPPB Res. 03-2025)
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.NoticeToProceeds.Dtos.NoticeToProceedDataDto>, NoticeToProceedPdfRenderer>();
+
+        // Purchase Order — PDF (COA GAM Appendix 61)
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.PurchaseOrders.DTOs.PurchaseOrderDataDto>, PurchaseOrderPdfRenderer>();
 
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config

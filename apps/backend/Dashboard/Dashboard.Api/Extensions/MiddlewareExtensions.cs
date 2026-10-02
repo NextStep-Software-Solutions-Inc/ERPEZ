@@ -49,6 +49,9 @@ public static class MiddlewareExtensions
         // 6.1 Tenant Resolution (extracts candidate tenant from JWT or header; detects conflicts)
         app.UseMiddleware<ERPEZ.Shared.Middlewares.TenantResolutionMiddleware>();
 
+        // 6.2 Authoritative Tenant Access Gatekeeper (validates invariants & resolves connection info post-authorization)
+        app.UseMiddleware<ERPEZ.Shared.Middlewares.TenantAccessValidationMiddleware>();
+
         // 7. Authorization (after authentication)
         app.UseAuthorization();
 
