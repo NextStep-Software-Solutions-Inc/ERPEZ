@@ -34,6 +34,8 @@ export interface PRHeaderDetails {
   // For out-of-stock PRs originating from APR/CNAS
   cnasReferenceNumber?: string
   sourceAPR?: string
+  aprId?: string
+  aprNumber?: string
   // Multi-source BAC Resolution references
   appItemId?: string
   bacResolutionId?: string
@@ -110,6 +112,8 @@ export interface PurchaseRequest {
   totalAmount: number
   officeCode?: string
   officeName?: string
+  aprId?: string
+  aprNumber?: string
   isIndependent?: boolean
   dateSubmitted?: string
   createdBy: string

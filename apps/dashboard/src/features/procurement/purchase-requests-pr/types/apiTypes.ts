@@ -92,6 +92,8 @@ export interface PurchaseRequestListItem {
   prType: string
   officeId: string
   officeName: string
+  aprId?: string
+  aprNumber?: string
   status: string
   totalAmount: number
   requestedDate: string
@@ -154,6 +156,8 @@ export interface PurchaseRequestDetailApi {
   totalAmount: number
   officeId: string
   officeName: string
+  aprId?: string
+  aprNumber?: string
   uacsCode: string
   /** BE field name is fundSource (maps from FundSource.Name) */
   fundSource: string

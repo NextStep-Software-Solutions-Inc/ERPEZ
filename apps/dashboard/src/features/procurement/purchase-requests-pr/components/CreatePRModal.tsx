@@ -316,6 +316,8 @@ export function CreatePRModal({
           type: prType as PurchaseRequest['type'],
           status: 'draft',
           isIndependent,
+          aprId: targetAprId,
+          aprNumber: initialAprNumber || sourceAprData?.aprNumber,
           headerDetails: {
             date: format(value.date, 'yyyy-MM-dd'),
             prNumber: value.prNumber,
@@ -330,6 +332,8 @@ export function CreatePRModal({
               selectedCategory?.isHighlyTechnicalGoodsServices,
             isIndependent,
             sourceType: isIndependent ? 'INDEPENDENT' : 'APP_ITEM',
+            aprId: targetAprId,
+            aprNumber: initialAprNumber || sourceAprData?.aprNumber,
           },
           items: newPRItems,
           totalAmount: newPRTotalAmount,
@@ -349,8 +353,8 @@ export function CreatePRModal({
                 status: 'Draft',
               })
             )
-          } catch {
-            // ignore
+          } catch (err) {
+            console.warn('Could not cache optimistic PR in localStorage:', err)
           }
         }
 

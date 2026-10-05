@@ -216,7 +216,7 @@ export function PRDetailsPage({
   const [isExporting, setIsExporting] = useState(false)
   // Always fetch fresh data from the server so edits (purpose, items) are reflected
   // after mutations without requiring a full page reload.
-  const { data: freshPRResponse } = usePurchaseRequest({
+  const { data: freshPRResponse, isError: isFreshPRError, refetch: refetchFreshPR } = usePurchaseRequest({
     pathParams: { id: initialPR.id }
   })
 
@@ -378,6 +378,8 @@ export function PRDetailsPage({
       status: fromApiStatus(apiData.status),
       type: fromApiPrType(apiData.prType),
       totalAmount: apiData.totalAmount,
+      aprId: apiData.aprId ?? base.aprId,
+      aprNumber: apiData.aprNumber ?? base.aprNumber,
       remarks: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : (apiData.returnRemarks || base.remarks),
       returnRemarks: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : apiData.returnRemarks,
       returnedDate: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : apiData.returnedDate,
@@ -394,6 +396,8 @@ export function PRDetailsPage({
         procurementCategoryName: apiData.procurementCategory ?? base.headerDetails?.procurementCategoryName ?? '',
         officeId: apiData.officeId ?? base.headerDetails?.officeId,
         officeName: apiData.officeName ?? base.headerDetails?.officeName,
+        aprId: apiData.aprId ?? base.headerDetails?.aprId,
+        aprNumber: apiData.aprNumber ?? base.headerDetails?.aprNumber,
       },
       items: deduplicatedItems,
     }
@@ -564,15 +568,27 @@ export function PRDetailsPage({
     setRequestItemModalOpen(true)
   }
 
-  const sourceAprIdFromDesc = useMemo(() => {
-    const match = pr.headerDetails?.description?.match(/\[APR:([a-zA-Z0-9-]+)\]/i)
-    return match ? match[1] : undefined
-  }, [pr.headerDetails?.description])
+  const relationalAprId = useMemo(() => {
+    return (
+      pr.headerDetails?.aprId ||
+      pr.aprId ||
+      groupedAPRs[0]?.aprId ||
+      groupedAPRs[0]?.aprGroup?.aprId ||
+      pr.items?.find((it) => it.aprId)?.aprId ||
+      pr.headerDetails?.description?.match(/\[APR:([a-zA-Z0-9-]+)\]/i)?.[1]
+    )
+  }, [pr.headerDetails?.aprId, pr.aprId, groupedAPRs, pr.items, pr.headerDetails?.description])
 
-  const sourceAprNumberFromDesc = useMemo(() => {
-    const match = pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)
-    return match ? match[1].trim() : undefined
-  }, [pr.headerDetails?.description])
+  const relationalAprNumber = useMemo(() => {
+    return (
+      pr.headerDetails?.aprNumber ||
+      pr.aprNumber ||
+      groupedAPRs[0]?.aprNumber ||
+      groupedAPRs[0]?.aprGroup?.aprNumber ||
+      pr.items?.find((it) => it.aprNumber)?.aprNumber ||
+      pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)?.[1]?.trim()
+    )
+  }, [pr.headerDetails?.aprNumber, pr.aprNumber, groupedAPRs, pr.items, pr.headerDetails?.description])
 
   const [isImportingSourceApr, setIsImportingSourceApr] = useState(false)
 
@@ -585,8 +601,8 @@ export function PRDetailsPage({
       const aprs = res.data?.data || []
       const matched = aprs.find(
         (a: any) =>
-          (sourceAprIdFromDesc && a.aprId.toLowerCase() === sourceAprIdFromDesc.toLowerCase()) ||
-          (sourceAprNumberFromDesc && a.aprNumber.toLowerCase() === sourceAprNumberFromDesc.toLowerCase())
+          (relationalAprId && a.aprId.toLowerCase() === relationalAprId.toLowerCase()) ||
+          (relationalAprNumber && a.aprNumber.toLowerCase() === relationalAprNumber.toLowerCase())
       ) || aprs[0]
 
       if (!matched || !matched.items || matched.items.length === 0) {
@@ -1440,6 +1456,23 @@ export function PRDetailsPage({
         </Button>
       </div>
 
+      {isFreshPRError && (
+        <div className="flex items-center justify-between p-3.5 px-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+            <span>Could not refresh purchase request from server. Displaying cached details.</span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => refetchFreshPR()}
+            className="h-7 px-3 text-xs border-amber-300 hover:bg-amber-100"
+          >
+            Retry
+          </Button>
+        </div>
+      )}
+
       {/* PR Header Card - Modern Design */}
       <Card className="border-0 shadow-md bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
         <CardHeader>
@@ -1471,9 +1504,11 @@ export function PRDetailsPage({
                     <span>
                       {(() => {
                         const aprNum =
+                          relationalAprNumber ||
                           groupedAPRs[0]?.aprNumber ||
                           groupedAPRs[0]?.aprGroup?.aprNumber ||
-                          pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)?.[1]?.trim()
+                          pr.headerDetails?.aprNumber ||
+                          pr.aprNumber
                         return aprNum ? `Sourced from APR: ${aprNum}` : 'Sourced from Approved APR (Out-of-Stock CSE)'
                       })()}
                     </span>

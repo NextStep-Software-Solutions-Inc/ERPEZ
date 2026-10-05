@@ -433,8 +433,12 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                               className="text-[10px] font-semibold px-1.5 py-0 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
                             >
                               {(() => {
-                                const aprMatch = pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)
-                                return aprMatch ? `APR: ${aprMatch[1].trim()}` : 'Sourced from APR'
+                                const aprNum =
+                                  pr.headerDetails?.aprNumber ||
+                                  pr.aprNumber ||
+                                  pr.items?.find((i) => i.aprNumber)?.aprNumber ||
+                                  pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)?.[1]?.trim()
+                                return aprNum ? `APR: ${aprNum}` : 'Sourced from APR'
                               })()}
                             </Badge>
                           </div>

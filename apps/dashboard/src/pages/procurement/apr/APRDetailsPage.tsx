@@ -319,8 +319,8 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
             }
           }
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.warn('Failed to read or parse optimistic PR from localStorage:', err)
       }
     }
 
@@ -351,8 +351,8 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       if (existsInAPR || existsInPRList) {
         localStorage.removeItem(storageKey)
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Failed to clean up optimistic PR from localStorage:', err)
     }
   }, [apr?.id, apr?.linkedPurchaseRequests, outOfStockPRsResponse?.data])
 
