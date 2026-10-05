@@ -4,7 +4,7 @@ import stylesheet from './app.css?url'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { Toaster } from 'sonner'
-import { KeycloakProvider } from './providers/KeycloakProvider'
+import { ClerkAuthProvider } from './providers/ClerkAuthProvider'
 import { AuthProvider } from './providers/AuthProvider'
 import { initConsoleSecurityWarning } from 'erpez-shared-lib'
 
@@ -40,6 +40,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   )
 }
 
+export function HydrateFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+  )
+}
+
 export default function App() {
   const [queryClient] = useState(
     () =>
@@ -59,14 +67,14 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <KeycloakProvider>
+      <ClerkAuthProvider>
         <AuthProvider>
           <main>
             <Outlet />
             <Toaster position="bottom-right" richColors />
           </main>
         </AuthProvider>
-      </KeycloakProvider>
+      </ClerkAuthProvider>
     </QueryClientProvider>
   )
 }

@@ -1,5 +1,6 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Entities.AMS;
 using ERPEZ.Infrastructure.Persistence.Configurations;
 using ERPEZ.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,12 @@ namespace ERPEZ.Infrastructure.Persistence;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
+    // AMS (Account & Access Management System)
+    public DbSet<AmsRole>? AmsRoles { get; set; }
+    public DbSet<AmsRolePermission>? AmsRolePermissions { get; set; }
+    public DbSet<UserRoleAssignment>? UserRoleAssignments { get; set; }
+    public DbSet<AmsLicenseSetting>? AmsLicenseSettings { get; set; }
+
     //Planning
     public DbSet<WFPObjectiveActivity>? WFPObjectiveActivities { get; set; }
     public DbSet<WFPObjectiveActivityExpenditure>? WFPObjectiveActivityExpenditures { get; set; }
@@ -2770,6 +2777,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(pr => pr.OfficeId);
 
         modelBuilder.Entity<PurchaseRequest>()
+            .HasIndex(pr => new { pr.OfficeId, pr.PRType, pr.Status })
+            .HasFilter("\"IsDeleted\" = false");
+
+        modelBuilder.Entity<PurchaseRequest>()
             .Property(pr => pr.TotalAmount)
             .HasPrecision(18, 2);
 
@@ -2788,6 +2799,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PRItem>()
+            .HasOne(i => i.APRItem)
+            .WithMany()
+            .HasForeignKey(i => i.APRItemId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PRItem>()
             .Property(i => i.UnitCost)
             .HasPrecision(18, 2);
 
@@ -2800,6 +2818,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PRItem>()
             .HasIndex(i => i.PPMPItemId);
+
+        modelBuilder.Entity<PRItem>()
+            .HasIndex(i => i.APRItemId);
 
         // (PRItemMonthlyQuantity was removed in favor of RequestedMonth on PRItem)
 
@@ -3635,6 +3656,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // Notice to Proceed (RA 12009 Section 66)
         modelBuilder.ApplyConfiguration(new NoticeToProceedConfiguration());
+
+        // AMS Configurations (Decoupled Dashboard RBAC & Licensing)
+        modelBuilder.ApplyConfiguration(new AmsRoleConfiguration());
+        modelBuilder.ApplyConfiguration(new AmsRolePermissionConfiguration());
+        modelBuilder.ApplyConfiguration(new UserRoleAssignmentConfiguration());
+        modelBuilder.ApplyConfiguration(new AmsLicenseSettingConfiguration());
     }
 
     private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)

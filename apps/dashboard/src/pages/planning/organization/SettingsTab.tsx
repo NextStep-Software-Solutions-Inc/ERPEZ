@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Building2, Users, TrendingUp, ChevronRight } from 'lucide-react'
+import { Building2, Users, TrendingUp, ChevronRight, KeyRound } from 'lucide-react'
 import type { SettingsTabProps } from '@/components/features/planning/organizational-structure/types'
 import { StructureManagementSettings } from '@/components/features/planning/organizational-structure/settings/StructureManagementSettings'
 import { StaffingPlantillaSettings } from '@/components/features/planning/organizational-structure/settings/StaffingPlantillaSettings'
 import { PersonnelReportingSettings } from '@/components/features/planning/organizational-structure/settings/PersonnelReportingSettings'
+import { LicenseStatusCard } from '@/components/ams/LicenseStatusCard'
 import { cn } from '@/lib/utils'
 
 interface SettingItem {
@@ -32,6 +33,12 @@ const SETTINGS_ITEMS: SettingItem[] = [
     icon: <TrendingUp className="h-5 w-5" />,
     description: 'Set up PMT configurations and reporting structures',
   },
+  {
+    id: 'license-entitlements',
+    label: 'Subscription & License',
+    icon: <KeyRound className="h-5 w-5" />,
+    description: 'Manage workspace activation key, tier, and enabled modules',
+  },
 ]
 
 function SettingsTab(_props: SettingsTabProps) {
@@ -45,6 +52,8 @@ function SettingsTab(_props: SettingsTabProps) {
         return <StaffingPlantillaSettings />
       case 'personnel-reporting':
         return <PersonnelReportingSettings />
+      case 'license-entitlements':
+        return <LicenseStatusCard />
       default:
         return null
     }

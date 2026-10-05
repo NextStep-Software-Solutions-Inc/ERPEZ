@@ -7,7 +7,10 @@ using ERPEZ.Application.Features.Procurement.DirectContractings.Commands.UpdateD
 using ERPEZ.Application.Features.Procurement.DirectContractings.Dtos;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingById;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingProposal;
+using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingSummary;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractings;
+using ERPEZ.Application.Features.Procurement.Projects.Dtos;
+using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjects;
 using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Constants;
@@ -24,6 +27,23 @@ namespace ERPEZ.Api.Controllers;
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class DirectContractingController(ISender mediator) : ControllerBase
 {
+    [HttpGet("summary")]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    [ProducesResponseType(typeof(ApiResponse<DirectContractingSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSummary()
+    {
+        var result = await mediator.Send(new GetDirectContractingSummaryQuery());
+        return Ok(result);
+    }
+
+    [HttpGet("eligible-bac-projects")]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    [ProducesResponseType(typeof(PaginatedApiResponse<ProcurementProjectResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetEligibleBacProjects([FromQuery] GetProcurementProjectsQuery query)
+    {
+        var result = await mediator.Send(query with { UnlinkedDirectContracting = true });
+        return Ok(result);
+    }
     [HttpPost]
     [HasPermission(Permissions.Procurement.bacManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
@@ -130,6 +150,25 @@ public class DirectContractingController(ISender mediator) : ControllerBase
             Action = request.Action,
             Remarks = request.Remarks
         });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("{id:guid}/generate")]
+    [HasPermission(Permissions.Procurement.bacManage)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GenerateDocument(
+        Guid id,
+        [FromQuery] ERPEZ.Domain.Enums.ExportFormat format = ERPEZ.Domain.Enums.ExportFormat.Pdf)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.DirectContractings.Commands.GenerateDirectContractingDocument.GenerateDirectContractingDocumentCommand
+        {
+            DirectContractingId = id,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

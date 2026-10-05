@@ -1,4 +1,4 @@
-﻿import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import {
   createLotGroupingEntry,
   createTechnicalEvaluationCriterion,
@@ -369,7 +369,7 @@ function renderField(
   return (
     <Input
       id={field.key}
-      type={field.inputType === 'textarea' ? 'text' : field.inputType}
+      type={field.inputType}
       value={value}
       onChange={(event) => onChange(event.target.value)}
       onBlur={isReadOnly ? undefined : onBlur}

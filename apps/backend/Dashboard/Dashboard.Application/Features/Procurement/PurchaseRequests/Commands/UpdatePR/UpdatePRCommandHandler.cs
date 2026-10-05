@@ -41,36 +41,19 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
                     // Resolve PPMPItemId: for APR items (out-of-stock), the FE may only
                     // send APRItemId. In that case look up the APRItem to get its PPMPItemId.
                     // For independent/custom PR items, neither is provided (resolvedPpmpItemId remains null).
-                    Guid? resolvedPpmpItemId = null;
-                    if (itemReq.PPMPItemId.HasValue)
+                    Guid? resolvedPpmpItemId = itemReq.PPMPItemId;
+
+                    if (pr.PRType == PRType.NonCSE)
                     {
-                        resolvedPpmpItemId = itemReq.PPMPItemId.Value;
-                    }
-                    else if (itemReq.APRItemId.HasValue)
-                    {
-                        var aprItem = await unitOfWork.APRItemRepository.GetByIdAsync(
-                            itemReq.APRItemId.Value, cancellationToken)
-                            ?? throw new NotFoundException(
-                                $"APR Item with ID {itemReq.APRItemId} not found.");
-                        if (!aprItem.PPMPItemId.HasValue)
+                        if (resolvedPpmpItemId.HasValue)
                         {
-                            throw new ValidationException(
-                                $"APR Item with ID {itemReq.APRItemId} has no linked PPMP item.");
-                        }
-                        resolvedPpmpItemId = aprItem.PPMPItemId.Value;
-                    }
+                            var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
+                                resolvedPpmpItemId.Value, cancellationToken)
+                                ?? throw new NotFoundException($"PPMP Item with ID {resolvedPpmpItemId} not found.");
 
-                    if (resolvedPpmpItemId.HasValue)
-                    {
-                        var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
-                            resolvedPpmpItemId.Value, cancellationToken)
-                            ?? throw new NotFoundException($"PPMP Item with ID {resolvedPpmpItemId} not found.");
+                            if (ppmpItem.CSEItemId.HasValue)
+                                throw new ValidationException($"Item '{ppmpItem.Name}' is a CSE item and cannot be added to a Non-CSE PR.");
 
-                        if (pr.PRType == PRType.NonCSE && ppmpItem.NonCSEItemId == null)
-                            throw new ValidationException($"Item '{ppmpItem.Name}' is not an approved Non-CSE item.");
-
-                        if (pr.PRType == PRType.NonCSE)
-                        {
                             var itemOfficeId = ppmpItem.PPMPExpenditureItem?.PPMP?.OfficeId
                                             ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId;
                             if (itemOfficeId.HasValue && itemOfficeId.Value != pr.OfficeId)
@@ -84,9 +67,45 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
                             var isAppApproved = ppmpItem.APPItems.Any(ai => !ai.IsDeleted && !ai.APP.IsDeleted && ai.APP.Status == StatusEnum.Approved);
                             if (!isAppApproved)
                                 throw new ValidationException($"Item '{ppmpItem.Name}' has not been consolidated into an approved Annual Procurement Plan (APP).");
-                        }
 
-                        await ValidatePPMPItemBudget(ppmpItem.Id, itemReq.RequestedMonth, itemReq.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, request.Id, cancellationToken);
+                            if (ppmpItem.NonCSEItemId == null)
+                                throw new ValidationException($"Item '{ppmpItem.Name}' is not an approved Non-CSE item.");
+
+                            await ValidatePPMPItemBudget(ppmpItem.Id, itemReq.RequestedMonth, itemReq.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, request.Id, cancellationToken);
+                        }
+                    }
+                    else if (pr.PRType == PRType.OutOfStockCSE)
+                    {
+                        if (itemReq.APRItemId.HasValue)
+                        {
+                            var aprItem = await unitOfWork.APRItemRepository.GetByIdAsync(
+                                itemReq.APRItemId.Value, cancellationToken)
+                                ?? throw new NotFoundException($"APR Item with ID {itemReq.APRItemId} not found.");
+
+                            var apr = await unitOfWork.APRRepository.GetByIdAsync(aprItem.APRId, cancellationToken)
+                                ?? throw new NotFoundException($"APR with ID {aprItem.APRId} not found.");
+
+                            if (apr.OfficeId != pr.OfficeId)
+                                throw new ValidationException($"Item '{itemReq.Name}' belongs to an APR from another office and cannot be added to this Purchase Request.");
+
+                            if (apr.Status != StatusEnum.Approved)
+                                throw new ValidationException($"Item '{itemReq.Name}' belongs to an APR that is not approved.");
+
+                            var existingPRItems = await unitOfWork.PRItemRepository.FindAllAsync(
+                                i => i.APRItemId == aprItem.Id &&
+                                    !i.PurchaseRequest.IsDeleted &&
+                                    i.PurchaseRequest.Status != StatusEnum.Returned &&
+                                    i.PurchaseRequestId != request.Id,
+                                cancellationToken);
+
+                            var totalReserved = existingPRItems.Sum(i => i.RequestedQuantity);
+                            var available = (int)aprItem.QuantityRequested - totalReserved;
+
+                            if (itemReq.RequestedQuantity > available)
+                                throw new ValidationException($"Requested quantity {itemReq.RequestedQuantity} for '{itemReq.Name}' exceeds available APR deficit ({available}).");
+
+                            resolvedPpmpItemId ??= aprItem.PPMPItemId;
+                        }
                     }
 
                     var item = new PRItem

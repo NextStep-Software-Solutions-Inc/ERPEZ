@@ -1,12 +1,38 @@
-﻿// @vitest-environment jsdom
+// @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mockStorage = vi.hoisted(() => {
+  let store: Record<string, string> = {}
+  const storage = {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = value
+    },
+    removeItem: (key: string) => {
+      delete store[key]
+    },
+    clear: () => {
+      store = {}
+    },
+    get length() {
+      return Object.keys(store).length
+    },
+    key: (index: number) => Object.keys(store)[index] ?? null,
+  }
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: storage,
+    writable: true,
+  })
+  return storage
+})
+
 import { getMockBiddingDocumentDatabase } from '../data/mockBiddingDocumentsData'
 import { useBiddingScheduleStore } from '../../bidding-schedule/store/biddingScheduleStore'
 import { useBiddingDocumentsStore } from './biddingDocumentsStore'
 
 function resetStores() {
-  localStorage.clear()
+  mockStorage.clear()
   useBiddingScheduleStore.setState({ schedules: [], mockGates: {} })
   useBiddingDocumentsStore.setState({
     documents: getMockBiddingDocumentDatabase(),
@@ -63,7 +89,7 @@ describe('biddingDocumentsStore', () => {
       bacResolutionId: 'bac-resolution-006',
       bacResolutionNumber: 'BAC-RES-2026-006',
       ibPostingDate: '2026-06-10',
-      procurementCategory: 'goods-and-services',
+      procurementCategory: 'goods',
       createdBy: 'BAC Secretariat Demo',
     })
 

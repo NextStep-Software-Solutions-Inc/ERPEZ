@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Procurement.PurchaseRequests.Common;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Dtos;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
@@ -50,7 +51,7 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
         if (authoritativeProject == null)
         {
             var appItemIds = activeItems
-                .SelectMany(i => i.PPMPItem?.APPItems ?? Enumerable.Empty<ERPEZ.Domain.Entities.Planning.APPItem>())
+                .SelectMany(i => (i.PPMPItem?.APPItems ?? i.APRItem?.PPMPItem?.APPItems ?? Enumerable.Empty<ERPEZ.Domain.Entities.Planning.APPItem>()))
                 .Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
                 .Select(ai => ai.Id)
                 .Distinct()
@@ -75,15 +76,15 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
             .ThenByDescending(r => r.CreatedAt)
             .Select(r => new ConsolidatedPRBacResolutionResponse(
                 Id:                   r.Id,
-                ProcurementProjectId: authoritativeProject.Id,
-                ProjectTitle:         authoritativeProject.Title,
+                ProcurementProjectId: authoritativeProject?.Id ?? Guid.Empty,
+                ProjectTitle:         authoritativeProject?.Title ?? string.Empty,
                 ResolutionNumber:     r.ResolutionNumber,
                 ResolutionType:       r.ResolutionType,
                 DateResolved:         r.DateResolved,
                 Status:               r.Status,
                 ResolvedLocation:     r.ResolvedLocation,
-                ABC:                  authoritativeProject.ABC,
-                SourceType:           authoritativeProject.SourceType.ToString()
+                ABC:                  authoritativeProject?.ABC ?? 0,
+                SourceType:           authoritativeProject?.SourceType.ToString() ?? string.Empty
             ))
             .ToList() ?? [];
 
@@ -98,59 +99,44 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
             RequestedDate       = pr.RequestedDate,
             TotalAmount         = pr.TotalAmount,
             OfficeId            = pr.OfficeId,
-            OfficeName          = pr.Office.Name,
+            OfficeName          = pr.Office != null ? pr.Office.Name : string.Empty,
             UACSCode            = pr.UACSCodeCombination?.CombinationCode,
             FundSource          = pr.FundSource?.Name,
             ProcurementCategory = pr.ProcurementCategory?.Name,
+            ReturnRemarks       = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted)
+                                    ? null
+                                    : (string.IsNullOrWhiteSpace(pr.ReturnRemarks) ? null : pr.ReturnRemarks.Trim()),
+            ReturnedDate        = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted)
+                                    ? null
+                                    : pr.ReturnedDate,
+            ReturnedBy          = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted)
+                                    ? null
+                                    : (string.IsNullOrWhiteSpace(pr.ReturnedBy) ? null : pr.ReturnedBy.Trim()),
             Items = activeItems
                 .Select(i => new PRItemDetailResponse
                 {
-                    Id                = i.Id,
-                    PPMPItemId        = i.PPMPItemId,
-                    APRItemId         = i.APRItemId,
-                    Name              = i.Name,
-                    Description       = !string.IsNullOrWhiteSpace(i.Description) 
-                                        ? i.Description 
-                                        : (!string.IsNullOrWhiteSpace(i.PPMPItem?.Description) 
-                                            ? i.PPMPItem.Description 
-                                            : i.PPMPItem?.NonCSEItem?.Description),
-                    StockNo           = i.StockNo,
-                    IsNonCSE          = i.IsNonCSE,
-                    UnitCost          = i.UnitCost,
-                    RequestedQuantity = i.RequestedQuantity,
-                    Amount            = i.Amount,
-                    RequestedMonth    = i.RequestedMonth,
-                    Category          = i.PPMPItem?.NonCSEItem?.ItemCategory?.Name 
-                                        ?? i.PPMPItem?.CSEItem?.ItemCategory?.Name 
-                                        ?? i.PPMPItem?.ProjectType.ToString() 
-                                        ?? string.Empty,
-                    Fund              = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.FundSource?.Name
-                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSource?.Name
-                                        ?? pr.FundSource?.Name 
-                                        ?? string.Empty,
-                    PPMPId            = i.PPMPItem?.PPMPExpenditureItem?.PPMPId 
-                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMPId,
-                    PPMPNumber        = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.PPMPNumber 
-                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.PPMPNumber,
-                    Unit              = i.PPMPItem?.Unit 
-                                        ?? i.PPMPItem?.NonCSEItem?.UOM?.Name 
-                                        ?? i.PPMPItem?.CSEItem?.UOM?.Name 
-                                        ?? "unit",
-                    OfficeName        = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.Office?.Name
-                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Office?.Name
-                                        ?? pr.Office?.Name,
-                    ProcurementModeId = i.ConsolidatedPRItems?.OrderByDescending(ci => ci.CreatedAt).FirstOrDefault(ci => !ci.IsDeleted && ci.ProcurementModeId.HasValue)?.ProcurementModeId
-                                        ?? i.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
-                                            .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
-                                            .ThenByDescending(ai => ai.CreatedAt)
-                                            .FirstOrDefault()?.ProcurementModeId
-                                        ?? (i.PPMPItem?.ProcurementModeId != Guid.Empty ? i.PPMPItem?.ProcurementModeId : null),
-                    ProcurementModeName = i.ConsolidatedPRItems?.OrderByDescending(ci => ci.CreatedAt).FirstOrDefault(ci => !ci.IsDeleted && ci.ProcurementMode != null)?.ProcurementMode?.Name
-                                          ?? i.PPMPItem?.APPItems?.Where(ai => !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
-                                              .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
-                                              .ThenByDescending(ai => ai.CreatedAt)
-                                              .FirstOrDefault()?.ProcurementMode?.Name
-                                          ?? i.PPMPItem?.ProcurementMode?.Name
+                    Id                  = i.Id,
+                    PPMPItemId          = i.PPMPItemId,
+                    APRItemId           = i.APRItemId,
+                    APRId               = i.APRItem?.APRId,
+                    APRNumber           = i.APRItem?.APR?.APRNumber ?? (i.APRItemId.HasValue ? "APR" : null),
+                    APROfficeName       = i.ResolveAPROfficeName(pr),
+                    Name                = i.Name ?? string.Empty,
+                    Description         = i.ResolveDescription(),
+                    StockNo             = i.ResolveStockNo(),
+                    IsNonCSE            = i.IsNonCSE,
+                    UnitCost            = i.UnitCost,
+                    RequestedQuantity   = i.RequestedQuantity,
+                    Amount              = i.Amount,
+                    RequestedMonth      = i.RequestedMonth,
+                    Category            = i.ResolveCategory(),
+                    Fund                = i.ResolveFund(pr),
+                    PPMPId              = i.ResolvePPMPId(),
+                    PPMPNumber          = i.ResolvePPMPNumber(),
+                    Unit                = i.ResolveUnit(),
+                    OfficeName          = i.ResolveOfficeName(pr),
+                    ProcurementModeId   = i.ResolveProcurementModeId(),
+                    ProcurementModeName = i.ResolveProcurementModeName()
                 }).ToList(),
             BacResolutions = bacResolutions
         };

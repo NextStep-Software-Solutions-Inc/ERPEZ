@@ -46,6 +46,7 @@ public class GetAOBsQueryHandler(IUnitOfWork unitOfWork, ISieveProcessor sievePr
             SignedDocumentUrl = a.SignedDocumentUrl,
             Remarks = a.Remarks,
             RFQIds = a.AOBRFQMappings.Select(m => m.RFQId).ToList(),
+            RFQNumbers = a.AOBRFQMappings.Select(m => m.RFQ.RFQNumber).ToList(),
             AwardedItems = a.AOBAwardedItems.Select(ai => new AOBAwardedItemResponse
             {
                 Id = ai.Id,
@@ -68,8 +69,18 @@ public class GetAOBsQueryHandler(IUnitOfWork unitOfWork, ISieveProcessor sievePr
         var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
         var entities = await paginatedQuery.Select(projection).ToListAsync(cancellationToken);
 
+        var resultEntities = entities.Select(e =>
+        {
+            var validNumbers = e.RFQNumbers.Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().ToList();
+            return e with
+            {
+                RFQNumbers = validNumbers,
+                RFQNumber = validNumbers.Count > 0 ? string.Join(", ", validNumbers) : null
+            };
+        }).ToList();
+
         return new PaginatedApiResponse<AOBResponse>(
-            [.. entities],
+            resultEntities,
             query.PageNumber,
             query.PageSize,
             totalCount);

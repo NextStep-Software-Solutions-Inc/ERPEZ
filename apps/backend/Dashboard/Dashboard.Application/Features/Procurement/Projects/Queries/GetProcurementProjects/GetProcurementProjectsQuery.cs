@@ -10,4 +10,5 @@ public record GetProcurementProjectsQuery : PaginatedQuery<PaginatedApiResponse<
     public bool? HasRFQ { get; init; }
     public bool? HasApprovedRFQ { get; init; }
     public bool? ForSupplierPortal { get; init; }
+    public bool? UnlinkedDirectContracting { get; init; }
 }

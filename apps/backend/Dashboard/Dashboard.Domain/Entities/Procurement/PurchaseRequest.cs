@@ -45,6 +45,15 @@ public class PurchaseRequest : ApprovableEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal TotalAmount { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateTime? ReturnedDate { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ReturnRemarks { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ReturnedBy { get; set; }
+
     public virtual Office Office { get; set; } = null!;
     public virtual FundSource? FundSource { get; set; }
     public virtual PPMP? PPMP { get; set; }

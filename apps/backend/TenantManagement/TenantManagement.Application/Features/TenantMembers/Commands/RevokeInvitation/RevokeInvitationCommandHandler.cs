@@ -1,6 +1,7 @@
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.TenantManagement.Application.Common.Interfaces;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -12,7 +13,8 @@ public class RevokeInvitationCommandHandler(
     IUnitOfWork unitOfWork,
     ITenantContextService tenantContext,
     ICurrentUserService currentUser,
-    ITenantAuditService auditService)
+    ITenantAuditService auditService,
+    IClerkInvitationService clerkInvitationService)
     : IRequestHandler<RevokeInvitationCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(RevokeInvitationCommand command, CancellationToken cancellationToken)
@@ -45,6 +47,11 @@ public class RevokeInvitationCommandHandler(
         member.InvitationTokenHash = null;
         member.InvitationExpiresAtUtc = null;
         member.ConcurrencyStamp = Guid.NewGuid();
+
+        if (!string.IsNullOrWhiteSpace(member.ExternalIdentityId) && member.ExternalIdentityId.StartsWith("inv_"))
+        {
+            await clerkInvitationService.RevokeInvitationAsync(member.ExternalIdentityId, cancellationToken);
+        }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -145,4 +145,43 @@ public class PurchaseOrdersController(ISender mediator) : ControllerBase
         var result = await mediator.Send(new ReturnPurchaseOrderCommand(id, request.ReturnReason));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
+
+    /// <summary>
+    /// Stream official server-rendered Purchase Order PDF directly (inline preview / download)
+    /// </summary>
+    [HttpGet("{id:guid}/pdf")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.poManage)]
+    public async Task<IActionResult> GetPdf(Guid id)
+    {
+        var query = new ERPEZ.Application.Features.Procurement.PurchaseOrders.Queries.GetPurchaseOrderPdf.GetPurchaseOrderPdfQuery(id);
+        var result = await mediator.Send(query);
+        if (!result.Succeeded || result.Data == null)
+        {
+            return NotFound(result);
+        }
+
+        Response.Headers.Append("Content-Disposition", $"inline; filename=\"{result.Data.FileName}\"");
+        return File(result.Data.FileBytes, result.Data.ContentType, result.Data.FileName);
+    }
+
+    /// <summary>
+    /// Generate and persist official Purchase Order PDF document
+    /// </summary>
+    [HttpPost("{id:guid}/generate-document")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(Permissions.Procurement.poManage)]
+    public async Task<IActionResult> GenerateDocument(Guid id)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.GeneratePurchaseOrderDocument.GeneratePurchaseOrderDocumentCommand
+        {
+            PurchaseOrderId = id,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
 }

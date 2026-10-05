@@ -65,6 +65,11 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             dbQuery = dbQuery.Where(p => allowedPortalStatuses.Contains(p.Status));
         }
 
+        if (query.UnlinkedDirectContracting == true)
+        {
+            dbQuery = dbQuery.Where(p => !p.DirectContractings.Any(dc => !dc.IsDeleted) && p.ABC > 0);
+        }
+
         if (string.IsNullOrWhiteSpace(query.Sorts))
         {
             dbQuery = dbQuery.OrderByDescending(p => p.CreatedAt);

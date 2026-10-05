@@ -736,7 +736,7 @@ export function AOBDetailsPage({
                   size="sm"
                   variant="outline"
                   onClick={() => setActiveTab('summary')}
-                  className={`h-8 text-xs bg-white ${
+                  className={`h-9 px-3.5 text-sm font-medium bg-white ${
                     isAdmin
                       ? 'hover:bg-amber-50 border-amber-300 text-amber-900'
                       : 'hover:bg-blue-50 border-blue-300 text-blue-900'
@@ -744,28 +744,28 @@ export function AOBDetailsPage({
                 >
                   Review Awards
                 </Button>
-                {isAdmin && onApprove && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowApproveDialog(true)}
-                    disabled={isProcessing || !allItemsAwarded}
-                    className="h-8 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
-                  >
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    Approve AOB
-                  </Button>
-                )}
-                {isAdmin && onReturn && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowReturnDialog(true)}
-                    disabled={isProcessing}
-                    className="h-8 text-xs font-semibold border-rose-300 text-rose-700 hover:bg-rose-50 gap-1"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Return
-                  </Button>
+                {isAdmin && (
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={() => (onApprove ? onApprove() : setShowApproveDialog(true))}
+                      disabled={isProcessing || !allItemsAwarded}
+                      className="h-9 px-4 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Approve AOB
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => (onReturn ? onReturn() : setShowReturnDialog(true))}
+                      disabled={isProcessing}
+                      className="h-9 px-3.5 text-sm font-semibold border-rose-300 text-rose-700 hover:bg-rose-50 gap-1.5"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Return
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -773,61 +773,38 @@ export function AOBDetailsPage({
         </Card>
 
         {/* Action Buttons - Role-Based */}
-        <div className="flex gap-2 justify-end pt-4">
-          {canModifyAOB && (
-            <>
+        {canModifyAOB && (
+          <div className="flex gap-2 justify-end pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowAddRFQDialog(true)}
+              disabled={isProcessing}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add RFQs & Bids
+            </Button>
+            {aob.status === AOBStatus.DRAFT && (
               <Button
-                variant="outline"
-                onClick={() => setShowAddRFQDialog(true)}
+                variant="destructive"
+                onClick={() => setShowDeleteConfirm(true)}
                 disabled={isProcessing}
                 className="gap-2"
               >
-                <Plus className="w-4 h-4" />
-                Add RFQs & Bids
+                <Trash2 className="w-4 h-4" />
+                Delete
               </Button>
-              {aob.status === AOBStatus.DRAFT && (
-                <Button
-                  variant="destructive"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={isProcessing}
-                  className="gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </Button>
-              )}
-              <Button
-                onClick={() => onSubmitForApproval?.()}
-                disabled={isProcessing}
-                className="gap-2"
-              >
-                <Send className="w-4 h-4" />
-                Submit for Approval
-              </Button>
-            </>
-          )}
-          {isForApproval && isAdmin && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => (onReturn ? onReturn() : setShowReturnDialog(true))}
-                disabled={isProcessing}
-                className="gap-2"
-              >
-                <AlertCircle className="w-4 h-4" />
-                Return
-              </Button>
-              <Button
-                onClick={() => (onApprove ? onApprove() : setShowApproveDialog(true))}
-                disabled={isProcessing || !allItemsAwarded}
-                className="gap-2"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Approve
-              </Button>
-            </>
-          )}
-        </div>
+            )}
+            <Button
+              onClick={() => onSubmitForApproval?.()}
+              disabled={isProcessing}
+              className="gap-2"
+            >
+              <Send className="w-4 h-4" />
+              Submit for Approval
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Alert if evaluation incomplete */}

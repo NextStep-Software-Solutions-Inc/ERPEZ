@@ -103,6 +103,11 @@ public class User : BaseEntity
     public virtual List<PersonnelPosition> PersonnelPositions { get; set; } = [];
 
     /// <summary>
+    /// AMS Operational role assignments.
+    /// </summary>
+    public virtual ICollection<ERPEZ.Domain.Entities.AMS.UserRoleAssignment> RoleAssignments { get; set; } = [];
+
+    /// <summary>
     /// Gets the full name of the user.
     /// </summary>
     public string FullName =>

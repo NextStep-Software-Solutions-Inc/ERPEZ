@@ -94,9 +94,21 @@ function editItemQuantity(items: PRItem[], itemId: string, newQty: number): PRIt
   })
 }
 
+export interface TestPayloadItem {
+  ppmpItemId?: string
+  aprItemId?: string
+  name: string
+  description: string
+  unitCost: number
+  requestedQuantity: number
+  stockNo: string
+  isNonCSE: boolean
+  requestedMonth: string
+}
+
 // Replicating buildPayloadItems from PRDetailsPage
-function buildPayloadItems(items: PRItem[]) {
-  return items.flatMap((group) => {
+function buildPayloadItems(items: PRItem[]): TestPayloadItem[] {
+  return items.flatMap((group): TestPayloadItem[] => {
     if (group.aprGroup) {
       const nested = group.aprGroup.items || []
       return nested.flatMap((aprItem) => {
@@ -445,6 +457,7 @@ describe('Purchase Request Enhancements (BE & FE)', () => {
     it('creates Non-CSE PR items without requiring a PPMP item linkage', () => {
       const catalogItem: PRItem = {
         id: 'item-non-cse-1',
+        itemId: 'item-non-cse-1',
         itemName: 'All-in-One Desktop Computer (Core i7 / 16GB / 512GB SSD)',
         description: '23.8-inch FHD IPS display, Windows 11 Pro',
         category: 'IT Equipment & Software',
@@ -460,7 +473,7 @@ describe('Purchase Request Enhancements (BE & FE)', () => {
         month: 'January',
       }
 
-      expect(catalogItem.PPMPItemId).toBeUndefined()
+      expect(catalogItem.ppmpItemId).toBeUndefined()
       expect(catalogItem.totalAmount).toBe(175500)
       expect(catalogItem.category).toBe('IT Equipment & Software')
     })
@@ -468,6 +481,7 @@ describe('Purchase Request Enhancements (BE & FE)', () => {
     it('creates custom Non-CSE PR items with custom technical specifications', () => {
       const customItem: PRItem = {
         id: 'custom-pr-item-1',
+        itemId: 'custom-pr-item-1',
         itemName: 'High-Accuracy Spectrophotometer',
         description: 'UV-Vis double-beam spectrophotometer with wavelength range 190-1100 nm',
         category: 'Medical & Scientific Supplies',
@@ -494,6 +508,7 @@ describe('Purchase Request Enhancements (BE & FE)', () => {
           id: 'existing-1',
           itemId: 'cat-it-01',
           itemName: 'All-in-One Desktop Computer',
+          category: 'IT Equipment & Software',
           quantity: 2,
           setQuantity: 2,
           remainingQuantity: 0,
@@ -508,6 +523,7 @@ describe('Purchase Request Enhancements (BE & FE)', () => {
           id: 'incoming-1',
           itemId: 'cat-it-01',
           itemName: 'All-in-One Desktop Computer',
+          category: 'IT Equipment & Software',
           quantity: 3,
           setQuantity: 3,
           remainingQuantity: 0,
@@ -845,6 +861,289 @@ describe('Purchase Request Enhancements (BE & FE)', () => {
       // Submitted/Approved state does not allow changing MoP
       const nonDraftItem = updateMoP(updatedDraftItem, 'Competitive Bidding', false)
       expect(nonDraftItem.procurementModeName).toBe('Small Value Procurement')
+    })
+  })
+
+  describe('[TASK-11] PR Creation from Out-of-Stock APR and PR Consolidation', () => {
+    it('accurately builds update payload from out-of-stock APR items without dropping items', () => {
+      const aprGroupItem: PRItem = {
+        id: 'group-uuid-1',
+        itemId: 'group-uuid-1',
+        itemName: 'APR #APR-2026-0001 (Accounting Office)',
+        category: 'Consolidated APR',
+        quantity: 1,
+        unitOfMeasure: 'group',
+        unitPrice: 50000,
+        totalAmount: 50000,
+        aprGroup: {
+          aprId: 'apr-guid-1',
+          aprNumber: 'APR-2026-0001',
+          officeName: 'Accounting Office',
+          totalAmount: 50000,
+          items: [
+            {
+              id: 'local-item-1',
+              itemId: 'apr-item-guid-101',
+              itemName: 'Ballpen (Black)',
+              category: 'Office Supplies',
+              quantity: 50,
+              unitOfMeasure: 'box',
+              unitPrice: 200,
+              totalAmount: 10000,
+              source: 'apr',
+              month: undefined, // Simulates backend item where month is undefined
+              monthlyQuantities: {}, // Simulates empty monthlyQuantities
+            },
+            {
+              id: 'local-item-2',
+              itemId: 'apr-item-guid-102',
+              itemName: 'A4 Copy Paper',
+              category: 'Paper Products',
+              quantity: 100,
+              unitOfMeasure: 'ream',
+              unitPrice: 400,
+              totalAmount: 40000,
+              source: 'apr',
+              month: 'February',
+              monthlyQuantities: { February: 100 },
+            },
+          ],
+        },
+      }
+
+      const payload = buildPayloadItems([aprGroupItem])
+
+      expect(payload).toHaveLength(2)
+      expect(payload[0]).toEqual({
+        aprItemId: 'apr-item-guid-101',
+        name: 'Ballpen (Black)',
+        description: '',
+        unitCost: 200,
+        requestedQuantity: 50,
+        stockNo: '',
+        isNonCSE: false,
+        requestedMonth: 'January', // Falls back safely to January
+      })
+      expect(payload[1]).toEqual({
+        aprItemId: 'apr-item-guid-102',
+        name: 'A4 Copy Paper',
+        description: '',
+        unitCost: 400,
+        requestedQuantity: 100,
+        stockNo: '',
+        isNonCSE: false,
+        requestedMonth: 'February',
+      })
+    })
+
+    it('maps source PRs for PR consolidation using GUID for id and prNumber for display', () => {
+      const mockEligiblePrs = [
+        {
+          purchaseRequestId: 'pr-guid-999',
+          prNumber: 'PR-2026-0001',
+          officeId: 'off-guid-1',
+          officeName: 'Finance Division',
+          prType: 'OutOfStockCSE',
+          totalAmount: 50000,
+          items: [
+            {
+              name: 'Ballpen (Black)',
+              unit: 'box',
+              totalQuantity: 50,
+              unitPrice: 200,
+              fund: 'General Fund',
+              category: 'Office Supplies',
+            },
+          ],
+        },
+      ]
+
+      const sourcePRs = mockEligiblePrs.map((pr) => ({
+        id: pr.purchaseRequestId,
+        prNumber: pr.prNumber || pr.purchaseRequestId,
+        office: pr.officeName || pr.officeId,
+        month: 'Jan',
+        fund: pr.items[0]?.fund || '',
+        category: pr.items[0]?.category || '',
+        type: pr.prType?.toLowerCase() === 'non-cse' ? ('non-cse' as const) : ('out-of-stock' as const),
+        items: pr.items.map((item) => ({
+          name: item.name,
+          unit: item.unit,
+          qty: item.totalQuantity,
+          unitPrice: item.unitPrice,
+          totalRequired: item.totalQuantity,
+          currentTotal: item.totalQuantity,
+          deficit: item.totalQuantity,
+        })),
+      }))
+
+      // The id must be the purchaseRequestId GUID
+      expect(sourcePRs[0].id).toBe('pr-guid-999')
+      // The prNumber must be human-readable
+      expect(sourcePRs[0].prNumber).toBe('PR-2026-0001')
+
+      // Mutation payload must contain the GUID, not the PR number
+      const selected = [sourcePRs[0]]
+      const payload = { purchaseRequestIds: Array.from(new Set(selected.map((p) => p.id))) }
+      expect(payload.purchaseRequestIds).toEqual(['pr-guid-999'])
+    })
+  })
+
+  describe('Nullable Handling & Edge Cases (Production Constraint Alignment)', () => {
+    it('gracefully reconstructs API items with all optional and foreign key fields set to null', () => {
+      const apiItemsWithNulls: ApiItemRow[] = [
+        {
+          id: 'item-null-1',
+          ppmpItemId: null,
+          aprItemId: null,
+          name: 'Specialized Hardware Sensor',
+          description: undefined,
+          category: undefined,
+          unitCost: 1500,
+          requestedQuantity: 2,
+          amount: 3000,
+          requestedMonth: 'May',
+          isNonCSE: true,
+          unit: undefined,
+          fund: undefined,
+          procurementModeId: undefined,
+          procurementModeName: undefined,
+          ppmpId: undefined,
+          ppmpNumber: undefined,
+          officeName: undefined,
+        },
+      ]
+
+      const reconstructed = reconstructPRItemsFromApi(apiItemsWithNulls)
+
+      expect(reconstructed).toHaveLength(1)
+      const item = reconstructed[0]
+      expect(item.id).toBe('item-null-1')
+      expect(item.itemId).toBe('item-null-1')
+      expect(item.itemName).toBe('Specialized Hardware Sensor')
+      expect(item.description).toBe('')
+      expect(item.category).toBe('')
+      expect(item.unitOfMeasure).toBe('')
+      expect(item.fund).toBe('')
+      expect(item.ppmpDocName).toBeUndefined()
+      expect(item.source).toBe('custom') // No ppmpItemId or aprItemId => custom
+      expect(item.quantity).toBe(2)
+      expect(item.unitPrice).toBe(1500)
+      expect(item.totalAmount).toBe(3000)
+    })
+
+    it('correctly defaults missing navigation properties in APR groups and nested items', () => {
+      const aprGroupWithNulls: PRItem = {
+        id: 'apr-group-null-1',
+        itemId: 'apr-group-null-1',
+        itemName: 'APR Group with Nulls',
+        category: 'Consolidated APR',
+        quantity: 1,
+        unitPrice: 2000,
+        totalAmount: 2000,
+        aprGroup: {
+          aprId: undefined,
+          aprNumber: undefined,
+          officeName: undefined,
+          items: [
+            {
+              id: 'nested-null-1',
+              itemId: 'apr-nested-guid-1',
+              itemName: 'Staple Wire #10',
+              category: 'Office Supplies',
+              quantity: 10,
+              unitPrice: 50,
+              totalAmount: 500,
+              source: 'apr',
+              month: undefined,
+              monthlyQuantities: undefined,
+            },
+          ],
+        },
+      }
+
+      // 1. APR Number and Office Name defaults
+      const aprNumber = aprGroupWithNulls.aprGroup?.aprNumber || aprGroupWithNulls.aprNumber || 'APR'
+      const officeName = aprGroupWithNulls.aprGroup?.officeName || aprGroupWithNulls.aprOffice || 'General Administration'
+      expect(aprNumber).toBe('APR')
+      expect(officeName).toBe('General Administration')
+
+      // 2. Payload building with undefined month and monthlyQuantities
+      const payload = buildPayloadItems([aprGroupWithNulls])
+      expect(payload).toHaveLength(1)
+      expect(payload[0].requestedMonth).toBe('January') // Safe fallback
+      expect(payload[0].aprItemId).toBe('apr-nested-guid-1')
+      expect(payload[0].unitCost).toBe(50)
+    })
+
+    it('computes deficit quantity defensively when totalGot equals or exceeds needed', () => {
+      const computeDeficit = (required: number, got?: number) => Math.max(0, required - (got || 0))
+
+      expect(computeDeficit(100, 40)).toBe(60)
+      expect(computeDeficit(100, 100)).toBe(0)
+      expect(computeDeficit(100, 150)).toBe(0) // Never negative
+      expect(computeDeficit(100, undefined)).toBe(100) // Undefined got defaults to 0
+    })
+
+    it('mirrors return remarks banner null-checking and formatting logic', () => {
+      const getReturnRemarksText = (returnRemarks?: string, remarks?: string) => {
+        return (returnRemarks || remarks)?.trim() || 'No specific return reason was provided.'
+      }
+
+      const safeFormatDate = (returnedDate?: string) => {
+        if (!returnedDate) return null
+        try {
+          const d = new Date(returnedDate)
+          return Number.isNaN(d.getTime()) ? null : format(d, 'MMM dd, yyyy h:mm a')
+        } catch {
+          return null
+        }
+      }
+
+      // Null return remarks fallback
+      expect(getReturnRemarksText(undefined, undefined)).toBe('No specific return reason was provided.')
+      expect(getReturnRemarksText('', '   ')).toBe('No specific return reason was provided.')
+      expect(getReturnRemarksText('Needs revision of unit prices')).toBe('Needs revision of unit prices')
+
+      // Date parsing safety
+      expect(safeFormatDate(undefined)).toBeNull()
+      expect(safeFormatDate('invalid-iso-date-string')).toBeNull()
+      expect(safeFormatDate('2026-10-02T08:30:00Z')).toBeTruthy()
+
+      // ReturnedBy fallback
+      const getReturnedByActor = (returnedBy?: string) => returnedBy ? ` by ${returnedBy}` : ' by the Approving Authority'
+      expect(getReturnedByActor(undefined)).toBe(' by the Approving Authority')
+      expect(getReturnedByActor('')).toBe(' by the Approving Authority')
+      expect(getReturnedByActor('Governor Jane Doe')).toBe(' by Governor Jane Doe')
+    })
+
+    it('clears returnRemarks, returnedDate, and returnedBy on approved or submitted status to prevent stale banner display', () => {
+      const mapApiResponse = (apiStatus: string, returnRemarks?: string, returnedDate?: string, returnedBy?: string) => {
+        const isTerminalOrPending = apiStatus === 'Approved' || apiStatus === 'Submitted' || apiStatus === 'ForBACUtilization'
+        return {
+          returnRemarks: isTerminalOrPending ? undefined : returnRemarks,
+          returnedDate: isTerminalOrPending ? undefined : returnedDate,
+          returnedBy: isTerminalOrPending ? undefined : returnedBy,
+        }
+      }
+
+      // When returned, remarks are retained
+      const returnedPR = mapApiResponse('Returned', 'Missing supplier quotes', '2026-10-02T08:30:00Z', 'BAC Sec')
+      expect(returnedPR.returnRemarks).toBe('Missing supplier quotes')
+      expect(returnedPR.returnedDate).toBe('2026-10-02T08:30:00Z')
+      expect(returnedPR.returnedBy).toBe('BAC Sec')
+
+      // When approved, remarks and audit fields are cleared so old rejection is never shown
+      const approvedPR = mapApiResponse('Approved', 'Old rejection reason', '2026-10-01T08:30:00Z', 'Old Reviewer')
+      expect(approvedPR.returnRemarks).toBeUndefined()
+      expect(approvedPR.returnedDate).toBeUndefined()
+      expect(approvedPR.returnedBy).toBeUndefined()
+
+      // When submitted, remarks and audit fields are cleared
+      const submittedPR = mapApiResponse('Submitted', 'Old rejection reason', '2026-10-01T08:30:00Z', 'Old Reviewer')
+      expect(submittedPR.returnRemarks).toBeUndefined()
+      expect(submittedPR.returnedDate).toBeUndefined()
+      expect(submittedPR.returnedBy).toBeUndefined()
     })
   })
 })

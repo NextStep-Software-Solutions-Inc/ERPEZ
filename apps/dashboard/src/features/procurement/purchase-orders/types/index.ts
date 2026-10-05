@@ -121,6 +121,7 @@ export type PurchaseOrder = {
   sourceDocumentDescription?: string | null
   supplierId?: string | null
   supplierName?: string | null
+  supplierAddress?: string | null
   supplierTin?: string | null
   description?: string | null
   source?: PurchaseOrderSource
@@ -143,6 +144,11 @@ export type PurchaseOrder = {
   signedDocument?: File | null
   signedDocumentFileName?: string | null
   printFileName?: string | null
+}
+
+export type PrintPurchaseOrderResult = {
+  fileName: string
+  blob: Blob
 }
 
 export type RetailStoreInfo = {

@@ -17,7 +17,9 @@ public enum DocumentType
     NoticeOfAward,
     Rfq,
     Aob,
+    DirectContracting,
     Contract,
     NoticeToProceed,
+    PurchaseOrder,
     LibRealignment
 }

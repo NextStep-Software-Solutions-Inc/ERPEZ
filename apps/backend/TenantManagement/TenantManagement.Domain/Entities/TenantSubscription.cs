@@ -25,6 +25,19 @@ public class TenantSubscription : BaseEntity
     public BillingCycle BillingCycle { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public bool AutoRenew { get; set; } = true;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? SubscriptionPlanPriceId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal? ContractedMonthlyPrice { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal? ContractedAnnualPrice { get; set; }
+
     [JsonIgnore]
     public virtual Tenant Tenant { get; set; } = null!;
+
+    [JsonIgnore]
+    public virtual SubscriptionPlanPrice? SubscriptionPlanPrice { get; set; }
 }

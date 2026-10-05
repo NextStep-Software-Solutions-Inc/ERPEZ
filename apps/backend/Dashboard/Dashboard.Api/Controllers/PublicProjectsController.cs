@@ -13,9 +13,12 @@ using Microsoft.AspNetCore.Mvc;
 using ERPEZ.Application.Interfaces;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.GenerateRFQDocument;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using System.IO;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace ERPEZ.Api.Controllers;
 
@@ -230,6 +233,161 @@ public class PublicProjectsController(ISender mediator) : ControllerBase
 
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Generate a pre-filled RFQ quotation document (PDF) populated with the public applicant's current quotation data.
+    /// This allows the supplier to preview or download the filled RFQ, apply signature/stamp, and attach it to their application.
+    /// </summary>
+    [HttpPost("projects/{id:guid}/generate-quotation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GeneratePublicQuotation(
+        Guid id,
+        [FromBody] ValidatePublicApplicationRequest request,
+        [FromServices] IUnitOfWork unitOfWork,
+        [FromServices] IRFQDocumentContextService rfqContextService,
+        [FromServices] IDocumentRendererService rendererService,
+        CancellationToken cancellationToken)
+    {
+        var rfq = await unitOfWork.RFQRepository.GetRFQWithDetailsAsync(id, cancellationToken);
+        if (rfq == null)
+        {
+            var project = await unitOfWork.ProcurementProjectRepository.GetByIdAsync(id, cancellationToken);
+            if (project?.ConsolidatedPRId != null)
+            {
+                rfq = await unitOfWork.RFQRepository.FindAsync(
+                    r => r.ConsolidatedPRId == project.ConsolidatedPRId && !r.IsDeleted,
+                    cancellationToken);
+                if (rfq != null)
+                {
+                    rfq = await unitOfWork.RFQRepository.GetRFQWithDetailsAsync(rfq.Id, cancellationToken);
+                }
+            }
+        }
+
+        if (rfq == null)
+        {
+            return NotFound(ApiResponse<object>.Fail("RFQ opportunity not found."));
+        }
+
+        Guid officeId = Guid.Empty;
+        var prOfficeId = rfq.RFQItems?
+            .Select(i => i.CPRItem?.PurchaseRequest?.OfficeId ?? i.CPRItem?.PRItem?.PurchaseRequest?.OfficeId)
+            .FirstOrDefault(oid => oid.HasValue && oid.Value != Guid.Empty);
+        if (prOfficeId.HasValue) officeId = prOfficeId.Value;
+        if (officeId == Guid.Empty)
+        {
+            var defaultOffice = await unitOfWork.OfficeRepository.FindAsync(o => !o.IsDeleted, cancellationToken)
+                ?? await unitOfWork.OfficeRepository.FindAsync(o => true, cancellationToken);
+            if (defaultOffice != null) officeId = defaultOffice.Id;
+        }
+
+        var ctx = await rfqContextService.ResolveAsync(rfq.RFQNumber, rfq.Id, officeId, cancellationToken);
+
+        var projectName = !string.IsNullOrWhiteSpace(rfq.Description)
+            ? rfq.Description.Trim()
+            : (!string.IsNullOrWhiteSpace(rfq.Purpose) ? rfq.Purpose.Trim() : "[Project Name / Purpose]");
+
+        var modeName = !string.IsNullOrWhiteSpace(rfq.ModeOfProcurement?.Name)
+            ? rfq.ModeOfProcurement.Name.Trim()
+            : "[Mode of Procurement]";
+
+        var dateFormatted = rfq.Date != default
+            ? rfq.Date.ToString("MMMM dd, yyyy")
+            : DateTime.UtcNow.ToString("MMMM dd, yyyy");
+
+        var deadlineFormatted = rfq.Deadline.HasValue
+            ? rfq.Deadline.Value.ToString("dddd, MMMM dd, yyyy 'at 12:00 noon'")
+            : "[Deadline Date]";
+
+        var prNumber = !string.IsNullOrWhiteSpace(rfq.ConsolidatedPR?.CPRNumber)
+            ? rfq.ConsolidatedPR.CPRNumber.Trim()
+            : (!string.IsNullOrWhiteSpace(rfq.TracingNumber) ? rfq.TracingNumber.Trim() : "[PR / Tracing No.]");
+
+        var itemBidsDict = request.ItemBids?.ToDictionary(b => b.RFQItemId) ?? new Dictionary<Guid, PublicItemBidDto>();
+
+        var rawRfqItems = (rfq.RFQItems ?? []).Where(i => !i.IsDeleted).ToList();
+        var rfqItems = rawRfqItems.Select((item, idx) =>
+        {
+            itemBidsDict.TryGetValue(item.Id, out var bid);
+            var quotedUnit = bid != null && bid.UnitPrice > 0 ? (decimal?)bid.UnitPrice : null;
+            var quotedTotal = quotedUnit.HasValue ? (decimal?)(quotedUnit.Value * item.Quantity) : null;
+            var brand = bid?.Brand?.Trim();
+            var model = bid?.Model?.Trim();
+            var offeredSpecs = !string.IsNullOrWhiteSpace(brand)
+                ? string.Join(" ", new[] { brand, model, bid?.Color?.Trim() }.Where(s => !string.IsNullOrWhiteSpace(s)))
+                : null;
+
+            return new RfqItemDataDto
+            {
+                ItemNo = idx + 1,
+                ItemName = item.ItemNameSnapshot?.Trim() ?? string.Empty,
+                Specifications = item.CPRItem?.PRItem?.Description?.Trim() ?? item.ItemNameSnapshot?.Trim() ?? string.Empty,
+                Quantity = item.Quantity,
+                Unit = item.CPRItem?.PRItem?.PPMPItem?.Unit?.Trim() ?? "lot",
+                ApprovedUnitCost = item.UnitPriceSnapshot,
+                ApprovedTotalCost = item.Quantity * item.UnitPriceSnapshot,
+                QuotedUnitPrice = quotedUnit,
+                QuotedTotalCost = quotedTotal,
+                OfferedBrand = brand,
+                OfferedModel = model,
+                OfferedSpecifications = offeredSpecs
+            };
+        }).ToList();
+
+        var supplier = new RfqSupplierDataDto
+        {
+            SupplierName = !string.IsNullOrWhiteSpace(request.CompanyName) ? request.CompanyName.Trim() : "[Supplier / Bidder Name]",
+            TradeName = !string.IsNullOrWhiteSpace(request.CompanyName) ? request.CompanyName.Trim() : "[Business / Store Name]",
+            Address = request.BusinessAddress?.Trim() ?? string.Empty,
+            ContactPerson = request.ContactPerson?.Trim() ?? string.Empty,
+            ContactNumber = request.ContactNumber?.Trim() ?? string.Empty,
+            Email = request.EmailAddress?.Trim() ?? string.Empty,
+            TINNumber = request.TinNumber?.Trim() ?? string.Empty,
+            PhilGEPSNumber = string.Empty,
+            QuotedItems = rfqItems
+        };
+
+        var deliveryPeriod = !string.IsNullOrWhiteSpace(request.DeliveryPeriod)
+            ? request.DeliveryPeriod.Trim()
+            : (!string.IsNullOrWhiteSpace(rfq.DeliveryPeriod) ? rfq.DeliveryPeriod.Trim() : "[Delivery Period]");
+
+        var rfqData = new RfqDataDto
+        {
+            RFQId = rfq.Id,
+            RFQNumber = rfq.RFQNumber,
+            QuotationNo = rfq.RFQNumber,
+            ProjectName = projectName,
+            Date = dateFormatted,
+            Deadline = deadlineFormatted,
+            ModeOfProcurement = modeName,
+            ApprovedBudgetForContract = rfqItems.Sum(i => i.ApprovedTotalCost),
+            PRNumber = prNumber,
+            BacResolutionNumber = string.Empty,
+            ProcuringEntity = ctx.ProcuringEntity,
+            ProcuringEntityAddress = ctx.ProcuringEntityAddress,
+            SubmissionLocation = ctx.SubmissionLocation,
+            DeliveryLocation = ctx.DeliveryLocation,
+            ContactEmail = ctx.ContactEmail,
+            ContactPhone = ctx.ContactPhone,
+            BacChairpersonName = ctx.BacChairpersonName,
+            BacChairpersonTitle = ctx.BacChairpersonTitle,
+            BacSecName = ctx.BacSecName,
+            DeliveryPeriod = deliveryPeriod,
+            IsBlankTemplate = false,
+            SignatoryName = !string.IsNullOrWhiteSpace(request.ContactPerson) ? request.ContactPerson.Trim() : null,
+            DateSigned = DateTime.UtcNow.ToString("MMMM dd, yyyy"),
+            Items = rfqItems,
+            Suppliers = new List<RfqSupplierDataDto> { supplier }
+        };
+
+        var bytes = await rendererService.RenderAsync(rfqData, DocumentType.Rfq, ExportFormat.Pdf, cancellationToken);
+        var safeCompanyName = string.Concat((request.CompanyName ?? "Supplier").Split(Path.GetInvalidFileNameChars()));
+        var fileName = $"RFQ_{rfq.RFQNumber}_Quotation_{safeCompanyName}.pdf";
+        Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+        return File(bytes, "application/pdf", fileName);
     }
 
     /// <summary>

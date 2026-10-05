@@ -1,4 +1,4 @@
-// Auth & Keycloak User Types
+// Auth & Clerk User Types
 export type UserRole = "super-admin" | "tenant" | "admin" | "member";
 
 export interface UserPublicMetadata {

@@ -3,6 +3,7 @@ using System.Text;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.TenantManagement.Application.Common.Interfaces;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -16,7 +17,8 @@ public class CreateTenantMemberCommandHandler(
     ITenantContextService tenantContext,
     ICurrentUserService currentUser,
     IRoleAssignmentValidator roleAssignmentValidator,
-    ITenantAuditService auditService)
+    ITenantAuditService auditService,
+    IClerkInvitationService clerkInvitationService)
     : IRequestHandler<CreateTenantMemberCommand, ApiResponse<CreateTenantMemberResponse>>
 {
     public async Task<ApiResponse<CreateTenantMemberResponse>> Handle(CreateTenantMemberCommand command, CancellationToken cancellationToken)
@@ -58,10 +60,10 @@ public class CreateTenantMemberCommandHandler(
         }
         else
         {
-            var endUserRole = await unitOfWork.RoleRepository.Query()
-                .FirstOrDefaultAsync(r => r.NormalizedName == "END USER", cancellationToken)
-                ?? throw new ValidationException("Default End User role was not found.");
-            rolesToAssign = [endUserRole.Id];
+            var tenantMemberRole = await unitOfWork.RoleRepository.Query()
+                .FirstOrDefaultAsync(r => r.NormalizedName == "TENANT MEMBER", cancellationToken)
+                ?? throw new ValidationException("Default Tenant Member role was not found.");
+            rolesToAssign = [tenantMemberRole.Id];
         }
 
         // 3. Role assignment and delegation validation
@@ -70,11 +72,39 @@ public class CreateTenantMemberCommandHandler(
             actorExternalId,
             targetMemberId: null,
             rolesToAssign,
-            cancellationToken);
+            expectedScope: RoleScope.Tenant,
+            cancellationToken: cancellationToken);
 
-        // 4. Generate cryptographically secure invitation token (32 bytes Base64Url)
+        // 4. Retrieve tenant to ensure Model A Cardinality alignment
+        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(tenantId, cancellationToken)
+            ?? throw new NotFoundException($"Tenant '{tenantId}' was not found.");
+
+        // 5. Query role names for invitation metadata and auditing
+        var assignedRoleNames = await unitOfWork.RoleRepository.Query()
+            .Where(r => rolesToAssign.Contains(r.Id))
+            .Select(r => r.Name)
+            .ToListAsync(cancellationToken);
+
+        // 6. Create User Invitation in Clerk (without using Clerk organization features)
+        // Clerk attaches public_metadata to the invitation which transfers to the user on signup.
+        var metadata = new Dictionary<string, object>
+        {
+            ["tenantId"] = tenantId.ToString(),
+            ["roleIds"] = rolesToAssign.Select(r => r.ToString()).ToArray(),
+            ["roles"] = assignedRoleNames.ToArray(),
+            ["invitationType"] = "tenant_member"
+        };
+
+        var clerkInvitation = await clerkInvitationService.CreateInvitationAsync(
+            normalizedEmail,
+            metadata,
+            notify: true,
+            ignoreExisting: true,
+            ct: cancellationToken);
+
+        // 7. Generate fallback secure invitation token
         var tokenBytes = RandomNumberGenerator.GetBytes(32);
-        var rawInvitationToken = Convert.ToBase64String(tokenBytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
+        var rawInvitationToken = clerkInvitation?.Id ?? Convert.ToBase64String(tokenBytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
         var tokenHashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawInvitationToken));
         var invitationTokenHash = Convert.ToHexString(tokenHashBytes).ToLowerInvariant();
         var expiresAt = DateTime.UtcNow.AddHours(48);
@@ -82,8 +112,9 @@ public class CreateTenantMemberCommandHandler(
         var tenantMember = new TenantMember
         {
             TenantId = tenantId,
+            Provider = tenant.AuthProvider,
             UserId = normalizedEmail,
-            ExternalIdentityId = string.Empty,
+            ExternalIdentityId = clerkInvitation?.Id ?? string.Empty,
             Email = normalizedEmail,
             FirstName = command.FirstName.Trim(),
             LastName = command.LastName.Trim(),
@@ -92,6 +123,11 @@ public class CreateTenantMemberCommandHandler(
             InvitationTokenHash = invitationTokenHash,
             InvitationExpiresAtUtc = expiresAt
         };
+
+        if (tenantMember.Provider != tenant.AuthProvider)
+        {
+            throw new InvalidOperationException($"Cannot add a {tenantMember.Provider} member to a {tenant.AuthProvider} tenant.");
+        }
 
         foreach (var roleId in rolesToAssign)
         {
@@ -103,12 +139,6 @@ public class CreateTenantMemberCommandHandler(
 
         await unitOfWork.TenantMemberRepository.AddAsync(tenantMember, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        // 5. Append audit log
-        var assignedRoleNames = await unitOfWork.RoleRepository.Query()
-            .Where(r => rolesToAssign.Contains(r.Id))
-            .Select(r => r.Name)
-            .ToListAsync(cancellationToken);
 
         await auditService.LogMemberEventAsync(
             tenantId,

@@ -67,6 +67,19 @@ public class GetConsolidatedPrItemsForRFQQueryHandler(IUnitOfWork unitOfWork)
                 var prItem = cprItem.PRItem;
                 if (prItem is null) continue;
 
+                // RA 12009 / RA 9184: Request for Quotation (RFQ) is exclusively for Alternative Methods
+                // that require price quotations (e.g. Small Value Procurement, Shopping, Negotiated Procurement).
+                // Competitive / Public Bidding (which uses Invitation to Bid / Bidding Docs) and Direct Contracting
+                // (single-source acquisition) cannot be sourced into an RFQ.
+                var modeName = cprItem.ProcurementMode?.Name
+                    ?? prItem.PPMPItem?.ProcurementMode?.Name
+                    ?? string.Empty;
+
+                if (IsNonRfqMode(modeName))
+                {
+                    continue;
+                }
+
                 var alreadySourced = await unitOfWork.RFQRepository.GetSourcedQuantityForCprItemAsync(
                     cprItem.Id, excludingRfqId: null, cancellationToken);
 
@@ -104,5 +117,15 @@ public class GetConsolidatedPrItemsForRFQQueryHandler(IUnitOfWork unitOfWork)
         }
 
         return ApiResponse<List<ConsolidatedPrItemForRFQDto>>.Success(result);
+    }
+
+    private static bool IsNonRfqMode(string modeName)
+    {
+        if (string.IsNullOrWhiteSpace(modeName)) return false;
+        var lower = modeName.ToLowerInvariant();
+        return lower.Contains("bidding") ||
+               lower.Contains("direct contracting") ||
+               lower.Contains("direct acquisition") ||
+               lower.Contains("repeat order");
     }
 }

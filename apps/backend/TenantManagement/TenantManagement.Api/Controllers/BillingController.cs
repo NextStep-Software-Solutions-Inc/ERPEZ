@@ -1,3 +1,4 @@
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Billing.Commands.CreateTenantPaymentMethod;
 using ERPEZ.TenantManagement.Application.Features.Billing.Commands.DeleteTenantPaymentMethod;
@@ -9,6 +10,7 @@ using ERPEZ.TenantManagement.Application.Features.Billing.Queries.GetTenantBilli
 using ERPEZ.TenantManagement.Application.Features.Billing.Queries.GetTenantInvoiceById;
 using ERPEZ.TenantManagement.Application.Features.Billing.Queries.GetTenantInvoices;
 using ERPEZ.TenantManagement.Application.Features.Billing.Queries.GetTenantPaymentMethods;
+using ERPEZ.TenantManagement.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +27,7 @@ public class BillingController(ISender mediator) : ControllerBase
     // ==========================================
 
     [HttpGet("invoices")]
+    [HasPermission(TenantPermissions.invoicesView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<TenantInvoiceDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetInvoices([FromQuery] GetTenantInvoicesQuery query)
     {
@@ -33,6 +36,7 @@ public class BillingController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("invoices/{id}")]
+    [HasPermission(TenantPermissions.invoicesView)]
     [ProducesResponseType(typeof(ApiResponse<TenantInvoiceDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetInvoiceById(Guid id)
@@ -42,6 +46,7 @@ public class BillingController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("invoices/{id}/pay")]
+    [HasPermission(TenantPermissions.billingManage)]
     [ProducesResponseType(typeof(ApiResponse<TenantInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> PayInvoice(Guid id, [FromBody] ProcessInvoicePaymentDto dto)
@@ -56,6 +61,7 @@ public class BillingController(ISender mediator) : ControllerBase
     // ==========================================
 
     [HttpGet("payment-methods")]
+    [HasPermission(TenantPermissions.billingView)]
     [ProducesResponseType(typeof(ApiResponse<List<TenantPaymentMethodDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPaymentMethods([FromQuery] Guid? tenantId)
     {
@@ -64,6 +70,7 @@ public class BillingController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("payment-methods")]
+    [HasPermission(TenantPermissions.billingManage)]
     [ProducesResponseType(typeof(ApiResponse<TenantPaymentMethodDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddPaymentMethod([FromBody] CreateTenantPaymentMethodCommand command)
@@ -73,6 +80,7 @@ public class BillingController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("payment-methods/{id}/default")]
+    [HasPermission(TenantPermissions.billingManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SetDefaultPaymentMethod(Guid id)
@@ -82,6 +90,7 @@ public class BillingController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("payment-methods/{id}")]
+    [HasPermission(TenantPermissions.billingManage)]
     [ProducesResponseType(typeof(ApiResponse<DeletePaymentMethodResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeletePaymentMethod(Guid id)
@@ -95,6 +104,7 @@ public class BillingController(ISender mediator) : ControllerBase
     // ==========================================
 
     [HttpGet("contact")]
+    [HasPermission(TenantPermissions.billingView)]
     [ProducesResponseType(typeof(ApiResponse<TenantBillingContactDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBillingContact([FromQuery] Guid? tenantId)
     {
@@ -103,6 +113,7 @@ public class BillingController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("contact")]
+    [HasPermission(TenantPermissions.billingManage)]
     [ProducesResponseType(typeof(ApiResponse<TenantBillingContactDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateBillingContact([FromBody] UpdateTenantBillingContactCommand command)

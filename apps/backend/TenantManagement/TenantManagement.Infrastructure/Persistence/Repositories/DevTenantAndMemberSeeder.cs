@@ -443,6 +443,39 @@ public static class DevTenantAndMemberSeeder
             }
         }
 
+        // 3c. Ensure all existing registered tenants have at least one active default subscription
+        if (dbContext.Tenants != null && dbContext.TenantSubscriptions != null)
+        {
+            var tenantsWithoutSub = await dbContext.Tenants
+                .Include(t => t.TenantSubscriptions)
+                .Where(t => !t.TenantSubscriptions.Any())
+                .ToListAsync(cancellationToken);
+
+            foreach (var t in tenantsWithoutSub)
+            {
+                var newSub = new TenantSubscription
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = t.Id,
+                    Plan = Plan.Starter,
+                    Status = Status.Active,
+                    Amount = 0m,
+                    StartDate = t.CreatedAt == default ? DateTime.UtcNow : t.CreatedAt,
+                    EndDate = (t.CreatedAt == default ? DateTime.UtcNow : t.CreatedAt).AddYears(1),
+                    BillingCycle = BillingCycle.Monthly,
+                    AutoRenew = true,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "system"
+                };
+                await dbContext.TenantSubscriptions.AddAsync(newSub, cancellationToken);
+            }
+
+            if (tenantsWithoutSub.Count > 0)
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
+
         // 4. Fetch System Roles for mapping
         var roles = await dbContext.Roles!
             .ToListAsync(cancellationToken);

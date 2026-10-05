@@ -102,6 +102,7 @@ export type SelectedPRItem = {
 
 export type SourcePR = {
   id: string
+  prNumber?: string
   office: string
   month: string
   fund: string
@@ -331,7 +332,8 @@ export default function ConsolidatePrsPage() {
   const sourcePRs = useMemo<SourcePR[]>(() => {
     if (!eligiblePrsResponse?.data) return []
     return eligiblePrsResponse.data.map((pr: EligiblePr) => ({
-      id: pr.prNumber || pr.purchaseRequestId,
+      id: pr.purchaseRequestId,
+      prNumber: pr.prNumber || pr.purchaseRequestId,
       office: pr.officeName || pr.officeId,
       month: 'Jan',
       fund: pr.items[0]?.fund || '',
@@ -1658,7 +1660,7 @@ export default function ConsolidatePrsPage() {
                       />
                       <div className="flex-1">
                         <div className="font-medium">
-                          {p.id} — {p.office}{' '}
+                          {p.prNumber || p.id} — {p.office}{' '}
                           <span className="text-xs text-muted-foreground">
                             (2026)
                           </span>

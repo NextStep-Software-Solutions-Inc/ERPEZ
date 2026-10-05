@@ -1,174 +1,124 @@
-# Environment Variables Configuration
+# Environment Variables & Secret Management Guide
 
-This document outlines all required environment variables for running the ERPEZ application.
+This document outlines all required and optional environment variables and secrets across the ERPEZ microservices and client applications.
 
-## Required Environment Variables
+---
 
-### Database Connection
+## 1. Secret & Key Management (Required for Staging & Production)
 
-#### `ConnectionStrings__DefaultConnection`
+### `ENCRYPTION_MASTER_KEY_V1` (or `ENCRYPTION_MASTER_KEY`)
 
-**Required:** Yes  
-**Description:** PostgreSQL database connection string  
-**Format:** `Host=localhost;Port=5432;Database=erpez_db;Username=your_user;Password=your_password`  
-**Used in:** All environments (Development, Production)
+- **Required:** **YES in Staging & Production** (Application will fail-fast at startup if missing). In `Development`, a fallback key is allowed with a logged security warning.
+- **Used by:** `ERPEZ.Shared.Configuration.EncryptionConfigurationValidator`, `AesGcmSecretEncryptionService` (Dashboard & TenantManagement microservices).
+- **Purpose:** 256-bit (32-byte) AES master key used for cryptographically securing tenant operational database credentials, connection strings, and sensitive secrets at rest.
+- **Format:** 32-byte raw UTF-8 string or 64-character hexadecimal representation.
+- **Version Precedence & Key Rotation:**
+  1. `ENCRYPTION_MASTER_KEY_V{n}` (Environment variable)
+  2. `Encryption:Keys:V{n}` (Structured JSON configuration)
+  3. `Encryption:MasterKey` (Legacy configuration fallback for V1)
+  4. `ENCRYPTION_MASTER_KEY` (Legacy environment fallback for V1)
 
-### Azure Blob Storage
+> [!CAUTION]
+> Non-development environments strictly enforce fail-closed security. If `ENCRYPTION_MASTER_KEY_V1` (or `ENCRYPTION_MASTER_KEY`) is null or empty, startup throws `InvalidOperationException` and aborts host initialization.
 
-#### `AzureBlobStorage__ConnectionString`
+---
 
-**Required:** Yes  
-**Description:** Azure Blob Storage connection string for file storage  
-**Format:** `DefaultEndpointsProtocol=https;AccountName=your_account;AccountKey=your_key;EndpointSuffix=core.windows.net`  
-**Used in:** All environments  
-**Notes:**
+## 2. Authentication & Identity Provider Configurations
 
-- Azure Blob Storage is the only supported file storage provider
-- Connection string must be provided for file upload/download operations to work
+### A. Keycloak (Dashboard Application & Operational APIs)
 
-## Setting Environment Variables
+Keycloak provides OpenID Connect (OIDC) identity federation for operational tenants and the Dashboard app.
 
-### Local Development
+#### Backend APIs (`Dashboard.Api` & `TenantManagement.Api`):
 
-#### Windows (PowerShell)
+| Variable | Required | Description | Example / Default |
+|---|---|---|---|
+| `JwtSettings__Authority` | Staging/Prod | Keycloak Realm Issuer URL | `https://keycloak.dev.nextstep-software.com/realms/erpez` |
+| `JwtSettings__Audience` | Staging/Prod | Client Audience in JWT | `web-client` or `erpez-api` |
+| `Keycloak__BaseUrl` | Optional | Keycloak instance base URL | `https://keycloak.dev.nextstep-software.com` |
+| `Keycloak__Authority` | Optional | Keycloak realm endpoint | `https://keycloak.dev.nextstep-software.com/realms/erpez` |
+| `Keycloak__Audience` | Optional | Target client audience | `web-client` |
+| `Keycloak__AdminUsername` | Optional | Admin account for automation | `admin` |
+| `Keycloak__AdminPassword` | Optional | Admin password for automation | *(secret)* |
 
-```powershell
-$env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=erpez_db;Username=postgres;Password=yourpassword"
-$env:AzureBlobStorage__ConnectionString = "DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=youraccountkey;EndpointSuffix=core.windows.net"
-```
+#### Frontend (`apps/dashboard`):
 
-#### Windows (Command Prompt)
+| Variable | Required | Description | Example / Default |
+|---|---|---|---|
+| `VITE_KEYCLOAK_URL` | Yes | Keycloak base URL | `https://keycloak.dev.nextstep-software.com` |
+| `VITE_KEYCLOAK_REALM` | Yes | Target Realm name | `erpez` |
+| `VITE_KEYCLOAK_CLIENT_ID` | Yes | OIDC Public Client ID | `web-client` |
+| `VITE_BACKEND_URL` | Yes | Dashboard backend API endpoint | `http://localhost:5245` |
 
-```cmd
-set ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=erpez_db;Username=postgres;Password=yourpassword
-set AzureBlobStorage__ConnectionString=DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=youraccountkey;EndpointSuffix=core.windows.net
-```
+---
 
-#### Linux/macOS (bash)
+### B. Clerk (Tenant Management Control Plane)
 
-```bash
-export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=erpez_db;Username=postgres;Password=yourpassword"
-export AzureBlobStorage__ConnectionString="DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=youraccountkey;EndpointSuffix=core.windows.net"
-```
+Clerk manages customer registration, multi-tenant workspace onboarding, and organization licensing in the Tenant Management portal.
 
-### Docker
+#### Backend APIs (`TenantManagement.Api`):
 
-When running with Docker, pass environment variables using `-e` flag:
+| Variable | Required | Description | Example / Default |
+|---|---|---|---|
+| `ClerkSettings__Authority` | Staging/Prod | Clerk JWT Issuer Authority | `https://clerk.yourdomain.com` |
+| `ClerkSettings__SecretKey` | Staging/Prod | Clerk Backend Secret API Key | `sk_live_...` |
+| `ClerkSettings__WebhookSecret` | Staging/Prod | Clerk Webhook signature validation secret | `whsec_...` |
 
-```bash
-docker run -d \
-  --name erpez-api \
-  -p 8080:8080 \
-  -e ASPNETCORE_ENVIRONMENT=Development \
-  -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=erpez_db;Username=postgres;Password=yourpassword" \
-  -e AzureBlobStorage__ConnectionString="DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=youraccountkey;EndpointSuffix=core.windows.net" \
-  erpez-api:latest
-```
+#### Frontend (`apps/tenant-management`):
 
-### CI/CD (GitHub Actions)
+| Variable | Required | Description | Example / Default |
+|---|---|---|---|
+| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable public key | `pk_test_...` or `pk_live_...` |
+| `VITE_ERPEZ_BACKEND_URL` | Yes | Tenant Management API endpoint | `http://localhost:5246` |
 
-Environment variables are configured as GitHub Secrets in the repository settings:
+---
 
-#### Required Secrets
+## 3. Multi-Tenancy & Host / Origin Boundaries
 
-1. **`ERPEZ_DB_CONNECTION_STRING`**
-   - Used for: Database connection
-   - Mapped to: `ConnectionStrings__DefaultConnection`
+| Variable | Required | Description | Default / Recommended |
+|---|---|---|---|
+| `TenantRouting__AllowedApiHosts` | Staging/Prod | Comma-delimited list of authorized API host headers | `api.erpez.com,dashboard.erpez.com` |
+| `TenantRouting__AllowDevelopmentFallback` | Staging/Prod | Controls whether unauthorized hosts fall back to dev defaults | Set to `false` in Staging & Production |
 
-2. **`AZURE_BLOB_STORAGE_CONNECTION_STRING`**
-   - Used for: Azure Blob Storage connection
-   - Mapped to: `AzureBlobStorage__ConnectionString`
+---
 
-#### Setting Secrets in GitHub
+## 4. Database Connection
 
-1. Go to your repository on GitHub
-2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Add each secret with its name and value
-5. Click **Add secret**
+### `ConnectionStrings__DefaultConnection`
 
-The CI/CD pipeline (`.github/workflows/deploy-erpez-api-dev.yml`) automatically injects these secrets as environment variables during deployment.
+- **Required:** Yes
+- **Description:** PostgreSQL connection string for the core master database.
+- **Format:** `Host=localhost;Port=5432;Database=erpez_db;Username=your_user;Password=your_password`
 
-## Configuration Files
+---
 
-### appsettings.json (Base Configuration)
+## 5. Azure Blob Storage
 
-```json
-{
-  "AzureBlobStorage": {
-    "ContainerName": "files"
-  }
-}
-```
+### `AzureBlobStorage__ConnectionString`
 
-### appsettings.Development.json
+- **Required:** Yes
+- **Description:** Azure Blob Storage connection string for file storage and document attachments.
+- **Format:** `DefaultEndpointsProtocol=https;AccountName=your_account;AccountKey=your_key;EndpointSuffix=core.windows.net`
+- **Default Container:** `files`
 
-```json
-{
-  "AzureBlobStorage": {
-    "ContainerName": "files"
-  }
-}
-```
+---
 
-### appsettings.Production.json
+## 6. Pre-Flight Staging & Production Deployment Checklist
 
-```json
-{
-  "AzureBlobStorage": {
-    "ContainerName": "files"
-  }
-}
-```
+Prior to promoting any build from Development to Staging or Production:
 
-## Storage Provider
+- [ ] **Encryption Master Key**: Verify `ENCRYPTION_MASTER_KEY_V1` (or `ENCRYPTION_MASTER_KEY`) is stored securely in Azure Key Vault / App Configuration / Kubernetes Secrets.
+- [ ] **Strict Security Mode**: Verify `TenantRouting__AllowDevelopmentFallback` is set to `false`.
+- [ ] **Allowed API Hosts**: Verify `TenantRouting__AllowedApiHosts` includes all custom domains and gateway hostnames.
+- [ ] **Keycloak OIDC**: Verify `JwtSettings__Authority` and `JwtSettings__Audience` match the target Keycloak realm.
+- [ ] **Clerk Keys**: Verify `VITE_CLERK_PUBLISHABLE_KEY` and `ClerkSettings__SecretKey` use production (`pk_live_`, `sk_live_`) keys.
+- [ ] **PostgreSQL**: Verify `ConnectionStrings__DefaultConnection` is pointed to the managed database cluster with SSL enforced (`SSL Mode=Require`).
+- [ ] **Blob Storage**: Verify `AzureBlobStorage__ConnectionString` points to the designated storage account.
 
-The system uses Azure Blob Storage as the only supported storage provider for file uploads and downloads. Ensure that the Azure Blob Storage connection string is properly configured in all environments.
+---
 
-## Security Best Practices
+## 7. Deprecation Notice & Removal Schedule
 
-1. **Never commit secrets** to version control
-2. **Rotate credentials regularly** (every 90 days recommended)
-3. **Use separate connection strings** for development, staging, and production
-4. **Limit database user permissions** to only what's needed
-5. **Use Azure Managed Identity** in production when possible (future enhancement)
-6. **Enable Azure Storage firewall** rules to restrict access
-7. **Monitor access logs** for suspicious activity
-
-## Troubleshooting
-
-### Database Connection Issues
-
-- Verify PostgreSQL is running: `psql -h localhost -U postgres -l`
-- Check firewall rules allow connections on port 5432
-- Verify credentials are correct
-- For Docker: Use `host.docker.internal` instead of `localhost`
-
-### Azure Blob Storage Issues
-
-- Verify connection string format is correct
-- Check Azure Storage account is active
-- Verify container name exists (`files` by default)
-- Check network connectivity to Azure endpoints
-- Review application logs for detailed error messages
-
-### Environment Variable Not Loading
-
-- Verify variable name uses double underscores (`__`) for nested configuration
-- Restart the application after setting environment variables
-- Check variable is set in correct scope (system vs. user vs. process)
-- For Docker: Ensure `-e` flags are before the image name
-
-## Getting Azure Blob Storage Connection String
-
-1. Log in to [Azure Portal](https://portal.azure.com)
-2. Navigate to your Storage Account
-3. Go to **Security + networking** → **Access keys**
-4. Copy **Connection string** from Key1 or Key2
-5. Store securely as `AZURE_BLOB_STORAGE_CONNECTION_STRING` secret
-
-## Additional Resources
-
-- [ASP.NET Core Configuration Documentation](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/)
-- [Azure Blob Storage Documentation](https://learn.microsoft.com/en-us/azure/storage/blobs/)
-- [PostgreSQL Connection Strings](https://www.npgsql.org/doc/connection-string-parameters.html)
+| Component / API | Deprecation Ticket | Target Removal | Migration Guidance |
+|---|---|---|---|
+| `ITenantAccessService.EvaluateAccessAsync(ClaimsPrincipal, Guid, string, CancellationToken)` | **`[SEC-DEP-001]`** | **v1.1.0** | Use `EvaluateAccessAsync(TenantAccessRequest, CancellationToken)`. All callers have already been migrated to use `TenantAccessRequest`. |

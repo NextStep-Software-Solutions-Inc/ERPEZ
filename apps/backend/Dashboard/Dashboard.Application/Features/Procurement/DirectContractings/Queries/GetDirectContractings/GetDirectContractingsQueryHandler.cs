@@ -20,6 +20,7 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
     {
         var dbQuery = unitOfWork.DirectContractingRepository.Query()
             .Include(dc => dc.BACProject)
+                .ThenInclude(p => p.BACResolutions)
             .Include(dc => dc.ExclusiveSupplier)
             .Include(dc => dc.Proposal)
                 .ThenInclude(p => p!.ProposalItems)
@@ -30,7 +31,7 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
         var sieveModel = new Sieve.Models.SieveModel
         {
             PageSize = query.PageSize,
-            Page = query.Page,
+            Page = query.PageNumber,
             Filters = query.Filters,
             Sorts = query.Sorts
         };
@@ -43,7 +44,15 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
             BACProjectId = c.BACProjectId,
             BACProjectTitle = c.BACProject != null ? c.BACProject.Title : string.Empty,
             BACProjectABC = c.BACProject != null ? c.BACProject.ABC : 0,
-            BACProjectStatus = c.BACProject != null ? c.BACProject.Status : string.Empty,
+            BACProjectStatus = c.BACProject != null
+                ? (c.BACProject.BACResolutions.Any(r => !r.IsDeleted && r.Status == "Approved")
+                    ? "Approved"
+                    : (c.BACProject.BACResolutions
+                        .Where(r => !r.IsDeleted)
+                        .OrderByDescending(r => r.CreatedAt)
+                        .Select(r => r.Status)
+                        .FirstOrDefault() ?? c.BACProject.Status))
+                : string.Empty,
             ExclusiveSupplierId = c.ExclusiveSupplierId,
             ExclusiveSupplierName = c.ExclusiveSupplier != null ? c.ExclusiveSupplier.Name : string.Empty,
             ExclusiveSupplierEmail = c.ExclusiveSupplier != null ? c.ExclusiveSupplier.Email : string.Empty,
@@ -77,8 +86,17 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
                     ProposalId = item.ProposalId,
                     CPRItemId = item.CPRItemId,
                     CPRItemName = item.CPRItem != null ? item.CPRItem.Name : string.Empty,
+                    Quantity = item.CPRItem != null
+                        ? (item.CPRItem.PlannedQuantity > 0
+                            ? item.CPRItem.PlannedQuantity
+                            : (item.CPRItem.PPMPItemAllocations.Any() ? item.CPRItem.PPMPItemAllocations.Sum(a => a.Quantity) : 1))
+                        : 1,
                     UnitABC = item.CPRItem != null ? item.CPRItem.UnitPrice : 0,
-                    TotalABC = item.CPRItem != null ? item.CPRItem.UnitPrice : 0, // unit cost * qty can be detailed later
+                    TotalABC = item.CPRItem != null
+                        ? item.CPRItem.UnitPrice * (item.CPRItem.PlannedQuantity > 0
+                            ? item.CPRItem.PlannedQuantity
+                            : (item.CPRItem.PPMPItemAllocations.Any() ? item.CPRItem.PPMPItemAllocations.Sum(a => a.Quantity) : 1))
+                        : 0,
                     UnitBid = item.UnitBid,
                     TotalBid = item.TotalBid,
                     Brand = item.Brand,
@@ -97,8 +115,8 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
 
         return new PaginatedApiResponse<DirectContractingResponse>(
             [.. entities],
-            query.Page ?? 1,
-            query.PageSize ?? 10,
+            query.PageNumber,
+            query.PageSize,
             totalCount);
     }
 }

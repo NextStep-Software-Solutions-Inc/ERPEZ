@@ -4,7 +4,7 @@ import {
   type APIResponse,
 } from 'erpez-shared-lib';
 
-const endpoint = '/roles/assignable';
+const endpoint = '/tenant-members/assignable-roles';
 
 export type RoleSummary = {
   id: string;
@@ -13,6 +13,8 @@ export type RoleSummary = {
   isSystemRole: boolean;
   isAssignableToTenant: boolean;
   tenantId?: string;
+  permissionKeys?: string[];
+  permissionDisplayNames?: string[];
 };
 
 export const getAssignableRolesRequest: QueryBlueprintFromTemplate<

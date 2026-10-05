@@ -381,6 +381,8 @@ export function NoticeOfAwardWorkspace({
           onOpenChange={setReturnOpen}
           noaId={selectedNoticeOfAward.id}
           noaNumber={selectedNoticeOfAward.noaNumber}
+          supplierName={selectedNoticeOfAward.supplierName}
+          totalAmount={selectedNoticeOfAward.totalAmount}
           onReturn={async (payload) => {
             try {
               await returnNoticeOfAwardRequest.fetcher({
@@ -406,6 +408,8 @@ export function NoticeOfAwardWorkspace({
           onOpenChange={setApproveOpen}
           noaId={selectedNoticeOfAward.id}
           noaNumber={selectedNoticeOfAward.noaNumber}
+          supplierName={selectedNoticeOfAward.supplierName}
+          totalAmount={selectedNoticeOfAward.totalAmount}
           onApprove={async (payload) => {
             try {
               await approveNoticeOfAwardRequest.fetcher({
