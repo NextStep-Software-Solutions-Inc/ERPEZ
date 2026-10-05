@@ -20,6 +20,9 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 5173,
+      warmup: {
+        clientFiles: ["./app/**/!(*.server|*.test)*.tsx"],
+      },
     },
     build: {
       minify: true,

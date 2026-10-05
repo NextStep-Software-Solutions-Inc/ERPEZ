@@ -39,6 +39,8 @@ export default function PurchaseRequestPageV2() {
       ? new URL(window.location.href).searchParams
       : new URL('http://localhost').searchParams
   const initialTabFromUrl = urlParams.get('tab') ?? undefined
+  const initialAprIdFromUrl = urlParams.get('aprId') ?? undefined
+  const initialOfficeIdFromUrl = urlParams.get('officeId') ?? undefined
 
   const TAB_CONFIG = useMemo(
     () =>
@@ -76,17 +78,23 @@ export default function PurchaseRequestPageV2() {
   const setActivePR = usePurchaseRequestStore((s) => s.setActivePR)
   const ppmpItems = usePurchaseRequestStore((s) => s.ppmpItems)
 
-  // Helper: displayStatus prefers 'returned' when remarks exist to keep metrics consistent
+  // Helper: displayStatus respects approved, submitted, for-bac-utilization ground truth
   const getDisplayStatus = (p: PurchaseRequest) => {
+    if (!p) return 'draft'
+    if (p.status === 'approved' || p.status === 'submitted' || p.status === 'for-bac-utilization') {
+      return p.status
+    }
+    if (p.status === 'returned') {
+      return 'returned'
+    }
     try {
       if (
-        p &&
         (p as any).remarks &&
         (p as any).remarks.toString().trim().length > 0
       ) {
         return 'returned' as any
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     return p.status
@@ -310,6 +318,12 @@ export default function PurchaseRequestPageV2() {
           open={showCreateModal}
           onOpenChange={setShowCreateModal}
           prType={currentPRType}
+          initialOfficeId={initialOfficeIdFromUrl}
+          initialPurpose={
+            currentPRType === 'out-of-stock' && initialAprIdFromUrl
+              ? `Procurement of out-of-stock CSE items from APR`
+              : undefined
+          }
           onSuccess={(pr: PurchaseRequest) => {
             // Optionally navigate to details
             handleViewDetails(pr)

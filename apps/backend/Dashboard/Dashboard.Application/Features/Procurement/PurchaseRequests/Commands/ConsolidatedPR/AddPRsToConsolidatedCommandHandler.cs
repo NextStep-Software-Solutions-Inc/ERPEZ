@@ -47,7 +47,9 @@ public class AddPRsToConsolidatedCommandHandler(IUnitOfWork unitOfWork)
                     .OrderByDescending(ai => ai.APP != null && (ai.APP.Status == StatusEnum.Approved || ai.APP.Status == StatusEnum.Active) ? 2 : 1)
                     .ThenByDescending(ai => ai.CreatedAt)
                     .FirstOrDefault()?.ProcurementModeId
-                    ?? (prItem.PPMPItem?.ProcurementModeId != Guid.Empty ? prItem.PPMPItem?.ProcurementModeId : null);
+                    ?? (prItem.PPMPItem?.ProcurementModeId is Guid pmId && pmId != Guid.Empty ? (Guid?)pmId : null)
+                    ?? prItem.APRItem?.APPItem?.ProcurementModeId
+                    ?? (prItem.APRItem?.PPMPItem?.ProcurementModeId is Guid aprPmId && aprPmId != Guid.Empty ? (Guid?)aprPmId : null);
 
                 cpr.ConsolidatedPRItems.Add(new ConsolidatedPRItem
                 {

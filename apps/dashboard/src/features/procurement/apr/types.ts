@@ -167,8 +167,9 @@ export interface ConsolidatedAPRItem {
   quantityVariancePercent?: number
   budgetVariance?: number
   budgetVariancePercent?: number
-  // Procurement Milestones
-  bacMilestones?: APRMilestones
+  // Stock & Availability Tracking
+  outOfStockQuantity?: number
+  isOutOfStock?: boolean
   psdbmMatches?: Array<{
     itemCode: string
     description: string
@@ -225,6 +226,8 @@ export interface APRMaster {
   requestDate: string
   fiscalYear: number
   status: APRStatus | string
+  officeId?: string
+  officeName?: string
   procuringEntity?: string
   requestingEntity?: string
   requestedBy?: string

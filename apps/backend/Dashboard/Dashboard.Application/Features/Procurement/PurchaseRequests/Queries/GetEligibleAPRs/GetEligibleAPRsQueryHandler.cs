@@ -12,13 +12,29 @@ public class GetEligibleAPRsQueryHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<List<EligibleAPRResponse>>> Handle(
         GetEligibleAPRsQuery query, CancellationToken cancellationToken)
     {
-        var pr = await unitOfWork.PurchaseRequestRepository.GetByIdAsync(
-            query.PurchaseRequestId, cancellationToken)
-            ?? throw new NotFoundException(
-                $"Purchase Request with ID {query.PurchaseRequestId} not found.");
+        Guid officeId;
+        Guid? prId = null;
+
+        if (query.PurchaseRequestId.HasValue)
+        {
+            var pr = await unitOfWork.PurchaseRequestRepository.GetByIdAsync(
+                query.PurchaseRequestId.Value, cancellationToken)
+                ?? throw new NotFoundException(
+                    $"Purchase Request with ID {query.PurchaseRequestId} not found.");
+            officeId = pr.OfficeId;
+            prId = pr.Id;
+        }
+        else if (query.OfficeId.HasValue)
+        {
+            officeId = query.OfficeId.Value;
+        }
+        else
+        {
+            throw new ValidationException("Either PurchaseRequestId or OfficeId must be provided.");
+        }
 
         var flatItems = await unitOfWork.PurchaseRequestRepository
-            .GetEligibleOutOfStockItemsAsync(pr.OfficeId, cancellationToken);
+            .GetEligibleOutOfStockItemsAsync(officeId, prId, cancellationToken);
 
         var result = flatItems
             .GroupBy(i => new { i.APRId, i.APRNumber, i.OfficeId, i.OfficeName })

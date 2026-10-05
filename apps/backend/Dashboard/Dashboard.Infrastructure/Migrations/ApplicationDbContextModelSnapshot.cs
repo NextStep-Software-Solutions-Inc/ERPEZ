@@ -11276,6 +11276,15 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateOnly>("RequestedDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("ReturnRemarks")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReturnedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ReturnedDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -11313,6 +11322,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ProcurementProjectId");
 
                     b.HasIndex("UACSCodeCombinationId");
+
+                    b.HasIndex("OfficeId", "PRType", "Status")
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("PurchaseRequests", "procurement");
                 });
@@ -14323,7 +14335,8 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.APRItem", "APRItem")
                         .WithMany()
-                        .HasForeignKey("APRItemId");
+                        .HasForeignKey("APRItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.PPMPItem", "PPMPItem")
                         .WithMany()

@@ -36,7 +36,7 @@ public class GetEligiblePRsForCPRQueryHandler(IUnitOfWork unitOfWork)
                 PurchaseRequestId: pr.Id,
                 PRNumber:          pr.PRNumber,
                 OfficeId:          pr.OfficeId,
-                OfficeName:        pr.Office.Name,
+                OfficeName:        pr.Office != null ? pr.Office.Name : string.Empty,
                 PRType:            pr.PRType == PRType.NonCSE ? "Non-CSE" : "Out of Stock",
                 TotalAmount:       pr.TotalAmount,
                 Items: pr.PRItems
@@ -47,9 +47,15 @@ public class GetEligiblePRsForCPRQueryHandler(IUnitOfWork unitOfWork)
                         Description:       i.Description,
                         Category:          i.PPMPItem?.NonCSEItem?.Name
                                         ?? i.PPMPItem?.CSEItem?.Name
+                                        ?? i.APRItem?.PPMPItem?.CSEItem?.Name
+                                        ?? i.APRItem?.PPMPItem?.NonCSEItem?.Name
+                                        ?? (i.APRItemId.HasValue ? "Out of Stock CSE" : string.Empty),
+                        Fund:              i.PPMPItem?.PPMPExpenditureItem?.PPMP?.FundSource?.Name
+                                        ?? pr.FundSource?.Name 
                                         ?? string.Empty,
-                        Fund:              pr.FundSource?.Name ?? string.Empty,
-                        Unit:              i.PPMPItem?.Unit ?? string.Empty,
+                        Unit:              i.PPMPItem?.Unit 
+                                        ?? i.APRItem?.Unit 
+                                        ?? "unit",
                         UnitPrice:         i.UnitCost,
                         TotalQuantity:     i.RequestedQuantity,
                         TotalAmount:       i.Amount,

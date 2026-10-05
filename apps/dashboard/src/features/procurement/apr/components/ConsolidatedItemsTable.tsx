@@ -239,10 +239,22 @@ export function ConsolidatedItemsTable({
                               {item.unit || 'Box'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                            <span>In Stock ({item.quantity})</span>
-                          </div>
+                          {item.isOutOfStock || (item.outOfStockQuantity !== undefined && item.outOfStockQuantity > 0) ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1 text-[11px] text-amber-600 font-semibold">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <span>Out of Stock at PS-DBM ({item.outOfStockQuantity ?? item.quantity})</span>
+                              </div>
+                              <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                Eligible for PR
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                              <span>In Stock ({item.quantity})</span>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
 

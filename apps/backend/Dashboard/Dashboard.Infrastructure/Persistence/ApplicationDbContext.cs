@@ -2777,6 +2777,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(pr => pr.OfficeId);
 
         modelBuilder.Entity<PurchaseRequest>()
+            .HasIndex(pr => new { pr.OfficeId, pr.PRType, pr.Status })
+            .HasFilter("\"IsDeleted\" = false");
+
+        modelBuilder.Entity<PurchaseRequest>()
             .Property(pr => pr.TotalAmount)
             .HasPrecision(18, 2);
 
@@ -2795,6 +2799,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PRItem>()
+            .HasOne(i => i.APRItem)
+            .WithMany()
+            .HasForeignKey(i => i.APRItemId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PRItem>()
             .Property(i => i.UnitCost)
             .HasPrecision(18, 2);
 
@@ -2807,6 +2818,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PRItem>()
             .HasIndex(i => i.PPMPItemId);
+
+        modelBuilder.Entity<PRItem>()
+            .HasIndex(i => i.APRItemId);
 
         // (PRItemMonthlyQuantity was removed in favor of RequestedMonth on PRItem)
 
