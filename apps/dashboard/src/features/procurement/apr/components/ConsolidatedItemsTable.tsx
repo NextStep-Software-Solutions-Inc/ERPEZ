@@ -37,6 +37,7 @@ import {
   Package,
   FolderClosed,
   ZoomIn,
+  CheckCircle2,
 } from 'lucide-react'
 import { formatCurrencyPHP } from '@/utils/formatters'
 import type { ConsolidatedAPRItem } from '../types'
@@ -45,6 +46,7 @@ import { APRImageViewerModal } from './APRImageViewerModal'
 interface ConsolidatedItemsTableProps {
   items: ConsolidatedAPRItem[]
   status?: string
+  linkedPRNumber?: string | null
   onRemoveItem?: (itemCode: string) => void
   onOpenAddItem?: () => void
 }
@@ -52,6 +54,7 @@ interface ConsolidatedItemsTableProps {
 export function ConsolidatedItemsTable({
   items,
   status = 'DRAFT',
+  linkedPRNumber,
   onRemoveItem,
   onOpenAddItem,
 }: ConsolidatedItemsTableProps) {
@@ -154,7 +157,7 @@ export function ConsolidatedItemsTable({
                     Office & Fund Source
                   </TableHead>
                   <TableHead className="font-bold text-xs text-gray-800 py-3.5">
-                    Quantity & Stock
+                    Quantity & PS-DBM Deficit
                   </TableHead>
                   <TableHead className="font-bold text-xs text-gray-800 py-3.5 text-right">
                     Unit Cost
@@ -169,6 +172,17 @@ export function ConsolidatedItemsTable({
               </TableHeader>
               <TableBody>
                 {items.map((item, index) => {
+                  const itemFulfilled = item.servedQuantity ?? 0
+                  const hasRemainingDeficit =
+                    item.deficit !== undefined
+                      ? item.deficit > 0
+                      : (item.outOfStockQuantity !== undefined && item.outOfStockQuantity > 0)
+                  const isFullyCoveredByPR =
+                    itemFulfilled > 0 && (item.deficit === 0 || itemFulfilled >= item.quantity)
+                  const isPartiallyCovered = itemFulfilled > 0 && hasRemainingDeficit
+                  const isDeficit = item.isOutOfStock || hasRemainingDeficit
+                  const deficitQty = item.deficit ?? item.outOfStockQuantity ?? (hasRemainingDeficit ? item.quantity : 0)
+
                   return (
                     <TableRow
                       key={item.id || item.itemCode || `item-row-${index}`}
@@ -230,29 +244,107 @@ export function ConsolidatedItemsTable({
 
                       {/* Quantity & Stock Status */}
                       <TableCell className="py-4.5 align-middle">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5">
+                        <div className="space-y-1.5 min-w-[170px]">
+                          {/* Requested Quantity */}
+                          <div className="flex items-baseline gap-1.5">
                             <span className="font-extrabold text-xs text-gray-950">
                               {item.quantity}
                             </span>
                             <span className="text-xs text-gray-500 font-medium">
                               {item.unit || 'Box'}
                             </span>
+                            <span className="text-[10px] text-gray-400 font-medium">
+                              (Requested)
+                            </span>
                           </div>
-                          {item.isOutOfStock || (item.outOfStockQuantity !== undefined && item.outOfStockQuantity > 0) ? (
+
+                          {isFullyCoveredByPR ? (
                             <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1 text-[11px] text-amber-600 font-semibold">
-                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                <span>Out of Stock at PS-DBM ({item.outOfStockQuantity ?? item.quantity})</span>
+                              {/* Stock status indicator */}
+                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" />
+                                <span>Requisitioned via Out-of-Stock PR</span>
                               </div>
-                              <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                Eligible for PR
+
+                              {/* PR linkage badge */}
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100/90 text-emerald-900 border border-emerald-300">
+                                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                  <span>{linkedPRNumber ? `PR Created (${linkedPRNumber})` : 'Transferred to PR'}</span>
+                                </span>
+                              </div>
+
+                              {/* Deficit resolved breakdown */}
+                              <span className="text-[10px] text-gray-500 font-medium">
+                                0 {item.unit || 'unit'} remaining deficit • All {item.quantity} {item.unit || 'unit'} covered
                               </span>
                             </div>
+                          ) : isPartiallyCovered ? (
+                            <div className="flex flex-col gap-1">
+                              {/* Stock status indicator */}
+                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
+                                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                                <span>Partially Covered by PR</span>
+                              </div>
+
+                              {/* Deficit quantity breakdown badge */}
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300">
+                                  <span>Remaining Deficit:</span>
+                                  <span>{deficitQty} {item.unit || 'Box'}</span>
+                                </span>
+                              </div>
+
+                              {/* Action tag */}
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {linkedPRNumber && (
+                                  <span className="inline-flex items-center gap-1 w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                    {itemFulfilled} in {linkedPRNumber}
+                                  </span>
+                                )}
+                                <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                  Eligible for PR ({deficitQty} left)
+                                </span>
+                              </div>
+                            </div>
+                          ) : isDeficit ? (
+                            <div className="flex flex-col gap-1">
+                              {/* Stock status indicator */}
+                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
+                                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                                <span>Out of Stock at PS-DBM</span>
+                              </div>
+
+                              {/* Deficit quantity breakdown badge */}
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300">
+                                  <span>Deficit:</span>
+                                  <span>{deficitQty} {item.unit || 'Box'}</span>
+                                </span>
+                              </div>
+
+                              {/* Action tag */}
+                              {linkedPRNumber ? (
+                                <span className="inline-flex items-center gap-1 w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                  PR Created ({linkedPRNumber})
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                  Eligible for PR
+                                </span>
+                              )}
+                            </div>
                           ) : (
-                            <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                              <span>In Stock ({item.quantity})</span>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-semibold">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                                <span>In Stock at PS-DBM</span>
+                              </div>
+                              <span className="text-[10px] text-gray-400 font-medium">
+                                Deficit: 0 {item.unit || 'Box'}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -311,13 +403,31 @@ export function ConsolidatedItemsTable({
             <span className="text-gray-500 font-medium">
               Showing {items.length} of {items.length} item{items.length === 1 ? '' : 's'}
             </span>
-            <div className="flex items-center gap-6 self-end sm:self-auto">
+            <div className="flex items-center gap-6 self-end sm:self-auto flex-wrap">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-gray-600 font-medium">Total Units:</span>
                 <span className="font-bold text-gray-950">
                   {items.reduce((sum, item) => sum + (item.quantity || 0), 0)}
                 </span>
               </div>
+              {(() => {
+                const totalDeficit = items.reduce((sum, item) => {
+                  const isDef =
+                    item.isOutOfStock ||
+                    (item.outOfStockQuantity !== undefined && item.outOfStockQuantity > 0) ||
+                    (item.deficit !== undefined && item.deficit > 0)
+                  return sum + (item.outOfStockQuantity ?? item.deficit ?? (isDef ? item.quantity : 0))
+                }, 0)
+
+                return totalDeficit > 0 ? (
+                  <div className="flex items-baseline gap-1.5 bg-amber-100/70 border border-amber-300 px-2.5 py-0.5 rounded-md">
+                    <span className="text-amber-900 font-medium">Total Deficit:</span>
+                    <span className="font-extrabold text-amber-950">
+                      {totalDeficit} units
+                    </span>
+                  </div>
+                ) : null
+              })()}
               <div className="flex items-baseline gap-1.5">
                 <span className="text-gray-600 font-medium">Total Amount:</span>
                 <span className="font-extrabold text-sm text-gray-950">

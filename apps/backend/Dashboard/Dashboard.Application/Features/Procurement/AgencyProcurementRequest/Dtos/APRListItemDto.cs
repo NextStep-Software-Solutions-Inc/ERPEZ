@@ -42,6 +42,9 @@ public class APRDetailDto
     public string? ReturnRemarks { get; set; }
     public string? ApprovedBy { get; set; }
     public string? ReturnedBy { get; set; }
+    public Guid? LinkedPurchaseRequestId { get; set; }
+    public string? LinkedPurchaseRequestNumber { get; set; }
+    public string? LinkedPurchaseRequestStatus { get; set; }
     public List<APRItemDto> Items { get; set; } = [];
 }
 
@@ -56,6 +59,8 @@ public class APRItemDto
     public decimal QuantityRequested { get; set; }
     public decimal UnitCost { get; set; }
     public decimal TotalCost { get; set; }
+    public decimal FulfilledQuantity { get; set; }
+    public decimal Deficit { get; set; }
     public List<APRItemMilestoneDto> Milestones { get; set; } = [];
 }
 

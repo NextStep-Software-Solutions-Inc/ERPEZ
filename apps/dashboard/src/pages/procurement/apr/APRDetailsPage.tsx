@@ -29,6 +29,7 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -64,6 +65,7 @@ import {
   useAddCatalogItemsToAPRMutation,
   useRemoveAPRItemMutation,
 } from '@/features/procurement/apr/handlers/hooks'
+import { usePurchaseRequests } from '@/features/procurement/purchase-requests-pr/handlers/hooks'
 
 interface APRDetailsPageProps {
   aprId: string
@@ -87,6 +89,15 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
   const { data: rawResponse, isLoading, error, refetch } = useAPR({
     pathParams: { aprId },
   } as any)
+
+  // Query existing Out-of-Stock CSE Purchase Requests to detect if PR has already been created
+  const { data: outOfStockPRsResponse } = usePurchaseRequests({
+    pathParams: {},
+    queryParams: {
+      Filters: 'prType==OutOfStockCSE',
+      PageSize: 100,
+    },
+  })
 
   const { mutateAsync: submitAPR, isPending: isSubmittingAPR } = useSubmitAPRMutation()
   const { mutateAsync: approveAPR, isPending: isApprovingAPR } = useApproveAPRMutation()
@@ -114,36 +125,43 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       statusLower === 'outofstock' ||
       statusLower === 'partiallyavailable'
 
-    return (data.items || []).map((item, idx) => ({
-      id: item.id || `item-${idx}`,
-      itemCode: item.ppmpItemId || item.appItemId || `ITEM-${idx + 1}`,
-      description: item.description || 'Procurement Item',
-      unit: item.unit || 'Box',
-      quantity: item.quantityRequested ?? 1,
-      unitCost: item.unitCost ?? 0,
-      totalAmount: item.totalCost ?? ((item.quantityRequested ?? 1) * (item.unitCost ?? 0)),
-      office: data.officeName || 'Innovation and Technology Solutions Division',
-      fundSource: 'PS-DBM',
-      ppmpId: item.ppmpItemId,
-      appId: data.appId,
-      allotmentClass: 'CO',
-      sourceFiscalYear: data.fiscalYear,
-      appLineItemId: item.appItemId,
-      appApprovedQuantity: item.quantityRequested,
-      appApprovedBudget: item.totalCost,
-      quantityVariance: 0,
-      quantityVariancePercent: 0,
-      budgetVariance: 0,
-      budgetVariancePercent: 0,
-      isOutOfStock: isOutOfStockStatus,
-      outOfStockQuantity: item.quantityRequested ?? 1,
-      bacMilestones: item.milestones && item.milestones.length > 0 ? {
-        advertisementDate: item.milestones[0]?.scheduledDate,
-        submissionDate: item.milestones[1]?.scheduledDate,
-        noticeOfAwardDate: item.milestones[2]?.scheduledDate,
-        contractSigningDate: item.milestones[3]?.scheduledDate,
-      } : undefined,
-    }))
+    return (data.items || []).map((item, idx) => {
+      const itemDeficit = item.deficit !== undefined ? item.deficit : (isOutOfStockStatus ? (item.quantityRequested ?? 1) : 0)
+      const itemFulfilled = item.fulfilledQuantity !== undefined ? item.fulfilledQuantity : (isOutOfStockStatus ? 0 : (item.quantityRequested ?? 1))
+
+      return {
+        id: item.id || `item-${idx}`,
+        itemCode: item.ppmpItemId || item.appItemId || `ITEM-${idx + 1}`,
+        description: item.description || 'Procurement Item',
+        unit: item.unit || 'Box',
+        quantity: item.quantityRequested ?? 1,
+        unitCost: item.unitCost ?? 0,
+        totalAmount: item.totalCost ?? ((item.quantityRequested ?? 1) * (item.unitCost ?? 0)),
+        office: data.officeName || 'Innovation and Technology Solutions Division',
+        fundSource: 'PS-DBM',
+        ppmpId: item.ppmpItemId,
+        appId: data.appId,
+        allotmentClass: 'CO',
+        sourceFiscalYear: data.fiscalYear,
+        appLineItemId: item.appItemId,
+        appApprovedQuantity: item.quantityRequested,
+        appApprovedBudget: item.totalCost,
+        quantityVariance: 0,
+        quantityVariancePercent: 0,
+        budgetVariance: 0,
+        budgetVariancePercent: 0,
+        isOutOfStock: isOutOfStockStatus || itemDeficit > 0 || itemFulfilled > 0,
+        outOfStockQuantity: itemDeficit,
+        deficit: itemDeficit,
+        servedQuantity: itemFulfilled,
+        bacMilestones: item.milestones && item.milestones.length > 0 ? {
+          advertisementDate: item.milestones[0]?.scheduledDate,
+          submissionDate: item.milestones[1]?.scheduledDate,
+          noticeOfAwardDate: item.milestones[2]?.scheduledDate,
+          contractSigningDate: item.milestones[3]?.scheduledDate,
+        } : undefined,
+      }
+    })
   }, [rawResponse])
 
   const consolidatedItems = useMemo(() => {
@@ -152,6 +170,19 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
 
   const totalAmount = useMemo(() => {
     return consolidatedItems.reduce((sum, i) => sum + i.totalAmount, 0)
+  }, [consolidatedItems])
+
+  const deficitItemsCount = useMemo(() => {
+    return consolidatedItems.filter(
+      (item) => (item.deficit !== undefined && item.deficit > 0) || (item.outOfStockQuantity !== undefined && item.outOfStockQuantity > 0)
+    ).length
+  }, [consolidatedItems])
+
+  const totalDeficitUnits = useMemo(() => {
+    return consolidatedItems.reduce(
+      (sum, item) => sum + (item.deficit ?? item.outOfStockQuantity ?? 0),
+      0
+    )
   }, [consolidatedItems])
 
   const apr: APRMaster | null = useMemo(() => {
@@ -202,6 +233,9 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       returnedAt: data.returnedDate,
       returnedBy: data.returnedBy,
       returnRemarks: data.returnRemarks,
+      linkedPurchaseRequestId: data.linkedPurchaseRequestId,
+      linkedPurchaseRequestNumber: data.linkedPurchaseRequestNumber,
+      linkedPurchaseRequestStatus: data.linkedPurchaseRequestStatus,
       sourceAPPId: data.appId,
       appStatus: 'Approved',
       appApprovedBudget: totalAmount,
@@ -210,6 +244,65 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       totalBudgetVariancePercent: 0,
     }
   }, [rawResponse, consolidatedItems, totalAmount])
+
+  // Check for linked Out-of-Stock PR across 3 layers:
+  // 1. Backend DTO linkage (LinkedPurchaseRequestNumber / LinkedPurchaseRequestId)
+  // 2. Query match in existing Out-of-Stock PRs (via description/items)
+  // 3. Client session cache (localStorage 'apr_pr_' + aprId)
+  const linkedPR = useMemo(() => {
+    if (!apr) return null
+
+    // Layer 1: Backend DTO field
+    if (apr.linkedPurchaseRequestNumber || apr.linkedPurchaseRequestId) {
+      return {
+        id: apr.linkedPurchaseRequestId,
+        prNumber: apr.linkedPurchaseRequestNumber || 'PR-Out-of-Stock',
+        status: apr.linkedPurchaseRequestStatus || 'Draft',
+      }
+    }
+
+    // Layer 2: Matching in outOfStockPRsResponse
+    if (outOfStockPRsResponse?.data && outOfStockPRsResponse.data.length > 0) {
+      const match = outOfStockPRsResponse.data.find((p) => {
+        const desc = (p.description || '').toLowerCase()
+        const aprNum = (apr.aprNumber || '').toLowerCase()
+        const aprIdLower = (apr.id || '').toLowerCase()
+        return (
+          desc.includes(aprNum) ||
+          desc.includes(aprIdLower) ||
+          desc.includes(`[apr:${aprIdLower}]`)
+        )
+      })
+      if (match) {
+        return {
+          id: match.id,
+          prNumber: match.prNumber,
+          status: match.status,
+        }
+      }
+    }
+
+    // Layer 3: LocalStorage optimistic cache
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(`apr_pr_${apr.id}`)
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (parsed?.prNumber) {
+            return {
+              id: parsed.id,
+              prNumber: parsed.prNumber,
+              status: parsed.status || 'Draft',
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return null
+  }, [apr, outOfStockPRsResponse])
 
   const queryClient = useQueryClient()
 
@@ -470,10 +563,117 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
         isReviewer={isReviewer}
       />
 
+      {/* PS-DBM Stock Deficit / Out-of-Stock Notice Banner */}
+      {isApproved && (deficitItemsCount > 0 || linkedPR) && (
+        <div
+          className={cn(
+            'p-4.5 border rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs transition-colors',
+            deficitItemsCount === 0 && linkedPR
+              ? 'bg-gradient-to-r from-emerald-50 via-teal-50/40 to-emerald-50 border-emerald-200'
+              : 'bg-gradient-to-r from-[#fffbeb] via-[#fef3c7]/60 to-[#fffbeb] border-[#fde68a]'
+          )}
+        >
+          <div className="flex items-start gap-3.5">
+            <div
+              className={cn(
+                'h-10 w-10 rounded-xl border flex items-center justify-center flex-shrink-0 shadow-2xs',
+                deficitItemsCount === 0 && linkedPR
+                  ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
+                  : 'bg-[#fef3c7] border-[#f59e0b]/40 text-[#b45309]'
+              )}
+            >
+              {deficitItemsCount === 0 && linkedPR ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="h-5 w-5" />
+              )}
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-bold text-gray-950 text-sm">
+                  {deficitItemsCount === 0 && linkedPR
+                    ? 'PS-DBM Deficit Requisitioned'
+                    : 'PS-DBM Stock Deficit Notice'}
+                </p>
+                {deficitItemsCount > 0 ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#fde68a] text-[#78350f] border border-[#f59e0b]/40">
+                    {deficitItemsCount} {deficitItemsCount === 1 ? 'item' : 'items'} • {totalDeficitUnits} units deficit
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    Fully Requisitioned (0 deficit remaining)
+                  </span>
+                )}
+                {linkedPR && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    PR Created: {linkedPR.prNumber} ({linkedPR.status})
+                  </span>
+                )}
+              </div>
+              <p className="text-gray-700 leading-relaxed font-medium">
+                {deficitItemsCount === 0 && linkedPR ? (
+                  <>
+                    The PS-DBM deficit items for this APR have been fully transferred to Purchase Request <span className="font-bold text-gray-950">{linkedPR.prNumber}</span> for external procurement. You can track this requisition directly.
+                  </>
+                ) : linkedPR ? (
+                  <>
+                    An Out-of-Stock Purchase Request has already been generated for this APR&apos;s deficit quantities (<span className="font-bold text-gray-950">{linkedPR.prNumber}</span>). To prevent duplicate PR creation, use the view button to inspect or track the existing requisition.
+                  </>
+                ) : (
+                  <>
+                    The items requested below have an unserved deficit or are marked as Out of Stock at PS-DBM. In accordance with procurement guidelines (RA 12009 / PS-DBM Form 002), your office is authorized to procure these deficit quantities via an <span className="font-bold text-gray-950">Out-of-Stock Purchase Request (PR)</span>.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+          {linkedPR ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 rounded-xl h-9 px-4 shadow-xs shrink-0 self-start sm:self-center"
+              onClick={() =>
+                navigate({
+                  to: '/v2/purchase-requests-pr',
+                  search: {
+                    tab: 'out-of-stock',
+                    prId: linkedPR.id,
+                  } as any,
+                })
+              }
+            >
+              <FileText className="h-3.5 w-3.5 text-emerald-600" />
+              View Purchase Request ({linkedPR.prNumber})
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs shrink-0 self-start sm:self-center"
+              onClick={() =>
+                navigate({
+                  to: '/v2/purchase-requests-pr',
+                  search: {
+                    tab: 'out-of-stock',
+                    aprId: apr.id,
+                    aprNumber: apr.aprNumber,
+                    officeId: apr.officeId,
+                  } as any,
+                })
+              }
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Create PR for Deficit Items
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* 3. Consolidated Items Table Card (Positioned directly below Stats) */}
       <ConsolidatedItemsTable
         items={apr.consolidatedItems}
         status={apr.status as string}
+        linkedPRNumber={linkedPR?.prNumber}
         onRemoveItem={isReviewer ? undefined : handleRemoveItem}
         onOpenAddItem={isReviewer ? undefined : () => setAddItemDialogOpen(true)}
       />
@@ -612,24 +812,45 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                 </span>
               )}
               {isApproved && (
-                <Button
-                  size="sm"
-                  className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
-                  disabled={consolidatedItems.length === 0}
-                  onClick={() =>
-                    navigate({
-                      to: '/v2/purchase-requests-pr',
-                      search: {
-                        tab: 'out-of-stock',
-                        aprId: apr.id,
-                        officeId: apr.officeId,
-                      } as any,
-                    })
-                  }
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  Create PR for Out-of-Stock Items
-                </Button>
+                linkedPR ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 rounded-xl h-9 px-4 shadow-xs"
+                    onClick={() =>
+                      navigate({
+                        to: '/v2/purchase-requests-pr',
+                        search: {
+                          tab: 'out-of-stock',
+                          prId: linkedPR.id,
+                        } as any,
+                      })
+                    }
+                  >
+                    <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                    View Out-of-Stock PR ({linkedPR.prNumber})
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
+                    disabled={consolidatedItems.length === 0}
+                    onClick={() =>
+                      navigate({
+                        to: '/v2/purchase-requests-pr',
+                        search: {
+                          tab: 'out-of-stock',
+                          aprId: apr.id,
+                          aprNumber: apr.aprNumber,
+                          officeId: apr.officeId,
+                        } as any,
+                      })
+                    }
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Create PR for Out-of-Stock Items
+                  </Button>
+                )
               )}
               <Button
                 variant="outline"
@@ -733,24 +954,45 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
               {/* Approved Actions for Requesting User */}
               {isApproved && (
                 <>
-                  <Button
-                    size="sm"
-                    className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
-                    disabled={consolidatedItems.length === 0}
-                    onClick={() =>
-                      navigate({
-                        to: '/v2/purchase-requests-pr',
-                        search: {
-                          tab: 'out-of-stock',
-                          aprId: apr.id,
-                          officeId: apr.officeId,
-                        } as any,
-                      })
-                    }
-                  >
-                    <FileText className="h-3.5 w-3.5" />
-                    Create PR for Out-of-Stock Items
-                  </Button>
+                  {linkedPR ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 rounded-xl h-9 px-4 shadow-xs"
+                      onClick={() =>
+                        navigate({
+                          to: '/v2/purchase-requests-pr',
+                          search: {
+                            tab: 'out-of-stock',
+                            prId: linkedPR.id,
+                          } as any,
+                        })
+                      }
+                    >
+                      <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                      View Out-of-Stock PR ({linkedPR.prNumber})
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
+                      disabled={consolidatedItems.length === 0}
+                      onClick={() =>
+                        navigate({
+                          to: '/v2/purchase-requests-pr',
+                          search: {
+                            tab: 'out-of-stock',
+                            aprId: apr.id,
+                            aprNumber: apr.aprNumber,
+                            officeId: apr.officeId,
+                          } as any,
+                        })
+                      }
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      Create PR for Out-of-Stock Items
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

@@ -564,6 +564,109 @@ export function PRDetailsPage({
     setRequestItemModalOpen(true)
   }
 
+  const sourceAprIdFromDesc = useMemo(() => {
+    const match = pr.headerDetails?.description?.match(/\[APR:([a-zA-Z0-9-]+)\]/i)
+    return match ? match[1] : undefined
+  }, [pr.headerDetails?.description])
+
+  const sourceAprNumberFromDesc = useMemo(() => {
+    const match = pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)
+    return match ? match[1].trim() : undefined
+  }, [pr.headerDetails?.description])
+
+  const [isImportingSourceApr, setIsImportingSourceApr] = useState(false)
+
+  const handleImportItemsFromSourceAPR = async () => {
+    try {
+      setIsImportingSourceApr(true)
+      const res = await api.get<{ succeeded: boolean; data: any[] }>(
+        `/purchase-requests/${pr.id}/eligible-aprs`
+      )
+      const aprs = res.data?.data || []
+      const matched = aprs.find(
+        (a: any) =>
+          (sourceAprIdFromDesc && a.aprId.toLowerCase() === sourceAprIdFromDesc.toLowerCase()) ||
+          (sourceAprNumberFromDesc && a.aprNumber.toLowerCase() === sourceAprNumberFromDesc.toLowerCase())
+      ) || aprs[0]
+
+      if (!matched || !matched.items || matched.items.length === 0) {
+        toast.error('No eligible deficit items found for this APR.')
+        return
+      }
+
+      const deficitItems = matched.items.filter((it: any) => it.deficit > 0)
+      if (deficitItems.length === 0) {
+        toast.error('All items in this APR have already been covered.')
+        return
+      }
+
+      const nested: PRItem[] = deficitItems.map((it: any) => ({
+        id: it.aprItemId,
+        itemId: it.aprItemId,
+        itemName: it.itemName,
+        category: it.category || 'Consolidated APR',
+        quantity: it.deficit,
+        unitOfMeasure: it.unit || 'unit',
+        unitPrice: it.unitPrice,
+        totalAmount: it.deficit * (it.unitPrice || 0),
+        month: 'January',
+        monthlyQuantities: { January: it.deficit },
+        fund: it.fund || '',
+        source: 'apr' as const,
+        aprId: matched.aprId,
+        aprNumber: matched.aprNumber,
+        aprOffice: matched.officeName,
+      }))
+
+      const aprGroupItem: PRItem = {
+        id: `apr-group-${matched.aprId}`,
+        itemId: `apr-group-${matched.aprId}`,
+        itemName: `APR #${matched.aprNumber} (${matched.officeName})`,
+        category: 'Consolidated APR',
+        quantity: nested.length,
+        unitOfMeasure: 'group',
+        unitPrice: nested.reduce((s: number, it: PRItem) => s + it.totalAmount, 0),
+        totalAmount: nested.reduce((s: number, it: PRItem) => s + it.totalAmount, 0),
+        source: 'apr',
+        aprId: matched.aprId,
+        aprNumber: matched.aprNumber,
+        aprOffice: matched.officeName,
+        aprGroup: {
+          id: matched.aprId,
+          aprId: matched.aprId,
+          aprNumber: matched.aprNumber,
+          officeName: matched.officeName,
+          totalAmount: nested.reduce((s: number, it: PRItem) => s + it.totalAmount, 0),
+          items: nested,
+        },
+      }
+
+      handleAddItems([aprGroupItem])
+
+      // Persist to backend immediately
+      const payloadItems = buildPayloadItems([aprGroupItem])
+      await updateApi({
+        pathParams: { id: pr.id },
+        queryParams: { id: pr.id },
+        payload: {
+          description: pr.headerDetails.description || '',
+          purpose: pr.headerDetails.purpose || '',
+          ...(pr.headerDetails.procurementCategoryId ? { procurementCategoryId: pr.headerDetails.procurementCategoryId } : {}),
+          requestedDate: pr.headerDetails.date || new Date().toISOString(),
+          items: payloadItems,
+        },
+      })
+
+      setHasUnsavedChanges(false)
+      toast.success(`Successfully imported ${deficitItems.length} item(s) from ${matched.aprNumber}!`)
+    } catch (err) {
+      console.error('Failed to import items from source APR:', err)
+      toast.error('Failed to import items from APR.')
+    } finally {
+      setIsImportingSourceApr(false)
+    }
+  }
+
   const navigate = useNavigate()
   const [generatingDocId, setGeneratingDocId] = useState<string | null>(null)
   const { mutateAsync: generateBACResolutionDocument } = useGenerateBACResolutionDocument()
@@ -1359,6 +1462,23 @@ export function PRDetailsPage({
                     Approved via BAC Resolution ({pr.bacResolutionNumber || 'Path A'})
                   </Badge>
                 )}
+                {pr.type === 'out-of-stock' && (
+                  <Badge
+                    variant="outline"
+                    className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 font-semibold text-xs px-3 py-1 gap-1.5 flex items-center dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
+                  >
+                    <Boxes className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>
+                      {(() => {
+                        const aprNum =
+                          groupedAPRs[0]?.aprNumber ||
+                          groupedAPRs[0]?.aprGroup?.aprNumber ||
+                          pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)?.[1]?.trim()
+                        return aprNum ? `Sourced from APR: ${aprNum}` : 'Sourced from Approved APR (Out-of-Stock CSE)'
+                      })()}
+                    </span>
+                  </Badge>
+                )}
               </div>
               {pr.headerDetails.description && (
                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
@@ -1942,13 +2062,40 @@ export function PRDetailsPage({
             <div className="text-center py-10">
               <p className="text-muted-foreground mb-4">No APRs added yet</p>
               {canAddItems && (
-                <Button
-                  onClick={() => setShowAddItems(true)}
-                  variant="outline"
-                  size="sm"
-                >
-                  Add APR
-                </Button>
+                sourceAprNumberFromDesc || sourceAprIdFromDesc ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Button
+                      onClick={handleImportItemsFromSourceAPR}
+                      disabled={isImportingSourceApr}
+                      size="sm"
+                      className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                    >
+                      {isImportingSourceApr ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Boxes className="h-4 w-4" />
+                      )}
+                      Import Deficit Items from {sourceAprNumberFromDesc || 'Source APR'}
+                    </Button>
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Other APR
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => setShowAddItems(true)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Add APR
+                  </Button>
+                )
               )}
             </div>
           ) : pr.items.length === 0 ? (

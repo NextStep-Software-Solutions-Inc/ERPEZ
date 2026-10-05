@@ -423,7 +423,22 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                   {pagedPRs.map((pr) => (
                     <TableRow key={pr.id}>
                       <TableCell className="font-medium">
-                        {pr.headerDetails.prNumber}
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">
+                          {pr.headerDetails.prNumber}
+                        </div>
+                        {pr.type === 'out-of-stock' && (
+                          <div className="mt-1">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-semibold px-1.5 py-0 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
+                            >
+                              {(() => {
+                                const aprMatch = pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)
+                                return aprMatch ? `APR: ${aprMatch[1].trim()}` : 'Sourced from APR'
+                              })()}
+                            </Badge>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm font-medium text-slate-800 dark:text-slate-200">
                         {pr.headerDetails.officeName || officesMap.get(pr.headerDetails.officeId || '') || 'General Administration'}
