@@ -51,6 +51,7 @@ export interface AOB {
   // RFQ Linking
   rfqId?: string | null
   rfqNumber?: string
+  rfqNumbers?: string[]
   rfqIds?: string[]
   rfqs?: AOBMatrixRFQ[]
   rfqCategories?: string[] // Selected RFQ categories

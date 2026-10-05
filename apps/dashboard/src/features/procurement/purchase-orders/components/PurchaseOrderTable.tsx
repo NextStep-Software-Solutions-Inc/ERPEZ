@@ -27,6 +27,7 @@ import {
   Search,
   Pencil,
   Trash2,
+  FileText,
 } from 'lucide-react'
 import { PurchaseOrderStatusBadge, normalizePoStatus } from './PurchaseOrderStatusBadge'
 import type { PurchaseOrder, PurchaseOrderMode, PurchaseOrderRole } from '../types'
@@ -205,8 +206,8 @@ export function PurchaseOrderTable({
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem onSelect={() => onPrint(purchaseOrder.id)}>
-                            <Printer className="h-4 w-4 mr-2" />
-                            Print PO
+                            <FileText className="h-4 w-4 mr-2 text-primary" />
+                            Generate PO (PDF)
                           </DropdownMenuItem>
 
                           {(normStatus === 'draft' || normStatus === 'returned') &&

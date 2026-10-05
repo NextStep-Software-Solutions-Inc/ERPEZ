@@ -49,6 +49,8 @@ public class GetPurchaseOrderByIdQueryHandler(IUnitOfWork unitOfWork)
             SourceDocumentNumber = sourceDocNumber,
             SupplierId = purchaseOrder.SupplierId,
             SupplierName = purchaseOrder.Supplier?.Name ?? string.Empty,
+            SupplierAddress = purchaseOrder.Supplier?.Address,
+            SupplierTin = purchaseOrder.Supplier?.TINNumber,
             Description = purchaseOrder.Description,
             Date = purchaseOrder.Date,
             PlaceOfDelivery = purchaseOrder.PlaceOfDelivery,

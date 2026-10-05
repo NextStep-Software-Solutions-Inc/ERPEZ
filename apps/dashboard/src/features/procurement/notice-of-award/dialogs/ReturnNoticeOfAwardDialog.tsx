@@ -1,14 +1,16 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type { ReturnNoticeOfAwardPayload } from '../types'
 import { ReturnNoticeOfAwardForm } from '../forms'
 
-type ReturnNoticeOfAwardDialogProps = {
+export type ReturnNoticeOfAwardDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   noaId: string
   noaNumber: string
+  supplierName?: string
+  totalAmount?: number
   onReturn: (values: ReturnNoticeOfAwardPayload) => Promise<void> | void
 }
 
@@ -17,6 +19,8 @@ export function ReturnNoticeOfAwardDialog({
   onOpenChange,
   noaId,
   noaNumber,
+  supplierName,
+  totalAmount,
   onReturn,
 }: ReturnNoticeOfAwardDialogProps) {
   const [isDirty, setIsDirty] = useState(false)
@@ -36,13 +40,16 @@ export function ReturnNoticeOfAwardDialog({
       <ResponsiveDialog
         open={open && !showDiscardWarning}
         onOpenChange={handleOpenChange}
-        title="Return NOA"
-        description={`Return ${noaNumber} for revision with remarks.`}
-        size="lg"
+        title="Return Notice of Award"
+        description={`Return ${noaNumber} to procurement staff for revision.`}
+        size="md"
         showCloseButton
       >
         <ReturnNoticeOfAwardForm
           noaId={noaId}
+          noaNumber={noaNumber}
+          supplierName={supplierName}
+          totalAmount={totalAmount}
           onSubmit={onReturn}
           onCancel={() => handleOpenChange(false)}
           onDirtyChange={setIsDirty}

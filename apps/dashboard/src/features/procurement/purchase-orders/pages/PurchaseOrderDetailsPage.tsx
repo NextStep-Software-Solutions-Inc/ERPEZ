@@ -11,13 +11,11 @@ import {
 import {
   ChevronLeft,
   Printer,
-  Send,
-  RotateCcw,
-  CheckCircle,
   MoreVertical,
   Loader2,
   Pencil,
   Trash2,
+  FileText,
 } from 'lucide-react'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { PurchaseOrderDetailsShell } from '../components/PurchaseOrderDetailsShell'
@@ -30,16 +28,16 @@ import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import {
   useGetPurchaseOrderById,
   useGetPurchaseOrderItems,
-  useUpdatePurchaseOrder,
   useDeletePurchaseOrder,
   useSubmitPurchaseOrderForApproval,
   useApprovePurchaseOrder,
   useReturnPurchaseOrder,
   uploadPoDocument,
 } from '../handlers'
+import { downloadPurchaseOrderPdf } from '../handlers/generatePurchaseOrderDocumentRequest'
 import { useGetAOBById } from '@/features/procurement/aob/handlers/getAOBByIdRequest'
 import { getBidMatrixRequest } from '@/features/procurement/aob/handlers/getBidMatrixRequest'
-import { downloadPurchaseOrderBlob } from '../utils/downloadPurchaseOrderBlob'
+import { printPurchaseOrder } from '../utils/printPurchaseOrder'
 import { toast } from 'sonner'
 
 const useBidMatrix = createQueryHookFromTemplate(getBidMatrixRequest)
@@ -72,15 +70,17 @@ export function PurchaseOrderDetailsPage({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isReturnOpen, setIsReturnOpen] = useState(false)
   const [isApproveOpen, setIsApproveOpen] = useState(false)
+  const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState(false)
+  const [isGeneratingPo, setIsGeneratingPo] = useState(false)
   const [activeTab, setActiveTab] = useState<string>('po-details')
 
   const poMode = (purchaseOrder?.source || purchaseOrder?.procurementMode || '').toString().toLowerCase()
-  const backRoute =
+  const backMode: 'svp' | 'public-bidding' | 'direct-acquisition' =
     poMode.includes('public')
-      ? '/v2/po-public-bidding'
+      ? 'public-bidding'
       : poMode.includes('direct')
-        ? '/v2/po-direct-acquisition'
-        : '/v2/po-svp'
+        ? 'direct-acquisition'
+        : 'svp'
 
   const sourceDocType = (purchaseOrder?.sourceDocumentType || '').toUpperCase()
   const sourceDocId = purchaseOrder?.sourceDocumentId
@@ -115,7 +115,7 @@ export function PurchaseOrderDetailsPage({
       <div className="space-y-4 pb-10">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <Link to={backRoute}>
+            <Link to="/v2/purchase-orders" search={{ mode: backMode }}>
               <ChevronLeft className="h-4 w-4" />
               Back
             </Link>
@@ -180,9 +180,26 @@ export function PurchaseOrderDetailsPage({
       await deleteMutation.mutateAsync(purchaseOrder.id)
       toast.success('Purchase Order deleted successfully!')
       setIsDeleteOpen(false)
-      navigate({ to: backRoute as any })
+      navigate({ to: '/v2/purchase-orders', search: { mode: backMode } as any })
     } catch (err: any) {
       toast.error(err?.message || 'Failed to delete Purchase Order.')
+    }
+  }
+
+  const handleGeneratePo = async () => {
+    setIsGeneratingPo(true)
+    try {
+      await downloadPurchaseOrderPdf(
+        purchaseOrder.id,
+        `${purchaseOrder.poNumber || 'PO'}_Purchase_Order.pdf`
+      )
+      toast.success('Official Purchase Order PDF generated successfully.')
+    } catch (err: any) {
+      console.warn('Server PDF generation failed, falling back to print preview:', err)
+      printPurchaseOrder(fullPo)
+      toast.info('Generated live document print preview.')
+    } finally {
+      setIsGeneratingPo(false)
     }
   }
 
@@ -196,77 +213,71 @@ export function PurchaseOrderDetailsPage({
           className="gap-2 hover:bg-slate-100 dark:hover:bg-slate-800"
           asChild
         >
-          <Link to={backRoute}>
+          <Link to="/v2/purchase-orders" search={{ mode: backMode }}>
             <ChevronLeft className="h-4 w-4" />
             Back
           </Link>
         </Button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+
+          {canSubmit && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 h-8"
+              onClick={() => setIsEditOpen(true)}
+            >
+              <Pencil className="h-4 w-4" />
+              <span>Edit PO</span>
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 h-8 font-semibold border-primary/30 text-primary hover:bg-primary/5 shadow-2xs transition-all duration-200"
+            onClick={handleGeneratePo}
+            disabled={isGeneratingPo}
+            title="Generate official COA Appendix 61 Purchase Order PDF"
+          >
+            {isGeneratingPo ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            <span>Generate PO</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
             className="gap-2 h-8"
-            onClick={() => {
-              const blob = new Blob([JSON.stringify(fullPo, null, 2)], { type: 'application/json' })
-              downloadPurchaseOrderBlob({ blob, filename: `${purchaseOrder.poNumber || 'PO'}.json` })
-            }}
+            onClick={() => printPurchaseOrder(fullPo)}
+            title="Print Purchase Order document"
           >
             <Printer className="h-4 w-4" />
-            Print PO
+            <span>Print PO</span>
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {canSubmit && (
-                <>
-                  <DropdownMenuItem onSelect={() => setIsEditOpen(true)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit PO
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={handleSubmitForApproval}
-                    disabled={submitMutation.isPending}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Submit for Approval
-                  </DropdownMenuItem>
-                  {normalizedStatus === 'draft' && (
-                    <DropdownMenuItem
-                      onSelect={() => setIsDeleteOpen(true)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete PO
-                    </DropdownMenuItem>
-                  )}
-                </>
-              )}
-              {canForApproval && (
-                <>
-                  <DropdownMenuItem
-                    onSelect={() => setIsReturnOpen(true)}
-                    disabled={returnMutation.isPending}
-                  >
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Return
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={() => setIsApproveOpen(true)}
-                    disabled={approveMutation.isPending}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Approve
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {normalizedStatus === 'draft' && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => setIsDeleteOpen(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete PO
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 
@@ -279,6 +290,25 @@ export function PurchaseOrderDetailsPage({
           aob,
           bidMatrix,
           isLoading: isAobLoading,
+        }}
+        onOpenSubmit={() => setIsSubmitConfirmOpen(true)}
+        onOpenApprove={() => setIsApproveOpen(true)}
+        onOpenReturn={() => setIsReturnOpen(true)}
+        isSubmitting={submitMutation.isPending}
+        canSubmit={canSubmit}
+        canForApproval={canForApproval}
+      />
+
+      <ConfirmAlertDialog
+        open={isSubmitConfirmOpen}
+        onOpenChange={setIsSubmitConfirmOpen}
+        title="Submit Purchase Order for Approval?"
+        description={`Are you sure you want to submit purchase order "${purchaseOrder.poNumber || ''}" for approval? Once submitted, it will be sent for review and approval by the Head of the Procuring Entity (HOPE).`}
+        confirmLabel="Submit for Approval"
+        loading={submitMutation.isPending}
+        onConfirm={async () => {
+          await handleSubmitForApproval()
+          setIsSubmitConfirmOpen(false)
         }}
       />
 
@@ -310,6 +340,7 @@ export function PurchaseOrderDetailsPage({
         onOpenChange={setIsApproveOpen}
         onSubmit={handleApprove}
         isSubmitting={approveMutation.isPending}
+        poNumber={purchaseOrder.poNumber}
       />
     </div>
   )

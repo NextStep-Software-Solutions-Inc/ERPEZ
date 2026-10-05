@@ -23,6 +23,7 @@ import {
   FileText,
   RotateCcw,
   Send,
+  ShieldAlert,
   ShieldCheck,
   Upload,
   Building2,
@@ -188,34 +189,56 @@ export function NoticeOfAwardDetailsShell({
                 </Button>
               ) : null}
 
-              {role === 'hope' && isForApproval && onReturn ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 h-9 font-bold border-rose-250 text-rose-600 hover:bg-rose-50 shadow-sm transition-all duration-200"
-                  onClick={onReturn}
-                  disabled={isLoading}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Return
-                </Button>
-              ) : null}
-
-              {role === 'hope' && isForApproval && onApprove ? (
-                <Button
-                  size="sm"
-                  className="gap-1.5 h-9 font-bold bg-success text-white hover:bg-success/90 shadow-md transition-all duration-200"
-                  onClick={onApprove}
-                  disabled={isLoading}
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  Approve / Issue
-                </Button>
-              ) : null}
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
+          {/* Executive Approval Callout Banner for HoPE */}
+          {role === 'hope' && isForApproval && (
+            <div className="rounded-xl border border-amber-200/90 dark:border-amber-900/60 bg-gradient-to-r from-amber-50/90 via-amber-50/50 to-orange-50/30 dark:from-amber-950/30 dark:to-orange-950/20 p-4 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 shrink-0 mt-0.5">
+                    <ShieldAlert className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <h4 className="text-sm font-bold text-amber-950 dark:text-amber-200">
+                      Pending Executive Decision & Award Issuance
+                    </h4>
+                    <p className="text-xs text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                      This Notice of Award has been submitted by the BAC Secretariat. Review the winning supplier, financial bid, and line items, then approve with the signed NOA document or return for revisions.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  {onReturn && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 font-semibold border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 shadow-2xs"
+                      onClick={onReturn}
+                      disabled={isLoading}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Return
+                    </Button>
+                  )}
+                  {onApprove && (
+                    <Button
+                      size="sm"
+                      className="gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                      onClick={onApprove}
+                      disabled={isLoading}
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Approve & Issue NOA
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Details Sections Panel */}
           <div className="grid gap-4 md:grid-cols-3">
             
