@@ -21,6 +21,30 @@ public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, ApiRespon
         var apr = await unitOfWork.APRRepository.GetAPRWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("APR not found.");
 
+        var linkedPRs = await unitOfWork.PurchaseRequestRepository.FindAllAsync(
+            pr => !pr.IsDeleted &&
+                  pr.PRType == ERPEZ.Domain.Enums.PRType.OutOfStockCSE &&
+                  pr.Status != ERPEZ.Domain.Enums.StatusEnum.Returned &&
+                  (pr.APRId == apr.Id ||
+                   pr.PRItems.Any(pi => pi.APRItem != null && pi.APRItem.APRId == apr.Id) ||
+                   (pr.Description != null && (pr.Description.Contains(apr.APRNumber) || pr.Description.Contains(apr.Id.ToString()))) ||
+                   (pr.Purpose.Contains(apr.APRNumber) || pr.Purpose.Contains(apr.Id.ToString()))),
+            cancellationToken);
+
+        var firstLinkedPR = linkedPRs.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
+
+        var aprItemIds = apr.APRItems.Select(ai => ai.Id).ToList();
+        var existingPRItems = await unitOfWork.PRItemRepository.FindAllAsync(
+            i => i.APRItemId != null &&
+                 aprItemIds.Contains(i.APRItemId.Value) &&
+                 !i.PurchaseRequest.IsDeleted &&
+                 i.PurchaseRequest.Status != ERPEZ.Domain.Enums.StatusEnum.Returned,
+            cancellationToken);
+
+        var reservedByAprItem = existingPRItems
+            .GroupBy(i => i.APRItemId!.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(i => i.RequestedQuantity));
+
         return ApiResponse<APRDetailDto>.Success(new APRDetailDto
         {
             Id = apr.Id,
@@ -48,26 +72,45 @@ public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, ApiRespon
             ReturnedDate = apr.ReturnedDate,
             ReturnRemarks = apr.ReturnRemarks,
             ApprovedBy = apr.ApprovedBy,
-            ReturnedBy = apr.ReturnedBy,
-            Items = apr.APRItems.Select(item => new APRItemDto
+            LinkedPurchaseRequestId = firstLinkedPR?.Id,
+            LinkedPurchaseRequestNumber = firstLinkedPR?.PRNumber,
+            LinkedPurchaseRequestStatus = firstLinkedPR?.Status.ToString(),
+            LinkedPurchaseRequests = linkedPRs.Select(p => new LinkedPurchaseRequestDto
             {
-                Id = item.Id,
-                APPItemId = item.APPItemId,
-                PPMPItemId = item.PPMPItemId,
-                ItemCode = item.ItemCode ?? item.PPMPItemId?.ToString() ?? string.Empty,
-                Description = item.Description ?? item.PPMPItem?.Name ?? item.APPItem?.PPMPItem?.Name ?? string.Empty,
-                Unit = item.Unit ?? item.PPMPItem?.Unit ?? item.APPItem?.PPMPItem?.Unit ?? string.Empty,
-                QuantityRequested = item.QuantityRequested,
-                UnitCost = item.UnitCost,
-                TotalCost = item.TotalCost,
-                Milestones = item.APRItemMilestones.Select(m => new APRItemMilestoneDto
+                Id = p.Id,
+                PRNumber = p.PRNumber,
+                Status = p.Status.ToString(),
+                TotalAmount = p.TotalAmount,
+                CreatedAt = p.CreatedAt
+            }).ToList(),
+            Items = apr.APRItems.Select(item =>
+            {
+                var reserved = reservedByAprItem.GetValueOrDefault(item.Id, 0);
+                var totalReq = (int)item.QuantityRequested;
+                var deficit = Math.Max(0, totalReq - reserved);
+
+                return new APRItemDto
                 {
-                    Id = m.Id,
-                    ProcurementActivityTypeId = m.ProcurementActivityTypeId,
-                    ProcurementActivityTypeName = m.ProcurementActivityType?.Name ?? string.Empty,
-                    ScheduledDate = m.ScheduledDate,
-                    Remarks = m.Remarks
-                }).ToList()
+                    Id = item.Id,
+                    APPItemId = item.APPItemId,
+                    PPMPItemId = item.PPMPItemId,
+                    ItemCode = item.ItemCode ?? item.PPMPItemId?.ToString() ?? string.Empty,
+                    Description = item.Description ?? item.PPMPItem?.Name ?? item.APPItem?.PPMPItem?.Name ?? string.Empty,
+                    Unit = item.Unit ?? item.PPMPItem?.Unit ?? item.APPItem?.PPMPItem?.Unit ?? string.Empty,
+                    QuantityRequested = item.QuantityRequested,
+                    UnitCost = item.UnitCost,
+                    TotalCost = item.TotalCost,
+                    FulfilledQuantity = reserved,
+                    Deficit = deficit,
+                    Milestones = item.APRItemMilestones.Select(m => new APRItemMilestoneDto
+                    {
+                        Id = m.Id,
+                        ProcurementActivityTypeId = m.ProcurementActivityTypeId,
+                        ProcurementActivityTypeName = m.ProcurementActivityType?.Name ?? string.Empty,
+                        ScheduledDate = m.ScheduledDate,
+                        Remarks = m.Remarks
+                    }).ToList()
+                };
             }).ToList()
         }, "APR retrieved successfully.");
     }

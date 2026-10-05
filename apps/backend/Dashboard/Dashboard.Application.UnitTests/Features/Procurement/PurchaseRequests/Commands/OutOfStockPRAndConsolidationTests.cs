@@ -37,6 +37,8 @@ public class OutOfStockPRAndConsolidationTests
         mockUnitOfWork.Setup(u => u.ConsolidatedPRRepository).Returns(mockCprRepo.Object);
         mockUnitOfWork.Setup(u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()))
             .Returns<Func<Task>, CancellationToken>((action, _) => action());
+        mockUnitOfWork.Setup(u => u.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<System.Data.IsolationLevel>(), It.IsAny<CancellationToken>()))
+            .Returns<Func<Task>, System.Data.IsolationLevel, CancellationToken>((action, _, _) => action());
     }
 
     [Fact]

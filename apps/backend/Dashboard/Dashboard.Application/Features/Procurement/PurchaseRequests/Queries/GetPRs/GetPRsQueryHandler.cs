@@ -35,13 +35,15 @@ public class GetPRsQueryHandler(IUnitOfWork unitOfWork)
                 CreatedDate   = DateOnly.FromDateTime(pr.CreatedAt),
                 OfficeId      = pr.OfficeId,
                 OfficeName    = pr.Office != null ? pr.Office.Name : string.Empty,
+                APRId         = pr.APRId,
+                APRNumber     = pr.APR != null ? pr.APR.APRNumber : null,
                 ReturnRemarks = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted) ? null : pr.ReturnRemarks,
                 ReturnedDate  = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted) ? null : pr.ReturnedDate,
                 ReturnedBy    = (pr.Status == StatusEnum.Approved || pr.Status == StatusEnum.Submitted) ? null : pr.ReturnedBy
             };
 
         var (items, totalCount) = await unitOfWork.PurchaseRequestRepository
-            .GetPRsWithDetailsAsync(sieveModel, projection, [pr => pr.Office], cancellationToken);
+            .GetPRsWithDetailsAsync(sieveModel, projection, [pr => pr.Office, pr => pr.APR!], cancellationToken);
 
         return new PaginatedApiResponse<PurchaseRequestSummaryResponse>(
             [.. items],

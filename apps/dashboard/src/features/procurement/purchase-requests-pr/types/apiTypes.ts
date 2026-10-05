@@ -92,6 +92,8 @@ export interface PurchaseRequestListItem {
   prType: string
   officeId: string
   officeName: string
+  aprId?: string
+  aprNumber?: string
   status: string
   totalAmount: number
   requestedDate: string
@@ -154,6 +156,8 @@ export interface PurchaseRequestDetailApi {
   totalAmount: number
   officeId: string
   officeName: string
+  aprId?: string
+  aprNumber?: string
   uacsCode: string
   /** BE field name is fundSource (maps from FundSource.Name) */
   fundSource: string
@@ -176,6 +180,8 @@ export interface CreatePurchaseRequestPayload {
   officeId: string
   /** Optional – required for Non-CSE PRs that originate from a specific PPMP */
   ppmpId?: string
+  /** Optional – references the APR that originated this Out-of-Stock PR */
+  aprId?: string
   /** TODO: add fund cluster selector to CreatePRModal UI */
   fundClusterId?: string
   /** TODO: add UACS code combination selector to CreatePRModal UI */

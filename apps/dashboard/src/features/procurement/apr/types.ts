@@ -99,6 +99,8 @@ export interface APRItemDto {
   quantityRequested: number
   unitCost: number
   totalCost: number
+  fulfilledQuantity?: number
+  deficit?: number
   milestones: APRItemMilestoneDto[]
 }
 
@@ -132,7 +134,19 @@ export interface APRDetailDto {
   returnRemarks?: string | null
   approvedBy?: string | null
   returnedBy?: string | null
+  linkedPurchaseRequestId?: string | null
+  linkedPurchaseRequestNumber?: string | null
+  linkedPurchaseRequestStatus?: string | null
+  linkedPurchaseRequests?: LinkedPurchaseRequestDto[]
   items: APRItemDto[]
+}
+
+export interface LinkedPurchaseRequestDto {
+  id: string
+  prNumber: string
+  status: string
+  totalAmount?: number
+  createdAt?: string
 }
 
 /**
@@ -170,6 +184,8 @@ export interface ConsolidatedAPRItem {
   // Stock & Availability Tracking
   outOfStockQuantity?: number
   isOutOfStock?: boolean
+  deficit?: number
+  servedQuantity?: number
   psdbmMatches?: Array<{
     itemCode: string
     description: string
@@ -247,6 +263,10 @@ export interface APRMaster {
   returnedBy?: string | null
   returnRemarks?: string | null
   signedDocumentUrl?: string
+  linkedPurchaseRequestId?: string | null
+  linkedPurchaseRequestNumber?: string | null
+  linkedPurchaseRequestStatus?: string | null
+  linkedPurchaseRequests?: LinkedPurchaseRequestDto[]
   sourceAPPId?: string
   appStatus?: string
   appApprovedBudget?: number

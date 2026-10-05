@@ -31,6 +31,14 @@ export function APRIdentityBanner({ apr, context = 'user' }: APRHeaderSectionPro
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const deficitItems = apr.consolidatedItems?.filter(
+    (item) => item.isOutOfStock || (item.outOfStockQuantity && item.outOfStockQuantity > 0) || (item.deficit && item.deficit > 0)
+  ) || []
+  const totalDeficitUnits = deficitItems.reduce(
+    (sum, item) => sum + (item.outOfStockQuantity ?? item.deficit ?? item.quantity ?? 0),
+    0
+  )
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-r from-[#f4f2ff] via-[#f7f5ff] to-[#efeaff] border border-[#e8e3fe] rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-start md:justify-between gap-4">
       <div className="space-y-1.5 min-w-0 z-10">
@@ -39,6 +47,12 @@ export function APRIdentityBanner({ apr, context = 'user' }: APRHeaderSectionPro
             {apr.aprNumber}
           </h1>
           <APRStatusBadge status={apr.status || 'Draft'} context={context} size="sm" />
+          {deficitItems.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+              PS-DBM Deficit: {deficitItems.length} {deficitItems.length === 1 ? 'item' : 'items'} ({totalDeficitUnits} units)
+            </span>
+          )}
         </div>
         {apr.description ? (
           <p className="text-xs text-gray-500 leading-relaxed max-w-2xl">
