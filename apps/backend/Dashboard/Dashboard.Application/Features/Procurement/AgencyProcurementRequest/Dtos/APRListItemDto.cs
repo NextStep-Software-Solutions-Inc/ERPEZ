@@ -45,7 +45,17 @@ public class APRDetailDto
     public Guid? LinkedPurchaseRequestId { get; set; }
     public string? LinkedPurchaseRequestNumber { get; set; }
     public string? LinkedPurchaseRequestStatus { get; set; }
+    public List<LinkedPurchaseRequestDto> LinkedPurchaseRequests { get; set; } = [];
     public List<APRItemDto> Items { get; set; } = [];
+}
+
+public class LinkedPurchaseRequestDto
+{
+    public Guid Id { get; set; }
+    public string PRNumber { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; }
+    public DateTime? CreatedAt { get; set; }
 }
 
 public class APRItemDto

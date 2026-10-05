@@ -47,6 +47,7 @@ interface ConsolidatedItemsTableProps {
   items: ConsolidatedAPRItem[]
   status?: string
   linkedPRNumber?: string | null
+  linkedPRNumbers?: string[] | null
   onRemoveItem?: (itemCode: string) => void
   onOpenAddItem?: () => void
 }
@@ -55,12 +56,17 @@ export function ConsolidatedItemsTable({
   items,
   status = 'DRAFT',
   linkedPRNumber,
+  linkedPRNumbers,
   onRemoveItem,
   onOpenAddItem,
 }: ConsolidatedItemsTableProps) {
   const isDraft = status?.toUpperCase() === 'DRAFT' || status?.toUpperCase() === 'RETURNED'
   const [itemToDelete, setItemToDelete] = useState<ConsolidatedAPRItem | null>(null)
   const [previewItem, setPreviewItem] = useState<ConsolidatedAPRItem | null>(null)
+  const linkedPRDisplay =
+    linkedPRNumbers && linkedPRNumbers.length > 0
+      ? linkedPRNumbers.join(', ')
+      : linkedPRNumber || ''
 
   const handleConfirmDelete = () => {
     if (itemToDelete) {
@@ -270,7 +276,7 @@ export function ConsolidatedItemsTable({
                               <div className="flex items-center gap-1.5">
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100/90 text-emerald-900 border border-emerald-300">
                                   <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                                  <span>{linkedPRNumber ? `PR Created (${linkedPRNumber})` : 'Transferred to PR'}</span>
+                                  <span>{linkedPRDisplay ? `PR Created (${linkedPRDisplay})` : 'Transferred to PR'}</span>
                                 </span>
                               </div>
 
@@ -297,10 +303,10 @@ export function ConsolidatedItemsTable({
 
                               {/* Action tag */}
                               <div className="flex items-center gap-1 flex-wrap">
-                                {linkedPRNumber && (
+                                {linkedPRDisplay && (
                                   <span className="inline-flex items-center gap-1 w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
                                     <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                                    {itemFulfilled} in {linkedPRNumber}
+                                    {itemFulfilled} in {linkedPRDisplay}
                                   </span>
                                 )}
                                 <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
@@ -325,10 +331,10 @@ export function ConsolidatedItemsTable({
                               </div>
 
                               {/* Action tag */}
-                              {linkedPRNumber ? (
+                              {linkedPRDisplay ? (
                                 <span className="inline-flex items-center gap-1 w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
                                   <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                                  PR Created ({linkedPRNumber})
+                                  PR Created ({linkedPRDisplay})
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">

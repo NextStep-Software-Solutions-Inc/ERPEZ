@@ -137,7 +137,16 @@ export interface APRDetailDto {
   linkedPurchaseRequestId?: string | null
   linkedPurchaseRequestNumber?: string | null
   linkedPurchaseRequestStatus?: string | null
+  linkedPurchaseRequests?: LinkedPurchaseRequestDto[]
   items: APRItemDto[]
+}
+
+export interface LinkedPurchaseRequestDto {
+  id: string
+  prNumber: string
+  status: string
+  totalAmount?: number
+  createdAt?: string
 }
 
 /**
@@ -257,6 +266,7 @@ export interface APRMaster {
   linkedPurchaseRequestId?: string | null
   linkedPurchaseRequestNumber?: string | null
   linkedPurchaseRequestStatus?: string | null
+  linkedPurchaseRequests?: LinkedPurchaseRequestDto[]
   sourceAPPId?: string
   appStatus?: string
   appApprovedBudget?: number

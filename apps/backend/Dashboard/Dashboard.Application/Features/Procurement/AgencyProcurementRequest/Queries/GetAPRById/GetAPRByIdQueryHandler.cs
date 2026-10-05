@@ -21,7 +21,7 @@ public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, ApiRespon
         var apr = await unitOfWork.APRRepository.GetAPRWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("APR not found.");
 
-        var linkedPR = await unitOfWork.PurchaseRequestRepository.FindAsync(
+        var linkedPRs = await unitOfWork.PurchaseRequestRepository.FindAllAsync(
             pr => !pr.IsDeleted &&
                   pr.PRType == ERPEZ.Domain.Enums.PRType.OutOfStockCSE &&
                   pr.Status != ERPEZ.Domain.Enums.StatusEnum.Returned &&
@@ -29,6 +29,8 @@ public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, ApiRespon
                    (pr.Description != null && (pr.Description.Contains(apr.APRNumber) || pr.Description.Contains(apr.Id.ToString()))) ||
                    (pr.Purpose.Contains(apr.APRNumber) || pr.Purpose.Contains(apr.Id.ToString()))),
             cancellationToken);
+
+        var firstLinkedPR = linkedPRs.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
 
         var aprItemIds = apr.APRItems.Select(ai => ai.Id).ToList();
         var existingPRItems = await unitOfWork.PRItemRepository.FindAllAsync(
@@ -69,10 +71,17 @@ public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, ApiRespon
             ReturnedDate = apr.ReturnedDate,
             ReturnRemarks = apr.ReturnRemarks,
             ApprovedBy = apr.ApprovedBy,
-            ReturnedBy = apr.ReturnedBy,
-            LinkedPurchaseRequestId = linkedPR?.Id,
-            LinkedPurchaseRequestNumber = linkedPR?.PRNumber,
-            LinkedPurchaseRequestStatus = linkedPR?.Status.ToString(),
+            LinkedPurchaseRequestId = firstLinkedPR?.Id,
+            LinkedPurchaseRequestNumber = firstLinkedPR?.PRNumber,
+            LinkedPurchaseRequestStatus = firstLinkedPR?.Status.ToString(),
+            LinkedPurchaseRequests = linkedPRs.Select(p => new LinkedPurchaseRequestDto
+            {
+                Id = p.Id,
+                PRNumber = p.PRNumber,
+                Status = p.Status.ToString(),
+                TotalAmount = p.TotalAmount,
+                CreatedAt = p.CreatedAt
+            }).ToList(),
             Items = apr.APRItems.Select(item =>
             {
                 var reserved = reservedByAprItem.GetValueOrDefault(item.Id, 0);
