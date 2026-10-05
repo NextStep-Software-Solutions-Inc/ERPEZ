@@ -899,45 +899,14 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                 </span>
               )}
               {isApproved && (
-                linkedPR ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 rounded-xl h-9 px-4 shadow-xs"
-                    onClick={() =>
-                      navigate({
-                        to: '/v2/purchase-requests-pr',
-                        search: {
-                          tab: 'out-of-stock',
-                          prId: linkedPR.id,
-                        } as any,
-                      })
-                    }
-                  >
-                    <FileText className="h-3.5 w-3.5 text-emerald-600" />
-                    View Out-of-Stock PR ({linkedPR.prNumber})
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
-                    disabled={consolidatedItems.length === 0}
-                    onClick={() =>
-                      navigate({
-                        to: '/v2/purchase-requests-pr',
-                        search: {
-                          tab: 'out-of-stock',
-                          aprId: apr.id,
-                          aprNumber: apr.aprNumber,
-                          officeId: apr.officeId,
-                        } as any,
-                      })
-                    }
-                  >
-                    <FileText className="h-3.5 w-3.5" />
-                    Create PR for Out-of-Stock Items
-                  </Button>
-                )
+                <OutOfStockPRActionButton
+                  linkedPR={linkedPR}
+                  aprId={apr.id}
+                  aprNumber={apr.aprNumber}
+                  officeId={apr.officeId}
+                  disabled={consolidatedItems.length === 0}
+                  navigate={navigate}
+                />
               )}
               <Button
                 variant="outline"
@@ -1041,45 +1010,14 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
               {/* Approved Actions for Requesting User */}
               {isApproved && (
                 <>
-                  {linkedPR ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 rounded-xl h-9 px-4 shadow-xs"
-                      onClick={() =>
-                        navigate({
-                          to: '/v2/purchase-requests-pr',
-                          search: {
-                            tab: 'out-of-stock',
-                            prId: linkedPR.id,
-                          } as any,
-                        })
-                      }
-                    >
-                      <FileText className="h-3.5 w-3.5 text-emerald-600" />
-                      View Out-of-Stock PR ({linkedPR.prNumber})
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
-                      disabled={consolidatedItems.length === 0}
-                      onClick={() =>
-                        navigate({
-                          to: '/v2/purchase-requests-pr',
-                          search: {
-                            tab: 'out-of-stock',
-                            aprId: apr.id,
-                            aprNumber: apr.aprNumber,
-                            officeId: apr.officeId,
-                          } as any,
-                        })
-                      }
-                    >
-                      <FileText className="h-3.5 w-3.5" />
-                      Create PR for Out-of-Stock Items
-                    </Button>
-                  )}
+                  <OutOfStockPRActionButton
+                    linkedPR={linkedPR}
+                    aprId={apr.id}
+                    aprNumber={apr.aprNumber}
+                    officeId={apr.officeId}
+                    disabled={consolidatedItems.length === 0}
+                    navigate={navigate}
+                  />
                   <Button
                     variant="outline"
                     size="sm"
@@ -1138,3 +1076,68 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
     </div>
   )
 }
+
+interface OutOfStockPRActionButtonProps {
+  linkedPR: { id: string; prNumber: string; status: string } | null
+  aprId: string
+  aprNumber?: string
+  officeId?: string
+  disabled?: boolean
+  navigate: (opts: any) => void
+  className?: string
+}
+
+function OutOfStockPRActionButton({
+  linkedPR,
+  aprId,
+  aprNumber,
+  officeId,
+  disabled,
+  navigate,
+  className,
+}: OutOfStockPRActionButtonProps) {
+  if (linkedPR) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className={`gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 rounded-xl h-9 px-4 shadow-xs ${className ?? ''}`}
+        onClick={() =>
+          navigate({
+            to: '/v2/purchase-requests-pr',
+            search: {
+              tab: 'out-of-stock',
+              prId: linkedPR.id,
+            } as any,
+          })
+        }
+      >
+        <FileText className="h-3.5 w-3.5 text-emerald-600" />
+        View Out-of-Stock PR ({linkedPR.prNumber})
+      </Button>
+    )
+  }
+
+  return (
+    <Button
+      size="sm"
+      className={`gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs ${className ?? ''}`}
+      disabled={disabled}
+      onClick={() =>
+        navigate({
+          to: '/v2/purchase-requests-pr',
+          search: {
+            tab: 'out-of-stock',
+            aprId,
+            aprNumber,
+            officeId,
+          } as any,
+        })
+      }
+    >
+      <FileText className="h-3.5 w-3.5" />
+      Create PR for Out-of-Stock Items
+    </Button>
+  )
+}
+

@@ -12,124 +12,141 @@
     {
         public async Task<ApiResponse<Guid>> Handle(CreatePRCommand request, CancellationToken cancellationToken)
         {
-            _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken)
-                ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
+            Guid createdPrId = Guid.Empty;
 
-            if (request.FundSourceId.HasValue)
-                _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId.Value, cancellationToken)
-                    ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId.Value} not found.");
+            var isolationLevel = request.PRType == PRType.OutOfStockCSE
+                ? System.Data.IsolationLevel.Serializable
+                : System.Data.IsolationLevel.ReadCommitted;
 
-            if (request.ProcurementCategoryId.HasValue)
-                _ = await unitOfWork.ProcurementCategoryRepository.GetByIdAsync(request.ProcurementCategoryId.Value, cancellationToken)
-                    ?? throw new NotFoundException($"Procurement Category with ID {request.ProcurementCategoryId.Value} not found.");
-
-            if (request.PPMPId.HasValue)
-                _ = await unitOfWork.PPMPRepository.GetByIdAsync(request.PPMPId.Value, cancellationToken)
-                    ?? throw new NotFoundException($"PPMP with ID {request.PPMPId.Value} not found.");
-
-            if (request.APRId.HasValue)
-                _ = await unitOfWork.APRRepository.GetByIdAsync(request.APRId.Value, cancellationToken)
-                    ?? throw new NotFoundException($"APR with ID {request.APRId.Value} not found.");
-
-            var existing = await unitOfWork.PurchaseRequestRepository.FindAsync(
-                x => x.PRNumber == request.PRNumber && !x.IsDeleted, cancellationToken);
-
-            if (existing is not null)
-                throw new ConflictException($"A Purchase Request with number '{request.PRNumber}' already exists.");
-
-            var prItems = new List<PRItem>();
-            decimal totalAmount = 0;
-            Guid? resolvedAprId = request.APRId;
-
-            foreach (var itemRequest in request.Items)
+            try
             {
-                Guid? resolvedPpmpItemId = itemRequest.PPMPItemId;
-
-                if (request.PRType == PRType.NonCSE && itemRequest.PPMPItemId.HasValue)
+                await unitOfWork.ExecuteInTransactionAsync(async () =>
                 {
-                    var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
-                        itemRequest.PPMPItemId.Value, cancellationToken)
-                        ?? throw new NotFoundException($"PPMP Item with ID {itemRequest.PPMPItemId} not found.");
+                    _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken)
+                        ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
 
-                    if (ppmpItem.CSEItemId.HasValue)
-                        throw new ValidationException($"Item '{ppmpItem.Name}' is a CSE item and cannot be added to a Non-CSE PR.");
+                    if (request.FundSourceId.HasValue)
+                        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId.Value, cancellationToken)
+                            ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId.Value} not found.");
 
-                    var itemOfficeId = ppmpItem.PPMPExpenditureItem?.PPMP?.OfficeId
-                                    ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId;
-                    if (itemOfficeId.HasValue && itemOfficeId.Value != request.OfficeId)
-                        throw new ValidationException($"Item '{ppmpItem.Name}' belongs to another office and cannot be added to this Purchase Request.");
+                    if (request.ProcurementCategoryId.HasValue)
+                        _ = await unitOfWork.ProcurementCategoryRepository.GetByIdAsync(request.ProcurementCategoryId.Value, cancellationToken)
+                            ?? throw new NotFoundException($"Procurement Category with ID {request.ProcurementCategoryId.Value} not found.");
 
-                    var ppmpStatus = ppmpItem.PPMPExpenditureItem?.PPMP?.Status
-                                  ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Status;
-                    if (ppmpStatus != StatusEnum.Approved)
-                        throw new ValidationException($"Item '{ppmpItem.Name}' belongs to a PPMP that is not approved.");
+                    if (request.PPMPId.HasValue)
+                        _ = await unitOfWork.PPMPRepository.GetByIdAsync(request.PPMPId.Value, cancellationToken)
+                            ?? throw new NotFoundException($"PPMP with ID {request.PPMPId.Value} not found.");
 
-                    var isAppApproved = ppmpItem.APPItems.Any(ai => !ai.IsDeleted && !ai.APP.IsDeleted && ai.APP.Status == StatusEnum.Approved);
-                    if (!isAppApproved)
-                        throw new ValidationException($"Item '{ppmpItem.Name}' has not been consolidated into an approved Annual Procurement Plan (APP).");
+                    if (request.APRId.HasValue)
+                        _ = await unitOfWork.APRRepository.GetByIdAsync(request.APRId.Value, cancellationToken)
+                            ?? throw new NotFoundException($"APR with ID {request.APRId.Value} not found.");
 
-                    if (ppmpItem.NonCSEItemId == null)
-                        throw new ValidationException($"Item '{ppmpItem.Name}' is not an approved Non-CSE item.");
+                    var existing = await unitOfWork.PurchaseRequestRepository.FindAsync(
+                        x => x.PRNumber == request.PRNumber && !x.IsDeleted, cancellationToken);
 
-                    await ValidatePPMPItemBudget(ppmpItem.Id, itemRequest.RequestedMonth, itemRequest.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, null, cancellationToken);
-                }
-                else if (request.PRType == PRType.OutOfStockCSE && itemRequest.APRItemId.HasValue)
-                {
-                    var aprItem = await unitOfWork.APRItemRepository.GetByIdAsync(
-                        itemRequest.APRItemId.Value, cancellationToken)
-                        ?? throw new NotFoundException($"APR Item with ID {itemRequest.APRItemId} not found.");
+                    if (existing is not null)
+                        throw new ConflictException($"A Purchase Request with number '{request.PRNumber}' already exists.");
 
-                    var apr = await unitOfWork.APRRepository.GetByIdAsync(aprItem.APRId, cancellationToken)
-                        ?? throw new NotFoundException($"APR with ID {aprItem.APRId} not found.");
+                    var prItems = new List<PRItem>();
+                    decimal totalAmount = 0;
+                    Guid? resolvedAprId = request.APRId;
 
-                    if (apr.OfficeId != request.OfficeId)
-                        throw new ValidationException($"Item '{itemRequest.Name}' belongs to an APR from another office and cannot be added to this Purchase Request.");
+                    foreach (var itemRequest in request.Items)
+                    {
+                        Guid? resolvedPpmpItemId = itemRequest.PPMPItemId;
 
-                    if (apr.Status != StatusEnum.Approved)
-                        throw new ValidationException($"Item '{itemRequest.Name}' belongs to an APR that is not approved.");
+                        if (request.PRType == PRType.NonCSE && itemRequest.PPMPItemId.HasValue)
+                        {
+                            var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
+                                itemRequest.PPMPItemId.Value, cancellationToken)
+                                ?? throw new NotFoundException($"PPMP Item with ID {itemRequest.PPMPItemId} not found.");
 
-                    var existingPRItems = await unitOfWork.PRItemRepository.FindAllAsync(
-                        i => i.APRItemId == aprItem.Id &&
-                            !i.PurchaseRequest.IsDeleted &&
-                            i.PurchaseRequest.Status != StatusEnum.Returned,
-                        cancellationToken);
+                            if (ppmpItem.CSEItemId.HasValue)
+                                throw new ValidationException($"Item '{ppmpItem.Name}' is a CSE item and cannot be added to a Non-CSE PR.");
 
-                    var totalReserved = existingPRItems.Sum(i => i.RequestedQuantity);
-                    var available = (int)aprItem.QuantityRequested - totalReserved;
+                            var itemOfficeId = ppmpItem.PPMPExpenditureItem?.PPMP?.OfficeId
+                                            ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId;
+                            if (itemOfficeId.HasValue && itemOfficeId.Value != request.OfficeId)
+                                throw new ValidationException($"Item '{ppmpItem.Name}' belongs to another office and cannot be added to this Purchase Request.");
 
-                    if (itemRequest.RequestedQuantity > available)
-                        throw new ValidationException($"Requested quantity {itemRequest.RequestedQuantity} for '{itemRequest.Name}' exceeds available APR deficit ({available}).");
+                            var ppmpStatus = ppmpItem.PPMPExpenditureItem?.PPMP?.Status
+                                          ?? ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Status;
+                            if (ppmpStatus != StatusEnum.Approved)
+                                throw new ValidationException($"Item '{ppmpItem.Name}' belongs to a PPMP that is not approved.");
 
-                    resolvedPpmpItemId ??= aprItem.PPMPItemId;
-                    resolvedAprId ??= aprItem.APRId;
-                }
+                            var isAppApproved = ppmpItem.APPItems.Any(ai => !ai.IsDeleted && !ai.APP.IsDeleted && ai.APP.Status == StatusEnum.Approved);
+                            if (!isAppApproved)
+                                throw new ValidationException($"Item '{ppmpItem.Name}' has not been consolidated into an approved Annual Procurement Plan (APP).");
 
-                prItems.Add(BuildPRItem(itemRequest, resolvedPpmpItemId));
-                totalAmount += itemRequest.RequestedQuantity * itemRequest.UnitCost;
+                            if (ppmpItem.NonCSEItemId == null)
+                                throw new ValidationException($"Item '{ppmpItem.Name}' is not an approved Non-CSE item.");
+
+                            await ValidatePPMPItemBudget(ppmpItem.Id, itemRequest.RequestedMonth, itemRequest.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, null, cancellationToken);
+                        }
+                        else if (request.PRType == PRType.OutOfStockCSE && itemRequest.APRItemId.HasValue)
+                        {
+                            var aprItem = await unitOfWork.APRItemRepository.GetByIdAsync(
+                                itemRequest.APRItemId.Value, cancellationToken)
+                                ?? throw new NotFoundException($"APR Item with ID {itemRequest.APRItemId} not found.");
+
+                            var apr = await unitOfWork.APRRepository.GetByIdAsync(aprItem.APRId, cancellationToken)
+                                ?? throw new NotFoundException($"APR with ID {aprItem.APRId} not found.");
+
+                            if (apr.OfficeId != request.OfficeId)
+                                throw new ValidationException($"Item '{itemRequest.Name}' belongs to an APR from another office and cannot be added to this Purchase Request.");
+
+                            if (apr.Status != StatusEnum.Approved)
+                                throw new ValidationException($"Item '{itemRequest.Name}' belongs to an APR that is not approved.");
+
+                            var existingPRItems = await unitOfWork.PRItemRepository.FindAllAsync(
+                                i => i.APRItemId == aprItem.Id &&
+                                    !i.PurchaseRequest.IsDeleted &&
+                                    i.PurchaseRequest.Status != StatusEnum.Returned,
+                                cancellationToken);
+
+                            var totalReserved = existingPRItems.Sum(i => i.RequestedQuantity);
+                            var available = (int)aprItem.QuantityRequested - totalReserved;
+
+                            if (itemRequest.RequestedQuantity > available)
+                                throw new ValidationException($"Requested quantity {itemRequest.RequestedQuantity} for '{itemRequest.Name}' exceeds available APR deficit ({available}).");
+
+                            resolvedPpmpItemId ??= aprItem.PPMPItemId;
+                            resolvedAprId ??= aprItem.APRId;
+                        }
+
+                        prItems.Add(BuildPRItem(itemRequest, resolvedPpmpItemId));
+                        totalAmount += itemRequest.RequestedQuantity * itemRequest.UnitCost;
+                    }
+
+                    var pr = new PurchaseRequest
+                    {
+                        PRNumber              = request.PRNumber,
+                        Description           = request.Description,
+                        Purpose               = request.Purpose,
+                        PRType                = request.PRType,
+                        OfficeId              = request.OfficeId,
+                        PPMPId                = request.PPMPId,
+                        APRId                 = resolvedAprId,
+                        FundSourceId         = request.FundSourceId,
+                        UACSCodeCombinationId = request.UACSCodeCombinationId,
+                        ProcurementCategoryId = request.ProcurementCategoryId,
+                        RequestedDate         = request.RequestedDate,
+                        TotalAmount           = totalAmount,
+                        Status                = StatusEnum.Draft,
+                        PRItems               = prItems
+                    };
+
+                    await unitOfWork.PurchaseRequestRepository.AddAsync(pr, cancellationToken);
+                    await unitOfWork.SaveChangesAsync(cancellationToken);
+                    createdPrId = pr.Id;
+                }, isolationLevel, cancellationToken);
+            }
+            catch (Exception ex) when (ex.Message.Contains("40001") || ex.InnerException?.Message.Contains("40001") == true)
+            {
+                throw new ConflictException("A concurrent transaction modified the available APR item deficit. Please refresh and try again.");
             }
 
-            var pr = new PurchaseRequest
-            {
-                PRNumber              = request.PRNumber,
-                Description           = request.Description,
-                Purpose               = request.Purpose,
-                PRType                = request.PRType,
-                OfficeId              = request.OfficeId,
-                PPMPId                = request.PPMPId,
-                APRId                 = resolvedAprId,
-                FundSourceId         = request.FundSourceId,
-                UACSCodeCombinationId = request.UACSCodeCombinationId,
-                ProcurementCategoryId = request.ProcurementCategoryId,
-                RequestedDate         = request.RequestedDate,
-                TotalAmount           = totalAmount,
-                Status                = StatusEnum.Draft,
-                PRItems               = prItems
-            };
-
-            await unitOfWork.PurchaseRequestRepository.AddAsync(pr, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-
-            return ApiResponse<Guid>.Success(pr.Id, "Purchase Request created successfully.");
+            return ApiResponse<Guid>.Success(createdPrId, "Purchase Request created successfully.");
         }
 
         private async Task ValidatePPMPItemBudget(
