@@ -66,6 +66,12 @@ import {
   useRemoveAPRItemMutation,
 } from '@/features/procurement/apr/handlers/hooks'
 import { usePurchaseRequests } from '@/features/procurement/purchase-requests-pr/handlers/hooks'
+import {
+  getOptimisticPR,
+  removeOptimisticPR,
+  sweepStaleOptimisticPRs,
+  APR_PR_STORAGE_PREFIX,
+} from '@/features/procurement/purchase-requests-pr/utils/aprStorage'
 
 interface APRDetailsPageProps {
   aprId: string
@@ -246,10 +252,31 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
     }
   }, [rawResponse, consolidatedItems, totalAmount])
 
+  const [storageSyncTrigger, setStorageSyncTrigger] = useState(0)
+
+  // Cross-tab sync and proactive storage cleanup on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    // Proactively sweep stale or expired keys from prior sessions / abrupt crashes
+    sweepStaleOptimisticPRs()
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key && event.key.startsWith(APR_PR_STORAGE_PREFIX)) {
+        setStorageSyncTrigger((prev) => prev + 1)
+      }
+    }
+
+    window.addEventListener('storage', handleStorage)
+    return () => {
+      window.removeEventListener('storage', handleStorage)
+    }
+  }, [])
+
   // Check for linked Out-of-Stock PR across 3 layers:
   // 1. Backend DTO linkage (linkedPurchaseRequests / linkedPurchaseRequestNumber)
   // 2. Query match in existing Out-of-Stock PRs (via description/items)
-  // 3. Client session cache (localStorage 'apr_pr_' + aprId)
+  // 3. Client session cache (localStorage 'apr_pr_' + aprId via aprStorage with 60s TTL)
   const allLinkedPRs = useMemo(() => {
     if (!apr) return []
 
@@ -300,62 +327,38 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
     }
 
     // Layer 3: Transient optimistic cache (expires after 60s, discarded once backend synchronizes)
-    if (typeof window !== 'undefined') {
-      try {
-        const storageKey = `apr_pr_${apr.id}`
-        const cached = localStorage.getItem(storageKey)
-        if (cached) {
-          const parsed = JSON.parse(cached)
-          const isExpired = parsed?.timestamp && Date.now() - parsed.timestamp > 60000
-          if (parsed?.id && parsed?.prNumber && !isExpired) {
-            if (map.has(parsed.id)) {
-              // Stale optimistic cache: already confirmed on backend, purge it
-              localStorage.removeItem(storageKey)
-            } else {
-              map.set(parsed.id, {
-                id: parsed.id,
-                prNumber: parsed.prNumber,
-                status: parsed.status || 'Draft',
-              })
-            }
-          } else if (isExpired) {
-            localStorage.removeItem(storageKey)
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to read or parse optimistic PR from localStorage:', err)
+    const optimisticPr = apr?.id ? getOptimisticPR(apr.id) : null
+    if (optimisticPr) {
+      if (map.has(optimisticPr.id)) {
+        // Stale optimistic cache: already confirmed on backend, purge it
+        removeOptimisticPR(apr.id)
+      } else {
+        map.set(optimisticPr.id, {
+          id: optimisticPr.id,
+          prNumber: optimisticPr.prNumber,
+          status: optimisticPr.status || 'Draft',
+        })
       }
     }
 
     return Array.from(map.values())
-  }, [apr, outOfStockPRsResponse])
+  }, [apr, outOfStockPRsResponse, storageSyncTrigger])
 
   // Pure backend synchronization: Purge transient localStorage once backend settles
   useEffect(() => {
-    if (!apr?.id || typeof window === 'undefined') return
-    try {
-      const storageKey = `apr_pr_${apr.id}`
-      const cached = localStorage.getItem(storageKey)
-      if (!cached) return
+    if (!apr?.id) return
+    const cached = getOptimisticPR(apr.id)
+    if (!cached) return
 
-      const parsed = JSON.parse(cached)
-      if (!parsed?.id) {
-        localStorage.removeItem(storageKey)
-        return
-      }
+    const isConfirmedInAPR =
+      Boolean(apr.linkedPurchaseRequestId) ||
+      (apr.linkedPurchaseRequests && apr.linkedPurchaseRequests.length > 0)
+    const isConfirmedInPRList = outOfStockPRsResponse?.data?.some(
+      (p) => p.id === cached.id || p.prNumber === cached.prNumber
+    )
 
-      const isConfirmedInAPR =
-        Boolean(apr.linkedPurchaseRequestId) ||
-        (apr.linkedPurchaseRequests && apr.linkedPurchaseRequests.length > 0)
-      const isConfirmedInPRList = outOfStockPRsResponse?.data?.some(
-        (p) => p.id === parsed.id || p.prNumber === parsed.prNumber
-      )
-
-      if (isConfirmedInAPR || isConfirmedInPRList) {
-        localStorage.removeItem(storageKey)
-      }
-    } catch (err) {
-      console.warn('Failed to clean up optimistic PR from localStorage:', err)
+    if (isConfirmedInAPR || isConfirmedInPRList) {
+      removeOptimisticPR(apr.id)
     }
   }, [apr?.id, apr?.linkedPurchaseRequestId, apr?.linkedPurchaseRequests, outOfStockPRsResponse?.data])
 

@@ -4,7 +4,7 @@
  * Redesigned using the Post-Qualification verification dialog as design basis.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   createMutationHookFromTemplate,
   createQueryHookFromTemplate,
@@ -20,6 +20,8 @@ import {
   Building2,
   CheckCircle2,
   Boxes,
+  AlertCircle,
+  RotateCw,
 } from 'lucide-react'
 import * as z from 'zod'
 import api from '@/services/api'
@@ -28,6 +30,7 @@ import { toApiPrType, type CreatePurchaseRequestItemPayload } from '../types/api
 import type { EligibleAPRResponse } from '../handlers/getPurchaseRequestEligibleAprsRequest'
 import { useDashboardRole } from '@/hooks/useDashboardRole'
 import { categoryRequiresTorAttachment } from '../utils/torAttachment'
+import { saveOptimisticPR } from '../utils/aprStorage'
 import type { PurchaseRequest, PRItem } from '../types'
 import type { ProcurementCategory } from '@/lib/fiscal-year-and-policies/types'
 import { Calendar } from '@/components/ui/calendar'
@@ -142,69 +145,70 @@ export function CreatePRModal({
     return []
   }, [officesResponse])
 
+  const [fetchAprItemsError, setFetchAprItemsError] = useState<string | null>(null)
+
   // Fetch deficit items from APR when creating Out-of-Stock PR
-  useEffect(() => {
+  const fetchEligibleItems = useCallback(async () => {
     if (!open || prType !== 'out-of-stock' || !initialAprId) {
       setSourceAprData(null)
+      setFetchAprItemsError(null)
       return
     }
 
-    let isMounted = true
     setIsLoadingAprItems(true)
+    setFetchAprItemsError(null)
 
-    const fetchEligibleItems = async () => {
-      try {
-        const targetOfficeId = initialOfficeId || departmentId
-        const endpoint = targetOfficeId
-          ? `/purchase-requests/eligible-aprs?officeId=${targetOfficeId}`
-          : `/purchase-requests/eligible-aprs`
-        const res = await api.get<{ succeeded: boolean; data: EligibleAPRResponse[] }>(endpoint)
-        if (!isMounted) return
+    try {
+      const targetOfficeId = initialOfficeId || departmentId
+      const endpoint = targetOfficeId
+        ? `/purchase-requests/eligible-aprs?officeId=${targetOfficeId}`
+        : `/purchase-requests/eligible-aprs`
+      const res = await api.get<{ succeeded: boolean; data: EligibleAPRResponse[] }>(endpoint)
 
-        if (res.data?.succeeded === false) {
-          throw new Error('API returned unsuccessful response when loading APR deficit items')
-        }
-
-        const allAprs = res.data?.data || []
-        const matched = allAprs.find(
-          (a) =>
-            a.aprId.toLowerCase() === initialAprId.toLowerCase() ||
-            (initialAprNumber && a.aprNumber.toLowerCase() === initialAprNumber.toLowerCase())
-        ) || allAprs[0]
-
-        if (matched) {
-          setSourceAprData(matched)
-        }
-      } catch (err) {
-        console.error('Failed to fetch eligible APR items for initial APR:', err)
-        if (isMounted) {
-          toast({
-            variant: 'destructive',
-            title: 'Failed to load APR deficit items',
-            description: 'Could not fetch deficit items for this APR. Please try again or check your network connection.',
-          })
-        }
-      } finally {
-        if (isMounted) setIsLoadingAprItems(false)
+      if (res.data?.succeeded === false) {
+        throw new Error('API returned unsuccessful response when loading APR deficit items')
       }
-    }
 
+      const allAprs = res.data?.data || []
+      const matched = allAprs.find(
+        (a) =>
+          a.aprId.toLowerCase() === initialAprId.toLowerCase() ||
+          (initialAprNumber && a.aprNumber.toLowerCase() === initialAprNumber.toLowerCase())
+      ) || allAprs[0]
+
+      if (matched) {
+        setSourceAprData(matched)
+      }
+    } catch (err) {
+      console.error('Failed to fetch eligible APR items for initial APR:', err)
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Network error occurred while fetching eligible APR deficit items.'
+      setFetchAprItemsError(errorMsg)
+      toast({
+        variant: 'destructive',
+        title: 'Failed to load APR deficit items',
+        description: 'Could not fetch deficit items for this APR. You can still create the PR or click Retry.',
+      })
+    } finally {
+      setIsLoadingAprItems(false)
+    }
+  }, [open, prType, initialAprId, initialAprNumber, initialOfficeId, departmentId, toast])
+
+  useEffect(() => {
     void fetchEligibleItems()
-
-    return () => {
-      isMounted = false
-    }
-  }, [open, prType, initialAprId, initialAprNumber, initialOfficeId, departmentId])
+  }, [fetchEligibleItems])
 
   const aprDeficitPayloadItems = useMemo<CreatePurchaseRequestItemPayload[]>(() => {
-    if (!sourceAprData || !sourceAprData.items) return []
+    if (!sourceAprData || !Array.isArray(sourceAprData.items)) return []
     return sourceAprData.items
-      .filter((it) => it.deficit > 0)
+      .filter((it) => it && typeof it.deficit === 'number' && it.deficit > 0)
       .map((it) => ({
         aprItemId: it.aprItemId,
-        name: it.itemName,
-        description: it.itemName,
-        unitCost: it.unitPrice,
+        name: it.itemName ?? 'Item',
+        description: it.itemName ?? 'Item',
+        unitCost: it.unitPrice ?? 0,
         requestedQuantity: it.deficit,
         isNonCSE: false,
         requestedMonth: 'January',
@@ -343,20 +347,12 @@ export function CreatePRModal({
           torAttachment: requiresTor ? value.torAttachment : null,
         }
 
-        if (initialAprId && typeof window !== 'undefined') {
-          try {
-            localStorage.setItem(
-              `apr_pr_${initialAprId}`,
-              JSON.stringify({
-                id: result.data,
-                prNumber: value.prNumber,
-                status: 'Draft',
-                timestamp: Date.now(),
-              })
-            )
-          } catch (err) {
-            console.warn('Could not cache optimistic PR in localStorage:', err)
-          }
+        if (initialAprId) {
+          saveOptimisticPR(initialAprId, {
+            id: result.data,
+            prNumber: value.prNumber,
+            status: 'Draft',
+          })
         }
 
         toast({
@@ -707,22 +703,64 @@ export function CreatePRModal({
 
             {/* Auto-attached APR Items Banner for Out-of-Stock PR */}
             {prType === 'out-of-stock' && initialAprId && (
-              <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl space-y-2">
+              <div
+                className={`p-4 rounded-xl space-y-2 border transition-colors ${
+                  fetchAprItemsError
+                    ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800'
+                    : 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800'
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Boxes className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                    <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200">
+                    {fetchAprItemsError ? (
+                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    ) : (
+                      <Boxes className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    )}
+                    <span
+                      className={`text-xs font-bold ${
+                        fetchAprItemsError
+                          ? 'text-amber-950 dark:text-amber-200'
+                          : 'text-indigo-950 dark:text-indigo-200'
+                      }`}
+                    >
                       Sourced Items from {sourceAprData?.aprNumber || initialAprNumber || 'APR'}
                     </span>
                   </div>
-                  <Badge variant="outline" className="text-[10px] font-semibold bg-white dark:bg-slate-900 border-indigo-200 text-indigo-700">
-                    {isLoadingAprItems ? 'Loading...' : `${aprDeficitPayloadItems.length} item(s) to import`}
-                  </Badge>
+                  {fetchAprItemsError ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void fetchEligibleItems()}
+                      disabled={isLoadingAprItems}
+                      className="h-6 px-2 text-[10px] font-semibold border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 flex items-center gap-1 shadow-none"
+                    >
+                      <RotateCw className={`h-3 w-3 ${isLoadingAprItems ? 'animate-spin' : ''}`} />
+                      Retry
+                    </Button>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-semibold bg-white dark:bg-slate-900 border-indigo-200 text-indigo-700"
+                    >
+                      {isLoadingAprItems ? 'Loading...' : `${aprDeficitPayloadItems.length} item(s) to import`}
+                    </Badge>
+                  )}
                 </div>
                 {isLoadingAprItems ? (
-                  <div className="flex items-center gap-2 py-1 text-xs text-indigo-700">
+                  <div className="flex items-center gap-2 py-1 text-xs text-indigo-700 dark:text-indigo-300">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     <span>Loading deficit items from APR...</span>
+                  </div>
+                ) : fetchAprItemsError ? (
+                  <div className="space-y-1 pt-1 text-xs text-amber-800 dark:text-amber-300">
+                    <p className="font-medium">
+                      Could not load deficit items automatically due to a network connection issue.
+                    </p>
+                    <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80">
+                      You can still create this Purchase Request now; deficit items can be imported after creation. Or click <strong>Retry</strong> above to try again.
+                    </p>
                   </div>
                 ) : sourceAprData && aprDeficitPayloadItems.length > 0 ? (
                   <div className="space-y-1.5 pt-1 border-t border-indigo-100 dark:border-indigo-900/60">
