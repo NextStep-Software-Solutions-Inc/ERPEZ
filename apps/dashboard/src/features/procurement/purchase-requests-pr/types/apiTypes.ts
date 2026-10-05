@@ -176,6 +176,8 @@ export interface CreatePurchaseRequestPayload {
   officeId: string
   /** Optional – required for Non-CSE PRs that originate from a specific PPMP */
   ppmpId?: string
+  /** Optional – references the APR that originated this Out-of-Stock PR */
+  aprId?: string
   /** TODO: add fund cluster selector to CreatePRModal UI */
   fundClusterId?: string
   /** TODO: add UACS code combination selector to CreatePRModal UI */

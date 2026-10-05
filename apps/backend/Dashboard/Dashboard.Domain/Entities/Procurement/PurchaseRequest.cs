@@ -16,6 +16,9 @@ public class PurchaseRequest : ApprovableEntity
     public Guid? PPMPId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? APRId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ProcurementProjectId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
@@ -57,6 +60,7 @@ public class PurchaseRequest : ApprovableEntity
     public virtual Office Office { get; set; } = null!;
     public virtual FundSource? FundSource { get; set; }
     public virtual PPMP? PPMP { get; set; }
+    public virtual APR? APR { get; set; }
     public virtual ProcurementProject? ProcurementProject { get; set; }
     public virtual UACSCodeCombination? UACSCodeCombination { get; set; }
     public virtual ProcurementCategory? ProcurementCategory { get; set; }

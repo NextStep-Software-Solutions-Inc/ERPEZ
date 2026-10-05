@@ -161,6 +161,10 @@ export function CreatePRModal({
         const res = await api.get<{ succeeded: boolean; data: EligibleAPRResponse[] }>(endpoint)
         if (!isMounted) return
 
+        if (res.data?.succeeded === false) {
+          throw new Error('API returned unsuccessful response when loading APR deficit items')
+        }
+
         const allAprs = res.data?.data || []
         const matched = allAprs.find(
           (a) =>
@@ -173,6 +177,13 @@ export function CreatePRModal({
         }
       } catch (err) {
         console.error('Failed to fetch eligible APR items for initial APR:', err)
+        if (isMounted) {
+          toast({
+            variant: 'destructive',
+            title: 'Failed to load APR deficit items',
+            description: 'Could not fetch deficit items for this APR. Please try again or check your network connection.',
+          })
+        }
       } finally {
         if (isMounted) setIsLoadingAprItems(false)
       }
@@ -229,6 +240,7 @@ export function CreatePRModal({
         const officeId = value.officeId
         const officeNameById = new Map(offices.map((office) => [office.id, office.name]))
         const payloadItems = aprDeficitPayloadItems.length > 0 ? aprDeficitPayloadItems : undefined
+        const targetAprId = prType === 'out-of-stock' ? (initialAprId || sourceAprData?.aprId) : undefined
         const result = await createPRMutation.mutateAsync({
           pathParams: {},
           payload: {
@@ -239,6 +251,7 @@ export function CreatePRModal({
             purpose: value.purpose,
             officeId,
             prType: toApiPrType(prType),
+            aprId: targetAprId,
             items: payloadItems,
           },
         })

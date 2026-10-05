@@ -25,7 +25,8 @@ public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, ApiRespon
             pr => !pr.IsDeleted &&
                   pr.PRType == ERPEZ.Domain.Enums.PRType.OutOfStockCSE &&
                   pr.Status != ERPEZ.Domain.Enums.StatusEnum.Returned &&
-                  (pr.PRItems.Any(pi => pi.APRItem != null && pi.APRItem.APRId == apr.Id) ||
+                  (pr.APRId == apr.Id ||
+                   pr.PRItems.Any(pi => pi.APRItem != null && pi.APRItem.APRId == apr.Id) ||
                    (pr.Description != null && (pr.Description.Contains(apr.APRNumber) || pr.Description.Contains(apr.Id.ToString()))) ||
                    (pr.Purpose.Contains(apr.APRNumber) || pr.Purpose.Contains(apr.Id.ToString()))),
             cancellationToken);

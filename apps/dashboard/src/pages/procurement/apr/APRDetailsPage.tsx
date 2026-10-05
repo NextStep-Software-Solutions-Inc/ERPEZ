@@ -302,15 +302,21 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
     // Layer 3: LocalStorage optimistic cache
     if (typeof window !== 'undefined') {
       try {
-        const cached = localStorage.getItem(`apr_pr_${apr.id}`)
+        const storageKey = `apr_pr_${apr.id}`
+        const cached = localStorage.getItem(storageKey)
         if (cached) {
           const parsed = JSON.parse(cached)
-          if (parsed?.id && parsed?.prNumber && !map.has(parsed.id)) {
-            map.set(parsed.id, {
-              id: parsed.id,
-              prNumber: parsed.prNumber,
-              status: parsed.status || 'Draft',
-            })
+          if (parsed?.id && parsed?.prNumber) {
+            if (map.has(parsed.id)) {
+              // Stale optimistic cache: already confirmed on backend, purge it
+              localStorage.removeItem(storageKey)
+            } else {
+              map.set(parsed.id, {
+                id: parsed.id,
+                prNumber: parsed.prNumber,
+                status: parsed.status || 'Draft',
+              })
+            }
           }
         }
       } catch {
@@ -320,6 +326,35 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
 
     return Array.from(map.values())
   }, [apr, outOfStockPRsResponse])
+
+  // Local storage cleanup: Ensure optimistic cache entries are purged once confirmed by backend
+  useEffect(() => {
+    if (!apr?.id || typeof window === 'undefined') return
+    try {
+      const storageKey = `apr_pr_${apr.id}`
+      const cached = localStorage.getItem(storageKey)
+      if (!cached) return
+
+      const parsed = JSON.parse(cached)
+      if (!parsed?.id) {
+        localStorage.removeItem(storageKey)
+        return
+      }
+
+      const existsInAPR = apr.linkedPurchaseRequests?.some(
+        (p) => p.id === parsed.id || p.prNumber === parsed.prNumber
+      )
+      const existsInPRList = outOfStockPRsResponse?.data?.some(
+        (p) => p.id === parsed.id || p.prNumber === parsed.prNumber
+      )
+
+      if (existsInAPR || existsInPRList) {
+        localStorage.removeItem(storageKey)
+      }
+    } catch {
+      // ignore
+    }
+  }, [apr?.id, apr?.linkedPurchaseRequests, outOfStockPRsResponse?.data])
 
   // Primary linked PR for single-reference fallbacks
   const linkedPR = allLinkedPRs[0] ?? null

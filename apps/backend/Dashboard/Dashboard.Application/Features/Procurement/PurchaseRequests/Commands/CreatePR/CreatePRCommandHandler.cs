@@ -27,6 +27,10 @@
                 _ = await unitOfWork.PPMPRepository.GetByIdAsync(request.PPMPId.Value, cancellationToken)
                     ?? throw new NotFoundException($"PPMP with ID {request.PPMPId.Value} not found.");
 
+            if (request.APRId.HasValue)
+                _ = await unitOfWork.APRRepository.GetByIdAsync(request.APRId.Value, cancellationToken)
+                    ?? throw new NotFoundException($"APR with ID {request.APRId.Value} not found.");
+
             var existing = await unitOfWork.PurchaseRequestRepository.FindAsync(
                 x => x.PRNumber == request.PRNumber && !x.IsDeleted, cancellationToken);
 
@@ -35,6 +39,7 @@
 
             var prItems = new List<PRItem>();
             decimal totalAmount = 0;
+            Guid? resolvedAprId = request.APRId;
 
             foreach (var itemRequest in request.Items)
             {
@@ -96,6 +101,7 @@
                         throw new ValidationException($"Requested quantity {itemRequest.RequestedQuantity} for '{itemRequest.Name}' exceeds available APR deficit ({available}).");
 
                     resolvedPpmpItemId ??= aprItem.PPMPItemId;
+                    resolvedAprId ??= aprItem.APRId;
                 }
 
                 prItems.Add(BuildPRItem(itemRequest, resolvedPpmpItemId));
@@ -110,6 +116,7 @@
                 PRType                = request.PRType,
                 OfficeId              = request.OfficeId,
                 PPMPId                = request.PPMPId,
+                APRId                 = resolvedAprId,
                 FundSourceId         = request.FundSourceId,
                 UACSCodeCombinationId = request.UACSCodeCombinationId,
                 ProcurementCategoryId = request.ProcurementCategoryId,
