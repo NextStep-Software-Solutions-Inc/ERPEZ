@@ -92,6 +92,7 @@ import { useNonCSEItems } from '@/features/planning/ppmp/catalog/hooks/useNonCSE
 import { useProcurementModes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementModes'
 import { purchaseRequestRequiresTor } from '../utils/torAttachment'
 import { openSignedDocument } from '../utils/openSignedDocument'
+import { resolveRelationalAPR } from '../utils/aprReference'
 
 import api from '@/services/api'
 
@@ -568,27 +569,10 @@ export function PRDetailsPage({
     setRequestItemModalOpen(true)
   }
 
-  const relationalAprId = useMemo(() => {
-    return (
-      pr.headerDetails?.aprId ||
-      pr.aprId ||
-      groupedAPRs[0]?.aprId ||
-      groupedAPRs[0]?.aprGroup?.aprId ||
-      pr.items?.find((it) => it.aprId)?.aprId ||
-      pr.headerDetails?.description?.match(/\[APR:([a-zA-Z0-9-]+)\]/i)?.[1]
-    )
-  }, [pr.headerDetails?.aprId, pr.aprId, groupedAPRs, pr.items, pr.headerDetails?.description])
-
-  const relationalAprNumber = useMemo(() => {
-    return (
-      pr.headerDetails?.aprNumber ||
-      pr.aprNumber ||
-      groupedAPRs[0]?.aprNumber ||
-      groupedAPRs[0]?.aprGroup?.aprNumber ||
-      pr.items?.find((it) => it.aprNumber)?.aprNumber ||
-      pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)?.[1]?.trim()
-    )
-  }, [pr.headerDetails?.aprNumber, pr.aprNumber, groupedAPRs, pr.items, pr.headerDetails?.description])
+  const { aprId: relationalAprId, aprNumber: relationalAprNumber } = useMemo(
+    () => resolveRelationalAPR(pr),
+    [pr]
+  )
 
   const [isImportingSourceApr, setIsImportingSourceApr] = useState(false)
 

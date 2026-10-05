@@ -47,6 +47,7 @@ import { EditPRModal } from './EditPRModal'
 import { usePurchaseRequests, usePurchaseRequestStats, useDeletePurchaseRequest } from '../handlers/hooks'
 import { fromApiStatus, fromApiPrType, toApiPrType } from '../types/apiTypes'
 import { useDashboardRole } from '@/hooks/useDashboardRole'
+import { resolveRelationalAPR } from '../utils/aprReference'
 
 const STATUS_BADGE_CONFIG: Record<PRStatus, { label: string; color?: any; variant?: any }> = {
   draft: { label: 'Draft', color: 'secondary' },
@@ -422,12 +423,8 @@ export function PRDashboardTab({
                               className="text-[10px] font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
                             >
                               {(() => {
-                                const aprNum =
-                                  pr.headerDetails?.aprNumber ||
-                                  pr.aprNumber ||
-                                  pr.items?.find((i) => i.aprNumber)?.aprNumber ||
-                                  pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)?.[1]?.trim()
-                                return aprNum ? `APR: ${aprNum}` : 'Sourced from APR'
+                                const { aprNumber } = resolveRelationalAPR(pr)
+                                return aprNumber ? `APR: ${aprNumber}` : 'Sourced from APR'
                               })()}
                             </Badge>
                           </div>

@@ -43,6 +43,7 @@ import { PurchaseRequest, PRStatus, PRType } from '../types'
 import { usePurchaseRequests, useUpdatePurchaseRequestStatus } from '../handlers/hooks'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
 import { openSignedDocument } from '../utils/openSignedDocument'
+import { resolveRelationalAPR } from '../utils/aprReference'
 import { getOfficesRequest } from '@/features/planning/app-consolidation/handlers/getOfficesRequest'
 
 const useOffices = createQueryHookFromTemplate(getOfficesRequest)
@@ -433,12 +434,8 @@ export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
                               className="text-[10px] font-semibold px-1.5 py-0 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
                             >
                               {(() => {
-                                const aprNum =
-                                  pr.headerDetails?.aprNumber ||
-                                  pr.aprNumber ||
-                                  pr.items?.find((i) => i.aprNumber)?.aprNumber ||
-                                  pr.headerDetails?.description?.match(/Sourced from APR:\s*([^\[\n\r]+)/i)?.[1]?.trim()
-                                return aprNum ? `APR: ${aprNum}` : 'Sourced from APR'
+                                const { aprNumber } = resolveRelationalAPR(pr)
+                                return aprNumber ? `APR: ${aprNumber}` : 'Sourced from APR'
                               })()}
                             </Badge>
                           </div>

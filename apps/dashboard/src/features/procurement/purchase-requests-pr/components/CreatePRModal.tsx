@@ -351,6 +351,7 @@ export function CreatePRModal({
                 id: result.data,
                 prNumber: value.prNumber,
                 status: 'Draft',
+                timestamp: Date.now(),
               })
             )
           } catch (err) {
