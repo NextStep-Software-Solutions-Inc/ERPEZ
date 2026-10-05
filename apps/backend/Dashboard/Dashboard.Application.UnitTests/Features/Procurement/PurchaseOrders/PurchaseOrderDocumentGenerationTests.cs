@@ -100,7 +100,7 @@ public class PurchaseOrderDocumentGenerationTests
             TypeOfPO = "SVP",
             SourceDocumentType = "AOB",
             SourceDocumentNumber = "AOB-2023-0891",
-            ProcuringEntityName = entityName,
+            ProcuringEntityName = entityName!,
             ProcuringEntityOffice = "SuperAdmin Workspace Unit",
 
             SupplierId = Guid.NewGuid(),

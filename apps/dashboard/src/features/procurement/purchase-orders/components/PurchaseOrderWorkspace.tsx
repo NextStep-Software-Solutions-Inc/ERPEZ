@@ -21,6 +21,8 @@ import {
   uploadPoDocument,
 } from '../handlers'
 import { downloadPurchaseOrderBlob } from '../utils/downloadPurchaseOrderBlob'
+import { downloadPurchaseOrderPdf } from '../handlers/generatePurchaseOrderDocumentRequest'
+import { printPurchaseOrder } from '../utils/printPurchaseOrder'
 import { normalizePoStatus } from './PurchaseOrderStatusBadge'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type {
@@ -483,12 +485,20 @@ export function PurchaseOrderWorkspace({
               rows={filteredRows}
               role={role}
               mode={mode}
-              onPrint={(purchaseOrderId) => {
+              onPrint={async (purchaseOrderId) => {
                 const po = purchaseOrders.find((p) => p.id === purchaseOrderId)
                 if (po) {
-                  // If printable document exists or mock download
-                  const blob = new Blob([JSON.stringify(po, null, 2)], { type: 'application/json' })
-                  downloadPurchaseOrderBlob({ blob, filename: `${po.poNumber || 'PO'}.json` })
+                  try {
+                    await downloadPurchaseOrderPdf(
+                      po.id,
+                      `${po.poNumber || 'PO'}_Purchase_Order.pdf`
+                    )
+                    toast.success('Official Purchase Order PDF downloaded.')
+                  } catch (err: any) {
+                    console.warn('Server PDF download failed, opening print preview:', err)
+                    printPurchaseOrder(po)
+                    toast.info('Opened document print preview.')
+                  }
                 }
               }}
               onSubmit={(purchaseOrderId) => {

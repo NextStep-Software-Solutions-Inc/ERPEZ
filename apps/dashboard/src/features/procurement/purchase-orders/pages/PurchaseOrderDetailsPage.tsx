@@ -15,6 +15,7 @@ import {
   Loader2,
   Pencil,
   Trash2,
+  FileText,
 } from 'lucide-react'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { PurchaseOrderDetailsShell } from '../components/PurchaseOrderDetailsShell'
@@ -33,6 +34,7 @@ import {
   useReturnPurchaseOrder,
   uploadPoDocument,
 } from '../handlers'
+import { downloadPurchaseOrderPdf } from '../handlers/generatePurchaseOrderDocumentRequest'
 import { useGetAOBById } from '@/features/procurement/aob/handlers/getAOBByIdRequest'
 import { getBidMatrixRequest } from '@/features/procurement/aob/handlers/getBidMatrixRequest'
 import { printPurchaseOrder } from '../utils/printPurchaseOrder'
@@ -69,6 +71,7 @@ export function PurchaseOrderDetailsPage({
   const [isReturnOpen, setIsReturnOpen] = useState(false)
   const [isApproveOpen, setIsApproveOpen] = useState(false)
   const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState(false)
+  const [isGeneratingPo, setIsGeneratingPo] = useState(false)
   const [activeTab, setActiveTab] = useState<string>('po-details')
 
   const poMode = (purchaseOrder?.source || purchaseOrder?.procurementMode || '').toString().toLowerCase()
@@ -183,6 +186,23 @@ export function PurchaseOrderDetailsPage({
     }
   }
 
+  const handleGeneratePo = async () => {
+    setIsGeneratingPo(true)
+    try {
+      await downloadPurchaseOrderPdf(
+        purchaseOrder.id,
+        `${purchaseOrder.poNumber || 'PO'}_Purchase_Order.pdf`
+      )
+      toast.success('Official Purchase Order PDF generated successfully.')
+    } catch (err: any) {
+      console.warn('Server PDF generation failed, falling back to print preview:', err)
+      printPurchaseOrder(fullPo)
+      toast.info('Generated live document print preview.')
+    } finally {
+      setIsGeneratingPo(false)
+    }
+  }
+
   return (
     <div className="space-y-6 pb-10">
       {/* Back Button & Actions row */}
@@ -216,8 +236,25 @@ export function PurchaseOrderDetailsPage({
           <Button
             variant="outline"
             size="sm"
+            className="gap-1.5 h-8 font-semibold border-primary/30 text-primary hover:bg-primary/5 shadow-2xs transition-all duration-200"
+            onClick={handleGeneratePo}
+            disabled={isGeneratingPo}
+            title="Generate official COA Appendix 61 Purchase Order PDF"
+          >
+            {isGeneratingPo ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            <span>Generate PO</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             className="gap-2 h-8"
             onClick={() => printPurchaseOrder(fullPo)}
+            title="Print Purchase Order document"
           >
             <Printer className="h-4 w-4" />
             <span>Print PO</span>

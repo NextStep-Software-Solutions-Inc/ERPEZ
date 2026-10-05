@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -204,6 +205,23 @@ export function PurchaseOrderDetailsShell({
                   >
                     <span>View Bid Matrix</span>
                     <ArrowRight className="h-3 w-3" />
+                  </Button>
+                )}
+                {purchaseOrder.sourceDocumentType?.toUpperCase() === 'NOA' && purchaseOrder.sourceDocumentId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="h-6 px-2 text-xs font-semibold text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 bg-blue-50/60 hover:bg-blue-100/70 dark:bg-blue-950/40 gap-1 rounded shadow-2xs"
+                  >
+                    <Link
+                      to="/v2/manage-noa/$noaId"
+                      params={{ noaId: purchaseOrder.sourceDocumentId }}
+                    >
+                      <span>View NOA</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
                   </Button>
                 )}
               </div>
