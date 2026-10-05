@@ -216,16 +216,12 @@ export function PRDashboardTab({
   // these are simple placeholders — replace with store actions as needed.
   const handleApprovePR = (id: string) => {
     if (!window.confirm('Approve this PR?')) return
-    // TODO: call store action to update PR status to 'approved'
     // e.g. approvePurchaseRequest?.(id)
-    console.log('Approved PR', id)
   }
 
   const handleReturnPR = (id: string) => {
     if (!window.confirm('Return this PR?')) return
-    // TODO: call store action to update PR status to 'returned'
     // e.g. returnPurchaseRequest?.(id)
-    console.log('Returned PR', id)
   }
 
   // Helper: displayStatus respects approved, submitted, for-bac-utilization ground truth

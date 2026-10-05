@@ -30,7 +30,6 @@ import { toApiPrType, type CreatePurchaseRequestItemPayload } from '../types/api
 import type { EligibleAPRResponse } from '../handlers/getPurchaseRequestEligibleAprsRequest'
 import { useDashboardRole } from '@/hooks/useDashboardRole'
 import { categoryRequiresTorAttachment } from '../utils/torAttachment'
-import { saveOptimisticPR } from '../utils/aprStorage'
 import type { PurchaseRequest, PRItem } from '../types'
 import type { ProcurementCategory } from '@/lib/fiscal-year-and-policies/types'
 import { Calendar } from '@/components/ui/calendar'
@@ -180,7 +179,6 @@ export function CreatePRModal({
         setSourceAprData(matched)
       }
     } catch (err) {
-      console.error('Failed to fetch eligible APR items for initial APR:', err)
       const errorMsg =
         err instanceof Error
           ? err.message
@@ -347,14 +345,6 @@ export function CreatePRModal({
           torAttachment: requiresTor ? value.torAttachment : null,
         }
 
-        if (initialAprId) {
-          saveOptimisticPR(initialAprId, {
-            id: result.data,
-            prNumber: value.prNumber,
-            status: 'Draft',
-          })
-        }
-
         toast({
           title: isIndependent ? 'Independent PR Created' : 'Purchase Request Created',
           description: isIndependent
@@ -368,7 +358,6 @@ export function CreatePRModal({
           onSuccess?.(newPR)
         }, 80)
       } catch (error) {
-        console.error('Failed to create PR:', error)
         toast({
           title: 'Error Creating PR',
           description:
@@ -419,7 +408,6 @@ export function CreatePRModal({
       })
       setTorUploadResetKey((value) => value + 1)
     } catch (error) {
-      console.error('Failed to upload TOR:', error)
       toast({
         title: 'TOR Upload Failed',
         description:

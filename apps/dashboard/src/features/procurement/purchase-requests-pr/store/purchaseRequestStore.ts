@@ -758,14 +758,10 @@ export const usePurchaseRequestStore = create<PurchaseRequestStore>()(
         set((state) => {
           // Only allow approve action when UI is in Manage PR tab
           if (!state.isManagePRView) {
-            console.warn(
-              'approvePurchaseRequest is only allowed in the Manage PR tab',
-            )
             return state
           }
 
           if (!signedPdfUrl || signedPdfUrl.trim() === '') {
-            console.warn('approvePurchaseRequest requires a signedPdfUrl')
             return state
           }
 
@@ -807,14 +803,10 @@ export const usePurchaseRequestStore = create<PurchaseRequestStore>()(
         set((state) => {
           // Only allow return action when UI is in Manage PR tab
           if (!state.isManagePRView) {
-            console.warn(
-              'returnPurchaseRequest is only allowed in the Manage PR tab',
-            )
             return state
           }
 
           if (!remarks || remarks.trim() === '') {
-            console.warn('returnPurchaseRequest requires non-empty remarks')
             return state
           }
 

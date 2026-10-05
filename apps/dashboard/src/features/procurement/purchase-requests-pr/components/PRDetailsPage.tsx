@@ -659,8 +659,7 @@ export function PRDetailsPage({
 
       setHasUnsavedChanges(false)
       toast.success(`Successfully imported ${deficitItems.length} item(s) from ${matched.aprNumber}!`)
-    } catch (err) {
-      console.error('Failed to import items from source APR:', err)
+    } catch {
       toast.error('Failed to import items from APR.')
     } finally {
       setIsImportingSourceApr(false)
@@ -1410,7 +1409,6 @@ export function PRDetailsPage({
         toast.error('Failed to generate PR document.', { id: toastId })
       }
     } catch (err: unknown) {
-      console.error('❌ PR document generation error:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to generate Purchase Request PDF.', { id: toastId })
     } finally {
       setIsExporting(false)

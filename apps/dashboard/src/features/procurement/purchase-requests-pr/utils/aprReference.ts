@@ -52,8 +52,8 @@ export function parseAprReferenceFromDescription(
         aprNumber = candidateNum
       }
     }
-  } catch (err) {
-    console.warn('Failed to parse APR reference from description string:', err)
+  } catch {
+    // Safe fallback: returns empty reference on any parsing exception
   }
 
   return { aprId, aprNumber }

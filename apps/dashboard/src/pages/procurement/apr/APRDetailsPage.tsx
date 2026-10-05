@@ -66,12 +66,6 @@ import {
   useRemoveAPRItemMutation,
 } from '@/features/procurement/apr/handlers/hooks'
 import { usePurchaseRequests } from '@/features/procurement/purchase-requests-pr/handlers/hooks'
-import {
-  getOptimisticPR,
-  removeOptimisticPR,
-  sweepStaleOptimisticPRs,
-  APR_PR_STORAGE_PREFIX,
-} from '@/features/procurement/purchase-requests-pr/utils/aprStorage'
 
 interface APRDetailsPageProps {
   aprId: string
@@ -252,31 +246,9 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
     }
   }, [rawResponse, consolidatedItems, totalAmount])
 
-  const [storageSyncTrigger, setStorageSyncTrigger] = useState(0)
-
-  // Cross-tab sync and proactive storage cleanup on mount
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    // Proactively sweep stale or expired keys from prior sessions / abrupt crashes
-    sweepStaleOptimisticPRs()
-
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key && event.key.startsWith(APR_PR_STORAGE_PREFIX)) {
-        setStorageSyncTrigger((prev) => prev + 1)
-      }
-    }
-
-    window.addEventListener('storage', handleStorage)
-    return () => {
-      window.removeEventListener('storage', handleStorage)
-    }
-  }, [])
-
-  // Check for linked Out-of-Stock PR across 3 layers:
-  // 1. Backend DTO linkage (linkedPurchaseRequests / linkedPurchaseRequestNumber)
-  // 2. Query match in existing Out-of-Stock PRs (via description/items)
-  // 3. Client session cache (localStorage 'apr_pr_' + aprId via aprStorage with 60s TTL)
+  // Check for linked Out-of-Stock PR directly from backend API:
+  // 1. Authoritative Backend DTO linkage (linkedPurchaseRequests / linkedPurchaseRequestNumber)
+  // 2. Query match in existing Out-of-Stock PRs (via API response data)
   const allLinkedPRs = useMemo(() => {
     if (!apr) return []
 
@@ -326,41 +298,8 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       }
     }
 
-    // Layer 3: Transient optimistic cache (expires after 60s, discarded once backend synchronizes)
-    const optimisticPr = apr?.id ? getOptimisticPR(apr.id) : null
-    if (optimisticPr) {
-      if (map.has(optimisticPr.id)) {
-        // Stale optimistic cache: already confirmed on backend, purge it
-        removeOptimisticPR(apr.id)
-      } else {
-        map.set(optimisticPr.id, {
-          id: optimisticPr.id,
-          prNumber: optimisticPr.prNumber,
-          status: optimisticPr.status || 'Draft',
-        })
-      }
-    }
-
     return Array.from(map.values())
-  }, [apr, outOfStockPRsResponse, storageSyncTrigger])
-
-  // Pure backend synchronization: Purge transient localStorage once backend settles
-  useEffect(() => {
-    if (!apr?.id) return
-    const cached = getOptimisticPR(apr.id)
-    if (!cached) return
-
-    const isConfirmedInAPR =
-      Boolean(apr.linkedPurchaseRequestId) ||
-      (apr.linkedPurchaseRequests && apr.linkedPurchaseRequests.length > 0)
-    const isConfirmedInPRList = outOfStockPRsResponse?.data?.some(
-      (p) => p.id === cached.id || p.prNumber === cached.prNumber
-    )
-
-    if (isConfirmedInAPR || isConfirmedInPRList) {
-      removeOptimisticPR(apr.id)
-    }
-  }, [apr?.id, apr?.linkedPurchaseRequestId, apr?.linkedPurchaseRequests, outOfStockPRsResponse?.data])
+  }, [apr, outOfStockPRsResponse])
 
   // Primary linked PR for single-reference fallbacks
   const linkedPR = allLinkedPRs[0] ?? null
@@ -380,7 +319,6 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       setSubmitDialogOpen(false)
       refetch()
     } catch (err: any) {
-      console.error('Error submitting APR:', err)
       const msg = err?.response?.data?.message || err?.message || 'Failed to submit APR for review'
       toast.error(msg)
     }
@@ -402,7 +340,6 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       setReturnDialogOpen(false)
       refetch()
     } catch (err: any) {
-      console.error('Error returning APR:', err)
       const msg = err?.response?.data?.message || err?.message || 'Failed to return APR'
       toast.error(msg)
     }
@@ -424,7 +361,6 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       setApproveDialogOpen(false)
       refetch()
     } catch (err: any) {
-      console.error('Error approving APR:', err)
       const msg = err?.response?.data?.message || err?.message || 'Failed to approve APR'
       toast.error(msg)
     }
@@ -453,7 +389,6 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       setAddItemDialogOpen(false)
       await refetch()
     } catch (err: any) {
-      console.error('Error saving catalog items to APR:', err)
       const msg = err?.response?.data?.message || err?.message || 'Failed to save items to APR'
       toast.error(msg)
       setExtraItems((prev) => {
@@ -478,7 +413,6 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       invalidateAPRQueries(queryClient)
       await refetch()
     } catch (err: any) {
-      console.error('Error removing item from APR:', err)
       setExtraItems((prev) => prev.filter((i) => i.itemCode !== itemIdentifier && i.id !== itemIdentifier))
       toast.success('Item removed.')
       invalidateAPRQueries(queryClient)
