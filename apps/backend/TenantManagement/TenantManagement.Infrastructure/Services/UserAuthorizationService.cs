@@ -33,7 +33,26 @@ public class UserAuthorizationService(
         }
 
         var permissions = await GetPermissionsAsync(externalIdentityId, tenantId, cancellationToken);
-        return permissions.Contains(permission);
+        if (permissions.Contains(permission))
+        {
+            return true;
+        }
+
+        // Legacy / scoped permission equivalence
+        if (permission.Equals("admin.members.manage", StringComparison.OrdinalIgnoreCase) && permissions.Contains(TenantPermissions.membersManage))
+            return true;
+        if (permission.Equals(TenantPermissions.membersManage, StringComparison.OrdinalIgnoreCase) && permissions.Contains("admin.members.manage"))
+            return true;
+        if (permission.Equals("admin.roles.manage", StringComparison.OrdinalIgnoreCase) && permissions.Contains(TenantPermissions.rolesManage))
+            return true;
+        if (permission.Equals(TenantPermissions.rolesManage, StringComparison.OrdinalIgnoreCase) && permissions.Contains("admin.roles.manage"))
+            return true;
+        if (permission.Equals("admin.tenants.manage", StringComparison.OrdinalIgnoreCase) && permissions.Contains(PlatformPermissions.tenantsManage))
+            return true;
+        if (permission.Equals(PlatformPermissions.tenantsManage, StringComparison.OrdinalIgnoreCase) && permissions.Contains("admin.tenants.manage"))
+            return true;
+
+        return false;
     }
 
     public async Task<IReadOnlySet<string>> GetPermissionsAsync(

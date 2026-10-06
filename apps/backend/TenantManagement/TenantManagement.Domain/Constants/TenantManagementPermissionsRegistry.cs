@@ -22,7 +22,10 @@ public static class PlatformPermissions
         settingsManage,
         subscriptionsManage,
         licensesManage,
-        auditLogsView
+        auditLogsView,
+        "admin.tenants.manage",
+        "admin.system.admin.manage",
+        "admin.system.admin.view"
     };
 
     public static readonly IReadOnlySet<string> auditor = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -76,7 +79,9 @@ public static class TenantPermissions
         licensesView,
         licensesManage,
         modulesView,
-        modulesManage
+        modulesManage,
+        "admin.members.manage",
+        "admin.roles.manage"
     };
 
     public static readonly IReadOnlySet<string> billingAdmin = new HashSet<string>(StringComparer.OrdinalIgnoreCase)

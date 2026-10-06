@@ -14,6 +14,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using ERPEZ.TenantManagement.Application.Features.Roles.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Roles.Queries.GetAssignableRolesQuery;
+using ERPEZ.TenantManagement.Domain.Constants;
 using ERPEZ.TenantManagement.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,7 +29,7 @@ public class TenantMembersController(ISender mediator) : ControllerBase
     /// Hardcoded internal filter: RoleScope == TenantManagement.
     /// </summary>
     [HttpGet("assignable-roles")]
-    [HasPermission(Permissions.Admin.membersManage)]
+    [HasPermission(TenantPermissions.membersManage)]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<RoleSummaryDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAssignableGovernanceRoles()
     {
@@ -39,7 +40,7 @@ public class TenantMembersController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<CreateTenantMemberResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [HasPermission(Permissions.Admin.membersManage)]
+    [HasPermission(TenantPermissions.membersManage)]
     public async Task<IActionResult> CreateTenantMember([FromBody] CreateTenantMemberCommand command)
     {
         var response = await mediator.Send(command);
@@ -48,7 +49,7 @@ public class TenantMembersController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<TenantMemberDto>), StatusCodes.Status200OK)]
-    [HasPermission(Permissions.Admin.membersManage)]
+    [HasPermission(TenantPermissions.membersManage)]
     public async Task<IActionResult> GetTenantMembers([FromQuery] GetTenantMembersQuery query)
     {
         var result = await mediator.Send(query);
@@ -58,7 +59,7 @@ public class TenantMembersController(ISender mediator) : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<TenantMemberDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HasPermission(Permissions.Admin.membersManage)]
+    [HasPermission(TenantPermissions.membersManage)]
     public async Task<IActionResult> GetTenantMemberById(Guid id)
     {
         var query = new GetTenantMemberByIdQuery(id);
@@ -71,7 +72,7 @@ public class TenantMembersController(ISender mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [HasPermission(Permissions.Admin.membersManage)]
+    [HasPermission(TenantPermissions.membersManage)]
     public async Task<IActionResult> UpdateTenantMember(Guid id, [FromBody] UpdateTenantMemberDto tenantMemberDto)
     {
         var command = new UpdateTenantMemberCommand
@@ -89,7 +90,7 @@ public class TenantMembersController(ISender mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [HasPermission(Permissions.Admin.membersManage)]
+    [HasPermission(TenantPermissions.membersManage)]
     public async Task<IActionResult> ToggleTenantMemberStatus(Guid id, [FromBody] ToggleTenantMemberStatusDto dto)
     {
         var command = new ToggleTenantMemberStatusCommand
@@ -107,7 +108,7 @@ public class TenantMembersController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HasPermission(Permissions.Admin.membersManage)]
+    [HasPermission(TenantPermissions.membersManage)]
     public async Task<IActionResult> RevokeInvitation(Guid id)
     {
         var command = new RevokeInvitationCommand(id);
@@ -130,7 +131,7 @@ public class TenantMembersController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [HasPermission(Permissions.Admin.membersManage)]
+    [HasPermission(TenantPermissions.membersManage)]
     public async Task<IActionResult> DeleteTenantMember(Guid id)
     {
         var command = new DeleteTenantMemberCommand(id);

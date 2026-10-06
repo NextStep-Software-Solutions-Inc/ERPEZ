@@ -347,6 +347,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -361,12 +364,12 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("APPNumber")
-                        .IsUnique();
-
                     b.HasIndex("FiscalYearId");
 
                     b.HasIndex("SourceAPPId");
+
+                    b.HasIndex("TenantId", "APPNumber")
+                        .IsUnique();
 
                     b.ToTable("APPs", "planning");
                 });
@@ -456,6 +459,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("StartOfProcurementOverride")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -505,6 +511,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("PPMPId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -513,9 +522,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("APPId");
+
                     b.HasIndex("PPMPId");
 
-                    b.HasIndex("APPId", "PPMPId")
+                    b.HasIndex("TenantId", "APPId", "PPMPId")
                         .IsUnique();
 
                     b.ToTable("APP_PPMP_Selections", "planning");
@@ -554,6 +565,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<DateTime?>("ScheduledDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -621,6 +635,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<DateTime?>("SignatureDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -727,6 +744,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -783,6 +803,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -797,7 +820,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("SourceDocumentType");
 
-                    b.HasIndex("FiscalYearId", "FundSourceId", "SourceDocumentType")
+                    b.HasIndex("TenantId", "FiscalYearId", "FundSourceId", "SourceDocumentType")
                         .IsUnique();
 
                     b.ToTable("AgencyMasterBudgets", "planning");
@@ -855,6 +878,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
 
@@ -910,6 +936,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("ParentAttributeId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -953,6 +982,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -995,6 +1027,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<DateTime>("SubmissionDeadline")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Type")
                         .HasColumnType("text");
@@ -1179,6 +1214,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1187,10 +1225,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
+                    b.HasIndex("Name")
                         .IsUnique();
 
-                    b.HasIndex("Name")
+                    b.HasIndex("TenantId", "Code")
                         .IsUnique();
 
                     b.ToTable("Clusters", "planning");
@@ -1228,6 +1266,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("KPITargetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -1274,6 +1315,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -1494,6 +1538,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1569,6 +1616,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1622,6 +1672,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1674,6 +1727,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1719,6 +1775,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<decimal>("Percentage")
                         .HasColumnType("numeric");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1778,6 +1837,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<decimal>("SupportMinWeight")
                         .HasColumnType("numeric");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1967,6 +2029,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2008,6 +2073,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("ProcurementItemId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("UnitPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -2022,7 +2090,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("FiscalYearId");
 
-                    b.HasIndex("ProcurementItemId", "FiscalYearId")
+                    b.HasIndex("ProcurementItemId");
+
+                    b.HasIndex("TenantId", "ProcurementItemId", "FiscalYearId")
                         .IsUnique();
 
                     b.ToTable("ItemPrices", "planning");
@@ -2092,6 +2162,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("TechnicalSpecification")
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("UACSCode")
                         .HasColumnType("text");
@@ -2188,6 +2261,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2198,10 +2274,12 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("MFOPAPId");
 
-                    b.HasIndex("Name")
-                        .IsUnique();
+                    b.HasIndex("Name");
 
                     b.HasIndex("ParentKPIId");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique();
 
                     b.ToTable("KPIs", "planning");
                 });
@@ -2257,6 +2335,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("OfficeId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2265,9 +2346,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("FYActiveKPIId");
+
                     b.HasIndex("OfficeId");
 
-                    b.HasIndex("FYActiveKPIId", "OfficeId")
+                    b.HasIndex("TenantId", "FYActiveKPIId", "OfficeId")
                         .IsUnique();
 
                     b.ToTable("KPIAssignments", "planning");
@@ -2323,6 +2406,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2370,6 +2456,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2413,6 +2502,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("PerformanceMeasureId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -2468,6 +2560,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<decimal>("TargetValue")
                         .HasColumnType("numeric");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2531,6 +2626,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2630,6 +2728,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2651,10 +2752,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("FundSourceId");
 
-                    b.HasIndex("LIBNumber")
-                        .IsUnique()
-                        .HasFilter("\"IsDeleted\" = false");
-
                     b.HasIndex("OfficeId");
 
                     b.HasIndex("ParentLIBId");
@@ -2662,6 +2759,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PreviousVersionId");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("TenantId", "LIBNumber")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("LineItemBudgets", "planning");
                 });
@@ -2704,6 +2805,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2721,11 +2825,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("WFPObjectiveActivityId");
 
-                    b.HasIndex("LineItemBudgetId", "OPCRActivityId")
+                    b.HasIndex("TenantId", "LineItemBudgetId", "OPCRActivityId")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false AND \"OPCRActivityId\" IS NOT NULL");
 
-                    b.HasIndex("LineItemBudgetId", "WFPObjectiveActivityId")
+                    b.HasIndex("TenantId", "LineItemBudgetId", "WFPObjectiveActivityId")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false AND \"WFPObjectiveActivityId\" IS NOT NULL");
 
@@ -2776,6 +2880,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("TimelineType")
                         .IsRequired()
@@ -2854,6 +2961,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("ParentLocationId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
@@ -2921,6 +3031,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("ParentMFOPAPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Type")
@@ -3000,6 +3113,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("TargetLineItemBudgetId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3011,15 +3127,19 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TargetLineItemBudgetActivityId")
+                    b.HasIndex("TargetLineItemBudgetActivityId");
+
+                    b.HasIndex("TargetLineItemBudgetId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TenantId", "TargetLineItemBudgetActivityId")
                         .IsUnique()
                         .HasFilter("\"TargetLineItemBudgetActivityId\" IS NOT NULL AND \"IsDeleted\" = false");
 
-                    b.HasIndex("TargetLineItemBudgetId")
+                    b.HasIndex("TenantId", "TargetLineItemBudgetId")
                         .IsUnique()
                         .HasFilter("\"TargetLineItemBudgetId\" IS NOT NULL AND \"IsDeleted\" = false");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("MarketScopings", "planning", t =>
                         {
@@ -3056,6 +3176,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<Guid>("MarketScopingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -3104,6 +3227,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<Guid>("MarketScopingActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -3157,6 +3283,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -3212,6 +3341,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3262,6 +3394,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Remarks")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3308,6 +3443,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<Guid>("MarketScopingParameterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -3361,6 +3499,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -3434,6 +3575,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<decimal>("SellingPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -3526,6 +3670,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3580,6 +3727,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<Guid>("OPCRItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -3638,6 +3788,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3683,6 +3836,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<Guid>("OPCRActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -3745,6 +3901,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int>("Score")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3788,6 +3947,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -3839,6 +4001,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -3902,6 +4067,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<decimal>("Q4Target")
                         .HasColumnType("numeric");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3958,6 +4126,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3973,7 +4144,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OPCRItemId");
 
-                    b.HasIndex("OPCRItemId", "FYActiveKPIMeasurementId", "RequirementName")
+                    b.HasIndex("TenantId", "OPCRItemId", "FYActiveKPIMeasurementId", "RequirementName")
                         .IsUnique();
 
                     b.ToTable("OPCRItemMOVs", "planning");
@@ -4023,6 +4194,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -4035,7 +4209,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OPCRItemId");
 
-                    b.HasIndex("OPCRItemId", "FYActiveKPIMeasurementId", "Dimension")
+                    b.HasIndex("TenantId", "OPCRItemId", "FYActiveKPIMeasurementId", "Dimension")
                         .IsUnique();
 
                     b.ToTable("OPCRItemRatings", "planning");
@@ -4067,6 +4241,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("OfficeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -4125,6 +4302,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("Remarks")
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -4379,6 +4559,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("ResponsibilityCenterCode")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -4393,9 +4576,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ClusterId");
 
-                    b.HasIndex("Code")
-                        .IsUnique();
-
                     b.HasIndex("OfficeTypeId");
 
                     b.HasIndex("OrganizationId");
@@ -4403,6 +4583,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ParentId");
 
                     b.HasIndex("ProcurementWorkflowId");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
 
                     b.ToTable("Offices", "planning");
                 });
@@ -4465,6 +4648,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -4481,7 +4667,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("OfficeId", "FiscalYearId", "AgencyMasterBudgetId", "TargetType", "IsSupplemental")
+                    b.HasIndex("TenantId", "OfficeId", "FiscalYearId", "AgencyMasterBudgetId", "TargetType", "IsSupplemental")
                         .IsUnique();
 
                     b.ToTable("OfficeCeilings", "planning");
@@ -4683,6 +4869,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -4733,6 +4922,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -4828,6 +5020,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int?>("SupplementalNumber")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("TotalEstimatedBudget")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -4851,12 +5046,12 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("LIBId");
 
-                    b.HasIndex("PPMPNumber")
-                        .IsUnique();
-
                     b.HasIndex("ParentId");
 
                     b.HasIndex("SourcePPMPId");
+
+                    b.HasIndex("TenantId", "PPMPNumber")
+                        .IsUnique();
 
                     b.HasIndex("OfficeId", "FiscalYearId", "IsFinal");
 
@@ -4891,6 +5086,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("PPMPId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -4901,7 +5099,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("LIBActivityId");
 
-                    b.HasIndex("PPMPId", "LIBActivityId")
+                    b.HasIndex("PPMPId");
+
+                    b.HasIndex("TenantId", "PPMPId", "LIBActivityId")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
 
@@ -4940,6 +5140,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("PPMPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("TotalCost")
@@ -5051,6 +5254,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Remarks")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Unit")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -5121,6 +5327,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -5129,7 +5338,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PPMPItemId", "AllocationMonth")
+                    b.HasIndex("PPMPItemId");
+
+                    b.HasIndex("TenantId", "PPMPItemId", "AllocationMonth")
                         .IsUnique();
 
                     b.ToTable("PPMPItemAllocations", "planning", t =>
@@ -5166,6 +5377,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -5218,6 +5432,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -5356,6 +5573,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("StepId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
@@ -5368,9 +5588,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
-                        .IsUnique();
-
                     b.HasIndex("PlantillaTypeId");
 
                     b.HasIndex("PositionTypeId");
@@ -5380,6 +5597,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("StepId");
 
                     b.HasIndex("OfficeId", "Title");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
 
                     b.ToTable("Positions", "planning");
                 });
@@ -5610,6 +5830,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Specifications")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
@@ -5795,6 +6018,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("ProcurementModeThresholdId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -5893,6 +6119,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Remarks")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -5946,6 +6175,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int>("RatingValue")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -5998,6 +6230,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -6048,6 +6283,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -6287,6 +6525,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("SubOfficeId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -6303,7 +6544,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("SubOfficeId");
 
-                    b.HasIndex("OfficeCeilingId", "SubOfficeId", "FundClusterId")
+                    b.HasIndex("TenantId", "OfficeCeilingId", "SubOfficeId", "FundClusterId")
                         .IsUnique();
 
                     b.ToTable("SubOfficeCeilings", "planning");
@@ -6375,6 +6616,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -6383,17 +6627,17 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BusinessPermitNo")
-                        .IsUnique()
-                        .HasFilter("\"IsDeleted\" = false");
-
                     b.HasIndex("Email");
 
                     b.HasIndex("PhilGEPSNumber");
 
                     b.HasIndex("SupplierCategoryId");
 
-                    b.HasIndex("TINNumber")
+                    b.HasIndex("TenantId", "BusinessPermitNo")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
+
+                    b.HasIndex("TenantId", "TINNumber")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
 
@@ -6429,6 +6673,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -6437,7 +6684,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("TenantId", "Name")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
 
@@ -6474,6 +6721,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -6536,6 +6786,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("TransactionDate")
@@ -7222,6 +7475,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -7267,6 +7523,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("Outcome")
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -7319,6 +7578,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<Guid?>("OPCRActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -7378,6 +7640,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int?>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal?>("UnitCost")
                         .HasColumnType("numeric");
 
@@ -7429,6 +7694,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<decimal>("TargetValue")
                         .HasColumnType("decimal(18, 2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("TimelineType")
                         .IsRequired()
@@ -7495,6 +7763,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text[]");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Timeframe")
                         .IsRequired()
                         .HasColumnType("text");
@@ -7539,6 +7810,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -7599,6 +7873,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -7686,6 +7963,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("SubmittedBy")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -7694,7 +7974,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AOBNumber")
+                    b.HasIndex("TenantId", "AOBNumber")
                         .IsUnique();
 
                     b.ToTable("AOBs", "procurement");
@@ -7744,6 +8024,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<decimal>("Score")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("TotalAwardedAmount")
                         .HasPrecision(18, 2)
@@ -7799,6 +8082,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("ProcurementProjectId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -7842,6 +8128,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("RFQId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -7850,9 +8139,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AOBId");
+
                     b.HasIndex("RFQId");
 
-                    b.HasIndex("AOBId", "RFQId")
+                    b.HasIndex("TenantId", "AOBId", "RFQId")
                         .IsUnique();
 
                     b.ToTable("AOBRFQMappings", "procurement");
@@ -7955,6 +8246,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -7969,15 +8263,15 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("APPId");
 
-                    b.HasIndex("APRNumber")
-                        .IsUnique()
-                        .HasFilter("\"IsDeleted\" = false");
-
                     b.HasIndex("FiscalYearId");
 
                     b.HasIndex("OfficeId");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("TenantId", "APRNumber")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("APRs", "procurement");
                 });
@@ -8022,6 +8316,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<decimal>("QuantityRequested")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("TotalCost")
                         .HasPrecision(18, 2)
@@ -8089,6 +8386,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime>("ScheduledDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8141,6 +8441,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("OriginalFileName")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -8200,6 +8503,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8257,6 +8563,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8269,12 +8578,15 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BiddingAwardRecommendationId")
-                        .IsUnique()
-                        .HasFilter("\"BiddingAwardRecommendationId\" IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("ProcurementProjectId");
 
-                    b.HasIndex("ResolutionNumber")
+                    b.HasIndex("TenantId", "BiddingAwardRecommendationId")
+                        .IsUnique()
+                        .HasFilter("\"BiddingAwardRecommendationId\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "ResolutionNumber")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
 
@@ -8314,6 +8626,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<Guid>("ResolutionClauseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -8361,6 +8676,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<int>("Order")
                         .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -8431,6 +8749,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Remarks")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8442,6 +8763,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("BiddingActivityScheduleId");
 
                     b.HasIndex("BiddingSubmissionId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "BiddingSubmissionId")
                         .IsUnique();
 
                     b.ToTable("BidOpeningRecords", "procurement");
@@ -8542,6 +8866,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8611,6 +8938,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Remarks")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8625,10 +8955,15 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("BiddingPostQualificationId")
                         .IsUnique();
 
-                    b.HasIndex("ProcurementProjectId")
-                        .IsUnique();
+                    b.HasIndex("ProcurementProjectId");
 
                     b.HasIndex("WinningSupplierId");
+
+                    b.HasIndex("TenantId", "BiddingPostQualificationId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "ProcurementProjectId")
+                        .IsUnique();
 
                     b.ToTable("BiddingAwardRecommendations", "procurement");
                 });
@@ -8670,6 +9005,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -8743,6 +9081,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal?>("TotalScore")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
@@ -8758,11 +9099,16 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("BidOpeningRecordId")
                         .IsUnique();
 
+                    b.HasIndex("BiddingEvaluationId");
+
                     b.HasIndex("Rank");
 
                     b.HasIndex("SupplierId");
 
-                    b.HasIndex("BiddingEvaluationId", "SupplierId")
+                    b.HasIndex("TenantId", "BidOpeningRecordId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "BiddingEvaluationId", "SupplierId")
                         .IsUnique();
 
                     b.ToTable("BiddingEvaluatedBids", "procurement");
@@ -8821,6 +9167,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8829,7 +9178,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProcurementProjectId")
+                    b.HasIndex("ProcurementProjectId");
+
+                    b.HasIndex("TenantId", "ProcurementProjectId")
                         .IsUnique();
 
                     b.ToTable("BiddingEvaluations", "procurement");
@@ -8882,6 +9233,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("TargetDeadlineDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8897,6 +9251,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BiddingEvaluatedBidId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "BiddingEvaluatedBidId")
                         .IsUnique();
 
                     b.ToTable("BiddingPostQualifications", "procurement");
@@ -8961,6 +9318,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8969,11 +9329,13 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProcurementProjectId");
+
                     b.HasIndex("PublicSupplierApplicationId");
 
                     b.HasIndex("SupplierId");
 
-                    b.HasIndex("ProcurementProjectId", "SupplierId")
+                    b.HasIndex("TenantId", "ProcurementProjectId", "SupplierId")
                         .IsUnique();
 
                     b.ToTable("BiddingSubmissions", "procurement");
@@ -9016,6 +9378,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<decimal>("Quantity")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("TotalPrice")
                         .HasPrecision(18, 2)
@@ -9090,6 +9455,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -9102,7 +9470,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CPRNumber")
+                    b.HasIndex("TenantId", "CPRNumber")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
 
@@ -9146,6 +9514,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("PurchaseRequestId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -9162,7 +9533,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("PurchaseRequestId");
 
-                    b.HasIndex("ConsolidatedPRId", "PRItemId")
+                    b.HasIndex("TenantId", "ConsolidatedPRId", "PRItemId")
                         .IsUnique();
 
                     b.ToTable("ConsolidatedPRItems", "procurement");
@@ -9268,6 +9639,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("SubmittedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -9334,6 +9708,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("TotalABC")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -9350,7 +9727,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ConsolidatedPRId");
 
-                    b.HasIndex("DANumber")
+                    b.HasIndex("TenantId", "DANumber")
                         .IsUnique();
 
                     b.ToTable("DirectAcquisitions", "procurement");
@@ -9404,6 +9781,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -9480,6 +9860,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime>("SubmissionDeadline")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("TotalABC")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -9535,6 +9918,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("TotalProposalAmount")
@@ -9595,6 +9981,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<Guid>("ProposalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("TotalBid")
@@ -9677,6 +10066,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -9734,6 +10126,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -9742,7 +10137,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("TenantId", "Name")
                         .IsUnique();
 
                     b.ToTable("DocumentProfiles", "procurement");
@@ -9779,6 +10174,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int>("OrderIndex")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -9787,9 +10185,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DocumentProfileId");
+
                     b.HasIndex("MasterDocumentTypeId");
 
-                    b.HasIndex("DocumentProfileId", "MasterDocumentTypeId")
+                    b.HasIndex("TenantId", "DocumentProfileId", "MasterDocumentTypeId")
                         .IsUnique();
 
                     b.ToTable("DocumentProfileItems", "procurement");
@@ -10009,6 +10409,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -10063,6 +10466,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<Guid>("NoticeOfAwardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("Timestamp")
@@ -10127,6 +10533,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("Remarks")
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -10263,6 +10672,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -10334,6 +10746,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("StockNo")
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("UnitCost")
                         .HasPrecision(18, 2)
@@ -10422,6 +10837,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("TechRepresentativeId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
@@ -10444,6 +10862,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ProcurementModeId");
 
                     b.HasIndex("TechRepresentativeId");
+
+                    b.HasIndex("TenantId", "ConsolidatedPRId")
+                        .IsUnique();
 
                     b.ToTable("ProcurementProjects", "procurement");
                 });
@@ -10477,6 +10898,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<Guid>("ProcurementProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -10538,6 +10962,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Role")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
 
@@ -10597,6 +11024,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<Guid>("ProcurementProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -11143,6 +11573,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("SupportingDocumentUrl")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -11199,6 +11632,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("SourceItemId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Unit")
                         .HasColumnType("text");
 
@@ -11222,6 +11658,9 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("APRId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("ApprovedDate")
@@ -11292,6 +11731,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -11307,21 +11749,23 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("APRId");
+
                     b.HasIndex("FundSourceId");
 
                     b.HasIndex("OfficeId");
 
                     b.HasIndex("PPMPId");
 
-                    b.HasIndex("PRNumber")
-                        .IsUnique()
-                        .HasFilter("\"IsDeleted\" = false");
-
                     b.HasIndex("ProcurementCategoryId");
 
                     b.HasIndex("ProcurementProjectId");
 
                     b.HasIndex("UACSCodeCombinationId");
+
+                    b.HasIndex("TenantId", "PRNumber")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.HasIndex("OfficeId", "PRType", "Status")
                         .HasFilter("\"IsDeleted\" = false");
@@ -11389,6 +11833,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -11410,12 +11857,12 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ModeOfProcurementId");
 
-                    b.HasIndex("RFQNumber")
-                        .IsUnique();
-
                     b.HasIndex("Status");
 
-                    b.HasIndex("TracingNumber")
+                    b.HasIndex("TenantId", "RFQNumber")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "TracingNumber")
                         .IsUnique();
 
                     b.ToTable("RFQs", "procurement");
@@ -11472,6 +11919,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("RFQId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("UnitPriceSnapshot")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -11488,7 +11938,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("RFQId");
 
-                    b.HasIndex("RFQId", "CPRItemId")
+                    b.HasIndex("TenantId", "RFQId", "CPRItemId")
                         .IsUnique();
 
                     b.ToTable("RFQItems", "procurement");
@@ -11525,6 +11975,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -11537,7 +11990,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.HasIndex("RFQId", "SupplierId")
+                    b.HasIndex("TenantId", "RFQId", "SupplierId")
                         .IsUnique();
 
                     b.ToTable("RFQSuppliers", "procurement");
@@ -11601,6 +12054,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("TotalAmount")
@@ -11679,6 +12135,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("SupplierBidId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("TotalPrice")
@@ -14513,6 +14972,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PurchaseRequest", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.APR", "APR")
+                        .WithMany()
+                        .HasForeignKey("APRId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
                         .WithMany()
                         .HasForeignKey("FundSourceId")
@@ -14543,6 +15007,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UACSCodeCombinationId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("APR");
 
                     b.Navigation("FundSource");
 

@@ -45,6 +45,7 @@ AMS entities represent system-level operational RBAC roles, permission sets, dep
 | `AmsRolePermission` | **Global** | System permission mappings for operational roles | No | No | Unique on `(RoleId, PermissionKey)` |
 | `UserRoleAssignment` | **Global** | Operational user role bindings | No | No | Unique on `(UserId, RoleId)` |
 | `AmsLicenseSetting` | **Global** | Operational dashboard node license configuration | No | No | Global singleton node license |
+| `User` | **Global** | Operational user/employee accounts linked to AMS roles | No | No | Unique on `ExternalIdentityId` |
 
 ---
 
@@ -202,7 +203,6 @@ All purchasing, bidding, awards, supplier responses, and contracting workflows b
 | `SupplierCategory` | **Tenant** | Tenant classification of vendors | Yes | Yes | `(TenantId, Code)` |
 | `SupplierRequirement` | **Tenant** | Eligibility docs required from tenant vendors | Yes | Yes | `(TenantId, Id)` |
 | `Transaction` | **Tenant** | Financial journal / allotment transactions | Yes | Yes | `(TenantId, TransactionNumber)` |
-| `User` | **Tenant** | Local employee / profile record in workspace | Yes | Yes | `(TenantId, Email)` |
 | `WorkflowMatrix` | **Tenant** | Routing matrix for tenant approvals | Yes | Yes | `(TenantId, Id)` |
 | `GeneratedDocument` | **Tenant** | Rendered PDF/Excel outputs with tenant storage paths | Yes | Yes | `(TenantId, Id)` |
 
