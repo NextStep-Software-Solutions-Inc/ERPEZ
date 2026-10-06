@@ -1,4 +1,5 @@
-import { ArrowLeft, Building2, Plus } from "lucide-react";
+import { useEffect } from "react";
+import { ArrowLeft, Building2, Mail, Plus } from "lucide-react";
 import { useNavigate } from "react-router";
 import GradientEllipses from "~/components/design/GradientEllipse";
 import GridLines from "~/components/design/GridLines";
@@ -6,6 +7,15 @@ import { Button } from "~/components/ui/button";
 
 export default function NoTenantEmptyState() {
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const pendingToken = sessionStorage.getItem("pending_invitation_token");
+            if (pendingToken) {
+                navigate(`/accept-invitation?token=${encodeURIComponent(pendingToken)}`, { replace: true });
+            }
+        }
+    }, [navigate]);
 
     const handleBack = () => {
         if (typeof window !== "undefined" && window.history.length > 1) {
@@ -55,17 +65,17 @@ export default function NoTenantEmptyState() {
 
                     {/* Description */}
                     <p className="text-sm text-slate-600 mt-3 leading-relaxed">
-                        You don't have a tenant registered yet. Please register your first tenant to continue.
+                        You don't have an active workspace registered under this account yet.
                     </p>
 
                     {/* Actions */}
-                    <div className="w-full flex flex-col gap-3 mt-8">
+                    <div className="w-full flex flex-col gap-3 mt-6">
                         <Button
                             onClick={() => navigate("/register-tenant")}
                             className="w-full bg-[#10B981] hover:bg-[#0a5139] text-white font-medium py-2.5 rounded-lg shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
                         >
                             <Plus className="w-4 h-4" />
-                            Register Tenant
+                            Register New Tenant
                         </Button>
 
                         <Button
@@ -75,6 +85,16 @@ export default function NoTenantEmptyState() {
                         >
                             Back
                         </Button>
+                    </div>
+
+                    {/* Invitation Note */}
+                    <div className="mt-6 pt-5 border-t border-slate-200/70 w-full text-left">
+                        <div className="flex items-start gap-2.5 text-xs text-slate-500 bg-slate-50/80 p-3 rounded-lg border border-slate-100">
+                            <Mail className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                            <span>
+                                <strong>Invited to an existing workspace?</strong> Open the workspace invitation link provided by your administrator to accept and access your organization.
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

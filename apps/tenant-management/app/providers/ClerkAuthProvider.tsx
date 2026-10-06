@@ -12,7 +12,7 @@ export interface AuthUser {
   role: string | null;
   tenantId: string | null;
   isSuperAdmin: boolean;
-  publicMetadata?: Record<string, any>;
+  publicMetadata?: Record<string, unknown>;
 }
 
 export interface ClerkAuthContextType {
@@ -134,8 +134,8 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
   }, [isInitialized, isSignedIn, onInitialized]);
 
   const roles = (clerkUser?.publicMetadata?.roles as string[]) ||
-    (clerkUser?.publicMetadata?.role ? [clerkUser.publicMetadata.role as string] : ['Tenant Administrator']);
-  const role = (clerkUser?.publicMetadata?.role as string) || roles[0] || 'Tenant Administrator';
+    (clerkUser?.publicMetadata?.role ? [clerkUser.publicMetadata.role as string] : []);
+  const role = (clerkUser?.publicMetadata?.role as string) || roles[0] || null;
   const tenantId = (clerkUser?.publicMetadata?.tenantId as string) ||
     (typeof window !== 'undefined' ? localStorage.getItem('erpez_tenant_id') : null) ||
     null;

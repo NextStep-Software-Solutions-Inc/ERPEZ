@@ -33,8 +33,24 @@ public class AcceptInvitationCommandHandler(
         // 2. Find member by invitation token hash
         var member = await unitOfWork.TenantMemberRepository.Query()
             .Include(m => m.RoleAssignments).ThenInclude(ra => ra.Role)
-            .FirstOrDefaultAsync(m => m.InvitationTokenHash == tokenHash && !m.IsDeleted, cancellationToken)
-            ?? throw new NotFoundException("Invitation token is invalid or has already been used.");
+            .FirstOrDefaultAsync(m => m.InvitationTokenHash == tokenHash && !m.IsDeleted, cancellationToken);
+
+        // 2b. Fallback: If not found by token hash (e.g. stale or missing token in browser session),
+        // look up any active pending invitation matching the caller's authenticated email.
+        if (member == null && !string.IsNullOrWhiteSpace(authenticatedEmail))
+        {
+            var normalizedCallerEmail = authenticatedEmail.Trim().ToLowerInvariant();
+            member = await unitOfWork.TenantMemberRepository.Query()
+                .Include(m => m.RoleAssignments).ThenInclude(ra => ra.Role)
+                .FirstOrDefaultAsync(m => m.Email.ToLower() == normalizedCallerEmail &&
+                                          m.Status == Status.Pending &&
+                                          !m.IsDeleted, cancellationToken);
+        }
+
+        if (member == null)
+        {
+            throw new NotFoundException("Invitation token is invalid or has already been used.");
+        }
 
         // 3. Expiry check
         if (member.InvitationExpiresAtUtc.HasValue && member.InvitationExpiresAtUtc.Value < DateTime.UtcNow)
