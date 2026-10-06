@@ -113,7 +113,7 @@ public class TenantConnectionResolver(
             throw new InvalidOperationException($"No valid database connection string found for authorized tenant {authorizedTenantId}.");
         }
 
-        return new TenantDatabaseConnectionInfo(authorizedTenantId, resolvedConnectionString);
+        return new TenantDatabaseConnectionInfo(authorizedTenantId, resolvedConnectionString, tenancyMode ?? TenancyMode.OnPremise);
     }
 
     public void InvalidateConnection(Guid tenantId)

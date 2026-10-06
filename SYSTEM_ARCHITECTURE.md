@@ -161,7 +161,12 @@ Operational entities are explicitly partitioned into two hierarchies (see [TENAN
 
 ### 4.4. Background Jobs (Hangfire) Tenant Isolation
 
-Background workers operate outside HTTP request pipelines. All tenant-scoped background tasks must explicitly accept `TenantId` in their job payload (e.g., `ProcessRfqJob(Guid TenantId, Guid RfqId)`). The job execution wrapper initializes `ITenantRequestContext` with that `TenantId` before instantiating `ApplicationDbContext`. Tenancy must never be derived via unscoped database queries.
+Background workers operate outside HTTP request pipelines. Tenant context propagation is enforced deterministically:
+- **`ITenantBackgroundScopeActivator` & `ITenantScopeFactory`**: Services can create isolated scopes (`CreateTenantScopeAsync(tenantId)` or `CreateGlobalScopeAsync()`) that resolve connection parameters and initialize `ITenantRequestContext` prior to `ApplicationDbContext` instantiation.
+- **`HangfireTenantJobFilter` (`JobFilterAttribute, IServerFilter`)**: Automatically intercepts Hangfire jobs during `OnPerforming`.
+  - When job arguments include a `Guid tenantId` or `ITenantScopedJob`, the filter activates the tenant's context and connection parameters in the job's service scope.
+  - When no tenant parameter is present (e.g., PS-DBM catalogue sync), the filter activates the global system context, permitting access to global catalogs on the shared database while maintaining strict fail-closed protections.
+- Tenancy must never be derived via unscoped database queries or hardcoded IDs.
 
 ### 4.5. RBAC Model
 

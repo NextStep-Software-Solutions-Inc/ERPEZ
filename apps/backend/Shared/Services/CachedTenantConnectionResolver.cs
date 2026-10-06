@@ -116,7 +116,7 @@ public class CachedTenantConnectionResolver(
                             var decrypted = encryptionService.Decrypt(encrypted, version);
                             if (!string.IsNullOrWhiteSpace(decrypted))
                             {
-                                return new TenantDatabaseConnectionInfo(authorizedTenantId, decrypted);
+                                return new TenantDatabaseConnectionInfo(authorizedTenantId, decrypted, TenancyMode.OnPremise);
                             }
                         }
                     }
@@ -130,13 +130,13 @@ public class CachedTenantConnectionResolver(
             // In development environments, allow seeded dev tenant to use DefaultConnection
             if (env.IsDevelopment())
             {
-                return new TenantDatabaseConnectionInfo(authorizedTenantId, sharedConnStr);
+                return new TenantDatabaseConnectionInfo(authorizedTenantId, sharedConnStr, TenancyMode.SaaS);
             }
 
             // Fallback for On-Premise: deterministic DB naming convention
             var tenantDbName = $"erpez_tenant_{authorizedTenantId:N}";
             var builder = new NpgsqlConnectionStringBuilder(sharedConnStr) { Database = tenantDbName };
-            return new TenantDatabaseConnectionInfo(authorizedTenantId, builder.ConnectionString);
+            return new TenantDatabaseConnectionInfo(authorizedTenantId, builder.ConnectionString, TenancyMode.OnPremise);
         });
     }
 
