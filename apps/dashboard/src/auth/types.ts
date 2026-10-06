@@ -17,12 +17,23 @@ export interface UnifiedUser {
 export type AuthState = 'loading' | 'authenticated' | 'unauthenticated';
 export type TenantState = 'loading' | 'resolved' | 'unavailable' | 'forbidden';
 
+export interface WorkspaceMemberInfo {
+  userId: string;
+  email: string;
+  fullName: string;
+  firstName?: string;
+  lastName?: string;
+  imageUrl?: string;
+  role?: string;
+}
+
 export interface UnifiedAuthContextType {
   authState: AuthState;
   tenantState: TenantState;
   authReady: boolean;          // authState === 'authenticated'
   tenantContextReady: boolean; // tenantState === 'resolved'
   user: UnifiedUser | null;
+  workspaceMembers: WorkspaceMemberInfo[];
   activeTenant: UnifiedTenantContext | null;
   availableTenants: UnifiedTenantContext[];
   switchTenant: (tenantId: string) => Promise<void>; // Takes internal ERPEZ Tenant.Id

@@ -453,6 +453,7 @@ export function KeycloakProvider({
     authReady: authState === 'authenticated',
     tenantContextReady: tenantState === 'resolved',
     user: unifiedUser,
+    workspaceMembers: [],
     activeTenant,
     availableTenants,
     switchTenant,

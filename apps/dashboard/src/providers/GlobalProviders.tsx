@@ -40,12 +40,16 @@ export default function GlobalProviders({ children }: GlobalProvidersProps) {
     initConsoleSecurityWarning()
   }, [])
 
+  const isDevPersonasAllowed =
+    import.meta.env.VITE_ENABLE_DEV_PERSONAS === 'true' &&
+    (import.meta.env.VITE_AUTH_PROVIDER || '').toLowerCase() !== 'clerk'
+
   return (
     <JotaiProvider>
       <TenantContextInitializer />
       <UnifiedAuthProvider>
         {children}
-        {import.meta.env.VITE_ENABLE_DEV_PERSONAS === 'true' && <DevRoleSwitcher />}
+        {isDevPersonasAllowed && <DevRoleSwitcher />}
       </UnifiedAuthProvider>
     </JotaiProvider>
   )

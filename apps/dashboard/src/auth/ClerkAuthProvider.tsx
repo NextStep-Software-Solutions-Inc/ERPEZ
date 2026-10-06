@@ -27,7 +27,11 @@ interface ClerkAuthProviderProps {
 function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn, getToken, signOut } = useAuth();
   const { user } = useUser();
-  const { organization } = useOrganization();
+  const { organization, memberships } = useOrganization({
+    memberships: {
+      infinite: true,
+    },
+  });
   const { setActive } = useOrganizationList({ userMemberships: { infinite: true } });
   const clerk = useClerk();
 
@@ -187,6 +191,28 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     };
   }, [user]);
 
+  const workspaceMembers = useMemo(() => {
+    if (!memberships?.data) return [];
+    return memberships.data.map((m: any) => {
+      const pub = m.publicUserData || {};
+      const firstName = pub.firstName || '';
+      const lastName = pub.lastName || '';
+      const fullName =
+        [firstName, lastName].filter(Boolean).join(' ') ||
+        pub.identifier ||
+        'Workspace Member';
+      return {
+        userId: pub.userId || '',
+        email: pub.identifier || '',
+        fullName,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        imageUrl: pub.imageUrl || undefined,
+        role: m.role || undefined,
+      };
+    });
+  }, [memberships?.data]);
+
   const authState: AuthState = !isLoaded ? 'loading' : isSignedIn ? 'authenticated' : 'unauthenticated';
 
   const value: UnifiedAuthContextType = {
@@ -195,6 +221,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     authReady: authState === 'authenticated',
     tenantContextReady: tenantState === 'resolved',
     user: unifiedUser,
+    workspaceMembers,
     activeTenant,
     availableTenants,
     switchTenant,

@@ -25,19 +25,123 @@ import { fetchUsers, type User } from '@/services/api/users'
 import {
   fetchAssignableOperationalRoles,
   assignOperationalRoles,
+  fetchUserAssignedRoles,
   type OperationalRoleSummary,
 } from '@/services/api/operationalRoles'
 import { toast } from 'sonner'
 import { LicenseStatusCard } from '@/components/ams/LicenseStatusCard'
 import { AmsRolesManagementView } from '@/components/ams/AmsRolesManagementView'
+import { useUnifiedAuth } from '@/auth/UnifiedAuthContext'
+
+interface ResolvedIdentity {
+  displayName: string
+  email: string
+  authId: string
+  avatarUrl?: string
+  roleBadge?: string
+  isCurrentUser: boolean
+  initials: string
+}
+
+function getInitials(name: string): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+function resolveUserIdentity(
+  user: User,
+  workspaceMembers: any[] = [],
+  currentAuthUser: any = null,
+): ResolvedIdentity {
+  let authId = ''
+  if (user.email?.includes('@keycloak.local')) {
+    authId = user.email.replace('@keycloak.local', '')
+  } else if (user.username?.startsWith('user_')) {
+    authId = user.username
+  } else if (user.fullName?.startsWith('user_')) {
+    authId = user.fullName.split(/[@\s]/)[0]
+  }
+
+  // 1. Match against Clerk workspace memberships
+  const clerkMember = workspaceMembers.find(
+    (m) =>
+      (authId && m.userId?.toLowerCase() === authId.toLowerCase()) ||
+      (user.email && m.email && m.email.toLowerCase() === user.email.toLowerCase())
+  )
+
+  // 2. Match against current logged-in user
+  const isCurrentUser = Boolean(
+    currentAuthUser &&
+      ((authId && currentAuthUser.id?.toLowerCase() === authId.toLowerCase()) ||
+        (user.email &&
+          currentAuthUser.email &&
+          user.email.toLowerCase() === currentAuthUser.email.toLowerCase()))
+  )
+
+  const isPlaceholderName =
+    !user.fullName ||
+    user.fullName.startsWith('user_') ||
+    user.fullName.includes('@keycloak.local')
+
+  const isPlaceholderEmail =
+    !user.email || user.email.includes('@keycloak.local')
+
+  let displayName = user.fullName
+  let email = user.email
+  let avatarUrl: string | undefined = undefined
+  let roleBadge: string | undefined = undefined
+
+  if (clerkMember) {
+    if (isPlaceholderName && clerkMember.fullName) {
+      displayName = clerkMember.fullName
+    }
+    if (isPlaceholderEmail && clerkMember.email) {
+      email = clerkMember.email
+    }
+    avatarUrl = clerkMember.imageUrl
+    roleBadge =
+      clerkMember.role === 'org:admin' || clerkMember.role === 'admin'
+        ? 'Workspace Admin'
+        : 'Member'
+  } else if (isCurrentUser && currentAuthUser) {
+    if (isPlaceholderName && currentAuthUser.displayName) {
+      displayName = currentAuthUser.displayName
+    }
+    if (isPlaceholderEmail && currentAuthUser.email) {
+      email = currentAuthUser.email
+    }
+    roleBadge = 'Workspace Admin'
+  } else if (isPlaceholderName) {
+    const short = authId ? `${authId.slice(0, 10)}...` : 'User'
+    displayName = `Workspace Member (${short})`
+  }
+
+  if (isPlaceholderEmail && authId) {
+    email = `ID: ${authId.slice(0, 16)}...`
+  }
+
+  return {
+    displayName,
+    email,
+    authId,
+    avatarUrl,
+    roleBadge,
+    isCurrentUser,
+    initials: getInitials(displayName),
+  }
+}
 
 export default function OperationalRolesTab() {
   const queryClient = useQueryClient()
+  const { user: currentAuthUser, workspaceMembers = [] } = useUnifiedAuth()
   const [viewMode, setViewMode] = useState<'assignments' | 'roles'>('assignments')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [loadingUserRoles, setLoadingUserRoles] = useState(false)
 
   // 1. Fetch active personnel/users
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
@@ -60,6 +164,7 @@ export default function OperationalRolesTab() {
       setIsDialogOpen(false)
       setSelectedUser(null)
       queryClient.invalidateQueries({ queryKey: ['workspace-users'] })
+      queryClient.invalidateQueries({ queryKey: ['assignable-operational-roles'] })
     },
     onError: (error: any) => {
       const msg =
@@ -68,23 +173,37 @@ export default function OperationalRolesTab() {
     },
   })
 
-  // Filtered users list
+  // Filtered users list with resolved identity matching
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) return users
     const q = searchQuery.toLowerCase()
-    return users.filter(
-      (u) =>
+    return users.filter((u) => {
+      const resolved = resolveUserIdentity(u, workspaceMembers, currentAuthUser)
+      return (
+        resolved.displayName.toLowerCase().includes(q) ||
+        resolved.email.toLowerCase().includes(q) ||
+        resolved.authId.toLowerCase().includes(q) ||
         u.fullName?.toLowerCase().includes(q) ||
         u.email?.toLowerCase().includes(q) ||
         u.employeeNumber?.toLowerCase().includes(q) ||
-        u.officeName?.toLowerCase().includes(q),
-    )
-  }, [users, searchQuery])
+        u.officeName?.toLowerCase().includes(q)
+      )
+    })
+  }, [users, searchQuery, workspaceMembers, currentAuthUser])
 
-  const handleOpenAssignModal = (user: User) => {
+  const handleOpenAssignModal = async (user: User) => {
     setSelectedUser(user)
     setSelectedRoleIds([]) // Reset or initialize
     setIsDialogOpen(true)
+    setLoadingUserRoles(true)
+    try {
+      const assigned = await fetchUserAssignedRoles(user.id)
+      setSelectedRoleIds(assigned.map((r: any) => r.id))
+    } catch {
+      // Keep empty if fetch fails
+    } finally {
+      setLoadingUserRoles(false)
+    }
   }
 
   const handleToggleRole = (roleId: string) => {
@@ -208,51 +327,95 @@ export default function OperationalRolesTab() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user) => (
-                <TableRow
-                  key={user.id}
-                  className="hover:bg-slate-50/60 transition"
-                >
-                  <TableCell className="py-3">
-                    <div className="font-medium text-slate-900">
-                      {user.fullName}
-                    </div>
-                    <div className="text-xs text-slate-500 flex items-center gap-2">
-                      <span>{user.email}</span>
-                      {user.employeeNumber && (
-                        <>
-                          <span>•</span>
-                          <span>EMP: {user.employeeNumber}</span>
-                        </>
+              filteredUsers.map((user) => {
+                const resolved = resolveUserIdentity(user, workspaceMembers, currentAuthUser)
+                return (
+                  <TableRow
+                    key={user.id}
+                    className="hover:bg-slate-50/60 transition"
+                  >
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-3">
+                        {resolved.avatarUrl ? (
+                          <img
+                            src={resolved.avatarUrl}
+                            alt={resolved.displayName}
+                            className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-semibold text-xs shrink-0">
+                            {resolved.initials}
+                          </div>
+                        )}
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-sm text-slate-900 truncate">
+                              {resolved.displayName}
+                            </span>
+                            {resolved.isCurrentUser && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 font-medium"
+                              >
+                                You
+                              </Badge>
+                            )}
+                            {resolved.roleBadge && (
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] px-1.5 py-0 h-4 bg-slate-100 text-slate-700 font-normal"
+                              >
+                                {resolved.roleBadge}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-500 flex items-center gap-2 truncate">
+                            <span>{resolved.email}</span>
+                            {user.employeeNumber && (
+                              <>
+                                <span>•</span>
+                                <span>EMP: {user.employeeNumber}</span>
+                              </>
+                            )}
+                            {resolved.authId && !resolved.email.includes(resolved.authId) && (
+                              <>
+                                <span>•</span>
+                                <span className="font-mono text-[10px] text-slate-400">
+                                  {resolved.authId.slice(0, 14)}...
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-700">
+                      {user.officeName || (
+                        <span className="text-slate-400 italic">Unassigned</span>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-700">
-                    {user.officeName || (
-                      <span className="text-slate-400 italic">Unassigned</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={user.isActive ? 'default' : 'secondary'}
-                      className="text-[10px]"
-                    >
-                      {user.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right pr-6">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleOpenAssignModal(user)}
-                      className="gap-1.5 text-xs h-8"
-                    >
-                      <UserCheck className="h-3.5 w-3.5 text-primary" />
-                      Configure Roles
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={user.isActive ? 'default' : 'secondary'}
+                        className="text-[10px]"
+                      >
+                        {user.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenAssignModal(user)}
+                        className="gap-1.5 text-xs h-8"
+                      >
+                        <UserCheck className="h-3.5 w-3.5 text-primary" />
+                        Configure Roles
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>
@@ -267,18 +430,26 @@ export default function OperationalRolesTab() {
               Assign Operational ERP Roles
             </DialogTitle>
             <DialogDescription>
-              Select operational roles to delegate to{' '}
-              <strong className="text-slate-900">
-                {selectedUser?.fullName}
-              </strong>{' '}
-              ({selectedUser?.email}).
+              {(() => {
+                if (!selectedUser) return null
+                const resolved = resolveUserIdentity(selectedUser, workspaceMembers, currentAuthUser)
+                return (
+                  <span>
+                    Select operational roles to delegate to{' '}
+                    <strong className="text-slate-900 font-semibold">
+                      {resolved.displayName}
+                    </strong>{' '}
+                    ({resolved.email}).
+                  </span>
+                )
+              })()}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto pr-2 py-4 space-y-3">
-            {isLoadingRoles ? (
+            {isLoadingRoles || loadingUserRoles ? (
               <div className="text-center py-8 text-slate-500">
-                Loading assignable operational roles...
+                {isLoadingRoles ? 'Loading assignable operational roles...' : 'Loading member roles...'}
               </div>
             ) : operationalRoles.length === 0 ? (
               <div className="text-center py-8 text-slate-500 flex flex-col items-center gap-2">
@@ -290,6 +461,7 @@ export default function OperationalRolesTab() {
             ) : (
               operationalRoles.map((role) => {
                 const isSelected = selectedRoleIds.includes(role.id)
+                const perms = role.permissionDisplayNames || (role as any).permissions || []
                 return (
                   <label
                     key={role.id}
@@ -323,11 +495,11 @@ export default function OperationalRolesTab() {
                           {role.description}
                         </p>
                       )}
-                      {role.permissionDisplayNames?.length > 0 && (
+                      {perms.length > 0 && (
                         <div className="flex flex-wrap gap-1 pt-1.5">
-                          {role.permissionDisplayNames
+                          {perms
                             .slice(0, 4)
-                            .map((p, idx) => (
+                            .map((p: string, idx: number) => (
                               <span
                                 key={idx}
                                 className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono"
@@ -335,9 +507,9 @@ export default function OperationalRolesTab() {
                                 {p}
                               </span>
                             ))}
-                          {role.permissionDisplayNames.length > 4 && (
+                          {perms.length > 4 && (
                             <span className="text-[10px] text-slate-400 self-center">
-                              +{role.permissionDisplayNames.length - 4} more
+                              +{perms.length - 4} more
                             </span>
                           )}
                         </div>
