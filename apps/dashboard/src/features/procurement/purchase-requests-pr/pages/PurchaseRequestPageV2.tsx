@@ -40,6 +40,7 @@ export default function PurchaseRequestPageV2() {
       : new URL('http://localhost').searchParams
   const initialTabFromUrl = urlParams.get('tab') ?? undefined
   const initialAprIdFromUrl = urlParams.get('aprId') ?? undefined
+  const initialAprNumberFromUrl = urlParams.get('aprNumber') ?? undefined
   const initialOfficeIdFromUrl = urlParams.get('officeId') ?? undefined
 
   const TAB_CONFIG = useMemo(
@@ -187,6 +188,14 @@ export default function PurchaseRequestPageV2() {
     }
   }, [isManagePrsRoute, TAB_CONFIG, activeTab])
 
+  // Automatically trigger Create PR Modal when navigated from an APR deficit alert
+  useEffect(() => {
+    if (initialTabFromUrl === 'out-of-stock' && initialAprIdFromUrl) {
+      setCurrentPRType('out-of-stock')
+      setShowCreateModal(true)
+    }
+  }, [initialTabFromUrl, initialAprIdFromUrl])
+
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab)
 
@@ -319,9 +328,11 @@ export default function PurchaseRequestPageV2() {
           onOpenChange={setShowCreateModal}
           prType={currentPRType}
           initialOfficeId={initialOfficeIdFromUrl}
+          initialAprId={initialAprIdFromUrl}
+          initialAprNumber={initialAprNumberFromUrl}
           initialPurpose={
             currentPRType === 'out-of-stock' && initialAprIdFromUrl
-              ? `Procurement of out-of-stock CSE items from APR`
+              ? `Procurement of out-of-stock CSE items from ${initialAprNumberFromUrl || 'approved APR'}`
               : undefined
           }
           onSuccess={(pr: PurchaseRequest) => {

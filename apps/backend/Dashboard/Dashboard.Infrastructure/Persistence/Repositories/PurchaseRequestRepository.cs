@@ -31,6 +31,7 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             .Include(pr => pr.FundSource)
             .Include(pr => pr.UACSCodeCombination)
             .Include(pr => pr.ProcurementCategory)
+            .Include(pr => pr.APR)
             .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
                 .ThenInclude(i => i.PPMPItem)
                     .ThenInclude(pi => pi!.NonCSEItem)

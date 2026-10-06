@@ -2742,6 +2742,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired(false);
 
         modelBuilder.Entity<PurchaseRequest>()
+            .HasOne(pr => pr.APR)
+            .WithMany()
+            .HasForeignKey(pr => pr.APRId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PurchaseRequest>()
             .HasOne(pr => pr.UACSCodeCombination)
             .WithMany()
             .HasForeignKey(pr => pr.UACSCodeCombinationId)
@@ -2775,6 +2782,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PurchaseRequest>()
             .HasIndex(pr => pr.OfficeId);
+
+        modelBuilder.Entity<PurchaseRequest>()
+            .HasIndex(pr => pr.APRId);
 
         modelBuilder.Entity<PurchaseRequest>()
             .HasIndex(pr => new { pr.OfficeId, pr.PRType, pr.Status })

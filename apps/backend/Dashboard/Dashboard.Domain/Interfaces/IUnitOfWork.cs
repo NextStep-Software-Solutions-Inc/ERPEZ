@@ -149,6 +149,7 @@ public interface IUnitOfWork
 
     IPublicSupplierApplicationRepository PublicSupplierApplicationRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
+    Task ExecuteInTransactionAsync(Func<Task> operation, System.Data.IsolationLevel isolationLevel, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     IAPRRepository APRRepository { get; }
     IAPRItemRepository APRItemRepository { get; }
