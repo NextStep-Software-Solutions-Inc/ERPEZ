@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.AMS;
 /// Locally cached and validated license state consumed by the Dashboard engine.
 /// Decoupled from direct Tenant Management database access.
 /// </summary>
-public class AmsLicenseSetting : TenantScopedEntity
+public class AmsLicenseSetting : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string LicenseKey { get; set; } = string.Empty;

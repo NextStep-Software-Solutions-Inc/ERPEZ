@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents procurement approval workflows for offices.
 /// </summary>
-public class ProcurementWorkflow : TenantScopedEntity
+public class ProcurementWorkflow : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

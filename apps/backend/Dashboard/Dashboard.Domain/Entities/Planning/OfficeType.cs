@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents the type/classification of an office.
 /// </summary>
-public class OfficeType : TenantScopedEntity
+public class OfficeType : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.AMS;
 /// Operational RBAC role defined inside the Dashboard AMS engine.
 /// Decoupled from external tenant management tables.
 /// </summary>
-public class AmsRole : TenantScopedEntity
+public class AmsRole : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

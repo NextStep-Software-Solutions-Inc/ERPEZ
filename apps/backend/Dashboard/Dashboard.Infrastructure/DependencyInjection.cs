@@ -253,6 +253,8 @@ public static class DependencyInjection
                     "CREATE SCHEMA IF NOT EXISTS procurement;");
                 await dbContext.Database.MigrateAsync();
 
+                dbContext.CurrentTenantId = ApplicationDbContext.DefaultTestTenantId;
+
                 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                 await ERPEZ.Infrastructure.Persistence.Seeders.ProcurementActivityTypeSeeder.SeedAsync(unitOfWork);
                 await ERPEZ.Infrastructure.Persistence.Seeders.PublicHolidaySeeder.SeedAsync(unitOfWork);

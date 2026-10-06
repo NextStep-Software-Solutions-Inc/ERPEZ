@@ -37,12 +37,14 @@ Each operational entity is classified strictly according to its **ownership sema
 
 ### 3.1. AMS (Account & Access Management System) — 4 Entities
 
-| Entity | Scope | Reason & Ownership | TenantId | Query Filter | Compound Constraints |
+AMS entities represent system-level operational RBAC roles, permission sets, deployment licenses, and role assignments defined globally for the Dashboard operational instance. They do not contain tenant-specific data partitions.
+
+| Entity | Scope | Reason & Ownership | TenantId | Query Filter | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `AmsRole` | **Tenant** | Workspace-specific role definitions | Yes | Yes | `(TenantId, Name)` |
-| `AmsRolePermission` | **Tenant** | Permission assignments for workspace roles | Yes | Yes | `(TenantId, RoleId, Permission)` |
-| `UserRoleAssignment` | **Tenant** | User mapping to workspace roles | Yes | Yes | `(TenantId, UserId, RoleId)` |
-| `AmsLicenseSetting` | **Tenant** | Tenant workspace license allocation settings | Yes | Yes | `(TenantId)` |
+| `AmsRole` | **Global** | System-wide role definitions ("System Administrator", "Planning Officer", etc.) | No | No | Unique on `Name` |
+| `AmsRolePermission` | **Global** | System permission mappings for operational roles | No | No | Unique on `(RoleId, PermissionKey)` |
+| `UserRoleAssignment` | **Global** | Operational user role bindings | No | No | Unique on `(UserId, RoleId)` |
+| `AmsLicenseSetting` | **Global** | Operational dashboard node license configuration | No | No | Global singleton node license |
 
 ---
 
@@ -126,12 +128,8 @@ All purchasing, bidding, awards, supplier responses, and contracting workflows b
 | Entity | Scope | Reason & Ownership | TenantId | Query Filter | Compound Constraints |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `Office` | **Tenant** | Organization's internal office/division tree | Yes | Yes | `(TenantId, Code)` |
-| `OfficeType` | **Tenant** | Internal organizational office categories | Yes | Yes | `(TenantId, Name)` |
 | `OfficeCeiling` | **Tenant** | Budget expenditure limits assigned to office | Yes | Yes | `(TenantId, OfficeId, FiscalYearId)` |
 | `SubOfficeCeiling` | **Tenant** | Sub-unit budget ceiling allocations | Yes | Yes | `(TenantId, Id)` |
-| `Organization` | **Tenant** | Tenant agency organizational entity | Yes | Yes | `(TenantId, Code)` |
-| `OrganizationFundSource` | **Tenant** | Association between tenant org and fund sources | Yes | Yes | `(TenantId, OrgId, FundSourceId)` |
-| `FundSource` | **Tenant** | Tenant's specific appropriated fund sources (GAA, SARO, Income) | Yes | Yes | `(TenantId, Code)` |
 | `AgencyMasterBudget` | **Tenant** | Master budget ceiling allocated to tenant agency | Yes | Yes | `(TenantId, FiscalYearId)` |
 | `BudgetCall` | **Tenant** | Internal budget call initiated by tenant leadership | Yes | Yes | `(TenantId, FiscalYearId)` |
 | `FiscalYear` | **Tenant** | Tenant accounting fiscal year lifecycle & status | Yes | Yes | `(TenantId, Year)` |
@@ -197,7 +195,6 @@ All purchasing, bidding, awards, supplier responses, and contracting workflows b
 | `PersonnelPosition` | **Tenant** | Tenant personnel assignments to positions | Yes | Yes | `(TenantId, PositionId, UserId)` |
 | `Position` | **Tenant** | Tenant organizational plantilla positions | Yes | Yes | `(TenantId, ItemNumber)` |
 | `ProcurementPolicyConfig` | **Tenant** | Tenant-specific procurement rules and thresholds | Yes | Yes | `(TenantId)` |
-| `ProcurementWorkflow` | **Tenant** | Custom approval chains for tenant documents | Yes | Yes | `(TenantId, Code)` |
 | `Rating` | **Tenant** | Performance score records | Yes | Yes | `(TenantId, Id)` |
 | `RatingScaleLevel` | **Tenant** | Performance rubric intervals | Yes | Yes | `(TenantId, Id)` |
 | `RatingScaleTemplate` | **Tenant** | Agency evaluation scale templates | Yes | Yes | `(TenantId, Name)` |
@@ -246,8 +243,11 @@ These represent Philippine national government standards, civil service regulati
 | `ObjectExpenseClass` | **Global** | Mapping of UACS Object Codes to Expense Classes | No | No | Standard national allotment rules |
 | `Object` | **Global** | National UACS Object of Expenditures (e.g. 50203010-00) | No | No | Official COA Chart of Accounts |
 | `ObjectChildCode` | **Global** | Detailed sub-object expenditure codes under UACS | No | No | Official COA Chart of Accounts |
-| `ItemPrice` | **Tenant** | Local approved item pricing within tenant | Yes | Yes | Local price index derived by agency |
-| `ItemRequest` | **Tenant** | Local requisition requests | Yes | Yes | Internal department request |
+| `FundSource` | **Global** | Official Philippine UACS Fund Source codes (Clusters, Authorizations, Categories) | No | No | National statutory standard |
+| `OfficeType` | **Global** | Standard government organizational unit types (Office, Division, Section, Bureau) | No | No | Standard administrative classification |
+| `ProcurementWorkflow` | **Global** | Standard statutory procurement approval routing models (Centralized, Decentralized) | No | No | Statutory government procurement workflows |
+| `Organization` | **Global** | Official Philippine Government Department / Agency catalog (UACS Dept/Agency registry) | No | No | National statutory registry |
+| `OrganizationFundSource` | **Global** | Official statutory mapping between national government agencies and fund sources | No | No | National statutory standard |
 
 ---
 

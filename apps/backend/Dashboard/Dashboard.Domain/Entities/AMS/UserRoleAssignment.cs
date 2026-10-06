@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.AMS;
 /// <summary>
 /// Association linking a Dashboard User with an operational AmsRole.
 /// </summary>
-public class UserRoleAssignment : TenantScopedEntity
+public class UserRoleAssignment : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid UserId { get; set; }

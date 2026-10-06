@@ -990,7 +990,7 @@ public class ApplicationDbContext : DbContext
         
         //OfficeType
         modelBuilder.Entity<OfficeType>()
-            .HasIndex(ot => new { ot.TenantId, ot.Code })
+            .HasIndex(ot => ot.Code)
             .IsUnique();
 
         //Category
@@ -1005,7 +1005,7 @@ public class ApplicationDbContext : DbContext
 
         //ProcurementWorkflow
         modelBuilder.Entity<ProcurementWorkflow>()
-            .HasIndex(pw => new { pw.TenantId, pw.Code })
+            .HasIndex(pw => pw.Code)
             .IsUnique();
 
         //Cluster
