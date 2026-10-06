@@ -90,7 +90,8 @@ public class CachedTenantAccessService(
                     t."Name" as tenant_name, 
                     t."IsDisabled" as tenant_is_disabled, 
                     t."ProvisioningState"::text as tenant_provisioning_state, 
-                    COALESCE(ts."AllowedDomain", 'localhost') as allowed_domain
+                    COALESCE(ts."AllowedDomain", 'localhost') as allowed_domain,
+                    COALESCE(t."TenancyMode"::text, 'SaaS') as tenancy_mode
                 FROM "TenantMembers" tm
                 JOIN "Tenants" t ON tm."TenantId" = t."Id"
                 LEFT JOIN "TenantSettings" ts ON ts."TenantId" = t."Id" AND ts."IsDeleted" = false
@@ -115,7 +116,8 @@ public class CachedTenantAccessService(
                         "Development Workspace",
                         TenantProvisioningState.Ready,
                         "localhost",
-                        "Active");
+                        "Active",
+                        TenancyMode.SaaS);
                     return TenantAccessResult.Success(devContext);
                 }
 
@@ -128,6 +130,7 @@ public class CachedTenantAccessService(
             var tenantIsDisabled = reader.GetBoolean(3);
             var provisioningStateStr = reader.GetString(4);
             var allowedDomain = reader.GetString(5);
+            var tenancyModeStr = reader.IsDBNull(6) ? "SaaS" : reader.GetString(6);
 
             if (memberIsDeleted || (!string.Equals(memberStatus, "Active", StringComparison.OrdinalIgnoreCase) && memberStatus != "1"))
             {
@@ -149,12 +152,17 @@ public class CachedTenantAccessService(
                 ? parsedState
                 : TenantProvisioningState.Ready;
 
+            var tenancyMode = Enum.TryParse<TenancyMode>(tenancyModeStr, true, out var parsedMode)
+                ? parsedMode
+                : TenancyMode.SaaS;
+
             var accessContext = new TenantAccessContext(
                 request.TenantId,
                 tenantName,
                 provState,
                 allowedDomain,
-                "Active");
+                "Active",
+                tenancyMode);
 
             var successResult = TenantAccessResult.Success(accessContext);
             cache.Set(cacheKey, successResult, TimeSpan.FromMinutes(5));

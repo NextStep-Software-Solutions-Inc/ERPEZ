@@ -98,6 +98,7 @@ public class TenantAccessService(
                 t.Name,
                 t.IsDisabled,
                 t.ProvisioningState,
+                t.TenancyMode,
                 t.AuthProvider,
                 AllowedDomain = t.TenantSetting != null ? t.TenantSetting.AllowedDomain : string.Empty
             })
@@ -138,14 +139,15 @@ public class TenantAccessService(
                 503);
         }
 
-        // 7. Operational Database Readiness Check
+        // 7. Operational Database Readiness Check (required for On-Premise or if an operational DB record exists)
         var opDb = await dbContext.TenantOperationalDatabases!
             .AsNoTracking()
             .Where(db => db.TenantId == request.TenantId && !db.IsDeleted)
             .Select(db => new { db.ProvisioningState })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (opDb != null && opDb.ProvisioningState != TenantProvisioningState.Ready)
+        if ((tenantInfo.TenancyMode == TenancyMode.OnPremise && opDb == null) ||
+            (opDb != null && opDb.ProvisioningState != TenantProvisioningState.Ready))
         {
             return TenantAccessResult.Fail(
                 "Tenant operational database is currently being provisioned.",
@@ -199,7 +201,8 @@ public class TenantAccessService(
             tenantInfo.Name,
             tenantInfo.ProvisioningState,
             tenantInfo.AllowedDomain,
-            license?.Status.ToString() ?? "Active"
+            license?.Status.ToString() ?? "Active",
+            tenantInfo.TenancyMode
         );
 
         return TenantAccessResult.Success(accessContext);
