@@ -32,6 +32,8 @@ import { toast } from 'sonner'
 import { LicenseStatusCard } from '@/components/ams/LicenseStatusCard'
 import { AmsRolesManagementView } from '@/components/ams/AmsRolesManagementView'
 import { useUnifiedAuth } from '@/auth/UnifiedAuthContext'
+import { InviteWorkspaceMemberModal } from './InviteWorkspaceMemberModal'
+import { fetchTenantMembers } from '@/services/api/tenantMembers'
 
 interface ResolvedIdentity {
   displayName: string
@@ -62,19 +64,29 @@ function resolveUserIdentity(
     authId = user.username
   } else if (user.fullName?.startsWith('user_')) {
     authId = user.fullName.split(/[@\s]/)[0]
+  } else if (user.employeeNumber?.startsWith('user_')) {
+    authId = user.employeeNumber
   }
 
-  // 1. Match against Clerk workspace memberships
+  // 1. Match against Clerk / Tenant workspace memberships
   const clerkMember = workspaceMembers.find(
     (m) =>
-      (authId && m.userId?.toLowerCase() === authId.toLowerCase()) ||
-      (user.email && m.email && m.email.toLowerCase() === user.email.toLowerCase())
+      (authId && m.userId && (
+        m.userId.toLowerCase() === authId.toLowerCase() ||
+        authId.toLowerCase().includes(m.userId.toLowerCase()) ||
+        m.userId.toLowerCase().includes(authId.toLowerCase())
+      )) ||
+      (user.email && m.email && m.email.toLowerCase() === user.email.toLowerCase()) ||
+      (user.username && m.userId && m.userId.toLowerCase() === user.username.toLowerCase())
   )
 
   // 2. Match against current logged-in user
   const isCurrentUser = Boolean(
     currentAuthUser &&
-      ((authId && currentAuthUser.id?.toLowerCase() === authId.toLowerCase()) ||
+      ((authId && currentAuthUser.id && (
+        currentAuthUser.id.toLowerCase() === authId.toLowerCase() ||
+        authId.toLowerCase().includes(currentAuthUser.id.toLowerCase())
+      )) ||
         (user.email &&
           currentAuthUser.email &&
           user.email.toLowerCase() === currentAuthUser.email.toLowerCase()))
@@ -94,15 +106,15 @@ function resolveUserIdentity(
   let roleBadge: string | undefined = undefined
 
   if (clerkMember) {
-    if (isPlaceholderName && clerkMember.fullName) {
+    if ((isPlaceholderName || !displayName) && clerkMember.fullName) {
       displayName = clerkMember.fullName
     }
-    if (isPlaceholderEmail && clerkMember.email) {
+    if ((isPlaceholderEmail || !email) && clerkMember.email) {
       email = clerkMember.email
     }
     avatarUrl = clerkMember.imageUrl
     roleBadge =
-      clerkMember.role === 'org:admin' || clerkMember.role === 'admin'
+      clerkMember.role === 'org:admin' || clerkMember.role === 'admin' || clerkMember.role === 'TenantAdmin'
         ? 'Workspace Admin'
         : 'Member'
   } else if (isCurrentUser && currentAuthUser) {
@@ -155,7 +167,49 @@ export default function OperationalRolesTab() {
     queryFn: fetchAssignableOperationalRoles,
   })
 
-  // 3. Mutation to assign operational roles
+  // 3. Fetch tenant members from TenantManagement.Api for comprehensive identification
+  const { data: tenantMembers = [] } = useQuery({
+    queryKey: ['tenant-members'],
+    queryFn: fetchTenantMembers,
+    staleTime: 30_000,
+  })
+
+  // Combine workspace members from Auth Provider (Clerk/Keycloak) and TenantManagement.Api
+  const allWorkspaceMembers = useMemo(() => {
+    const list = [...workspaceMembers]
+    for (const tm of tenantMembers) {
+      const userId = tm.userId || tm.externalIdentityId || tm.id
+      const firstName = tm.firstName || ''
+      const lastName = tm.lastName || ''
+      const fullName =
+        tm.fullName ||
+        [firstName, lastName].filter(Boolean).join(' ') ||
+        tm.email ||
+        'Workspace Member'
+      const existing = list.find(
+        (m) =>
+          (m.userId && userId && m.userId.toLowerCase() === userId.toLowerCase()) ||
+          (m.email && tm.email && m.email.toLowerCase() === tm.email.toLowerCase())
+      )
+      if (existing) {
+        if (fullName !== 'Workspace Member') existing.fullName = fullName
+        if (tm.email) existing.email = tm.email
+        if (tm.role) existing.role = tm.role
+      } else {
+        list.push({
+          userId,
+          email: tm.email || '',
+          fullName,
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          role: tm.role || (tm.roles && tm.roles[0]) || 'Member',
+        })
+      }
+    }
+    return list
+  }, [workspaceMembers, tenantMembers])
+
+  // 4. Mutation to assign operational roles
   const assignMutation = useMutation({
     mutationFn: ({ userId, roleIds }: { userId: string; roleIds: string[] }) =>
       assignOperationalRoles(userId, roleIds),
@@ -178,7 +232,7 @@ export default function OperationalRolesTab() {
     if (!searchQuery.trim()) return users
     const q = searchQuery.toLowerCase()
     return users.filter((u) => {
-      const resolved = resolveUserIdentity(u, workspaceMembers, currentAuthUser)
+      const resolved = resolveUserIdentity(u, allWorkspaceMembers, currentAuthUser)
       return (
         resolved.displayName.toLowerCase().includes(q) ||
         resolved.email.toLowerCase().includes(q) ||
@@ -189,7 +243,7 @@ export default function OperationalRolesTab() {
         u.officeName?.toLowerCase().includes(q)
       )
     })
-  }, [users, searchQuery, workspaceMembers, currentAuthUser])
+  }, [users, searchQuery, allWorkspaceMembers, currentAuthUser])
 
   const handleOpenAssignModal = async (user: User) => {
     setSelectedUser(user)
@@ -272,8 +326,8 @@ export default function OperationalRolesTab() {
             </div>
           </div>
 
-      {/* Toolbar / Search */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Toolbar / Search & Actions */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
@@ -283,8 +337,11 @@ export default function OperationalRolesTab() {
             className="pl-9 h-10"
           />
         </div>
-        <div className="text-xs text-slate-500">
-          Showing {filteredUsers.length} of {users.length} workspace members
+        <div className="flex items-center justify-between sm:justify-end gap-3">
+          <div className="text-xs text-slate-500 hidden sm:block">
+            Showing {filteredUsers.length} of {users.length} workspace members
+          </div>
+          <InviteWorkspaceMemberModal />
         </div>
       </div>
 
@@ -328,7 +385,7 @@ export default function OperationalRolesTab() {
               </TableRow>
             ) : (
               filteredUsers.map((user) => {
-                const resolved = resolveUserIdentity(user, workspaceMembers, currentAuthUser)
+                const resolved = resolveUserIdentity(user, allWorkspaceMembers, currentAuthUser)
                 return (
                   <TableRow
                     key={user.id}
@@ -432,7 +489,7 @@ export default function OperationalRolesTab() {
             <DialogDescription>
               {(() => {
                 if (!selectedUser) return null
-                const resolved = resolveUserIdentity(selectedUser, workspaceMembers, currentAuthUser)
+                const resolved = resolveUserIdentity(selectedUser, allWorkspaceMembers, currentAuthUser)
                 return (
                   <span>
                     Select operational roles to delegate to{' '}

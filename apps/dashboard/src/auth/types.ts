@@ -27,6 +27,14 @@ export interface WorkspaceMemberInfo {
   role?: string;
 }
 
+export interface WorkspaceInvitationInfo {
+  id: string;
+  email: string;
+  role?: string;
+  status: string;
+  createdAt?: string;
+}
+
 export interface UnifiedAuthContextType {
   authState: AuthState;
   tenantState: TenantState;
@@ -34,6 +42,9 @@ export interface UnifiedAuthContextType {
   tenantContextReady: boolean; // tenantState === 'resolved'
   user: UnifiedUser | null;
   workspaceMembers: WorkspaceMemberInfo[];
+  workspaceInvitations: WorkspaceInvitationInfo[];
+  inviteWorkspaceMember: (email: string, role?: string) => Promise<void>;
+  revokeWorkspaceInvitation: (invitationId: string) => Promise<void>;
   activeTenant: UnifiedTenantContext | null;
   availableTenants: UnifiedTenantContext[];
   switchTenant: (tenantId: string) => Promise<void>; // Takes internal ERPEZ Tenant.Id

@@ -47,6 +47,17 @@ export function WorkspaceSelector() {
     );
   }
 
+  // If user only has 1 tenant (or none to switch to), do not render a dropdown switcher
+  if (availableTenants.length <= 1) {
+    if (!activeTenant) return null;
+    return (
+      <div className="flex items-center gap-2 max-w-[240px] h-9 px-3 border border-border/80 bg-card text-card-foreground rounded-md shadow-xs text-xs font-medium">
+        <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+        <span className="truncate text-left font-semibold">{activeTenant.name}</span>
+      </div>
+    );
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

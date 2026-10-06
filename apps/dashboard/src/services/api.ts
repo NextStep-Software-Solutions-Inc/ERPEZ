@@ -44,13 +44,21 @@ api.interceptors.request.use(
     }
 
     // Tenant Header Propagation:
-    // In Keycloak mode, candidate tenant ID is attached as X-Tenant-Id.
-    // In Clerk mode, bridge returns null (org context is encoded in session token).
+    // Attached as X-Tenant-Id and X-Tenant-Name
     const candidateTenant = getCandidateTenantId()
     if (candidateTenant) {
       config.headers['X-Tenant-Id'] = candidateTenant
     } else {
       delete config.headers['X-Tenant-Id']
+    }
+
+    if (typeof window !== 'undefined') {
+      const tenantName =
+        sessionStorage.getItem('erpez_tenant_name') ||
+        localStorage.getItem('erpez_tenant_name')
+      if (tenantName) {
+        config.headers['X-Tenant-Name'] = tenantName
+      }
     }
 
     return config

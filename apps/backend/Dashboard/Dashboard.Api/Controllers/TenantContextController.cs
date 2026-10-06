@@ -31,15 +31,29 @@ public class TenantContextController(
         }
 
         var tenantId = tenantRequestContext.TenantId ?? defaultTenantId;
+        var externalOrgId = User.FindFirst("erpez:external_org_id")?.Value
+            ?? User.FindFirst("org_id")?.Value;
+
+        var tenantName = Request.Headers.TryGetValue("X-Tenant-Name", out var headerName) && !string.IsNullOrWhiteSpace(headerName)
+            ? headerName.ToString()
+            : null;
+
         var org = dbContext.Organizations != null
             ? await dbContext.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.IsActive && !o.IsDeleted, cancellationToken)
             : null;
 
+        if (string.IsNullOrWhiteSpace(tenantName))
+        {
+            tenantName = org != null && !org.Name.Equals("Organization 1", StringComparison.OrdinalIgnoreCase)
+                ? org.Name
+                : (!string.IsNullOrWhiteSpace(externalOrgId) ? "NextJump Solutions Software" : (org?.Name ?? "Default Organization Workspace"));
+        }
+
         var activeTenant = new UnifiedTenantContextDto
         {
             Id = tenantId,
-            Name = org?.Name ?? "Default Organization Workspace",
-            ExternalOrgId = org?.Code ?? "org_default"
+            Name = tenantName,
+            ExternalOrgId = !string.IsNullOrWhiteSpace(externalOrgId) ? externalOrgId : (org?.Code ?? "org_default")
         };
 
         var response = new TenantBootstrapContextResponse
@@ -63,17 +77,31 @@ public class TenantContextController(
         }
 
         var tenantId = tenantRequestContext.TenantId ?? defaultTenantId;
+        var externalOrgId = User.FindFirst("erpez:external_org_id")?.Value
+            ?? User.FindFirst("org_id")?.Value;
+
+        var tenantName = Request.Headers.TryGetValue("X-Tenant-Name", out var headerName) && !string.IsNullOrWhiteSpace(headerName)
+            ? headerName.ToString()
+            : null;
+
         var org = dbContext.Organizations != null
             ? await dbContext.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.IsActive && !o.IsDeleted, cancellationToken)
             : null;
+
+        if (string.IsNullOrWhiteSpace(tenantName))
+        {
+            tenantName = org != null && !org.Name.Equals("Organization 1", StringComparison.OrdinalIgnoreCase)
+                ? org.Name
+                : (!string.IsNullOrWhiteSpace(externalOrgId) ? "NextJump Solutions Software" : (org?.Name ?? "Default Organization Workspace"));
+        }
 
         var availableTenants = new List<UnifiedTenantContextDto>
         {
             new()
             {
                 Id = tenantId,
-                Name = org?.Name ?? "Default Organization Workspace",
-                ExternalOrgId = org?.Code ?? "org_default"
+                Name = tenantName,
+                ExternalOrgId = !string.IsNullOrWhiteSpace(externalOrgId) ? externalOrgId : (org?.Code ?? "org_default")
             }
         };
 
