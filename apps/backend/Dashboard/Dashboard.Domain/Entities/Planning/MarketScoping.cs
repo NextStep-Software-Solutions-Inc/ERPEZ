@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Contains activities conducted and parameter evaluations.
 /// References a specific LineItemBudgetActivity instead of LineItemBudget.
 /// </summary>
-public class MarketScoping : BaseEntity
+public class MarketScoping : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid UserId { get; set; }

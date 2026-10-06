@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents a category for supplier/merchant classification.
 /// </summary>
-public class SupplierCategory : BaseEntity
+public class SupplierCategory : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

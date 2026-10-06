@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Aggregate root representing the authoritative winning award recommendation resulting from completed Post-Qualification.
 /// Consumed directly by BACResolution (Award) and NoticeOfAward (NOA).
 /// </summary>
-public class BiddingAwardRecommendation : BaseEntity
+public class BiddingAwardRecommendation : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ProcurementProjectId { get; set; }

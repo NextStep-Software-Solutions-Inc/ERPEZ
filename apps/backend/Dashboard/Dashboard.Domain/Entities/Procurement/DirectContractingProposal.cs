@@ -4,7 +4,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
-public class DirectContractingProposal : BaseEntity
+public class DirectContractingProposal : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid DirectContractingId { get; set; }

@@ -12,7 +12,7 @@ public class AmsRoleConfiguration : IEntityTypeConfiguration<AmsRole>
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Name).IsRequired().HasMaxLength(100);
         builder.Property(r => r.Description).HasMaxLength(500);
-        builder.HasIndex(r => r.Name).IsUnique();
+        builder.HasIndex(r => new { r.TenantId, r.Name }).IsUnique();
 
         builder.HasMany(r => r.Permissions)
             .WithOne(p => p.Role)
@@ -33,7 +33,7 @@ public class AmsRolePermissionConfiguration : IEntityTypeConfiguration<AmsRolePe
         builder.ToTable("AmsRolePermissions");
         builder.HasKey(p => p.Id);
         builder.Property(p => p.PermissionKey).IsRequired().HasMaxLength(150);
-        builder.HasIndex(p => new { p.RoleId, p.PermissionKey }).IsUnique();
+        builder.HasIndex(p => new { p.TenantId, p.RoleId, p.PermissionKey }).IsUnique();
     }
 }
 
@@ -43,7 +43,7 @@ public class UserRoleAssignmentConfiguration : IEntityTypeConfiguration<UserRole
     {
         builder.ToTable("UserRoleAssignments");
         builder.HasKey(ua => ua.Id);
-        builder.HasIndex(ua => new { ua.UserId, ua.RoleId }).IsUnique();
+        builder.HasIndex(ua => new { ua.TenantId, ua.UserId, ua.RoleId }).IsUnique();
 
         builder.HasOne(ua => ua.User)
             .WithMany(u => u.RoleAssignments)
@@ -58,6 +58,7 @@ public class AmsLicenseSettingConfiguration : IEntityTypeConfiguration<AmsLicens
     {
         builder.ToTable("AmsLicenseSettings");
         builder.HasKey(l => l.Id);
+        builder.HasIndex(l => l.TenantId).IsUnique();
         builder.Property(l => l.LicenseKey).IsRequired().HasMaxLength(256);
         builder.Property(l => l.Plan).HasMaxLength(50);
         builder.Property(l => l.AllowedDomain).HasMaxLength(200);

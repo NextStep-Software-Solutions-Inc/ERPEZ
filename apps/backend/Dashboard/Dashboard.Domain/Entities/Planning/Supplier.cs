@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Represents a supplier/merchant in the vendor master list.
 /// Manages compliance and verification of suppliers within the procurement ecosystem.
 /// </summary>
-public class Supplier : BaseEntity
+public class Supplier : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

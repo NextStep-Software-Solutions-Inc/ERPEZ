@@ -12,7 +12,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// will be added in a dedicated TC-02 task once that scope starts.
 /// </summary>
 [Table("BiddingDocument", Schema = "procurement")]
-public class BiddingDocument : BaseEntity
+public class BiddingDocument : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ProcurementProjectId { get; set; }

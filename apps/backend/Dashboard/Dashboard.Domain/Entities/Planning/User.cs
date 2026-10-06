@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Represents a user/employee in the system.
 /// Serves as both authentication account and employee/personnel record.
 /// </summary>
-public class User : BaseEntity
+public class User : TenantScopedEntity
 {
     /// <summary>
     /// Keycloak subject identifier (sub claim) representing the federated external identity.

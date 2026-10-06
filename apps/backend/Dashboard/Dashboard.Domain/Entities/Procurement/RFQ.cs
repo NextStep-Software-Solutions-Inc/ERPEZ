@@ -15,7 +15,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// (Shopping, Small Value Procurement, Negotiated Procurement, Direct Contracting, etc.)
 /// per GPPB rules.
 /// </summary>
-public class RFQ : BaseEntity
+public class RFQ : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string RFQNumber { get; set; } = string.Empty;

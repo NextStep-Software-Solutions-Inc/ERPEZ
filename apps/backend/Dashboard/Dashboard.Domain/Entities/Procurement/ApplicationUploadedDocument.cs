@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Mirrors the pattern used by SupplierRequirement.Url.
 /// BlobStorageUrl is the permanent URL returned by PromoteFileAsync.
 /// </summary>
-public class ApplicationUploadedDocument : BaseEntity
+public class ApplicationUploadedDocument : TenantScopedEntity
 {
     public Guid ApplicationId   { get; set; }
 

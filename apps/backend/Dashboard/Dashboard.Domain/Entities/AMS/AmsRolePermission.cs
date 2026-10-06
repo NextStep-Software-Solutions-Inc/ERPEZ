@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.AMS;
 /// Atomic permission mapping assigned to an AmsRole.
 /// Corresponds to constants in ERPEZ.Shared.Constants.Permissions.
 /// </summary>
-public class AmsRolePermission : BaseEntity
+public class AmsRolePermission : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid RoleId { get; set; }

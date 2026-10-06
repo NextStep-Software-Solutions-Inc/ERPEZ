@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Represents uploaded proof or approval documents associated with Direct Acquisition.
 /// Maps to files handled by IFileStorageService.
 /// </summary>
-public class DirectAcquisitionDocument : BaseEntity
+public class DirectAcquisitionDocument : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid DirectAcquisitionId { get; set; }

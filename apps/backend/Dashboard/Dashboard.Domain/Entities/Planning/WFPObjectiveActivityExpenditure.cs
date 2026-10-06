@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class WFPObjectiveActivityExpenditure : BaseEntity
+public class WFPObjectiveActivityExpenditure : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid WFPObjectiveActivityId { get; set; }

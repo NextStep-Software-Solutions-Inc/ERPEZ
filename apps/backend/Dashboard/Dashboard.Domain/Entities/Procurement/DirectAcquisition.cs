@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Bypasses competitive bidding and quotation procedures while maintaining audit integrity and routing
 /// to disbursement voucher processing upon recording purchase and approval.
 /// </summary>
-public class DirectAcquisition : BaseEntity
+public class DirectAcquisition : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string DANumber { get; set; } = string.Empty;

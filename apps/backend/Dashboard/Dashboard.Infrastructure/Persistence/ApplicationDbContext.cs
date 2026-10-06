@@ -10,8 +10,69 @@ using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Infrastructure.Persistence;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+public class ApplicationDbContext : DbContext
 {
+    private readonly ERPEZ.Shared.Interfaces.ITenantRequestContext? tenantRequestContext;
+    private Guid? currentTenantIdOverride;
+
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        ERPEZ.Shared.Interfaces.ITenantRequestContext? tenantRequestContext = null) : base(options)
+    {
+        this.tenantRequestContext = tenantRequestContext;
+    }
+
+    public static Guid DefaultTestTenantId { get; } = Guid.Parse("00000000-0000-0000-0000-000000000001");
+
+    /// <summary>
+    /// Evaluated dynamically per DbContext instance at query execution time.
+    /// Never embeds a tenant-specific constant into the compiled EF Core model tree.
+    /// </summary>
+    public virtual Guid? CurrentTenantId
+    {
+        get
+        {
+            if (currentTenantIdOverride.HasValue)
+            {
+                return currentTenantIdOverride.Value;
+            }
+
+            if (tenantRequestContext != null)
+            {
+                return tenantRequestContext.TenantId;
+            }
+
+            // Standalone test/tooling fallback when no DI request context exists
+            return DefaultTestTenantId;
+        }
+        set => currentTenantIdOverride = value;
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        StampTenantIds();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        StampTenantIds();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void StampTenantIds()
+    {
+        if (CurrentTenantId.HasValue && CurrentTenantId.Value != Guid.Empty)
+        {
+            foreach (var entry in ChangeTracker.Entries<ERPEZ.Domain.Common.TenantScopedEntity>())
+            {
+                if (entry.State == EntityState.Added && entry.Entity.TenantId == Guid.Empty)
+                {
+                    entry.Entity.TenantId = CurrentTenantId.Value;
+                }
+            }
+        }
+    }
     // AMS (Account & Access Management System)
     public DbSet<AmsRole>? AmsRoles { get; set; }
     public DbSet<AmsRolePermission>? AmsRolePermissions { get; set; }
@@ -251,7 +312,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         .HasIndex(k => new { k.Name });
 
         modelBuilder.Entity<KPI>()
-            .HasIndex(k => k.Name)
+            .HasIndex(k => new { k.TenantId, k.Name })
             .IsUnique();
 
         // KPI -> KPIPerformanceMeasures
@@ -929,7 +990,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         //OfficeType
         modelBuilder.Entity<OfficeType>()
-            .HasIndex(ot => ot.Code)
+            .HasIndex(ot => new { ot.TenantId, ot.Code })
             .IsUnique();
 
         //Category
@@ -944,17 +1005,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //ProcurementWorkflow
         modelBuilder.Entity<ProcurementWorkflow>()
-            .HasIndex(pw => pw.Code)
+            .HasIndex(pw => new { pw.TenantId, pw.Code })
             .IsUnique();
 
         //Cluster
         modelBuilder.Entity<Cluster>()
-            .HasIndex(c => c.Code)
+            .HasIndex(c => new { c.TenantId, c.Code })
             .IsUnique();
 
         //Office
         modelBuilder.Entity<Office>()
-            .HasIndex(o => o.Code)
+            .HasIndex(o => new { o.TenantId, o.Code })
             .IsUnique();
 
         modelBuilder.Entity<Office>()
@@ -1023,7 +1084,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //Position
         modelBuilder.Entity<Position>()
-            .HasIndex(p => p.Code)
+            .HasIndex(p => new { p.TenantId, p.Code })
             .IsUnique();
 
         modelBuilder.Entity<Position>()
@@ -1056,7 +1117,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //ItemPrice - Pricing Schedule
         modelBuilder.Entity<ItemPrice>()
-            .HasIndex(ip => new { ip.ProcurementItemId, ip.FiscalYearId })
+            .HasIndex(ip => new { ip.TenantId, ip.ProcurementItemId, ip.FiscalYearId })
             .IsUnique();
 
         modelBuilder.Entity<ItemPrice>()
@@ -1077,12 +1138,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //Supplier - Merchant Registry
         modelBuilder.Entity<Supplier>()
-            .HasIndex(s => s.BusinessPermitNo)
+            .HasIndex(s => new { s.TenantId, s.BusinessPermitNo })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<Supplier>()
-            .HasIndex(s => s.TINNumber)
+            .HasIndex(s => new { s.TenantId, s.TINNumber })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false");
 
@@ -1100,7 +1161,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //SupplierCategory
         modelBuilder.Entity<SupplierCategory>()
-            .HasIndex(sc => sc.Name)
+            .HasIndex(sc => new { sc.TenantId, sc.Name })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false");
 
@@ -1369,7 +1430,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<KPIAssignment>()
-            .HasIndex(ka => new { ka.FYActiveKPIId, ka.OfficeId })
+            .HasIndex(ka => new { ka.TenantId, ka.FYActiveKPIId, ka.OfficeId })
             .IsUnique();
 
         modelBuilder.Entity<KPIAssignment>()
@@ -1467,7 +1528,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(e => e.SourceDocumentType);
 
         modelBuilder.Entity<AgencyMasterBudget>()
-            .HasIndex(e => new { e.FiscalYearId, e.FundSourceId, e.SourceDocumentType })
+            .HasIndex(e => new { e.TenantId, e.FiscalYearId, e.FundSourceId, e.SourceDocumentType })
             .IsUnique();
 
         // Budget - OfficeCeiling
@@ -1532,7 +1593,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(e => e.Status);
 
         modelBuilder.Entity<OfficeCeiling>()
-            .HasIndex(e => new { e.OfficeId, e.FiscalYearId, e.AgencyMasterBudgetId, e.TargetType, e.IsSupplemental })
+            .HasIndex(e => new { e.TenantId, e.OfficeId, e.FiscalYearId, e.AgencyMasterBudgetId, e.TargetType, e.IsSupplemental })
             .IsUnique();
 
         // Budget - SubOfficeCeiling
@@ -1593,7 +1654,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(e => e.FiscalYearId);
 
         modelBuilder.Entity<SubOfficeCeiling>()
-            .HasIndex(e => new { e.OfficeCeilingId, e.SubOfficeId, e.FundClusterId })
+            .HasIndex(e => new { e.TenantId, e.OfficeCeilingId, e.SubOfficeId, e.FundClusterId })
             .IsUnique();
 
         // Budget - LineItemBudget
@@ -1672,7 +1733,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<LineItemBudget>()
-            .HasIndex(e => e.LIBNumber)
+            .HasIndex(e => new { e.TenantId, e.LIBNumber })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false");
 
@@ -1726,12 +1787,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(e => e.OPCRActivityId);
 
         modelBuilder.Entity<LineItemBudgetActivity>()
-            .HasIndex(e => new { e.LineItemBudgetId, e.OPCRActivityId })
+            .HasIndex(e => new { e.TenantId, e.LineItemBudgetId, e.OPCRActivityId })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false AND \"OPCRActivityId\" IS NOT NULL");
 
         modelBuilder.Entity<LineItemBudgetActivity>()
-            .HasIndex(e => new { e.LineItemBudgetId, e.WFPObjectiveActivityId })
+            .HasIndex(e => new { e.TenantId, e.LineItemBudgetId, e.WFPObjectiveActivityId })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false AND \"WFPObjectiveActivityId\" IS NOT NULL");
 
@@ -1858,7 +1919,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasDefaultValue(PPMPTypeEnum.Original);
 
         modelBuilder.Entity<PPMP>()
-            .HasIndex(p => p.PPMPNumber)
+            .HasIndex(p => new { p.TenantId, p.PPMPNumber })
             .IsUnique();
 
         modelBuilder.Entity<PPMP>()
@@ -1907,7 +1968,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PPMPActivity>()
-            .HasIndex(pa => new { pa.PPMPId, pa.LIBActivityId })
+            .HasIndex(pa => new { pa.TenantId, pa.PPMPId, pa.LIBActivityId })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false");
 
@@ -1987,7 +2048,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             ));
 
         modelBuilder.Entity<PPMPItemAllocation>()
-            .HasIndex(pia => new { pia.PPMPItemId, pia.AllocationMonth })
+            .HasIndex(pia => new { pia.TenantId, pia.PPMPItemId, pia.AllocationMonth })
             .IsUnique();
 
         // ItemRequest
@@ -2257,7 +2318,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<APP>()
-            .HasIndex(e => e.APPNumber)
+            .HasIndex(e => new { e.TenantId, e.APPNumber })
             .IsUnique();
 
         modelBuilder.Entity<APP>()
@@ -2280,7 +2341,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<APPPPMP>()
-            .HasIndex(e => new { e.APPId, e.PPMPId })
+            .HasIndex(e => new { e.TenantId, e.APPId, e.PPMPId })
             .IsUnique();
 
         modelBuilder.Entity<APPPPMP>()
@@ -2329,7 +2390,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(oir => oir.OPCRItemId);
 
         modelBuilder.Entity<OPCRItemRating>()
-            .HasIndex(oir => new { oir.OPCRItemId, oir.FYActiveKPIMeasurementId, oir.Dimension })
+            .HasIndex(oir => new { oir.TenantId, oir.OPCRItemId, oir.FYActiveKPIMeasurementId, oir.Dimension })
             .IsUnique();
 
         // OPCRItemMOV
@@ -2358,7 +2419,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(oim => oim.OPCRItemId);
 
         modelBuilder.Entity<OPCRItemMOV>()
-            .HasIndex(oim => new { oim.OPCRItemId, oim.FYActiveKPIMeasurementId, oim.RequirementName })
+            .HasIndex(oim => new { oim.TenantId, oim.OPCRItemId, oim.FYActiveKPIMeasurementId, oim.RequirementName })
             .IsUnique();
 
         // MarketScopingParameter -> MarketScopingParameterSettings
@@ -2399,13 +2460,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // Filtered unique index: at most 1 active MSF per project-scoped LIB
         modelBuilder.Entity<MarketScoping>()
-            .HasIndex(ms => ms.TargetLineItemBudgetId)
+            .HasIndex(ms => new { ms.TenantId, ms.TargetLineItemBudgetId })
             .HasFilter("\"TargetLineItemBudgetId\" IS NOT NULL AND \"IsDeleted\" = false")
             .IsUnique();
 
         // Filtered unique index: at most 1 active MSF per LIB Activity
         modelBuilder.Entity<MarketScoping>()
-            .HasIndex(ms => ms.TargetLineItemBudgetActivityId)
+            .HasIndex(ms => new { ms.TenantId, ms.TargetLineItemBudgetActivityId })
             .HasFilter("\"TargetLineItemBudgetActivityId\" IS NOT NULL AND \"IsDeleted\" = false")
             .IsUnique();
 
@@ -2451,11 +2512,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey<BACResolution>(r => r.BiddingAwardRecommendationId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            e.HasIndex(r => r.BiddingAwardRecommendationId)
+            e.HasIndex(r => new { r.TenantId, r.BiddingAwardRecommendationId })
                 .IsUnique()
                 .HasFilter("\"BiddingAwardRecommendationId\" IS NOT NULL");
 
-            e.HasIndex(r => r.ResolutionNumber)
+            e.HasIndex(r => new { r.TenantId, r.ResolutionNumber })
                 .IsUnique()
                 .HasFilter("\"IsDeleted\" = false");
         });
@@ -2535,7 +2596,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<DirectAcquisition>(e =>
         {
             e.Property(da => da.DANumber).IsRequired().HasMaxLength(50);
-            e.HasIndex(da => da.DANumber).IsUnique();
+            e.HasIndex(da => new { da.TenantId, da.DANumber }).IsUnique();
 
             e.Property(da => da.TotalABC).HasPrecision(18, 2);
 
@@ -2645,7 +2706,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<AOB>(e =>
         {
-            e.HasIndex(a => a.AOBNumber)
+            e.HasIndex(a => new { a.TenantId, a.AOBNumber })
                 .IsUnique();
 
             e.Property(a => a.AwardCriterion)
@@ -2669,7 +2730,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(m => m.RFQId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            e.HasIndex(m => new { m.AOBId, m.RFQId })
+            e.HasIndex(m => new { m.TenantId, m.AOBId, m.RFQId })
                 .IsUnique();
         });
 
@@ -2776,7 +2837,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired(false);
 
         modelBuilder.Entity<PurchaseRequest>()
-            .HasIndex(pr => pr.PRNumber)
+            .HasIndex(pr => new { pr.TenantId, pr.PRNumber })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false");
 
@@ -2849,7 +2910,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired(false);
 
         modelBuilder.Entity<ConsolidatedPR>()
-            .HasIndex(cpr => cpr.CPRNumber)
+            .HasIndex(cpr => new { cpr.TenantId, cpr.CPRNumber })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false");
 
@@ -2890,7 +2951,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(ci => ci.PurchaseRequestId);
 
         modelBuilder.Entity<ConsolidatedPRItem>()
-            .HasIndex(ci => new { ci.ConsolidatedPRId, ci.PRItemId })
+            .HasIndex(ci => new { ci.TenantId, ci.ConsolidatedPRId, ci.PRItemId })
             .IsUnique();
 
         // RFQ
@@ -2957,11 +3018,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Cascade);
         
         modelBuilder.Entity<RFQ>()
-            .HasIndex(r => r.RFQNumber)
+            .HasIndex(r => new { r.TenantId, r.RFQNumber })
             .IsUnique();
         
         modelBuilder.Entity<RFQ>()
-            .HasIndex(r => r.TracingNumber)
+            .HasIndex(r => new { r.TenantId, r.TracingNumber })
             .IsUnique();
         
         modelBuilder.Entity<RFQ>()
@@ -3018,7 +3079,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // quantity check against PRItem.RequestedQuantity — not enforceable via a DB constraint
         // alone, since partial quantities are allowed.)
         modelBuilder.Entity<RFQItem>()
-            .HasIndex(i => new { i.RFQId, i.CPRItemId })
+            .HasIndex(i => new { i.TenantId, i.RFQId, i.CPRItemId })
             .IsUnique();
         
         // RFQSupplier
@@ -3042,7 +3103,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         // Prevents inviting the same supplier twice to the same RFQ.
         modelBuilder.Entity<RFQSupplier>()
-            .HasIndex(s => new { s.RFQId, s.SupplierId })
+            .HasIndex(s => new { s.TenantId, s.RFQId, s.SupplierId })
             .IsUnique();
 
         // ── Bidding Document Library ──────────────────────────────────────────────
@@ -3082,7 +3143,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .IsRequired()
                 .HasMaxLength(100);
 
-            e.HasIndex(x => x.Name)
+            e.HasIndex(x => new { x.TenantId, x.Name })
                 .IsUnique();
 
             e.HasMany(p => p.DocumentProfileItems)
@@ -3100,7 +3161,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(i => i.MasterDocumentTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            e.HasIndex(x => new { x.DocumentProfileId, x.MasterDocumentTypeId })
+            e.HasIndex(x => new { x.TenantId, x.DocumentProfileId, x.MasterDocumentTypeId })
                 .IsUnique();
         });
 
@@ -3133,7 +3194,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<ProcurementProject>(e =>
         {
-            e.HasIndex(p => p.ConsolidatedPRId)
+            e.HasIndex(p => new { p.TenantId, p.ConsolidatedPRId })
                 .IsUnique();
 
             e.HasOne(p => p.ConsolidatedPR)
@@ -3232,7 +3293,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // under concurrent submissions (mirrors APP.APPNumber / PurchaseRequest.PRNumber /
         // ConsolidatedPR.CPRNumber convention — no sequence/lock table exists in this codebase).
         modelBuilder.Entity<APR>()
-            .HasIndex(e => e.APRNumber)
+            .HasIndex(e => new { e.TenantId, e.APRNumber })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false");
 
@@ -3510,7 +3571,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey<BidOpeningRecord>(o => o.BiddingSubmissionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasIndex(s => new { s.ProcurementProjectId, s.SupplierId })
+            entity.HasIndex(s => new { s.TenantId, s.ProcurementProjectId, s.SupplierId })
                 .IsUnique();
 
             entity.Property(s => s.OriginalProposedAmount)
@@ -3548,7 +3609,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(o => o.BiddingActivityScheduleId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasIndex(o => o.BiddingSubmissionId)
+            entity.HasIndex(o => new { o.TenantId, o.BiddingSubmissionId })
                 .IsUnique();
 
             entity.Property(o => o.AsReadBidAmount)
@@ -3568,7 +3629,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(b => b.BiddingEvaluationId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasIndex(e => e.ProcurementProjectId)
+            entity.HasIndex(e => new { e.TenantId, e.ProcurementProjectId })
                 .IsUnique();
 
             entity.Property(e => e.TechnicalWeight)
@@ -3596,10 +3657,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey<BiddingPostQualification>(p => p.BiddingEvaluatedBidId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasIndex(b => new { b.BiddingEvaluationId, b.SupplierId })
+            entity.HasIndex(b => new { b.TenantId, b.BiddingEvaluationId, b.SupplierId })
                 .IsUnique();
 
-            entity.HasIndex(b => b.BidOpeningRecordId)
+            entity.HasIndex(b => new { b.TenantId, b.BidOpeningRecordId })
                 .IsUnique();
 
             entity.HasIndex(b => b.Rank);
@@ -3620,7 +3681,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // BiddingPostQualification
         modelBuilder.Entity<BiddingPostQualification>(entity =>
         {
-            entity.HasIndex(p => p.BiddingEvaluatedBidId)
+            entity.HasIndex(p => new { p.TenantId, p.BiddingEvaluatedBidId })
                 .IsUnique();
         });
 
@@ -3642,10 +3703,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey<BiddingAwardRecommendation>(a => a.BiddingPostQualificationId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasIndex(a => a.ProcurementProjectId)
+            entity.HasIndex(a => new { a.TenantId, a.ProcurementProjectId })
                 .IsUnique();
 
-            entity.HasIndex(a => a.BiddingPostQualificationId)
+            entity.HasIndex(a => new { a.TenantId, a.BiddingPostQualificationId })
                 .IsUnique();
 
             entity.Property(a => a.AwardedAmount)
@@ -3672,6 +3733,28 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.ApplyConfiguration(new AmsRolePermissionConfiguration());
         modelBuilder.ApplyConfiguration(new UserRoleAssignmentConfiguration());
         modelBuilder.ApplyConfiguration(new AmsLicenseSettingConfiguration());
+
+        // Apply Global Query Filters to all TenantScopedEntity types
+        ApplyTenantFilters(modelBuilder);
+    }
+
+    private void ApplyTenantFilters(ModelBuilder modelBuilder)
+    {
+        var method = typeof(ApplicationDbContext)
+            .GetMethod(nameof(ConfigureTenantFilter), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes().ToList())
+        {
+            if (typeof(ERPEZ.Domain.Common.TenantScopedEntity).IsAssignableFrom(entityType.ClrType) && entityType.BaseType == null)
+            {
+                method.MakeGenericMethod(entityType.ClrType).Invoke(this, [modelBuilder]);
+            }
+        }
+    }
+
+    private void ConfigureTenantFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : ERPEZ.Domain.Common.TenantScopedEntity
+    {
+        modelBuilder.Entity<TEntity>().HasQueryFilter(e => !e.IsDeleted && e.TenantId == CurrentTenantId);
     }
 
     private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)

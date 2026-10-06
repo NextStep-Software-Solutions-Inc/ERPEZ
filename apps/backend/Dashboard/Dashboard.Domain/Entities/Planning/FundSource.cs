@@ -4,7 +4,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class FundSource : BaseEntity
+public class FundSource : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentId { get; set; }

@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Market Scoping Activity - child entity representing activities conducted during market scoping.
 /// Hierarchy: MarketScoping → MarketScopingActivity → MarketScopingActivityAttachment
 /// </summary>
-public class MarketScopingActivity : BaseEntity
+public class MarketScopingActivity : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid MarketScopingId { get; set; }

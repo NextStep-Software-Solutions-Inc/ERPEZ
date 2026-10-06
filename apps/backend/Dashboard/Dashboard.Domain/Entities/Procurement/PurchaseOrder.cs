@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
-public class PurchaseOrder : BaseEntity
+public class PurchaseOrder : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string PONumber { get; set; } = string.Empty;

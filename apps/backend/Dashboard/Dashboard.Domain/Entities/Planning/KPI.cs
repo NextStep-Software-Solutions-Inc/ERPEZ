@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class KPI : BaseEntity
+public class KPI : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentKPIId { get; set; }

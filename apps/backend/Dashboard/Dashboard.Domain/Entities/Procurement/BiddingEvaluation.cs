@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Aggregate root representing the BAC / TWG Bid Evaluation for a Public Bidding project.
 /// Exactly one authoritative BiddingEvaluation exists per ProcurementProject.
 /// </summary>
-public class BiddingEvaluation : BaseEntity
+public class BiddingEvaluation : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ProcurementProjectId { get; set; }

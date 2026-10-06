@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class DeliveryUnit : BaseEntity
+public class DeliveryUnit : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid OfficeId { get; set; }
