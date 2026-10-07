@@ -178,11 +178,33 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
 
   // Derive active workspace directly from active Clerk organization or TenantManagement.Api
   const activeTenant: UnifiedTenantContext | null = useMemo(() => {
+    const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
     if (organization) {
+      const matched = tmTenants.find(
+        (t) =>
+          t.id === organization.id ||
+          t.externalOrgId === organization.id ||
+          t.name.toLowerCase() === organization.name.toLowerCase() ||
+          (t.slug && organization.slug && t.slug.toLowerCase() === organization.slug.toLowerCase())
+      );
+
+      const storedId = typeof window !== 'undefined'
+        ? sessionStorage.getItem('erpez_candidate_tenant_id') || localStorage.getItem('erpez_tenant_id')
+        : null;
+      const validStoredId = storedId && guidRegex.test(storedId) ? storedId : null;
+
+      // In development fallback, if NextJump Solutions is the active Clerk organization, use its seeded tenant GUID
+      const devNextJumpId = organization.name.toLowerCase().includes('nextjump')
+        ? '01a0d69d-924b-762c-a774-523a30544619'
+        : null;
+
+      const resolvedId = matched?.id || validStoredId || devNextJumpId || organization.id;
+
       return {
-        id: organization.id,
+        id: resolvedId,
         externalOrgId: organization.id,
-        name: organization.name,
+        name: matched?.name || organization.name,
         slug: organization.slug || undefined,
         authProvider: 'clerk',
       };
@@ -197,7 +219,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
       return availableTenants[0];
     }
     return null;
-  }, [organization?.id, organization?.name, organization?.slug, availableTenants, selectedTenantId]);
+  }, [organization?.id, organization?.name, organization?.slug, availableTenants, selectedTenantId, tmTenants]);
 
   // Derive tenantState cleanly from Clerk & TenantManagement loading states
   const tenantState: TenantState = useMemo(() => {
@@ -213,10 +235,15 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (activeTenant?.id) {
       try {
-        sessionStorage.setItem('erpez_external_org_id', activeTenant.externalOrgId || activeTenant.id);
-        localStorage.setItem('erpez_external_org_id', activeTenant.externalOrgId || activeTenant.id);
-        sessionStorage.setItem('erpez_candidate_tenant_id', activeTenant.id);
-        localStorage.setItem('erpez_tenant_id', activeTenant.id);
+        const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (activeTenant.externalOrgId) {
+          sessionStorage.setItem('erpez_external_org_id', activeTenant.externalOrgId);
+          localStorage.setItem('erpez_external_org_id', activeTenant.externalOrgId);
+        }
+        if (guidRegex.test(activeTenant.id)) {
+          sessionStorage.setItem('erpez_candidate_tenant_id', activeTenant.id);
+          localStorage.setItem('erpez_tenant_id', activeTenant.id);
+        }
         sessionStorage.setItem('erpez_tenant_name', activeTenant.name);
         localStorage.setItem('erpez_tenant_name', activeTenant.name);
       } catch {}

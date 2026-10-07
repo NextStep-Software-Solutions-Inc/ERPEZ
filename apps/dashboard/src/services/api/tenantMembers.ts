@@ -42,7 +42,8 @@ const getAuthHeaders = async () => {
   const candidateId = typeof window !== 'undefined'
     ? (sessionStorage.getItem('erpez_candidate_tenant_id') || localStorage.getItem('erpez_tenant_id'))
     : null
-  if (candidateId) {
+  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (candidateId && guidRegex.test(candidateId)) {
     headers['X-Tenant-Id'] = candidateId
   }
   return headers

@@ -1,4 +1,5 @@
 using ERPEZ.Infrastructure.Persistence;
+using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -60,7 +61,9 @@ public class DashboardUserAuthorizationService(
                 .AsNoTracking()
                 .Where(ra => !ra.IsDeleted &&
                              ra.User != null &&
-                             ra.User.ExternalIdentityId == externalIdentityId &&
+                             (ra.User.ExternalIdentityId == externalIdentityId ||
+                              ra.User.Username == externalIdentityId ||
+                              (ra.User.Email != null && ra.User.Email.ToLower() == externalIdentityId.ToLower())) &&
                              ra.User.IsActive &&
                              !ra.User.IsDeleted &&
                              ra.Role != null &&
@@ -75,6 +78,46 @@ public class DashboardUserAuthorizationService(
             foreach (var p in assignedPermissions)
             {
                 permissionsSet.Add(p);
+            }
+
+            // Fallback: If active user has no explicit operational roles assigned, grant default "Employee / Viewer" permissions
+            if (permissionsSet.Count == 0 && dbContext.Users != null)
+            {
+                var userExists = await dbContext.Users
+                    .AsNoTracking()
+                    .AnyAsync(u => !u.IsDeleted && u.IsActive &&
+                                   (u.ExternalIdentityId == externalIdentityId ||
+                                    u.Username == externalIdentityId ||
+                                    (u.Email != null && u.Email.ToLower() == externalIdentityId.ToLower())),
+                                   cancellationToken);
+
+                if (userExists && dbContext.AmsRoles != null)
+                {
+                    var viewerPerms = await dbContext.AmsRoles
+                        .AsNoTracking()
+                        .Where(r => !r.IsDeleted && r.IsActive && r.Name == "Employee / Viewer")
+                        .SelectMany(r => r.Permissions)
+                        .Where(p => !p.IsDeleted)
+                        .Select(p => p.PermissionKey)
+                        .Distinct()
+                        .ToListAsync(cancellationToken);
+
+                    if (viewerPerms != null && viewerPerms.Count > 0)
+                    {
+                        foreach (var p in viewerPerms)
+                        {
+                            permissionsSet.Add(p);
+                        }
+                    }
+                    else
+                    {
+                        permissionsSet.Add(Permissions.Planning.viewOfficeDashboard);
+                        permissionsSet.Add(Permissions.Planning.fiscalYearView);
+                        permissionsSet.Add(Permissions.Planning.budgetCallView);
+                        permissionsSet.Add(Permissions.Procurement.ppmpView);
+                        permissionsSet.Add(Permissions.Procurement.biddingDocumentsView);
+                    }
+                }
             }
         }
 

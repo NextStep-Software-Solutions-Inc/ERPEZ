@@ -68,6 +68,8 @@ public class TenantResolutionMiddleware(RequestDelegate next)
                                     path.Equals("/api/tenant/available", StringComparison.OrdinalIgnoreCase) ||
                                     path.Equals("/tenants/context", StringComparison.OrdinalIgnoreCase) ||
                                     path.Equals("/tenants/available", StringComparison.OrdinalIgnoreCase) ||
+                                    path.Equals("/tenants/my", StringComparison.OrdinalIgnoreCase) ||
+                                    path.Equals("/api/tenants/my", StringComparison.OrdinalIgnoreCase) ||
                                     (path.Equals("/tenants", StringComparison.OrdinalIgnoreCase) && HttpMethods.IsPost(context.Request.Method));
 
         if (context.User?.Identity?.IsAuthenticated == true)
@@ -96,6 +98,10 @@ public class TenantResolutionMiddleware(RequestDelegate next)
                             IdentityProvider.Clerk,
                             externalOrgCandidate,
                             context.RequestAborted);
+                    }
+                    else if (headerCandidate.HasValue)
+                    {
+                        mappedTenantId = headerCandidate;
                     }
 
                     if (mappedTenantId.HasValue)

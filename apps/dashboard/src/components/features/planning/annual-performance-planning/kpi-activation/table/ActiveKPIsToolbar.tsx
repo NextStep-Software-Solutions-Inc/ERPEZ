@@ -6,6 +6,8 @@
 import { Search, Plus, Loader2, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { usePermissions } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/constants/permissions'
 import {
   Select,
   SelectContent,
@@ -42,6 +44,9 @@ export function ActiveKPIsToolbar({
   isLoadingKPIs = false,
   isLoadingFiscalYears = false,
 }: ActiveKPIsToolbarProps) {
+  const { hasPermission } = usePermissions()
+  const canManageTargets = hasPermission(PERMISSIONS.Planning.Target.Manage)
+
   return (
     <div className="w-full flex items-center gap-3">
       {/* Search Input - Left side */}
@@ -106,27 +111,29 @@ export function ActiveKPIsToolbar({
       <div className="flex-1" />
 
       {/* Add KPI Button - Far right side */}
-      <div className="flex-shrink-0">
-        <Button
-          type="button"
-          onClick={onAddKPI}
-          disabled={isLoadingKPIs || !selectedFiscalYearId}
-          className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400"
-          title={!selectedFiscalYearId ? 'Please select a fiscal year first' : ''}
-        >
-          {isLoadingKPIs ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Loading KPIs...
-            </>
-          ) : (
-            <>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Active KPI
-            </>
-          )}
-        </Button>
-      </div>
+      {canManageTargets && (
+        <div className="flex-shrink-0">
+          <Button
+            type="button"
+            onClick={onAddKPI}
+            disabled={isLoadingKPIs || !selectedFiscalYearId}
+            className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400"
+            title={!selectedFiscalYearId ? 'Please select a fiscal year first' : ''}
+          >
+            {isLoadingKPIs ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Loading KPIs...
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Active KPI
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

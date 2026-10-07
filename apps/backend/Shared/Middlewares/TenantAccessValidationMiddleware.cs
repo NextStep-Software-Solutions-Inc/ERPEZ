@@ -53,7 +53,9 @@ public class TenantAccessValidationMiddleware(RequestDelegate next)
         var isIdentityScopedRoute = path.Equals("/api/tenant/context", StringComparison.OrdinalIgnoreCase) ||
                                     path.Equals("/api/tenant/available", StringComparison.OrdinalIgnoreCase) ||
                                     path.Equals("/tenants/context", StringComparison.OrdinalIgnoreCase) ||
-                                    path.Equals("/tenants/available", StringComparison.OrdinalIgnoreCase);
+                                    path.Equals("/tenants/available", StringComparison.OrdinalIgnoreCase) ||
+                                    path.Equals("/tenants/my", StringComparison.OrdinalIgnoreCase) ||
+                                    path.Equals("/api/tenants/my", StringComparison.OrdinalIgnoreCase);
 
         if (isIdentityScopedRoute)
         {

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import api from '@/services/api'
-import { useKeycloak } from '@/providers/KeycloakProvider'
+import { useUnifiedAuth } from '@/auth/UnifiedAuthContext'
 
 export type PermissionStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -9,7 +9,7 @@ export type PermissionStatus = 'idle' | 'loading' | 'success' | 'error'
  * Implements strict deny-by-default and fail-closed state semantics.
  */
 export function usePermissions() {
-  const { token, isAuthenticated, userName, tenantId, activeDevUser, isSuperAdmin } = useKeycloak()
+  const { token, isAuthenticated, userName, tenantId, activeDevUser, isSuperAdmin } = useUnifiedAuth()
 
   const {
     data: permissions = [],
@@ -25,14 +25,14 @@ export function usePermissions() {
       activeDevUser || 'default',
     ],
     queryFn: async () => {
-      if (!isAuthenticated || !token || !tenantId) {
+      if (!isAuthenticated || !token) {
         return []
       }
       const res = await api.get('/auth/me/permissions')
       return res.data?.data || []
     },
     staleTime: 60 * 1000,
-    enabled: typeof window !== 'undefined' && !!isAuthenticated && !!token && !!tenantId,
+    enabled: typeof window !== 'undefined' && !!isAuthenticated && !!token,
   })
 
   const status: PermissionStatus = isLoading
@@ -43,7 +43,7 @@ export function usePermissions() {
         ? 'success'
         : 'idle'
 
-  const isLoaded = status === 'success' && !!tenantId
+  const isLoaded = status === 'success'
 
   // Fail closed: only evaluate if permissions successfully loaded
   const hasPermission = (permission: string): boolean => {
