@@ -371,6 +371,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("TenantId", "APPNumber")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("APPs", "planning");
                 });
 
@@ -480,6 +482,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ProcurementModeId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("APPItems", "planning");
                 });
 
@@ -525,6 +529,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("APPId");
 
                     b.HasIndex("PPMPId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "APPId", "PPMPId")
                         .IsUnique();
@@ -582,6 +588,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ProcurementActivityTypeId");
 
                     b.HasIndex("ScheduledDate");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("APPProcurementSchedules", "planning");
                 });
@@ -655,6 +663,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PersonnelPositionId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("APPSignatories", "planning");
                 });
@@ -755,6 +765,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("Agencies", "planning");
                 });
 
@@ -819,6 +831,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("FundSourceId");
 
                     b.HasIndex("SourceDocumentType");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "FiscalYearId", "FundSourceId", "SourceDocumentType")
                         .IsUnique();
@@ -898,6 +912,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("PPMPId", "Timestamp");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("ApprovalEvents", "planning");
                 });
 
@@ -949,6 +965,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ParentAttributeId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("Attributes", "planning");
                 });
 
@@ -992,6 +1010,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("BACResolutionWhereasClauses", "planning");
                 });
@@ -1043,6 +1063,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FiscalYearId", "SubmissionDeadline");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("BudgetCalls", "planning");
                 });
@@ -1228,6 +1250,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("TenantId", "Code")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "Name")
                         .IsUnique();
 
@@ -1283,6 +1307,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("KPITargetId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("DeliveryUnitId", "KPIId", "KPITargetId")
                         .IsUnique();
 
@@ -1331,6 +1357,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ParentId");
 
                     b.HasIndex("OfficeId", "ParentId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("DeliveryUnits", "planning");
                 });
@@ -1549,8 +1577,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Code");
-
                     b.HasIndex("FiscalYearId");
 
                     b.HasIndex("MFOPAPId");
@@ -1562,6 +1588,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("Status");
 
                     b.HasIndex("FiscalYearId", "MasterKPIId");
+
+                    b.HasIndex("TenantId", "Code");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("FYActiveKPIs", "planning");
                 });
@@ -1631,6 +1661,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("RatingScaleTemplateId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("FYActiveKPIMeasurements", "planning");
                 });
 
@@ -1684,6 +1716,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "FiscalYearId", "MonthIndex")
                         .IsUnique();
@@ -1743,6 +1777,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "Year")
                         .IsUnique();
 
@@ -1793,6 +1829,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "FunctionType", "FiscalYearId")
                         .IsUnique();
@@ -1855,6 +1893,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("FunctionConfigs", "planning");
                 });
@@ -2047,6 +2087,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OfficeId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("GeneratedDocuments", "planning");
                 });
 
@@ -2096,6 +2138,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("FiscalYearId");
 
                     b.HasIndex("ProcurementItemId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "ProcurementItemId", "FiscalYearId")
                         .IsUnique();
@@ -2196,6 +2240,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OfficeId", "RequestDate");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("ItemRequests", "planning");
                 });
 
@@ -2283,6 +2329,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ParentKPIId");
 
+                    b.HasIndex("TenantId", "Code");
+
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "Name")
                         .IsUnique();
 
@@ -2355,6 +2405,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OfficeId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "FYActiveKPIId", "OfficeId")
                         .IsUnique();
 
@@ -2426,6 +2478,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("RatingScaleTemplateId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("KPIMeasurements", "planning");
                 });
 
@@ -2477,6 +2531,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("KPIId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "KPIId", "Name")
                         .IsUnique();
 
@@ -2525,6 +2581,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("KPIId");
 
                     b.HasIndex("PerformanceMeasureId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "KPIId", "PerformanceMeasureId")
                         .IsUnique();
@@ -2584,6 +2642,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("KPIId");
 
                     b.HasIndex("ParentKPITargetId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "KPIId", "Period", "QuarterName")
                         .IsUnique()
@@ -2654,6 +2714,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ProposedLineItemBudgetId");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("LIBAmendmentRequests", "planning");
                 });
@@ -2771,6 +2833,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "LIBNumber")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
@@ -2835,6 +2899,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("OPCRActivityId");
 
                     b.HasIndex("WFPObjectiveActivityId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "LineItemBudgetId", "OPCRActivityId")
                         .IsUnique()
@@ -2927,6 +2993,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("StartDate", "EndDate");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("LineItemBudgetDetails", "planning");
                 });
 
@@ -2992,6 +3060,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ParentId");
 
                     b.HasIndex("ParentLocationId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "Name", "Code")
                         .IsUnique();
@@ -3066,6 +3136,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ParentId");
 
                     b.HasIndex("ParentMFOPAPId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "Name", "Code")
                         .IsUnique();
@@ -3144,6 +3216,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "TargetLineItemBudgetActivityId")
                         .IsUnique()
                         .HasFilter("\"TargetLineItemBudgetActivityId\" IS NOT NULL AND \"IsDeleted\" = false");
@@ -3204,6 +3278,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("MarketScopingId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("MarketScopingActivities", "planning");
                 });
 
@@ -3252,6 +3328,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MarketScopingActivityId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("MarketScopingActivityAttachments", "planning");
                 });
@@ -3305,6 +3383,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("MarketScopingActivitySettings", "planning");
                 });
@@ -3365,6 +3445,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("MarketScopingId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("MarketScopingHistories", "planning");
                 });
 
@@ -3420,6 +3502,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ParameterSettingsId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("MarketScopingParameters", "planning");
                 });
 
@@ -3468,6 +3552,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MarketScopingParameterId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("MarketScopingParameterAttachments", "planning");
                 });
@@ -3521,6 +3607,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("MarketScopingParameterSettings", "planning");
                 });
@@ -3616,6 +3704,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("UOMId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("NonCSEItems", "planning");
                 });
 
@@ -3698,6 +3788,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OfficeId");
 
+                    b.HasIndex("TenantId", "Code");
+
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "OfficeId", "FiscalYearId")
                         .IsUnique();
 
@@ -3756,6 +3850,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("KPIId");
 
                     b.HasIndex("OPCRItemId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "OPCRItemId", "Name")
                         .IsUnique();
@@ -3820,6 +3916,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("OPCRActivityEvaluations", "planning");
                 });
 
@@ -3874,6 +3972,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("OPCRActivityId");
 
                     b.HasIndex("UploadedDate");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("OPCRActivityMOVs", "planning");
                 });
@@ -3931,6 +4031,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OPCRActivityId", "PerformanceMeasureId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("OPCRActivityRatings", "planning");
                 });
 
@@ -3975,6 +4077,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("OPCRConsolidations", "planning");
                 });
@@ -4027,6 +4131,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("OPCRId", "EvaluatorId", "EvaluationDate");
 
@@ -4097,6 +4203,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OPCRId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "OPCRId", "KPIAssignmentId")
                         .IsUnique();
 
@@ -4160,6 +4268,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("FYActiveKPIMeasurementId");
 
                     b.HasIndex("OPCRItemId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "OPCRItemId", "FYActiveKPIMeasurementId", "RequirementName")
                         .IsUnique();
@@ -4226,6 +4336,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OPCRItemId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "OPCRItemId", "FYActiveKPIMeasurementId", "Dimension")
                         .IsUnique();
 
@@ -4274,6 +4386,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("OPCRActivityId");
 
                     b.HasIndex("OfficeId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "OPCRActivityId", "OfficeId")
                         .IsUnique();
@@ -4340,6 +4454,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("OPCRId");
 
                     b.HasIndex("PerformanceMeasureId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "OPCREvaluationId", "PerformanceMeasureId", "OPCRId", "DUKPITargetAssignmentId")
                         .IsUnique();
@@ -4608,6 +4724,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("TenantId", "Code")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("Offices", "planning");
                 });
 
@@ -4687,6 +4805,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("OfficeId");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "OfficeId", "FiscalYearId", "AgencyMasterBudgetId", "TargetType", "IsSupplemental")
                         .IsUnique();
@@ -4903,6 +5023,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OrganizationId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("PMTs", "planning");
                 });
 
@@ -4961,6 +5083,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PMTId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("PMTMembers", "planning");
                 });
@@ -5071,6 +5195,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("SourcePPMPId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "PPMPNumber")
                         .IsUnique();
 
@@ -5121,6 +5247,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("LIBActivityId");
 
                     b.HasIndex("PPMPId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "PPMPId", "LIBActivityId")
                         .IsUnique()
@@ -5183,6 +5311,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PPMPActivityId");
 
                     b.HasIndex("PPMPId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("PPMPExpenditureItems", "planning", t =>
                         {
@@ -5309,6 +5439,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ProcurementModeId1");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("PPMPItems", "planning");
                 });
 
@@ -5361,6 +5493,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("PPMPItemId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "PPMPItemId", "AllocationMonth")
                         .IsUnique();
 
@@ -5409,6 +5543,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "Name")
                         .IsUnique();
@@ -5471,6 +5607,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PositionId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("PersonnelPositions", "planning");
                 });
@@ -5621,6 +5759,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "Code")
                         .IsUnique();
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("Positions", "planning");
                 });
@@ -5880,6 +6020,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("UOMId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("ProcurementItems", "planning");
                 });
 
@@ -6056,6 +6198,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("FiscalYearId", "ProcurementModeId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("ProcurementPolicyConfigs", "planning");
                 });
 
@@ -6153,6 +6297,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("KPIPerformanceMeasureId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "KPIPerformanceMeasureId", "NumericalRating")
                         .IsUnique();
 
@@ -6212,6 +6358,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("RatingScaleTemplateId", "RatingValue")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("RatingScaleLevels", "planning");
                 });
 
@@ -6270,6 +6418,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("Name");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("RatingScaleTemplates", "planning");
                 });
 
@@ -6317,6 +6467,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("ResolutionClauses", "planning");
                 });
@@ -6567,6 +6719,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("SubOfficeId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "OfficeCeilingId", "SubOfficeId", "FundClusterId")
                         .IsUnique();
 
@@ -6650,15 +6804,17 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email");
-
-                    b.HasIndex("PhilGEPSNumber");
-
                     b.HasIndex("SupplierCategoryId");
 
                     b.HasIndex("TenantId", "BusinessPermitNo")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
+
+                    b.HasIndex("TenantId", "Email");
+
+                    b.HasIndex("TenantId", "Id");
+
+                    b.HasIndex("TenantId", "PhilGEPSNumber");
 
                     b.HasIndex("TenantId", "TINNumber")
                         .IsUnique()
@@ -6706,6 +6862,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "Name")
                         .IsUnique()
@@ -6761,6 +6919,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SupplierId", "RequirementName");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("SupplierRequirements", "planning");
                 });
@@ -6839,6 +6999,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("OrganizationId");
 
                     b.HasIndex("UACSCodeCombinationId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "FundSourceId", "OrganizationId", "LocationId", "MFOPAPId", "ObjectId", "TransactionDate")
                         .IsUnique();
@@ -7517,6 +7679,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OfficeId", "Mode");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("WFPs", "planning");
                 });
 
@@ -7567,6 +7731,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("WFPId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "WFPId", "Description")
                         .IsUnique();
@@ -7633,6 +7799,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("WFPObjectiveId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("WFPObjectiveActivities", "planning");
                 });
 
@@ -7685,6 +7853,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ObjectId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("WFPObjectiveActivityId", "ObjectId", "ItemDescription");
 
@@ -7741,6 +7911,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("WFPObjectiveActivityId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "WFPObjectiveActivityId", "StartDate")
                         .IsUnique();
@@ -7813,6 +7985,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("WFPId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("WFPPAPs", "planning");
                 });
 
@@ -7858,6 +8032,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("DeliveryUnitId");
 
                     b.HasIndex("WFPPAPId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "WFPPAPId", "DeliveryUnitId")
                         .IsUnique();
@@ -7924,6 +8100,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("OfficeId");
 
                     b.HasIndex("RecommendingApproverPositionId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "FiscalYearId", "OfficeId")
                         .IsUnique()
@@ -8011,6 +8189,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("TenantId", "AOBNumber")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("AOBs", "procurement");
                 });
 
@@ -8085,6 +8265,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("WinningSupplierId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("AOBAwardedItems", "procurement");
                 });
 
@@ -8131,6 +8313,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ProcurementProjectId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("AOBProcurementProjectMappings", "procurement");
                 });
 
@@ -8176,6 +8360,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("AOBId");
 
                     b.HasIndex("RFQId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "AOBId", "RFQId")
                         .IsUnique();
@@ -8307,6 +8493,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("APRs", "procurement");
                 });
 
@@ -8379,6 +8567,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("PPMPItemId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("APRItems", "procurement", t =>
                         {
                             t.HasCheckConstraint("CK_APRItem_TotalCost", "\"TotalCost\" >= 0");
@@ -8437,6 +8627,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ScheduledDate");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("APRItemMilestones", "procurement");
                 });
 
@@ -8494,6 +8686,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ChecklistItemId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("ApplicationUploadedDocuments", "procurement");
                 });
 
@@ -8547,6 +8741,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("BACMembers", "procurement");
                 });
@@ -8620,6 +8816,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("\"BiddingAwardRecommendationId\" IS NOT NULL");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "ResolutionNumber")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
@@ -8677,6 +8875,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ResolutionClauseId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("BACResolutionClauseLinks", "procurement");
                 });
 
@@ -8725,6 +8925,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("BACResolutionId");
 
                     b.HasIndex("BACResolutionWhereasClauseId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("BACResolutionWhereasClauseItems", "procurement");
                 });
@@ -8801,6 +9003,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "BiddingSubmissionId")
                         .IsUnique();
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("BidOpeningRecords", "procurement");
                 });
@@ -8921,6 +9125,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ProcurementProjectId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("BiddingActivitySchedules", "procurement");
                 });
 
@@ -8996,6 +9202,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("TenantId", "BiddingPostQualificationId")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "ProcurementProjectId")
                         .IsUnique();
 
@@ -9055,6 +9263,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ProcurementProjectId")
                         .IsUnique();
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("BiddingDocument", "procurement");
                 });
@@ -9142,6 +9352,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("TenantId", "BidOpeningRecordId")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "BiddingEvaluationId", "SupplierId")
                         .IsUnique();
 
@@ -9213,6 +9425,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProcurementProjectId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "ProcurementProjectId")
                         .IsUnique();
@@ -9289,6 +9503,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "BiddingEvaluatedBidId")
                         .IsUnique();
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("BiddingPostQualifications", "procurement");
                 });
@@ -9369,6 +9585,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("SupplierId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "ProcurementProjectId", "SupplierId")
                         .IsUnique();
 
@@ -9437,6 +9655,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BiddingSubmissionId", "ProcurementProjectItemId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("BiddingSubmissionItems", "procurement");
                 });
@@ -9508,6 +9728,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("ConsolidatedPRs", "procurement");
                 });
 
@@ -9566,6 +9788,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ProcurementModeId");
 
                     b.HasIndex("PurchaseRequestId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "ConsolidatedPRId", "PRItemId")
                         .IsUnique();
@@ -9688,6 +9912,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("NoticeOfAwardId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("Contracts", "procurement");
                 });
 
@@ -9764,6 +9990,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("TenantId", "DANumber")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("DirectAcquisitions", "procurement");
                 });
 
@@ -9833,6 +10061,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("DirectAcquisitionId");
 
                     b.HasIndex("DirectPurchaseEntryId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("DirectAcquisitionDocuments", "procurement");
                 });
@@ -9913,6 +10143,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ExclusiveSupplierId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("DirectContractings", "procurement");
                 });
 
@@ -9973,6 +10205,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("SupplierId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("DirectContractingProposals", "procurement");
                 });
@@ -10039,6 +10273,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("CPRItemId");
 
                     b.HasIndex("ProposalId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("DirectContractingProposalItems", "procurement");
                 });
@@ -10121,6 +10357,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("SupplierId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("DirectPurchaseEntries", "procurement");
                 });
 
@@ -10170,6 +10408,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "Name")
                         .IsUnique();
@@ -10222,6 +10462,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("DocumentProfileId");
 
                     b.HasIndex("MasterDocumentTypeId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "DocumentProfileId", "MasterDocumentTypeId")
                         .IsUnique();
@@ -10460,6 +10702,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("SupplierId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("NoticeOfAwards", "procurement");
                 });
 
@@ -10517,6 +10761,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("NoticeOfAwardId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("NoticeOfAwardActivities", "procurement");
                 });
@@ -10580,6 +10826,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("NoticeOfAwardId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("NoticeOfAwardMilestones", "procurement");
                 });
@@ -10723,6 +10971,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("NoticeToProceeds", "procurement");
                 });
 
@@ -10801,6 +11051,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PPMPItemId");
 
                     b.HasIndex("PurchaseRequestId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("PRItems", "procurement");
                 });
@@ -10900,6 +11152,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("TenantId", "ConsolidatedPRId")
                         .IsUnique();
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("ProcurementProjects", "procurement");
                 });
 
@@ -10948,6 +11202,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("APPItemId");
 
                     b.HasIndex("ProcurementProjectId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("ProcurementProjectAPPItems", "procurement");
                 });
@@ -11012,6 +11268,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ProcurementProjectId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("ProcurementProjectApprovalEvents", "procurement");
                 });
 
@@ -11074,6 +11332,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("MasterDocumentTypeId");
 
                     b.HasIndex("ProcurementProjectId", "EnvelopeType");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("ProjectDocumentChecklists", "procurement");
                 });
@@ -11623,6 +11883,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("SupplierId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "PONumber")
                         .IsUnique();
 
@@ -11684,6 +11946,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PurchaseOrderId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("PurchaseOrderItems", "procurement");
                 });
@@ -11797,6 +12061,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("UACSCodeCombinationId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "PRNumber")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
@@ -11893,6 +12159,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "RFQNumber")
                         .IsUnique();
 
@@ -11972,6 +12240,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("RFQId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.HasIndex("TenantId", "RFQId", "CPRItemId")
                         .IsUnique();
 
@@ -12023,6 +12293,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("RFQId");
 
                     b.HasIndex("SupplierId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.HasIndex("TenantId", "RFQId", "SupplierId")
                         .IsUnique();
@@ -12115,6 +12387,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("SupplierId");
 
+                    b.HasIndex("TenantId", "Id");
+
                     b.ToTable("SupplierBids", "procurement");
                 });
 
@@ -12193,6 +12467,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("RFQItemId");
 
                     b.HasIndex("SupplierBidId");
+
+                    b.HasIndex("TenantId", "Id");
 
                     b.ToTable("SupplierBidItems", "procurement");
                 });

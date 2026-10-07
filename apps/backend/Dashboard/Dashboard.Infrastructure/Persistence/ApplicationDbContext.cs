@@ -315,6 +315,9 @@ public class ApplicationDbContext : DbContext
             .HasIndex(k => new { k.TenantId, k.Name })
             .IsUnique();
 
+        modelBuilder.Entity<KPI>()
+            .HasIndex(k => new { k.TenantId, k.Code });
+
         // KPI -> KPIPerformanceMeasures
         modelBuilder.Entity<KPI>()
             .HasMany(k => k.KPIPerformanceMeasures)
@@ -852,6 +855,9 @@ public class ApplicationDbContext : DbContext
             .IsUnique();
 
         modelBuilder.Entity<OPCR>()
+            .HasIndex(o => new { o.TenantId, o.Code });
+
+        modelBuilder.Entity<OPCR>()
             .HasOne(o => o.Office)
             .WithMany(o => o.OPCRs)
             .HasForeignKey(o => o.OfficeId);
@@ -1152,10 +1158,10 @@ public class ApplicationDbContext : DbContext
             .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<Supplier>()
-            .HasIndex(s => s.Email);
+            .HasIndex(s => new { s.TenantId, s.Email });
 
         modelBuilder.Entity<Supplier>()
-            .HasIndex(s => s.PhilGEPSNumber);
+            .HasIndex(s => new { s.TenantId, s.PhilGEPSNumber });
 
         modelBuilder.Entity<Supplier>()
             .HasOne(s => s.SupplierCategory)
@@ -1368,7 +1374,7 @@ public class ApplicationDbContext : DbContext
             .HasIndex(fk => fk.ParentKPIId);
 
         modelBuilder.Entity<FYActiveKPI>()
-            .HasIndex(fk => fk.Code);
+            .HasIndex(fk => new { fk.TenantId, fk.Code });
 
         modelBuilder.Entity<FYActiveKPI>()
             .HasIndex(fk => fk.Status);
@@ -3759,6 +3765,7 @@ public class ApplicationDbContext : DbContext
     private void ConfigureTenantFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : ERPEZ.Domain.Common.TenantScopedEntity
     {
         modelBuilder.Entity<TEntity>().HasQueryFilter(e => !e.IsDeleted && e.TenantId == CurrentTenantId);
+        modelBuilder.Entity<TEntity>().HasIndex(e => new { e.TenantId, e.Id });
     }
 
     private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)

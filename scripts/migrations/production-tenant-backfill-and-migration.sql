@@ -31,6 +31,8 @@ DECLARE
     null_count BIGINT;
     zero_count BIGINT;
     total_backfilled BIGINT := 0;
+    idx_table_name TEXT;
+    clean_name TEXT;
 
     -- All 136 tenant-scoped operational tables across planning and procurement schemas
     tenant_tables CONSTANT text[] := ARRAY[
@@ -505,6 +507,34 @@ BEGIN
     CREATE UNIQUE INDEX IF NOT EXISTS "IX_ItemPrices_TenantId_ProcurementItemId_FiscalYearId"
         ON planning."ItemPrices" ("TenantId", "ProcurementItemId", "FiscalYearId");
 
+    -- 5.3 High-Volume Performance Composite (TenantId, Id) Indexes
+    -- Prevents full table scans when global query filters (TenantId = CurrentTenantId) are evaluated
+    RAISE NOTICE '   Stage 5.3: Creating composite (TenantId, Id) indexes across all 136 operational tables...';
+    FOREACH idx_table_name IN ARRAY tenant_tables LOOP
+        clean_name := replace(replace(split_part(idx_table_name, '.', 2), '"', ''), ' ', '_');
+        EXECUTE format('CREATE INDEX IF NOT EXISTS %I ON %s ("TenantId", "Id")',
+            'IX_' || clean_name || '_TenantId_Id', idx_table_name);
+    END LOOP;
+
+    -- 5.4 Natural Key Composite Indexes
+    DROP INDEX IF EXISTS planning."IX_FYActiveKPIs_Code";
+    CREATE INDEX IF NOT EXISTS "IX_FYActiveKPIs_TenantId_Code"
+        ON planning."FYActiveKPIs" ("TenantId", "Code");
+
+    CREATE INDEX IF NOT EXISTS "IX_KPIs_TenantId_Code"
+        ON planning."KPIs" ("TenantId", "Code");
+
+    CREATE INDEX IF NOT EXISTS "IX_OPCRs_TenantId_Code"
+        ON planning."OPCRs" ("TenantId", "Code");
+
+    DROP INDEX IF EXISTS planning."IX_Suppliers_Email";
+    CREATE INDEX IF NOT EXISTS "IX_Suppliers_TenantId_Email"
+        ON planning."Suppliers" ("TenantId", "Email");
+
+    DROP INDEX IF EXISTS planning."IX_Suppliers_PhilGEPSNumber";
+    CREATE INDEX IF NOT EXISTS "IX_Suppliers_TenantId_PhilGEPSNumber"
+        ON planning."Suppliers" ("TenantId", "PhilGEPSNumber");
+
     RAISE NOTICE '   Stage 5 Complete: All single-tenant unique indexes dropped and composite (TenantId, ...) indexes established.';
 
     -- ────────────────────────────────────────────────────────────────────────
@@ -525,6 +555,10 @@ BEGIN
 
     INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
     VALUES ('20261007010656_AddCompositeTenantIndexesToOperationalEntities', '9.0.0')
+    ON CONFLICT ("MigrationId") DO NOTHING;
+
+    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+    VALUES ('20261007013355_AddTenantIdAndBusinessKeyCompositeIndexes', '9.0.0')
     ON CONFLICT ("MigrationId") DO NOTHING;
 
     RAISE NOTICE '   Stage 6 Complete: Migrations registered in __EFMigrationsHistory.';
