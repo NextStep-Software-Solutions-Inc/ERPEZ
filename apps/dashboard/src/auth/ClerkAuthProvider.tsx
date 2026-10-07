@@ -317,6 +317,35 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     [availableTenants, setActive]
   );
 
+  const isOrgAdmin = useMemo(() => {
+    if (user?.publicMetadata?.isSuperAdmin) return true;
+    const activeOrgId = organization?.id || activeTenant?.externalOrgId || activeTenant?.id;
+    const membership = userMemberships?.data?.find((m: any) => m.organization?.id === activeOrgId);
+    if (membership?.role === 'org:admin' || membership?.role === 'admin') return true;
+    if (organization && (organization as any).membership?.role === 'org:admin') return true;
+    const tmSelf = tmMembers.find(
+      (m) =>
+        (m.userId && user?.id && m.userId.toLowerCase() === user.id.toLowerCase()) ||
+        (m.email && user?.primaryEmailAddress?.emailAddress && m.email.toLowerCase() === user.primaryEmailAddress.emailAddress.toLowerCase())
+    );
+    if (
+      tmSelf &&
+      (tmSelf.role === 'TenantAdmin' ||
+       tmSelf.role === 'DASHBOARD SYSTEM ADMIN' ||
+       tmSelf.roles?.some((r: string) => r.toUpperCase().includes('ADMIN')))
+    ) {
+      return true;
+    }
+    return false;
+  }, [user, organization, activeTenant, userMemberships?.data, tmMembers]);
+
+  const derivedRoles = useMemo(() => {
+    const metaRoles = (user?.publicMetadata?.roles as string[]) || [];
+    if (metaRoles.length > 0) return metaRoles;
+    if (isOrgAdmin) return ['Tenant Administrator', 'System Administrator'];
+    return ['Employee / Viewer'];
+  }, [user?.publicMetadata?.roles, isOrgAdmin]);
+
   const unifiedUser: UnifiedUser | null = useMemo(() => {
     if (!user) return null;
     return {
@@ -324,9 +353,9 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
       username: user.username || user.primaryEmailAddress?.emailAddress || user.id,
       email: user.primaryEmailAddress?.emailAddress || '',
       displayName: user.fullName || user.firstName || 'User',
-      roles: (user.publicMetadata?.roles as string[]) || ['User'],
+      roles: derivedRoles,
     };
-  }, [user]);
+  }, [user, derivedRoles]);
 
   const workspaceMembers = useMemo(() => {
     const list: WorkspaceMemberInfo[] = [];
@@ -524,7 +553,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     role: unifiedUser?.roles?.[0] || null,
     roles: unifiedUser?.roles || [],
     tenantId: activeTenant?.id || null,
-    isSuperAdmin: Boolean(user?.publicMetadata?.isSuperAdmin),
+    isSuperAdmin: Boolean(user?.publicMetadata?.isSuperAdmin) || isOrgAdmin,
     activeDevUser: '',
     login: () => {
       clerk.openSignIn();

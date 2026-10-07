@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using ERPEZ.Infrastructure.Persistence;
 using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -10,10 +12,12 @@ namespace ERPEZ.Infrastructure.Services;
 /// Dashboard native AMS Authorization Service.
 /// Completely decoupled from TenantManagement DB tables.
 /// Evaluates user permissions using Dashboard's native AmsRole and UserRoleAssignment records.
+/// Provides authoritative fallback to full permissions for Tenant Administrators & Workspace Admins.
 /// </summary>
 public class DashboardUserAuthorizationService(
     ApplicationDbContext dbContext,
-    IMemoryCache memoryCache) : IUserAuthorizationService
+    IMemoryCache memoryCache,
+    IHttpContextAccessor? httpContextAccessor = null) : IUserAuthorizationService
 {
     private const string cacheKeyPrefix = "perms:ams:";
     private static readonly TimeSpan slidingExpiration = TimeSpan.FromMinutes(5);
@@ -53,6 +57,48 @@ public class DashboardUserAuthorizationService(
             return cachedPerms;
         }
 
+        // Check if caller holds administrator claims from their active token session
+        var callerPrincipal = httpContextAccessor?.HttpContext?.User;
+        var callerIsAdmin = false;
+        if (callerPrincipal != null && callerPrincipal.Identity?.IsAuthenticated == true)
+        {
+            var callerSub = callerPrincipal.FindFirstValue(ClaimTypes.NameIdentifier) 
+                ?? callerPrincipal.FindFirstValue("sub");
+
+            if (string.Equals(callerSub, externalIdentityId, StringComparison.OrdinalIgnoreCase))
+            {
+                var roleClaims = callerPrincipal.FindAll(ClaimTypes.Role)
+                    .Concat(callerPrincipal.FindAll("role"))
+                    .Concat(callerPrincipal.FindAll("roles"))
+                    .Concat(callerPrincipal.FindAll("org_role"))
+                    .Select(c => c.Value);
+
+                var isSuper = callerPrincipal.FindFirstValue("is_super_admin") ?? callerPrincipal.FindFirstValue("super_admin");
+                callerIsAdmin = (bool.TryParse(isSuper, out var s) && s) ||
+                    roleClaims.Any(r => r.Equals("org:admin", StringComparison.OrdinalIgnoreCase) ||
+                                        r.Equals("admin", StringComparison.OrdinalIgnoreCase) ||
+                                        r.Equals("Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
+                                        r.Equals("TenantAdmin", StringComparison.OrdinalIgnoreCase) ||
+                                        r.Equals("DASHBOARD SYSTEM ADMIN", StringComparison.OrdinalIgnoreCase) ||
+                                        r.Equals("Workspace Admin", StringComparison.OrdinalIgnoreCase) ||
+                                        r.Equals("System Administrator", StringComparison.OrdinalIgnoreCase) ||
+                                        r.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
+                                        r.Equals("platform_administrator", StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        if (callerIsAdmin)
+        {
+            var allPerms = Permissions.GetAllPermissions().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var cacheOptionsAdmin = new MemoryCacheEntryOptions
+            {
+                SlidingExpiration = slidingExpiration,
+                AbsoluteExpirationRelativeToNow = absoluteExpiration
+            };
+            memoryCache.Set(cacheKey, allPerms, cacheOptionsAdmin);
+            return allPerms;
+        }
+
         var permissionsSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         if (dbContext.UserRoleAssignments != null)
@@ -80,7 +126,7 @@ public class DashboardUserAuthorizationService(
                 permissionsSet.Add(p);
             }
 
-            // Fallback: If active user has no explicit operational roles assigned, grant default "Employee / Viewer" permissions
+            // Fallback: If active user has no explicit operational roles assigned, grant default permissions
             if (permissionsSet.Count == 0 && dbContext.Users != null)
             {
                 var userExists = await dbContext.Users
