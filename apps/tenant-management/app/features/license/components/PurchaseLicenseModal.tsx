@@ -249,7 +249,7 @@ export function PurchaseLicenseModal({
                   }`}
                 >
                   <p className="font-bold text-sm text-slate-900">Foundation</p>
-                  <p className="text-xs text-slate-500 mt-0.5">AMS + SAMS</p>
+                  <p className="text-xs text-slate-500 mt-0.5">AMS (Account Management)</p>
                   <p className="font-extrabold text-blue-600 mt-2 text-base">$1,499/yr</p>
                 </div>
                 <div
@@ -264,7 +264,7 @@ export function PurchaseLicenseModal({
                     <p className="font-bold text-sm text-slate-900">Professional</p>
                     <Badge className="bg-blue-100 text-blue-800 text-[10px] py-0">Popular</Badge>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">AMS + SAMS + PMS</p>
+                  <p className="text-xs text-slate-500 mt-0.5">AMS + PMS</p>
                   <p className="font-extrabold text-blue-600 mt-2 text-base">$4,999/yr</p>
                 </div>
               </div>

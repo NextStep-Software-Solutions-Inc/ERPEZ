@@ -2,7 +2,7 @@ export const faqs = [
   {
     question: "What is ERP?",
     answer:
-      "Enterprise Resource Planning (ERP) is a software system that integrates an organization's core functions—such as planning, procurement, supply, asset management, finance, and HR—into a unified platform to streamline processes and improve efficiency.",
+      "Enterprise Resource Planning (ERP) is a software system that integrates an organization's core operations—such as multi-tenant account governance, strategic budget planning, and procurement workflows—into a unified platform to streamline processes and improve operational efficiency.",
   },
   {
     question: "Why is ERP important for organizations?",
@@ -12,7 +12,7 @@ export const faqs = [
   {
     question: "What are the key features of an ERP system?",
     answer:
-      "Common features include centralized data management, inventory and procurement tracking, financial reporting, human resource management, and supply chain monitoring.",
+      "Core features include centralized identity and role-based access control (AMS), strategic budget planning and commitment controls (PBMS), and transparent procurement workflows from purchase requests and bidding to contract awards (PMS).",
   },
   {
     question: "How does ERP benefit employees and management?",

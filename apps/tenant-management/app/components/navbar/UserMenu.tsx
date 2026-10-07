@@ -25,7 +25,7 @@ export function UserMenu({ className = '', showDetails = true }: UserMenuProps) 
 
   const displayName = user.displayName || user.username || 'User';
   const email = user.email || 'user@erpez.dev';
-  const roleLabel = isSuperAdmin ? 'Super Administrator' : user.role || 'Tenant Admin';
+  const roleLabel = isSuperAdmin ? 'Super Administrator' : user.role || 'Member';
 
   const initials = displayName
     .split(' ')

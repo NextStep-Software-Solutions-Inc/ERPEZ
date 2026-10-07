@@ -14,20 +14,38 @@ const WHITELISTED_METHODS = ["post", "put", "patch", "delete"];
 export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL || "http://localhost:5246");
 
 let authToken: string | null = null;
+let authTokenGetter: (() => Promise<string | null>) | null = null;
 
 export const setAuthToken = (token: string | null) => {
   authToken = token;
 };
 
+export const setAuthTokenGetter = (getter: (() => Promise<string | null>) | null) => {
+  authTokenGetter = getter;
+};
+
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     let token = authToken;
+
+    if (authTokenGetter) {
+      try {
+        const fresh = await authTokenGetter();
+        if (fresh) {
+          token = fresh;
+          authToken = fresh;
+        }
+      } catch {
+        // Fall back to current in-memory token
+      }
+    }
+
     let tenantId: string | null = null;
 
     if (typeof window !== "undefined") {
       try {
         const storedToken = localStorage.getItem("erpez_auth_token");
-        if (storedToken && storedToken.startsWith("ey")) {
+        if (!token && storedToken && storedToken.startsWith("ey")) {
           token = storedToken;
         }
         tenantId = localStorage.getItem("erpez_tenant_id");

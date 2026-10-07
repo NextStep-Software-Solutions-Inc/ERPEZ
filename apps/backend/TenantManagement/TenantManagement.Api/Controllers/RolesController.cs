@@ -33,11 +33,11 @@ public class RolesController(ISender mediator) : ControllerBase
 
     /// <summary>
     /// Consumes assignable roles for the current tenant to populate member assignment controls.
-    /// Protected by TenantPermissions.membersManage. Derives tenant strictly from server context.
+    /// Protected by TenantPermissions.rolesView. Derives tenant strictly from server context.
     /// Internal filter ensures only TenantManagement scoped roles are returned.
     /// </summary>
     [HttpGet("assignable")]
-    [HasPermission(TenantPermissions.membersManage)]
+    [HasPermission(TenantPermissions.rolesView)]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<RoleSummaryDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAssignableRoles()
     {
@@ -62,7 +62,7 @@ public class RolesController(ISender mediator) : ControllerBase
 
     /// <summary>
     /// Updates an existing custom role within the current tenant.
-    /// Protected by Admin.rolesManage and privilege delegation validation.
+    /// Protected by TenantPermissions.rolesManage and privilege delegation validation.
     /// </summary>
     [HttpPut("{id}")]
     [HasPermission(TenantPermissions.rolesManage)]

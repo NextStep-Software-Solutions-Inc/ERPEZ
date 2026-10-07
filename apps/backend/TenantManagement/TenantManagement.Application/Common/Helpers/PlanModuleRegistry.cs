@@ -9,9 +9,9 @@ public static class PlanModuleRegistry
     public const string modulePms = "pms";
     public const string modulePbms = "pbms";
 
-    private static readonly string[] starterModules = [moduleAms, moduleSams];
-    private static readonly string[] professionalModules = [moduleAms, moduleSams, modulePms];
-    private static readonly string[] enterpriseModules = [moduleAms, moduleSams, modulePms, modulePbms];
+    private static readonly string[] starterModules = [moduleAms];
+    private static readonly string[] professionalModules = [moduleAms, modulePms];
+    private static readonly string[] enterpriseModules = [moduleAms, modulePms, modulePbms];
 
     public static IReadOnlyList<string> GetModuleKeysForPlan(Plan plan)
     {

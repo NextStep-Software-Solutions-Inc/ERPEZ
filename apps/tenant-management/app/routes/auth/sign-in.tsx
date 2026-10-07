@@ -1,5 +1,5 @@
 import { ArrowLeft, KeyRound } from "lucide-react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { Button } from "~/components/ui/button";
 import { useEffect } from "react";
@@ -15,16 +15,17 @@ export function meta() {
 export default function SignInPage() {
   const { isAuthenticated, isSuperAdmin, login, isClerkLive } = useClerkAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const redirectParam = searchParams.get("redirect");
+  const pendingToken = typeof window !== "undefined" ? sessionStorage.getItem("pending_invitation_token") : null;
+  const redirectTarget = redirectParam || (pendingToken ? `/accept-invitation?token=${encodeURIComponent(pendingToken)}` : (isSuperAdmin ? "/super-admin/overview" : "/overview"));
 
   useEffect(() => {
     if (isAuthenticated) {
-      if (isSuperAdmin) {
-        navigate("/super-admin/overview");
-      } else {
-        navigate("/overview");
-      }
+      navigate(redirectTarget);
     }
-  }, [isAuthenticated, isSuperAdmin, navigate]);
+  }, [isAuthenticated, redirectTarget, navigate]);
 
   return (
     <div className="flex h-screen w-full">
@@ -55,7 +56,7 @@ export default function SignInPage() {
           <div className="space-y-4">
             {isClerkLive ? (
               <div className="flex justify-center">
-                <SignIn routing="hash" fallbackRedirectUrl="/overview" />
+                <SignIn routing="hash" fallbackRedirectUrl={redirectTarget} />
               </div>
             ) : (
               <Button

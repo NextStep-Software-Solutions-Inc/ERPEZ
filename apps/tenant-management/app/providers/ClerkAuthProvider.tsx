@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ClerkProvider, useAuth as useClerkSdkAuth, useUser as useClerkSdkUser, useClerk } from '@clerk/clerk-react';
-import { setAuthToken } from '~/services/api';
+import { setAuthToken, setAuthTokenGetter } from '~/services/api';
 
 export interface AuthUser {
   id: string;
@@ -12,7 +12,7 @@ export interface AuthUser {
   role: string | null;
   tenantId: string | null;
   isSuperAdmin: boolean;
-  publicMetadata?: Record<string, any>;
+  publicMetadata?: Record<string, unknown>;
 }
 
 export interface ClerkAuthContextType {
@@ -33,6 +33,7 @@ export interface ClerkAuthContextType {
   register: () => void;
   updateToken: (minValidity?: number) => Promise<boolean>;
   isClerkLive: boolean;
+  getToken: () => Promise<string | null>;
 }
 
 const ClerkAuthContext = createContext<ClerkAuthContextType | undefined>(undefined);
@@ -47,20 +48,36 @@ interface ClerkAuthProviderProps {
  * Strictly uses live Clerk identity tokens and session management with no offline fake personas.
  */
 function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
-  const { isSignedIn, isLoaded, getToken } = useClerkSdkAuth();
+  const { isSignedIn, isLoaded, getToken: getClerkToken } = useClerkSdkAuth();
   const { user: clerkUser, isLoaded: isUserLoaded } = useClerkSdkUser();
   const clerk = useClerk();
 
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('erpez_auth_token');
+        if (stored && stored.startsWith('ey')) {
+          setAuthToken(stored);
+          return stored;
+        }
+      } catch {
+        // Ignore storage errors
+      }
+    }
+    return null;
+  });
+  const [isTokenFetched, setIsTokenFetched] = useState(false);
 
   // Sync token from Clerk to Axios client
   useEffect(() => {
     let isMounted = true;
 
     async function syncToken() {
+      if (!isLoaded) return;
+
       if (isSignedIn) {
         try {
-          const sessionToken = await getToken();
+          const sessionToken = await getClerkToken();
           if (isMounted) {
             setToken(sessionToken);
             setAuthToken(sessionToken);
@@ -71,18 +88,21 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
                 // Ignore storage errors
               }
             }
+            setIsTokenFetched(true);
           }
         } catch (err) {
           console.error('Failed to obtain Clerk session token:', err);
           if (isMounted) {
             setToken(null);
             setAuthToken(null);
+            setIsTokenFetched(true);
           }
         }
       } else {
         if (isMounted) {
           setToken(null);
           setAuthToken(null);
+          setIsTokenFetched(true);
         }
       }
     }
@@ -91,9 +111,21 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
     return () => {
       isMounted = false;
     };
-  }, [isSignedIn, getToken]);
+  }, [isSignedIn, isLoaded, getClerkToken]);
 
-  const isInitialized = isLoaded && isUserLoaded;
+  // Register dynamic token getter with Axios for transparent background token refresh
+  useEffect(() => {
+    if (isSignedIn) {
+      setAuthTokenGetter(getClerkToken);
+    } else {
+      setAuthTokenGetter(null);
+    }
+    return () => {
+      setAuthTokenGetter(null);
+    };
+  }, [isSignedIn, getClerkToken]);
+
+  const isInitialized = isLoaded && isUserLoaded && (!isSignedIn || isTokenFetched);
 
   useEffect(() => {
     if (isInitialized && onInitialized) {
@@ -102,8 +134,8 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
   }, [isInitialized, isSignedIn, onInitialized]);
 
   const roles = (clerkUser?.publicMetadata?.roles as string[]) ||
-    (clerkUser?.publicMetadata?.role ? [clerkUser.publicMetadata.role as string] : ['Tenant Administrator']);
-  const role = (clerkUser?.publicMetadata?.role as string) || roles[0] || 'Tenant Administrator';
+    (clerkUser?.publicMetadata?.role ? [clerkUser.publicMetadata.role as string] : []);
+  const role = (clerkUser?.publicMetadata?.role as string) || roles[0] || null;
   const tenantId = (clerkUser?.publicMetadata?.tenantId as string) ||
     (typeof window !== 'undefined' ? localStorage.getItem('erpez_tenant_id') : null) ||
     null;
@@ -147,7 +179,7 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
   };
 
   const updateToken = async () => {
-    const freshToken = await getToken();
+    const freshToken = await getClerkToken();
     setToken(freshToken);
     setAuthToken(freshToken);
     return Boolean(freshToken);
@@ -173,6 +205,7 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
         register,
         updateToken,
         isClerkLive: true,
+        getToken: getClerkToken,
       }}
     >
       {children}
@@ -228,13 +261,13 @@ export function useClerkAuth() {
 }
 
 export function useAuth() {
-  const { isAuthenticated, isInitialized, token, login, logout, user } = useClerkAuth();
+  const { isAuthenticated, isInitialized, token, login, logout, user, getToken } = useClerkAuth();
   return {
     isSignedIn: isAuthenticated,
     isLoaded: isInitialized,
     userId: user?.id || (token ? 'user_active' : null),
     sessionId: token ? 'session_active' : null,
-    getToken: async () => token,
+    getToken: getToken,
     signOut: logout,
     signIn: login,
   };

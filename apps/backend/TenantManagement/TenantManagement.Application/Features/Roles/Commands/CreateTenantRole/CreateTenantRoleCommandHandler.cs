@@ -38,7 +38,7 @@ public class CreateTenantRoleCommandHandler(
         // 1. Check if actor is an active Tenant Administrator in THIS tenant
         var isTenantAdmin = await unitOfWork.TenantMemberRepository.Query()
             .AnyAsync(tm => tm.TenantId == tenantId &&
-                            tm.ExternalIdentityId == actorExternalId &&
+                            (tm.ExternalIdentityId == actorExternalId || tm.UserId == actorExternalId) &&
                             tm.Status == Status.Active &&
                             !tm.IsDeleted &&
                             tm.RoleAssignments.Any(ra => ra.Role.NormalizedName == "TENANT ADMINISTRATOR"),

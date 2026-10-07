@@ -80,8 +80,17 @@ public static class TenantPermissions
         licensesManage,
         modulesView,
         modulesManage,
-        "admin.members.manage",
-        "admin.roles.manage"
+        // Cross-domain aliases for backward compatibility with shared Admin permissions
+        ERPEZ.Shared.Constants.Permissions.Admin.rolesManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.membersManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.tenantsManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.usersManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.orgStructureView,
+        ERPEZ.Shared.Constants.Permissions.Admin.orgStructureManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.systemAdminView,
+        ERPEZ.Shared.Constants.Permissions.Admin.systemAdminManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.operationalRolesView,
+        ERPEZ.Shared.Constants.Permissions.Admin.operationalRolesManage
     };
 
     public static readonly IReadOnlySet<string> billingAdmin = new HashSet<string>(StringComparer.OrdinalIgnoreCase)

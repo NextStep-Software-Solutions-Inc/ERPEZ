@@ -38,9 +38,11 @@ const LOCAL_STORAGE_SPECTATING_KEY = "erpez_spectating_tenant";
 
 function TenantProviderContent({ children }: { children: ReactNode }) {
     const queryClient = useQueryClient();
+    const { isTokenReady } = useAuthReady();
     const { data: myTenant, isLoading, error, refetch } = useMyTenant({
         pathParams: {},
         queryParams: { pageSize: 50, pageNumber: 1 },
+        enabled: isTokenReady,
     });
 
     const workspaces: Tenant[] = useMemo(() => {
