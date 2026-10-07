@@ -133,14 +133,30 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
     }
   }, [isInitialized, isSignedIn, onInitialized]);
 
-  const roles = (clerkUser?.publicMetadata?.roles as string[]) ||
+  const userEmail = clerkUser?.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || '';
+  const configuredAdminEmails = (
+    (import.meta.env.VITE_PLATFORM_ADMIN_EMAILS as string | undefined) ||
+    'jeanmaureal@gmail.com,superadmin@erpez.dev'
+  )
+    .split(',')
+    .map((e: string) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  const isEmailAdmin = Boolean(userEmail && configuredAdminEmails.includes(userEmail));
+
+  const metadataRoles = (clerkUser?.publicMetadata?.roles as string[]) ||
     (clerkUser?.publicMetadata?.role ? [clerkUser.publicMetadata.role as string] : []);
-  const role = (clerkUser?.publicMetadata?.role as string) || roles[0] || null;
+  const roles = metadataRoles.length > 0
+    ? metadataRoles
+    : (isEmailAdmin ? ['Platform Administrator'] : []);
+
+  const role = (clerkUser?.publicMetadata?.role as string) || roles[0] || (isEmailAdmin ? 'Platform Administrator' : null);
   const tenantId = (clerkUser?.publicMetadata?.tenantId as string) ||
     (typeof window !== 'undefined' ? localStorage.getItem('erpez_tenant_id') : null) ||
     null;
 
   const isSuperAdmin = Boolean(
+    isEmailAdmin ||
     role === 'super-admin' ||
     role === 'platform_administrator' ||
     role === 'Platform Administrator' ||
