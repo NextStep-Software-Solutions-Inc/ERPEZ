@@ -276,7 +276,8 @@ BEGIN
     -- 5.1 Procurement Core Transactions
     DROP INDEX IF EXISTS procurement."IX_PurchaseOrders_PONumber";
     CREATE UNIQUE INDEX IF NOT EXISTS "IX_PurchaseOrders_TenantId_PONumber"
-        ON procurement."PurchaseOrders" ("TenantId", "PONumber");
+        ON procurement."PurchaseOrders" ("TenantId", "PONumber")
+        WHERE "IsDeleted" = false;
 
     DROP INDEX IF EXISTS procurement."IX_PurchaseRequests_PRNumber";
     CREATE UNIQUE INDEX IF NOT EXISTS "IX_PurchaseRequests_TenantId_PRNumber"
@@ -367,6 +368,7 @@ BEGIN
     CREATE UNIQUE INDEX IF NOT EXISTS "IX_Transactions_TenantId_Accounting_Combination"
         ON planning."Transactions" ("TenantId", "FundSourceId", "OrganizationId", "LocationId", "MFOPAPId", "ObjectId", "TransactionDate");
 
+    DROP INDEX IF EXISTS planning."IX_FiscalYears_Year";
     DROP INDEX IF EXISTS planning."IX_FiscalYears_TenantId_Year";
     CREATE UNIQUE INDEX IF NOT EXISTS "IX_FiscalYears_TenantId_Year"
         ON planning."FiscalYears" ("TenantId", "Year");

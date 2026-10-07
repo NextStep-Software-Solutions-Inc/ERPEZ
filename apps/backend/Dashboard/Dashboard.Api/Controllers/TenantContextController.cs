@@ -5,6 +5,7 @@ using ERPEZ.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace ERPEZ.Api.Controllers;
 
@@ -15,7 +16,8 @@ namespace ERPEZ.Api.Controllers;
 public class TenantContextController(
     ApplicationDbContext dbContext,
     ITenantRequestContext tenantRequestContext,
-    ICurrentUserService currentUser) : ControllerBase
+    ICurrentUserService currentUser,
+    IConfiguration configuration) : ControllerBase
 {
     private static readonly Guid defaultTenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
@@ -31,29 +33,16 @@ public class TenantContextController(
         }
 
         var tenantId = tenantRequestContext.TenantId ?? defaultTenantId;
-        var externalOrgId = User.FindFirst("erpez:external_org_id")?.Value
+        var externalOrgIdClaim = User.FindFirst("erpez:external_org_id")?.Value
             ?? User.FindFirst("org_id")?.Value;
 
-        var tenantName = Request.Headers.TryGetValue("X-Tenant-Name", out var headerName) && !string.IsNullOrWhiteSpace(headerName)
-            ? headerName.ToString()
-            : null;
-
-        var org = dbContext.Organizations != null
-            ? await dbContext.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.IsActive && !o.IsDeleted, cancellationToken)
-            : null;
-
-        if (string.IsNullOrWhiteSpace(tenantName))
-        {
-            tenantName = org != null && !org.Name.Equals("Organization 1", StringComparison.OrdinalIgnoreCase)
-                ? org.Name
-                : (!string.IsNullOrWhiteSpace(externalOrgId) ? "NextJump Solutions Software" : (org?.Name ?? "Default Organization Workspace"));
-        }
+        var (tenantName, externalOrgId) = await ResolveTenantDisplayInfoAsync(externalOrgIdClaim, cancellationToken);
 
         var activeTenant = new UnifiedTenantContextDto
         {
             Id = tenantId,
             Name = tenantName,
-            ExternalOrgId = !string.IsNullOrWhiteSpace(externalOrgId) ? externalOrgId : (org?.Code ?? "org_default")
+            ExternalOrgId = externalOrgId
         };
 
         var response = new TenantBootstrapContextResponse
@@ -77,23 +66,10 @@ public class TenantContextController(
         }
 
         var tenantId = tenantRequestContext.TenantId ?? defaultTenantId;
-        var externalOrgId = User.FindFirst("erpez:external_org_id")?.Value
+        var externalOrgIdClaim = User.FindFirst("erpez:external_org_id")?.Value
             ?? User.FindFirst("org_id")?.Value;
 
-        var tenantName = Request.Headers.TryGetValue("X-Tenant-Name", out var headerName) && !string.IsNullOrWhiteSpace(headerName)
-            ? headerName.ToString()
-            : null;
-
-        var org = dbContext.Organizations != null
-            ? await dbContext.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.IsActive && !o.IsDeleted, cancellationToken)
-            : null;
-
-        if (string.IsNullOrWhiteSpace(tenantName))
-        {
-            tenantName = org != null && !org.Name.Equals("Organization 1", StringComparison.OrdinalIgnoreCase)
-                ? org.Name
-                : (!string.IsNullOrWhiteSpace(externalOrgId) ? "NextJump Solutions Software" : (org?.Name ?? "Default Organization Workspace"));
-        }
+        var (tenantName, externalOrgId) = await ResolveTenantDisplayInfoAsync(externalOrgIdClaim, cancellationToken);
 
         var availableTenants = new List<UnifiedTenantContextDto>
         {
@@ -101,10 +77,60 @@ public class TenantContextController(
             {
                 Id = tenantId,
                 Name = tenantName,
-                ExternalOrgId = !string.IsNullOrWhiteSpace(externalOrgId) ? externalOrgId : (org?.Code ?? "org_default")
+                ExternalOrgId = externalOrgId
             }
         };
 
         return Ok(ApiResponse<List<UnifiedTenantContextDto>>.Success(availableTenants));
+    }
+
+    private async Task<(string tenantName, string externalOrgId)> ResolveTenantDisplayInfoAsync(
+        string? externalOrgIdClaim,
+        CancellationToken cancellationToken)
+    {
+        // 1. Client/gateway forwarded tenant name header
+        if (Request.Headers.TryGetValue("X-Tenant-Name", out var headerName) && !string.IsNullOrWhiteSpace(headerName))
+        {
+            var headerStr = headerName.ToString().Trim();
+            if (!string.IsNullOrWhiteSpace(headerStr))
+            {
+                return (headerStr, !string.IsNullOrWhiteSpace(externalOrgIdClaim) ? externalOrgIdClaim : "org_default");
+            }
+        }
+
+        // 2. Token-level organization claims
+        var claimOrgName = User.FindFirst("org_name")?.Value
+            ?? User.FindFirst("erpez:org_name")?.Value
+            ?? User.FindFirst("organization")?.Value;
+
+        if (!string.IsNullOrWhiteSpace(claimOrgName))
+        {
+            return (claimOrgName.Trim(), !string.IsNullOrWhiteSpace(externalOrgIdClaim) ? externalOrgIdClaim : "org_default");
+        }
+
+        // 3. Operational database active organization
+        var org = dbContext.Organizations != null
+            ? await dbContext.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.IsActive && !o.IsDeleted, cancellationToken)
+            : null;
+
+        if (!string.IsNullOrWhiteSpace(org?.Name))
+        {
+            var resolvedOrgId = !string.IsNullOrWhiteSpace(externalOrgIdClaim)
+                ? externalOrgIdClaim
+                : (!string.IsNullOrWhiteSpace(org.Code) ? org.Code : "org_default");
+
+            return (org.Name.Trim(), resolvedOrgId);
+        }
+
+        // 4. Configured default or generic workspace fallback
+        var configuredName = configuration["Multitenancy:DefaultTenantName"]
+            ?? configuration["Tenancy:DefaultTenantName"]
+            ?? configuration["App:DefaultTenantName"];
+
+        var fallbackName = !string.IsNullOrWhiteSpace(configuredName)
+            ? configuredName.Trim()
+            : (!string.IsNullOrWhiteSpace(externalOrgIdClaim) ? externalOrgIdClaim : "Default Workspace");
+
+        return (fallbackName, !string.IsNullOrWhiteSpace(externalOrgIdClaim) ? externalOrgIdClaim : "org_default");
     }
 }
