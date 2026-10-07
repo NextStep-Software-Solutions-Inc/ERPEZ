@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
 import { createMutationHookFromTemplate } from 'erpez-shared-lib';
 import { acceptInvitationRequest } from '~/features/tenant-member/handlers/acceptInvitationRequest';
@@ -6,8 +6,11 @@ import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '~/components/ui/card';
-import { ShieldCheck, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Loader2, ArrowRight, CheckCircle2, AlertCircle, LogOut, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { useClerkAuth } from '~/providers/ClerkAuthProvider';
+import { SignIn, SignUp } from '@clerk/clerk-react';
 
 export function meta() {
   return [
@@ -21,106 +24,298 @@ const useAcceptInvitation = createMutationHookFromTemplate(acceptInvitationReque
 export default function AcceptInvitationRoute() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, isInitialized, user, logout } = useClerkAuth();
+
   const tokenFromUrl = searchParams.get('token') || '';
-  const [token, setToken] = useState(tokenFromUrl);
+  const [token, setToken] = useState(() => {
+    if (tokenFromUrl) return tokenFromUrl;
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('pending_invitation_token') || '';
+    }
+    return '';
+  });
+
+  const [authMode, setAuthMode] = useState<'sign-up' | 'sign-in'>('sign-up');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const acceptMutation = useAcceptInvitation();
+  const autoAcceptAttempted = useRef(false);
 
   useEffect(() => {
     if (tokenFromUrl) {
       setToken(tokenFromUrl);
+      try {
+        sessionStorage.setItem('pending_invitation_token', tokenFromUrl);
+      } catch {
+        // Ignore storage errors
+      }
     }
   }, [tokenFromUrl]);
 
-  const handleAccept = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!token.trim()) {
-      toast.error('Invitation token is required.');
-      return;
-    }
+  const executeAccept = async (tokenToUse: string) => {
+    const effectiveToken = tokenToUse.trim() || 'auto';
 
+    setErrorMessage(null);
     try {
       await acceptMutation.mutateAsync({
         pathParams: {},
-        payload: { invitationToken: token.trim() },
+        payload: { invitationToken: effectiveToken },
       });
       setIsSuccess(true);
-      toast.success('Invitation accepted successfully! Redirecting...');
+      try {
+        sessionStorage.removeItem('pending_invitation_token');
+      } catch {
+        // Ignore storage errors
+      }
+      await queryClient.invalidateQueries();
+      toast.success('Invitation accepted! Setting up your workspace...');
       setTimeout(() => {
         window.location.href = '/overview';
-      }, 1500);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Failed to accept invitation. The token may be expired or invalid.';
+      }, 1200);
+    } catch (err: unknown) {
+      let msg = 'Failed to accept invitation. The token may be expired or invalid.';
+      if (err && typeof err === 'object' && 'response' in err) {
+        const response = (err as { response?: { data?: { message?: string } } }).response;
+        if (response?.data?.message) {
+          msg = response.data.message;
+        }
+      }
+      setErrorMessage(msg);
       toast.error(msg);
     }
   };
 
+  // Seamless Auto-Accept: Once the user is authenticated, auto-accept immediately!
+  useEffect(() => {
+    if (
+      isInitialized &&
+      isAuthenticated &&
+      (token.trim() || user?.email) &&
+      !isSuccess &&
+      !errorMessage &&
+      !acceptMutation.isPending &&
+      !autoAcceptAttempted.current
+    ) {
+      autoAcceptAttempted.current = true;
+      executeAccept(token.trim() || 'auto');
+    }
+  }, [isInitialized, isAuthenticated, token, user?.email, isSuccess, errorMessage, acceptMutation.isPending]);
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+        <div className="flex flex-col items-center gap-2 text-sm text-slate-500">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          Verifying invitation...
+        </div>
+      </div>
+    );
+  }
+
+  // State 1: Authenticated & Successfully Accepted
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+        <Card className="w-full max-w-md shadow-xl border-slate-200 dark:border-slate-800 text-center p-6">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">
+            Welcome to the Workspace!
+          </CardTitle>
+          <CardDescription className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Your invitation was successfully accepted. Taking you directly to your portal dashboard...
+          </CardDescription>
+          <div className="mt-6 flex justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // State 2: Authenticated & Processing Auto-Accept
+  if (isAuthenticated && acceptMutation.isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+        <Card className="w-full max-w-md shadow-xl border-slate-200 dark:border-slate-800 text-center p-6">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+          <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">
+            Joining Workspace...
+          </CardTitle>
+          <CardDescription className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Connecting your account (<strong>{user?.email}</strong>) to the organization. Please wait a moment...
+          </CardDescription>
+        </Card>
+      </div>
+    );
+  }
+
+  // State 3: Authenticated with Error (e.g. Email mismatch or expired token)
+  if (isAuthenticated && errorMessage) {
+    const isEmailMismatch = errorMessage.toLowerCase().includes('does not match');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+        <Card className="w-full max-w-md shadow-xl border-slate-200 dark:border-slate-800">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            <CardTitle className="text-xl font-bold">
+              {isEmailMismatch ? 'Account Email Mismatch' : 'Invitation Notice'}
+            </CardTitle>
+            <CardDescription className="mt-1 text-sm">
+              {isEmailMismatch ? (
+                <>
+                  You are currently signed in as <strong>{user?.email}</strong>, but this invitation was sent to a different email address.
+                </>
+              ) : (
+                errorMessage
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex flex-col gap-2">
+            {isEmailMismatch ? (
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                onClick={() => {
+                  autoAcceptAttempted.current = false;
+                  setErrorMessage(null);
+                  logout();
+                }}
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out & Switch Account
+              </Button>
+            ) : (
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  autoAcceptAttempted.current = false;
+                  executeAccept(token);
+                }}
+              >
+                Retry Acceptance
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs text-muted-foreground"
+              onClick={() => navigate('/overview')}
+            >
+              Continue to Overview
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // State 4: Authenticated, but no token detected in URL or storage
+  if (isAuthenticated && !token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+        <Card className="w-full max-w-md shadow-xl border-slate-200 dark:border-slate-800">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+              <Building2 className="h-6 w-6" />
+            </div>
+            <CardTitle className="text-xl font-bold">Enter Invitation Token</CardTitle>
+            <CardDescription>
+              Authenticated as <strong>{user?.email}</strong>. Please enter the invitation token to join.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="manual-token" className="text-xs font-semibold">Invitation Token</Label>
+              <Input
+                id="manual-token"
+                placeholder="Paste invitation token (e.g. inv_...)"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                className="font-mono text-xs"
+              />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={!token.trim() || acceptMutation.isPending}
+              onClick={() => executeAccept(token.trim())}
+            >
+              Accept Invitation
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // State 5: Unauthenticated — Embed Clerk Sign-In / Sign-Up directly on this page!
+  // The user NEVER leaves localhost:5173, avoiding all Clerk hosted developer redirect screens.
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-      <Card className="w-full max-w-md shadow-xl border-slate-200 dark:border-slate-800">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600">
-            {isSuccess ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : <ShieldCheck className="h-6 w-6" />}
+      <div className="w-full max-w-md space-y-4">
+        <div className="text-center space-y-1">
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 shadow-inner dark:bg-blue-950/60 dark:text-blue-400">
+            <ShieldCheck className="h-6 w-6" />
           </div>
-          <CardTitle className="text-xl font-bold">
-            {isSuccess ? 'Invitation Accepted!' : 'Join Workspace'}
-          </CardTitle>
-          <CardDescription>
-            {isSuccess
-              ? 'Your account has been bound to the workspace. Taking you to your workspace now...'
-              : 'Accept your invitation to join this organization and access authorized ERP workflows.'}
-          </CardDescription>
-        </CardHeader>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            Join ERPEZ Workspace
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            You've been invited to collaborate. Sign in or register below to automatically enter your workspace.
+          </p>
+        </div>
 
-        {!isSuccess && (
-          <form onSubmit={handleAccept}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="token" className="text-xs font-semibold">
-                  Invitation Token
-                </Label>
-                <Input
-                  id="token"
-                  placeholder="Paste your 32-byte invitation token"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  className="font-mono text-xs"
-                  required
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2">
-              <Button
-                type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white font-medium"
-                disabled={acceptMutation.isPending || !token.trim()}
-              >
-                {acceptMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Accepting Invitation...
-                  </>
-                ) : (
-                  <>
-                    Accept Invitation
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full text-xs text-muted-foreground"
-                onClick={() => navigate('/overview')}
-              >
-                Go to Overview
-              </Button>
-            </CardFooter>
-          </form>
-        )}
-      </Card>
+        {/* Tab switch between Sign Up and Sign In */}
+        <div className="flex rounded-lg bg-slate-200/70 p-1 dark:bg-slate-800">
+          <button
+            type="button"
+            onClick={() => setAuthMode('sign-up')}
+            className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all ${
+              authMode === 'sign-up'
+                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-900 dark:text-slate-100'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400'
+            }`}
+          >
+            Create New Account
+          </button>
+          <button
+            type="button"
+            onClick={() => setAuthMode('sign-in')}
+            className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all ${
+              authMode === 'sign-in'
+                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-900 dark:text-slate-100'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400'
+            }`}
+          >
+            I Already Have an Account
+          </button>
+        </div>
+
+        {/* Embedded Clerk Component directly on localhost:5173 */}
+        <div className="flex justify-center pt-2">
+          {authMode === 'sign-up' ? (
+            <SignUp
+              routing="hash"
+              fallbackRedirectUrl={token ? `/accept-invitation?token=${encodeURIComponent(token)}` : '/accept-invitation'}
+              forceRedirectUrl={token ? `/accept-invitation?token=${encodeURIComponent(token)}` : '/accept-invitation'}
+            />
+          ) : (
+            <SignIn
+              routing="hash"
+              fallbackRedirectUrl={token ? `/accept-invitation?token=${encodeURIComponent(token)}` : '/accept-invitation'}
+              forceRedirectUrl={token ? `/accept-invitation?token=${encodeURIComponent(token)}` : '/accept-invitation'}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

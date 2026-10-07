@@ -14,6 +14,15 @@ export function meta() {
 
 export default function RegisterTenantPage() {
     const navigate = useNavigate();
+
+    const handleBack = () => {
+        if (typeof window !== "undefined" && window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate("/");
+        }
+    };
+
     return (
         <TenantChecker inverted fallback={(<Navigate to="/overview" replace />)}>
             <GradientEllipses numEllipses={4} opacityRange={[0.15, 0.18]} />
@@ -23,11 +32,13 @@ export default function RegisterTenantPage() {
                         alt="ERPEZ Logo"
                         width={126}
                         height={60}
+                        className="cursor-pointer"
+                        onClick={() => navigate("/")}
                     />
                     <Button
-                        onClick={() => navigate(-1)}
+                        onClick={handleBack}
                         variant={"ghost"}
-                        className="flex items-center text-[var(--button-blue)] hover:text-gray-800 z-50"
+                        className="flex items-center text-[var(--button-blue)] hover:text-gray-800 z-50 cursor-pointer"
                     >
                         <ArrowLeft className="h-5 w-5 mr-1" />
                         Back

@@ -2,6 +2,7 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.TenantManagement.Domain.Constants;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -54,7 +55,7 @@ public class DeleteTenantRoleCommandHandler(
 
         var isTenantAdmin = await unitOfWork.TenantMemberRepository.Query()
             .AnyAsync(tm => tm.TenantId == tenantId &&
-                            tm.ExternalIdentityId == actorExternalId &&
+                            (tm.ExternalIdentityId == actorExternalId || tm.UserId == actorExternalId) &&
                             tm.Status == Status.Active &&
                             !tm.IsDeleted &&
                             tm.RoleAssignments.Any(ra => ra.Role.NormalizedName == "TENANT ADMINISTRATOR"),
@@ -63,7 +64,8 @@ public class DeleteTenantRoleCommandHandler(
         if (!isTenantAdmin)
         {
             var actorPermissions = await authService.GetPermissionsAsync(actorExternalId, tenantId, cancellationToken);
-            if (!actorPermissions.Contains(Permissions.Admin.rolesManage))
+            if (!actorPermissions.Contains(TenantPermissions.rolesManage) &&
+                !actorPermissions.Contains(Permissions.Admin.rolesManage))
             {
                 throw new ForbiddenException("You do not have permission to manage tenant roles.");
             }

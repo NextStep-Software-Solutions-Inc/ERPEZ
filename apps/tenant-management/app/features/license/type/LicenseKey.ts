@@ -17,4 +17,5 @@ export interface LicenseKey {
   remainingDays: number;
   activatedAt?: string;
   notes?: string;
+  signature?: string;
 }
