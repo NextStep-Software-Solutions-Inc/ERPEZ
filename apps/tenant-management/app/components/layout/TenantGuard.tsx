@@ -1,9 +1,8 @@
-import { Navigate } from "react-router";
+import { useEffect } from "react";
 import { useTenant } from "~/providers/TenantProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import LoadingSpinner from "../LoadingSpinner";
-
 import { Button } from "~/components/ui/button";
-
 import NoTenantEmptyState from "./NoTenantEmptyState";
 
 interface TenantGuardProps {
@@ -11,10 +10,26 @@ interface TenantGuardProps {
 }
 
 function TenantGuard({ children }: TenantGuardProps) {
-    const { tenant: myTenant, isLoading, error, refetchWorkspaces } = useTenant();
+    const { tenant: myTenant, isLoading, error, refetchWorkspaces, userWorkspaceRoles, isSpectating } = useTenant();
+    const { isSuperAdmin } = useClerkAuth();
+
+    const isTenantAdmin = isSuperAdmin || isSpectating || (userWorkspaceRoles || []).some(r =>
+        r.toLowerCase().includes('admin') || r.toLowerCase().includes('owner')
+    );
+
+    useEffect(() => {
+        if (!isLoading && myTenant && !isTenantAdmin) {
+            const dashboardUrl = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000';
+            window.location.href = `${dashboardUrl}/v2/overview`;
+        }
+    }, [isLoading, myTenant, isTenantAdmin]);
 
     if (isLoading) {
         return <LoadingSpinner size="md" message="Loading interface..." />;
+    }
+
+    if (!isTenantAdmin && myTenant) {
+        return <LoadingSpinner size="md" message="Redirecting to ERPEZ Dashboard..." />;
     }
 
     if (error) {

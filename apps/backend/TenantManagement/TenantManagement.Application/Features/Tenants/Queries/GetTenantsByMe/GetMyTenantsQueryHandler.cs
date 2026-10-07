@@ -9,6 +9,7 @@ using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
 using System.Linq.Expressions;
 
@@ -29,6 +30,34 @@ public class GetMyTenantsQueryHandler(
 
         var externalSubject = currentUserService.ExternalIdentityId;
         var lookupSubject = !string.IsNullOrWhiteSpace(externalSubject) ? externalSubject : currentUserService.UserId;
+
+        // Auto-reconcile any pending memberships for this authenticated caller
+        if (!string.IsNullOrWhiteSpace(currentUserService.Email))
+        {
+            var normalizedEmail = currentUserService.Email.Trim().ToLowerInvariant();
+            var pendingMembers = await unitOfWork.TenantMemberRepository.Query()
+                .Where(tm => tm.Email.ToLower() == normalizedEmail &&
+                             tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Pending &&
+                             !tm.IsDeleted)
+                .ToListAsync(cancellationToken);
+
+            if (pendingMembers.Count > 0)
+            {
+                foreach (var pm in pendingMembers)
+                {
+                    pm.Status = ERPEZ.TenantManagement.Domain.Enums.Status.Active;
+                    if (!string.IsNullOrWhiteSpace(lookupSubject))
+                    {
+                        pm.ExternalIdentityId = lookupSubject;
+                        pm.UserId = lookupSubject;
+                    }
+                    pm.InvitationTokenHash = null;
+                    pm.InvitationExpiresAtUtc = null;
+                    pm.ConcurrencyStamp = Guid.NewGuid();
+                }
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+        }
         Expression<Func<Tenant, bool>> customFilter;
 
         if (currentUserService.IsSuperAdmin)

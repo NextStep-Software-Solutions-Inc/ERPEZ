@@ -161,25 +161,17 @@ public static class AmsRoleSeeder
             }
         }
 
-        // Seed default development / on-premise trial license if none exists
-        if (context.AmsLicenseSettings != null && !await context.AmsLicenseSettings.AnyAsync())
+        // Enforce strict licensing: clean up any legacy permissive development Enterprise license
+        if (context.AmsLicenseSettings != null)
         {
-            await context.AmsLicenseSettings.AddAsync(new AmsLicenseSetting
+            var legacyDevLicenses = await context.AmsLicenseSettings
+                .Where(s => s.LicenseKey == "EPZ-ENTERPRISE-DEVELOPMENT-LICENSE-KEY")
+                .ToListAsync();
+
+            if (legacyDevLicenses.Count > 0)
             {
-                Id = Guid.NewGuid(),
-                LicenseKey = "EPZ-ENTERPRISE-DEVELOPMENT-LICENSE-KEY",
-                Plan = "Enterprise",
-                AllowedDomain = "*",
-                MaxUsers = 100,
-                RemainingDays = 365,
-                ExpiresAt = DateTime.UtcNow.AddYears(1),
-                LastValidatedAt = DateTime.UtcNow,
-                IsValid = true,
-                EnabledModules = "ams,sams,pms,pbms",
-                ValidationMessage = "Development and Enterprise standalone license active.",
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = "SystemSeed"
-            });
+                context.AmsLicenseSettings.RemoveRange(legacyDevLicenses);
+            }
         }
 
         await context.SaveChangesAsync();

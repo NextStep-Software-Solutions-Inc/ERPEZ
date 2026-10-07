@@ -16,7 +16,8 @@ public class ResendInvitationCommandHandler(
     ITenantContextService tenantContext,
     ICurrentUserService currentUser,
     ITenantAuditService auditService,
-    IClerkInvitationService clerkInvitationService)
+    IClerkInvitationService clerkInvitationService,
+    Microsoft.Extensions.Configuration.IConfiguration configuration)
     : IRequestHandler<ResendInvitationCommand, ApiResponse<ResendInvitationResponse>>
 {
     public async Task<ApiResponse<ResendInvitationResponse>> Handle(ResendInvitationCommand command, CancellationToken cancellationToken)
@@ -63,10 +64,14 @@ public class ResendInvitationCommandHandler(
             ["invitationType"] = "tenant_member"
         };
 
+        var dashboardUrl = configuration["App:DashboardUrl"] ?? configuration["DashboardUrl"] ?? "http://localhost:3000";
+        var redirectUrl = $"{dashboardUrl.TrimEnd('/')}/v2/overview";
+
         // 3. Create fresh User Invitation in Clerk
         var clerkInvitation = await clerkInvitationService.CreateInvitationAsync(
             member.Email,
             metadata,
+            redirectUrl: redirectUrl,
             notify: true,
             ignoreExisting: true,
             ct: cancellationToken);

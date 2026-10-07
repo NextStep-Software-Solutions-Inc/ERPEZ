@@ -27,37 +27,88 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                 
                 if (dbContext.Users != null)
                 {
-                    var userExists = await dbContext.Users
-                        .AsNoTracking()
-                        .AnyAsync(u => u.ExternalIdentityId == externalIdentityId);
+                    var email = context.User.FindFirstValue(ClaimTypes.Email) 
+                        ?? context.User.FindFirstValue("email");
 
-                    if (!userExists)
+                    var username = context.User.FindFirstValue("preferred_username") 
+                        ?? context.User.FindFirstValue(ClaimTypes.Name) 
+                        ?? email;
+
+                    var givenName = context.User.FindFirstValue(ClaimTypes.GivenName) 
+                        ?? context.User.FindFirstValue("given_name") 
+                        ?? username;
+
+                    var familyName = context.User.FindFirstValue(ClaimTypes.Surname) 
+                        ?? context.User.FindFirstValue("family_name") 
+                        ?? "User";
+
+                    var normalizedEmail = !string.IsNullOrWhiteSpace(email) ? email.Trim().ToLowerInvariant() : "";
+
+                    var user = await dbContext.Users
+                        .Include(u => u.RoleAssignments)
+                        .FirstOrDefaultAsync(u => u.ExternalIdentityId == externalIdentityId ||
+                                                  (!string.IsNullOrEmpty(normalizedEmail) && u.Email.ToLower() == normalizedEmail));
+
+                    if (user != null)
                     {
-                        var email = context.User.FindFirstValue(ClaimTypes.Email) 
-                            ?? context.User.FindFirstValue("email") 
-                            ?? $"{externalIdentityId}@keycloak.local";
+                        // Bind identity if not set or changed
+                        if (user.ExternalIdentityId != externalIdentityId)
+                        {
+                            user.ExternalIdentityId = externalIdentityId;
+                        }
 
-                        var username = context.User.FindFirstValue("preferred_username") 
-                            ?? context.User.FindFirstValue(ClaimTypes.Name) 
-                            ?? email;
+                        if (!string.IsNullOrWhiteSpace(username) && (string.IsNullOrWhiteSpace(user.Username) || user.Username.StartsWith("user_")))
+                        {
+                            user.Username = username;
+                        }
 
-                        var givenName = context.User.FindFirstValue(ClaimTypes.GivenName) 
-                            ?? context.User.FindFirstValue("given_name") 
-                            ?? username;
+                        if (!string.IsNullOrWhiteSpace(givenName) && (string.IsNullOrWhiteSpace(user.FirstName) || user.FirstName == normalizedEmail.Split('@')[0]))
+                        {
+                            user.FirstName = givenName;
+                        }
 
-                        var familyName = context.User.FindFirstValue(ClaimTypes.Surname) 
-                            ?? context.User.FindFirstValue("family_name") 
-                            ?? "User";
+                        if (!string.IsNullOrWhiteSpace(familyName) && (string.IsNullOrWhiteSpace(user.LastName) || user.LastName == "User"))
+                        {
+                            user.LastName = familyName;
+                        }
 
+                        user.IsActive = true;
+
+                        // If user has no active role assignments (e.g. was auto-created without any roles), assign default role
+                        var hasActiveRoles = user.RoleAssignments != null && user.RoleAssignments.Any(ra => !ra.IsDeleted);
+                        if (!hasActiveRoles)
+                        {
+                            var isFirstUser = !await dbContext.Users.AnyAsync(u => u.Id != user.Id);
+                            var targetRoleName = isFirstUser ? "System Administrator" : "Employee / Viewer";
+                            var role = await dbContext.AmsRoles!
+                                .FirstOrDefaultAsync(r => r.Name == targetRoleName && !r.IsDeleted);
+
+                            if (role != null)
+                            {
+                                await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                {
+                                    Id = Guid.NewGuid(),
+                                    UserId = user.Id,
+                                    RoleId = role.Id,
+                                    AssignedAt = DateTime.UtcNow,
+                                    CreatedAt = DateTime.UtcNow,
+                                    CreatedBy = "KeycloakJIT"
+                                });
+                            }
+                        }
+
+                        await dbContext.SaveChangesAsync();
+                    }
+                    else
+                    {
                         var isFirstUser = !await dbContext.Users.AnyAsync();
-
                         var newUser = new User
                         {
                             Id = Guid.NewGuid(),
                             ExternalIdentityId = externalIdentityId,
-                            Username = username,
-                            Email = email,
-                            FirstName = givenName,
+                            Username = username ?? (string.IsNullOrEmpty(normalizedEmail) ? externalIdentityId : normalizedEmail),
+                            Email = string.IsNullOrEmpty(normalizedEmail) ? $"{externalIdentityId}@keycloak.local" : normalizedEmail,
+                            FirstName = string.IsNullOrWhiteSpace(givenName) ? (string.IsNullOrEmpty(normalizedEmail) ? "Workspace" : normalizedEmail.Split('@')[0]) : givenName,
                             LastName = string.IsNullOrWhiteSpace(familyName) ? "User" : familyName,
                             IsActive = true,
                             CreatedAt = DateTime.UtcNow,
@@ -66,10 +117,9 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
 
                         await dbContext.Users.AddAsync(newUser);
 
-                        // If first user, make them System Administrator; otherwise assign Employee / Viewer
                         var targetRoleName = isFirstUser ? "System Administrator" : "Employee / Viewer";
                         var role = await dbContext.AmsRoles!
-                            .FirstOrDefaultAsync(r => r.Name == targetRoleName);
+                            .FirstOrDefaultAsync(r => r.Name == targetRoleName && !r.IsDeleted);
 
                         if (role != null)
                         {

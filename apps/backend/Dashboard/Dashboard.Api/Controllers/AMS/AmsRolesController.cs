@@ -259,17 +259,66 @@ public class AmsRolesController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AssignUserRoles([FromBody] AssignUserRolesDto request, CancellationToken cancellationToken)
     {
-        var user = await dbContext.Users!
-            .Include(u => u.RoleAssignments)
-            .FirstOrDefaultAsync(u => u.Id == request.UserId && !u.IsDeleted, cancellationToken);
+        Domain.Entities.Planning.User? user = null;
 
+        // 1. Try finding by UserId if provided
+        if (request.UserId.HasValue && request.UserId.Value != Guid.Empty)
+        {
+            user = await dbContext.Users!
+                .Include(u => u.RoleAssignments)
+                .FirstOrDefaultAsync(u => u.Id == request.UserId.Value && !u.IsDeleted, cancellationToken);
+        }
+
+        // 2. Try finding by ExternalIdentityId if provided
+        if (user == null && !string.IsNullOrWhiteSpace(request.ExternalIdentityId))
+        {
+            user = await dbContext.Users!
+                .Include(u => u.RoleAssignments)
+                .FirstOrDefaultAsync(u => u.ExternalIdentityId == request.ExternalIdentityId && !u.IsDeleted, cancellationToken);
+        }
+
+        // 3. Try finding by Email if provided
+        if (user == null && !string.IsNullOrWhiteSpace(request.Email))
+        {
+            var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+            user = await dbContext.Users!
+                .Include(u => u.RoleAssignments)
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && !u.IsDeleted, cancellationToken);
+        }
+
+        // 4. If user does not exist in planning.Users yet, auto-provision them immediately!
         if (user == null)
         {
-            return BadRequest(ApiResponse<bool>.Fail("User not found."));
+            if (string.IsNullOrWhiteSpace(request.Email) && string.IsNullOrWhiteSpace(request.FullName))
+            {
+                return BadRequest(ApiResponse<bool>.Fail("User not found and insufficient details (Email/Name) provided to provision user profile."));
+            }
+
+            var email = !string.IsNullOrWhiteSpace(request.Email) ? request.Email.Trim() : $"{Guid.NewGuid()}@workspace.local";
+            var fullName = !string.IsNullOrWhiteSpace(request.FullName) ? request.FullName.Trim() : email.Split('@')[0];
+            var nameParts = fullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            var firstName = nameParts.Length > 0 ? nameParts[0] : "Member";
+            var lastName = nameParts.Length > 1 ? nameParts[1] : "User";
+
+            user = new Domain.Entities.Planning.User
+            {
+                Id = request.UserId.HasValue && request.UserId.Value != Guid.Empty ? request.UserId.Value : Guid.NewGuid(),
+                ExternalIdentityId = request.ExternalIdentityId,
+                Username = email,
+                Email = email,
+                FirstName = firstName,
+                LastName = lastName,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = User.Identity?.Name ?? "Admin"
+            };
+
+            await dbContext.Users!.AddAsync(user, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         // Remove existing assignments
-        if (user.RoleAssignments.Count > 0)
+        if (user.RoleAssignments != null && user.RoleAssignments.Count > 0)
         {
             dbContext.UserRoleAssignments!.RemoveRange(user.RoleAssignments);
         }
@@ -304,6 +353,32 @@ public class AmsRolesController(
         }
 
         return Ok(ApiResponse<bool>.Success(true));
+    }
+
+    [HttpGet("assignments")]
+    [HasPermission(Permissions.Admin.rolesManage)]
+    [ProducesResponseType(typeof(ApiResponse<List<UserRoleAssignmentSummaryDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllRoleAssignments(CancellationToken cancellationToken)
+    {
+        var usersWithRoles = await dbContext.Users!
+            .AsNoTracking()
+            .Include(u => u.RoleAssignments)
+                .ThenInclude(ra => ra.Role)
+            .Where(u => !u.IsDeleted)
+            .Select(u => new UserRoleAssignmentSummaryDto
+            {
+                UserId = u.Id,
+                ExternalIdentityId = u.ExternalIdentityId,
+                Email = u.Email,
+                Roles = u.RoleAssignments
+                    .Where(ra => !ra.IsDeleted && ra.Role != null && !ra.Role.IsDeleted)
+                    .Select(ra => ra.Role!.Name)
+                    .Distinct()
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(ApiResponse<List<UserRoleAssignmentSummaryDto>>.Success(usersWithRoles));
     }
 
     [HttpGet("users/{userId:guid}")]

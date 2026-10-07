@@ -54,7 +54,7 @@ public class LicenseConsumptionService(
                 ActiveUsersCount = activeUserCount,
                 RemainingDays = 0,
                 EnabledModules = ["ams", "sams"],
-                Message = "No license activated. Basic access only.",
+                Message = "No active license key. Please activate your workspace license key from the Tenant Management portal to unlock full ERP modules.",
                 IsAirGapped = false
             };
 

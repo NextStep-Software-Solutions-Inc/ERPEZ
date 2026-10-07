@@ -403,10 +403,12 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
       }
 
       if (activeOrg) {
+        const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/v2/overview` : undefined;
         await activeOrg.inviteMember({
           emailAddress: email.trim().toLowerCase(),
           role: role as any,
-        });
+          redirectUrl,
+        } as any);
         if (invitations?.revalidate) {
           await invitations.revalidate();
         }

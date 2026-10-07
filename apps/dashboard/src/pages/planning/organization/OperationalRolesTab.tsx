@@ -1,6 +1,17 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Shield, UserCheck, AlertCircle, Check } from 'lucide-react'
+import {
+  Search,
+  Shield,
+  UserCheck,
+  AlertCircle,
+  RotateCw,
+  Trash2,
+  Clock,
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -26,14 +37,38 @@ import {
   fetchAssignableOperationalRoles,
   assignOperationalRoles,
   fetchUserAssignedRoles,
-  type OperationalRoleSummary,
+  fetchAllUserRoleAssignments,
 } from '@/services/api/operationalRoles'
 import { toast } from 'sonner'
 import { LicenseStatusCard } from '@/components/ams/LicenseStatusCard'
 import { AmsRolesManagementView } from '@/components/ams/AmsRolesManagementView'
 import { useUnifiedAuth } from '@/auth/UnifiedAuthContext'
 import { InviteWorkspaceMemberModal } from './InviteWorkspaceMemberModal'
-import { fetchTenantMembers } from '@/services/api/tenantMembers'
+import {
+  fetchTenantMembers,
+  resendTenantMemberInvitation,
+  revokeTenantMemberInvitation,
+  type TenantMemberDto,
+} from '@/services/api/tenantMembers'
+
+interface UnifiedWorkspaceMemberRow {
+  key: string
+  operationalUser: User | null
+  tenantMember: TenantMemberDto | null
+  displayName: string
+  email: string
+  authId: string
+  avatarUrl?: string
+  roleBadge?: string
+  isCurrentUser: boolean
+  initials: string
+  employeeNumber?: string
+  officeName?: string
+  status: 'Active' | 'Pending' | 'Expired' | 'Disabled'
+  invitationExpiresAtUtc?: string | null
+  isPendingOrExpired: boolean
+  assignedRoles: string[]
+}
 
 interface ResolvedIdentity {
   displayName: string
@@ -147,10 +182,16 @@ function resolveUserIdentity(
 
 export default function OperationalRolesTab() {
   const queryClient = useQueryClient()
-  const { user: currentAuthUser, workspaceMembers = [] } = useUnifiedAuth()
+  const {
+    user: currentAuthUser,
+    workspaceMembers = [],
+    workspaceInvitations = [],
+    revokeWorkspaceInvitation,
+  } = useUnifiedAuth()
   const [viewMode, setViewMode] = useState<'assignments' | 'roles'>('assignments')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'expired'>('all')
+  const [selectedRow, setSelectedRow] = useState<UnifiedWorkspaceMemberRow | null>(null)
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [loadingUserRoles, setLoadingUserRoles] = useState(false)
@@ -167,8 +208,25 @@ export default function OperationalRolesTab() {
     queryFn: fetchAssignableOperationalRoles,
   })
 
-  // 3. Fetch tenant members from TenantManagement.Api for comprehensive identification
-  const { data: tenantMembers = [] } = useQuery({
+  // 3. Fetch all operational role assignments across the workspace
+  const { data: allRoleAssignments = [] } = useQuery({
+    queryKey: ['ams-all-role-assignments'],
+    queryFn: fetchAllUserRoleAssignments,
+  })
+
+  // Role assignments lookup map
+  const roleAssignmentsMap = useMemo(() => {
+    const map = new Map<string, string[]>()
+    for (const item of allRoleAssignments) {
+      if (item.userId) map.set(item.userId.toLowerCase(), item.roles)
+      if (item.externalIdentityId) map.set(item.externalIdentityId.toLowerCase(), item.roles)
+      if (item.email) map.set(item.email.toLowerCase(), item.roles)
+    }
+    return map
+  }, [allRoleAssignments])
+
+  // 4. Fetch tenant members from TenantManagement.Api for comprehensive identification
+  const { data: tenantMembers = [], isLoading: isLoadingTenantMembers } = useQuery({
     queryKey: ['tenant-members'],
     queryFn: fetchTenantMembers,
     staleTime: 30_000,
@@ -209,16 +267,22 @@ export default function OperationalRolesTab() {
     return list
   }, [workspaceMembers, tenantMembers])
 
-  // 4. Mutation to assign operational roles
+  // 5. Mutation to assign operational roles
   const assignMutation = useMutation({
-    mutationFn: ({ userId, roleIds }: { userId: string; roleIds: string[] }) =>
-      assignOperationalRoles(userId, roleIds),
+    mutationFn: (payload: {
+      userId?: string
+      email?: string
+      fullName?: string
+      externalIdentityId?: string
+      roleIds: string[]
+    }) => assignOperationalRoles(payload),
     onSuccess: () => {
       toast.success('Operational roles assigned successfully.')
       setIsDialogOpen(false)
-      setSelectedUser(null)
+      setSelectedRow(null)
       queryClient.invalidateQueries({ queryKey: ['workspace-users'] })
       queryClient.invalidateQueries({ queryKey: ['assignable-operational-roles'] })
+      queryClient.invalidateQueries({ queryKey: ['ams-all-role-assignments'] })
     },
     onError: (error: any) => {
       const msg =
@@ -227,32 +291,268 @@ export default function OperationalRolesTab() {
     },
   })
 
-  // Filtered users list with resolved identity matching
-  const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users
-    const q = searchQuery.toLowerCase()
-    return users.filter((u) => {
-      const resolved = resolveUserIdentity(u, allWorkspaceMembers, currentAuthUser)
-      return (
-        resolved.displayName.toLowerCase().includes(q) ||
-        resolved.email.toLowerCase().includes(q) ||
-        resolved.authId.toLowerCase().includes(q) ||
-        u.fullName?.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q) ||
-        u.employeeNumber?.toLowerCase().includes(q) ||
-        u.officeName?.toLowerCase().includes(q)
-      )
-    })
-  }, [users, searchQuery, allWorkspaceMembers, currentAuthUser])
+  // 5. Mutation to resend tenant member invitation
+  const resendMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      return await resendTenantMemberInvitation(memberId)
+    },
+    onSuccess: () => {
+      toast.success('Invitation resent successfully.')
+      queryClient.invalidateQueries({ queryKey: ['tenant-members'] })
+      queryClient.invalidateQueries({ queryKey: ['workspace-users'] })
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || error?.message || 'Failed to resend invitation.'
+      toast.error(msg)
+    },
+  })
 
-  const handleOpenAssignModal = async (user: User) => {
-    setSelectedUser(user)
+  // 6. Mutation to revoke invitation
+  const revokeMutation = useMutation({
+    mutationFn: async ({ id, isClerk }: { id: string; isClerk: boolean }) => {
+      if (isClerk && revokeWorkspaceInvitation) {
+        return await revokeWorkspaceInvitation(id)
+      }
+      return await revokeTenantMemberInvitation(id)
+    },
+    onSuccess: () => {
+      toast.success('Invitation revoked successfully.')
+      queryClient.invalidateQueries({ queryKey: ['tenant-members'] })
+      queryClient.invalidateQueries({ queryKey: ['workspace-users'] })
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || error?.message || 'Failed to revoke invitation.'
+      toast.error(msg)
+    },
+  })
+
+  // Unified list of all workspace members and pending/expired invitations
+  const unifiedMembers = useMemo(() => {
+    const rows: UnifiedWorkspaceMemberRow[] = []
+    const matchedTenantMemberIds = new Set<string>()
+    const matchedEmails = new Set<string>()
+
+    // 1. Process operational users from planning.Users
+    for (const u of users) {
+      const resolved = resolveUserIdentity(u, allWorkspaceMembers, currentAuthUser)
+
+      const tm = tenantMembers.find(
+        (m: TenantMemberDto) =>
+          (m.email && u.email && m.email.toLowerCase() === u.email.toLowerCase()) ||
+          (m.userId && resolved.authId && m.userId.toLowerCase() === resolved.authId.toLowerCase()) ||
+          (m.externalIdentityId && resolved.authId && m.externalIdentityId.toLowerCase() === resolved.authId.toLowerCase())
+      )
+
+      if (tm) {
+        matchedTenantMemberIds.add(tm.id)
+      }
+      if (u.email) {
+        matchedEmails.add(u.email.toLowerCase())
+      }
+
+      let status: 'Active' | 'Pending' | 'Expired' | 'Disabled' = u.isActive ? 'Active' : 'Disabled'
+      if (tm) {
+        if (tm.status === 'Disabled') {
+          status = 'Disabled'
+        } else if (tm.status === 'Pending' || tm.status === 'Invited') {
+          const isAuthActive = allWorkspaceMembers.some(
+            (m) =>
+              (m.email && u.email && m.email.toLowerCase() === u.email.toLowerCase()) ||
+              (m.userId && resolved.authId && m.userId.toLowerCase() === resolved.authId.toLowerCase())
+          )
+          if (u.isActive || resolved.isCurrentUser || isAuthActive) {
+            status = 'Active'
+          } else {
+            const isExpired = tm.invitationExpiresAtUtc ? new Date(tm.invitationExpiresAtUtc) < new Date() : false
+            status = isExpired ? 'Expired' : 'Pending'
+          }
+        }
+      }
+
+      const assignedRoles =
+        roleAssignmentsMap.get(u.id.toLowerCase()) ||
+        (resolved.authId ? roleAssignmentsMap.get(resolved.authId.toLowerCase()) : undefined) ||
+        (resolved.email ? roleAssignmentsMap.get(resolved.email.toLowerCase()) : undefined) ||
+        []
+
+      rows.push({
+        key: `user-${u.id}`,
+        operationalUser: u,
+        tenantMember: tm || null,
+        displayName: resolved.displayName,
+        email: resolved.email,
+        authId: resolved.authId,
+        avatarUrl: resolved.avatarUrl,
+        roleBadge: resolved.roleBadge,
+        isCurrentUser: resolved.isCurrentUser,
+        initials: resolved.initials,
+        employeeNumber: u.employeeNumber,
+        officeName: u.officeName,
+        status,
+        invitationExpiresAtUtc: tm?.invitationExpiresAtUtc,
+        isPendingOrExpired: status === 'Pending' || status === 'Expired',
+        assignedRoles,
+      })
+    }
+
+    // 2. Process tenant members who do NOT yet exist in planning.Users (e.g. pending/invited)
+    for (const tm of tenantMembers) {
+      if (matchedTenantMemberIds.has(tm.id)) continue
+      if (tm.email && matchedEmails.has(tm.email.toLowerCase())) continue
+
+      const firstName = tm.firstName || ''
+      const lastName = tm.lastName || ''
+      const fullName =
+        tm.fullName ||
+        [firstName, lastName].filter(Boolean).join(' ') ||
+        tm.email ||
+        'Workspace Member'
+
+      const email = tm.email || ''
+      const authId = tm.userId || tm.externalIdentityId || tm.id
+
+      const isCurrentUser = Boolean(
+        currentAuthUser &&
+          ((authId && currentAuthUser.id && currentAuthUser.id.toLowerCase() === authId.toLowerCase()) ||
+            (email && currentAuthUser.email && email.toLowerCase() === currentAuthUser.email.toLowerCase()))
+      )
+
+      const isAuthActive = allWorkspaceMembers.some(
+        (m) =>
+          (m.email && email && m.email.toLowerCase() === email.toLowerCase()) ||
+          (m.userId && authId && m.userId.toLowerCase() === authId.toLowerCase())
+      )
+
+      const isExpired = tm.invitationExpiresAtUtc ? new Date(tm.invitationExpiresAtUtc) < new Date() : false
+      let status: 'Active' | 'Pending' | 'Expired' | 'Disabled' = 'Active'
+      if (tm.status === 'Disabled') {
+        status = 'Disabled'
+      } else if (tm.status === 'Pending' || tm.status === 'Invited') {
+        if (isCurrentUser || isAuthActive) {
+          status = 'Active'
+        } else {
+          status = isExpired ? 'Expired' : 'Pending'
+        }
+      } else if (tm.status === 'Active') {
+        status = 'Active'
+      }
+
+      const roleBadge = tm.role === 'TenantAdmin' ? 'Workspace Admin' : 'Workspace Member'
+
+      const assignedRoles =
+        (authId ? roleAssignmentsMap.get(authId.toLowerCase()) : undefined) ||
+        (email ? roleAssignmentsMap.get(email.toLowerCase()) : undefined) ||
+        []
+
+      rows.push({
+        key: `tm-${tm.id}`,
+        operationalUser: null,
+        tenantMember: tm,
+        displayName: fullName,
+        email,
+        authId,
+        avatarUrl: undefined,
+        roleBadge,
+        isCurrentUser,
+        initials: getInitials(fullName),
+        employeeNumber: undefined,
+        officeName: status === 'Pending' || status === 'Expired' ? 'Pending Activation' : 'Unassigned (Pending Profile)',
+        status,
+        invitationExpiresAtUtc: tm.invitationExpiresAtUtc,
+        isPendingOrExpired: status === 'Pending' || status === 'Expired',
+        assignedRoles,
+      })
+
+      if (email) matchedEmails.add(email.toLowerCase())
+    }
+
+    // 3. Process workspace invitations from auth provider (e.g. Clerk) if any
+    for (const inv of workspaceInvitations) {
+      if (!inv.email || matchedEmails.has(inv.email.toLowerCase())) continue
+
+      const alreadyActive =
+        allWorkspaceMembers.some((m) => m.email && m.email.toLowerCase() === inv.email.toLowerCase()) ||
+        users.some((u: User) => u.email && u.email.toLowerCase() === inv.email.toLowerCase())
+
+      if (alreadyActive) continue
+
+      rows.push({
+        key: `inv-${inv.id}`,
+        operationalUser: null,
+        tenantMember: null,
+        displayName: inv.email.split('@')[0],
+        email: inv.email,
+        authId: inv.id,
+        avatarUrl: undefined,
+        roleBadge: inv.role || 'Workspace Member',
+        isCurrentUser: false,
+        initials: getInitials(inv.email),
+        employeeNumber: undefined,
+        officeName: 'Pending Activation',
+        status: 'Pending',
+        invitationExpiresAtUtc: null,
+        isPendingOrExpired: true,
+        assignedRoles: [],
+      })
+      matchedEmails.add(inv.email.toLowerCase())
+    }
+
+    return rows
+  }, [users, tenantMembers, workspaceInvitations, allWorkspaceMembers, currentAuthUser, roleAssignmentsMap])
+
+  // Counts for status filter pills
+  const counts = useMemo(() => {
+    let active = 0
+    let pending = 0
+    let expired = 0
+    for (const r of unifiedMembers) {
+      if (r.status === 'Active') active++
+      else if (r.status === 'Pending') pending++
+      else if (r.status === 'Expired') expired++
+    }
+    return { active, pending, expired, total: unifiedMembers.length }
+  }, [unifiedMembers])
+
+  // Filtered rows list with search and status filtering
+  const filteredRows = useMemo(() => {
+    let result = unifiedMembers
+    if (statusFilter === 'active') {
+      result = result.filter((r) => r.status === 'Active')
+    } else if (statusFilter === 'pending') {
+      result = result.filter((r) => r.status === 'Pending')
+    } else if (statusFilter === 'expired') {
+      result = result.filter((r) => r.status === 'Expired')
+    }
+
+    if (!searchQuery.trim()) return result
+    const q = searchQuery.toLowerCase()
+    return result.filter(
+      (r) =>
+        r.displayName.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q) ||
+        r.authId?.toLowerCase().includes(q) ||
+        r.employeeNumber?.toLowerCase().includes(q) ||
+        r.officeName?.toLowerCase().includes(q) ||
+        r.status.toLowerCase().includes(q)
+    )
+  }, [unifiedMembers, statusFilter, searchQuery])
+
+  const handleOpenAssignModal = async (row: UnifiedWorkspaceMemberRow) => {
+    setSelectedRow(row)
     setSelectedRoleIds([]) // Reset or initialize
     setIsDialogOpen(true)
     setLoadingUserRoles(true)
     try {
-      const assigned = await fetchUserAssignedRoles(user.id)
-      setSelectedRoleIds(assigned.map((r: any) => r.id))
+      if (row.operationalUser?.id) {
+        const assigned = await fetchUserAssignedRoles(row.operationalUser.id)
+        setSelectedRoleIds(assigned.map((r: any) => r.id))
+      } else {
+        const existingNames = row.assignedRoles || []
+        const matchedIds = operationalRoles
+          .filter((r: any) => existingNames.includes(r.name))
+          .map((r: any) => r.id)
+        setSelectedRoleIds(matchedIds)
+      }
     } catch {
       // Keep empty if fetch fails
     } finally {
@@ -269,9 +569,15 @@ export default function OperationalRolesTab() {
   }
 
   const handleSaveAssignments = () => {
-    if (!selectedUser) return
+    if (!selectedRow) return
     assignMutation.mutate({
-      userId: selectedUser.id,
+      userId: selectedRow.operationalUser?.id,
+      email: selectedRow.email,
+      fullName: selectedRow.displayName,
+      externalIdentityId:
+        selectedRow.authId ||
+        selectedRow.tenantMember?.userId ||
+        selectedRow.tenantMember?.externalIdentityId,
       roleIds: selectedRoleIds,
     })
   }
@@ -327,19 +633,78 @@ export default function OperationalRolesTab() {
           </div>
 
       {/* Toolbar / Search & Actions */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search personnel by name, email, employee #..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10"
-          />
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search personnel, email, role, office..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-xs"
+            />
+          </div>
+
+          {/* Quick status filters */}
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStatusFilter('all')}
+              className={`h-7 px-2.5 text-xs font-medium rounded-md transition ${
+                statusFilter === 'all'
+                  ? 'bg-white shadow-sm text-slate-900'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              All ({counts.total})
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStatusFilter('active')}
+              className={`h-7 px-2.5 text-xs font-medium rounded-md transition ${
+                statusFilter === 'active'
+                  ? 'bg-white shadow-sm text-emerald-800'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Active ({counts.active})
+            </Button>
+            {counts.pending > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStatusFilter('pending')}
+                className={`h-7 px-2.5 text-xs font-medium rounded-md transition ${
+                  statusFilter === 'pending'
+                    ? 'bg-amber-100/90 text-amber-900 shadow-sm'
+                    : 'text-amber-700 hover:bg-amber-50'
+                }`}
+              >
+                Pending ({counts.pending})
+              </Button>
+            )}
+            {counts.expired > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStatusFilter('expired')}
+                className={`h-7 px-2.5 text-xs font-medium rounded-md transition ${
+                  statusFilter === 'expired'
+                    ? 'bg-rose-100 text-rose-900 shadow-sm'
+                    : 'text-rose-700 hover:bg-rose-50'
+                }`}
+              >
+                Expired ({counts.expired})
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center justify-between sm:justify-end gap-3">
+
+        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
           <div className="text-xs text-slate-500 hidden sm:block">
-            Showing {filteredUsers.length} of {users.length} workspace members
+            Showing {filteredRows.length} of {unifiedMembers.length} workspace members & invites
           </div>
           <InviteWorkspaceMemberModal />
         </div>
@@ -354,6 +719,9 @@ export default function OperationalRolesTab() {
                 Personnel / Member
               </TableHead>
               <TableHead className="font-semibold text-slate-700">
+                Operational Roles
+              </TableHead>
+              <TableHead className="font-semibold text-slate-700">
                 Official Office
               </TableHead>
               <TableHead className="font-semibold text-slate-700">
@@ -365,114 +733,216 @@ export default function OperationalRolesTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoadingUsers ? (
+            {isLoadingUsers || isLoadingTenantMembers ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="text-center py-8 text-slate-500"
                 >
-                  Loading personnel records...
+                  Loading workspace records and invitations...
                 </TableCell>
               </TableRow>
-            ) : filteredUsers.length === 0 ? (
+            ) : filteredRows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="text-center py-10 text-slate-500"
                 >
-                  No personnel records found matching your search.
+                  No workspace members or invitations found matching your search.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user) => {
-                const resolved = resolveUserIdentity(user, allWorkspaceMembers, currentAuthUser)
-                return (
-                  <TableRow
-                    key={user.id}
-                    className="hover:bg-slate-50/60 transition"
-                  >
-                    <TableCell className="py-3">
-                      <div className="flex items-center gap-3">
-                        {resolved.avatarUrl ? (
-                          <img
-                            src={resolved.avatarUrl}
-                            alt={resolved.displayName}
-                            className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-semibold text-xs shrink-0">
-                            {resolved.initials}
-                          </div>
-                        )}
-                        <div className="space-y-0.5 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-sm text-slate-900 truncate">
-                              {resolved.displayName}
-                            </span>
-                            {resolved.isCurrentUser && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 font-medium"
-                              >
-                                You
-                              </Badge>
-                            )}
-                            {resolved.roleBadge && (
-                              <Badge
-                                variant="secondary"
-                                className="text-[10px] px-1.5 py-0 h-4 bg-slate-100 text-slate-700 font-normal"
-                              >
-                                {resolved.roleBadge}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-xs text-slate-500 flex items-center gap-2 truncate">
-                            <span>{resolved.email}</span>
-                            {user.employeeNumber && (
-                              <>
-                                <span>•</span>
-                                <span>EMP: {user.employeeNumber}</span>
-                              </>
-                            )}
-                            {resolved.authId && !resolved.email.includes(resolved.authId) && (
-                              <>
-                                <span>•</span>
-                                <span className="font-mono text-[10px] text-slate-400">
-                                  {resolved.authId.slice(0, 14)}...
-                                </span>
-                              </>
-                            )}
-                          </div>
+              filteredRows.map((row) => (
+                <TableRow
+                  key={row.key}
+                  className={`hover:bg-slate-50/60 transition ${
+                    row.isPendingOrExpired ? 'bg-slate-50/40' : ''
+                  }`}
+                >
+                  <TableCell className="py-3">
+                    <div className="flex items-center gap-3">
+                      {row.avatarUrl ? (
+                        <img
+                          src={row.avatarUrl}
+                          alt={row.displayName}
+                          className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
+                        />
+                      ) : (
+                        <div
+                          className={`w-9 h-9 rounded-full border flex items-center justify-center font-semibold text-xs shrink-0 ${
+                            row.status === 'Expired'
+                              ? 'bg-rose-50 border-rose-200 text-rose-700'
+                              : row.status === 'Pending'
+                              ? 'bg-amber-50 border-amber-200 text-amber-700'
+                              : 'bg-primary/10 border-primary/20 text-primary'
+                          }`}
+                        >
+                          {row.initials}
+                        </div>
+                      )}
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm text-slate-900 truncate">
+                            {row.displayName}
+                          </span>
+                          {row.isCurrentUser && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 font-medium"
+                            >
+                              You
+                            </Badge>
+                          )}
+                          {row.roleBadge && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-1.5 py-0 h-4 bg-slate-100 text-slate-700 font-normal"
+                            >
+                              {row.roleBadge}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-2 truncate">
+                          <span>{row.email}</span>
+                          {row.employeeNumber && (
+                            <>
+                              <span>•</span>
+                              <span>EMP: {row.employeeNumber}</span>
+                            </>
+                          )}
+                          {row.authId && !row.email.includes(row.authId) && (
+                            <>
+                              <span>•</span>
+                              <span className="font-mono text-[10px] text-slate-400">
+                                {row.authId.slice(0, 14)}...
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-slate-700">
-                      {user.officeName || (
-                        <span className="text-slate-400 italic">Unassigned</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    {row.assignedRoles && row.assignedRoles.length > 0 ? (
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {row.assignedRoles.map((roleName, idx) => (
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className={`text-[11px] font-medium px-2 py-0.5 rounded-md ${
+                              roleName.toLowerCase().includes('admin')
+                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                : roleName.toLowerCase().includes('officer') || roleName.toLowerCase().includes('approver')
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : 'bg-slate-100 text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            {roleName}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : row.status === 'Active' ? (
                       <Badge
-                        variant={user.isActive ? 'default' : 'secondary'}
-                        className="text-[10px]"
+                        variant="outline"
+                        className="text-[11px] font-normal px-2 py-0.5 rounded-md bg-slate-50 text-slate-500 border-slate-200"
                       >
-                        {user.isActive ? 'Active' : 'Inactive'}
+                        Employee / Viewer (Default)
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right pr-6">
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">None</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm text-slate-700">
+                    {row.isPendingOrExpired ? (
+                      <span className="text-slate-400 italic text-xs">
+                        {row.status === 'Expired' ? 'Invitation Expired' : 'Pending Activation'}
+                      </span>
+                    ) : (
+                      row.officeName || <span className="text-slate-400 italic">Unassigned</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {row.status === 'Active' ? (
+                      <Badge
+                        variant="default"
+                        className="text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                      >
+                        <CheckCircle2 className="w-3 h-3" />
+                        Active
+                      </Badge>
+                    ) : row.status === 'Expired' ? (
+                      <Badge
+                        variant="destructive"
+                        className="text-[10px] bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 gap-1 font-medium"
+                      >
+                        <AlertTriangle className="w-3 h-3 text-rose-600" />
+                        Expired
+                      </Badge>
+                    ) : row.status === 'Pending' ? (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 gap-1 font-medium"
+                      >
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        Pending Invite
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {row.status}
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right pr-6">
+                    {row.isPendingOrExpired ? (
+                      <div className="flex items-center justify-end gap-1.5">
+                        {row.tenantMember?.id && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => resendMutation.mutate(row.tenantMember!.id)}
+                            disabled={resendMutation.isPending}
+                            className="gap-1 text-xs h-7 px-2 border-amber-300 text-amber-800 hover:bg-amber-50"
+                          >
+                            {resendMutation.isPending && resendMutation.variables === row.tenantMember.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <RotateCw className="h-3 w-3 text-amber-600" />
+                            )}
+                            <span>Resend</span>
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            if (window.confirm(`Revoke invitation for ${row.email}?`)) {
+                              revokeMutation.mutate({
+                                id: row.tenantMember?.id || row.authId,
+                                isClerk: !row.tenantMember,
+                              })
+                            }
+                          }}
+                          disabled={revokeMutation.isPending}
+                          className="gap-1 text-xs h-7 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span>Revoke</span>
+                        </Button>
+                      </div>
+                    ) : (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleOpenAssignModal(user)}
+                        onClick={() => handleOpenAssignModal(row)}
                         className="gap-1.5 text-xs h-8"
                       >
                         <UserCheck className="h-3.5 w-3.5 text-primary" />
                         Configure Roles
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                )
-              })
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
@@ -487,19 +957,15 @@ export default function OperationalRolesTab() {
               Assign Operational ERP Roles
             </DialogTitle>
             <DialogDescription>
-              {(() => {
-                if (!selectedUser) return null
-                const resolved = resolveUserIdentity(selectedUser, allWorkspaceMembers, currentAuthUser)
-                return (
-                  <span>
-                    Select operational roles to delegate to{' '}
-                    <strong className="text-slate-900 font-semibold">
-                      {resolved.displayName}
-                    </strong>{' '}
-                    ({resolved.email}).
-                  </span>
-                )
-              })()}
+              {selectedRow && (
+                <span>
+                  Select operational roles to delegate to{' '}
+                  <strong className="text-slate-900 font-semibold">
+                    {selectedRow.displayName}
+                  </strong>{' '}
+                  ({selectedRow.email}).
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -516,7 +982,7 @@ export default function OperationalRolesTab() {
                 </span>
               </div>
             ) : (
-              operationalRoles.map((role) => {
+              operationalRoles.map((role: any) => {
                 const isSelected = selectedRoleIds.includes(role.id)
                 const perms = role.permissionDisplayNames || (role as any).permissions || []
                 return (

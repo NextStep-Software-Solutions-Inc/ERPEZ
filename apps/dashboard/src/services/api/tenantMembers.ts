@@ -13,6 +13,8 @@ export interface TenantMemberDto {
   role?: string
   roles?: string[]
   status?: string
+  invitationExpiresAtUtc?: string | null
+  concurrencyStamp?: string
 }
 
 export interface TenantDto {
@@ -109,4 +111,23 @@ export async function inviteTenantMember(payload: {
   const res = await axios.post(`${getTenantApiUrl()}/tenant-members`, body, { headers })
   return res.data
 }
+
+/**
+ * Resend invitation email for a tenant member
+ */
+export async function resendTenantMemberInvitation(memberId: string) {
+  const headers = await getAuthHeaders()
+  const res = await axios.post(`${getTenantApiUrl()}/tenant-members/${memberId}/invitation/resend`, {}, { headers })
+  return res.data
+}
+
+/**
+ * Revoke invitation for a tenant member
+ */
+export async function revokeTenantMemberInvitation(memberId: string) {
+  const headers = await getAuthHeaders()
+  const res = await axios.post(`${getTenantApiUrl()}/tenant-members/${memberId}/invitation/revoke`, {}, { headers })
+  return res.data
+}
+
 
