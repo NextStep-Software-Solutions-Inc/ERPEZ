@@ -40,14 +40,21 @@ public class CachedTenantConnectionResolver(
             return null;
         }
 
-        // 1. If TenancyMode is already known to be SaaS, return shared operational DB immediately
+        // 1. If TenancyMode is unspecified, check in-memory cache to prevent control plane query storms during concurrent jobs
+        var modeCacheKey = $"tenant:mode:{authorizedTenantId}";
+        if (!tenancyMode.HasValue && cache.TryGetValue(modeCacheKey, out TenancyMode cachedMode))
+        {
+            tenancyMode = cachedMode;
+        }
+
+        // 2. If TenancyMode is already known to be SaaS, return shared operational DB immediately
         // Invariant: No tenant-specific connection string is cached for SaaS tenants.
         if (tenancyMode == TenancyMode.SaaS)
         {
             return new TenantDatabaseConnectionInfo(authorizedTenantId, sharedConnStr);
         }
 
-        // 2. If TenancyMode is unspecified, query control plane to determine deployment topology
+        // 3. If TenancyMode is still unspecified, query control plane to determine deployment topology
         if (!tenancyMode.HasValue)
         {
             try
@@ -67,16 +74,23 @@ public class CachedTenantConnectionResolver(
                 var rawMode = await modeCmd.ExecuteScalarAsync(cancellationToken) as string;
 
                 if (!string.IsNullOrWhiteSpace(rawMode) &&
-                    Enum.TryParse<TenancyMode>(rawMode, true, out var detectedMode) &&
-                    detectedMode == TenancyMode.SaaS)
+                    Enum.TryParse<TenancyMode>(rawMode, true, out var detectedMode))
                 {
-                    return new TenantDatabaseConnectionInfo(authorizedTenantId, sharedConnStr);
+                    cache.Set(modeCacheKey, detectedMode, TimeSpan.FromMinutes(10));
+
+                    if (detectedMode == TenancyMode.SaaS)
+                    {
+                        return new TenantDatabaseConnectionInfo(authorizedTenantId, sharedConnStr);
+                    }
+
+                    tenancyMode = detectedMode;
                 }
             }
             catch
             {
                 if (env.IsDevelopment())
                 {
+                    cache.Set(modeCacheKey, TenancyMode.SaaS, TimeSpan.FromMinutes(10));
                     return new TenantDatabaseConnectionInfo(authorizedTenantId, sharedConnStr);
                 }
             }
@@ -142,6 +156,7 @@ public class CachedTenantConnectionResolver(
 
     public void InvalidateConnection(Guid tenantId)
     {
+        cache.Remove($"tenant:mode:{tenantId}");
         cache.Remove($"tenant:conn:{tenantId}");
     }
 }
