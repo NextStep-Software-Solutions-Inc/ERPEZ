@@ -17,8 +17,8 @@ export interface WorkspaceContextType {
 
     // Spectator Mode
     isSpectating: boolean;
-    spectatingTenant: { id: string; name: string } | null;
-    startSpectating: (tenant: { id: string; name: string }) => void;
+    spectatingTenant: ({ id: string; name: string } & Partial<Tenant>) | null;
+    startSpectating: (tenant: { id: string; name: string } & Partial<Tenant>) => void;
     stopSpectating: () => void;
 
     // Backward-compatibility aliases for existing codebase
@@ -49,7 +49,7 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
         return myTenant?.data || [];
     }, [myTenant?.data]);
 
-    const [spectatingTenant, setSpectatingTenant] = useState<{ id: string; name: string } | null>(() => {
+    const [spectatingTenant, setSpectatingTenant] = useState<({ id: string; name: string } & Partial<Tenant>) | null>(() => {
         if (typeof window !== 'undefined') {
             try {
                 const stored = localStorage.getItem(LOCAL_STORAGE_SPECTATING_KEY);
@@ -120,6 +120,7 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
                 name: spectatingTenant.name,
                 isDeleted: false,
                 isDisabled: false,
+                ...spectatingTenant,
             } as unknown as Tenant;
         }
         if (workspaces.length === 0) return null;
@@ -129,7 +130,7 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
     // Extract caller's roles inside the active workspace
     const userWorkspaceRoles: string[] = useMemo(() => {
         if (spectatingTenant) {
-            return ['Platform Administrator'];
+            return ['Platform Administrator', 'Tenant Administrator'];
         }
         if (!activeWorkspace) return [];
         const member = (activeWorkspace as any).tenantMembers?.[0];
@@ -158,7 +159,7 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
         queryClient.invalidateQueries();
     };
 
-    const startSpectating = (tenantInfo: { id: string; name: string }) => {
+    const startSpectating = (tenantInfo: { id: string; name: string } & Partial<Tenant>) => {
         setSpectatingTenant(tenantInfo);
         setSelectedWorkspaceId(tenantInfo.id);
         setIsStaleSelection(false);
