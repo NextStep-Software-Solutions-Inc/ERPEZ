@@ -317,7 +317,24 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     [availableTenants, setActive]
   );
 
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || '';
+  const configuredAdminEmails = (
+    (import.meta.env.VITE_PLATFORM_ADMIN_EMAILS as string | undefined) ||
+    'jeanmaureal@gmail.com,superadmin@erpez.dev'
+  )
+    .split(',')
+    .map((e: string) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const isEmailAdmin = Boolean(userEmail && configuredAdminEmails.includes(userEmail));
+  const isPlatformAdmin = Boolean(
+    isEmailAdmin ||
+    user?.publicMetadata?.isSuperAdmin ||
+    user?.publicMetadata?.role === 'Platform Administrator' ||
+    user?.publicMetadata?.role === 'super-admin'
+  );
+
   const isOrgAdmin = useMemo(() => {
+    if (isPlatformAdmin) return true;
     if (user?.publicMetadata?.isSuperAdmin) return true;
     const activeOrgId = organization?.id || activeTenant?.externalOrgId || activeTenant?.id;
     const membership = userMemberships?.data?.find((m: any) => m.organization?.id === activeOrgId);
@@ -337,14 +354,15 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
       return true;
     }
     return false;
-  }, [user, organization, activeTenant, userMemberships?.data, tmMembers]);
+  }, [isPlatformAdmin, user, organization, activeTenant, userMemberships?.data, tmMembers]);
 
   const derivedRoles = useMemo(() => {
     const metaRoles = (user?.publicMetadata?.roles as string[]) || [];
     if (metaRoles.length > 0) return metaRoles;
+    if (isPlatformAdmin) return ['Platform Administrator', 'System Administrator'];
     if (isOrgAdmin) return ['Tenant Administrator', 'System Administrator'];
     return ['Employee / Viewer'];
-  }, [user?.publicMetadata?.roles, isOrgAdmin]);
+  }, [user?.publicMetadata?.roles, isPlatformAdmin, isOrgAdmin]);
 
   const unifiedUser: UnifiedUser | null = useMemo(() => {
     if (!user) return null;

@@ -51,14 +51,20 @@ public class CachedTenantAccessService(
             return TenantAccessResult.Fail($"API host '{request.ApiHost}' is not authorized.", "API_HOST_VIOLATION", 403);
         }
 
-        // 3. SuperAdmin Global Access
+        // 3. SuperAdmin / Platform Administrator Global Access
         var isSuperAdminClaim = request.User.FindFirstValue("is_super_admin")
-            ?? request.User.FindFirstValue("super_admin");
-        if ((bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) || request.User.IsInRole("SuperAdmin"))
+            ?? request.User.FindFirstValue("super_admin")
+            ?? request.User.FindFirstValue("is_platform_admin");
+        var roleClaim = request.User.FindFirstValue(ClaimTypes.Role) ?? request.User.FindFirstValue("role");
+        if ((bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) || 
+            request.User.IsInRole("SuperAdmin") ||
+            request.User.IsInRole("Platform Administrator") ||
+            string.Equals(roleClaim, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(roleClaim, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
         {
             var superAdminContext = new TenantAccessContext(
                 request.TenantId,
-                "SuperAdmin Workspace",
+                "Platform Administrator Workspace",
                 TenantProvisioningState.Ready,
                 "*",
                 "Active");

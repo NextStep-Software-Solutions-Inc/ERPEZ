@@ -65,27 +65,43 @@ public class TenantAccessService(
         }
 
         // 3. Server-side Membership Authorization (sub -> TenantMember -> TenantId)
-        var member = await dbContext.TenantMembers!
-            .AsNoTracking()
-            .Where(tm => tm.TenantId == request.TenantId &&
-                         (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId))
-            .Select(tm => new { tm.Status, tm.IsDeleted, tm.Provider })
-            .FirstOrDefaultAsync(cancellationToken);
+        var isSuperAdminClaim = request.User.FindFirstValue("is_super_admin")
+            ?? request.User.FindFirstValue("super_admin")
+            ?? request.User.FindFirstValue("is_platform_admin");
+        var roleClaim = request.User.FindFirstValue(ClaimTypes.Role) ?? request.User.FindFirstValue("role");
+        var isPlatformAdmin = (bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) ||
+            request.User.IsInRole("SuperAdmin") ||
+            request.User.IsInRole("Platform Administrator") ||
+            string.Equals(roleClaim, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(roleClaim, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
 
-        if (member == null)
+        IdentityProvider? memberProvider = null;
+        if (!isPlatformAdmin)
         {
-            return TenantAccessResult.Fail(
-                "Caller is not an active authorized member of this tenant.",
-                "TENANT_MEMBERSHIP_REQUIRED",
-                403);
-        }
+            var member = await dbContext.TenantMembers!
+                .AsNoTracking()
+                .Where(tm => tm.TenantId == request.TenantId &&
+                             (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId))
+                .Select(tm => new { tm.Status, tm.IsDeleted, tm.Provider })
+                .FirstOrDefaultAsync(cancellationToken);
 
-        if (member.Status != Status.Active || member.IsDeleted)
-        {
-            return TenantAccessResult.Fail(
-                "Caller's tenant membership is inactive or has been revoked.",
-                "TENANT_MEMBERSHIP_INACTIVE",
-                403);
+            if (member == null)
+            {
+                return TenantAccessResult.Fail(
+                    "Caller is not an active authorized member of this tenant.",
+                    "TENANT_MEMBERSHIP_REQUIRED",
+                    403);
+            }
+
+            if (member.Status != Status.Active || member.IsDeleted)
+            {
+                return TenantAccessResult.Fail(
+                    "Caller's tenant membership is inactive or has been revoked.",
+                    "TENANT_MEMBERSHIP_INACTIVE",
+                    403);
+            }
+
+            memberProvider = member.Provider;
         }
 
         // 4. Tenant Existence & Governance (Notice: DbConnectionString is NEVER materialized here)
@@ -113,7 +129,7 @@ public class TenantAccessService(
         }
 
         // Model A Enforcement: IdentityProvider must match
-        if (member.Provider != tenantInfo.AuthProvider)
+        if (!isPlatformAdmin && memberProvider.HasValue && memberProvider.Value != tenantInfo.AuthProvider)
         {
             return TenantAccessResult.Fail(
                 "Caller's identity provider does not match the tenant's authentication provider.",
