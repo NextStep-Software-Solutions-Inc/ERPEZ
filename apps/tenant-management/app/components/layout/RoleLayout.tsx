@@ -17,7 +17,7 @@ export default function RoleLayout() {
         );
     }
 
-    if (isInitialized && isSuperAdmin && (location.pathname === "/" || location.pathname === "/overview")) {
+    if (isInitialized && isSuperAdmin && (location.pathname === "/" || location.pathname === "/overview" || location.pathname === "/super-admin" || location.pathname === "/super-admin/")) {
         return <Navigate to="/super-admin/overview" replace />;
     }
 

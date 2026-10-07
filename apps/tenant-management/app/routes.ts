@@ -35,6 +35,7 @@ export default [
 
 
       layout("components/layout/SuperAdminLayout.tsx", [
+        route("super-admin", "routes/super-admin/redirect.tsx"),
         route("super-admin/overview", "routes/super-admin/overview.tsx"),
         route(
           "super-admin/tenant-management",
