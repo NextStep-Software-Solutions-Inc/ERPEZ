@@ -12,11 +12,6 @@ export default function PlanSection() {
 
     const activePlans = deploymentType === "saas" ? saasPlans : onPremisePlans;
 
-    const isCustom = (val?: string) => {
-        if (!val) return false;
-        return /custom|contact/i.test(val);
-    };
-
     return (
         <section className="py-16 mb-12 px-6 sm:px-14 lg:px-24" id="pricing">
             <div className="text-center mb-12 max-w-6xl mx-auto">
@@ -66,8 +61,8 @@ export default function PlanSection() {
                     )}
                 </div>
 
-                {/* Billing cycle switch (for SaaS) */}
-                {deploymentType === "saas" && (
+                {/* Billing cycle switch (for SaaS, only if plans define annualPrice) */}
+                {deploymentType === "saas" && activePlans.some(p => Boolean(p.annualPrice)) && (
                     <div className="pt-6 flex items-center justify-center gap-4 z-10 relative">
                         <span className={isAnnual ? "text-muted-foreground" : "font-medium"}>Monthly</span>
                         <Switch
@@ -101,34 +96,12 @@ export default function PlanSection() {
                         )}
                         <CardHeader className="text-center pt-8">
                             <CardTitle className="text-xl font-bold text-slate-900">{plan.name}</CardTitle>
-                            <span className="flex items-baseline justify-center gap-2 mt-4">
-                                {deploymentType === "saas" && isAnnual ? (
-                                    plan.annualPrice ? (
-                                        <>
-                                            {!isCustom(plan.price) && (
-                                                <p className="text-sm text-muted-foreground line-through">{plan.price}</p>
-                                            )}
-                                            <p className="text-3xl font-bold text-slate-900 mt-2">{plan.annualPrice}</p>
-                                            {!isCustom(plan.annualPrice) && (
-                                                <p className="text-sm text-muted-foreground">per year</p>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <p className="text-3xl font-bold text-slate-900 mt-2">{plan.price}</p>
-                                            <p className="text-sm text-muted-foreground">per year</p>
-                                        </>
-                                    )
-                                ) : (
-                                    <>
-                                        <p className="text-3xl font-bold text-slate-900 mt-2">{plan.price}</p>
-                                        <p className="text-sm text-muted-foreground">{plan.period}</p>
-                                    </>
+                            <div className="flex flex-col items-center justify-center mt-4">
+                                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{plan.price}</p>
+                                {plan.period && (
+                                    <p className="text-xs text-muted-foreground mt-1.5 font-medium">{plan.period}</p>
                                 )}
-                            </span>
-                            {isAnnual && plan.annualPriceSave && !isCustom(plan.price) && (
-                                <span className="text-xs text-green-600 font-semibold">Save {plan.annualPriceSave}!</span>
-                            )}
+                            </div>
                             <p className="text-sm text-muted-foreground mt-3">{plan.description}</p>
                         </CardHeader>
                         <CardContent className="px-8 pb-8 flex flex-col justify-between flex-1">
@@ -142,14 +115,14 @@ export default function PlanSection() {
                             </ul>
 
                             <div className="flex justify-center mt-6">
-                                <NavLink to={deploymentType === "saas" ? "/billing" : "/contact"} className="w-full">  
+                                <a href="#contact" className="w-full">  
                                     <Button
                                         className={`w-full text-center ${plan.popular ? "btn-blue" : "btn-green"}`}
                                         variant={plan.buttonVariant as "default" | "secondary"}
                                     >
                                         {plan.button}
                                     </Button>
-                                </NavLink>
+                                </a>
                             </div>
                         </CardContent>
                     </Card>

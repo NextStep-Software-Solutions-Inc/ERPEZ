@@ -57,15 +57,6 @@ export default function ContactSection() {
                                         </a>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-gray-400 w-16 shrink-0">Support:</span>
-                                        <a
-                                            href="mailto:erpez@nextstep-software.com"
-                                            className="text-gray-700 hover:text-blue-600 font-medium transition-colors break-all sm:break-normal"
-                                        >
-                                            erpez@nextstep-software.com
-                                        </a>
-                                    </div>
-                                    <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-gray-400 w-16 shrink-0">Sales:</span>
                                         <a
                                             href="mailto:sales@nextstep-software.com"
