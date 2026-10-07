@@ -1,5 +1,5 @@
 import type { ColumnDef } from "erpez-shared-lib";
-import { ArrowUpDown, MoreHorizontal, Shield, UserCheck, UserX, Trash2, Ban, Eye, Edit2 } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Shield, UserCheck, UserX, Trash2, Ban, Eye, Edit2, RotateCw } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Badge } from "~/components/ui/badge";
@@ -18,6 +18,7 @@ export interface MemberActionHandlers {
     onEditRoles?: (member: TenantMember) => void;
     onToggleStatus?: (member: TenantMember) => void;
     onRevokeInvitation?: (member: TenantMember) => void;
+    onResendInvitation?: (member: TenantMember) => void;
     onDelete?: (member: TenantMember) => void;
     currentUserId?: string;
     currentUserEmail?: string;
@@ -145,9 +146,16 @@ export function createColumns(handlers?: MemberActionHandlers): ColumnDef<Tenant
             ),
             cell: ({ row }) => {
                 const status = row.original.status;
+                const expiresAt = row.original.invitationExpiresAtUtc ? new Date(row.original.invitationExpiresAtUtc) : null;
+                const isExpired = status === "Pending" && !!expiresAt && expiresAt.getTime() < Date.now();
+
                 let badgeClass = "bg-gray-100 text-gray-800 border-gray-200";
+                let displayStatus = status;
                 if (status === "Active") {
                     badgeClass = "bg-green-100 text-green-800 border-green-200";
+                } else if (isExpired) {
+                    badgeClass = "bg-rose-100 text-rose-800 border-rose-200";
+                    displayStatus = "Expired";
                 } else if (status === "Pending") {
                     badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
                 } else if (status === "Disabled") {
@@ -159,11 +167,12 @@ export function createColumns(handlers?: MemberActionHandlers): ColumnDef<Tenant
                 return (
                     <div className="flex flex-col items-start gap-0.5">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badgeClass}`}>
-                            {status}
+                            {displayStatus}
                         </span>
-                        {status === "Pending" && row.original.invitationExpiresAtUtc && (
-                            <span className="text-[10px] text-muted-foreground">
-                                Exp: {new Date(row.original.invitationExpiresAtUtc).toLocaleDateString()}
+                        {status === "Pending" && expiresAt && (
+                            <span className={`text-[10px] ${isExpired ? "text-rose-600 font-medium" : "text-muted-foreground"}`}>
+                                {isExpired ? "Expired: " : "Exp: "}
+                                {expiresAt.toLocaleDateString()}
                             </span>
                         )}
                     </div>
@@ -171,7 +180,13 @@ export function createColumns(handlers?: MemberActionHandlers): ColumnDef<Tenant
             },
             filterFn: (row, columnId, filterValue) => {
                 if (!filterValue || filterValue === "All") return true;
-                return String(row.original.status).toLowerCase() === String(filterValue).toLowerCase();
+                const status = row.original.status;
+                const expiresAt = row.original.invitationExpiresAtUtc ? new Date(row.original.invitationExpiresAtUtc) : null;
+                const isExpired = status === "Pending" && !!expiresAt && expiresAt.getTime() < Date.now();
+                if (filterValue.toLowerCase() === "expired") {
+                    return isExpired;
+                }
+                return String(status).toLowerCase() === String(filterValue).toLowerCase();
             },
         },
         {
@@ -218,6 +233,16 @@ export function createColumns(handlers?: MemberActionHandlers): ColumnDef<Tenant
                                         <Shield className="mr-2 h-4 w-4 text-slate-600" />
                                         Edit Roles
                                     </DropdownMenuItem>
+
+                                    {(member.status === "Pending" || member.status === "Cancelled") && (
+                                        <DropdownMenuItem
+                                            onClick={() => handlers?.onResendInvitation?.(member)}
+                                            className="cursor-pointer text-blue-600 focus:text-blue-600"
+                                        >
+                                            <RotateCw className="mr-2 h-4 w-4" />
+                                            Resend Invitation
+                                        </DropdownMenuItem>
+                                    )}
 
                                     {member.status === "Pending" ? (
                                         <DropdownMenuItem

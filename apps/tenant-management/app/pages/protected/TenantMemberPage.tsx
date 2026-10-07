@@ -17,6 +17,7 @@ import { getAssignableRolesRequest } from '~/features/tenant-member/handlers/get
 import { updateTenantMemberRolesRequest } from '~/features/tenant-member/handlers/updateTenantMemberRolesRequest';
 import { toggleTenantMemberStatusRequest } from '~/features/tenant-member/handlers/toggleTenantMemberStatusRequest';
 import { revokeTenantMemberInvitationRequest } from '~/features/tenant-member/handlers/revokeTenantMemberInvitationRequest';
+import { resendTenantMemberInvitationRequest } from '~/features/tenant-member/handlers/resendTenantMemberInvitationRequest';
 import { deleteTenantMemberRequest } from '~/features/tenant-member/handlers/deleteTenantMemberRequest';
 import { useTenant } from '~/providers/TenantProvider';
 import { useClerkAuth } from '~/providers/ClerkAuthProvider';
@@ -44,6 +45,7 @@ const useCreateMember = createMutationHookFromTemplate(createTenantMemberRequest
 const useUpdateRoles = createMutationHookFromTemplate(updateTenantMemberRolesRequest);
 const useToggleStatus = createMutationHookFromTemplate(toggleTenantMemberStatusRequest);
 const useRevokeInvitation = createMutationHookFromTemplate(revokeTenantMemberInvitationRequest);
+const useResendInvitation = createMutationHookFromTemplate(resendTenantMemberInvitationRequest);
 const useDeleteMember = createMutationHookFromTemplate(deleteTenantMemberRequest);
 
 function TenantMemberPage() {
@@ -90,6 +92,7 @@ function TenantMemberPage() {
     const updateRolesMutation = useUpdateRoles();
     const toggleStatusMutation = useToggleStatus();
     const revokeInvitationMutation = useRevokeInvitation();
+    const resendInvitationMutation = useResendInvitation();
     const deleteMemberMutation = useDeleteMember();
 
     const data: TenantMember[] = React.useMemo(() => {
@@ -223,6 +226,25 @@ function TenantMemberPage() {
         }
     };
 
+    const handleResendInvitation = async (member: TenantMember) => {
+        try {
+            const res = await resendInvitationMutation.mutateAsync({
+                pathParams: { id: member.id },
+            });
+            toast.success(`Invitation resent to ${member.email}`);
+            if (res?.data?.invitationToken) {
+                setInvitationResult({
+                    email: res.data.email,
+                    token: res.data.invitationToken,
+                    expiresAt: res.data.invitationExpiresAtUtc,
+                });
+            }
+            await refetch();
+        } catch {
+            // Handled by interceptor
+        }
+    };
+
     const handleConfirmDelete = async (memberId: string) => {
         try {
             await deleteMemberMutation.mutateAsync({
@@ -254,6 +276,7 @@ function TenantMemberPage() {
             onEditRoles: (member) => setEditingMember(member),
             onToggleStatus: handleToggleStatus,
             onRevokeInvitation: handleRevokeInvitation,
+            onResendInvitation: handleResendInvitation,
             onDelete: (member) => setDeletingMember(member),
             currentUserId: user?.id,
             currentUserEmail: user?.email,
@@ -609,6 +632,7 @@ function TenantMemberPage() {
                     setEditingMember(m);
                 }}
                 onToggleStatus={handleToggleStatus}
+                onResendInvitation={handleResendInvitation}
                 onDelete={(m) => {
                     setDetailMember(null);
                     setDeletingMember(m);

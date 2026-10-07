@@ -5,6 +5,7 @@ using ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.AcceptI
 using ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.CreateTenantMember;
 using ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.DeleteTenantMember;
 using ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.RevokeInvitation;
+using ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.ResendInvitation;
 using ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.ToggleTenantMemberStatus;
 using ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.UpdateTenantMember;
 using ERPEZ.TenantManagement.Application.Features.TenantMembers.Dtos;
@@ -112,6 +113,18 @@ public class TenantMembersController(ISender mediator) : ControllerBase
     public async Task<IActionResult> RevokeInvitation(Guid id)
     {
         var command = new RevokeInvitationCommand(id);
+        var result = await mediator.Send(command);
+        return Ok(result);
+    }
+
+    [HttpPost("{id}/invitation/resend")]
+    [ProducesResponseType(typeof(ApiResponse<ResendInvitationResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasPermission(TenantPermissions.membersManage)]
+    public async Task<IActionResult> ResendInvitation(Guid id)
+    {
+        var command = new ResendInvitationCommand(id);
         var result = await mediator.Send(command);
         return Ok(result);
     }
