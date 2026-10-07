@@ -382,7 +382,7 @@ public class ApplicationDbContext : DbContext
 
         // KPIModeOfVerification
         modelBuilder.Entity<KPIModeOfVerification>()
-            .HasIndex(mv => new { mv.KPIId, mv.Name })
+            .HasIndex(mv => new { mv.TenantId, mv.KPIId, mv.Name })
             .IsUnique();
 
         modelBuilder.Entity<KPIModeOfVerification>()
@@ -392,7 +392,7 @@ public class ApplicationDbContext : DbContext
 
         // KPIPerformanceMeasure join entity and Rating relationship
         modelBuilder.Entity<KPIPerformanceMeasure>()
-            .HasIndex(kpm => new { kpm.KPIId, kpm.PerformanceMeasureId })
+            .HasIndex(kpm => new { kpm.TenantId, kpm.KPIId, kpm.PerformanceMeasureId })
             .IsUnique();
 
         modelBuilder.Entity<KPIPerformanceMeasure>()
@@ -401,7 +401,7 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(kpm => kpm.PerformanceMeasureId);
 
         modelBuilder.Entity<Rating>()
-            .HasIndex(r => new { r.KPIPerformanceMeasureId, r.NumericalRating })
+            .HasIndex(r => new { r.TenantId, r.KPIPerformanceMeasureId, r.NumericalRating })
             .IsUnique();
 
         modelBuilder.Entity<Rating>()
@@ -419,14 +419,14 @@ public class ApplicationDbContext : DbContext
             .IsRequired(false);
 
         modelBuilder.Entity<KPITarget>()
-            .HasIndex(kt => new { kt.KPIId, kt.Period, kt.QuarterName })
+            .HasIndex(kt => new { kt.TenantId, kt.KPIId, kt.Period, kt.QuarterName })
             .IsUnique()
             .HasFilter("\"QuarterName\" IS NOT NULL");
             
 
         //PerformanceMeasure
         modelBuilder.Entity<PerformanceMeasure>()
-            .HasIndex(pm => pm.Name)
+            .HasIndex(pm => new { pm.TenantId, pm.Name })
             .IsUnique();
 
         // PerformanceMeasure relations are configured via KPIPerformanceMeasure above
@@ -438,7 +438,7 @@ public class ApplicationDbContext : DbContext
 
         //Location
         modelBuilder.Entity<Location>()
-            .HasIndex(l => new { l.Name, l.Code })
+            .HasIndex(l => new { l.TenantId, l.Name, l.Code })
             .IsUnique();
 
         modelBuilder.Entity<Location>()
@@ -468,7 +468,7 @@ public class ApplicationDbContext : DbContext
 
         //MFOPAP
         modelBuilder.Entity<MFOPAP>()
-            .HasIndex(m => new { m.Name, m.Code })
+            .HasIndex(m => new { m.TenantId, m.Name, m.Code })
             .IsUnique();
 
         modelBuilder.Entity<MFOPAP>()
@@ -513,7 +513,7 @@ public class ApplicationDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Transaction>()
-            .HasIndex(t => new { t.FundSourceId, t.OrganizationId, t.LocationId, t.MFOPAPId, t.ObjectId, t.TransactionDate })
+            .HasIndex(t => new { t.TenantId, t.FundSourceId, t.OrganizationId, t.LocationId, t.MFOPAPId, t.ObjectId, t.TransactionDate })
             .IsUnique();
 
         //Object
@@ -585,6 +585,10 @@ public class ApplicationDbContext : DbContext
 
         //FiscalYear
         modelBuilder.Entity<FiscalYear>()
+            .HasIndex(fy => new { fy.TenantId, fy.Year })
+            .IsUnique();
+
+        modelBuilder.Entity<FiscalYear>()
             .HasMany(fy => fy.FiscalMonths)
             .WithOne(fm => fm.FiscalYear)
             .HasForeignKey(fm => fm.FiscalYearId);
@@ -596,7 +600,7 @@ public class ApplicationDbContext : DbContext
 
         //FiscalMonth
         modelBuilder.Entity<FiscalMonth>()
-            .HasIndex(fm => new { fm.FiscalYearId, fm.MonthIndex })
+            .HasIndex(fm => new { fm.TenantId, fm.FiscalYearId, fm.MonthIndex })
             .IsUnique();
 
         //BudgetCall
@@ -700,12 +704,12 @@ public class ApplicationDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<WorkflowMatrix>()
-            .HasIndex(wm => new { wm.FiscalYearId, wm.OfficeId, wm.DocumentType })
+            .HasIndex(wm => new { wm.TenantId, wm.FiscalYearId, wm.OfficeId, wm.DocumentType })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false"); // Partial index - only enforce uniqueness for non-deleted records
 
         modelBuilder.Entity<WorkflowMatrix>()
-            .HasIndex(wm => new { wm.FiscalYearId, wm.OfficeId })
+            .HasIndex(wm => new { wm.TenantId, wm.FiscalYearId, wm.OfficeId })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false AND \"DocumentType\" IS NULL"); // One default workflow per FiscalYear and Office
 
@@ -733,7 +737,7 @@ public class ApplicationDbContext : DbContext
 
         // WFPObjective
         modelBuilder.Entity<WFPObjective>()
-            .HasIndex(o => new { o.WFPId, o.Description })
+            .HasIndex(o => new { o.TenantId, o.WFPId, o.Description })
             .IsUnique();
 
         modelBuilder.Entity<WFPObjective>()
@@ -750,7 +754,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<PurchaseOrder>(entity =>
         {
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)");
-            entity.HasIndex(e => e.PONumber).IsUnique();
+            entity.HasIndex(e => new { e.TenantId, e.PONumber }).IsUnique();
             entity.HasOne(e => e.Supplier)
                   .WithMany()
                   .HasForeignKey(e => e.SupplierId)
@@ -810,7 +814,7 @@ public class ApplicationDbContext : DbContext
 
         //WFPObjectiveTimeline
         modelBuilder.Entity<WFPObjectiveTimeline>()
-            .HasIndex(t => new { t.WFPObjectiveActivityId, t.StartDate })
+            .HasIndex(t => new { t.TenantId, t.WFPObjectiveActivityId, t.StartDate })
             .IsUnique();
 
         modelBuilder.Entity<WFPObjectiveTimeline>()
@@ -826,7 +830,7 @@ public class ApplicationDbContext : DbContext
 
         //WFPPAPDepartment
         modelBuilder.Entity<WFPPAPDepartment>()
-            .HasIndex(d => new { d.WFPPAPId, d.DeliveryUnitId })
+            .HasIndex(d => new { d.TenantId, d.WFPPAPId, d.DeliveryUnitId })
             .IsUnique();
 
         modelBuilder.Entity<WFPPAPDepartment>()
@@ -844,7 +848,7 @@ public class ApplicationDbContext : DbContext
 
         // OPCR
         modelBuilder.Entity<OPCR>()
-            .HasIndex(o => new { o.OfficeId, o.FiscalYearId })
+            .HasIndex(o => new { o.TenantId, o.OfficeId, o.FiscalYearId })
             .IsUnique();
 
         modelBuilder.Entity<OPCR>()
@@ -880,7 +884,7 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(d => d.OfficeId);
 
         modelBuilder.Entity<OPCRPAPDepartment>()
-            .HasIndex(d => new { d.OPCRActivityId, d.OfficeId })
+            .HasIndex(d => new { d.TenantId, d.OPCRActivityId, d.OfficeId })
             .IsUnique();
 
         // OPCREvaluation
@@ -909,12 +913,12 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(a => a.OPCRItemId);
 
         modelBuilder.Entity<OPCRActivity>()
-            .HasIndex(a => new { a.OPCRItemId, a.Name })
+            .HasIndex(a => new { a.TenantId, a.OPCRItemId, a.Name })
             .IsUnique();
 
         // OPCRRating
         modelBuilder.Entity<OPCRRating>()
-            .HasIndex(r => new { r.OPCREvaluationId, r.PerformanceMeasureId, r.OPCRId, r.DUKPITargetAssignmentId })
+            .HasIndex(r => new { r.TenantId, r.OPCREvaluationId, r.PerformanceMeasureId, r.OPCRId, r.DUKPITargetAssignmentId })
             .IsUnique();
 
         modelBuilder.Entity<OPCRRating>()
@@ -949,12 +953,12 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(i => i.KPIAssignmentId);
 
         modelBuilder.Entity<OPCRItem>()
-            .HasIndex(i => new { i.OPCRId, i.KPIAssignmentId })
+            .HasIndex(i => new { i.TenantId, i.OPCRId, i.KPIAssignmentId })
             .IsUnique();
 
         //Cluster
         modelBuilder.Entity<Cluster>()
-            .HasIndex(c => c.Name)
+            .HasIndex(c => new { c.TenantId, c.Name })
             .IsUnique();
 
         modelBuilder.Entity<Cluster>()
@@ -975,7 +979,7 @@ public class ApplicationDbContext : DbContext
             .IsRequired();
 
         modelBuilder.Entity<WFPObjectiveTimeline>()
-            .HasIndex(t => new { t.WFPObjectiveActivityId, t.StartDate, t.EndDate })
+            .HasIndex(t => new { t.TenantId, t.WFPObjectiveActivityId, t.StartDate, t.EndDate })
             .IsUnique();
 
         modelBuilder.Entity<WFPObjectiveTimeline>()
@@ -983,7 +987,7 @@ public class ApplicationDbContext : DbContext
 
         //FunctionAllocations
         modelBuilder.Entity<FunctionAllocation>()
-            .HasIndex(fpa => new { fpa.FunctionType, fpa.FiscalYearId })
+            .HasIndex(fpa => new { fpa.TenantId, fpa.FunctionType, fpa.FiscalYearId })
             .IsUnique();
 
         //Position Management
