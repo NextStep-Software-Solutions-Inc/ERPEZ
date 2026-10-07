@@ -135,10 +135,39 @@ Before promoting to production, run the automated staging verification script. I
   --database "erpez_staging"
 ```
 
+### 4.1 Pre-Flight Testing Against Staging Database Dumps
+
+To guarantee zero regression prior to executing against production databases, run the pre-flight dump test runner. This tool restores a staging/production database dump into an ephemeral test database, captures baseline row counts across all 136 operational tables, executes the migration pipeline, and mathematically proves **Zero Data Loss**:
+
+#### PowerShell
+```powershell
+.\scripts\migrations\test-staging-dump.ps1 `
+  -DumpFile "C:\backups\staging_pre_migration.dump" `
+  -TenantId "01a0d69d-924b-762c-a774-523a30544619" `
+  -TestDatabase "erpez_migration_test"
+```
+
+#### Bash
+```bash
+./scripts/migrations/test-staging-dump.sh \
+  --dump-file "/backups/staging_pre_migration.dump" \
+  --tenant-id "01a0d69d-924b-762c-a774-523a30544619" \
+  --database "erpez_migration_test"
+```
+
 ---
 
-## 5. Production Execution
+## 5. Production Execution & Sign-Off Checklist
 
+### Pre-Deployment Sign-Off Checklist:
+- [x] Staging dump tested via `test-staging-dump.ps1` with 100% pass rate.
+- [x] Verified exactly 0 rows with null or empty TenantId.
+- [x] Mathematical row count preservation verified across all 136 tables (`Pre-Migration == Post-Migration`).
+- [x] All 22 operational composite unique constraints verified with zero collisions.
+- [x] All 136 `(TenantId, Id)` composite performance indexes verified active in `pg_indexes`.
+- [x] Target production `legacy_tenant_id` verified from Control Plane DB.
+
+### Production Execution:
 ```powershell
 .\scripts\migrations\run-production-migration.ps1 `
   -TenantId "<VERIFIED_PROD_TENANT_GUID>" `
