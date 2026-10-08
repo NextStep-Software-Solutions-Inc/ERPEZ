@@ -58,13 +58,15 @@ public class PermissionAuthorizationHandler(
         var isSuperAdminHeader = httpReq?.Headers.TryGetValue("X-Super-Admin", out var val) == true &&
             string.Equals(val.ToString(), "true", StringComparison.OrdinalIgnoreCase);
 
-        var configuredPlatformEmails = (configuration?["PlatformAdmin:Emails"] 
-            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
-            ?? "jeanmaureal@gmail.com,superadmin@erpez.dev,admin@erpez.dev,tabasan.louiejayb@gmail.com")
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(e => e.ToLowerInvariant());
+        var configuredEmailsRaw = configuration?["PlatformAdmin:Emails"] 
+            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS");
 
-        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) && configuredPlatformEmails.Contains(normalizedEmail);
+        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) &&
+            !string.IsNullOrWhiteSpace(configuredEmailsRaw) &&
+            configuredEmailsRaw
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(e => e.ToLowerInvariant())
+                .Contains(normalizedEmail);
 
         var isOperatingAsPlatformAdmin = string.Equals(activeOperatingRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
                                         (string.IsNullOrWhiteSpace(activeOperatingRole) && isPlatformAdminByEmail);

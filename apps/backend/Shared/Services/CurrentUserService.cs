@@ -112,15 +112,19 @@ public sealed class CurrentUserService(
             var email = Email?.Trim().ToLowerInvariant();
             if (!string.IsNullOrEmpty(email))
             {
-                var configuredPlatformEmails = (configuration?["PlatformAdmin:Emails"] 
-                    ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
-                    ?? "jeanmaureal@gmail.com,superadmin@erpez.dev,admin@erpez.dev,tabasan.louiejayb@gmail.com")
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(e => e.ToLowerInvariant());
+                var configuredEmailsRaw = configuration?["PlatformAdmin:Emails"] 
+                    ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS");
 
-                if (configuredPlatformEmails.Contains(email))
+                if (!string.IsNullOrWhiteSpace(configuredEmailsRaw))
                 {
-                    return true;
+                    var configuredPlatformEmails = configuredEmailsRaw
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .Select(e => e.ToLowerInvariant());
+
+                    if (configuredPlatformEmails.Contains(email))
+                    {
+                        return true;
+                    }
                 }
             }
 

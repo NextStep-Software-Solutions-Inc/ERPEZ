@@ -77,13 +77,15 @@ public class TenantAccessService(
             ?? request.User.FindFirstValue("primary_email_address");
         var normalizedEmail = userEmail?.Trim().ToLowerInvariant();
 
-        var configuredPlatformEmails = (configuration?["PlatformAdmin:Emails"]
-            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
-            ?? "jeanmaureal@gmail.com,superadmin@erpez.dev")
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(e => e.ToLowerInvariant());
+        var configuredEmailsRaw = configuration?["PlatformAdmin:Emails"]
+            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS");
 
-        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) && configuredPlatformEmails.Contains(normalizedEmail);
+        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) &&
+            !string.IsNullOrWhiteSpace(configuredEmailsRaw) &&
+            configuredEmailsRaw
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(e => e.ToLowerInvariant())
+                .Contains(normalizedEmail);
 
         var isPlatformAdmin = (bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) ||
             request.User.IsInRole("SuperAdmin") ||

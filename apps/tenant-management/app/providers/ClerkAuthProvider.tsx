@@ -138,13 +138,13 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
   const configuredAdminEmails = (
     (import.meta.env.VITE_PLATFORM_ADMIN_EMAILS as string | undefined) ||
     (import.meta.env.VITE_SUPER_ADMIN_EMAILS as string | undefined) ||
-    'jeanmaureal@gmail.com,superadmin@erpez.dev,admin@erpez.dev,tabasan.louiejayb@gmail.com'
+    ''
   )
     .split(',')
     .map((e: string) => e.trim().toLowerCase())
     .filter(Boolean);
 
-  const isEmailAdmin = Boolean(userEmail && configuredAdminEmails.includes(userEmail));
+  const isEmailAdmin = Boolean(userEmail && configuredAdminEmails.length > 0 && configuredAdminEmails.includes(userEmail));
 
   const metadataRoles = (clerkUser?.publicMetadata?.roles as string[]) ||
     (clerkUser?.publicMetadata?.role ? [clerkUser.publicMetadata.role as string] : []);

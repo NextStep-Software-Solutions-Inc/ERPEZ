@@ -16,7 +16,8 @@ namespace ERPEZ.TenantManagement.Infrastructure.Services;
 public class UserAuthorizationService(
     ApplicationDbContext dbContext,
     IMemoryCache memoryCache,
-    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null) : IUserAuthorizationService
+    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null,
+    Microsoft.Extensions.Configuration.IConfiguration? configuration = null) : IUserAuthorizationService
 {
     private const string cacheKeyPrefix = "perms:";
     private static readonly TimeSpan slidingExpiration = TimeSpan.FromMinutes(5);
@@ -168,8 +169,17 @@ public class UserAuthorizationService(
             }
 
             // Operating Role Authority (System Administrator / Tenant Administrator or platform admin operating in tenant)
-            var isPrivilegedAdmin = (!string.IsNullOrEmpty(normalizedCallerEmail) &&
-                                    (normalizedCallerEmail == "jeanmaureal@gmail.com" || normalizedCallerEmail == "superadmin@erpez.dev")) ||
+            var configuredEmailsRaw = configuration?["PlatformAdmin:Emails"] 
+                ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS");
+
+            var isConfiguredPlatformAdmin = !string.IsNullOrEmpty(normalizedCallerEmail) &&
+                !string.IsNullOrWhiteSpace(configuredEmailsRaw) &&
+                configuredEmailsRaw
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(e => e.ToLowerInvariant())
+                    .Contains(normalizedCallerEmail);
+
+            var isPrivilegedAdmin = isConfiguredPlatformAdmin ||
                                     string.Equals(activeOperatingRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
                                     string.Equals(activeOperatingRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase);
 
