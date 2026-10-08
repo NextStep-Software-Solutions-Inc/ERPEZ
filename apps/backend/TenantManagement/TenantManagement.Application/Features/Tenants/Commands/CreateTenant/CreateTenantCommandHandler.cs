@@ -51,9 +51,10 @@ public sealed class CreateTenantCommandHandler(
             }
         };
 
-        // Provision full system access: all active system modules (PBMS, PMS, SAMS, AMS)
+        // Provision 30-Day Full-Suite Trial modules (AMS, PBMS, PMS) excluding unreleased SAMS
+        var trialModuleKeys = ERPEZ.Shared.Constants.PlanModuleCatalog.trialModules;
         var allModules = await unitOfWork.ModuleRepository.ToListAsync(
-            unitOfWork.ModuleRepository.Query(m => m.IsActive), cancellationToken);
+            unitOfWork.ModuleRepository.Query(m => m.IsActive && trialModuleKeys.Contains(m.Key.ToLower())), cancellationToken);
         if (allModules != null && allModules.Count > 0)
         {
             foreach (var m in allModules)
@@ -67,13 +68,13 @@ public sealed class CreateTenantCommandHandler(
             if (defaultModule != null) tenant.Modules.Add(defaultModule);
         }
 
-        // 30-day Free Trial Subscription
+        // 30-day Free Trial Subscription (Full operational suite: AMS + PBMS + PMS)
         var trialDays = 30;
         var trialExpiry = DateTime.UtcNow.AddDays(trialDays);
         var subscription = new TenantSubscription
         {
             TenantId = tenant.Id,
-            Plan = Plan.Starter,
+            Plan = Plan.Professional,
             Status = Status.Active,
             Amount = 0m,
             StartDate = DateTime.UtcNow,
@@ -86,7 +87,7 @@ public sealed class CreateTenantCommandHandler(
         // Generate matching 30-day Trial License Key
         if (licenseService != null)
         {
-            var keyString = licenseService.GenerateKeyString("TRIAL", request.BillingContactEmail, trialExpiry, Plan.Starter);
+            var keyString = licenseService.GenerateKeyString("TRIAL", request.BillingContactEmail, trialExpiry, Plan.Professional);
             var signature = licenseService.ComputeSignature(keyString, request.BillingContactEmail, "localhost", trialExpiry);
             var license = new LicenseKey
             {
@@ -94,7 +95,7 @@ public sealed class CreateTenantCommandHandler(
                 Key = keyString,
                 Prefix = "TRIAL",
                 BoundEmail = request.BillingContactEmail,
-                Plan = Plan.Starter,
+                Plan = Plan.Professional,
                 AllowedDomain = "localhost",
                 MaxTenants = 1,
                 MaxUsers = 10,

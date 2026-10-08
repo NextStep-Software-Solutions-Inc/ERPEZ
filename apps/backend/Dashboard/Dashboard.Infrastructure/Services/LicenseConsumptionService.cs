@@ -6,6 +6,7 @@ using ERPEZ.Application.Common.Dtos.AMS;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.AMS;
 using ERPEZ.Infrastructure.Persistence;
+using ERPEZ.Shared.Constants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -53,7 +54,7 @@ public class LicenseConsumptionService(
                 MaxUsers = 5,
                 ActiveUsersCount = activeUserCount,
                 RemainingDays = 0,
-                EnabledModules = ["ams", "sams"],
+                EnabledModules = [PlanModuleCatalog.moduleAms],
                 Message = "No license activated. Basic access only.",
                 IsAirGapped = false
             };
@@ -70,7 +71,7 @@ public class LicenseConsumptionService(
         var isExpired = setting.ExpiresAt.HasValue && setting.ExpiresAt.Value <= DateTime.UtcNow;
         var isValid = setting.IsValid && !isExpired;
 
-        var modules = (setting.EnabledModules ?? "ams,sams")
+        var modules = (setting.EnabledModules ?? PlanModuleCatalog.moduleAms)
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList();
 
@@ -236,9 +237,8 @@ public class LicenseConsumptionService(
         var license = await GetCurrentLicenseAsync(cancellationToken);
         if (!license.IsValid)
         {
-            // Starter baseline modules are always permitted for basic operation
-            return moduleCode.Equals("ams", StringComparison.OrdinalIgnoreCase) ||
-                   moduleCode.Equals("sams", StringComparison.OrdinalIgnoreCase);
+            // Baseline AMS module is permitted for basic administrative recovery
+            return moduleCode.Equals(PlanModuleCatalog.moduleAms, StringComparison.OrdinalIgnoreCase);
         }
 
         return license.EnabledModules.Any(m => m.Equals(moduleCode, StringComparison.OrdinalIgnoreCase));
@@ -259,14 +259,8 @@ public class LicenseConsumptionService(
             .CountAsync(u => u.IsActive && !u.IsDeleted, cancellationToken);
     }
 
-    private static IReadOnlyList<string> GetModulesForPlan(string plan) => plan switch
-    {
-        "Starter" => ["ams", "sams"],
-        "Professional" => ["ams", "sams", "pms"],
-        "Enterprise" => ["ams", "sams", "pms", "pbms"],
-        "OnPremise" => ["ams", "sams", "pms", "pbms"],
-        _ => ["ams", "sams"]
-    };
+    private static IReadOnlyList<string> GetModulesForPlan(string plan) =>
+        PlanModuleCatalog.GetModulesForPlan(plan);
 
     private static bool TryValidateOfflineKey(
         string key,

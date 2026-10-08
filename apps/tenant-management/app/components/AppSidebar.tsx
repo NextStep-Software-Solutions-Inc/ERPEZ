@@ -36,6 +36,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { hasPermission } = usePermissions()
   const dashboardUrl = import.meta.env.VITE_ERP_DASHBOARD_URL || "http://localhost:3000"
 
+  const activePlan = (workspace?.tenantSubscription?.plan || "Starter").toLowerCase();
+
+  const isPlanHidden = (link: (typeof navigationLinks)[number]["items"][number]) => {
+    if (!link.hiddenForPlans || link.hiddenForPlans.length === 0) return false;
+    return link.hiddenForPlans.some((plan) =>
+      activePlan.includes(plan.toLowerCase())
+    );
+  };
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -57,7 +66,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         {navigationLinks.map((item) => {
           const visibleItems = item.items.filter(
-            (link) => !link.permission || hasPermission(link.permission)
+            (link) => (!link.permission || hasPermission(link.permission)) && !isPlanHidden(link)
           );
           if (visibleItems.length === 0) return null;
 

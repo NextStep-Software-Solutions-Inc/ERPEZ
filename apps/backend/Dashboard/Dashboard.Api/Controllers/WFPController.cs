@@ -12,12 +12,15 @@ using ERPEZ.Application.Features.Planning.WFP.Commands.UpdateWFP;
 using ERPEZ.Application.Features.Planning.WFP.Commands.DeleteWFP;
 using ERPEZ.Application.Features.Planning.WFP.Commands.UpdateWFPStatus;
 
+using ERPEZ.Api.Attributes;
+
 namespace ERPEZ.Api.Controllers
 {
     [Route("wfps")]
     [ApiController]
     [Authorize]
-public class WFPController(ISender mediator) : ControllerBase
+    [RequireModule("pbms")]
+    public class WFPController(ISender mediator) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]

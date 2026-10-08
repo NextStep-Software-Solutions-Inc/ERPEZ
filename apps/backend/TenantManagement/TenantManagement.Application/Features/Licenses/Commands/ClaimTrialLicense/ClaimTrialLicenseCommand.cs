@@ -76,9 +76,9 @@ public class ClaimTrialLicenseCommandHandler(
             return ApiResponse<LicenseKeyDto>.Success(existingDto, "Active 30-day trial license already provisioned for this tenant.");
         }
 
-        // Provision a new 30-day Free Trial License Key
+        // Provision a new 30-day Free Trial License Key (Professional Tier: AMS + PBMS + PMS)
         var trialExpiry = DateTime.UtcNow.AddDays(trialDurationDays);
-        var keyString = licenseService.GenerateKeyString("TRIAL", contactEmail, trialExpiry, Plan.Starter);
+        var keyString = licenseService.GenerateKeyString("TRIAL", contactEmail, trialExpiry, Plan.Professional);
         var signature = licenseService.ComputeSignature(keyString, contactEmail, domain, trialExpiry);
 
         var newLicense = new LicenseKey
@@ -88,7 +88,7 @@ public class ClaimTrialLicenseCommandHandler(
             Key = keyString,
             Prefix = "TRIAL",
             BoundEmail = contactEmail,
-            Plan = Plan.Starter,
+            Plan = Plan.Professional,
             AllowedDomain = domain,
             MaxTenants = 1,
             MaxUsers = 10,
@@ -122,7 +122,7 @@ public class ClaimTrialLicenseCommandHandler(
 
         if (existingSubscription != null)
         {
-            existingSubscription.Plan = Plan.Starter;
+            existingSubscription.Plan = Plan.Professional;
             existingSubscription.Status = Status.Active;
             existingSubscription.StartDate = DateTime.UtcNow;
             existingSubscription.EndDate = trialExpiry;
@@ -137,7 +137,7 @@ public class ClaimTrialLicenseCommandHandler(
             {
                 Id = Guid.NewGuid(),
                 TenantId = tenant.Id,
-                Plan = Plan.Starter,
+                Plan = Plan.Professional,
                 Status = Status.Active,
                 StartDate = DateTime.UtcNow,
                 EndDate = trialExpiry,

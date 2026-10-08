@@ -3,10 +3,20 @@ import { Badge } from "~/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import { Cloud, Server, } from "lucide-react"
 import { PageContainer } from "~/components/PageContainer"
+import { Navigate } from "react-router"
+import { useWorkspace } from "~/providers/TenantProvider"
 import PackageApiTab from "~/components/tab/PackageApiTab"
 import PackageCloudTab from "~/components/tab/PackageCloudTab"
 
 export default function PackageDownloadPage() {
+    const { workspace } = useWorkspace()
+    const activePlan = (workspace?.tenantSubscription?.plan || "Starter").toLowerCase()
+    const isStarter = activePlan.includes("starter")
+
+    if (isStarter) {
+        return <Navigate to="/overview" replace />
+    }
+
     return (
         <PageContainer
             title="Package Downloads"

@@ -10,12 +10,14 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using ERPEZ.Api.Attributes;
 
 namespace ERPEZ.Api.Controllers;
 
 [Route("budget-calls")]
 [ApiController]
 [Authorize]
+[RequireModule("pbms")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class BudgetCallController(ISender mediator) : ControllerBase

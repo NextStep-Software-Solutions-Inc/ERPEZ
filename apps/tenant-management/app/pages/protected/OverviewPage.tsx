@@ -52,7 +52,12 @@ export default function OverviewPage() {
         licenseHint,
     });
 
-    const quickActions = buildQuickActions()
+    const activePlan = (rawPlan || "Starter").toLowerCase();
+    const isStarter = activePlan.includes("starter");
+
+    const quickActions = buildQuickActions().filter(
+        (action) => !(action.id === "downloads" && isStarter)
+    );
     const handleAction = (id: string) => { 
         switch (id) {
             case "upgrade":

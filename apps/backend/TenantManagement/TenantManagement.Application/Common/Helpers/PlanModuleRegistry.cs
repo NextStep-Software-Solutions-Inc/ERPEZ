@@ -1,27 +1,18 @@
+using ERPEZ.Shared.Constants;
 using ERPEZ.TenantManagement.Domain.Enums;
 
 namespace ERPEZ.TenantManagement.Application.Common.Helpers;
 
 public static class PlanModuleRegistry
 {
-    public const string moduleAms = "ams";
-    public const string moduleSams = "sams";
-    public const string modulePms = "pms";
-    public const string modulePbms = "pbms";
-
-    private static readonly string[] starterModules = [moduleAms];
-    private static readonly string[] professionalModules = [moduleAms, modulePms];
-    private static readonly string[] enterpriseModules = [moduleAms, modulePms, modulePbms];
+    public const string moduleAms = PlanModuleCatalog.moduleAms;
+    public const string moduleSams = PlanModuleCatalog.moduleSams;
+    public const string modulePms = PlanModuleCatalog.modulePms;
+    public const string modulePbms = PlanModuleCatalog.modulePbms;
 
     public static IReadOnlyList<string> GetModuleKeysForPlan(Plan plan)
     {
-        return plan switch
-        {
-            Plan.Starter => starterModules,
-            Plan.Professional => professionalModules,
-            Plan.Enterprise or Plan.OnPremise => enterpriseModules,
-            _ => starterModules
-        };
+        return PlanModuleCatalog.GetModulesForPlan(plan.ToString());
     }
 
     public static decimal GetPlanPrice(Plan plan, BillingCycle cycle, bool isAirGapped)

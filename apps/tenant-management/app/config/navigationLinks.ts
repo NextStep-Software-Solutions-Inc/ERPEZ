@@ -3,6 +3,7 @@ export interface NavigationItem {
   url: string;
   icon: string;
   permission?: string;
+  hiddenForPlans?: string[];
 }
 
 export interface NavigationGroup {
@@ -26,7 +27,13 @@ export const navigationLinks: NavigationGroup[] = [
     url: "#",
     items: [
       { title: "Modules", url: "module", icon: "Puzzle", permission: "tenant.modules.view" },
-      { title: "Package Download", url: "package-download", icon: "Download", permission: "tenant.workspace.view" },
+      { 
+        title: "Package Download", 
+        url: "package-download", 
+        icon: "Download", 
+        permission: "tenant.workspace.view",
+        hiddenForPlans: ["Starter"],
+      },
     ],
   },
   {
