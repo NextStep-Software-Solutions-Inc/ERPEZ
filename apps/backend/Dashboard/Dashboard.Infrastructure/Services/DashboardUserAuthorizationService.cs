@@ -60,6 +60,17 @@ public class DashboardUserAuthorizationService(
         // Check if caller holds administrator claims from their active token session
         var callerPrincipal = httpContextAccessor?.HttpContext?.User;
         var callerIsAdmin = false;
+        string? callerEmail = callerPrincipal?.FindFirstValue(ClaimTypes.Email)
+            ?? callerPrincipal?.FindFirstValue("email")
+            ?? callerPrincipal?.FindFirstValue("primary_email_address");
+
+        if (string.IsNullOrWhiteSpace(callerEmail) &&
+            httpContextAccessor?.HttpContext?.Request.Headers.TryGetValue("X-User-Email", out var emailH) == true)
+        {
+            callerEmail = emailH.FirstOrDefault();
+        }
+        var normalizedCallerEmail = callerEmail?.Trim().ToLowerInvariant();
+
         if (callerPrincipal != null && callerPrincipal.Identity?.IsAuthenticated == true)
         {
             var callerSub = callerPrincipal.FindFirstValue(ClaimTypes.NameIdentifier) 
@@ -109,6 +120,7 @@ public class DashboardUserAuthorizationService(
                              ra.User != null &&
                              (ra.User.ExternalIdentityId == externalIdentityId ||
                               ra.User.Username == externalIdentityId ||
+                              (!string.IsNullOrEmpty(normalizedCallerEmail) && ra.User.Email.ToLower() == normalizedCallerEmail) ||
                               (ra.User.Email != null && ra.User.Email.ToLower() == externalIdentityId.ToLower())) &&
                              ra.User.IsActive &&
                              !ra.User.IsDeleted &&
@@ -134,6 +146,7 @@ public class DashboardUserAuthorizationService(
                     .AnyAsync(u => !u.IsDeleted && u.IsActive &&
                                    (u.ExternalIdentityId == externalIdentityId ||
                                     u.Username == externalIdentityId ||
+                                    (!string.IsNullOrEmpty(normalizedCallerEmail) && u.Email.ToLower() == normalizedCallerEmail) ||
                                     (u.Email != null && u.Email.ToLower() == externalIdentityId.ToLower())),
                                    cancellationToken);
 

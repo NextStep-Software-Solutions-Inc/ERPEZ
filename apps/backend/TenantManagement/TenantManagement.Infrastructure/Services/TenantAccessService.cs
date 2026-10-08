@@ -8,6 +8,8 @@ using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
+using Microsoft.Extensions.Configuration;
+
 namespace ERPEZ.TenantManagement.Infrastructure.Services;
 
 /// <summary>
@@ -19,7 +21,8 @@ public class TenantAccessService(
     ApplicationDbContext dbContext,
     ILicenseService licenseService,
     IApiHostValidator apiHostValidator,
-    IClientOriginMatcher clientOriginMatcher) : ITenantAccessService
+    IClientOriginMatcher clientOriginMatcher,
+    IConfiguration? configuration = null) : ITenantAccessService
 {
     public async Task<TenantAccessResult> EvaluateAccessAsync(
         TenantAccessRequest request,
@@ -69,11 +72,25 @@ public class TenantAccessService(
             ?? request.User.FindFirstValue("super_admin")
             ?? request.User.FindFirstValue("is_platform_admin");
         var roleClaim = request.User.FindFirstValue(ClaimTypes.Role) ?? request.User.FindFirstValue("role");
+        var userEmail = request.User.FindFirstValue(ClaimTypes.Email)
+            ?? request.User.FindFirstValue("email")
+            ?? request.User.FindFirstValue("primary_email_address");
+        var normalizedEmail = userEmail?.Trim().ToLowerInvariant();
+
+        var configuredPlatformEmails = (configuration?["PlatformAdmin:Emails"]
+            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
+            ?? "jeanmaureal@gmail.com,superadmin@erpez.dev")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(e => e.ToLowerInvariant());
+
+        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) && configuredPlatformEmails.Contains(normalizedEmail);
+
         var isPlatformAdmin = (bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) ||
             request.User.IsInRole("SuperAdmin") ||
             request.User.IsInRole("Platform Administrator") ||
             string.Equals(roleClaim, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(roleClaim, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+            string.Equals(roleClaim, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
+            isPlatformAdminByEmail;
 
         IdentityProvider? memberProvider = null;
         if (!isPlatformAdmin)

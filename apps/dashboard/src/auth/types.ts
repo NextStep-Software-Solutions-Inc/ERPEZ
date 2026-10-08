@@ -63,6 +63,8 @@ export interface UnifiedAuthContextType {
   lastName: string | null;
   role: string | null;
   roles: string[];
+  activeRole: string;
+  switchActiveRole: (role: string) => void;
   tenantId: string | null;
   isSuperAdmin: boolean;
   activeDevUser: string;

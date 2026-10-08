@@ -104,19 +104,33 @@ public class TenantResolutionMiddleware(RequestDelegate next)
                         mappedTenantId = headerCandidate;
                     }
 
+                    var currentUser = context.RequestServices?.GetService<ICurrentUserService>();
+                    var isSuperAdmin = currentUser?.IsSuperAdmin ?? false;
+
                     if (mappedTenantId.HasValue)
                     {
                         // Conflict Detection: If caller supplied X-Tenant-Id header and it differs from mapped org -> 400 Bad Request
+                        // Platform Administrators / SuperAdmins are explicitly authorized to switch across and spectate any workspace.
                         if (headerCandidate.HasValue && headerCandidate.Value != mappedTenantId.Value)
                         {
-                            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                            context.Response.ContentType = "application/json";
-                            var errorResponse = ApiResponse<object>.Fail(new Dictionary<string, string[]> { { "code", ["TENANT_SELECTOR_CONFLICT"] } }, "Conflicting tenant selectors. The organization in your token does not match the X-Tenant-Id header.");
-                            await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
-                            return;
+                            if (!isSuperAdmin)
+                            {
+                                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                context.Response.ContentType = "application/json";
+                                var errorResponse = ApiResponse<object>.Fail(new Dictionary<string, string[]> { { "code", ["TENANT_SELECTOR_CONFLICT"] } }, "Conflicting tenant selectors. The organization in your token does not match the X-Tenant-Id header.");
+                                await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
+                                return;
+                            }
+                            resolvedCandidate = headerCandidate.Value;
                         }
-
-                        resolvedCandidate = mappedTenantId.Value;
+                        else
+                        {
+                            resolvedCandidate = mappedTenantId.Value;
+                        }
+                    }
+                    else if (isSuperAdmin && headerCandidate.HasValue)
+                    {
+                        resolvedCandidate = headerCandidate.Value;
                     }
                     else if (!isIdentityScopedRoute)
                     {

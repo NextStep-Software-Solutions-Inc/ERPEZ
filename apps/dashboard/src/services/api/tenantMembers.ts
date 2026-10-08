@@ -46,18 +46,68 @@ const getAuthHeaders = async () => {
   if (candidateId && guidRegex.test(candidateId)) {
     headers['X-Tenant-Id'] = candidateId
   }
+  if (typeof window !== 'undefined') {
+    const userEmail =
+      sessionStorage.getItem('erpez_user_email') ||
+      localStorage.getItem('erpez_user_email')
+    if (userEmail) {
+      headers['X-User-Email'] = userEmail
+    }
+    const tenantName =
+      sessionStorage.getItem('erpez_tenant_name') ||
+      localStorage.getItem('erpez_tenant_name')
+    if (tenantName) {
+      headers['X-Tenant-Name'] = tenantName
+    }
+    const activeRole =
+      sessionStorage.getItem('erpez_active_role') ||
+      localStorage.getItem('erpez_active_role')
+    if (activeRole) {
+      headers['X-Operating-Role'] = activeRole
+    }
+  }
   return headers
 }
 
 /**
  * Fetch authorized workspaces for current user from TenantManagement.Api
  */
-export async function fetchMyTenants(): Promise<TenantDto[]> {
+export async function fetchMyTenants(authToken?: string | null): Promise<TenantDto[]> {
   try {
     const headers = await getAuthHeaders()
-    const res = await axios.get(`${getTenantApiUrl()}/tenants/my?pageSize=50&pageNumber=1`, { headers })
-    const items = res.data?.data || []
-    return Array.isArray(items) ? items : []
+    if (authToken) {
+      headers.Authorization = `Bearer ${authToken}`
+    }
+
+    const tenantMap = new Map<string, TenantDto>()
+
+    // 1. Attempt GET /tenants (accessible by platform administrators / superadmins to see all workspaces)
+    try {
+      const allRes = await axios.get(`${getTenantApiUrl()}/tenants?pageSize=100&pageNumber=1`, { headers })
+      const allItems = allRes.data?.data || []
+      if (Array.isArray(allItems)) {
+        for (const item of allItems) {
+          if (item?.id) tenantMap.set(item.id, item)
+        }
+      }
+    } catch {
+      // Non-admin callers will receive 403 on /tenants; proceed to /tenants/my
+    }
+
+    // 2. Attempt GET /tenants/my (personal active memberships)
+    try {
+      const myRes = await axios.get(`${getTenantApiUrl()}/tenants/my?pageSize=50&pageNumber=1`, { headers })
+      const myItems = myRes.data?.data || []
+      if (Array.isArray(myItems)) {
+        for (const item of myItems) {
+          if (item?.id) tenantMap.set(item.id, item)
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch from /tenants/my:', err)
+    }
+
+    return Array.from(tenantMap.values())
   } catch (err) {
     console.warn('Failed to fetch tenants from TenantManagement.Api:', err)
     return []

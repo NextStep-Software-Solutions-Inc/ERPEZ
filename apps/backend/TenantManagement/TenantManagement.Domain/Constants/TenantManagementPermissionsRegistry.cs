@@ -132,6 +132,12 @@ public static class TenantManagementPermissionsRegistry
 
             // Tenant Scope Roles
             ["Tenant Administrator"] = TenantPermissions.all,
+            ["TenantAdmin"] = TenantPermissions.all,
+            ["System Administrator"] = TenantPermissions.all,
+            ["Workspace Admin"] = TenantPermissions.all,
+            ["Org Admin"] = TenantPermissions.all,
+            ["admin"] = TenantPermissions.all,
+            ["Owner"] = TenantPermissions.all,
             ["Billing Administrator"] = TenantPermissions.billingAdmin,
             ["Tenant Auditor"] = TenantPermissions.auditor,
             ["Tenant Member"] = TenantPermissions.member,

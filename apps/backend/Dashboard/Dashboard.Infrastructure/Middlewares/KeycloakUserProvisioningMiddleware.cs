@@ -136,6 +136,49 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                             user.ExternalIdentityId = externalIdentityId;
                         }
 
+                        // Update email if current user email is placeholder and real normalizedEmail is available
+                        if (!string.IsNullOrEmpty(normalizedEmail) &&
+                            (string.IsNullOrEmpty(user.Email) || user.Email.Contains("@keycloak.local") || user.Email.Contains("@workspace.local")))
+                        {
+                            user.Email = normalizedEmail;
+                        }
+
+                        // Check and reconcile duplicate invited stub user if one exists
+                        if (!string.IsNullOrEmpty(normalizedEmail))
+                        {
+                            var duplicateStub = await dbContext.Users
+                                .Include(u => u.RoleAssignments!)
+                                .FirstOrDefaultAsync(u => u.Id != user.Id && !u.IsDeleted && u.Email.ToLower() == normalizedEmail);
+
+                            if (duplicateStub != null)
+                            {
+                                if (duplicateStub.RoleAssignments != null && duplicateStub.RoleAssignments.Count > 0)
+                                {
+                                    foreach (var stubRa in duplicateStub.RoleAssignments.Where(ra => !ra.IsDeleted))
+                                    {
+                                        var alreadyHas = user.RoleAssignments?.Any(ra => !ra.IsDeleted && ra.RoleId == stubRa.RoleId) == true;
+                                        if (!alreadyHas)
+                                        {
+                                            await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                            {
+                                                Id = Guid.NewGuid(),
+                                                UserId = user.Id,
+                                                RoleId = stubRa.RoleId,
+                                                AssignedAt = DateTime.UtcNow,
+                                                CreatedAt = DateTime.UtcNow,
+                                                CreatedBy = "IdentityReconciliation"
+                                            });
+                                        }
+                                        stubRa.IsDeleted = true;
+                                    }
+                                }
+
+                                duplicateStub.IsDeleted = true;
+                                duplicateStub.DeletedAt = DateTime.UtcNow;
+                                duplicateStub.DeletedBy = "IdentityReconciliation";
+                            }
+                        }
+
                         if (!string.IsNullOrWhiteSpace(username) && (string.IsNullOrWhiteSpace(user.Username) || user.Username.StartsWith("user_")))
                         {
                             user.Username = username;
@@ -170,15 +213,30 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                                     dbContext.UserRoleAssignments!.RemoveRange(viewerAssignments);
                                 }
 
-                                await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                var existingAdmin = await dbContext.UserRoleAssignments!
+                                    .IgnoreQueryFilters()
+                                    .FirstOrDefaultAsync(ra => ra.UserId == user.Id && ra.RoleId == adminRole.Id);
+
+                                if (existingAdmin != null)
                                 {
-                                    Id = Guid.NewGuid(),
-                                    UserId = user.Id,
-                                    RoleId = adminRole.Id,
-                                    AssignedAt = DateTime.UtcNow,
-                                    CreatedAt = DateTime.UtcNow,
-                                    CreatedBy = "AutoProvisioning"
-                                });
+                                    existingAdmin.IsDeleted = false;
+                                    existingAdmin.DeletedAt = null;
+                                    existingAdmin.DeletedBy = null;
+                                    existingAdmin.UpdatedAt = DateTime.UtcNow;
+                                    existingAdmin.UpdatedBy = "AutoProvisioning";
+                                }
+                                else
+                                {
+                                    await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                    {
+                                        Id = Guid.NewGuid(),
+                                        UserId = user.Id,
+                                        RoleId = adminRole.Id,
+                                        AssignedAt = DateTime.UtcNow,
+                                        CreatedAt = DateTime.UtcNow,
+                                        CreatedBy = "AutoProvisioning"
+                                    });
+                                }
 
                                 await dbContext.SaveChangesAsync();
 
@@ -198,15 +256,30 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
 
                             if (viewerRole != null)
                             {
-                                await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                var existingViewer = await dbContext.UserRoleAssignments!
+                                    .IgnoreQueryFilters()
+                                    .FirstOrDefaultAsync(ra => ra.UserId == user.Id && ra.RoleId == viewerRole.Id);
+
+                                if (existingViewer != null)
                                 {
-                                    Id = Guid.NewGuid(),
-                                    UserId = user.Id,
-                                    RoleId = viewerRole.Id,
-                                    AssignedAt = DateTime.UtcNow,
-                                    CreatedAt = DateTime.UtcNow,
-                                    CreatedBy = "AutoProvisioning"
-                                });
+                                    existingViewer.IsDeleted = false;
+                                    existingViewer.DeletedAt = null;
+                                    existingViewer.DeletedBy = null;
+                                    existingViewer.UpdatedAt = DateTime.UtcNow;
+                                    existingViewer.UpdatedBy = "AutoProvisioning";
+                                }
+                                else
+                                {
+                                    await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                    {
+                                        Id = Guid.NewGuid(),
+                                        UserId = user.Id,
+                                        RoleId = viewerRole.Id,
+                                        AssignedAt = DateTime.UtcNow,
+                                        CreatedAt = DateTime.UtcNow,
+                                        CreatedBy = "AutoProvisioning"
+                                    });
+                                }
 
                                 await dbContext.SaveChangesAsync();
 

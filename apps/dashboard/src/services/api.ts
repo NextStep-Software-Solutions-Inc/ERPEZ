@@ -80,6 +80,20 @@ api.interceptors.request.use(
       if (tenantName) {
         config.headers['X-Tenant-Name'] = tenantName
       }
+
+      const userEmail =
+        sessionStorage.getItem('erpez_user_email') ||
+        localStorage.getItem('erpez_user_email')
+      if (userEmail) {
+        config.headers['X-User-Email'] = userEmail
+      }
+
+      const activeRole =
+        sessionStorage.getItem('erpez_active_role') ||
+        localStorage.getItem('erpez_active_role')
+      if (activeRole) {
+        config.headers['X-Operating-Role'] = activeRole
+      }
     }
 
     return config

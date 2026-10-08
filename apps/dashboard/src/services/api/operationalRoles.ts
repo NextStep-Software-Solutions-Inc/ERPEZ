@@ -111,4 +111,18 @@ export async function fetchAllUserRoleAssignments(): Promise<UserRoleAssignmentS
   }
 }
 
+/**
+ * Fetches operational roles assigned to the currently authenticated user.
+ * Calls domain-specific endpoint: GET /api/ams/roles/me
+ */
+export async function fetchMyOperationalRoles(): Promise<string[]> {
+  try {
+    const response = await api.get<ApiResponse<string[]>>('/api/ams/roles/me')
+    return response.data?.data || []
+  } catch (error) {
+    console.warn('Failed to fetch personal operational roles:', error)
+    return []
+  }
+}
+
 

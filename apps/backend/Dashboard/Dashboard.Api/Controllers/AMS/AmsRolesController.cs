@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ERPEZ.Application.Common.Dtos.AMS;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.AMS;
@@ -320,6 +321,61 @@ public class AmsRolesController(
             .ToListAsync(cancellationToken);
 
         return Ok(ApiResponse<List<AmsRoleDto>>.Success(roles));
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<List<string>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyOperationalRoles(CancellationToken cancellationToken)
+    {
+        var externalId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? User.FindFirstValue("primary_email_address");
+        if (string.IsNullOrWhiteSpace(email) && Request.Headers.TryGetValue("X-User-Email", out var emailHeader))
+        {
+            email = emailHeader.FirstOrDefault();
+        }
+        var normalizedEmail = email?.Trim().ToLowerInvariant();
+
+        if (string.IsNullOrWhiteSpace(externalId) && string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            return Ok(ApiResponse<List<string>>.Success([]));
+        }
+
+        // Canonical user lookup: prioritize externalId, fallback to email
+        ERPEZ.Domain.Entities.Planning.User? user = null;
+        if (!string.IsNullOrWhiteSpace(externalId))
+        {
+            user = await dbContext.Users!
+                .AsNoTracking()
+                .Include(u => u.RoleAssignments!)
+                    .ThenInclude(ra => ra.Role)
+                .FirstOrDefaultAsync(u => !u.IsDeleted && u.IsActive && u.ExternalIdentityId == externalId, cancellationToken);
+        }
+
+        if (user == null && !string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            user = await dbContext.Users!
+                .AsNoTracking()
+                .Include(u => u.RoleAssignments!)
+                    .ThenInclude(ra => ra.Role)
+                .FirstOrDefaultAsync(u => !u.IsDeleted && u.IsActive && u.Email.ToLower() == normalizedEmail, cancellationToken);
+        }
+
+        if (user == null)
+        {
+            return Ok(ApiResponse<List<string>>.Success([]));
+        }
+
+        var roles = user.RoleAssignments?
+            .Where(ua => !ua.IsDeleted &&
+                         ua.Role != null &&
+                         !ua.Role.IsDeleted &&
+                         ua.Role.IsActive)
+            .Select(ua => ua.Role!.Name)
+            .Distinct()
+            .ToList() ?? [];
+
+        return Ok(ApiResponse<List<string>>.Success(roles));
     }
 
     private static string Capitalize(string text)

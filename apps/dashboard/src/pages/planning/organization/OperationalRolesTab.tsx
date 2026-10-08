@@ -130,7 +130,9 @@ function resolveUserIdentity(
   const isPlaceholderName =
     !user.fullName ||
     user.fullName.startsWith('user_') ||
-    user.fullName.includes('@keycloak.local')
+    user.fullName.includes('@keycloak.local') ||
+    user.fullName === 'Workspace User' ||
+    user.fullName === 'User'
 
   const isPlaceholderEmail =
     !user.email || user.email.includes('@keycloak.local')
@@ -184,6 +186,7 @@ export default function OperationalRolesTab() {
   const queryClient = useQueryClient()
   const {
     user: currentAuthUser,
+    activeTenant,
     workspaceMembers = [],
     workspaceInvitations = [],
     revokeWorkspaceInvitation,
@@ -198,19 +201,19 @@ export default function OperationalRolesTab() {
 
   // 1. Fetch active personnel/users
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['workspace-users'],
+    queryKey: ['workspace-users', activeTenant?.id],
     queryFn: fetchUsers,
   })
 
   // 2. Fetch assignable operational roles from backend
   const { data: operationalRoles = [], isLoading: isLoadingRoles } = useQuery({
-    queryKey: ['assignable-operational-roles'],
+    queryKey: ['assignable-operational-roles', activeTenant?.id],
     queryFn: fetchAssignableOperationalRoles,
   })
 
   // 3. Fetch all operational role assignments across the workspace
   const { data: allRoleAssignments = [] } = useQuery({
-    queryKey: ['ams-all-role-assignments'],
+    queryKey: ['ams-all-role-assignments', activeTenant?.id],
     queryFn: fetchAllUserRoleAssignments,
   })
 
@@ -227,7 +230,7 @@ export default function OperationalRolesTab() {
 
   // 4. Fetch tenant members from TenantManagement.Api for comprehensive identification
   const { data: tenantMembers = [], isLoading: isLoadingTenantMembers } = useQuery({
-    queryKey: ['tenant-members'],
+    queryKey: ['tenant-members', activeTenant?.id],
     queryFn: fetchTenantMembers,
     staleTime: 30_000,
   })
@@ -342,6 +345,24 @@ export default function OperationalRolesTab() {
           (m.userId && resolved.authId && m.userId.toLowerCase() === resolved.authId.toLowerCase()) ||
           (m.externalIdentityId && resolved.authId && m.externalIdentityId.toLowerCase() === resolved.authId.toLowerCase())
       )
+
+      // Multi-tenant membership isolation:
+      // Operational users from planning.Users must only be rendered in this workspace if they actually
+      // belong to this workspace (via tenantMembers matching, or matching current logged-in user).
+      // Prevents foreign tenant employees (e.g. NextJump dev users) from leaking into Pax Silica Inc.
+      const isDefaultDevWorkspace = Boolean(
+        activeTenant?.id?.includes('01a0d69d') ||
+        activeTenant?.name?.toLowerCase().includes('nextjump')
+      )
+      const belongsToThisWorkspace = Boolean(
+        tm ||
+        resolved.isCurrentUser ||
+        (tenantMembers.length === 0 && isDefaultDevWorkspace)
+      )
+
+      if (!belongsToThisWorkspace) {
+        continue
+      }
 
       if (tm) {
         matchedTenantMemberIds.add(tm.id)

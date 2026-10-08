@@ -2,10 +2,13 @@ import { createContext, useContext, useState, useEffect, useMemo, type ReactNode
 import { createQueryHookFromTemplate } from 'erpez-shared-lib';
 import { useQueryClient } from '@tanstack/react-query';
 import { getMyTenantRequest } from '~/features/tenant/handlers/getMyTenantRequest';
+import { getTenantsRequest } from '~/features/tenant/handlers/getTenantsRequest';
 import type { Tenant } from '~/features/tenant/type/Tenant';
 import { useAuthReady } from './AuthProvider';
+import { useClerkAuth } from './ClerkAuthProvider';
 
 const useMyTenant = createQueryHookFromTemplate(getMyTenantRequest);
+const useAllTenants = createQueryHookFromTemplate(getTenantsRequest);
 
 export interface WorkspaceContextType {
     // Canonical Workspace Plane accessors
@@ -39,15 +42,17 @@ const LOCAL_STORAGE_SPECTATING_KEY = "erpez_spectating_tenant";
 function TenantProviderContent({ children }: { children: ReactNode }) {
     const queryClient = useQueryClient();
     const { isTokenReady } = useAuthReady();
+    const { isSuperAdmin } = useClerkAuth();
     const { data: myTenant, isLoading, error, refetch } = useMyTenant({
         pathParams: {},
         queryParams: { pageSize: 50, pageNumber: 1 },
         enabled: isTokenReady,
     });
-
-    const workspaces: Tenant[] = useMemo(() => {
-        return myTenant?.data || [];
-    }, [myTenant?.data]);
+    const { data: allTenants } = useAllTenants({
+        pathParams: {},
+        queryParams: { pageSize: 50, pageNumber: 1 },
+        enabled: isTokenReady && isSuperAdmin,
+    });
 
     const [spectatingTenant, setSpectatingTenant] = useState<({ id: string; name: string } & Partial<Tenant>) | null>(() => {
         if (typeof window !== 'undefined') {
@@ -62,6 +67,24 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
     });
 
     const isSpectating = !!spectatingTenant;
+
+    const workspaces: Tenant[] = useMemo(() => {
+        const sourceList = (isSuperAdmin && allTenants?.data && allTenants.data.length > 0)
+            ? allTenants.data
+            : (myTenant?.data || []);
+
+        const list: Tenant[] = [...sourceList];
+        if (spectatingTenant && !list.some((w) => w.id === spectatingTenant.id)) {
+            list.unshift({
+                id: spectatingTenant.id,
+                name: spectatingTenant.name,
+                isDeleted: false,
+                isDisabled: false,
+                ...spectatingTenant,
+            } as unknown as Tenant);
+        }
+        return list;
+    }, [isSuperAdmin, allTenants?.data, myTenant?.data, spectatingTenant]);
 
     const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
         if (typeof window !== 'undefined') {
@@ -145,6 +168,15 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
         if (!target && (!spectatingTenant || spectatingTenant.id !== workspaceId)) {
             console.warn(`[Workspace Switcher] Cannot switch to unauthorized or unknown workspace: ${workspaceId}`);
             return;
+        }
+
+        if (spectatingTenant && target) {
+            setSpectatingTenant(target);
+            try {
+                localStorage.setItem(LOCAL_STORAGE_SPECTATING_KEY, JSON.stringify(target));
+            } catch {
+                // Ignore storage errors
+            }
         }
 
         setSelectedWorkspaceId(workspaceId);

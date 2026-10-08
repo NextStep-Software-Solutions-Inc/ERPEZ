@@ -177,6 +177,16 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
       }
     : null;
 
+  useEffect(() => {
+    if (clerkUser?.primaryEmailAddress?.emailAddress && typeof window !== 'undefined') {
+      try {
+        const email = clerkUser.primaryEmailAddress.emailAddress.toLowerCase().trim();
+        localStorage.setItem('erpez_user_email', email);
+        sessionStorage.setItem('erpez_user_email', email);
+      } catch {}
+    }
+  }, [clerkUser?.primaryEmailAddress?.emailAddress]);
+
   const login = () => {
     clerk.openSignIn();
   };

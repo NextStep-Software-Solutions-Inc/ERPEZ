@@ -19,6 +19,8 @@ export function WorkspaceSelector() {
     switchTenant,
     tenantState,
     provider,
+    isSuperAdmin,
+    isPlatformAdmin,
   } = useUnifiedAuth();
 
   const [isSwitching, setIsSwitching] = useState(false);
@@ -47,8 +49,8 @@ export function WorkspaceSelector() {
     );
   }
 
-  // If user only has 1 tenant (or none to switch to), do not render a dropdown switcher
-  if (availableTenants.length <= 1) {
+  // If user only has 1 tenant and is not a platform admin, render a clean static indicator
+  if (availableTenants.length <= 1 && !isSuperAdmin && !isPlatformAdmin) {
     if (!activeTenant) return null;
     return (
       <div className="flex items-center gap-2 max-w-[240px] h-9 px-3 border border-border/80 bg-card text-card-foreground rounded-md shadow-xs text-xs font-medium">

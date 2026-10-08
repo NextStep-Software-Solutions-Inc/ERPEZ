@@ -478,6 +478,8 @@ export function KeycloakProvider({
     lastName,
     role: roles[0] || null,
     roles,
+    activeRole: roles[0] || 'User',
+    switchActiveRole: () => {},
     tenantId: activeTenant?.id || tenantId,
     isSuperAdmin,
     activeDevUser,

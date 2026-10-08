@@ -25,11 +25,33 @@ import {
   type TenantDto,
   type TenantMemberDto,
 } from '@/services/api/tenantMembers';
+import { fetchMyOperationalRoles } from '@/services/api/operationalRoles';
 import axios from 'axios';
 
 interface ClerkAuthProviderProps {
   children: React.ReactNode;
   publishableKey?: string;
+}
+
+const KNOWN_WORKSPACES_KEY = 'erpez_known_workspaces';
+
+function getStoredKnownWorkspaces(): UnifiedTenantContext[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(KNOWN_WORKSPACES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveKnownWorkspaces(workspaces: UnifiedTenantContext[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(KNOWN_WORKSPACES_KEY, JSON.stringify(workspaces));
+  } catch {}
 }
 
 function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
@@ -54,6 +76,9 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
   const [isTmLoading, setIsTmLoading] = useState<boolean>(true);
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTenant = urlParams.get('tenantId');
+      if (urlTenant) return urlTenant;
       return (
         sessionStorage.getItem('erpez_candidate_tenant_id') ||
         localStorage.getItem('erpez_tenant_id') ||
@@ -78,7 +103,9 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
 
     const loadTenantData = async () => {
       try {
-        const tenants = await fetchMyTenants();
+        const token = await getToken();
+        if (token) setRawToken(token);
+        const tenants = await fetchMyTenants(token);
         if (!isMounted) return;
         setTmTenants(tenants);
 
@@ -109,7 +136,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [isSignedIn]);
+  }, [isSignedIn, getToken]);
 
   // Auto-activate Clerk organization once if none is active in session
   useEffect(() => {
@@ -132,54 +159,128 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
         ? userMemberships.data.find((m: any) => m.organization?.id === savedExternalId)
         : null;
 
-      const orgToActivate = targetMembership?.organization || userMemberships.data[0]?.organization;
-      if (orgToActivate?.id) {
-        setActive({ organization: orgToActivate.id }).catch((err) => {
+      if (targetMembership?.organization?.id) {
+        setActive({ organization: targetMembership.organization.id }).catch((err) => {
           console.error('Failed to auto-activate Clerk organization:', err);
         });
       }
     }
   }, [isLoaded, isSignedIn, isOrgListLoaded, Boolean(organization), userMemberships?.data?.length, setActive]);
 
-  // Derive available workspaces directly from Clerk memberships or TenantManagement.Api (memoized)
+  // Derive available workspaces by merging TenantManagement.Api workspaces with stored workspaces, Clerk organizations, and candidate storage
   const availableTenants: UnifiedTenantContext[] = useMemo(() => {
-    const list = userMemberships?.data;
-    if (list && list.length > 0) {
-      return list.map((m: any) => ({
-        id: m.organization.id,
-        externalOrgId: m.organization.id,
-        name: m.organization.name,
-        slug: m.organization.slug || undefined,
-        authProvider: 'clerk' as const,
-      }));
-    }
-    if (organization) {
-      return [
-        {
-          id: organization.id,
-          externalOrgId: organization.id,
-          name: organization.name,
-          slug: organization.slug || undefined,
-          authProvider: 'clerk' as const,
-        },
-      ];
-    }
-    if (tmTenants.length > 0) {
-      return tmTenants.map((t) => ({
-        id: t.id,
-        externalOrgId: t.id,
-        name: t.name,
-        slug: t.slug,
-        authProvider: 'clerk' as const,
-      }));
-    }
-    return [];
-  }, [userMemberships?.data, organization?.id, organization?.name, organization?.slug, tmTenants]);
+    const list: UnifiedTenantContext[] = [];
+    const seenIds = new Set<string>();
 
-  // Derive active workspace directly from active Clerk organization or TenantManagement.Api
+    const addWorkspace = (w: UnifiedTenantContext) => {
+      if (!w || !w.id) return;
+      if (!seenIds.has(w.id)) {
+        seenIds.add(w.id);
+        list.push(w);
+      }
+    };
+
+    // 1. Authoritative ERPEZ workspaces from TenantManagement.Api (tmTenants)
+    for (const t of tmTenants) {
+      addWorkspace({
+        id: t.id,
+        externalOrgId: t.externalOrgId || t.id,
+        name: t.name,
+        slug: t.slug || undefined,
+        authProvider: 'clerk' as const,
+      });
+    }
+
+    // 2. Previously remembered workspaces from persistent localStorage
+    const savedWorkspaces = getStoredKnownWorkspaces();
+    for (const w of savedWorkspaces) {
+      addWorkspace(w);
+    }
+
+    // 3. Candidate tenant from URL / storage (e.g. Pax Silica Inc. opened from tenant management)
+    const candidateId = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('erpez_candidate_tenant_id') || localStorage.getItem('erpez_tenant_id'))
+      : null;
+    const candidateName = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('erpez_tenant_name') || localStorage.getItem('erpez_tenant_name'))
+      : null;
+
+    if (candidateId) {
+      addWorkspace({
+        id: candidateId,
+        externalOrgId: candidateId,
+        name: candidateName || (candidateId.includes('01a115a3') ? 'Pax Silica Inc.' : 'Workspace'),
+        authProvider: 'clerk' as const,
+      });
+    }
+
+    // 4. Add any Clerk organizations not already represented
+    const clerkOrgs = userMemberships?.data || [];
+    for (const m of clerkOrgs) {
+      const clerkOrg = m.organization;
+      const alreadyAdded = list.some(
+        (t) =>
+          t.externalOrgId === clerkOrg.id ||
+          t.id === clerkOrg.id ||
+          t.name.toLowerCase() === clerkOrg.name.toLowerCase()
+      );
+      if (!alreadyAdded) {
+        addWorkspace({
+          id: clerkOrg.id,
+          externalOrgId: clerkOrg.id,
+          name: clerkOrg.name,
+          slug: clerkOrg.slug || undefined,
+          authProvider: 'clerk' as const,
+        });
+      }
+    }
+
+    // 5. Fallback to active organization if list is empty
+    if (list.length === 0 && organization) {
+      addWorkspace({
+        id: organization.id,
+        externalOrgId: organization.id,
+        name: organization.name,
+        slug: organization.slug || undefined,
+        authProvider: 'clerk' as const,
+      });
+    }
+
+    // Persist discovered workspaces so they survive switches across the session
+    if (list.length > 0) {
+      saveKnownWorkspaces(list);
+    }
+
+    return list;
+  }, [tmTenants, userMemberships?.data, organization]);
+
+  // Derive active workspace directly from requested tenant, Clerk organization, or TenantManagement.Api
   const activeTenant: UnifiedTenantContext | null = useMemo(() => {
     const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+    const storedCandidate = typeof window !== 'undefined'
+      ? sessionStorage.getItem('erpez_candidate_tenant_id') || localStorage.getItem('erpez_tenant_id')
+      : null;
+    const targetTenantId = selectedTenantId || (storedCandidate && guidRegex.test(storedCandidate) ? storedCandidate : null);
+
+    // 1. If a specific tenant is targeted/selected, prioritize matching from availableTenants or tmTenants
+    if (targetTenantId) {
+      const match =
+        availableTenants.find((t) => t.id === targetTenantId || t.externalOrgId === targetTenantId) ||
+        tmTenants.find((t) => t.id === targetTenantId || t.externalOrgId === targetTenantId);
+
+      if (match) {
+        return {
+          id: match.id,
+          externalOrgId: (match as any).externalOrgId || match.id,
+          name: match.name,
+          slug: match.slug || undefined,
+          authProvider: 'clerk',
+        };
+      }
+    }
+
+    // 2. If Clerk has an active organization, match it
     if (organization) {
       const matched = tmTenants.find(
         (t) =>
@@ -189,17 +290,11 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
           (t.slug && organization.slug && t.slug.toLowerCase() === organization.slug.toLowerCase())
       );
 
-      const storedId = typeof window !== 'undefined'
-        ? sessionStorage.getItem('erpez_candidate_tenant_id') || localStorage.getItem('erpez_tenant_id')
-        : null;
-      const validStoredId = storedId && guidRegex.test(storedId) ? storedId : null;
-
-      // In development fallback, if NextJump Solutions is the active Clerk organization, use its seeded tenant GUID
       const devNextJumpId = organization.name.toLowerCase().includes('nextjump')
         ? '01a0d69d-924b-762c-a774-523a30544619'
         : null;
 
-      const resolvedId = matched?.id || validStoredId || devNextJumpId || organization.id;
+      const resolvedId = matched?.id || devNextJumpId || organization.id;
 
       return {
         id: resolvedId,
@@ -209,17 +304,14 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
         authProvider: 'clerk',
       };
     }
+
+    // 3. Fallback to first available workspace
     if (availableTenants.length > 0) {
-      if (selectedTenantId) {
-        const found = availableTenants.find(
-          (t) => t.id === selectedTenantId || t.externalOrgId === selectedTenantId
-        );
-        if (found) return found;
-      }
       return availableTenants[0];
     }
+
     return null;
-  }, [organization?.id, organization?.name, organization?.slug, availableTenants, selectedTenantId, tmTenants]);
+  }, [selectedTenantId, availableTenants, tmTenants, organization]);
 
   // Derive tenantState cleanly from Clerk & TenantManagement loading states
   const tenantState: TenantState = useMemo(() => {
@@ -307,6 +399,9 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
         localStorage.setItem('erpez_tenant_name', target.name);
       } catch {}
 
+      // Update bridge immediately
+      setTenantProvider(() => target.id);
+
       try {
         const members = await fetchTenantMembers();
         setTmMembers(members);
@@ -318,6 +413,17 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
   );
 
   const userEmail = user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || '';
+
+  // Synchronize authenticated user email to storage for backend platform admin identification
+  useEffect(() => {
+    if (userEmail && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('erpez_user_email', userEmail);
+        sessionStorage.setItem('erpez_user_email', userEmail);
+      } catch {}
+    }
+  }, [userEmail]);
+
   const configuredAdminEmails = (
     (import.meta.env.VITE_PLATFORM_ADMIN_EMAILS as string | undefined) ||
     'jeanmaureal@gmail.com,superadmin@erpez.dev'
@@ -356,13 +462,80 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     return false;
   }, [isPlatformAdmin, user, organization, activeTenant, userMemberships?.data, tmMembers]);
 
+  const [assignedOperationalRoles, setAssignedOperationalRoles] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!isSignedIn || !user) {
+      setAssignedOperationalRoles([]);
+      return;
+    }
+
+    let isMounted = true;
+    fetchMyOperationalRoles()
+      .then((roles) => {
+        if (isMounted && roles && roles.length > 0) {
+          setAssignedOperationalRoles(roles);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not load user operational roles:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isSignedIn, user?.id, activeTenant?.id]);
+
   const derivedRoles = useMemo(() => {
+    const list: string[] = [];
     const metaRoles = (user?.publicMetadata?.roles as string[]) || [];
-    if (metaRoles.length > 0) return metaRoles;
-    if (isPlatformAdmin) return ['Platform Administrator', 'System Administrator'];
-    if (isOrgAdmin) return ['Tenant Administrator', 'System Administrator'];
-    return ['Employee / Viewer'];
-  }, [user?.publicMetadata?.roles, isPlatformAdmin, isOrgAdmin]);
+    list.push(...metaRoles);
+
+    if (isPlatformAdmin) {
+      list.push('Platform Administrator', 'Tenant Administrator', 'System Administrator');
+    } else if (isOrgAdmin) {
+      list.push('Tenant Administrator', 'System Administrator');
+    }
+
+    if (assignedOperationalRoles.length > 0) {
+      list.push(...assignedOperationalRoles);
+    }
+
+    if (list.length === 0) {
+      list.push('Employee / Viewer');
+    }
+
+    return Array.from(new Set(list));
+  }, [user?.publicMetadata?.roles, isPlatformAdmin, isOrgAdmin, assignedOperationalRoles]);
+
+  const [activeRole, setActiveRole] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('erpez_active_role');
+      if (saved) return saved;
+    }
+    return isPlatformAdmin ? 'Platform Administrator' : isOrgAdmin ? 'Tenant Administrator' : 'System Administrator';
+  });
+
+  // Automatically sync activeRole when real operational roles load
+  useEffect(() => {
+    if (assignedOperationalRoles.length > 0 && !isPlatformAdmin && !isOrgAdmin) {
+      const saved = typeof window !== 'undefined' ? sessionStorage.getItem('erpez_active_role') : null;
+      if (!saved || saved === 'Employee / Viewer' || !assignedOperationalRoles.includes(saved)) {
+        const primary = assignedOperationalRoles[0];
+        setActiveRole(primary);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('erpez_active_role', primary);
+        }
+      }
+    }
+  }, [assignedOperationalRoles, isPlatformAdmin, isOrgAdmin]);
+
+  const switchActiveRole = useCallback((newRole: string) => {
+    setActiveRole(newRole);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('erpez_active_role', newRole);
+    }
+  }, []);
 
   const unifiedUser: UnifiedUser | null = useMemo(() => {
     if (!user) return null;
@@ -568,10 +741,12 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     email: unifiedUser?.email || null,
     firstName: user?.firstName || null,
     lastName: user?.lastName || null,
-    role: unifiedUser?.roles?.[0] || null,
+    role: activeRole,
     roles: unifiedUser?.roles || [],
+    activeRole,
+    switchActiveRole,
     tenantId: activeTenant?.id || null,
-    isSuperAdmin: Boolean(user?.publicMetadata?.isSuperAdmin) || isOrgAdmin,
+    isSuperAdmin: activeRole === 'Platform Administrator' ? true : (activeRole === 'System Administrator' || activeRole === 'Tenant Administrator' ? false : (Boolean(user?.publicMetadata?.isSuperAdmin) || isPlatformAdmin)),
     activeDevUser: '',
     login: () => {
       clerk.openSignIn();

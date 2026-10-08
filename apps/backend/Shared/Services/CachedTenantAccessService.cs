@@ -56,11 +56,25 @@ public class CachedTenantAccessService(
             ?? request.User.FindFirstValue("super_admin")
             ?? request.User.FindFirstValue("is_platform_admin");
         var roleClaim = request.User.FindFirstValue(ClaimTypes.Role) ?? request.User.FindFirstValue("role");
+        var userEmail = request.User.FindFirstValue(ClaimTypes.Email)
+            ?? request.User.FindFirstValue("email")
+            ?? request.User.FindFirstValue("primary_email_address");
+        var normalizedEmail = userEmail?.Trim().ToLowerInvariant();
+
+        var configuredPlatformEmails = (configuration["PlatformAdmin:Emails"]
+            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
+            ?? "jeanmaureal@gmail.com,superadmin@erpez.dev")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(e => e.ToLowerInvariant());
+
+        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) && configuredPlatformEmails.Contains(normalizedEmail);
+
         if ((bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) || 
             request.User.IsInRole("SuperAdmin") ||
             request.User.IsInRole("Platform Administrator") ||
             string.Equals(roleClaim, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(roleClaim, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            string.Equals(roleClaim, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
+            isPlatformAdminByEmail)
         {
             var superAdminContext = new TenantAccessContext(
                 request.TenantId,
