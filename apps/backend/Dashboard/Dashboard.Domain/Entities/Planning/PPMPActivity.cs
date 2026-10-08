@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// PPMP Activity - Junction table linking PPMP to LineItemBudgetActivity
 /// Represents activities included in the PPMP procurement plan
 /// </summary>
-public class PPMPActivity : BaseEntity
+public class PPMPActivity : TenantScopedEntity
 {
     public PPMPActivity() { }
     

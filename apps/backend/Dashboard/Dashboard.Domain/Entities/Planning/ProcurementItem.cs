@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents an item in the procurement catalog/master list.
 /// </summary>
-public class ProcurementItem : BaseEntity
+public class ProcurementItem : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

@@ -38,6 +38,8 @@ import {
   supplementalDialogOpenAtom,
   selectedPpmpForSupplementalAtom,
 } from '../../atoms/ppmpStateAtoms'
+import { usePermissions } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const useToggleFinal = createMutationHookFromTemplate(
   togglePpmpFinalizationRequest,
@@ -203,6 +205,10 @@ export const columns: ColumnDef<PPMP>[] = [
     id: 'actions',
     cell: ({ row }) => {
       const ppmp = row.original
+      const { hasPermission } = usePermissions()
+      const canUpdate = hasPermission(PERMISSIONS.Procurement.Ppmp.Update) || hasPermission(PERMISSIONS.Procurement.Ppmp.Manage)
+      const canDelete = hasPermission(PERMISSIONS.Procurement.Ppmp.Delete) || hasPermission(PERMISSIONS.Procurement.Ppmp.Manage)
+      const canManage = hasPermission(PERMISSIONS.Procurement.Ppmp.Manage)
       const navigate = useNavigate()
       const queryClient = useQueryClient()
       const setSelectedForDelete = useSetAtom(selectedPpmpForDeleteAtom)
@@ -351,7 +357,7 @@ export const columns: ColumnDef<PPMP>[] = [
               Export as PDF
             </DropdownMenuItem>
 
-            {isApproved && ppmp.ppmpType !== 'Supplemental' && !ppmp.sourcePPMPId && (
+            {canManage && isApproved && ppmp.ppmpType !== 'Supplemental' && !ppmp.sourcePPMPId && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -381,18 +387,22 @@ export const columns: ColumnDef<PPMP>[] = [
               </>
             )}
 
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleEdit}>
-              <FilePen className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={handleDelete}
-              className="text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
+            {(canUpdate || canDelete) && <DropdownMenuSeparator />}
+            {canUpdate && (
+              <DropdownMenuItem onClick={handleEdit}>
+                <FilePen className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+            )}
+            {canDelete && (
+              <DropdownMenuItem
+                onClick={handleDelete}
+                className="text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )

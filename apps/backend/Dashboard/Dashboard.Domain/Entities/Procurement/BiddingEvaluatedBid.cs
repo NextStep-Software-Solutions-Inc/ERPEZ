@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Child entity of BiddingEvaluation representing a single evaluated bid from a supplier.
 /// Maintains distinct EvaluatedBidPrice after arithmetic correction and scoring/ranking.
 /// </summary>
-public class BiddingEvaluatedBid : BaseEntity
+public class BiddingEvaluatedBid : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid BiddingEvaluationId { get; set; }

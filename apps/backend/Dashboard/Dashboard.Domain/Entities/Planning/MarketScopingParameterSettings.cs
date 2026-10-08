@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Market Scoping Parameter Settings - represents reusable parameter settings for market scoping.
 /// Stores master data for parameters that can be used across multiple market scoping instances.
 /// </summary>
-public class MarketScopingParameterSettings : BaseEntity
+public class MarketScopingParameterSettings : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

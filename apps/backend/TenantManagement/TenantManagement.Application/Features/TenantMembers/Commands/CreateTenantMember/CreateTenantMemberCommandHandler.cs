@@ -18,7 +18,8 @@ public class CreateTenantMemberCommandHandler(
     ICurrentUserService currentUser,
     IRoleAssignmentValidator roleAssignmentValidator,
     ITenantAuditService auditService,
-    IClerkInvitationService clerkInvitationService)
+    IClerkInvitationService clerkInvitationService,
+    Microsoft.Extensions.Configuration.IConfiguration configuration)
     : IRequestHandler<CreateTenantMemberCommand, ApiResponse<CreateTenantMemberResponse>>
 {
     public async Task<ApiResponse<CreateTenantMemberResponse>> Handle(CreateTenantMemberCommand command, CancellationToken cancellationToken)
@@ -95,9 +96,13 @@ public class CreateTenantMemberCommandHandler(
             ["invitationType"] = "tenant_member"
         };
 
+        var dashboardUrl = configuration["App:DashboardUrl"] ?? configuration["DashboardUrl"] ?? "http://localhost:3000";
+        var redirectUrl = $"{dashboardUrl.TrimEnd('/')}/v2/overview";
+
         var clerkInvitation = await clerkInvitationService.CreateInvitationAsync(
             normalizedEmail,
             metadata,
+            redirectUrl: redirectUrl,
             notify: true,
             ignoreExisting: true,
             ct: cancellationToken);

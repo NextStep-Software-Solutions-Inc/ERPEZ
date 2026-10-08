@@ -17,6 +17,16 @@ on:
         required: false
         default: 'Manual production release'
         type: string
+      run_migrations:
+        description: 'Execute transactional migration (production-tenant-backfill-and-migration.sql) with ON_ERROR_STOP on'
+        required: false
+        default: false
+        type: boolean
+      legacy_tenant_id:
+        description: 'Target legacy tenant GUID for backfill (if migrating single-tenant data)'
+        required: false
+        default: '01a0d69d-924b-762c-a774-523a30544619'
+        type: string
 
 env:
   CONTAINER_NAME: dashboard-api
@@ -91,6 +101,8 @@ jobs:
         path: |
           ${{ env.CONTAINER_NAME }}.tar.gz
           apps/backend/Dashboard/docker-compose.yml
+          scripts/migrations/production-tenant-backfill-and-migration.sql
+          scripts/migrations/run-production-migration.sh
         retention-days: 7
 
   deploy:
@@ -113,7 +125,7 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
-        source: "${{ env.CONTAINER_NAME }}.tar.gz,apps/backend/Dashboard/docker-compose.yml"
+        source: "${{ env.CONTAINER_NAME }}.tar.gz,apps/backend/Dashboard/docker-compose.yml,scripts/migrations/production-tenant-backfill-and-migration.sql,scripts/migrations/run-production-migration.sh"
         target: "/tmp"
 
     - name: Deploy on Production VPS
@@ -128,6 +140,28 @@ jobs:
           mkdir -p /opt/docker-stack/dashboard-api-prod
           mv /tmp/apps/backend/Dashboard/docker-compose.yml /opt/docker-stack/dashboard-api-prod/docker-compose.yml
           rm -rf /tmp/apps
+
+          # Pre-deployment transactional database migration (with ON_ERROR_STOP on)
+          if [ "${{ inputs.run_migrations }}" = "true" ]; then
+            echo "================================================================="
+            echo " Executing transactional migration with ON_ERROR_STOP on..."
+            echo "================================================================="
+            chmod +x /tmp/scripts/migrations/run-production-migration.sh
+            export DB_CONNECTION_STRING="${{ secrets.ERPEZ_DB_CONNECTION_STRING }}"
+            
+            bash /tmp/scripts/migrations/run-production-migration.sh \
+              --connection-string "${{ secrets.ERPEZ_DB_CONNECTION_STRING }}" \
+              --tenant-id "${{ inputs.legacy_tenant_id || '01a0d69d-924b-762c-a774-523a30544619' }}"
+
+            MIGRATION_STATUS=$?
+            if [ $MIGRATION_STATUS -ne 0 ]; then
+              echo "::error::Transactional database migration failed with status $MIGRATION_STATUS! Transaction rolled back. Halting deployment before container start."
+              rm -rf /tmp/scripts
+              exit $MIGRATION_STATUS
+            fi
+            echo "Transactional migration completed successfully."
+          fi
+          rm -rf /tmp/scripts
 
           # Load the new image
           docker load -i /tmp/${{ env.CONTAINER_NAME }}.tar.gz

@@ -5,7 +5,7 @@ using Sieve.Attributes;
 namespace ERPEZ.Domain.Entities.Procurement;
 
 /// <summary>Suppliers invited to canvass/bid on a given RFQ.</summary>
-public class RFQSupplier : BaseEntity
+public class RFQSupplier : TenantScopedEntity
 {
     public RFQSupplier() { }
 

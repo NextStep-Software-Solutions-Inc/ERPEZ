@@ -2,7 +2,7 @@ using ERPEZ.Domain.Common;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class KPIPerformanceMeasure : BaseEntity
+public class KPIPerformanceMeasure : TenantScopedEntity
 {
     public Guid KPIId { get; set; }
     public Guid PerformanceMeasureId { get; set; }

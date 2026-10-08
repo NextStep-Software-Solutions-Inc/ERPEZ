@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Junction entity representing the selection of a PPMP into an APP.
 /// Supports non-exclusive M:M relationship: same PPMP can be selected into multiple APPs.
 /// </summary>
-public class APPPPMP : BaseEntity
+public class APPPPMP : TenantScopedEntity
 {
     public APPPPMP() { }
 

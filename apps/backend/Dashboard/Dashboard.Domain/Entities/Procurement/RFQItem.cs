@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// to avoid trusting live joins through PRItem/PPMPItem/PurchaseRequest at read time —
 /// mirrors the snapshot convention used on APRItem / RFQItem in this codebase.
 /// </summary>
-public class RFQItem : BaseEntity
+public class RFQItem : TenantScopedEntity
 {
     public RFQItem() { }
 

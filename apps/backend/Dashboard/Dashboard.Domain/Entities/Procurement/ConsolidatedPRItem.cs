@@ -19,7 +19,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// but the MOP and AllowPartial are displayed and set per PRItem line in the UI.
 /// We therefore join at the PRItem level for granularity.
 /// </summary>
-public class ConsolidatedPRItem : BaseEntity
+public class ConsolidatedPRItem : TenantScopedEntity
 {
     public ConsolidatedPRItem() { }
 

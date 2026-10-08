@@ -22,4 +22,9 @@ public interface ITenantContextService
     /// Safe tenant governance and lifecycle context.
     /// </summary>
     TenantAccessContext? AccessContext { get; }
+
+    /// <summary>
+    /// The resolved tenancy deployment mode (SaaS vs OnPremise) for the active tenant.
+    /// </summary>
+    ERPEZ.Shared.Enums.TenancyMode TenancyMode { get; }
 }

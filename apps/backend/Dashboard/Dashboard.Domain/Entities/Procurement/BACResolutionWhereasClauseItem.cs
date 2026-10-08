@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Represents an ordered join entity linking a BACResolution to a BACResolutionWhereasClause.
 /// </summary>
-public class BACResolutionWhereasClauseItem : BaseEntity
+public class BACResolutionWhereasClauseItem : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid BACResolutionId { get; set; }

@@ -5,7 +5,7 @@ using ERPEZ.Domain.Entities.Planning;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
-public class PRItem : BaseEntity
+public class PRItem : TenantScopedEntity
 {
     public PRItem() { }
 

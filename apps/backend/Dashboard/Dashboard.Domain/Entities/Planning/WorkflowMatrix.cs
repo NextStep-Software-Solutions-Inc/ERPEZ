@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// DocumentType is nullable - if null, applies as general default for all document types.
 /// Uses Position-based approvals for organizational stability - positions are stable, personnel change.
 /// </summary>
-public class WorkflowMatrix : BaseEntity
+public class WorkflowMatrix : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FiscalYearId { get; set; }

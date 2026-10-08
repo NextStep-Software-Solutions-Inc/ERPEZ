@@ -29,8 +29,19 @@ public class UpdateAmsRoleDto
 
 public class AssignUserRolesDto
 {
-    public Guid UserId { get; set; }
+    public Guid? UserId { get; set; }
+    public string? Email { get; set; }
+    public string? FullName { get; set; }
+    public string? ExternalIdentityId { get; set; }
     public List<Guid> RoleIds { get; set; } = [];
+}
+
+public class UserRoleAssignmentSummaryDto
+{
+    public Guid UserId { get; set; }
+    public string? ExternalIdentityId { get; set; }
+    public string? Email { get; set; }
+    public List<string> Roles { get; set; } = [];
 }
 
 public class PermissionGroupDto

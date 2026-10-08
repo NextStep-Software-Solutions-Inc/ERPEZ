@@ -35,7 +35,7 @@ public static class DevTenantAndMemberSeeder
             "Super Administrator (Dev)",
             "superadmin@erpez.dev",
             TenantMemberRole.Admin,
-            ["Tenant Administrator"]
+            ["Tenant Administrator", "Platform Administrator"]
         ),
         new(
             Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"),

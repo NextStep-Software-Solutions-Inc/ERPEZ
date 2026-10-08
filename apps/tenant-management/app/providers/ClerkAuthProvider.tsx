@@ -133,14 +133,30 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
     }
   }, [isInitialized, isSignedIn, onInitialized]);
 
-  const roles = (clerkUser?.publicMetadata?.roles as string[]) ||
+  const userEmail = clerkUser?.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || '';
+  const configuredAdminEmails = (
+    (import.meta.env.VITE_PLATFORM_ADMIN_EMAILS as string | undefined) ||
+    'jeanmaureal@gmail.com,superadmin@erpez.dev'
+  )
+    .split(',')
+    .map((e: string) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  const isEmailAdmin = Boolean(userEmail && configuredAdminEmails.includes(userEmail));
+
+  const metadataRoles = (clerkUser?.publicMetadata?.roles as string[]) ||
     (clerkUser?.publicMetadata?.role ? [clerkUser.publicMetadata.role as string] : []);
-  const role = (clerkUser?.publicMetadata?.role as string) || roles[0] || null;
+  const roles = metadataRoles.length > 0
+    ? metadataRoles
+    : (isEmailAdmin ? ['Platform Administrator'] : []);
+
+  const role = (clerkUser?.publicMetadata?.role as string) || roles[0] || (isEmailAdmin ? 'Platform Administrator' : null);
   const tenantId = (clerkUser?.publicMetadata?.tenantId as string) ||
     (typeof window !== 'undefined' ? localStorage.getItem('erpez_tenant_id') : null) ||
     null;
 
   const isSuperAdmin = Boolean(
+    isEmailAdmin ||
     role === 'super-admin' ||
     role === 'platform_administrator' ||
     role === 'Platform Administrator' ||
@@ -161,6 +177,22 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
       }
     : null;
 
+  useEffect(() => {
+    if (clerkUser?.primaryEmailAddress?.emailAddress && typeof window !== 'undefined') {
+      try {
+        const email = clerkUser.primaryEmailAddress.emailAddress.toLowerCase().trim();
+        const previousEmail = localStorage.getItem('erpez_user_email');
+        if (previousEmail && previousEmail !== email) {
+          // User switched accounts: clear stale tenant selections and spectator sessions
+          localStorage.removeItem('erpez_spectating_tenant');
+          localStorage.removeItem('erpez_tenant_id');
+        }
+        localStorage.setItem('erpez_user_email', email);
+        sessionStorage.setItem('erpez_user_email', email);
+      } catch {}
+    }
+  }, [clerkUser?.primaryEmailAddress?.emailAddress]);
+
   const login = () => {
     clerk.openSignIn();
   };
@@ -169,6 +201,10 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
     clerk.signOut();
     try {
       localStorage.removeItem('erpez_auth_token');
+      localStorage.removeItem('erpez_spectating_tenant');
+      localStorage.removeItem('erpez_tenant_id');
+      localStorage.removeItem('erpez_user_email');
+      sessionStorage.removeItem('erpez_user_email');
     } catch {
       // Ignore
     }

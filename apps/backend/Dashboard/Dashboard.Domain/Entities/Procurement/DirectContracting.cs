@@ -5,7 +5,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
-public class DirectContracting : BaseEntity
+public class DirectContracting : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string DCNumber { get; set; } = string.Empty;

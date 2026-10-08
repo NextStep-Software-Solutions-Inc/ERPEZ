@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import PermissionCheck from '@/components/PermissionCheck'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const useDeleteWfp = createMutationHookFromTemplate(deleteWfpRequest)
 
@@ -142,8 +143,8 @@ export default function Toolbar<TData = unknown>({
           </DropdownMenu>
         )}
 
-        {selectedRowsCount > 0 && actions.includes('delete') && !readonly && (
-          <PermissionCheck action="delete" actions={actions}>
+        {selectedRowsCount > 0 && !readonly && (
+          <PermissionCheck permission={PERMISSIONS.Planning.Wfp.Delete}>
             <Button
               color="destructive"
               className="bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs"
@@ -154,8 +155,8 @@ export default function Toolbar<TData = unknown>({
           </PermissionCheck>
         )}
 
-        {!readonly && actions.includes('write') && (
-          <PermissionCheck action="write" actions={actions}>
+        {!readonly && (
+          <PermissionCheck permission={PERMISSIONS.Planning.Wfp.Create}>
             <Button
               className="bg-green-600 text-white hover:bg-green-700"
               onClick={() =>

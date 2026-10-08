@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents a position within an office/organizational unit.
 /// </summary>
-public class Position : BaseEntity
+public class Position : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Title { get; set; } = string.Empty;

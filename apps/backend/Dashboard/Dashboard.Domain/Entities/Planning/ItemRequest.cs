@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Used by offices to request addition of new items to procurement system
 /// After approval, can be converted to NonCSEItem
 /// </summary>
-public class ItemRequest : BaseEntity
+public class ItemRequest : TenantScopedEntity
 {
     public ItemRequest() { }
     

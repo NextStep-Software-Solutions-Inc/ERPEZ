@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Note: For self rating, the Evaluator Id is the DeliveryUnitId.  
 ///       For final rating, the EvaluatorId is the Planning user Id.
 /// </summary>
-public class OPCRActivityMOV : BaseEntity
+public class OPCRActivityMOV : TenantScopedEntity
 {
     public OPCRActivityMOV() { }
     

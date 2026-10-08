@@ -1,3 +1,4 @@
+using System.Security;
 using ERPEZ.Shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -6,9 +7,13 @@ namespace ERPEZ.Shared.Interceptors;
 
 /// <summary>
 /// Interceptor that automatically sets audit fields (CreatedAt, UpdatedAt, DeletedAt) and user tracking.
-/// Also implements soft delete functionality by marking entities as IsDeleted instead of hard deleting.
+/// Also enforces strict multi-tenant write protection: stamping TenantId on insert, immutability on update,
+/// and ownership validation on modification and deletion.
+/// Implements soft delete functionality by marking entities as IsDeleted instead of hard deleting.
 /// </summary>
-public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesInterceptor
+public class AuditingInterceptor(
+    ICurrentUserService currentUser,
+    ITenantRequestContext? tenantRequestContext = null) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
@@ -29,6 +34,20 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
         var userId = string.IsNullOrWhiteSpace(currentUser.UserId) ? "system" : currentUser.UserId;
         var now = DateTime.UtcNow;
 
+        Guid? activeTenantId = null;
+        if (tenantRequestContext?.IsResolved == true && tenantRequestContext.TenantId.HasValue)
+        {
+            activeTenantId = tenantRequestContext.TenantId.Value;
+        }
+        else
+        {
+            var currentTenantProp = context.GetType().GetProperty("CurrentTenantId");
+            if (currentTenantProp != null)
+            {
+                activeTenantId = (Guid?)currentTenantProp.GetValue(context);
+            }
+        }
+
         foreach (var entry in context.ChangeTracker.Entries())
         {
             var entity = entry.Entity;
@@ -36,8 +55,28 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
 
             var entityType = entity.GetType();
 
+            var isTenantScoped = entityType.GetInterfaces().Any(i => i.Name == "ITenantScopedEntity");
+
             if (entry.State == EntityState.Added)
             {
+                if (isTenantScoped)
+                {
+                    var tenantProp = entry.Property("TenantId");
+                    if (activeTenantId.HasValue && activeTenantId.Value != Guid.Empty)
+                    {
+                        tenantProp.CurrentValue = activeTenantId.Value;
+                    }
+                    else
+                    {
+                        var currentVal = (Guid?)tenantProp.CurrentValue;
+                        if (!currentVal.HasValue || currentVal.Value == Guid.Empty)
+                        {
+                            throw new SecurityException(
+                                $"Cannot insert tenant-scoped entity '{entityType.Name}' without an established tenant context.");
+                        }
+                    }
+                }
+
                 var createdAtProp = entityType.GetProperty("CreatedAt");
                 if (createdAtProp != null && createdAtProp.CanWrite)
                 {
@@ -68,6 +107,26 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
             }
             else if (entry.State == EntityState.Modified)
             {
+                if (isTenantScoped)
+                {
+                    var tenantProp = entry.Property("TenantId");
+                    if (tenantProp.IsModified && !Equals(tenantProp.OriginalValue, tenantProp.CurrentValue))
+                    {
+                        throw new SecurityException(
+                            $"TenantId on entity '{entityType.Name}' is immutable and cannot be modified.");
+                    }
+
+                    if (activeTenantId.HasValue && activeTenantId.Value != Guid.Empty)
+                    {
+                        var currentVal = (Guid?)tenantProp.CurrentValue;
+                        if (currentVal.HasValue && currentVal.Value != activeTenantId.Value)
+                        {
+                            throw new SecurityException(
+                                $"Unauthorized cross-tenant modification attempt on entity '{entityType.Name}'.");
+                        }
+                    }
+                }
+
                 var updatedAtProp = entityType.GetProperty("UpdatedAt");
                 if (updatedAtProp != null && updatedAtProp.CanWrite)
                 {
@@ -82,6 +141,20 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
             }
             else if (entry.State == EntityState.Deleted)
             {
+                if (isTenantScoped)
+                {
+                    if (activeTenantId.HasValue && activeTenantId.Value != Guid.Empty)
+                    {
+                        var tenantProp = entry.Property("TenantId");
+                        var currentVal = (Guid?)tenantProp.CurrentValue;
+                        if (currentVal.HasValue && currentVal.Value != activeTenantId.Value)
+                        {
+                            throw new SecurityException(
+                                $"Unauthorized cross-tenant deletion attempt on entity '{entityType.Name}'.");
+                        }
+                    }
+                }
+
                 var isDeletedProp = entityType.GetProperty("IsDeleted");
                 var allowHardDeleteProp = entityType.GetProperty("AllowHardDelete");
 

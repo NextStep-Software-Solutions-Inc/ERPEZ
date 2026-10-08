@@ -60,6 +60,9 @@
 # Generated TanStack Router file line endings
 apps/dashboard/src/routeTree.gen.ts text eol=crlf
 
+# Shell scripts must always use LF line endings
+*.sh text eol=lf
+
 ###############################################################################
 # Code-generated migration snapshots and designer files (EF Core, etc.)
 # Keeps PR review diffs focused strictly on intentional schema changes.

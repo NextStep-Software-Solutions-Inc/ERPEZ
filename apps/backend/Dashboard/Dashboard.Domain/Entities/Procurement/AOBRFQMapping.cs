@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Linking table between AOB and RFQ.
 /// </summary>
-public class AOBRFQMapping : BaseEntity
+public class AOBRFQMapping : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid AOBId { get; set; }

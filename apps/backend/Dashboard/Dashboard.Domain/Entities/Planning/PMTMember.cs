@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents a member of a Performance Management Team (PMT).
 /// </summary>
-public class PMTMember : BaseEntity
+public class PMTMember : TenantScopedEntity
 {
     /// <summary>
     /// Foreign key to the PMT entity.

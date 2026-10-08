@@ -369,7 +369,8 @@ public class AuthController(
         {
             Name = orgName,
             Description = $"Primary workspace for {firstName} {lastName}",
-            ProvisioningState = TenantProvisioningState.Pending,
+            TenancyMode = ERPEZ.Shared.Enums.TenancyMode.SaaS,
+            ProvisioningState = TenantProvisioningState.Ready,
             TenantSetting = new()
             {
                 BillingContactEmail = email,
@@ -377,13 +378,7 @@ public class AuthController(
                 BaseURL = "",
                 DbConnectionString = ""
             },
-            OperationalDatabase = new TenantOperationalDatabase
-            {
-                DatabaseServer = "localhost",
-                DatabaseName = $"erpez_tenant_{Guid.NewGuid():N}",
-                ProvisioningState = TenantProvisioningState.Pending,
-                RetryCount = 0
-            }
+            OperationalDatabase = null
         };
 
         var module = await unitOfWork.ModuleRepository.FindAsync(m => m.Key == "ams", cancellationToken);
@@ -431,8 +426,11 @@ public class AuthController(
         tenant.TenantMembers.Add(tenantMember);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // 5. Enqueue background provisioning job for operational tenant DB
-        backgroundJobClient?.Enqueue<ITenantDatabaseProvisioner>(p => p.ProvisionTenantDatabaseAsync(tenant.Id, CancellationToken.None));
+        // 5. Enqueue background provisioning job for operational tenant DB only for On-Premise dedicated DB tenants
+        if (tenant.TenancyMode == ERPEZ.Shared.Enums.TenancyMode.OnPremise)
+        {
+            backgroundJobClient?.Enqueue<ITenantDatabaseProvisioner>(p => p.ProvisionTenantDatabaseAsync(tenant.Id, CancellationToken.None));
+        }
 
         // 6. Generate signed JWT session
         var claims = new List<Claim>

@@ -16,8 +16,8 @@ export default [
   route("accept-invitation", "routes/protected/accept-invitation.tsx"),
 
   layout("components/layout/ProtectedLayout.tsx", [
-    layout("components/layout/RoleLayout.tsx", [
-      layout("components/layout/TenantProviderLayout.tsx", [
+    layout("components/layout/TenantProviderLayout.tsx", [
+      layout("components/layout/RoleLayout.tsx", [
         layout("components/layout/TenantLayout.tsx", [
           route("overview", "routes/protected/overview.tsx"),
           route("module", "routes/protected/module.tsx"),
@@ -29,20 +29,20 @@ export default [
           route("tenant-member", "routes/protected/tenant-member.tsx"),
           route("roles", "routes/protected/roles.tsx"),
         ]),
-      route("register-tenant", "routes/protected/register-tenant.tsx"),
-      route("plan", "routes/protected/plan.tsx"),
-      ]),
+        route("register-tenant", "routes/protected/register-tenant.tsx"),
+        route("plan", "routes/protected/plan.tsx"),
 
-
-      layout("components/layout/SuperAdminLayout.tsx", [
-        route("super-admin/overview", "routes/super-admin/overview.tsx"),
-        route(
-          "super-admin/tenant-management",
-          "routes/super-admin/tenant-management.tsx"
-        ),
-        route("super-admin/users", "routes/super-admin/users.tsx"),
-        route("super-admin/tenant/:id", "routes/protected/tenant/[id].tsx"),
-        route("super-admin/settings", "routes/super-admin/settings.tsx"),
+        layout("components/layout/SuperAdminLayout.tsx", [
+          route("super-admin", "routes/super-admin/redirect.tsx"),
+          route("super-admin/overview", "routes/super-admin/overview.tsx"),
+          route(
+            "super-admin/tenant-management",
+            "routes/super-admin/tenant-management.tsx"
+          ),
+          route("super-admin/users", "routes/super-admin/users.tsx"),
+          route("super-admin/tenant/:id", "routes/protected/tenant/[id].tsx"),
+          route("super-admin/settings", "routes/super-admin/settings.tsx"),
+        ]),
       ]),
     ]),
   ]),

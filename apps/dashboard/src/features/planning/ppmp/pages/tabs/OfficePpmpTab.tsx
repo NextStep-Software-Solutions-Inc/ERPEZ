@@ -20,6 +20,8 @@ import type { PPMPManagementSearch } from '@/routes/v2/(planning)/ppmp/constants
 import { DataTable } from '../../tables/office-level-table/data-table'
 import { columns } from '../../tables/office-level-table/columns'
 import { usePpmpFormData } from '../../hooks/usePpmpFormData'
+import { usePermissions } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const usePpmps = createQueryHookFromTemplate(getPPMPsRequest)
 
@@ -40,6 +42,8 @@ export default function OfficePpmpTab({
   )
   const [selectedSupplementalPpmp] = useAtom(selectedPpmpForSupplementalAtom)
   const { offices, fiscalYears, libs } = usePpmpFormData({ enabled: true })
+  const { hasPermission } = usePermissions()
+  const canCreatePpmp = hasPermission(PERMISSIONS.Procurement.Ppmp.Create) || hasPermission(PERMISSIONS.Procurement.Ppmp.Manage)
 
   // 1. Paginated Table Filters
   const filterParts = [
@@ -137,7 +141,7 @@ export default function OfficePpmpTab({
         <DataTable
           columns={columns}
           data={ppmps?.data ?? []}
-          onCreateNew={() => setCreateOpen(true)}
+          onCreateNew={canCreatePpmp ? () => setCreateOpen(true) : undefined}
           searchParams={searchParams}
           handleUpdateSearch={handleUpdateSearch}
           pageCount={ppmps?.totalPages ?? ppmps?.totalPageNumber ?? 1}

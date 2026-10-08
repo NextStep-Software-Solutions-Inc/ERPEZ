@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Items not found in the CSE master list
 /// Can be created from approved ItemRequests or added manually
 /// </summary>
-public class NonCSEItem : BaseEntity
+public class NonCSEItem : TenantScopedEntity
 {
     public NonCSEItem() { }
     

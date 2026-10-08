@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents a generic clause (Whereas, NowTherefore, Resolved) used in BAC resolutions.
 /// </summary>
-public class ResolutionClause : BaseEntity
+public class ResolutionClause : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;
