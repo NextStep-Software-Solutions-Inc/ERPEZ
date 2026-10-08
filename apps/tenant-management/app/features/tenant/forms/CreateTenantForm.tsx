@@ -2,7 +2,6 @@ import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { Checkbox } from "~/components/ui/checkbox";
 import { createMutationHookFromTemplate } from "erpez-shared-lib";
 import { createTenantRequest } from "../handlers/createTenantRequest";
 import { type Tenant } from "../type/Tenant";
@@ -16,16 +15,10 @@ import FieldInfo from "~/components/FieldInfo";
 import { cn } from "~/lib/utils";
 
 // Keep the schema input shape identical to the form's defaultValues.
-// Using `.default()` makes the input type optional which caused a mismatch
-// with the form expecting `onPremise: boolean` (non-optional). Make it
-// required here to align types.
 const createTenantSchema = z.object({
     name: z.string()
         .min(2, "Name must be at least 2 characters")
         .max(100, "Name cannot exceed 100 characters"),
-    onPremise: z.boolean({
-        message: "Please specify if the tenant is on-premise",
-    }),
     billingContactEmail: z.string()
         .email("Please enter a valid email address"),
     description: z.string(),
@@ -44,7 +37,6 @@ export default function CreateTenantForm({ onCreated, onClose, gradientButton }:
     const form = useForm({
         defaultValues: {
             name: '',
-            onPremise: false,
             billingContactEmail: '',
             description: '',
         },
@@ -56,7 +48,10 @@ export default function CreateTenantForm({ onCreated, onClose, gradientButton }:
             toast.promise(
                 mutateAsync({
                     pathParams: {},
-                    payload: values.value
+                    payload: {
+                        ...values.value,
+                        onPremise: false,
+                    }
                 }, {
                     onSuccess(data) {
                         invalidateQueries(queryClient, "/tenants");
@@ -139,20 +134,6 @@ export default function CreateTenantForm({ onCreated, onClose, gradientButton }:
                         onBlur={field.handleBlur}
                     />
                     <FieldInfo field={field} />
-                </div>
-            )} />
-            <form.Field name="onPremise" children={(field) => (
-                <div className="flex items-start flex-row space-x-2 min-h-[3rem]">
-                    <Checkbox
-                        checked={!!field.state.value}
-                        onCheckedChange={(v) => field.handleChange(Boolean(v))}
-                        id={field.name}
-                        className="mt-1 border-gray-400"
-                    />
-                    <div className="flex-1 flex flex-col">
-                        <Label htmlFor={field.name} className="text-sm font-medium">On Premise <span className="text-red-500">*</span></Label>
-                        <FieldInfo field={field} />
-                    </div>
                 </div>
             )} />
 
