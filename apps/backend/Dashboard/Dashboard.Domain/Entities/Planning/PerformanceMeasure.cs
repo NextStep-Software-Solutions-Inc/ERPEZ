@@ -2,7 +2,7 @@ using ERPEZ.Domain.Common;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class PerformanceMeasure : BaseEntity
+public class PerformanceMeasure : TenantScopedEntity
 {
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }

@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Child entity of BiddingEvaluatedBid representing the post-qualification verification for that specific ranked bidder.
 /// Independently auditable for each ranked bidder (failed rank #1 does not mutate; next rank gets a distinct record).
 /// </summary>
-public class BiddingPostQualification : BaseEntity
+public class BiddingPostQualification : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid BiddingEvaluatedBidId { get; set; }

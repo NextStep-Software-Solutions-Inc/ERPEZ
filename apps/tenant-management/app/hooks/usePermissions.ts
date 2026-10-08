@@ -4,7 +4,7 @@ import { useClerkAuth } from '~/providers/ClerkAuthProvider';
 import { useTenant } from '~/providers/TenantProvider';
 
 export function usePermissions() {
-  const { isAuthenticated, isInitialized } = useClerkAuth();
+  const { isAuthenticated, isInitialized, isSuperAdmin } = useClerkAuth();
   const { tenant } = useTenant();
 
   const {
@@ -24,20 +24,24 @@ export function usePermissions() {
   const permissions = new Set<string>(permissionsData || []);
 
   const hasPermission = (permission: string): boolean => {
+    if (isSuperAdmin) return true;
     return permissions.has(permission);
   };
 
   const hasAnyPermission = (requiredPermissions: string[]): boolean => {
+    if (isSuperAdmin) return true;
     if (requiredPermissions.length === 0) return true;
     return requiredPermissions.some((p) => permissions.has(p));
   };
 
   const hasAllPermissions = (requiredPermissions: string[]): boolean => {
+    if (isSuperAdmin) return true;
     if (requiredPermissions.length === 0) return true;
     return requiredPermissions.every((p) => permissions.has(p));
   };
 
   const isPlatformAdmin =
+    Boolean(isSuperAdmin) ||
     permissions.has('platform.tenants.manage') ||
     permissions.has('platform.users.manage') ||
     permissions.has('platform.settings.manage');

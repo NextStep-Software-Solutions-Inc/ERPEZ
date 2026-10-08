@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents a personnel assignment to a position.
 /// </summary>
-public class PersonnelPosition : BaseEntity
+public class PersonnelPosition : TenantScopedEntity
 {
     /// <summary>
     /// Foreign key to the User entity.

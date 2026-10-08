@@ -3,7 +3,7 @@ using System;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
-public class PurchaseOrderItem : BaseEntity
+public class PurchaseOrderItem : TenantScopedEntity
 {
     public Guid PurchaseOrderId { get; set; }
     public Guid SourceItemId { get; set; }

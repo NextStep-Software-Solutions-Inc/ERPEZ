@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class Transaction : BaseEntity
+public class Transaction : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FundSourceId { get; set; }

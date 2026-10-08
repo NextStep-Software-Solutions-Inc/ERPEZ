@@ -73,6 +73,7 @@ export default function Toolbar<TData = any>({ table, showColumnVisibility = tru
                         <SelectItem value="All">All Status</SelectItem>
                         <SelectItem value="Active">Active</SelectItem>
                         <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Expired">Expired</SelectItem>
                         <SelectItem value="Disabled">Disabled</SelectItem>
                     </SelectContent>
                 </Select>

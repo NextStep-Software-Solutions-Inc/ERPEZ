@@ -19,6 +19,13 @@ import { SuperAdminSidebarHeader } from "./SuperAdminSidebarHeader"
 import { usePermissions } from "~/hooks/usePermissions"
 import { useClerkAuth } from "~/providers/ClerkAuthProvider"
 import { ArrowLeft } from "lucide-react"
+import * as LucideIcons from "lucide-react"
+
+const getIcon = (iconName?: string) => {
+  if (!iconName) return null;
+  const IconComponent = (LucideIcons as any)[iconName];
+  return IconComponent ? <IconComponent className="w-4 h-4 shrink-0" /> : null;
+};
 
 export function SuperAdminAppSidebar({ tenant, tenantOrganization, ...props }: { tenant?: string; tenantOrganization?: string } & React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
@@ -59,12 +66,13 @@ export function SuperAdminAppSidebar({ tenant, tenantOrganization, ...props }: {
                         <SidebarMenuButton asChild>
                           <Link
                             to={`/${link.url}`}
-                            className={`transition-colors py-6 ${isActive
+                            className={`transition-colors py-6 flex items-center gap-3 ${isActive
                               ? "text-white font-semibold rounded-lg bg-linear-to-l from-(--button-green)/70 to-(--button-blue)/70 p-4"
-                              : "text-gray-700 "
+                              : "text-gray-700 hover:bg-slate-100"
                               }`}
                           >
-                            {link.title}
+                            {getIcon(link.icon)}
+                            <span>{link.title}</span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>

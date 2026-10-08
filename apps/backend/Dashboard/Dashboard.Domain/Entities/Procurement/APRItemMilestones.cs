@@ -11,7 +11,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// the actual procurement activity schedule for that specific requested purchase
 /// (shown as "4 milestones set" badge, Image 7/10).
 /// </summary>
-public class APRItemMilestone : BaseEntity
+public class APRItemMilestone : TenantScopedEntity
 {
     public APRItemMilestone() { }
 

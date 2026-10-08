@@ -71,6 +71,20 @@ public class AcceptInvitationCommandHandler(
             throw new ForbiddenException($"The authenticated account email '{authenticatedEmail}' does not match the invitation email address.");
         }
 
+        // 5b. Verify that this external identity is not already bound to another member in this workspace
+        var existingWithSameIdentity = await unitOfWork.TenantMemberRepository.Query()
+            .FirstOrDefaultAsync(m => m.TenantId == member.TenantId &&
+                                      m.Provider == member.Provider &&
+                                      m.ExternalIdentityId == authenticatedExternalId &&
+                                      m.Id != member.Id &&
+                                      !m.IsDeleted, cancellationToken);
+
+        if (existingWithSameIdentity != null)
+        {
+            throw new ConflictException(
+                $"The authenticated account is already a member of this workspace ({existingWithSameIdentity.Email}). Please sign out and sign in with the invited email address.");
+        }
+
         // 6. Bind external identity, activate, invalidate token
         member.ExternalIdentityId = authenticatedExternalId;
         member.UserId = authenticatedExternalId;

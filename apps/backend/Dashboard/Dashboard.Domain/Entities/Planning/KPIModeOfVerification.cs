@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class KPIModeOfVerification : BaseEntity
+public class KPIModeOfVerification : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid KPIId { get; set; }

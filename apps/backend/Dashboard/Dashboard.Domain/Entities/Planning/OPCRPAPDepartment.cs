@@ -2,7 +2,7 @@ using ERPEZ.Domain.Common;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class OPCRPAPDepartment : BaseEntity
+public class OPCRPAPDepartment : TenantScopedEntity
 {
     public Guid OPCRActivityId { get; set; }
     public Guid OfficeId { get; set; }

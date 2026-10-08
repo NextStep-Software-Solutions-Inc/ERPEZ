@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
-public class BACMember : BaseEntity
+public class BACMember : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string FullName { get; set; } = string.Empty;

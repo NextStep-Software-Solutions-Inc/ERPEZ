@@ -51,14 +51,34 @@ public class CachedTenantAccessService(
             return TenantAccessResult.Fail($"API host '{request.ApiHost}' is not authorized.", "API_HOST_VIOLATION", 403);
         }
 
-        // 3. SuperAdmin Global Access
+        // 3. SuperAdmin / Platform Administrator Global Access
         var isSuperAdminClaim = request.User.FindFirstValue("is_super_admin")
-            ?? request.User.FindFirstValue("super_admin");
-        if ((bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) || request.User.IsInRole("SuperAdmin"))
+            ?? request.User.FindFirstValue("super_admin")
+            ?? request.User.FindFirstValue("is_platform_admin");
+        var roleClaim = request.User.FindFirstValue(ClaimTypes.Role) ?? request.User.FindFirstValue("role");
+        var userEmail = request.User.FindFirstValue(ClaimTypes.Email)
+            ?? request.User.FindFirstValue("email")
+            ?? request.User.FindFirstValue("primary_email_address");
+        var normalizedEmail = userEmail?.Trim().ToLowerInvariant();
+
+        var configuredPlatformEmails = (configuration["PlatformAdmin:Emails"]
+            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
+            ?? "jeanmaureal@gmail.com,superadmin@erpez.dev")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(e => e.ToLowerInvariant());
+
+        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) && configuredPlatformEmails.Contains(normalizedEmail);
+
+        if ((bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) || 
+            request.User.IsInRole("SuperAdmin") ||
+            request.User.IsInRole("Platform Administrator") ||
+            string.Equals(roleClaim, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(roleClaim, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
+            isPlatformAdminByEmail)
         {
             var superAdminContext = new TenantAccessContext(
                 request.TenantId,
-                "SuperAdmin Workspace",
+                "Platform Administrator Workspace",
                 TenantProvisioningState.Ready,
                 "*",
                 "Active");
@@ -90,7 +110,8 @@ public class CachedTenantAccessService(
                     t."Name" as tenant_name, 
                     t."IsDisabled" as tenant_is_disabled, 
                     t."ProvisioningState"::text as tenant_provisioning_state, 
-                    COALESCE(ts."AllowedDomain", 'localhost') as allowed_domain
+                    COALESCE(ts."AllowedDomain", 'localhost') as allowed_domain,
+                    COALESCE(t."TenancyMode"::text, 'SaaS') as tenancy_mode
                 FROM "TenantMembers" tm
                 JOIN "Tenants" t ON tm."TenantId" = t."Id"
                 LEFT JOIN "TenantSettings" ts ON ts."TenantId" = t."Id" AND ts."IsDeleted" = false
@@ -115,7 +136,8 @@ public class CachedTenantAccessService(
                         "Development Workspace",
                         TenantProvisioningState.Ready,
                         "localhost",
-                        "Active");
+                        "Active",
+                        TenancyMode.SaaS);
                     return TenantAccessResult.Success(devContext);
                 }
 
@@ -128,6 +150,7 @@ public class CachedTenantAccessService(
             var tenantIsDisabled = reader.GetBoolean(3);
             var provisioningStateStr = reader.GetString(4);
             var allowedDomain = reader.GetString(5);
+            var tenancyModeStr = reader.IsDBNull(6) ? "SaaS" : reader.GetString(6);
 
             if (memberIsDeleted || (!string.Equals(memberStatus, "Active", StringComparison.OrdinalIgnoreCase) && memberStatus != "1"))
             {
@@ -149,12 +172,17 @@ public class CachedTenantAccessService(
                 ? parsedState
                 : TenantProvisioningState.Ready;
 
+            var tenancyMode = Enum.TryParse<TenancyMode>(tenancyModeStr, true, out var parsedMode)
+                ? parsedMode
+                : TenancyMode.SaaS;
+
             var accessContext = new TenantAccessContext(
                 request.TenantId,
                 tenantName,
                 provState,
                 allowedDomain,
-                "Active");
+                "Active",
+                tenancyMode);
 
             var successResult = TenantAccessResult.Success(accessContext);
             cache.Set(cacheKey, successResult, TimeSpan.FromMinutes(5));

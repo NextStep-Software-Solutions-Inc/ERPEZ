@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using ERPEZ.Application.Common.Dtos.AMS;
+using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.AMS;
 using ERPEZ.Infrastructure.Persistence;
 using ERPEZ.Shared.Authorization;
@@ -16,7 +18,8 @@ namespace ERPEZ.Api.Controllers.AMS;
 [Authorize]
 public class AmsRolesController(
     ApplicationDbContext dbContext,
-    IUserAuthorizationService authorizationService) : ControllerBase
+    IUserAuthorizationService authorizationService,
+    IUserProvisioningService userProvisioningService) : ControllerBase
 {
     [HttpGet]
     [HasPermission(Permissions.Admin.rolesManage)]
@@ -259,51 +262,43 @@ public class AmsRolesController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AssignUserRoles([FromBody] AssignUserRolesDto request, CancellationToken cancellationToken)
     {
-        var user = await dbContext.Users!
-            .Include(u => u.RoleAssignments)
-            .FirstOrDefaultAsync(u => u.Id == request.UserId && !u.IsDeleted, cancellationToken);
+        var (success, errorMessage) = await userProvisioningService.AssignUserRolesAsync(
+            request,
+            User.Identity?.Name ?? "Admin",
+            cancellationToken);
 
-        if (user == null)
+        if (!success)
         {
-            return BadRequest(ApiResponse<bool>.Fail("User not found."));
-        }
-
-        // Remove existing assignments
-        if (user.RoleAssignments.Count > 0)
-        {
-            dbContext.UserRoleAssignments!.RemoveRange(user.RoleAssignments);
-        }
-
-        // Add new assignments
-        if (request.RoleIds != null && request.RoleIds.Count > 0)
-        {
-            var validRoleIds = await dbContext.AmsRoles!
-                .Where(r => request.RoleIds.Contains(r.Id) && !r.IsDeleted && r.IsActive)
-                .Select(r => r.Id)
-                .ToListAsync(cancellationToken);
-
-            foreach (var roleId in validRoleIds)
-            {
-                await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.Id,
-                    RoleId = roleId,
-                    AssignedAt = DateTime.UtcNow,
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = User.Identity?.Name ?? "Admin"
-                }, cancellationToken);
-            }
-        }
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        if (!string.IsNullOrWhiteSpace(user.ExternalIdentityId))
-        {
-            authorizationService.InvalidateUserPermissions(user.ExternalIdentityId, null);
+            return BadRequest(ApiResponse<bool>.Fail(errorMessage ?? "Failed to assign roles."));
         }
 
         return Ok(ApiResponse<bool>.Success(true));
+    }
+
+    [HttpGet("assignments")]
+    [HasPermission(Permissions.Admin.rolesManage)]
+    [ProducesResponseType(typeof(ApiResponse<List<UserRoleAssignmentSummaryDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllRoleAssignments(CancellationToken cancellationToken)
+    {
+        var usersWithRoles = await dbContext.Users!
+            .AsNoTracking()
+            .Include(u => u.RoleAssignments)
+                .ThenInclude(ra => ra.Role)
+            .Where(u => !u.IsDeleted)
+            .Select(u => new UserRoleAssignmentSummaryDto
+            {
+                UserId = u.Id,
+                ExternalIdentityId = u.ExternalIdentityId,
+                Email = u.Email,
+                Roles = u.RoleAssignments
+                    .Where(ra => !ra.IsDeleted && ra.Role != null && !ra.Role.IsDeleted)
+                    .Select(ra => ra.Role!.Name)
+                    .Distinct()
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(ApiResponse<List<UserRoleAssignmentSummaryDto>>.Success(usersWithRoles));
     }
 
     [HttpGet("users/{userId:guid}")]
@@ -326,6 +321,61 @@ public class AmsRolesController(
             .ToListAsync(cancellationToken);
 
         return Ok(ApiResponse<List<AmsRoleDto>>.Success(roles));
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<List<string>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyOperationalRoles(CancellationToken cancellationToken)
+    {
+        var externalId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? User.FindFirstValue("primary_email_address");
+        if (string.IsNullOrWhiteSpace(email) && Request.Headers.TryGetValue("X-User-Email", out var emailHeader))
+        {
+            email = emailHeader.FirstOrDefault();
+        }
+        var normalizedEmail = email?.Trim().ToLowerInvariant();
+
+        if (string.IsNullOrWhiteSpace(externalId) && string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            return Ok(ApiResponse<List<string>>.Success([]));
+        }
+
+        // Canonical user lookup: prioritize externalId, fallback to email
+        ERPEZ.Domain.Entities.Planning.User? user = null;
+        if (!string.IsNullOrWhiteSpace(externalId))
+        {
+            user = await dbContext.Users!
+                .AsNoTracking()
+                .Include(u => u.RoleAssignments!)
+                    .ThenInclude(ra => ra.Role)
+                .FirstOrDefaultAsync(u => !u.IsDeleted && u.IsActive && u.ExternalIdentityId == externalId, cancellationToken);
+        }
+
+        if (user == null && !string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            user = await dbContext.Users!
+                .AsNoTracking()
+                .Include(u => u.RoleAssignments!)
+                    .ThenInclude(ra => ra.Role)
+                .FirstOrDefaultAsync(u => !u.IsDeleted && u.IsActive && u.Email.ToLower() == normalizedEmail, cancellationToken);
+        }
+
+        if (user == null)
+        {
+            return Ok(ApiResponse<List<string>>.Success([]));
+        }
+
+        var roles = user.RoleAssignments?
+            .Where(ua => !ua.IsDeleted &&
+                         ua.Role != null &&
+                         !ua.Role.IsDeleted &&
+                         ua.Role.IsActive)
+            .Select(ua => ua.Role!.Name)
+            .Distinct()
+            .ToList() ?? [];
+
+        return Ok(ApiResponse<List<string>>.Success(roles));
     }
 
     private static string Capitalize(string text)

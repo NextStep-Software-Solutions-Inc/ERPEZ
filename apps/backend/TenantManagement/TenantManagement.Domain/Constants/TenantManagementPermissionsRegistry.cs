@@ -22,7 +22,10 @@ public static class PlatformPermissions
         settingsManage,
         subscriptionsManage,
         licensesManage,
-        auditLogsView
+        auditLogsView,
+        "admin.tenants.manage",
+        "admin.system.admin.manage",
+        "admin.system.admin.view"
     };
 
     public static readonly IReadOnlySet<string> auditor = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -77,7 +80,6 @@ public static class TenantPermissions
         licensesManage,
         modulesView,
         modulesManage,
-
         // Cross-domain aliases for backward compatibility with shared Admin permissions
         ERPEZ.Shared.Constants.Permissions.Admin.rolesManage,
         ERPEZ.Shared.Constants.Permissions.Admin.membersManage,
@@ -130,6 +132,12 @@ public static class TenantManagementPermissionsRegistry
 
             // Tenant Scope Roles
             ["Tenant Administrator"] = TenantPermissions.all,
+            ["TenantAdmin"] = TenantPermissions.all,
+            ["System Administrator"] = TenantPermissions.all,
+            ["Workspace Admin"] = TenantPermissions.all,
+            ["Org Admin"] = TenantPermissions.all,
+            ["admin"] = TenantPermissions.all,
+            ["Owner"] = TenantPermissions.all,
             ["Billing Administrator"] = TenantPermissions.billingAdmin,
             ["Tenant Auditor"] = TenantPermissions.auditor,
             ["Tenant Member"] = TenantPermissions.member,

@@ -15,6 +15,8 @@ public class Tenant : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public ERPEZ.Shared.Enums.TenantProvisioningState ProvisioningState { get; set; } = ERPEZ.Shared.Enums.TenantProvisioningState.Ready;
     [Sieve(CanFilter = true, CanSort = true)]
+    public ERPEZ.Shared.Enums.TenancyMode TenancyMode { get; set; } = ERPEZ.Shared.Enums.TenancyMode.SaaS;
+    [Sieve(CanFilter = true, CanSort = true)]
     public ERPEZ.Shared.Enums.IdentityProvider AuthProvider { get; set; } = ERPEZ.Shared.Enums.IdentityProvider.Keycloak;
     [Sieve(CanFilter = true, CanSort = true)]
     public string? ExternalOrgId { get; set; }

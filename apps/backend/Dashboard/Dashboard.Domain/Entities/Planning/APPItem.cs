@@ -10,7 +10,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Individual items in the Annual Procurement Plan
 /// Links to PPMP items and includes procurement strategy details
 /// </summary>
-public class APPItem : BaseEntity
+public class APPItem : TenantScopedEntity
 {
     public APPItem() { }
     

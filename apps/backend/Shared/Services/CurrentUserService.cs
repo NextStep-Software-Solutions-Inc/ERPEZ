@@ -1,13 +1,16 @@
 using System.Security.Claims;
 using ERPEZ.Shared.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace ERPEZ.Shared.Services;
 
 /// <summary>
 /// Default implementation of ICurrentUserService reading security claims from HttpContext.
 /// </summary>
-public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICurrentUserService
+public sealed class CurrentUserService(
+    IHttpContextAccessor httpContextAccessor,
+    IConfiguration? configuration = null) : ICurrentUserService
 {
     private const string claimOfficeId = "office_id";
 
@@ -16,9 +19,32 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
 
     public string? UserId => ExternalIdentityId;
 
-    public string? Email => httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email)
-        ?? httpContextAccessor.HttpContext?.User?.FindFirstValue("email")
-        ?? httpContextAccessor.HttpContext?.User?.FindFirstValue("primary_email_address");
+    public string? Email
+    {
+        get
+        {
+            var user = httpContextAccessor.HttpContext?.User;
+            var claimEmail = user?.FindFirstValue(ClaimTypes.Email)
+                ?? user?.FindFirstValue("email")
+                ?? user?.FindFirstValue("primary_email_address");
+
+            if (!string.IsNullOrWhiteSpace(claimEmail))
+            {
+                return claimEmail;
+            }
+
+            if (httpContextAccessor.HttpContext?.Request.Headers.TryGetValue("X-User-Email", out var emailHeader) == true)
+            {
+                var val = emailHeader.FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(val))
+                {
+                    return val.Trim();
+                }
+            }
+
+            return null;
+        }
+    }
 
     public string? Username => httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Name)
         ?? httpContextAccessor.HttpContext?.User?.FindFirstValue("preferred_username")
@@ -66,24 +92,39 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
             if (user == null) return false;
 
             var claimVal = user.FindFirstValue("is_super_admin") 
-                ?? user.FindFirstValue("super_admin");
+                ?? user.FindFirstValue("super_admin")
+                ?? user.FindFirstValue("is_platform_admin");
             if (bool.TryParse(claimVal, out var isSuper) && isSuper)
             {
                 return true;
             }
 
-            var email = Email;
-            if (!string.IsNullOrEmpty(email) &&
-                (email.Equals("superadmin@erpez.dev", StringComparison.OrdinalIgnoreCase) ||
-                 email.Equals("admin@erpez.dev", StringComparison.OrdinalIgnoreCase) ||
-                 email.Equals("tabasan.louiejayb@gmail.com", StringComparison.OrdinalIgnoreCase)))
+            if (user.IsInRole("SuperAdmin") || 
+                user.IsInRole("Platform Administrator") ||
+                user.IsInRole("platform_administrator") ||
+                string.Equals(user.FindFirstValue(ClaimTypes.Role), "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(user.FindFirstValue("role"), "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(user.FindFirstValue("role"), "platform_administrator", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
 
-            return user.IsInRole("SuperAdmin") || 
-                   user.IsInRole("Platform Administrator") || 
-                   user.IsInRole("platform_administrator");
+            var email = Email?.Trim().ToLowerInvariant();
+            if (!string.IsNullOrEmpty(email))
+            {
+                var configuredPlatformEmails = (configuration?["PlatformAdmin:Emails"] 
+                    ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
+                    ?? "jeanmaureal@gmail.com,superadmin@erpez.dev,admin@erpez.dev,tabasan.louiejayb@gmail.com")
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(e => e.ToLowerInvariant());
+
+                if (configuredPlatformEmails.Contains(email))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 

@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Represents a snapshot of KPI for a specific fiscal year. 
 /// Cloned from Master KPI during activation to ensure immutability.
 /// </summary>
-public class FYActiveKPI : BaseEntity
+public class FYActiveKPI : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FiscalYearId { get; set; }

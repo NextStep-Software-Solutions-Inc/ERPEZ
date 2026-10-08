@@ -12,5 +12,6 @@ public record TenantAccessContext(
     string TenantName,
     TenantProvisioningState ProvisioningState,
     string AllowedDomain,
-    string LicenseStatus
+    string LicenseStatus,
+    TenancyMode TenancyMode = TenancyMode.SaaS
 );

@@ -453,6 +453,12 @@ export function KeycloakProvider({
     authReady: authState === 'authenticated',
     tenantContextReady: tenantState === 'resolved',
     user: unifiedUser,
+    workspaceMembers: [],
+    workspaceInvitations: [],
+    inviteWorkspaceMember: async () => {
+      throw new Error('Workspace member invitation is only available in SaaS / Clerk mode.');
+    },
+    revokeWorkspaceInvitation: async () => {},
     activeTenant,
     availableTenants,
     switchTenant,
@@ -472,6 +478,8 @@ export function KeycloakProvider({
     lastName,
     role: roles[0] || null,
     roles,
+    activeRole: roles[0] || 'User',
+    switchActiveRole: () => {},
     tenantId: activeTenant?.id || tenantId,
     isSuperAdmin,
     activeDevUser,

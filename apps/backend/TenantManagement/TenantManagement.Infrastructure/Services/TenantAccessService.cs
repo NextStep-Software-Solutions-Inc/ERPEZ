@@ -8,6 +8,8 @@ using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
+using Microsoft.Extensions.Configuration;
+
 namespace ERPEZ.TenantManagement.Infrastructure.Services;
 
 /// <summary>
@@ -19,7 +21,8 @@ public class TenantAccessService(
     ApplicationDbContext dbContext,
     ILicenseService licenseService,
     IApiHostValidator apiHostValidator,
-    IClientOriginMatcher clientOriginMatcher) : ITenantAccessService
+    IClientOriginMatcher clientOriginMatcher,
+    IConfiguration? configuration = null) : ITenantAccessService
 {
     public async Task<TenantAccessResult> EvaluateAccessAsync(
         TenantAccessRequest request,
@@ -65,27 +68,57 @@ public class TenantAccessService(
         }
 
         // 3. Server-side Membership Authorization (sub -> TenantMember -> TenantId)
-        var member = await dbContext.TenantMembers!
-            .AsNoTracking()
-            .Where(tm => tm.TenantId == request.TenantId &&
-                         (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId))
-            .Select(tm => new { tm.Status, tm.IsDeleted, tm.Provider })
-            .FirstOrDefaultAsync(cancellationToken);
+        var isSuperAdminClaim = request.User.FindFirstValue("is_super_admin")
+            ?? request.User.FindFirstValue("super_admin")
+            ?? request.User.FindFirstValue("is_platform_admin");
+        var roleClaim = request.User.FindFirstValue(ClaimTypes.Role) ?? request.User.FindFirstValue("role");
+        var userEmail = request.User.FindFirstValue(ClaimTypes.Email)
+            ?? request.User.FindFirstValue("email")
+            ?? request.User.FindFirstValue("primary_email_address");
+        var normalizedEmail = userEmail?.Trim().ToLowerInvariant();
 
-        if (member == null)
-        {
-            return TenantAccessResult.Fail(
-                "Caller is not an active authorized member of this tenant.",
-                "TENANT_MEMBERSHIP_REQUIRED",
-                403);
-        }
+        var configuredPlatformEmails = (configuration?["PlatformAdmin:Emails"]
+            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
+            ?? "jeanmaureal@gmail.com,superadmin@erpez.dev")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(e => e.ToLowerInvariant());
 
-        if (member.Status != Status.Active || member.IsDeleted)
+        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) && configuredPlatformEmails.Contains(normalizedEmail);
+
+        var isPlatformAdmin = (bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) ||
+            request.User.IsInRole("SuperAdmin") ||
+            request.User.IsInRole("Platform Administrator") ||
+            string.Equals(roleClaim, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(roleClaim, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
+            isPlatformAdminByEmail;
+
+        IdentityProvider? memberProvider = null;
+        if (!isPlatformAdmin)
         {
-            return TenantAccessResult.Fail(
-                "Caller's tenant membership is inactive or has been revoked.",
-                "TENANT_MEMBERSHIP_INACTIVE",
-                403);
+            var member = await dbContext.TenantMembers!
+                .AsNoTracking()
+                .Where(tm => tm.TenantId == request.TenantId &&
+                             (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId))
+                .Select(tm => new { tm.Status, tm.IsDeleted, tm.Provider })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (member == null)
+            {
+                return TenantAccessResult.Fail(
+                    "Caller is not an active authorized member of this tenant.",
+                    "TENANT_MEMBERSHIP_REQUIRED",
+                    403);
+            }
+
+            if (member.Status != Status.Active || member.IsDeleted)
+            {
+                return TenantAccessResult.Fail(
+                    "Caller's tenant membership is inactive or has been revoked.",
+                    "TENANT_MEMBERSHIP_INACTIVE",
+                    403);
+            }
+
+            memberProvider = member.Provider;
         }
 
         // 4. Tenant Existence & Governance (Notice: DbConnectionString is NEVER materialized here)
@@ -98,6 +131,7 @@ public class TenantAccessService(
                 t.Name,
                 t.IsDisabled,
                 t.ProvisioningState,
+                t.TenancyMode,
                 t.AuthProvider,
                 AllowedDomain = t.TenantSetting != null ? t.TenantSetting.AllowedDomain : string.Empty
             })
@@ -112,7 +146,7 @@ public class TenantAccessService(
         }
 
         // Model A Enforcement: IdentityProvider must match
-        if (member.Provider != tenantInfo.AuthProvider)
+        if (!isPlatformAdmin && memberProvider.HasValue && memberProvider.Value != tenantInfo.AuthProvider)
         {
             return TenantAccessResult.Fail(
                 "Caller's identity provider does not match the tenant's authentication provider.",
@@ -138,14 +172,15 @@ public class TenantAccessService(
                 503);
         }
 
-        // 7. Operational Database Readiness Check
+        // 7. Operational Database Readiness Check (required for On-Premise or if an operational DB record exists)
         var opDb = await dbContext.TenantOperationalDatabases!
             .AsNoTracking()
             .Where(db => db.TenantId == request.TenantId && !db.IsDeleted)
             .Select(db => new { db.ProvisioningState })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (opDb != null && opDb.ProvisioningState != TenantProvisioningState.Ready)
+        if ((tenantInfo.TenancyMode == TenancyMode.OnPremise && opDb == null) ||
+            (opDb != null && opDb.ProvisioningState != TenantProvisioningState.Ready))
         {
             return TenantAccessResult.Fail(
                 "Tenant operational database is currently being provisioned.",
@@ -199,7 +234,8 @@ public class TenantAccessService(
             tenantInfo.Name,
             tenantInfo.ProvisioningState,
             tenantInfo.AllowedDomain,
-            license?.Status.ToString() ?? "Active"
+            license?.Status.ToString() ?? "Active",
+            tenantInfo.TenancyMode
         );
 
         return TenantAccessResult.Success(accessContext);

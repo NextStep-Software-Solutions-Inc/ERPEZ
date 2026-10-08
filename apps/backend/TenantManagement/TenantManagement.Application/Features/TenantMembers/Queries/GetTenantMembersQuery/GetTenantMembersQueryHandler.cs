@@ -5,6 +5,7 @@ using ERPEZ.TenantManagement.Application.Features.TenantMembers.Dtos;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
 using System.Linq.Expressions;
 
@@ -21,6 +22,26 @@ public class GetTenantMembersQueryHandler(IUnitOfWork unitOfWork, ITenantContext
         }
 
         var tenantId = tenantContext.TenantId.Value;
+
+        // Auto-reconcile pending members who already have an external identity bound or have signed in
+        var pendingWithIdentity = await unitOfWork.TenantMemberRepository.Query()
+            .Where(tm => tm.TenantId == tenantId &&
+                         tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Pending &&
+                         !string.IsNullOrEmpty(tm.ExternalIdentityId) &&
+                         !tm.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        if (pendingWithIdentity.Count > 0)
+        {
+            foreach (var pm in pendingWithIdentity)
+            {
+                pm.Status = ERPEZ.TenantManagement.Domain.Enums.Status.Active;
+                pm.InvitationTokenHash = null;
+                pm.InvitationExpiresAtUtc = null;
+                pm.ConcurrencyStamp = Guid.NewGuid();
+            }
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         var sieveModel = new SieveModel
         {

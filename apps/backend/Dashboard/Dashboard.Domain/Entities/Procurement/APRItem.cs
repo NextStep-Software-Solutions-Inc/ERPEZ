@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Line item selected from an approved APP or added from PSDBM catalog into an APR.
 /// </summary>
-public class APRItem : BaseEntity
+public class APRItem : TenantScopedEntity
 {
     public APRItem() { }
 

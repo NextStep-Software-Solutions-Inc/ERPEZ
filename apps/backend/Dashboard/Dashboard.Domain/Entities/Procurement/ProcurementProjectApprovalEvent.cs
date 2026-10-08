@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Audit trail for ProcurementProject / BAC Resolution approval workflow.
 /// Records each action (Submit, Approve, Return, etc.) with actor details, notes/remarks, attachment, and timestamp.
 /// </summary>
-public class ProcurementProjectApprovalEvent : BaseEntity
+public class ProcurementProjectApprovalEvent : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ProcurementProjectId { get; set; }

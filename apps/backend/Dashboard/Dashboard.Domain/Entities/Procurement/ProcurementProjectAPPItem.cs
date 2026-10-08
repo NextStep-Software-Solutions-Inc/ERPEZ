@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Represents a join entity linking a ProcurementProject to multiple APPItems.
 /// </summary>
-public class ProcurementProjectAPPItem : BaseEntity
+public class ProcurementProjectAPPItem : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ProcurementProjectId { get; set; }

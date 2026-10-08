@@ -28,12 +28,16 @@ public sealed class CreateTenantCommandHandler(
         var isClerk = currentUserId.StartsWith("user_");
         var provider = isClerk ? IdentityProvider.Clerk : IdentityProvider.Keycloak;
 
+        var isDedicatedOnPremise = request.OnPremise;
+        var tenancyMode = isDedicatedOnPremise ? ERPEZ.Shared.Enums.TenancyMode.OnPremise : ERPEZ.Shared.Enums.TenancyMode.SaaS;
+
         var tenant = new Tenant
         {
             Name = request.Name,
             Description = request.Description,
             AuthProvider = provider,
-            ProvisioningState = TenantProvisioningState.Ready,
+            TenancyMode = tenancyMode,
+            ProvisioningState = isDedicatedOnPremise ? TenantProvisioningState.Pending : TenantProvisioningState.Ready,
             TenantSetting = new()
             {
                 BillingContactEmail = request.BillingContactEmail,
@@ -42,13 +46,13 @@ public sealed class CreateTenantCommandHandler(
                 BaseURL = "",
                 DbConnectionString = ""
             },
-            OperationalDatabase = new TenantOperationalDatabase
+            OperationalDatabase = isDedicatedOnPremise ? new TenantOperationalDatabase
             {
                 DatabaseServer = "localhost",
                 DatabaseName = $"erpez_tenant_{Guid.NewGuid():N}",
-                ProvisioningState = TenantProvisioningState.Ready,
+                ProvisioningState = TenantProvisioningState.Pending,
                 RetryCount = 0
-            }
+            } : null
         };
 
         // Provision 30-Day Full-Suite Trial modules (AMS, PBMS, PMS) excluding unreleased SAMS
@@ -155,8 +159,11 @@ public sealed class CreateTenantCommandHandler(
         tenant.TenantMembers.Add(tenantMember);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Enqueue durable Hangfire provisioning job strictly with tenantId GUID (zero secrets in job arguments)
-        backgroundJobClient?.Enqueue<ITenantDatabaseProvisioner>(p => p.ProvisionTenantDatabaseAsync(tenant.Id, CancellationToken.None));
+        // Enqueue durable Hangfire provisioning job strictly for On-Premise dedicated DB tenants
+        if (isDedicatedOnPremise)
+        {
+            backgroundJobClient?.Enqueue<ITenantDatabaseProvisioner>(p => p.ProvisionTenantDatabaseAsync(tenant.Id, CancellationToken.None));
+        }
 
         return ApiResponse<Guid>.Success(tenant.Id, "Tenant created successfully.");
     }

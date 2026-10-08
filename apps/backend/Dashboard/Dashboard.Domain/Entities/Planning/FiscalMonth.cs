@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents a month within a Fiscal Year with its own locking state.
 /// </summary>
-public class FiscalMonth : BaseEntity
+public class FiscalMonth : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FiscalYearId { get; set; }

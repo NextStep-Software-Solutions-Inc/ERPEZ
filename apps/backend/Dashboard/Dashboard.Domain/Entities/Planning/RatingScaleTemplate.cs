@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Represents a rating scale template that can be used for KPI measurements.
 /// Each template can have multiple levels (1-5) with score ranges.
 /// </summary>
-public class RatingScaleTemplate : BaseEntity
+public class RatingScaleTemplate : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Represents the BAC's official opening record and observation during the scheduled Opening of Bids session.
 /// Belongs to the BiddingSubmission aggregate.
 /// </summary>
-public class BidOpeningRecord : BaseEntity
+public class BidOpeningRecord : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid BiddingSubmissionId { get; set; }

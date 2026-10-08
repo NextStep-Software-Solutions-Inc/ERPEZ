@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Market Scoping Activity Settings - represents reusable activity settings for market scoping.
 /// Stores master data for activities that can be conducted during multiple market scoping instances.
 /// </summary>
-public class MarketScopingActivitySettings : BaseEntity
+public class MarketScopingActivitySettings : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string ActivityType { get; set; } = string.Empty;

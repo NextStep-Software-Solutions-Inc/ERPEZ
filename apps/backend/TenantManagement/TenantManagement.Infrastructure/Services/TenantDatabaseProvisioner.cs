@@ -18,7 +18,8 @@ public class TenantDatabaseProvisioner(
     ApplicationDbContext controlDbContext,
     ISecretEncryptionService encryptionService,
     IConfiguration configuration,
-    ILogger<TenantDatabaseProvisioner> logger) : ITenantDatabaseProvisioner
+    ILogger<TenantDatabaseProvisioner> logger,
+    ITenantConnectionResolver? connectionResolver = null) : ITenantDatabaseProvisioner
 {
     public async Task ProvisionTenantDatabaseAsync(Guid tenantId, CancellationToken cancellationToken = default)
     {
@@ -145,6 +146,7 @@ public class TenantDatabaseProvisioner(
 
                 await controlDbContext.SaveChangesAsync(cancellationToken);
                 await tx.CommitAsync(cancellationToken);
+                connectionResolver?.InvalidateConnection(tenantId);
                 logger.LogInformation("Tenant {TenantId} and its operational database successfully transitioned to Ready.", tenantId);
             }
             catch
@@ -178,6 +180,7 @@ public class TenantDatabaseProvisioner(
                         tenant.ProvisioningState = TenantProvisioningState.Provisioning;
                     }
                     await controlDbContext.SaveChangesAsync(CancellationToken.None);
+                    connectionResolver?.InvalidateConnection(tenantId);
                 }
             }
             catch (Exception innerEx)

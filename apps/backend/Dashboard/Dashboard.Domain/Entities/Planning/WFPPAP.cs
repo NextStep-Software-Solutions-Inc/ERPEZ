@@ -2,7 +2,7 @@ using ERPEZ.Domain.Common;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class WFPPAP : BaseEntity
+public class WFPPAP : TenantScopedEntity
 {
     public Guid WFPId { get; set; }
     public string Name { get; set; } = string.Empty;

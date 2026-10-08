@@ -70,9 +70,10 @@ export default function AcceptInvitationRoute() {
         // Ignore storage errors
       }
       await queryClient.invalidateQueries();
-      toast.success('Invitation accepted! Setting up your workspace...');
+      toast.success('Invitation accepted! Taking you to your ERP workspace...');
+      const dashboardUrl = (window as any).ENV?.VITE_DASHBOARD_URL || import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000';
       setTimeout(() => {
-        window.location.href = '/overview';
+        window.location.href = `${dashboardUrl}/v2/overview`;
       }, 1200);
     } catch (err: unknown) {
       let msg = 'Failed to accept invitation. The token may be expired or invalid.';
@@ -116,6 +117,7 @@ export default function AcceptInvitationRoute() {
 
   // State 1: Authenticated & Successfully Accepted
   if (isSuccess) {
+    const dashboardUrl = (window as any).ENV?.VITE_DASHBOARD_URL || import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000';
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
         <Card className="w-full max-w-md shadow-xl border-slate-200 dark:border-slate-800 text-center p-6">
@@ -126,10 +128,16 @@ export default function AcceptInvitationRoute() {
             Welcome to the Workspace!
           </CardTitle>
           <CardDescription className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Your invitation was successfully accepted. Taking you directly to your portal dashboard...
+            Your invitation was successfully accepted. Redirecting you directly to the ERP Workspace Dashboard...
           </CardDescription>
-          <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex flex-col items-center gap-3">
             <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+            <a
+              href={`${dashboardUrl}/v2/overview`}
+              className="text-xs text-blue-600 hover:underline font-medium"
+            >
+              Click here if not redirected automatically
+            </a>
           </div>
         </Card>
       </div>
@@ -157,7 +165,9 @@ export default function AcceptInvitationRoute() {
 
   // State 3: Authenticated with Error (e.g. Email mismatch or expired token)
   if (isAuthenticated && errorMessage) {
-    const isEmailMismatch = errorMessage.toLowerCase().includes('does not match');
+    const isAccountMismatch = errorMessage.toLowerCase().includes('does not match') ||
+                              errorMessage.toLowerCase().includes('already a member') ||
+                              errorMessage.toLowerCase().includes('already an active member');
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
         <Card className="w-full max-w-md shadow-xl border-slate-200 dark:border-slate-800">
@@ -166,20 +176,14 @@ export default function AcceptInvitationRoute() {
               <AlertCircle className="h-6 w-6" />
             </div>
             <CardTitle className="text-xl font-bold">
-              {isEmailMismatch ? 'Account Email Mismatch' : 'Invitation Notice'}
+              {isAccountMismatch ? 'Account Mismatch' : 'Invitation Notice'}
             </CardTitle>
             <CardDescription className="mt-1 text-sm">
-              {isEmailMismatch ? (
-                <>
-                  You are currently signed in as <strong>{user?.email}</strong>, but this invitation was sent to a different email address.
-                </>
-              ) : (
-                errorMessage
-              )}
+              {errorMessage}
             </CardDescription>
           </CardHeader>
           <CardFooter className="flex flex-col gap-2">
-            {isEmailMismatch ? (
+            {isAccountMismatch ? (
               <Button
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
                 onClick={() => {

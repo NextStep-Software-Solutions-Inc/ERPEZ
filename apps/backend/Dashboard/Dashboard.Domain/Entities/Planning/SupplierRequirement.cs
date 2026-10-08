@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Represents a compliance document or requirement for a supplier.
 /// Tracks verification status for supplier approval workflow.
 /// </summary>
-public class SupplierRequirement : BaseEntity
+public class SupplierRequirement : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string RequirementName { get; set; } = string.Empty;

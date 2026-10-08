@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Stores the awarded/winning supplier details for each RFQ line item in the AOB.
 /// </summary>
-public class AOBAwardedItem : BaseEntity
+public class AOBAwardedItem : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid AOBId { get; set; }
