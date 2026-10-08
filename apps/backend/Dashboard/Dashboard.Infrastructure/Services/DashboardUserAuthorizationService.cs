@@ -50,7 +50,13 @@ public class DashboardUserAuthorizationService(
             return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
 
-        var cacheKey = $"{cacheKeyPrefix}{externalIdentityId.Trim().ToLowerInvariant()}";
+        string? activeRoleHeader = null;
+        if (httpContextAccessor?.HttpContext?.Request.Headers.TryGetValue("X-Operating-Role", out var opRoleHead) == true)
+        {
+            activeRoleHeader = opRoleHead.FirstOrDefault()?.Trim().ToLowerInvariant();
+        }
+
+        var cacheKey = $"{cacheKeyPrefix}{tenantId}_{externalIdentityId.Trim().ToLowerInvariant()}_{activeRoleHeader ?? "none"}";
 
         if (memoryCache.TryGetValue(cacheKey, out HashSet<string>? cachedPerms) && cachedPerms != null)
         {
@@ -95,6 +101,20 @@ public class DashboardUserAuthorizationService(
                                         r.Equals("System Administrator", StringComparison.OrdinalIgnoreCase) ||
                                         r.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
                                         r.Equals("platform_administrator", StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        if (!callerIsAdmin && httpContextAccessor?.HttpContext?.Request.Headers.TryGetValue("X-Operating-Role", out var opRoleH) == true)
+        {
+            var opRole = opRoleH.FirstOrDefault()?.Trim();
+            if (!string.IsNullOrEmpty(opRole) &&
+                (opRole.Equals("System Administrator", StringComparison.OrdinalIgnoreCase) ||
+                 opRole.Equals("Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
+                 opRole.Equals("Workspace Admin", StringComparison.OrdinalIgnoreCase) ||
+                 opRole.Equals("Workspace Administrator", StringComparison.OrdinalIgnoreCase) ||
+                 opRole.Equals("Platform Administrator", StringComparison.OrdinalIgnoreCase)))
+            {
+                callerIsAdmin = true;
             }
         }
 

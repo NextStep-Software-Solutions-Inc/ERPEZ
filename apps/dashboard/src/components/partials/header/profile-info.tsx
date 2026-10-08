@@ -72,7 +72,7 @@ export const ProfileInfo = () => {
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent className="w-72 p-2 shadow-2xl rounded-xl border border-border" align="end">
+      <DropdownMenuContent className="w-80 p-2 shadow-2xl rounded-xl border border-border" align="end">
         {/* User Identity Header */}
         <DropdownMenuLabel className="p-2 font-normal">
           <div className="flex items-center gap-3">
@@ -91,13 +91,33 @@ export const ProfileInfo = () => {
           </div>
         </DropdownMenuLabel>
 
+        {/* Active Workspace Banner */}
+        <div className="mx-1 my-1 p-2 rounded-lg bg-primary/5 border border-primary/15 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <Icon icon="heroicons:building-office-2" className="w-4 h-4" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] uppercase font-semibold text-muted-foreground tracking-wider leading-none">
+                Active Tenant Workspace
+              </span>
+              <span className="text-xs font-bold text-foreground truncate mt-0.5">
+                {activeTenant?.name || 'Workspace'}
+              </span>
+            </div>
+          </div>
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-medium text-emerald-600 border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/30 shrink-0">
+            Current
+          </Badge>
+        </div>
+
         <DropdownMenuSeparator className="my-1.5" />
 
         {/* Operating Role Switcher */}
-        <div className="px-2 py-1">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            <span>Operating Role</span>
-            <span className="text-[10px] font-normal text-muted-foreground/80">Permissions Scope</span>
+        <div className="px-1 py-1">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 px-1">
+            <span>Roles in {activeTenant?.name || 'Workspace'}</span>
+            <span className="text-[10px] font-normal text-muted-foreground/80">Scope</span>
           </div>
           <div className="space-y-1">
             {availableRoles.map((r) => {
@@ -105,11 +125,23 @@ export const ProfileInfo = () => {
               const isPlatform = r === 'Platform Administrator';
               const isTenant = r === 'Tenant Administrator';
               const isSysAdmin = r === 'System Administrator';
+              const isViewer = r === 'Employee / Viewer';
 
-              let desc = 'Operational user';
-              if (isPlatform) desc = 'Full cross-tenant platform control';
-              else if (isTenant) desc = 'Tenant account & governance';
-              else if (isSysAdmin) desc = 'Workspace operational admin';
+              let desc = `Standard operational access in ${activeTenant?.name || 'workspace'}`;
+              let tag = '';
+              if (isPlatform) {
+                desc = 'Cross-tenant master control (global)';
+                tag = 'Global';
+              } else if (isTenant) {
+                desc = `Governance, subscription & seats for ${activeTenant?.name || 'tenant'}`;
+                tag = 'Account';
+              } else if (isSysAdmin) {
+                desc = `Full operational admin in ${activeTenant?.name || 'workspace'}`;
+                tag = 'Workspace Admin';
+              } else if (isViewer) {
+                desc = `Simulation / read-only viewer mode in ${activeTenant?.name || 'workspace'}`;
+                tag = 'Simulation';
+              }
 
               return (
                 <button
@@ -122,9 +154,22 @@ export const ProfileInfo = () => {
                       : 'hover:bg-muted/70 text-foreground'
                   }`}
                 >
-                  <div className="flex flex-col">
-                    <span className="leading-tight">{r}</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">{desc}</span>
+                  <div className="flex flex-col min-w-0 pr-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="leading-tight font-medium">{r}</span>
+                      {tag && (
+                        <span className={`text-[9px] px-1 py-0.5 rounded font-normal ${
+                          isSysAdmin
+                            ? 'bg-primary/15 text-primary'
+                            : isPlatform
+                            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {tag}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-normal truncate mt-0.5">{desc}</span>
                   </div>
                   {isSelected && <Icon icon="heroicons:check-16-solid" className="w-4 h-4 text-primary shrink-0" />}
                 </button>

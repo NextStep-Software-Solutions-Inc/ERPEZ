@@ -523,7 +523,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
       const saved = sessionStorage.getItem('erpez_active_role');
       if (saved) return saved;
     }
-    return isPlatformAdmin ? 'Platform Administrator' : isOrgAdmin ? 'Tenant Administrator' : 'System Administrator';
+    return isPlatformAdmin ? 'Platform Administrator' : isOrgAdmin ? 'System Administrator' : 'System Administrator';
   });
 
   // Automatically sync activeRole when real operational roles load
