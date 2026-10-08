@@ -135,25 +135,50 @@ Before promoting to production, run the automated staging verification script. I
   --database "erpez_staging"
 ```
 
-### 4.1 Pre-Flight Testing Against Staging Database Dumps
+### 4.1 Pre-Flight Testing Against Staging Database Dumps (Legacy Single-Tenant Snapshots)
 
-To guarantee zero regression prior to executing against production databases, run the pre-flight dump test runner. This tool restores a staging/production database dump into an ephemeral test database, captures baseline row counts across all 136 operational tables, executes the migration pipeline, and mathematically proves **Zero Data Loss**:
+To guarantee zero regression and zero data loss prior to live production execution, operators and QA engineers **MUST test the transactional migration script (`production-tenant-backfill-and-migration.sql`) against a staging database snapshot containing actual legacy single-tenant data**.
 
-#### PowerShell
-```powershell
-.\scripts\migrations\test-staging-dump.ps1 `
-  -DumpFile "C:\backups\staging_pre_migration.dump" `
-  -TenantId "01a0d69d-924b-762c-a774-523a30544619" `
-  -TestDatabase "erpez_migration_test"
-```
+#### Protocol Steps:
+1. **Capture Legacy Single-Tenant Snapshot**:
+   Take a snapshot/dump of the pre-migration single-tenant database (where operational records lack `TenantId` or have `Guid.Empty`):
+   ```bash
+   # Create a custom-format compressed snapshot of the pre-migration database:
+   pg_dump -h legacy-db.internal -U postgres -Fc -d erpez_operational -f /backups/legacy_singletenant_snapshot.dump
+   ```
 
-#### Bash
-```bash
-./scripts/migrations/test-staging-dump.sh \
-  --dump-file "/backups/staging_pre_migration.dump" \
-  --tenant-id "01a0d69d-924b-762c-a774-523a30544619" \
-  --database "erpez_migration_test"
-```
+2. **Execute Automated Snapshot Pre-Flight Runner**:
+   The test runner restores the legacy snapshot into an ephemeral test database (`erpez_migration_test`), captures pre-migration row counts across all 136 operational tables, executes the transactional migration pipeline, verifies all post-migration integrity assertions, and validates that `Pre-Migration Row Count == Post-Migration Row Count` with **Zero Data Loss**:
+
+   ##### Bash Runner:
+   ```bash
+   ./scripts/migrations/test-staging-dump.sh \
+     --dump-file "/backups/legacy_singletenant_snapshot.dump" \
+     --tenant-id "<VERIFIED_PROD_TENANT_GUID>" \
+     --database "erpez_migration_test"
+   ```
+
+   ##### PowerShell Runner:
+   ```powershell
+   .\scripts\migrations\test-staging-dump.ps1 `
+     -DumpFile "C:\backups\legacy_singletenant_snapshot.dump" `
+     -TenantId "<VERIFIED_PROD_TENANT_GUID>" `
+     -TestDatabase "erpez_migration_test"
+   ```
+
+3. **Continuous Automated CI Simulation**:
+   For continuous verification within backend CI pipelines without requiring live PostgreSQL instances, run the automated legacy single-tenant data migration simulation tests:
+   ```bash
+   dotnet test apps/backend/Dashboard/Dashboard.Application.UnitTests/Dashboard.Application.UnitTests.csproj \
+     --filter "FullyQualifiedName~LegacyStagingDataMigrationSimulationTests"
+   ```
+   This suite simulates:
+   - Legacy entities created with `Guid.Empty` (single-tenant legacy data).
+   - Execution of Stage 2 (Deterministic Provenance Backfill) and Stage 3 (Zero-Null Assertions).
+   - Instant visibility restoration under EF Core Global Query Filters (`e.TenantId == CurrentTenantId`).
+   - Cross-tenant isolation (confirming other tenants cannot see migrated records).
+   - Relational foreign key graph preservation across Procurement and Planning models.
+   - Composite unique index validation ensuring multiple tenants can coexist with duplicate natural business keys (`Office.Code`, `PurchaseOrder.PONumber`) without collisions.
 
 ### 4.2 Production-Sized Staging Dry-Runs & Lock Contention Profiling
 
