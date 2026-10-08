@@ -48,11 +48,29 @@ param(
     [string]$Username = $(if ($env:PGUSER) { $env:PGUSER } else { "postgres" }),
 
     [Parameter(Mandatory = $false)]
+    [string]$ConnectionString = $(if ($env:DB_CONNECTION_STRING) { $env:DB_CONNECTION_STRING } else { $env:CONNECTION_STRING }),
+
+    [Parameter(Mandatory = $false)]
     [string]$PsqlPath = "psql"
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+if (-not [string]::IsNullOrWhiteSpace($ConnectionString)) {
+    try {
+        $builder = New-Object System.Data.Common.DbConnectionStringBuilder
+        $builder.ConnectionString = $ConnectionString
+        if ($builder.ContainsKey("Host")) { $Host = [string]$builder["Host"] }
+        if ($builder.ContainsKey("Port")) { $Port = [int]$builder["Port"] }
+        if ($builder.ContainsKey("Database")) { $Database = [string]$builder["Database"] }
+        if ($builder.ContainsKey("Username")) { $Username = [string]$builder["Username"] }
+        elseif ($builder.ContainsKey("User ID")) { $Username = [string]$builder["User ID"] }
+        if ($builder.ContainsKey("Password")) { $env:PGPASSWORD = [string]$builder["Password"] }
+    } catch {
+        Write-Warning "Could not parse connection string using DbConnectionStringBuilder. Falling back to explicit parameters."
+    }
+}
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sqlScriptPath = Join-Path $scriptDir "production-tenant-backfill-and-migration.sql"

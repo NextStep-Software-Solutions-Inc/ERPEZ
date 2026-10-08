@@ -168,11 +168,33 @@ To guarantee zero regression prior to executing against production databases, ru
 - [x] Target production `legacy_tenant_id` verified from Control Plane DB.
 
 ### Production Execution:
+
+#### Manual Execution (PowerShell):
 ```powershell
 .\scripts\migrations\run-production-migration.ps1 `
   -TenantId "<VERIFIED_PROD_TENANT_GUID>" `
-  -Host "prod-db.internal" `
-  -Port 5432 `
-  -Database "erpez_operational" `
-  -Username "postgres"
+  -ConnectionString $env:ERPEZ_DB_CONNECTION_STRING
 ```
+
+#### Manual Execution (Bash):
+```bash
+./scripts/migrations/run-production-migration.sh \
+  --tenant-id "<VERIFIED_PROD_TENANT_GUID>" \
+  --connection-string "$ERPEZ_DB_CONNECTION_STRING"
+```
+
+---
+
+## 6. CI/CD Deployment Pipeline Integration
+
+The production deployment workflow [`.github/workflows/deploy-dashboard-api-prod.yml`](../../.github/workflows/deploy-dashboard-api-prod.yml) natively incorporates the transactional migration runner:
+
+1. **Pipeline Pre-Deployment Stage**:
+   - Transfers `production-tenant-backfill-and-migration.sql` and `run-production-migration.sh` to the target host.
+   - Executes the runner with `-v ON_ERROR_STOP=1` and `\set ON_ERROR_STOP on`.
+   - Passes the target `legacy_tenant_id` and database connection string.
+2. **Fail-Closed Assertion Guarantee**:
+   - If **any** query, data assertion, or constraint validation fails during execution, PostgreSQL aborts and rolls back the transaction (`BEGIN ... COMMIT`) atomically.
+   - `ON_ERROR_STOP=1` ensures `psql` exits immediately with a non-zero exit code.
+   - The deployment workflow captures the failure status, issues an error notification, and **terminates before replacing or launching application containers** (`docker compose up -d` is never reached).
+   - Prevents partial schema states, un-indexed operational data, and application runtime downtime.
