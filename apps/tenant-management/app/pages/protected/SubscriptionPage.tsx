@@ -54,8 +54,15 @@ export default function SubscriptionPage() {
   const subscription = billingData?.subscription;
   const nextInvoice = billingData?.nextInvoice;
 
+  // License hook
+  const { data: licenseResponse } = useTenantLicense({
+    pathParams: { id: tenant?.id || "00000000-0000-0000-0000-000000000001" },
+    queryParams: { domain: typeof window !== "undefined" ? window.location.hostname : "" },
+  });
+  const license = licenseResponse?.data;
+
   // Authoritative subscription properties unified with Billing & Invoice pages
-  const planName = subscription?.planName || sub?.plan || "Starter";
+  const planName = subscription?.planName || sub?.plan || (license?.plan as string) || "Professional";
   const rawStatus = subscription?.status || (sub?.status?.toLowerCase() as string) || "active";
   const status = rawStatus.toLowerCase();
   const billingCycle =
@@ -66,13 +73,6 @@ export default function SubscriptionPage() {
   const amountCents = subscription?.amountCents || (sub?.amount ? Math.round(sub.amount * 100) : 29900);
   const currency = subscription?.currency || "USD";
 
-  // License hook
-  const { data: licenseResponse } = useTenantLicense({
-    pathParams: { id: tenant?.id || "00000000-0000-0000-0000-000000000001" },
-    queryParams: { domain: typeof window !== "undefined" ? window.location.hostname : "" },
-  });
-  const license = licenseResponse?.data;
-
   // Authoritative Trial Detection
   const isTrial =
     subscription?.isTrial ??
@@ -80,7 +80,8 @@ export default function SubscriptionPage() {
       sub?.amount === 0 ||
       license?.prefix === "TRIAL" ||
       license?.key?.startsWith("TRIAL") ||
-      (planName.toLowerCase().includes("starter") && (sub?.amount === 0 || !sub?.autoRenew)));
+      ((planName.toLowerCase().includes("starter") || planName.toLowerCase().includes("pro")) &&
+        (sub?.amount === 0 || !sub?.autoRenew)));
 
   const daysRemaining = subscription?.trialDaysRemaining ?? (license?.remainingDays || 30);
   const totalTrialDays = 30;
@@ -149,7 +150,7 @@ export default function SubscriptionPage() {
       await updateSubscription({ billingCycle: targetCycle });
       toast.success(
         targetCycle === "yearly"
-          ? "Switched to Annual billing (Save $598 after trial)"
+          ? `Switched to Annual billing (Save ${formatMoney(monthlyPriceCents * 2, currency)} after trial)`
           : "Switched to Monthly billing"
       );
     } catch {
@@ -166,7 +167,7 @@ export default function SubscriptionPage() {
       try {
         await updateSubscription({ autoRenew: true, status: "active" });
         setIsAutoRenewEnabledModalOpen(true);
-        toast.success("Starter trial reactivated. Your plan will continue after the trial.");
+        toast.success(`${planName} trial reactivated. Your plan will continue after the trial.`);
       } catch {
         toast.error("Failed to update renewal preference");
       }
@@ -178,7 +179,7 @@ export default function SubscriptionPage() {
     try {
       await updateSubscription({ status: "cancelled", autoRenew: false });
       setIsCancelDialogOpen(false);
-      toast.success(`Starter trial canceled. You'll keep access until ${formattedShortEndDate}.`);
+      toast.success(`${planName} trial canceled. You'll keep access until ${formattedShortEndDate}.`);
     } catch {
       toast.error("Failed to cancel trial");
     }
@@ -189,7 +190,7 @@ export default function SubscriptionPage() {
     try {
       await updateSubscription({ status: "active", autoRenew: true });
       setIsReactivateDialogOpen(false);
-      toast.success("Starter trial reactivated. Your plan will continue after the trial.");
+      toast.success(`${planName} trial reactivated. Your plan will continue after the trial.`);
     } catch {
       toast.error("Failed to reactivate trial");
     }
@@ -591,8 +592,8 @@ export default function SubscriptionPage() {
                     ? autoRenew && status !== "cancelled"
                       ? hasPaymentMethod
                         ? "Your saved payment method will be charged when your trial ends."
-                        : "Add a payment method before your trial ends to continue with Starter."
-                      : "Your account will not continue to a paid Starter subscription when the trial ends."
+                        : `Add a payment method before your trial ends to continue with ${planName}.`
+                      : `Your account will not continue to a paid ${planName} subscription when the trial ends.`
                     : "Automatically renew your subscription at the end of each billing period"}
                 </p>
               </div>
@@ -793,7 +794,7 @@ export default function SubscriptionPage() {
                       variant="outline"
                       className="text-emerald-700 border-emerald-300 bg-emerald-50 text-[10px] py-0 font-semibold"
                     >
-                      Save $598
+                      Save {formatMoney(monthlyPriceCents * 2, currency)}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">Billed yearly (2 months free)</p>
@@ -809,7 +810,7 @@ export default function SubscriptionPage() {
           </CardContent>
         </Card>
 
-        {/* Card 5: Trial Actions (Continue with Starter clearly visible when OFF) */}
+        {/* Card 5: Trial Actions (Continue after trial clearly visible when OFF) */}
         <Card className="shadow-sm border-slate-200">
           <CardHeader>
             <CardTitle className="text-lg">
@@ -842,7 +843,7 @@ export default function SubscriptionPage() {
                   className="w-full bg-emerald-600 text-white text-xs py-2.5 px-4 font-semibold hover:bg-emerald-700 shadow-xs"
                 >
                   <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                  Continue with Starter
+                  Continue with {planName}
                 </Button>
               ) : (
                 <Button
@@ -878,17 +879,17 @@ export default function SubscriptionPage() {
             <div className="flex items-center gap-2 text-rose-600">
               <AlertTriangle className="h-5 w-5" />
               <DialogTitle className="text-base font-bold">
-                {isTrial ? "Cancel your Starter trial?" : "Cancel Subscription?"}
+                {isTrial ? `Cancel your ${planName} trial?` : "Cancel Subscription?"}
               </DialogTitle>
             </div>
             <DialogDescription className="text-xs text-slate-600 mt-2 space-y-2">
               {isTrial ? (
                 <>
                   <p>
-                    You'll keep access to Starter until <strong>{trialEndsAt}</strong>.
+                    You'll keep access to {planName} until <strong>{trialEndsAt}</strong>.
                   </p>
                   <p>
-                    After that, your Starter subscription won't continue and you won't be charged.
+                    After that, your {planName} subscription won't continue and you won't be charged.
                   </p>
                 </>
               ) : (
@@ -931,14 +932,14 @@ export default function SubscriptionPage() {
             <div className="flex items-center gap-2 text-emerald-600">
               <RotateCcw className="h-5 w-5" />
               <DialogTitle className="text-base font-bold">
-                {isTrial ? "Continue with Starter" : "Reactivate Subscription"}
+                {isTrial ? `Continue with ${planName}` : "Reactivate Subscription"}
               </DialogTitle>
             </div>
             <DialogDescription className="text-xs text-slate-600 mt-2 space-y-2">
               {isTrial ? (
                 <>
                   <p>
-                    Your Starter plan will continue after <strong>{trialEndsAt}</strong>.
+                    Your {planName} plan will continue after <strong>{trialEndsAt}</strong>.
                   </p>
                   <p>
                     Billing: <strong>{formatMoney(monthlyPriceCents, currency)}/month + applicable tax</strong>
@@ -946,7 +947,7 @@ export default function SubscriptionPage() {
                   <p className="text-[11px] text-slate-500">
                     {hasPaymentMethod
                       ? "Your saved payment method will be charged when your trial ends."
-                      : "Add a payment method before your trial ends to continue with Starter."}
+                      : `Add a payment method before your trial ends to continue with ${planName}.`}
                   </p>
                   <p className="text-[11px] text-emerald-700 font-semibold">
                     Continue after trial: ON
@@ -980,25 +981,25 @@ export default function SubscriptionPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Starter Will Continue Dialog (After Enabling Auto-Renew) */}
+      {/* Plan Will Continue Dialog (After Enabling Auto-Renew) */}
       <Dialog open={isAutoRenewEnabledModalOpen} onOpenChange={setIsAutoRenewEnabledModalOpen}>
         <DialogContent className="max-w-md p-6">
           <DialogHeader>
             <div className="flex items-center gap-2 text-emerald-600">
               <Sparkles className="h-5 w-5" />
               <DialogTitle className="text-base font-bold">
-                Starter will continue after your trial
+                {planName} will continue after your trial
               </DialogTitle>
             </div>
             <DialogDescription className="text-xs text-slate-600 mt-2 space-y-2">
               <p>
-                Your free trial ends on <strong>{trialEndsAt}</strong>. Your Starter plan will continue at{" "}
+                Your free trial ends on <strong>{trialEndsAt}</strong>. Your {planName} plan will continue at{" "}
                 <strong>{formatMoney(monthlyPriceCents, currency)}/month + applicable tax</strong> after the trial.
               </p>
               <p className="text-[11px] text-slate-500">
                 {hasPaymentMethod
                   ? "Your saved payment method will be charged when your trial ends."
-                  : "Add a payment method before your trial ends to continue with Starter."}
+                  : `Add a payment method before your trial ends to continue with ${planName}.`}
               </p>
             </DialogDescription>
           </DialogHeader>

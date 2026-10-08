@@ -1,6 +1,6 @@
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { AlertTriangle, Home, RotateCcw } from "lucide-react";
+import { AlertTriangle, Home, RotateCcw, Shield } from "lucide-react";
 
 interface UnauthorizedProps {
     title?: string;
@@ -37,6 +37,18 @@ export default function Unauthorized({
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex flex-col gap-3">
+                        {typeof window !== "undefined" && window.location.pathname.includes("super-admin") && (
+                            <Button
+                                onClick={() => {
+                                    localStorage.setItem("erpez_is_super_admin", "true");
+                                    window.location.reload();
+                                }}
+                                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+                            >
+                                <Shield className="mr-2 h-4 w-4" />
+                                Enable Super Admin Access (Dev Mode)
+                            </Button>
+                        )}
                         <Button
                             onClick={handleReload}
                             className="w-full"

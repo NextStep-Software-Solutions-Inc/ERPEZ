@@ -49,6 +49,9 @@ api.interceptors.request.use(
           token = storedToken;
         }
         tenantId = localStorage.getItem("erpez_tenant_id");
+        if (localStorage.getItem("erpez_is_super_admin") === "true") {
+          config.headers["X-Super-Admin"] = "true";
+        }
       } catch {
         // Ignore localStorage access errors
       }

@@ -19,6 +19,7 @@ import { Link, useLocation, } from "react-router"
 import * as LucideIcons from "lucide-react"
 import { useWorkspace } from "~/providers/TenantProvider"
 import { usePermissions } from "~/hooks/usePermissions"
+import { useClerkAuth } from "~/providers/ClerkAuthProvider"
 
 export const data = {
   tenant: "Tenant Company",
@@ -34,6 +35,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
   const { workspace } = useWorkspace()
   const { hasPermission } = usePermissions()
+  const { isSuperAdmin } = useClerkAuth()
   const dashboardUrl = import.meta.env.VITE_ERP_DASHBOARD_URL || "http://localhost:3000"
 
   const activePlan = (workspace?.tenantSubscription?.plan || "Starter").toLowerCase();
@@ -60,6 +62,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <LucideIcons.ExternalLink className="size-3.5" />
               <span>Open ERP Dashboard</span>
             </a>
+          </div>
+        )}
+        {isSuperAdmin && (
+          <div className="px-2 pb-1">
+            <Link
+              to="/super-admin/overview"
+              className="flex items-center justify-center gap-2 w-full py-2 px-3 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg shadow-xs transition-all"
+            >
+              <LucideIcons.ShieldAlert className="size-3.5" />
+              <span>Super Admin Portal</span>
+            </Link>
           </div>
         )}
       </SidebarHeader>

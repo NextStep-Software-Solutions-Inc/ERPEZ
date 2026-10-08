@@ -1,16 +1,25 @@
 import { useState } from "react";
-import { saasPlans, onPremisePlans } from "~/data/plans";
+import { saasPlans, onPremisePlans, type PlanItem } from "~/data/plans";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Check, Cloud, Server, Shield } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Switch } from "~/components/ui/switch"; 
 import { NavLink } from "react-router";
+import { QuoteRequestModal } from "~/components/features/pricing/QuoteRequestModal";
 
 export default function PlanSection() {
     const [deploymentType, setDeploymentType] = useState<"saas" | "on-premise">("saas");
     const [isAnnual, setIsAnnual] = useState(false);
 
+    const [selectedQuotePlan, setSelectedQuotePlan] = useState<PlanItem | null>(null);
+    const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+
     const activePlans = deploymentType === "saas" ? saasPlans : onPremisePlans;
+
+    const handleOpenQuoteModal = (plan: PlanItem) => {
+        setSelectedQuotePlan(plan);
+        setIsQuoteModalOpen(true);
+    };
 
     return (
         <section className="py-16 mb-12 px-6 sm:px-14 lg:px-24" id="pricing">
@@ -115,19 +124,25 @@ export default function PlanSection() {
                             </ul>
 
                             <div className="flex justify-center mt-6">
-                                <a href="#contact" className="w-full">  
-                                    <Button
-                                        className={`w-full text-center ${plan.popular ? "btn-blue" : "btn-green"}`}
-                                        variant={plan.buttonVariant as "default" | "secondary"}
-                                    >
-                                        {plan.button}
-                                    </Button>
-                                </a>
+                                <Button
+                                    onClick={() => handleOpenQuoteModal(plan)}
+                                    className={`w-full text-center ${plan.popular ? "btn-blue" : "btn-green"}`}
+                                    variant={plan.buttonVariant as "default" | "secondary"}
+                                >
+                                    {plan.button}
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
                 ))}
             </div>
+
+            <QuoteRequestModal
+                isOpen={isQuoteModalOpen}
+                onClose={() => setIsQuoteModalOpen(false)}
+                plan={selectedQuotePlan}
+                deploymentType={deploymentType}
+            />
         </section>
     );
 }

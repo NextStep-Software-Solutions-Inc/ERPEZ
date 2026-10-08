@@ -9,7 +9,8 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '~/components/ui/avatar';
-import { LogOut, Shield } from 'lucide-react';
+import { LogOut, Shield, ShieldCheck, ArrowRightLeft } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router';
 
 interface UserMenuProps {
   className?: string;
@@ -17,7 +18,9 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ className = '', showDetails = true }: UserMenuProps) {
-  const { user, isSuperAdmin, logout } = useClerkAuth();
+  const { user, isSuperAdmin, logout, toggleSuperAdminOverride } = useClerkAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   if (!user) {
     return null;
@@ -26,6 +29,7 @@ export function UserMenu({ className = '', showDetails = true }: UserMenuProps) 
   const displayName = user.displayName || user.username || 'User';
   const email = user.email || 'user@erpez.dev';
   const roleLabel = isSuperAdmin ? 'Super Administrator' : user.role || 'Member';
+  const isSuperAdminView = location.pathname.startsWith('/super-admin');
 
   const initials = displayName
     .split(' ')
@@ -56,7 +60,7 @@ export function UserMenu({ className = '', showDetails = true }: UserMenuProps) 
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-56 p-2 shadow-xl">
+      <DropdownMenuContent align="end" className="w-60 p-2 shadow-xl">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-semibold leading-none">{displayName}</p>
@@ -67,6 +71,44 @@ export function UserMenu({ className = '', showDetails = true }: UserMenuProps) 
             </div>
           </div>
         </DropdownMenuLabel>
+
+        <DropdownMenuSeparator />
+
+        {/* Portal Switcher */}
+        {isSuperAdmin ? (
+          <DropdownMenuItem
+            onClick={() => {
+              if (isSuperAdminView) {
+                navigate('/overview');
+              } else {
+                navigate('/super-admin/overview');
+              }
+            }}
+            className="text-xs cursor-pointer font-medium text-blue-600 focus:bg-blue-50 focus:text-blue-700 py-2"
+          >
+            <ArrowRightLeft className="mr-2 h-3.5 w-3.5" />
+            <span>
+              {isSuperAdminView
+                ? 'Switch to Tenant Workspace'
+                : 'Switch to Super Admin Portal'}
+            </span>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            onClick={() => {
+              if (toggleSuperAdminOverride) {
+                toggleSuperAdminOverride(true);
+              } else {
+                localStorage.setItem('erpez_is_super_admin', 'true');
+                window.location.href = '/super-admin/overview';
+              }
+            }}
+            className="text-xs cursor-pointer font-medium text-purple-700 hover:text-purple-800 focus:bg-purple-50 py-2"
+          >
+            <ShieldCheck className="mr-2 h-3.5 w-3.5 text-purple-600" />
+            <span>Enable Super Admin Access</span>
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuSeparator />
 
