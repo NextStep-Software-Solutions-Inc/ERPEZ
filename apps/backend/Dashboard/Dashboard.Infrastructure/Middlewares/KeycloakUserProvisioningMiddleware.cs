@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.Infrastructure.Middlewares;
 
@@ -239,24 +240,33 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
 
                         user.IsActive = true;
 
+                        var adminRole = await dbContext.AmsRoles!
+                            .FirstOrDefaultAsync(r => r.Name == "System Administrator" && !r.IsDeleted);
+
                         var currentAssignments = user.RoleAssignments?.Where(ra => !ra.IsDeleted).ToList() ?? [];
-                        var hasSystemAdminRole = currentAssignments.Any(ra => ra.Role != null && ra.Role.Name == "System Administrator");
+                        var hasSystemAdminRole = adminRole != null && currentAssignments.Any(ra => ra.RoleId == adminRole.Id || (ra.Role != null && ra.Role.Name == "System Administrator"));
 
                         // If user is a Tenant / Workspace Admin, ensure they hold the System Administrator role
-                        if (isTargetAdmin && !hasSystemAdminRole)
+                        if (isTargetAdmin)
                         {
-                            var adminRole = await dbContext.AmsRoles!
-                                .FirstOrDefaultAsync(r => r.Name == "System Administrator" && !r.IsDeleted);
+                            var viewerRole = await dbContext.AmsRoles!
+                                .FirstOrDefaultAsync(r => r.Name == "Employee / Viewer" && !r.IsDeleted);
 
-                            if (adminRole != null)
+                            var viewerAssignments = currentAssignments
+                                .Where(ra => (ra.Role != null && ra.Role.Name == "Employee / Viewer") || (viewerRole != null && ra.RoleId == viewerRole.Id))
+                                .ToList();
+
+                            if (viewerAssignments.Count > 0)
                             {
-                                var viewerAssignments = currentAssignments.Where(ra => ra.Role != null && ra.Role.Name == "Employee / Viewer").ToList();
-                                if (viewerAssignments.Count > 0)
-                                {
-                                    dbContext.UserRoleAssignments!.RemoveRange(viewerAssignments);
-                                }
+                                dbContext.UserRoleAssignments!.RemoveRange(viewerAssignments);
+                            }
 
-                                var existingAdmin = await dbContext.UserRoleAssignments!
+                            if (!hasSystemAdminRole && adminRole != null)
+                            {
+                                var trackedAdmin = dbContext.ChangeTracker.Entries<UserRoleAssignment>()
+                                    .FirstOrDefault(e => e.Entity.UserId == user.Id && e.Entity.RoleId == adminRole.Id)?.Entity;
+
+                                var existingAdmin = trackedAdmin ?? await dbContext.UserRoleAssignments!
                                     .IgnoreQueryFilters()
                                     .FirstOrDefaultAsync(ra => ra.UserId == user.Id && ra.RoleId == adminRole.Id);
 
@@ -270,28 +280,31 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                                 }
                                 else
                                 {
-                                    await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                    var isAlreadyTracked = dbContext.ChangeTracker.Entries<UserRoleAssignment>()
+                                        .Any(e => e.Entity.UserId == user.Id && e.Entity.RoleId == adminRole.Id);
+
+                                    if (!isAlreadyTracked)
                                     {
-                                        Id = Guid.NewGuid(),
-                                        UserId = user.Id,
-                                        RoleId = adminRole.Id,
-                                        AssignedAt = DateTime.UtcNow,
-                                        CreatedAt = DateTime.UtcNow,
-                                        CreatedBy = "AutoProvisioning"
-                                    });
+                                        await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            UserId = user.Id,
+                                            RoleId = adminRole.Id,
+                                            AssignedAt = DateTime.UtcNow,
+                                            CreatedAt = DateTime.UtcNow,
+                                            CreatedBy = "AutoProvisioning"
+                                        });
+                                    }
                                 }
-
-                                await dbContext.SaveChangesAsync();
-
-                                var authService = context.RequestServices.GetService<IUserAuthorizationService>();
-                                authService?.InvalidateUserPermissions(externalIdentityId, null);
                             }
-                            else
-                            {
-                                await dbContext.SaveChangesAsync();
-                            }
+
+                            var logger = context.RequestServices.GetService<ILogger<KeycloakUserProvisioningMiddleware>>();
+                            await SafeSaveChangesAsync(dbContext, logger);
+
+                            var authService = context.RequestServices.GetService<IUserAuthorizationService>();
+                            authService?.InvalidateUserPermissions(externalIdentityId, null);
                         }
-                        else if (!isTargetAdmin && currentAssignments.Count == 0)
+                        else if (currentAssignments.Count == 0)
                         {
                             // Regular invited user with no operational roles pre-assigned -> default to Employee / Viewer
                             var viewerRole = await dbContext.AmsRoles!
@@ -299,7 +312,10 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
 
                             if (viewerRole != null)
                             {
-                                var existingViewer = await dbContext.UserRoleAssignments!
+                                var trackedViewer = dbContext.ChangeTracker.Entries<UserRoleAssignment>()
+                                    .FirstOrDefault(e => e.Entity.UserId == user.Id && e.Entity.RoleId == viewerRole.Id)?.Entity;
+
+                                var existingViewer = trackedViewer ?? await dbContext.UserRoleAssignments!
                                     .IgnoreQueryFilters()
                                     .FirstOrDefaultAsync(ra => ra.UserId == user.Id && ra.RoleId == viewerRole.Id);
 
@@ -313,30 +329,39 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                                 }
                                 else
                                 {
-                                    await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                    var isAlreadyTracked = dbContext.ChangeTracker.Entries<UserRoleAssignment>()
+                                        .Any(e => e.Entity.UserId == user.Id && e.Entity.RoleId == viewerRole.Id);
+
+                                    if (!isAlreadyTracked)
                                     {
-                                        Id = Guid.NewGuid(),
-                                        UserId = user.Id,
-                                        RoleId = viewerRole.Id,
-                                        AssignedAt = DateTime.UtcNow,
-                                        CreatedAt = DateTime.UtcNow,
-                                        CreatedBy = "AutoProvisioning"
-                                    });
+                                        await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            UserId = user.Id,
+                                            RoleId = viewerRole.Id,
+                                            AssignedAt = DateTime.UtcNow,
+                                            CreatedAt = DateTime.UtcNow,
+                                            CreatedBy = "AutoProvisioning"
+                                        });
+                                    }
                                 }
 
-                                await dbContext.SaveChangesAsync();
+                                var logger = context.RequestServices.GetService<ILogger<KeycloakUserProvisioningMiddleware>>();
+                                await SafeSaveChangesAsync(dbContext, logger);
 
                                 var authService = context.RequestServices.GetService<IUserAuthorizationService>();
                                 authService?.InvalidateUserPermissions(externalIdentityId, null);
                             }
                             else
                             {
-                                await dbContext.SaveChangesAsync();
+                                var logger = context.RequestServices.GetService<ILogger<KeycloakUserProvisioningMiddleware>>();
+                                await SafeSaveChangesAsync(dbContext, logger);
                             }
                         }
                         else
                         {
-                            await dbContext.SaveChangesAsync();
+                            var logger = context.RequestServices.GetService<ILogger<KeycloakUserProvisioningMiddleware>>();
+                            await SafeSaveChangesAsync(dbContext, logger);
                         }
                     }
                     else
@@ -372,7 +397,8 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                             });
                         }
 
-                        await dbContext.SaveChangesAsync();
+                        var logger = context.RequestServices.GetService<ILogger<KeycloakUserProvisioningMiddleware>>();
+                        await SafeSaveChangesAsync(dbContext, logger);
 
                         var authService = context.RequestServices.GetService<IUserAuthorizationService>();
                         authService?.InvalidateUserPermissions(externalIdentityId, null);
@@ -382,5 +408,45 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
         }
 
         await next(context);
+    }
+
+    private static async Task SafeSaveChangesAsync(DbContext dbContext, ILogger? logger)
+    {
+        try
+        {
+            await dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (IsDuplicateKeyException(ex))
+        {
+            logger?.LogInformation("KeycloakUserProvisioningMiddleware: Handled concurrent duplicate key race condition (23505): {Message}", ex.Message);
+            foreach (var entry in ex.Entries)
+            {
+                entry.State = EntityState.Detached;
+            }
+        }
+    }
+
+    private static bool IsDuplicateKeyException(DbUpdateException ex)
+    {
+        if (ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505")
+        {
+            return true;
+        }
+
+        var current = ex.InnerException;
+        while (current != null)
+        {
+            if (current is Npgsql.PostgresException p && p.SqlState == "23505")
+            {
+                return true;
+            }
+            if (current.Message.Contains("23505") || current.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            current = current.InnerException;
+        }
+
+        return ex.Message.Contains("23505") || ex.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase);
     }
 }
