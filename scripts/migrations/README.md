@@ -155,6 +155,41 @@ To guarantee zero regression prior to executing against production databases, ru
   --database "erpez_migration_test"
 ```
 
+### 4.2 Production-Sized Staging Dry-Runs & Lock Contention Profiling
+
+Prior to running the migration workflow in production, staging environments must execute a dry-run against a **production-sized dataset** to profile execution time, memory usage, and table lock durations:
+
+1. **Dry-Run Command**:
+   ```bash
+   ./scripts/migrations/verify-staging-migration.sh \
+     --tenant-id "<VERIFIED_STAGING_TENANT_GUID>" \
+     --host "staging-db.internal" \
+     --database "erpez_staging_prodsized" \
+     --dry-run
+   ```
+2. **Lock Contention & Duration Analysis**:
+   - **Stage 1 (Schema Expansion)**: `ADD COLUMN "TenantId" uuid NULL` takes an `ACCESS EXCLUSIVE` lock briefly for catalog metadata update without rewriting tables.
+   - **Stage 2 (Deterministic Backfill)**: Single-transaction `UPDATE` across 136 tables takes `ROW EXCLUSIVE` locks on updated rows. Profiling on staging reveals the exact duration required for backfill throughput (e.g. ~50,000 rows/sec).
+   - **Stage 3 (Integrity Assertions)**: Table scans evaluating null counts; fast sequential or bitmap index scans.
+   - **Stage 4 (Schema Enforcement)**: `ALTER COLUMN "TenantId" SET NOT NULL` validates that no nulls exist and establishes the column constraint.
+   - **Stage 5 (Composite Indexes)**: Generates `("TenantId", "Id")` across all 136 tables and unique composite natural keys.
+3. **Establishing Maintenance Windows**:
+   The dry-run stopwatch timer outputs the exact total elapsed execution time (`Migration execution completed in X second(s)`). Multiply this benchmark by 1.5x to determine the official maintenance window schedule.
+
+### 4.3 Gradual Rollout & Procurement Regression Verification Protocol
+
+Given the extensive domain model modifications across 136 operational entities:
+1. **Automated Procurement Regression Suite**:
+   Run the regression test suite covering complex procurement workflows, eager loading, explicit joins, cross-tenant FK isolation, and financial aggregations:
+   ```bash
+   dotnet test apps/backend/Dashboard/Dashboard.Application.UnitTests/Dashboard.Application.UnitTests.csproj \
+     --filter "FullyQualifiedName~ProcurementWorkflowCrossEntityJoinTests"
+   ```
+2. **Staging Smoke Testing Checklist**:
+   - Verify procurement lifecycle from PR creation through RFQ, Supplier Bidding, Notice of Award, Purchase Order, and Delivery Receipt.
+   - Confirm cross-entity queries (e.g., PO with Items and Supplier) evaluate cleanly without data leakage or missing navigation relations.
+   - Confirm financial summary reports aggregate data exclusively within the active tenant boundary.
+
 ---
 
 ## 5. Production Execution & Sign-Off Checklist

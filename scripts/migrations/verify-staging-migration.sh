@@ -128,6 +128,7 @@ EOF
 # 2. Execution / Dry Run
 echo ""
 echo "[Step 2/3] Executing Multi-Stage Migration Pipeline..."
+START_SEC=$(date +%s)
 if [ "$DRY_RUN" = true ]; then
   echo "Running simulation in transaction and rolling back..."
   psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 << EOF
@@ -142,6 +143,8 @@ else
     -c "SET erpez.legacy_tenant_id = '${TENANT_ID}';" \
     -f "$SQL_SCRIPT"
 fi
+ELAPSED_SEC=$(( $(date +%s) - START_SEC ))
+echo "Migration execution completed in ${ELAPSED_SEC} second(s)."
 
 # 3. Post-Migration Verification & Assertions
 echo ""

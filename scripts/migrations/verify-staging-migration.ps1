@@ -145,6 +145,7 @@ try {
 
 # 2. Execution / Dry Run
 Write-Host "`n[Step 2/3] Executing Multi-Stage Migration Pipeline..." -ForegroundColor Yellow
+$migrationTimer = [System.Diagnostics.Stopwatch]::StartNew()
 
 if ($DryRun) {
     Write-Host "Running in Dry-Run mode (Simulating migration within rolled-back transaction)..." -ForegroundColor Magenta
@@ -172,6 +173,8 @@ if ($DryRun) {
         exit $LASTEXITCODE
     }
 }
+$migrationTimer.Stop()
+Write-Host "Migration execution completed in $([math]::Round($migrationTimer.Elapsed.TotalSeconds, 2)) seconds." -ForegroundColor Cyan
 
 # 3. Post-Migration Verification & Assertions
 Write-Host "`n[Step 3/3] Running Strict Post-Migration Verification Assertions..." -ForegroundColor Yellow
