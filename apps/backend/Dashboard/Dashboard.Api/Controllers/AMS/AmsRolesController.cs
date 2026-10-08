@@ -1,4 +1,5 @@
 using ERPEZ.Application.Common.Dtos.AMS;
+using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.AMS;
 using ERPEZ.Infrastructure.Persistence;
 using ERPEZ.Shared.Authorization;
@@ -16,7 +17,8 @@ namespace ERPEZ.Api.Controllers.AMS;
 [Authorize]
 public class AmsRolesController(
     ApplicationDbContext dbContext,
-    IUserAuthorizationService authorizationService) : ControllerBase
+    IUserAuthorizationService authorizationService,
+    IUserProvisioningService userProvisioningService) : ControllerBase
 {
     [HttpGet]
     [HasPermission(Permissions.Admin.rolesManage)]
@@ -259,97 +261,14 @@ public class AmsRolesController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AssignUserRoles([FromBody] AssignUserRolesDto request, CancellationToken cancellationToken)
     {
-        Domain.Entities.Planning.User? user = null;
+        var (success, errorMessage) = await userProvisioningService.AssignUserRolesAsync(
+            request,
+            User.Identity?.Name ?? "Admin",
+            cancellationToken);
 
-        // 1. Try finding by UserId if provided
-        if (request.UserId.HasValue && request.UserId.Value != Guid.Empty)
+        if (!success)
         {
-            user = await dbContext.Users!
-                .Include(u => u.RoleAssignments)
-                .FirstOrDefaultAsync(u => u.Id == request.UserId.Value && !u.IsDeleted, cancellationToken);
-        }
-
-        // 2. Try finding by ExternalIdentityId if provided
-        if (user == null && !string.IsNullOrWhiteSpace(request.ExternalIdentityId))
-        {
-            user = await dbContext.Users!
-                .Include(u => u.RoleAssignments)
-                .FirstOrDefaultAsync(u => u.ExternalIdentityId == request.ExternalIdentityId && !u.IsDeleted, cancellationToken);
-        }
-
-        // 3. Try finding by Email if provided
-        if (user == null && !string.IsNullOrWhiteSpace(request.Email))
-        {
-            var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-            user = await dbContext.Users!
-                .Include(u => u.RoleAssignments)
-                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && !u.IsDeleted, cancellationToken);
-        }
-
-        // 4. If user does not exist in planning.Users yet, auto-provision them immediately!
-        if (user == null)
-        {
-            if (string.IsNullOrWhiteSpace(request.Email) && string.IsNullOrWhiteSpace(request.FullName))
-            {
-                return BadRequest(ApiResponse<bool>.Fail("User not found and insufficient details (Email/Name) provided to provision user profile."));
-            }
-
-            var email = !string.IsNullOrWhiteSpace(request.Email) ? request.Email.Trim() : $"{Guid.NewGuid()}@workspace.local";
-            var fullName = !string.IsNullOrWhiteSpace(request.FullName) ? request.FullName.Trim() : email.Split('@')[0];
-            var nameParts = fullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-            var firstName = nameParts.Length > 0 ? nameParts[0] : "Member";
-            var lastName = nameParts.Length > 1 ? nameParts[1] : "User";
-
-            user = new Domain.Entities.Planning.User
-            {
-                Id = request.UserId.HasValue && request.UserId.Value != Guid.Empty ? request.UserId.Value : Guid.NewGuid(),
-                ExternalIdentityId = request.ExternalIdentityId,
-                Username = email,
-                Email = email,
-                FirstName = firstName,
-                LastName = lastName,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = User.Identity?.Name ?? "Admin"
-            };
-
-            await dbContext.Users!.AddAsync(user, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-
-        // Remove existing assignments
-        if (user.RoleAssignments != null && user.RoleAssignments.Count > 0)
-        {
-            dbContext.UserRoleAssignments!.RemoveRange(user.RoleAssignments);
-        }
-
-        // Add new assignments
-        if (request.RoleIds != null && request.RoleIds.Count > 0)
-        {
-            var validRoleIds = await dbContext.AmsRoles!
-                .Where(r => request.RoleIds.Contains(r.Id) && !r.IsDeleted && r.IsActive)
-                .Select(r => r.Id)
-                .ToListAsync(cancellationToken);
-
-            foreach (var roleId in validRoleIds)
-            {
-                await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.Id,
-                    RoleId = roleId,
-                    AssignedAt = DateTime.UtcNow,
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = User.Identity?.Name ?? "Admin"
-                }, cancellationToken);
-            }
-        }
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        if (!string.IsNullOrWhiteSpace(user.ExternalIdentityId))
-        {
-            authorizationService.InvalidateUserPermissions(user.ExternalIdentityId, null);
+            return BadRequest(ApiResponse<bool>.Fail(errorMessage ?? "Failed to assign roles."));
         }
 
         return Ok(ApiResponse<bool>.Success(true));

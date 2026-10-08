@@ -200,7 +200,13 @@ For environments with existing operational data, schema changes follow a determi
 6. **Filter Activation**: Enable EF Core Global Query Filters and write-time interceptor enforcement.
 
 > [!IMPORTANT]
-> All DDL, DML backfills, and constraint updates run within an explicit transactional boundary (`scripts/migrations/production-tenant-backfill-and-migration.sql`). In the event of any validation failure or constraint violation, the entire migration aborts atomically, preventing partial schema states and data corruption.
+> **Production Database Initialization Routine**:
+> In Development environments, EF Core automatically applies migrations on container boot. In contrast, Production deployment pipelines and database initialization routines intentionally omit runtime auto-migration on container startup to prevent concurrency races across replicas. Instead, production initialization and upgrade routines must execute the strict transactional migration script (`scripts/migrations/production-tenant-backfill-and-migration.sql`) using `run-production-migration.sh` (or `.ps1`) with `ON_ERROR_STOP on`.
+> 
+> Running within an atomic PostgreSQL transaction (`BEGIN ... COMMIT`) guarantees:
+> 1. Large legacy single-tenant datasets across all 136 operational tables are deterministically backfilled to the verified target `TenantId`.
+> 2. Fail-closed assertion queries verify that zero records remain with `NULL` or empty GUIDs before applying `NOT NULL` constraints.
+> 3. If any statement or constraint fails, the entire transaction aborts atomically with `ROLLBACK`, completely eliminating partial state failures, data invisibility, or un-scoped operational records.
 
 ## 6. Cross-cutting runtime services
 

@@ -163,6 +163,7 @@ public static class DependencyInjection
         services.AddScoped<IFundSourceExcelImporter, FundSourceExcelImporter>();
         services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();
         services.AddScoped<IPositionImportService, PositionImportService>();
+        services.AddScoped<IUserProvisioningService, UserProvisioningService>();
         services.AddHostedService<TempFileCleanupService>();
 
         // ── Document Generation ─────────────────────────────────────────────────────
