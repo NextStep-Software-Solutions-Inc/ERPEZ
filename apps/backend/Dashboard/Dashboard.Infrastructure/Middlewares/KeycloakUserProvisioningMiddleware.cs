@@ -35,17 +35,45 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                     var email = context.User.FindFirstValue(ClaimTypes.Email) 
                         ?? context.User.FindFirstValue("email");
 
+                    if (string.IsNullOrWhiteSpace(email) && context.Request.Headers.TryGetValue("X-User-Email", out var emailH))
+                    {
+                        email = emailH.FirstOrDefault();
+                    }
+
                     var username = context.User.FindFirstValue("preferred_username") 
                         ?? context.User.FindFirstValue(ClaimTypes.Name) 
                         ?? email;
 
+                    if (string.IsNullOrWhiteSpace(username) && context.Request.Headers.TryGetValue("X-User-Name", out var userH))
+                    {
+                        username = userH.FirstOrDefault();
+                    }
+
                     var givenName = context.User.FindFirstValue(ClaimTypes.GivenName) 
-                        ?? context.User.FindFirstValue("given_name") 
-                        ?? username;
+                        ?? context.User.FindFirstValue("given_name");
+
+                    if (string.IsNullOrWhiteSpace(givenName) && context.Request.Headers.TryGetValue("X-User-Name", out var nameH))
+                    {
+                        var fullNameVal = nameH.FirstOrDefault()?.Trim();
+                        if (!string.IsNullOrEmpty(fullNameVal))
+                        {
+                            var parts = fullNameVal.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                            givenName = parts.Length > 0 ? parts[0] : fullNameVal;
+                        }
+                    }
 
                     var familyName = context.User.FindFirstValue(ClaimTypes.Surname) 
-                        ?? context.User.FindFirstValue("family_name") 
-                        ?? "User";
+                        ?? context.User.FindFirstValue("family_name");
+
+                    if (string.IsNullOrWhiteSpace(familyName) && context.Request.Headers.TryGetValue("X-User-Name", out var nameH2))
+                    {
+                        var fullNameVal = nameH2.FirstOrDefault()?.Trim();
+                        if (!string.IsNullOrEmpty(fullNameVal))
+                        {
+                            var parts = fullNameVal.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                            if (parts.Length > 1) familyName = parts[1];
+                        }
+                    }
 
                     var normalizedEmail = !string.IsNullOrWhiteSpace(email) ? email.Trim().ToLowerInvariant() : "";
 
@@ -68,7 +96,22 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                     var isSuperAdmin = (bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) 
                         || roleClaims.Any(r => r.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) || r.Equals("platform_administrator", StringComparison.OrdinalIgnoreCase));
 
-                    var hasAdminRoleClaim = isSuperAdmin || roleClaims.Any(r =>
+                    var isOperatingAdminHeader = false;
+                    if (context.Request.Headers.TryGetValue("X-Operating-Role", out var opRoleH))
+                    {
+                        var opRole = opRoleH.FirstOrDefault()?.Trim();
+                        if (!string.IsNullOrEmpty(opRole) &&
+                            (opRole.Equals("System Administrator", StringComparison.OrdinalIgnoreCase) ||
+                             opRole.Equals("Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
+                             opRole.Equals("Workspace Admin", StringComparison.OrdinalIgnoreCase) ||
+                             opRole.Equals("Workspace Administrator", StringComparison.OrdinalIgnoreCase) ||
+                             opRole.Equals("Platform Administrator", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            isOperatingAdminHeader = true;
+                        }
+                    }
+
+                    var hasAdminRoleClaim = isSuperAdmin || isOperatingAdminHeader || roleClaims.Any(r =>
                         r.Equals("org:admin", StringComparison.OrdinalIgnoreCase) ||
                         r.Equals("admin", StringComparison.OrdinalIgnoreCase) ||
                         r.Equals("Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||

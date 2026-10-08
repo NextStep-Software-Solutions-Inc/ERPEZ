@@ -390,11 +390,22 @@ export default function OperationalRolesTab() {
         }
       }
 
-      const assignedRoles =
+      const rawAssigned =
         roleAssignmentsMap.get(u.id.toLowerCase()) ||
         (resolved.authId ? roleAssignmentsMap.get(resolved.authId.toLowerCase()) : undefined) ||
         (resolved.email ? roleAssignmentsMap.get(resolved.email.toLowerCase()) : undefined) ||
         []
+
+      const isWorkspaceAdminMember =
+        resolved.roleBadge === 'Workspace Admin' ||
+        tm?.role === 'TenantAdmin' ||
+        tm?.role === 'Workspace Administrator' ||
+        tm?.roles?.some((r: string) => r.toLowerCase().includes('admin')) ||
+        (resolved.isCurrentUser && (currentAuthUser?.publicMetadata?.isSuperAdmin || currentAuthUser?.role?.includes('Admin') || currentAuthUser?.roles?.some((r: string) => r.toLowerCase().includes('admin'))))
+
+      const assignedRoles = rawAssigned.length > 0
+        ? rawAssigned
+        : (isWorkspaceAdminMember ? ['System Administrator'] : [])
 
       rows.push({
         key: `user-${u.id}`,
@@ -458,12 +469,17 @@ export default function OperationalRolesTab() {
         status = 'Active'
       }
 
-      const roleBadge = tm.role === 'TenantAdmin' ? 'Workspace Admin' : 'Workspace Member'
+      const roleBadge = tm.role === 'TenantAdmin' || tm.role === 'Workspace Administrator' || tm.roles?.some((r: string) => r.toLowerCase().includes('admin')) ? 'Workspace Admin' : 'Workspace Member'
 
-      const assignedRoles =
+      const rawRoles =
         (authId ? roleAssignmentsMap.get(authId.toLowerCase()) : undefined) ||
         (email ? roleAssignmentsMap.get(email.toLowerCase()) : undefined) ||
         []
+
+      const isWorkspaceAdmin = roleBadge === 'Workspace Admin' || isCurrentUser;
+      const assignedRoles = rawRoles.length > 0
+        ? rawRoles
+        : (isWorkspaceAdmin ? ['System Administrator'] : [])
 
       rows.push({
         key: `tm-${tm.id}`,
@@ -862,6 +878,13 @@ export default function OperationalRolesTab() {
                           </Badge>
                         ))}
                       </div>
+                    ) : row.roleBadge === 'Workspace Admin' || row.isCurrentUser ? (
+                      <Badge
+                        variant="outline"
+                        className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border-purple-200"
+                      >
+                        System Administrator (Workspace Admin)
+                      </Badge>
                     ) : row.status === 'Active' ? (
                       <Badge
                         variant="outline"

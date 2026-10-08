@@ -89,6 +89,13 @@ api.interceptors.request.use(
         config.headers['X-User-Email'] = userEmail
       }
 
+      const userName =
+        sessionStorage.getItem('erpez_user_name') ||
+        localStorage.getItem('erpez_user_name')
+      if (userName) {
+        config.headers['X-User-Name'] = userName
+      }
+
       const activeRole =
         sessionStorage.getItem('erpez_active_role') ||
         localStorage.getItem('erpez_active_role')

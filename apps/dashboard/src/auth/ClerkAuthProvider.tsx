@@ -424,15 +424,20 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
 
   const userEmail = user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || '';
 
-  // Synchronize authenticated user email to storage for backend platform admin identification
+  // Synchronize authenticated user email, name and active role to storage for backend identification
   useEffect(() => {
     if (userEmail && typeof window !== 'undefined') {
       try {
         localStorage.setItem('erpez_user_email', userEmail);
         sessionStorage.setItem('erpez_user_email', userEmail);
+        const name = user?.fullName || user?.firstName || user?.username || '';
+        if (name) {
+          localStorage.setItem('erpez_user_name', name);
+          sessionStorage.setItem('erpez_user_name', name);
+        }
       } catch {}
     }
-  }, [userEmail]);
+  }, [userEmail, user?.fullName, user?.firstName, user?.username]);
 
   const configuredAdminEmails = (
     (import.meta.env.VITE_PLATFORM_ADMIN_EMAILS as string | undefined) ||
@@ -544,8 +549,16 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     setActiveRole(newRole);
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('erpez_active_role', newRole);
+      localStorage.setItem('erpez_active_role', newRole);
     }
   }, []);
+
+  useEffect(() => {
+    if (activeRole && typeof window !== 'undefined') {
+      sessionStorage.setItem('erpez_active_role', activeRole);
+      localStorage.setItem('erpez_active_role', activeRole);
+    }
+  }, [activeRole]);
 
   const unifiedUser: UnifiedUser | null = useMemo(() => {
     if (!user) return null;
