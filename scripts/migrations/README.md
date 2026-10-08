@@ -202,20 +202,40 @@ Given the extensive domain model modifications across 136 operational entities:
 - [x] All 136 `(TenantId, Id)` composite performance indexes verified active in `pg_indexes`.
 - [x] Target production `legacy_tenant_id` verified from Control Plane DB.
 
-### Production Execution:
+### Production Execution Runbook:
 
-#### Manual Execution (PowerShell):
-```powershell
-.\scripts\migrations\run-production-migration.ps1 `
-  -TenantId "<VERIFIED_PROD_TENANT_GUID>" `
-  -ConnectionString $env:ERPEZ_DB_CONNECTION_STRING
+> [!IMPORTANT]
+> **Container Auto-Migrations are Intentionally Disabled in Production:**
+> Application container startup routines (`Database.Migrate()` / auto-migration listeners) are **intentionally disabled** in production environments (`Database:AutoMigrate=false`). Container auto-migrations are prohibited in production to prevent:
+> 1. Uncoordinated distributed schema locking across concurrent container replicas.
+> 2. Timeout failures during heavy backfill operations on production datasets.
+> 3. Partial migration states that leave legacy rows inaccessible to global query filters.
+> 
+> **Operator Upgrade Requirement:** Database administrators and deployment operators **MUST explicitly execute the transactional migration script (`production-tenant-backfill-and-migration.sql`) with `ON_ERROR_STOP on`** prior to launching updated application container revisions.
+
+#### Option A: Direct PostgreSQL CLI (`psql`) Execution:
+```bash
+# Execute transactional backfill with fail-closed ON_ERROR_STOP enforcement:
+psql "$ERPEZ_DB_CONNECTION_STRING" \
+  -v ON_ERROR_STOP=1 \
+  -v target_tenant_id='<VERIFIED_PROD_TENANT_GUID>' \
+  -f scripts/migrations/production-tenant-backfill-and-migration.sql
 ```
 
-#### Manual Execution (Bash):
+#### Option B: Automated Production Migration Runner (Bash):
 ```bash
+# Executes the script with -v ON_ERROR_STOP=1, pre-flight checks, and timing metrics:
 ./scripts/migrations/run-production-migration.sh \
   --tenant-id "<VERIFIED_PROD_TENANT_GUID>" \
   --connection-string "$ERPEZ_DB_CONNECTION_STRING"
+```
+
+#### Option C: Automated Production Migration Runner (PowerShell):
+```powershell
+# Executes the script with -v ON_ERROR_STOP=1, pre-flight checks, and timing metrics:
+.\scripts\migrations\run-production-migration.ps1 `
+  -TenantId "<VERIFIED_PROD_TENANT_GUID>" `
+  -ConnectionString $env:ERPEZ_DB_CONNECTION_STRING
 ```
 
 ---

@@ -121,9 +121,15 @@ ERPEZ supports a **Hybrid Multi-Tenancy Architecture** offering two distinct ope
 
 2. **Sovereign On-Premise Mode (`TenancyMode.OnPremise`)**:
    - **Persistence**: Dedicated physical database per tenant (`erpez_tenant_{tenantId}`).
-   - **Isolation**: Physical database separation via dedicated credentials stored encrypted in `TenantOperationalDatabases`.
+   - **Isolation**: Physical database separation via dedicated credentials stored in `TenantOperationalDatabases`.
+   - **Credential Security & Encryption**:
+     - Operational connection strings are encrypted at rest using **authenticated AES-256-GCM** via `AesGcmSecretEncryptionService`.
+     - Payloads are structured as `Base64(Nonce[12] + CipherText + Tag[16])` to prevent ciphertext tampering.
+     - Each record tracks an `EncryptionKeyVersion` integer to enable cryptographic key rotation without database downtime.
+     - In production on-premise deployments, master keys are securely provisioned via enterprise secret management services (e.g., Azure Key Vault, AWS Secrets Manager, HashiCorp Vault, or Kubernetes / Docker secrets) using `ENCRYPTION_MASTER_KEY_V{version}` or `Encryption:Keys:V{version}`.
+     - In non-development environments, the system strictly enforces **fail-closed initialization** via `EncryptionConfigurationValidator.Validate()`; missing master keys abort host startup immediately.
    - **Provisioning**: Asynchronous provisioning via Hangfire worker (`TenantDatabaseProvisioner`) that creates the physical PostgreSQL database and applies operational migrations.
-   - **Routing**: `CachedTenantConnectionResolver` queries the control-plane database, decrypts credentials, and caches the tenant connection string.
+   - **Routing & Invalidation**: `CachedTenantConnectionResolver` queries the control-plane database, decrypts credentials using `ISecretEncryptionService`, and caches the resolved connection string in-memory (`IMemoryCache`) for 10 minutes. Caches are immediately invalidated (`InvalidateConnection`) upon tenant deactivation, credential rotation, or tenancy mode changes.
    - **Defense in Depth**: Even in on-premise dedicated databases, entities still carry `TenantId` and enforce the same query filters and write validations, maintaining architectural symmetry across environments.
 
 ### 4.2. Request Lifecycle & Authoritative Security Boundary
@@ -230,11 +236,12 @@ Important configuration categories are:
 
 - `ConnectionStrings:DefaultConnection` — control-plane connection and the development fallback; Dashboard's tenant provider normally switches to the authorized operational connection per request.
 - `TenantRouting` — governs whether the development fallback is allowed.
+- `Encryption:Keys:V{n}` or `ENCRYPTION_MASTER_KEY_V{n}` — master encryption keys used by `AesGcmSecretEncryptionService` to secure on-premise operational database connection strings at rest. Supports versioned key rotation (`V1`, `V2`, etc.) and integration with enterprise secret managers (Azure Key Vault, AWS Secrets Manager, HashiCorp Vault, Kubernetes secrets). Non-development environments enforce fail-closed startup validation.
 - `JwtSettings` — authority/audience configuration for external identity-provider use.
 - `Cors` — environment-specific frontend origin policy.
 - `AzureBlobStorage` — file container and connection settings.
 
-Secrets must remain outside source control, using user secrets locally and deployment secret injection in hosted environments.
+Secrets must remain outside source control, using user secrets locally and deployment secret injection in hosted environments. Operational database credentials for sovereign on-premise tenants must always be encrypted via `ISecretEncryptionService` prior to persisting to `TenantOperationalDatabases`.
 
 ## 8. Current architecture considerations
 
