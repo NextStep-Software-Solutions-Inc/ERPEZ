@@ -11,6 +11,8 @@ public static class PlatformPermissions
     public const string subscriptionsManage = "platform.subscriptions.manage";
     public const string licensesManage = "platform.licenses.manage";
     public const string auditLogsView = "platform.audit_logs.view";
+    public const string inquiriesView = "platform.inquiries.view";
+    public const string inquiriesManage = "platform.inquiries.manage";
 
     public static readonly IReadOnlySet<string> all = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
@@ -23,6 +25,8 @@ public static class PlatformPermissions
         subscriptionsManage,
         licensesManage,
         auditLogsView,
+        inquiriesView,
+        inquiriesManage,
         "admin.tenants.manage",
         "admin.system.admin.manage",
         "admin.system.admin.view"

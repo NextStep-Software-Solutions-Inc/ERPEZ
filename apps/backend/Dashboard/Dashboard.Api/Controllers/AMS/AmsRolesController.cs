@@ -330,10 +330,6 @@ public class AmsRolesController(
     {
         var externalId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? User.FindFirstValue("primary_email_address");
-        if (string.IsNullOrWhiteSpace(email) && Request.Headers.TryGetValue("X-User-Email", out var emailHeader))
-        {
-            email = emailHeader.FirstOrDefault();
-        }
         var normalizedEmail = email?.Trim().ToLowerInvariant();
 
         if (string.IsNullOrWhiteSpace(externalId) && string.IsNullOrWhiteSpace(normalizedEmail))

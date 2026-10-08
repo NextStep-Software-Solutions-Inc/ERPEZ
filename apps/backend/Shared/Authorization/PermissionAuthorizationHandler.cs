@@ -11,7 +11,6 @@ namespace ERPEZ.Shared.Authorization;
 public class PermissionAuthorizationHandler(
     IUserAuthorizationService authorizationService,
     ITenantContextService tenantContext,
-    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null,
     Microsoft.Extensions.Configuration.IConfiguration? configuration = null) : AuthorizationHandler<PermissionRequirement>
 {
     protected override async Task HandleRequirementAsync(
@@ -28,7 +27,7 @@ public class PermissionAuthorizationHandler(
             return;
         }
 
-        // 2. SuperAdmin global bypass check
+        // 2. SuperAdmin / Platform Administrator verified identity check
         var isSuperAdminClaim = context.User.FindFirstValue("is_super_admin") 
             ?? context.User.FindFirstValue("super_admin")
             ?? context.User.FindFirstValue("is_platform_admin");
@@ -38,25 +37,7 @@ public class PermissionAuthorizationHandler(
             ?? context.User.FindFirstValue("email")
             ?? context.User.FindFirstValue("primary_email_address");
 
-        var httpReq = (context.Resource as Microsoft.AspNetCore.Http.HttpContext)?.Request
-            ?? httpContextAccessor?.HttpContext?.Request;
-
-        if (string.IsNullOrWhiteSpace(userEmail) && httpReq?.Headers.TryGetValue("X-User-Email", out var emailHeader) == true)
-        {
-            userEmail = emailHeader.FirstOrDefault();
-        }
-
         var normalizedEmail = userEmail?.Trim().ToLowerInvariant();
-
-        // Check active operating role header (from Operating Role Switcher)
-        string? activeOperatingRole = null;
-        if (httpReq?.Headers.TryGetValue("X-Operating-Role", out var opRoleHeader) == true)
-        {
-            activeOperatingRole = opRoleHeader.FirstOrDefault()?.Trim();
-        }
-
-        var isSuperAdminHeader = httpReq?.Headers.TryGetValue("X-Super-Admin", out var val) == true &&
-            string.Equals(val.ToString(), "true", StringComparison.OrdinalIgnoreCase);
 
         var configuredEmailsRaw = configuration?["PlatformAdmin:Emails"] 
             ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS");
@@ -68,18 +49,16 @@ public class PermissionAuthorizationHandler(
                 .Select(e => e.ToLowerInvariant())
                 .Contains(normalizedEmail);
 
-        var isOperatingAsPlatformAdmin = string.Equals(activeOperatingRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                        (string.IsNullOrWhiteSpace(activeOperatingRole) && isPlatformAdminByEmail);
-
-        if (isOperatingAsPlatformAdmin ||
-            isSuperAdminHeader ||
+        var isVerifiedPlatformAdmin = isPlatformAdminByEmail ||
             (bool.TryParse(isSuperAdminClaim, out var isSuperAdmin) && isSuperAdmin) ||
             context.User.IsInRole("SuperAdmin") ||
             context.User.IsInRole("Platform Administrator") ||
             context.User.IsInRole("platform_administrator") ||
             string.Equals(userRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(userRole, "platform_administrator", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(userRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            string.Equals(userRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+
+        if (isVerifiedPlatformAdmin)
         {
             context.Succeed(requirement);
             return;
@@ -88,13 +67,9 @@ public class PermissionAuthorizationHandler(
         // 3. Resolve Tenant Context
         var activeTenantId = tenantContext.TenantId;
 
-        // Workspace System Administrator & Tenant Administrator Role Authority:
-        // Operational System Administrators and Tenant Administrators have full authority over workspace member invitations and role governance within their workspace.
-        var isWorkspaceOrTenantAdmin = string.Equals(activeOperatingRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                      string.Equals(activeOperatingRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                      string.Equals(userRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                      string.Equals(userRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                      isPlatformAdminByEmail;
+        // Workspace System Administrator & Tenant Administrator Role Authority from verified token claims
+        var isWorkspaceOrTenantAdmin = string.Equals(userRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
+                                      string.Equals(userRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase);
 
         if (isWorkspaceOrTenantAdmin &&
             (requirement.Permission == "tenant.members.manage" ||

@@ -34,7 +34,6 @@ export interface ClerkAuthContextType {
   updateToken: (minValidity?: number) => Promise<boolean>;
   isClerkLive: boolean;
   getToken: () => Promise<string | null>;
-  toggleSuperAdminOverride?: (enabled?: boolean) => void;
 }
 
 const ClerkAuthContext = createContext<ClerkAuthContextType | undefined>(undefined);
@@ -157,43 +156,12 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
     (typeof window !== 'undefined' ? localStorage.getItem('erpez_tenant_id') : null) ||
     null;
 
-  const isDevSuperAdminOverride = Boolean(
-    typeof window !== 'undefined' && localStorage.getItem('erpez_is_super_admin') === 'true'
-  );
-
-  const unsafeRole = (clerkUser?.unsafeMetadata?.role as string) || null;
-  const isUnsafeSuperAdmin = Boolean(
-    unsafeRole === 'super-admin' ||
-    unsafeRole === 'platform_administrator' ||
-    unsafeRole === 'Platform Administrator' ||
-    clerkUser?.unsafeMetadata?.isSuperAdmin === true
-  );
-
   const isSuperAdmin = Boolean(
-    isEmailAdmin ||
+    clerkUser?.publicMetadata?.isSuperAdmin === true ||
     role === 'super-admin' ||
     role === 'platform_administrator' ||
-    role === 'Platform Administrator' ||
-    clerkUser?.publicMetadata?.isSuperAdmin === true ||
-    isUnsafeSuperAdmin ||
-    isDevSuperAdminOverride
+    role === 'Platform Administrator'
   );
-
-  const toggleSuperAdminOverride = (forceVal?: boolean) => {
-    if (typeof window === 'undefined') return;
-    const current = localStorage.getItem('erpez_is_super_admin') === 'true';
-    const next = forceVal !== undefined ? forceVal : !current;
-    localStorage.setItem('erpez_is_super_admin', String(next));
-    window.location.reload();
-  };
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).__toggleSuperAdmin = (enabled?: boolean) => {
-        toggleSuperAdminOverride(enabled);
-      };
-    }
-  }, []);
 
   const mappedUser: AuthUser | null = isSignedIn && clerkUser
     ? {
@@ -274,7 +242,6 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
         updateToken,
         isClerkLive: true,
         getToken: getClerkToken,
-        toggleSuperAdminOverride,
       }}
     >
       {children}

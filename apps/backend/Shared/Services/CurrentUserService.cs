@@ -28,21 +28,7 @@ public sealed class CurrentUserService(
                 ?? user?.FindFirstValue("email")
                 ?? user?.FindFirstValue("primary_email_address");
 
-            if (!string.IsNullOrWhiteSpace(claimEmail))
-            {
-                return claimEmail;
-            }
-
-            if (httpContextAccessor.HttpContext?.Request.Headers.TryGetValue("X-User-Email", out var emailHeader) == true)
-            {
-                var val = emailHeader.FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(val))
-                {
-                    return val.Trim();
-                }
-            }
-
-            return null;
+            return !string.IsNullOrWhiteSpace(claimEmail) ? claimEmail.Trim() : null;
         }
     }
 
@@ -81,13 +67,6 @@ public sealed class CurrentUserService(
     {
         get
         {
-            var request = httpContextAccessor.HttpContext?.Request;
-            if (request?.Headers.TryGetValue("X-Super-Admin", out var superAdminHdr) == true &&
-                string.Equals(superAdminHdr.ToString(), "true", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
             var user = httpContextAccessor.HttpContext?.User;
             if (user == null) return false;
 

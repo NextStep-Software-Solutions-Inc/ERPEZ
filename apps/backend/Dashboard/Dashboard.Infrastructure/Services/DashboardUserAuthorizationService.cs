@@ -64,11 +64,6 @@ public class DashboardUserAuthorizationService(
             ?? callerPrincipal?.FindFirstValue("email")
             ?? callerPrincipal?.FindFirstValue("primary_email_address");
 
-        if (string.IsNullOrWhiteSpace(callerEmail) &&
-            httpContextAccessor?.HttpContext?.Request.Headers.TryGetValue("X-User-Email", out var emailH) == true)
-        {
-            callerEmail = emailH.FirstOrDefault();
-        }
         var normalizedCallerEmail = callerEmail?.Trim().ToLowerInvariant();
 
         if (callerPrincipal != null && callerPrincipal.Identity?.IsAuthenticated == true)

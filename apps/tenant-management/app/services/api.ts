@@ -42,8 +42,6 @@ api.interceptors.request.use(
 
     let tenantId: string | null = null;
 
-    let userEmail: string | null = null;
-
     if (typeof window !== "undefined") {
       try {
         const storedToken = localStorage.getItem("erpez_auth_token");
@@ -51,10 +49,6 @@ api.interceptors.request.use(
           token = storedToken;
         }
         tenantId = localStorage.getItem("erpez_tenant_id");
-        if (localStorage.getItem("erpez_is_super_admin") === "true") {
-          config.headers["X-Super-Admin"] = "true";
-        }
-        userEmail = localStorage.getItem("erpez_user_email") || sessionStorage.getItem("erpez_user_email");
       } catch {
         // Ignore localStorage access errors
       }
@@ -65,9 +59,6 @@ api.interceptors.request.use(
     }
     if (tenantId) {
       config.headers["X-Tenant-Id"] = tenantId;
-    }
-    if (userEmail) {
-      config.headers["X-User-Email"] = userEmail;
     }
     return config;
   },

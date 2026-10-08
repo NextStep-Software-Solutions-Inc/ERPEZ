@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '~/components/ui/avatar';
-import { LogOut, Shield, ShieldCheck, ArrowRightLeft } from 'lucide-react';
+import { LogOut, Shield, ArrowRightLeft } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 
 interface UserMenuProps {
@@ -18,7 +18,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ className = '', showDetails = true }: UserMenuProps) {
-  const { user, isSuperAdmin, logout, toggleSuperAdminOverride } = useClerkAuth();
+  const { user, isSuperAdmin, logout } = useClerkAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -74,40 +74,28 @@ export function UserMenu({ className = '', showDetails = true }: UserMenuProps) 
 
         <DropdownMenuSeparator />
 
-        {/* Portal Switcher */}
-        {isSuperAdmin ? (
-          <DropdownMenuItem
-            onClick={() => {
-              if (isSuperAdminView) {
-                navigate('/overview');
-              } else {
-                navigate('/super-admin/overview');
-              }
-            }}
-            className="text-xs cursor-pointer font-medium text-blue-600 focus:bg-blue-50 focus:text-blue-700 py-2"
-          >
-            <ArrowRightLeft className="mr-2 h-3.5 w-3.5" />
-            <span>
-              {isSuperAdminView
-                ? 'Switch to Tenant Workspace'
-                : 'Switch to Super Admin Portal'}
-            </span>
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem
-            onClick={() => {
-              if (toggleSuperAdminOverride) {
-                toggleSuperAdminOverride(true);
-              } else {
-                localStorage.setItem('erpez_is_super_admin', 'true');
-                window.location.href = '/super-admin/overview';
-              }
-            }}
-            className="text-xs cursor-pointer font-medium text-purple-700 hover:text-purple-800 focus:bg-purple-50 py-2"
-          >
-            <ShieldCheck className="mr-2 h-3.5 w-3.5 text-purple-600" />
-            <span>Enable Super Admin Access</span>
-          </DropdownMenuItem>
+        {/* Portal Switcher - Only available for verified Super Admins */}
+        {isSuperAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => {
+                if (isSuperAdminView) {
+                  navigate('/overview');
+                } else {
+                  navigate('/super-admin/overview');
+                }
+              }}
+              className="text-xs cursor-pointer font-medium text-blue-600 focus:bg-blue-50 focus:text-blue-700 py-2"
+            >
+              <ArrowRightLeft className="mr-2 h-3.5 w-3.5" />
+              <span>
+                {isSuperAdminView
+                  ? 'Switch to Tenant Workspace'
+                  : 'Switch to Super Admin Portal'}
+              </span>
+            </DropdownMenuItem>
+          </>
         )}
 
         <DropdownMenuSeparator />

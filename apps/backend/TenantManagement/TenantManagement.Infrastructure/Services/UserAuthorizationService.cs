@@ -85,25 +85,13 @@ public class UserAuthorizationService(
             return PlatformPermissions.all;
         }
 
-        // Resolve caller context from headers/claims
+        // Resolve caller context from claims
         string? callerEmail = null;
-        string? activeOperatingRole = null;
         if (httpContextAccessor?.HttpContext != null)
         {
             callerEmail = httpContextAccessor.HttpContext.User.FindFirstValue(System.Security.Claims.ClaimTypes.Email)
                 ?? httpContextAccessor.HttpContext.User.FindFirstValue("email")
                 ?? httpContextAccessor.HttpContext.User.FindFirstValue("primary_email_address");
-
-            if (string.IsNullOrWhiteSpace(callerEmail) &&
-                httpContextAccessor.HttpContext.Request.Headers.TryGetValue("X-User-Email", out var emailHeader))
-            {
-                callerEmail = emailHeader.FirstOrDefault();
-            }
-
-            if (httpContextAccessor.HttpContext.Request.Headers.TryGetValue("X-Operating-Role", out var opRoleHeader))
-            {
-                activeOperatingRole = opRoleHeader.FirstOrDefault();
-            }
         }
         var normalizedCallerEmail = callerEmail?.Trim().ToLowerInvariant();
 
@@ -179,9 +167,11 @@ public class UserAuthorizationService(
                     .Select(e => e.ToLowerInvariant())
                     .Contains(normalizedCallerEmail);
 
-            var isPrivilegedAdmin = isConfiguredPlatformAdmin ||
-                                    string.Equals(activeOperatingRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                    string.Equals(activeOperatingRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase);
+            var userHasAdminRoleInTenant = roleNames.Any(r =>
+                string.Equals(r, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r, "System Administrator", StringComparison.OrdinalIgnoreCase));
+
+            var isPrivilegedAdmin = isConfiguredPlatformAdmin || userHasAdminRoleInTenant;
 
             if (isPrivilegedAdmin)
             {
