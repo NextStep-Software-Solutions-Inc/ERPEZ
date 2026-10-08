@@ -1,11 +1,9 @@
 import { useClerkAuth } from "~/providers/ClerkAuthProvider";
-import { useTenant } from "~/providers/TenantProvider";
 import { useLocation, Navigate, Outlet } from "react-router";
 import LoadingSpinner from "~/components/LoadingSpinner"; 
 
 export default function RoleLayout() {
     const { isInitialized, isSuperAdmin } = useClerkAuth();
-    const { isSpectating } = useTenant();
     const location = useLocation();
 
     if (!isInitialized) {
@@ -17,10 +15,6 @@ export default function RoleLayout() {
                 />
             </div>
         );
-    }
-
-    if (isInitialized && isSuperAdmin && !isSpectating && (location.pathname === "/" || location.pathname === "/overview")) {
-        return <Navigate to="/super-admin/overview" replace />;
     }
 
     if (isInitialized && isSuperAdmin && (location.pathname === "/super-admin" || location.pathname === "/super-admin/")) {

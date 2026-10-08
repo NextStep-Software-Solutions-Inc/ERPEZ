@@ -45,7 +45,7 @@ export default function Welcome() {
                             </div>
                         ) : (
                             <div className="flex items-center gap-3">
-                                <Link to="/overview">
+                                <Link to={isSuperAdmin ? "/super-admin/overview" : "/overview"}>
                                     <Button variant="outline" className="bg-[#10B981] hover:bg-[#0a5139] text-white hover:text-white">
                                         Go to Dashboard
                                     </Button>
