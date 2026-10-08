@@ -88,7 +88,16 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     }
     return null;
   });
+  const [loadTimeout, setLoadTimeout] = useState(false);
   const hasAutoActivatedRef = useRef(false);
+
+  useEffect(() => {
+    if (isLoaded) return;
+    const timer = setTimeout(() => {
+      setLoadTimeout(true);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [isLoaded]);
 
   // Fetch tenants and members from TenantManagement.Api upon signing in
   useEffect(() => {
@@ -764,10 +773,30 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-background p-6">
+        <div className="max-w-md w-full text-center space-y-4">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-          <p className="mt-4 text-sm text-muted-foreground">Initializing Clerk authentication...</p>
+          <p className="text-sm font-medium text-foreground">Initializing Clerk authentication...</p>
+          {loadTimeout && (
+            <div className="p-4 rounded-lg border border-amber-500/20 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300 text-left space-y-2 animate-in fade-in duration-300">
+              <p className="font-semibold text-sm">Authentication is taking longer than usual</p>
+              <p className="text-muted-foreground">The application is waiting for Clerk&apos;s authentication service to initialize:</p>
+              <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                <li>Check DevTools Console (<kbd className="px-1 py-0.5 rounded bg-muted">F12</kbd>) for network blocks or CORS errors.</li>
+                <li>Disable adblockers / Brave Shields for <code className="px-1 rounded bg-muted">localhost</code> and <code className="px-1 rounded bg-muted">*.clerk.accounts.dev</code>.</li>
+                <li>Verify your internet connection to Clerk&apos;s account portal.</li>
+              </ul>
+              <div className="pt-2 flex justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="px-3 py-1.5 text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                >
+                  Reload Page
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
