@@ -11,7 +11,8 @@ namespace ERPEZ.Shared.Authorization;
 public class PermissionAuthorizationHandler(
     IUserAuthorizationService authorizationService,
     ITenantContextService tenantContext,
-    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null) : AuthorizationHandler<PermissionRequirement>
+    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null,
+    Microsoft.Extensions.Configuration.IConfiguration? configuration = null) : AuthorizationHandler<PermissionRequirement>
 {
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
@@ -57,11 +58,13 @@ public class PermissionAuthorizationHandler(
         var isSuperAdminHeader = httpReq?.Headers.TryGetValue("X-Super-Admin", out var val) == true &&
             string.Equals(val.ToString(), "true", StringComparison.OrdinalIgnoreCase);
 
-        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) &&
-            (normalizedEmail == "jeanmaureal@gmail.com" ||
-             normalizedEmail == "superadmin@erpez.dev" ||
-             normalizedEmail == "admin@erpez.dev" ||
-             normalizedEmail == "tabasan.louiejayb@gmail.com");
+        var configuredPlatformEmails = (configuration?["PlatformAdmin:Emails"] 
+            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
+            ?? "jeanmaureal@gmail.com,superadmin@erpez.dev,admin@erpez.dev,tabasan.louiejayb@gmail.com")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(e => e.ToLowerInvariant());
+
+        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) && configuredPlatformEmails.Contains(normalizedEmail);
 
         var isOperatingAsPlatformAdmin = string.Equals(activeOperatingRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
                                         (string.IsNullOrWhiteSpace(activeOperatingRole) && isPlatformAdminByEmail);
