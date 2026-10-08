@@ -141,7 +141,7 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                             user.Username = username;
                         }
 
-                        if (!string.IsNullOrWhiteSpace(givenName) && (string.IsNullOrWhiteSpace(user.FirstName) || user.FirstName == normalizedEmail.Split('@')[0]))
+                        if (!string.IsNullOrWhiteSpace(givenName) && (string.IsNullOrWhiteSpace(user.FirstName) || user.FirstName == normalizedEmail?.Split('@')[0]))
                         {
                             user.FirstName = givenName;
                         }
