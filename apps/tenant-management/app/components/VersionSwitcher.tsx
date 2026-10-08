@@ -152,7 +152,7 @@ export function VersionSwitcher() {
                 </DropdownMenuItem>
               );
             })}
-            {(isSuperAdmin || isSpectating) && (
+            {isSuperAdmin && (
               <>
                 <DropdownMenuSeparator className="my-1 bg-slate-100" />
                 {isSpectating && (
