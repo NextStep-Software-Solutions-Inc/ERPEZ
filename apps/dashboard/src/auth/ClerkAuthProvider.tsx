@@ -518,11 +518,16 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     // Tenant governance role if user is explicitly an authorized tenant admin of this workspace
     if (isTenantAdmin) {
       list.push('Tenant Administrator');
+      // The Tenant Administrator / Owner who registered the workspace has full workspace admin access
+      list.push('System Administrator');
     }
 
     // Operational roles returned from active tenant database (e.g. Planning Officer, Inventory Manager, etc.)
     if (assignedOperationalRoles.length > 0) {
-      list.push(...assignedOperationalRoles);
+      const filteredOperational = assignedOperationalRoles.filter(
+        (r) => r !== 'Employee / Viewer' || (!isTenantAdmin && assignedOperationalRoles.length === 1)
+      );
+      list.push(...filteredOperational);
     }
 
     // Fallback if user has no assigned operational roles and is not a tenant admin

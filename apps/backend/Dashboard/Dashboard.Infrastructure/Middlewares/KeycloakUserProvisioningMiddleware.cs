@@ -128,15 +128,18 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                                 const string adminSql = """
                                     SELECT 1
                                     FROM "TenantMembers" tm
-                                    JOIN "TenantMemberRoleAssignments" tmra ON tmra."TenantMemberId" = tm."Id"
-                                    JOIN "Roles" r ON r."Id" = tmra."RoleId"
+                                    LEFT JOIN "TenantMemberRoleAssignments" tmra ON tmra."TenantMemberId" = tm."Id"
+                                    LEFT JOIN "Roles" r ON r."Id" = tmra."RoleId"
                                     WHERE (tm."ExternalIdentityId" = @externalId OR tm."UserId" = @externalId OR (tm."Email" IS NOT NULL AND LOWER(tm."Email") = LOWER(@email)))
                                       AND tm."TenantId" = @currentTenantId
                                       AND tm."IsDeleted" = false
-                                      AND tm."Status" = 0
+                                      AND (tm."Status" = 1 OR tm."Status" = 0)
                                       AND (
-                                        r."NormalizedName" IN ('TENANT ADMINISTRATOR', 'DASHBOARD SYSTEM ADMIN', 'SYSTEM ADMINISTRATOR', 'PLATFORM ADMINISTRATOR')
-                                        OR LOWER(r."Name") LIKE '%admin%'
+                                        tm."Role" IN (1, 4)
+                                        OR (r."NormalizedName" IS NOT NULL AND (
+                                            r."NormalizedName" IN ('TENANT ADMINISTRATOR', 'DASHBOARD SYSTEM ADMIN', 'SYSTEM ADMINISTRATOR', 'PLATFORM ADMINISTRATOR')
+                                            OR LOWER(r."Name") LIKE '%admin%'
+                                        ))
                                       )
                                     LIMIT 1;
                                 """;
