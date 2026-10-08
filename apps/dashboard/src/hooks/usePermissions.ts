@@ -13,10 +13,8 @@ export function usePermissions() {
 
   const currentRole = activeRole || role || ''
   const isWorkspaceAdmin =
-    isSuperAdmin ||
     currentRole === 'System Administrator' ||
     currentRole === 'Workspace Administrator' ||
-    currentRole === 'Tenant Administrator' ||
     currentRole === 'Platform Administrator'
 
   const {

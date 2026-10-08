@@ -162,10 +162,17 @@ public class UserAuthorizationService(
             }
 
             // Operating Role Authority (System Administrator / Tenant Administrator or platform admin operating in tenant)
-            var isPrivilegedAdmin = (!string.IsNullOrEmpty(normalizedCallerEmail) &&
-                                    (normalizedCallerEmail == "jeanmaureal@gmail.com" || normalizedCallerEmail == "superadmin@erpez.dev")) ||
-                                    string.Equals(activeOperatingRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                    string.Equals(activeOperatingRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase);
+            var isBoundedRole = !string.IsNullOrWhiteSpace(activeOperatingRole) &&
+                                !string.Equals(activeOperatingRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase) &&
+                                !string.Equals(activeOperatingRole, "System Administrator", StringComparison.OrdinalIgnoreCase) &&
+                                !string.Equals(activeOperatingRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase);
+
+            var isPrivilegedAdmin = !isBoundedRole &&
+                                    ((!string.IsNullOrEmpty(normalizedCallerEmail) &&
+                                      (normalizedCallerEmail == "jeanmaureal@gmail.com" || normalizedCallerEmail == "superadmin@erpez.dev")) ||
+                                     string.Equals(activeOperatingRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(activeOperatingRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(activeOperatingRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase));
 
             if (isPrivilegedAdmin)
             {

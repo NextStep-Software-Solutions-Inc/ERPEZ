@@ -92,27 +92,19 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                         .Select(c => c.Value)
                         .ToList();
 
-                    var isSuperAdminClaim = context.User.FindFirstValue("is_super_admin") 
-                        ?? context.User.FindFirstValue("super_admin");
-                    var isSuperAdmin = (bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) 
-                        || roleClaims.Any(r => r.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) || r.Equals("platform_administrator", StringComparison.OrdinalIgnoreCase));
-
-                    var isOperatingAdminHeader = false;
-                    if (context.Request.Headers.TryGetValue("X-Operating-Role", out var opRoleH))
+                    // Resolve active tenant ID from context or header for strict multi-tenant boundary checks
+                    var tenantContext = context.RequestServices.GetService<ITenantContextService>();
+                    var currentTenantId = tenantContext?.TenantId;
+                    if (!currentTenantId.HasValue && context.Request.Headers.TryGetValue("X-Tenant-Id", out var tH))
                     {
-                        var opRole = opRoleH.FirstOrDefault()?.Trim();
-                        if (!string.IsNullOrEmpty(opRole) &&
-                            (opRole.Equals("System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                             opRole.Equals("Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
-                             opRole.Equals("Workspace Admin", StringComparison.OrdinalIgnoreCase) ||
-                             opRole.Equals("Workspace Administrator", StringComparison.OrdinalIgnoreCase) ||
-                             opRole.Equals("Platform Administrator", StringComparison.OrdinalIgnoreCase)))
+                        if (Guid.TryParse(tH.FirstOrDefault(), out var parsedTid))
                         {
-                            isOperatingAdminHeader = true;
+                            currentTenantId = parsedTid;
                         }
                     }
 
-                    var hasAdminRoleClaim = isSuperAdmin || isOperatingAdminHeader || roleClaims.Any(r =>
+                    // Check administrative role claims from token (Clerk org_role, Keycloak realm/client roles, standard Role claims)
+                    var hasAdminRoleClaim = roleClaims.Any(r =>
                         r.Equals("org:admin", StringComparison.OrdinalIgnoreCase) ||
                         r.Equals("admin", StringComparison.OrdinalIgnoreCase) ||
                         r.Equals("Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
@@ -122,8 +114,8 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                         r.Equals("Workspace Admin", StringComparison.OrdinalIgnoreCase));
 
                     var isControlPlaneAdmin = false;
-                    // If no explicit admin claim in token, verify against Control Plane TenantMembers table
-                    if (!hasAdminRoleClaim)
+                    // If no explicit admin claim in token, verify against Control Plane TenantMembers table strictly for this tenant
+                    if (!hasAdminRoleClaim && currentTenantId.HasValue)
                     {
                         var config = context.RequestServices.GetService<IConfiguration>();
                         var controlConnStr = config?.GetConnectionString("DefaultConnection");
@@ -139,6 +131,7 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                                     JOIN "TenantMemberRoleAssignments" tmra ON tmra."TenantMemberId" = tm."Id"
                                     JOIN "Roles" r ON r."Id" = tmra."RoleId"
                                     WHERE (tm."ExternalIdentityId" = @externalId OR tm."UserId" = @externalId OR (tm."Email" IS NOT NULL AND LOWER(tm."Email") = LOWER(@email)))
+                                      AND tm."TenantId" = @currentTenantId
                                       AND tm."IsDeleted" = false
                                       AND tm."Status" = 0
                                       AND (
@@ -150,6 +143,7 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                                 await using var cmd = new Npgsql.NpgsqlCommand(adminSql, conn);
                                 cmd.Parameters.AddWithValue("externalId", externalIdentityId);
                                 cmd.Parameters.AddWithValue("email", normalizedEmail ?? string.Empty);
+                                cmd.Parameters.AddWithValue("currentTenantId", currentTenantId.Value);
                                 var scalar = await cmd.ExecuteScalarAsync();
                                 if (scalar != null && scalar != DBNull.Value)
                                 {
@@ -304,64 +298,97 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                             var authService = context.RequestServices.GetService<IUserAuthorizationService>();
                             authService?.InvalidateUserPermissions(externalIdentityId, null);
                         }
-                        else if (currentAssignments.Count == 0)
-                        {
-                            // Regular invited user with no operational roles pre-assigned -> default to Employee / Viewer
-                            var viewerRole = await dbContext.AmsRoles!
-                                .FirstOrDefaultAsync(r => r.Name == "Employee / Viewer" && !r.IsDeleted);
-
-                            if (viewerRole != null)
-                            {
-                                var trackedViewer = dbContext.ChangeTracker.Entries<UserRoleAssignment>()
-                                    .FirstOrDefault(e => e.Entity.UserId == user.Id && e.Entity.RoleId == viewerRole.Id)?.Entity;
-
-                                var existingViewer = trackedViewer ?? await dbContext.UserRoleAssignments!
-                                    .IgnoreQueryFilters()
-                                    .FirstOrDefaultAsync(ra => ra.UserId == user.Id && ra.RoleId == viewerRole.Id);
-
-                                if (existingViewer != null)
-                                {
-                                    existingViewer.IsDeleted = false;
-                                    existingViewer.DeletedAt = null;
-                                    existingViewer.DeletedBy = null;
-                                    existingViewer.UpdatedAt = DateTime.UtcNow;
-                                    existingViewer.UpdatedBy = "AutoProvisioning";
-                                }
-                                else
-                                {
-                                    var isAlreadyTracked = dbContext.ChangeTracker.Entries<UserRoleAssignment>()
-                                        .Any(e => e.Entity.UserId == user.Id && e.Entity.RoleId == viewerRole.Id);
-
-                                    if (!isAlreadyTracked)
-                                    {
-                                        await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
-                                        {
-                                            Id = Guid.NewGuid(),
-                                            UserId = user.Id,
-                                            RoleId = viewerRole.Id,
-                                            AssignedAt = DateTime.UtcNow,
-                                            CreatedAt = DateTime.UtcNow,
-                                            CreatedBy = "AutoProvisioning"
-                                        });
-                                    }
-                                }
-
-                                var logger = context.RequestServices.GetService<ILogger<KeycloakUserProvisioningMiddleware>>();
-                                await SafeSaveChangesAsync(dbContext, logger);
-
-                                var authService = context.RequestServices.GetService<IUserAuthorizationService>();
-                                authService?.InvalidateUserPermissions(externalIdentityId, null);
-                            }
-                            else
-                            {
-                                var logger = context.RequestServices.GetService<ILogger<KeycloakUserProvisioningMiddleware>>();
-                                await SafeSaveChangesAsync(dbContext, logger);
-                            }
-                        }
                         else
                         {
                             var logger = context.RequestServices.GetService<ILogger<KeycloakUserProvisioningMiddleware>>();
-                            await SafeSaveChangesAsync(dbContext, logger);
+
+                            // 1. If user was previously mistakenly assigned "System Administrator" via auto-provisioning
+                            // but does not hold an authorized admin role for this workspace, clean up that ungranted assignment
+                            var adminAssignments = currentAssignments
+                                .Where(ra => (adminRole != null && ra.RoleId == adminRole.Id) || (ra.Role != null && ra.Role.Name == "System Administrator"))
+                                .ToList();
+
+                            if (adminAssignments.Count > 0)
+                            {
+                                dbContext.UserRoleAssignments!.RemoveRange(adminAssignments);
+                                await SafeSaveChangesAsync(dbContext, logger);
+                                currentAssignments.RemoveAll(ra => adminAssignments.Contains(ra));
+                                var authService = context.RequestServices.GetService<IUserAuthorizationService>();
+                                authService?.InvalidateUserPermissions(externalIdentityId, null);
+                            }
+
+                            // 2. If user has explicit operational business roles (e.g. Planning Officer), clean up any redundant Employee / Viewer role
+                            var hasRealOperationalRole = currentAssignments.Any(ra =>
+                                ra.Role != null && !ra.Role.Name.Equals("Employee / Viewer", StringComparison.OrdinalIgnoreCase) && !ra.Role.Name.Equals("System Administrator", StringComparison.OrdinalIgnoreCase));
+
+                            if (hasRealOperationalRole)
+                            {
+                                var viewerAssignments = currentAssignments
+                                    .Where(ra => ra.Role != null && ra.Role.Name.Equals("Employee / Viewer", StringComparison.OrdinalIgnoreCase))
+                                    .ToList();
+
+                                if (viewerAssignments.Count > 0)
+                                {
+                                    dbContext.UserRoleAssignments!.RemoveRange(viewerAssignments);
+                                    await SafeSaveChangesAsync(dbContext, logger);
+                                    currentAssignments.RemoveAll(ra => viewerAssignments.Contains(ra));
+                                }
+                            }
+                            else if (currentAssignments.Count == 0)
+                            {
+                                // Regular user with no operational roles pre-assigned -> default to Employee / Viewer
+                                var viewerRole = await dbContext.AmsRoles!
+                                    .FirstOrDefaultAsync(r => r.Name == "Employee / Viewer" && !r.IsDeleted);
+
+                                if (viewerRole != null)
+                                {
+                                    var trackedViewer = dbContext.ChangeTracker.Entries<UserRoleAssignment>()
+                                        .FirstOrDefault(e => e.Entity.UserId == user.Id && e.Entity.RoleId == viewerRole.Id)?.Entity;
+
+                                    var existingViewer = trackedViewer ?? await dbContext.UserRoleAssignments!
+                                        .IgnoreQueryFilters()
+                                        .FirstOrDefaultAsync(ra => ra.UserId == user.Id && ra.RoleId == viewerRole.Id);
+
+                                    if (existingViewer != null)
+                                    {
+                                        existingViewer.IsDeleted = false;
+                                        existingViewer.DeletedAt = null;
+                                        existingViewer.DeletedBy = null;
+                                        existingViewer.UpdatedAt = DateTime.UtcNow;
+                                        existingViewer.UpdatedBy = "AutoProvisioning";
+                                    }
+                                    else
+                                    {
+                                        var isAlreadyTracked = dbContext.ChangeTracker.Entries<UserRoleAssignment>()
+                                            .Any(e => e.Entity.UserId == user.Id && e.Entity.RoleId == viewerRole.Id);
+
+                                        if (!isAlreadyTracked)
+                                        {
+                                            await dbContext.UserRoleAssignments!.AddAsync(new UserRoleAssignment
+                                            {
+                                                Id = Guid.NewGuid(),
+                                                UserId = user.Id,
+                                                RoleId = viewerRole.Id,
+                                                AssignedAt = DateTime.UtcNow,
+                                                CreatedAt = DateTime.UtcNow,
+                                                CreatedBy = "AutoProvisioning"
+                                            });
+                                        }
+                                    }
+
+                                    await SafeSaveChangesAsync(dbContext, logger);
+                                    var authService = context.RequestServices.GetService<IUserAuthorizationService>();
+                                    authService?.InvalidateUserPermissions(externalIdentityId, null);
+                                }
+                                else
+                                {
+                                    await SafeSaveChangesAsync(dbContext, logger);
+                                }
+                            }
+                            else
+                            {
+                                await SafeSaveChangesAsync(dbContext, logger);
+                            }
                         }
                     }
                     else

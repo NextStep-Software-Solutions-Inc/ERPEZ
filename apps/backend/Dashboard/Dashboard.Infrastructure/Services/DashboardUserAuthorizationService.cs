@@ -104,21 +104,11 @@ public class DashboardUserAuthorizationService(
             }
         }
 
-        if (!callerIsAdmin && httpContextAccessor?.HttpContext?.Request.Headers.TryGetValue("X-Operating-Role", out var opRoleH) == true)
-        {
-            var opRole = opRoleH.FirstOrDefault()?.Trim();
-            if (!string.IsNullOrEmpty(opRole) &&
-                (opRole.Equals("System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                 opRole.Equals("Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
-                 opRole.Equals("Workspace Admin", StringComparison.OrdinalIgnoreCase) ||
-                 opRole.Equals("Workspace Administrator", StringComparison.OrdinalIgnoreCase) ||
-                 opRole.Equals("Platform Administrator", StringComparison.OrdinalIgnoreCase)))
-            {
-                callerIsAdmin = true;
-            }
-        }
+        var isExplicitBoundedRole = !string.IsNullOrWhiteSpace(activeRoleHeader) &&
+                                    !activeRoleHeader.Equals("platform administrator", StringComparison.OrdinalIgnoreCase) &&
+                                    !activeRoleHeader.Equals("system administrator", StringComparison.OrdinalIgnoreCase);
 
-        if (callerIsAdmin)
+        if (callerIsAdmin && !isExplicitBoundedRole)
         {
             var allPerms = Permissions.GetAllPermissions().ToHashSet(StringComparer.OrdinalIgnoreCase);
             var cacheOptionsAdmin = new MemoryCacheEntryOptions
@@ -134,7 +124,7 @@ public class DashboardUserAuthorizationService(
 
         if (dbContext.UserRoleAssignments != null)
         {
-            var assignedPermissions = await dbContext.UserRoleAssignments
+            var query = dbContext.UserRoleAssignments
                 .AsNoTracking()
                 .Where(ra => !ra.IsDeleted &&
                              ra.User != null &&
@@ -146,8 +136,15 @@ public class DashboardUserAuthorizationService(
                              !ra.User.IsDeleted &&
                              ra.Role != null &&
                              ra.Role.IsActive &&
-                             !ra.Role.IsDeleted)
-                .SelectMany(ra => ra.Role.Permissions)
+                             !ra.Role.IsDeleted);
+
+            if (isExplicitBoundedRole)
+            {
+                query = query.Where(ra => ra.Role!.Name.ToLower() == activeRoleHeader);
+            }
+
+            var assignedPermissions = await query
+                .SelectMany(ra => ra.Role!.Permissions)
                 .Where(p => !p.IsDeleted)
                 .Select(p => p.PermissionKey)
                 .Distinct()

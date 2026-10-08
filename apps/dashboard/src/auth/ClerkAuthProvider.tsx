@@ -454,28 +454,38 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     user?.publicMetadata?.role === 'super-admin'
   );
 
-  const isOrgAdmin = useMemo(() => {
-    if (isPlatformAdmin) return true;
-    if (user?.publicMetadata?.isSuperAdmin) return true;
+  const isTenantAdmin = useMemo(() => {
+    if (!activeTenant) return false;
+
+    // 1. Check TenantManagement members for active tenant
+    const tmSelf = tmMembers.find(
+      (m) =>
+        (m.userId && user?.id && m.userId.toLowerCase() === user.id.toLowerCase()) ||
+        (m.email && userEmail && m.email.toLowerCase() === userEmail)
+    );
+    if (tmSelf) {
+      const roleUpper = (tmSelf.role || '').toUpperCase();
+      if (
+        roleUpper === 'TENANTADMIN' ||
+        roleUpper === 'TENANT ADMINISTRATOR' ||
+        roleUpper === 'DASHBOARD SYSTEM ADMIN' ||
+        tmSelf.roles?.some((r: string) => {
+          const u = r.toUpperCase();
+          return u === 'TENANTADMIN' || u === 'TENANT ADMINISTRATOR' || u === 'DASHBOARD SYSTEM ADMIN';
+        })
+      ) {
+        return true;
+      }
+    }
+
+    // 2. Check Clerk Organization membership for active organization
     const activeOrgId = organization?.id || activeTenant?.externalOrgId || activeTenant?.id;
     const membership = userMemberships?.data?.find((m: any) => m.organization?.id === activeOrgId);
     if (membership?.role === 'org:admin' || membership?.role === 'admin') return true;
     if (organization && (organization as any).membership?.role === 'org:admin') return true;
-    const tmSelf = tmMembers.find(
-      (m) =>
-        (m.userId && user?.id && m.userId.toLowerCase() === user.id.toLowerCase()) ||
-        (m.email && user?.primaryEmailAddress?.emailAddress && m.email.toLowerCase() === user.primaryEmailAddress.emailAddress.toLowerCase())
-    );
-    if (
-      tmSelf &&
-      (tmSelf.role === 'TenantAdmin' ||
-       tmSelf.role === 'DASHBOARD SYSTEM ADMIN' ||
-       tmSelf.roles?.some((r: string) => r.toUpperCase().includes('ADMIN')))
-    ) {
-      return true;
-    }
+
     return false;
-  }, [isPlatformAdmin, user, organization, activeTenant, userMemberships?.data, tmMembers]);
+  }, [user?.id, userEmail, activeTenant, tmMembers, organization, userMemberships?.data]);
 
   const [assignedOperationalRoles, setAssignedOperationalRoles] = useState<string[]>([]);
 
@@ -501,49 +511,71 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     };
   }, [isSignedIn, user?.id, activeTenant?.id]);
 
-  const derivedRoles = useMemo(() => {
+  // Workspace-scoped roles strictly granted within activeTenant
+  const workspaceRoles = useMemo(() => {
     const list: string[] = [];
-    const metaRoles = (user?.publicMetadata?.roles as string[]) || [];
-    list.push(...metaRoles);
 
-    if (isPlatformAdmin) {
-      list.push('Platform Administrator', 'Tenant Administrator', 'System Administrator');
-    } else if (isOrgAdmin) {
-      list.push('Tenant Administrator', 'System Administrator');
+    // Tenant governance role if user is explicitly an authorized tenant admin of this workspace
+    if (isTenantAdmin) {
+      list.push('Tenant Administrator');
     }
 
+    // Operational roles returned from active tenant database (e.g. Planning Officer, Inventory Manager, etc.)
     if (assignedOperationalRoles.length > 0) {
       list.push(...assignedOperationalRoles);
     }
 
+    // Fallback if user has no assigned operational roles and is not a tenant admin
     if (list.length === 0) {
       list.push('Employee / Viewer');
     }
 
     return Array.from(new Set(list));
-  }, [user?.publicMetadata?.roles, isPlatformAdmin, isOrgAdmin, assignedOperationalRoles]);
+  }, [isTenantAdmin, assignedOperationalRoles]);
+
+  // Global-scoped roles (independent of any specific workspace)
+  const globalRoles = useMemo(() => {
+    if (isPlatformAdmin) {
+      return ['Platform Administrator'];
+    }
+    return [];
+  }, [isPlatformAdmin]);
+
+  // Combined roles available to the user
+  const derivedRoles = useMemo(() => {
+    return Array.from(new Set([...workspaceRoles, ...globalRoles]));
+  }, [workspaceRoles, globalRoles]);
 
   const [activeRole, setActiveRole] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('erpez_active_role');
       if (saved) return saved;
     }
-    return isPlatformAdmin ? 'Platform Administrator' : isOrgAdmin ? 'System Administrator' : 'System Administrator';
+    return isPlatformAdmin ? 'Platform Administrator' : isTenantAdmin ? 'Tenant Administrator' : 'Employee / Viewer';
   });
 
-  // Automatically sync activeRole when real operational roles load
+  // Automatically validate and sync activeRole to available roles in the current tenant context
   useEffect(() => {
-    if (assignedOperationalRoles.length > 0 && !isPlatformAdmin && !isOrgAdmin) {
-      const saved = typeof window !== 'undefined' ? sessionStorage.getItem('erpez_active_role') : null;
-      if (!saved || saved === 'Employee / Viewer' || !assignedOperationalRoles.includes(saved)) {
-        const primary = assignedOperationalRoles[0];
-        setActiveRole(primary);
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('erpez_active_role', primary);
-        }
+    const allAvailable = [...workspaceRoles, ...globalRoles];
+    if (allAvailable.length === 0) return;
+
+    // Check if the current activeRole is valid in the current context
+    const isValid = allAvailable.includes(activeRole);
+    if (!isValid) {
+      // Prioritize primary operational workspace role if available (e.g. Planning Officer)
+      const primaryOperational = assignedOperationalRoles.find((r) => r !== 'Employee / Viewer');
+      const nextRole =
+        primaryOperational ||
+        workspaceRoles[0] ||
+        (isPlatformAdmin ? 'Platform Administrator' : 'Employee / Viewer');
+
+      setActiveRole(nextRole);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('erpez_active_role', nextRole);
+        localStorage.setItem('erpez_active_role', nextRole);
       }
     }
-  }, [assignedOperationalRoles, isPlatformAdmin, isOrgAdmin]);
+  }, [workspaceRoles, globalRoles, activeRole, assignedOperationalRoles, isPlatformAdmin]);
 
   const switchActiveRole = useCallback((newRole: string) => {
     setActiveRole(newRole);
@@ -769,7 +801,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     activeRole,
     switchActiveRole,
     tenantId: activeTenant?.id || null,
-    isSuperAdmin: activeRole === 'Platform Administrator' ? true : (activeRole === 'System Administrator' || activeRole === 'Tenant Administrator' ? false : (Boolean(user?.publicMetadata?.isSuperAdmin) || isPlatformAdmin)),
+    isSuperAdmin: activeRole === 'Platform Administrator',
     activeDevUser: '',
     login: () => {
       clerk.openSignIn();

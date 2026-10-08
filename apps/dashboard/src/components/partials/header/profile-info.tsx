@@ -37,19 +37,15 @@ export const ProfileInfo = () => {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }, [displayName]);
 
-  // Distinct roles available to this user
-  const availableRoles = useMemo(() => {
-    const list = [...roles];
-    if (isSuperAdmin) {
-      if (!list.includes('Platform Administrator')) list.unshift('Platform Administrator');
-      if (!list.includes('Tenant Administrator')) list.push('Tenant Administrator');
-      if (!list.includes('System Administrator')) list.push('System Administrator');
+  // Separate global roles from workspace-specific roles
+  const { globalRoles, workspaceRoles } = useMemo(() => {
+    const globals = roles.filter((r) => r === 'Platform Administrator');
+    const workspaces = roles.filter((r) => r !== 'Platform Administrator');
+    if (workspaces.length === 0 && globals.length === 0) {
+      workspaces.push('Employee / Viewer');
     }
-    if (list.length === 0) {
-      list.push('Employee / Viewer');
-    }
-    return Array.from(new Set(list));
-  }, [roles, isSuperAdmin]);
+    return { globalRoles: globals, workspaceRoles: workspaces };
+  }, [roles]);
 
   const handleRoleSelect = (selectedRole: string) => {
     if (switchActiveRole) {
@@ -113,26 +109,71 @@ export const ProfileInfo = () => {
 
         <DropdownMenuSeparator className="my-1.5" />
 
-        {/* Operating Role Switcher */}
+        {/* Global Scope (Cross-Tenant Platform Spectator / Admin) */}
+        {globalRoles.length > 0 && (
+          <>
+            <div className="px-1 py-1">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1.5 px-1">
+                <span className="flex items-center gap-1.5">
+                  <Icon icon="heroicons:globe-alt" className="w-3.5 h-3.5" />
+                  Global Scope
+                </span>
+                <span className="text-[10px] font-normal text-muted-foreground">Cross-Tenant</span>
+              </div>
+              <div className="space-y-1">
+                {globalRoles.map((r) => {
+                  const isSelected = r === currentRole;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => handleRoleSelect(r)}
+                      className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors text-xs ${
+                        isSelected
+                          ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-200 dark:border-indigo-800'
+                          : 'hover:bg-muted/70 text-foreground'
+                      }`}
+                    >
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="leading-tight font-medium">{r}</span>
+                          <span className="text-[9px] px-1 py-0.5 rounded font-normal bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                            Global Spectator
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-normal truncate mt-0.5">
+                          Cross-tenant spectator & platform governance mode
+                        </span>
+                      </div>
+                      {isSelected && <Icon icon="heroicons:check-16-solid" className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <DropdownMenuSeparator className="my-1.5" />
+          </>
+        )}
+
+        {/* Operating Role Switcher (Workspace Scope) */}
         <div className="px-1 py-1">
           <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 px-1">
-            <span>Roles in {activeTenant?.name || 'Workspace'}</span>
-            <span className="text-[10px] font-normal text-muted-foreground/80">Scope</span>
+            <span className="flex items-center gap-1.5">
+              <Icon icon="heroicons:building-office-2" className="w-3.5 h-3.5" />
+              Roles in {activeTenant?.name || 'Workspace'}
+            </span>
+            <span className="text-[10px] font-normal text-muted-foreground/80">Tenant Scope</span>
           </div>
           <div className="space-y-1">
-            {availableRoles.map((r) => {
+            {workspaceRoles.map((r) => {
               const isSelected = r === currentRole;
-              const isPlatform = r === 'Platform Administrator';
               const isTenant = r === 'Tenant Administrator';
               const isSysAdmin = r === 'System Administrator';
               const isViewer = r === 'Employee / Viewer';
 
               let desc = `Standard operational access in ${activeTenant?.name || 'workspace'}`;
-              let tag = '';
-              if (isPlatform) {
-                desc = 'Cross-tenant master control (global)';
-                tag = 'Global';
-              } else if (isTenant) {
+              let tag = 'Operations';
+              if (isTenant) {
                 desc = `Governance, subscription & seats for ${activeTenant?.name || 'tenant'}`;
                 tag = 'Account';
               } else if (isSysAdmin) {
@@ -157,17 +198,15 @@ export const ProfileInfo = () => {
                   <div className="flex flex-col min-w-0 pr-2">
                     <div className="flex items-center gap-1.5">
                       <span className="leading-tight font-medium">{r}</span>
-                      {tag && (
-                        <span className={`text-[9px] px-1 py-0.5 rounded font-normal ${
-                          isSysAdmin
-                            ? 'bg-primary/15 text-primary'
-                            : isPlatform
-                            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {tag}
-                        </span>
-                      )}
+                      <span className={`text-[9px] px-1 py-0.5 rounded font-normal ${
+                        isSysAdmin
+                          ? 'bg-primary/15 text-primary'
+                          : isTenant
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {tag}
+                      </span>
                     </div>
                     <span className="text-[10px] text-muted-foreground font-normal truncate mt-0.5">{desc}</span>
                   </div>
