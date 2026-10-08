@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Loader2,
+  Eye,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -190,6 +191,9 @@ export default function OperationalRolesTab() {
     workspaceMembers = [],
     workspaceInvitations = [],
     revokeWorkspaceInvitation,
+    activeRole,
+    role,
+    isSuperAdmin,
   } = useUnifiedAuth()
   const [viewMode, setViewMode] = useState<'assignments' | 'roles'>('assignments')
   const [searchQuery, setSearchQuery] = useState('')
@@ -198,6 +202,24 @@ export default function OperationalRolesTab() {
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [loadingUserRoles, setLoadingUserRoles] = useState(false)
+
+  const currentRole = activeRole || role || ''
+
+  // Dashboard System Admin holds full operational role governance inside this workspace
+  const isDashboardAdmin =
+    Boolean(isSuperAdmin) ||
+    currentRole === 'System Administrator' ||
+    currentRole === 'Dashboard System Admin' ||
+    currentRole === 'Workspace Admin' ||
+    currentRole === 'Workspace Administrator' ||
+    Boolean(currentAuthUser?.publicMetadata?.isSuperAdmin)
+
+  // Tenant Admin viewing ERP operational roles without Dashboard Admin role is a spectator
+  const isTenantAdminSpectator =
+    !isDashboardAdmin &&
+    (currentRole === 'Tenant Administrator' ||
+      currentRole === 'TenantAdmin' ||
+      currentRole === 'Platform Administrator')
 
   // 1. Fetch active personnel/users
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
@@ -376,18 +398,13 @@ export default function OperationalRolesTab() {
         if (tm.status === 'Disabled') {
           status = 'Disabled'
         } else if (tm.status === 'Pending' || tm.status === 'Invited') {
-          const isAuthActive = allWorkspaceMembers.some(
-            (m) =>
-              (m.email && u.email && m.email.toLowerCase() === u.email.toLowerCase()) ||
-              (m.userId && resolved.authId && m.userId.toLowerCase() === resolved.authId.toLowerCase())
-          )
-          if (u.isActive || resolved.isCurrentUser || isAuthActive) {
-            status = 'Active'
-          } else {
-            const isExpired = tm.invitationExpiresAtUtc ? new Date(tm.invitationExpiresAtUtc) < new Date() : false
-            status = isExpired ? 'Expired' : 'Pending'
-          }
+          const isExpired = tm.invitationExpiresAtUtc ? new Date(tm.invitationExpiresAtUtc) < new Date() : false
+          status = isExpired ? 'Expired' : 'Pending'
+        } else if (tm.status === 'Active') {
+          status = u.isActive ? 'Active' : 'Disabled'
         }
+      } else if (!u.externalIdentityId || !u.isActive) {
+        status = 'Pending'
       }
 
       const rawAssigned =
@@ -460,11 +477,7 @@ export default function OperationalRolesTab() {
       if (tm.status === 'Disabled') {
         status = 'Disabled'
       } else if (tm.status === 'Pending' || tm.status === 'Invited') {
-        if (isCurrentUser || isAuthActive) {
-          status = 'Active'
-        } else {
-          status = isExpired ? 'Expired' : 'Pending'
-        }
+        status = isExpired ? 'Expired' : 'Pending'
       } else if (tm.status === 'Active') {
         status = 'Active'
       }
@@ -669,6 +682,24 @@ export default function OperationalRolesTab() {
             </div>
           </div>
 
+          {/* Spectator Mode Banner */}
+          {isTenantAdminSpectator && (
+            <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50/80 text-amber-900 shadow-xs">
+              <Eye className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+              <div className="text-xs space-y-1">
+                <div className="font-semibold text-amber-950 flex items-center gap-2">
+                  <span>Spectator Mode (Read-Only)</span>
+                  <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 text-[10px]">
+                    Tenant Administrator
+                  </Badge>
+                </div>
+                <p className="text-amber-800 leading-relaxed">
+                  You are viewing this workspace’s operational roles as an Account Tenant Administrator. In the ERP dashboard, operational role assignments and member invitations are reserved exclusively for <strong>Dashboard System Admins</strong>.
+                </p>
+              </div>
+            </div>
+          )}
+
       {/* Toolbar / Search & Actions */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2.5 flex-1">
@@ -743,7 +774,7 @@ export default function OperationalRolesTab() {
           <div className="text-xs text-slate-500 hidden sm:block">
             Showing {filteredRows.length} of {unifiedMembers.length} workspace members & invites
           </div>
-          <InviteWorkspaceMemberModal />
+          {isDashboardAdmin && <InviteWorkspaceMemberModal />}
         </div>
       </div>
 
@@ -937,7 +968,9 @@ export default function OperationalRolesTab() {
                     )}
                   </TableCell>
                   <TableCell className="text-right pr-6">
-                    {row.isPendingOrExpired ? (
+                    {isTenantAdminSpectator ? (
+                      <span className="text-xs text-slate-400 italic">View Only</span>
+                    ) : row.isPendingOrExpired ? (
                       <div className="flex items-center justify-end gap-1.5">
                         {row.tenantMember?.id && (
                           <Button
