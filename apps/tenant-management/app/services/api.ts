@@ -7,11 +7,12 @@ import {
 } from "erpez-shared-lib";
 import { toast } from "sonner";
 import { extractErrorMessage, extractSuccessMessage } from "./utils/messages";
+import { getTenantBackendUrl } from "~/config/env";
 
 const BLACKLISTED_CODES = ["ERR_CANCELED"];
 const WHITELISTED_METHODS = ["post", "put", "patch", "delete"];
 
-export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL || "http://localhost:5246");
+export const api = createAxiosInstance(getTenantBackendUrl());
 
 let authToken: string | null = null;
 let authTokenGetter: (() => Promise<string | null>) | null = null;

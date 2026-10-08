@@ -7,13 +7,12 @@ import {
 } from 'erpez-shared-lib';
 import { toast } from 'sonner';
 import { extractErrorMessage, extractSuccessMessage } from './utils/messages';
+import { getDashboardBackendUrl } from '~/config/env';
 
 const BLACKLISTED_CODES = ['ERR_CANCELED'];
 const WHITELISTED_METHODS = ['post', 'put', 'patch', 'delete'];
 
-export const dashboardApi = createAxiosInstance(
-  import.meta.env.VITE_DASHBOARD_BACKEND_URL || 'http://localhost:5245'
-);
+export const dashboardApi = createAxiosInstance(getDashboardBackendUrl());
 
 dashboardApi.interceptors.request.use(
   (config) => {

@@ -8,11 +8,12 @@ import type {
   AxiosResponse,
 } from 'erpez-shared-lib'
 import { getAuthToken, getCandidateTenantId, refreshAuthToken } from '@/auth/authBridge'
+import { getDashboardBackendUrl } from '@/config/env'
 
 const BLACKLISTED_CODES = ['ERR_CANCELED']
 const WHITELISTED_METHODS = ['post', 'put', 'patch', 'delete']
 
-export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL)
+export const api = createAxiosInstance(getDashboardBackendUrl())
 api.defaults.timeout = 30000 // 30s timeout to allow database operations and debugging without premature frontend timeouts
 
 // Request interceptor to add IdP token and Tenant ID via unified auth bridge

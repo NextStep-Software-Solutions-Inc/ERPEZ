@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { getStoredToken } from '@/auth/authBridge'
+import { getTenantApiUrl } from '@/config/env'
 
 export interface TenantMemberDto {
   id: string
@@ -25,10 +26,6 @@ export interface TenantDto {
   plan?: string
   seatCapacity?: number
   seatsUsed?: number
-}
-
-const getTenantApiUrl = () => {
-  return import.meta.env.VITE_TENANT_API_URL || 'http://localhost:5246'
 }
 
 const getAuthHeaders = async () => {

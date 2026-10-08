@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { getTenantManagementUrl } from '@/config/env';
 
 export const ProfileInfo = () => {
   const {
@@ -59,7 +60,7 @@ export const ProfileInfo = () => {
     }
   };
 
-  const tenantMgmtUrl = import.meta.env.VITE_TENANT_MANAGEMENT_URL || 'http://localhost:5173';
+  const tenantMgmtUrl = getTenantManagementUrl();
 
   return (
     <DropdownMenu>

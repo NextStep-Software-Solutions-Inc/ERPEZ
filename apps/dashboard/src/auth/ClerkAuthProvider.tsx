@@ -26,6 +26,7 @@ import {
   type TenantMemberDto,
 } from '@/services/api/tenantMembers';
 import { fetchMyOperationalRoles } from '@/services/api/operationalRoles';
+import { getTenantApiUrl } from '@/config/env';
 import axios from 'axios';
 
 interface ClerkAuthProviderProps {
@@ -700,7 +701,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
           : null;
         if (candidateId) headers['X-Tenant-Id'] = candidateId;
 
-        const apiUrl = import.meta.env.VITE_TENANT_API_URL || 'http://localhost:5246';
+        const apiUrl = getTenantApiUrl();
         await axios.post(`${apiUrl}/tenant-members/${invitationId}/invitation/revoke`, {}, { headers });
         const updated = await fetchTenantMembers();
         setTmMembers(updated);
