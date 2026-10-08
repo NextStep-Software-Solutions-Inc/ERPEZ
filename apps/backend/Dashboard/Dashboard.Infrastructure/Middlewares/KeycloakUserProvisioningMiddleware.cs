@@ -3,6 +3,7 @@ using ERPEZ.Domain.Entities.AMS;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Infrastructure.Persistence;
 using ERPEZ.Infrastructure.Persistence.Seeders;
+using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -105,20 +106,31 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
 
                     // Check administrative role claims from token (Clerk org_role, Keycloak realm/client roles, standard Role claims)
                     var hasAdminRoleClaim = roleClaims.Any(r =>
-                        r.Equals("org:admin", StringComparison.OrdinalIgnoreCase) ||
-                        r.Equals("admin", StringComparison.OrdinalIgnoreCase) ||
-                        r.Equals("Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
-                        r.Equals("TenantAdmin", StringComparison.OrdinalIgnoreCase) ||
-                        r.Equals("DASHBOARD SYSTEM ADMIN", StringComparison.OrdinalIgnoreCase) ||
-                        r.Equals("System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                        r.Equals("Workspace Admin", StringComparison.OrdinalIgnoreCase));
+                        RoleConstants.IsWorkspaceAdmin(r) ||
+                        RoleConstants.IsTenantAdmin(r) ||
+                        RoleConstants.IsPlatformAdmin(r));
 
                     var isControlPlaneAdmin = false;
                     // If no explicit admin claim in token, verify against Control Plane TenantMembers table strictly for this tenant
                     if (!hasAdminRoleClaim && currentTenantId.HasValue)
                     {
                         var config = context.RequestServices.GetService<IConfiguration>();
-                        var controlConnStr = config?.GetConnectionString("DefaultConnection");
+                        var controlConnStr = config?.GetConnectionString("ControlPlaneConnection")
+                            ?? config?.GetConnectionString("TenantManagementConnection");
+
+                        if (string.IsNullOrWhiteSpace(controlConnStr))
+                        {
+                            var defConn = config?.GetConnectionString("DefaultConnection");
+                            if (!string.IsNullOrWhiteSpace(defConn) && defConn.Contains("ERPEZ-DASHBOARD_DB", StringComparison.OrdinalIgnoreCase))
+                            {
+                                controlConnStr = defConn.Replace("ERPEZ-DASHBOARD_DB", "ERPEZ-TENANT_MANAGEMENT_DB", StringComparison.OrdinalIgnoreCase);
+                            }
+                            else
+                            {
+                                controlConnStr = defConn;
+                            }
+                        }
+
                         if (!string.IsNullOrWhiteSpace(controlConnStr))
                         {
                             try
@@ -129,23 +141,21 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                                     SELECT 1
                                     FROM "TenantMembers" tm
                                     LEFT JOIN "TenantMemberRoleAssignments" tmra ON tmra."TenantMemberId" = tm."Id"
-                                    LEFT JOIN "Roles" r ON r."Id" = tmra."RoleId"
-                                    WHERE (tm."ExternalIdentityId" = @externalId OR tm."UserId" = @externalId OR (tm."Email" IS NOT NULL AND LOWER(tm."Email") = LOWER(@email)))
-                                      AND tm."TenantId" = @currentTenantId
+                                    LEFT JOIN "Roles" r ON r."Id" = tmra."RoleId" AND r."IsDeleted" = false
+                                    WHERE tm."TenantId" = @currentTenantId
                                       AND tm."IsDeleted" = false
-                                      AND (tm."Status" = 1 OR tm."Status" = 0)
+                                      AND (tm."ExternalIdentityId" = @externalId OR tm."UserId" = @externalId OR (tm."Email" IS NOT NULL AND LOWER(tm."Email") = @email))
+                                      AND (tm."Status" = 'Active' OR tm."Status" = '1' OR tm."Status" = '0' OR tm."Status" = 'Unknown')
                                       AND (
-                                        tm."Role" IN (1, 4)
-                                        OR (r."NormalizedName" IS NOT NULL AND (
-                                            r."NormalizedName" IN ('TENANT ADMINISTRATOR', 'DASHBOARD SYSTEM ADMIN', 'SYSTEM ADMINISTRATOR', 'PLATFORM ADMINISTRATOR')
-                                            OR LOWER(r."Name") LIKE '%admin%'
-                                        ))
+                                        tm."Role" IN ('Admin', 'Owner', '1', '4')
+                                        OR (r."NormalizedName" IS NOT NULL AND r."NormalizedName" IN ('TENANT ADMINISTRATOR', 'DASHBOARD SYSTEM ADMIN', 'SYSTEM ADMINISTRATOR', 'PLATFORM ADMINISTRATOR'))
+                                        OR r."Name" ILIKE '%admin%'
                                       )
                                     LIMIT 1;
                                 """;
                                 await using var cmd = new Npgsql.NpgsqlCommand(adminSql, conn);
                                 cmd.Parameters.AddWithValue("externalId", externalIdentityId);
-                                cmd.Parameters.AddWithValue("email", normalizedEmail ?? string.Empty);
+                                cmd.Parameters.AddWithValue("email", normalizedEmail?.ToLowerInvariant() ?? string.Empty);
                                 cmd.Parameters.AddWithValue("currentTenantId", currentTenantId.Value);
                                 var scalar = await cmd.ExecuteScalarAsync();
                                 if (scalar != null && scalar != DBNull.Value)
@@ -153,15 +163,16 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                                     isControlPlaneAdmin = true;
                                 }
                             }
-                            catch
+                            catch (Exception ex)
                             {
-                                // Ignore DB check error and rely on token claims
+                                var logger = context.RequestServices.GetService<ILogger<KeycloakUserProvisioningMiddleware>>();
+                                logger?.LogWarning(ex, "Failed to verify control plane admin status for {ExternalIdentityId} in tenant {TenantId}", externalIdentityId, currentTenantId);
                             }
                         }
                     }
 
                     var isTargetAdmin = hasAdminRoleClaim || isControlPlaneAdmin;
-                    var targetRoleName = isTargetAdmin ? "System Administrator" : "Employee / Viewer";
+                    var targetRoleName = isTargetAdmin ? RoleConstants.SystemAdministrator : RoleConstants.EmployeeViewer;
 
                     var user = await dbContext.Users
                         .Include(u => u.RoleAssignments!)
@@ -238,19 +249,19 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                         user.IsActive = true;
 
                         var adminRole = await dbContext.AmsRoles!
-                            .FirstOrDefaultAsync(r => r.Name == "System Administrator" && !r.IsDeleted);
+                            .FirstOrDefaultAsync(r => r.Name == RoleConstants.SystemAdministrator && !r.IsDeleted);
 
                         var currentAssignments = user.RoleAssignments?.Where(ra => !ra.IsDeleted).ToList() ?? [];
-                        var hasSystemAdminRole = adminRole != null && currentAssignments.Any(ra => ra.RoleId == adminRole.Id || (ra.Role != null && ra.Role.Name == "System Administrator"));
+                        var hasSystemAdminRole = adminRole != null && currentAssignments.Any(ra => ra.RoleId == adminRole.Id || (ra.Role != null && ra.Role.Name == RoleConstants.SystemAdministrator));
 
                         // If user is a Tenant / Workspace Admin, ensure they hold the System Administrator role
                         if (isTargetAdmin)
                         {
                             var viewerRole = await dbContext.AmsRoles!
-                                .FirstOrDefaultAsync(r => r.Name == "Employee / Viewer" && !r.IsDeleted);
+                                .FirstOrDefaultAsync(r => r.Name == RoleConstants.EmployeeViewer && !r.IsDeleted);
 
                             var viewerAssignments = currentAssignments
-                                .Where(ra => (ra.Role != null && ra.Role.Name == "Employee / Viewer") || (viewerRole != null && ra.RoleId == viewerRole.Id))
+                                .Where(ra => (ra.Role != null && ra.Role.Name == RoleConstants.EmployeeViewer) || (viewerRole != null && ra.RoleId == viewerRole.Id))
                                 .ToList();
 
                             if (viewerAssignments.Count > 0)
@@ -308,7 +319,7 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                             // 1. If user was previously mistakenly assigned "System Administrator" via auto-provisioning
                             // but does not hold an authorized admin role for this workspace, clean up that ungranted assignment
                             var adminAssignments = currentAssignments
-                                .Where(ra => (adminRole != null && ra.RoleId == adminRole.Id) || (ra.Role != null && ra.Role.Name == "System Administrator"))
+                                .Where(ra => (adminRole != null && ra.RoleId == adminRole.Id) || (ra.Role != null && ra.Role.Name == RoleConstants.SystemAdministrator))
                                 .ToList();
 
                             if (adminAssignments.Count > 0)
@@ -322,12 +333,12 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
 
                             // 2. If user has explicit operational business roles (e.g. Planning Officer), clean up any redundant Employee / Viewer role
                             var hasRealOperationalRole = currentAssignments.Any(ra =>
-                                ra.Role != null && !ra.Role.Name.Equals("Employee / Viewer", StringComparison.OrdinalIgnoreCase) && !ra.Role.Name.Equals("System Administrator", StringComparison.OrdinalIgnoreCase));
+                                ra.Role != null && !ra.Role.Name.Equals(RoleConstants.EmployeeViewer, StringComparison.OrdinalIgnoreCase) && !ra.Role.Name.Equals(RoleConstants.SystemAdministrator, StringComparison.OrdinalIgnoreCase));
 
                             if (hasRealOperationalRole)
                             {
                                 var viewerAssignments = currentAssignments
-                                    .Where(ra => ra.Role != null && ra.Role.Name.Equals("Employee / Viewer", StringComparison.OrdinalIgnoreCase))
+                                    .Where(ra => ra.Role != null && ra.Role.Name.Equals(RoleConstants.EmployeeViewer, StringComparison.OrdinalIgnoreCase))
                                     .ToList();
 
                                 if (viewerAssignments.Count > 0)
@@ -341,7 +352,7 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                             {
                                 // Regular user with no operational roles pre-assigned -> default to Employee / Viewer
                                 var viewerRole = await dbContext.AmsRoles!
-                                    .FirstOrDefaultAsync(r => r.Name == "Employee / Viewer" && !r.IsDeleted);
+                                    .FirstOrDefaultAsync(r => r.Name == RoleConstants.EmployeeViewer && !r.IsDeleted);
 
                                 if (viewerRole != null)
                                 {
@@ -448,7 +459,7 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
         }
         catch (DbUpdateException ex) when (IsDuplicateKeyException(ex))
         {
-            logger?.LogInformation("KeycloakUserProvisioningMiddleware: Handled concurrent duplicate key race condition (23505): {Message}", ex.Message);
+            logger?.LogDebug("KeycloakUserProvisioningMiddleware: Handled concurrent duplicate key race condition (23505): {Message}", ex.Message);
             foreach (var entry in ex.Entries)
             {
                 entry.State = EntityState.Detached;

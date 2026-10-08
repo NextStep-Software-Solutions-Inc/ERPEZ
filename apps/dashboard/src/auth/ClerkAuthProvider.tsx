@@ -27,6 +27,7 @@ import {
 } from '@/services/api/tenantMembers';
 import { fetchMyOperationalRoles } from '@/services/api/operationalRoles';
 import { getTenantApiUrl } from '@/config/env';
+import { ROLES, isWorkspaceAdminRole, isTenantAdminRole, isPlatformAdminRole } from '@/constants/roles';
 import axios from 'axios';
 
 interface ClerkAuthProviderProps {
@@ -517,22 +518,22 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
 
     // Tenant governance role if user is explicitly an authorized tenant admin of this workspace
     if (isTenantAdmin) {
-      list.push('Tenant Administrator');
+      list.push(ROLES.TENANT_ADMINISTRATOR);
       // The Tenant Administrator / Owner who registered the workspace has full workspace admin access
-      list.push('System Administrator');
+      list.push(ROLES.SYSTEM_ADMINISTRATOR);
     }
 
     // Operational roles returned from active tenant database (e.g. Planning Officer, Inventory Manager, etc.)
     if (assignedOperationalRoles.length > 0) {
       const filteredOperational = assignedOperationalRoles.filter(
-        (r) => r !== 'Employee / Viewer' || (!isTenantAdmin && assignedOperationalRoles.length === 1)
+        (r) => r !== ROLES.EMPLOYEE_VIEWER || (!isTenantAdmin && assignedOperationalRoles.length === 1)
       );
       list.push(...filteredOperational);
     }
 
     // Fallback if user has no assigned operational roles and is not a tenant admin
     if (list.length === 0) {
-      list.push('Employee / Viewer');
+      list.push(ROLES.EMPLOYEE_VIEWER);
     }
 
     return Array.from(new Set(list));
@@ -541,7 +542,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
   // Global-scoped roles (independent of any specific workspace)
   const globalRoles = useMemo(() => {
     if (isPlatformAdmin) {
-      return ['Platform Administrator'];
+      return [ROLES.PLATFORM_ADMINISTRATOR];
     }
     return [];
   }, [isPlatformAdmin]);
@@ -556,7 +557,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
       const saved = sessionStorage.getItem('erpez_active_role');
       if (saved) return saved;
     }
-    return isPlatformAdmin ? 'Platform Administrator' : isTenantAdmin ? 'Tenant Administrator' : 'Employee / Viewer';
+    return isPlatformAdmin ? ROLES.PLATFORM_ADMINISTRATOR : isTenantAdmin ? ROLES.TENANT_ADMINISTRATOR : ROLES.EMPLOYEE_VIEWER;
   });
 
   // Automatically validate and sync activeRole to available roles in the current tenant context

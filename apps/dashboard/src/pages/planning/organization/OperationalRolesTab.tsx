@@ -51,6 +51,12 @@ import {
   revokeTenantMemberInvitation,
   type TenantMemberDto,
 } from '@/services/api/tenantMembers'
+import {
+  ROLES,
+  isWorkspaceAdminRole,
+  isTenantAdminRole,
+  isPlatformAdminRole,
+} from '@/constants/roles'
 
 interface UnifiedWorkspaceMemberRow {
   key: string
@@ -208,18 +214,13 @@ export default function OperationalRolesTab() {
   // Dashboard System Admin holds full operational role governance inside this workspace
   const isDashboardAdmin =
     Boolean(isSuperAdmin) ||
-    currentRole === 'System Administrator' ||
-    currentRole === 'Dashboard System Admin' ||
-    currentRole === 'Workspace Admin' ||
-    currentRole === 'Workspace Administrator' ||
+    isWorkspaceAdminRole(currentRole) ||
     Boolean(currentAuthUser?.publicMetadata?.isSuperAdmin)
 
   // Tenant Admin viewing ERP operational roles without Dashboard Admin role is a spectator
   const isTenantAdminSpectator =
     !isDashboardAdmin &&
-    (currentRole === 'Tenant Administrator' ||
-      currentRole === 'TenantAdmin' ||
-      currentRole === 'Platform Administrator')
+    (isTenantAdminRole(currentRole) || isPlatformAdminRole(currentRole))
 
   // 1. Fetch active personnel/users
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
@@ -420,9 +421,13 @@ export default function OperationalRolesTab() {
         tm?.roles?.some((r: string) => r.toLowerCase().includes('admin')) ||
         (resolved.isCurrentUser && (currentAuthUser?.publicMetadata?.isSuperAdmin || currentAuthUser?.role?.includes('Admin') || currentAuthUser?.roles?.some((r: string) => r.toLowerCase().includes('admin'))))
 
-      const assignedRoles = rawAssigned.length > 0
-        ? rawAssigned
-        : (isWorkspaceAdminMember ? ['System Administrator'] : [])
+      const filteredRaw = isWorkspaceAdminMember
+        ? rawAssigned.filter((r) => r !== ROLES.EMPLOYEE_VIEWER)
+        : rawAssigned
+
+      const assignedRoles = filteredRaw.length > 0
+        ? filteredRaw
+        : (isWorkspaceAdminMember ? [ROLES.SYSTEM_ADMINISTRATOR] : [])
 
       rows.push({
         key: `user-${u.id}`,
