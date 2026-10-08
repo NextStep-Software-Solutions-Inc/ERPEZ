@@ -48,4 +48,15 @@ public class InquiriesController(ISender mediator) : ControllerBase
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
+
+    /// <summary>
+    /// Retrieves all quotes, scheduled demos, and newsletter leads for platform administrators.
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<ERPEZ.TenantManagement.Application.Features.Inquiries.Common.InquiriesSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetInquiries()
+    {
+        var result = await mediator.Send(new ERPEZ.TenantManagement.Application.Features.Inquiries.Queries.GetInquiries.GetInquiriesQuery());
+        return Ok(result);
+    }
 }

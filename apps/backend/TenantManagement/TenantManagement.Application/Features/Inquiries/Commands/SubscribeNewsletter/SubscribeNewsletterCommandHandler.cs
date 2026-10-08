@@ -5,7 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.TenantManagement.Application.Features.Inquiries.Commands.SubscribeNewsletter;
 
-public partial class SubscribeNewsletterCommandHandler(ILogger<SubscribeNewsletterCommandHandler> logger)
+public partial class SubscribeNewsletterCommandHandler(
+    ILogger<SubscribeNewsletterCommandHandler> logger,
+    ERPEZ.TenantManagement.Application.Features.Inquiries.Common.IInquiryStore? inquiryStore = null)
     : IRequestHandler<SubscribeNewsletterCommand, ApiResponse<bool>>
 {
     public Task<ApiResponse<bool>> Handle(SubscribeNewsletterCommand command, CancellationToken cancellationToken)
@@ -17,6 +19,14 @@ public partial class SubscribeNewsletterCommandHandler(ILogger<SubscribeNewslett
 
         var normalizedEmail = command.Email.Trim().ToLowerInvariant();
         logger.LogInformation("Newsletter subscription registered: Email={Email}", normalizedEmail);
+
+        inquiryStore?.AddSubscriber(new ERPEZ.TenantManagement.Application.Features.Inquiries.Common.SubscriberInquiryDto
+        {
+            Email = normalizedEmail,
+            Source = "Landing Page Footer",
+            Status = "Active",
+            SubscribedAtUtc = DateTime.UtcNow
+        });
 
         return Task.FromResult(ApiResponse<bool>.Success(true, "Thank you for subscribing to ERP-EZ product and release updates."));
     }

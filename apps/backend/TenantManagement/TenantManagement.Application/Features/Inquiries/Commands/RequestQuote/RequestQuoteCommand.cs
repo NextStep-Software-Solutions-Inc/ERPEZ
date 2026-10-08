@@ -10,6 +10,8 @@ public record RequestQuoteCommand : IRequest<ApiResponse<QuoteResponseDto>>
     public string DeploymentType { get; init; } = "saas";
     public string ContactName { get; init; } = string.Empty;
     public string Email { get; init; } = string.Empty;
+    public string? Phone { get; init; }
+    public string? PhoneNumber { get; init; }
     public string OrganizationName { get; init; } = string.Empty;
     public string TeamSize { get; init; } = "1-15";
     public IReadOnlyList<string> RequestedModules { get; init; } = [];

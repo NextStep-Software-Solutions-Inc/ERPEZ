@@ -39,6 +39,7 @@ export default [
             "super-admin/tenant-management",
             "routes/super-admin/tenant-management.tsx"
           ),
+          route("super-admin/inquiries", "routes/super-admin/inquiries.tsx"),
           route("super-admin/users", "routes/super-admin/users.tsx"),
           route("super-admin/tenant/:id", "routes/protected/tenant/[id].tsx"),
           route("super-admin/settings", "routes/super-admin/settings.tsx"),

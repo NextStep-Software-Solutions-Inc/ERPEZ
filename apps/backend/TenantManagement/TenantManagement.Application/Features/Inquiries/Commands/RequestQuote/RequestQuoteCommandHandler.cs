@@ -7,7 +7,9 @@ using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.TenantManagement.Application.Features.Inquiries.Commands.RequestQuote;
 
-public partial class RequestQuoteCommandHandler(ILogger<RequestQuoteCommandHandler> logger)
+public partial class RequestQuoteCommandHandler(
+    ILogger<RequestQuoteCommandHandler> logger,
+    ERPEZ.TenantManagement.Application.Features.Inquiries.Common.IInquiryStore? inquiryStore = null)
     : IRequestHandler<RequestQuoteCommand, ApiResponse<QuoteResponseDto>>
 {
     public Task<ApiResponse<QuoteResponseDto>> Handle(RequestQuoteCommand command, CancellationToken cancellationToken)
@@ -46,6 +48,7 @@ public partial class RequestQuoteCommandHandler(ILogger<RequestQuoteCommandHandl
             "Quote requested: Reference={ReferenceCode}, Email={Email}, Organization={Org}, Plan={Plan}, Deployment={Deployment}",
             referenceCode, command.Email.Trim(), command.OrganizationName.Trim(), command.PlanName, command.DeploymentType);
 
+        var now = DateTime.UtcNow;
         var responseDto = new QuoteResponseDto
         {
             ReferenceCode = referenceCode,
@@ -55,9 +58,27 @@ public partial class RequestQuoteCommandHandler(ILogger<RequestQuoteCommandHandl
             EstimatedDelivery = deliveryTime,
             ScopeSummary = scopeSummary,
             IncludedModules = requested,
-            SubmittedAtUtc = DateTime.UtcNow,
+            SubmittedAtUtc = now,
             Message = "Your customized scope quote has been generated. Our solutions team will reach out with commercial details."
         };
+
+        inquiryStore?.AddQuote(new ERPEZ.TenantManagement.Application.Features.Inquiries.Common.QuoteInquiryDto
+        {
+            ReferenceCode = referenceCode,
+            ContactName = command.ContactName.Trim(),
+            Email = command.Email.Trim(),
+            Phone = command.Phone?.Trim() ?? command.PhoneNumber?.Trim() ?? string.Empty,
+            OrganizationName = command.OrganizationName.Trim(),
+            TeamSize = command.TeamSize ?? string.Empty,
+            PlanName = responseDto.PlanName,
+            Tier = responseDto.Tier,
+            DeploymentType = responseDto.DeploymentType,
+            RequestedModules = requested.ToList(),
+            ScopeSummary = scopeSummary,
+            EstimatedDelivery = deliveryTime,
+            Status = "Pending Review",
+            SubmittedAtUtc = now
+        });
 
         return Task.FromResult(ApiResponse<QuoteResponseDto>.Success(responseDto, "Quote request submitted successfully."));
     }

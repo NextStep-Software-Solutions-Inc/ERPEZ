@@ -6,7 +6,9 @@ using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.TenantManagement.Application.Features.Inquiries.Commands.ScheduleDemo;
 
-public partial class ScheduleDemoCommandHandler(ILogger<ScheduleDemoCommandHandler> logger)
+public partial class ScheduleDemoCommandHandler(
+    ILogger<ScheduleDemoCommandHandler> logger,
+    ERPEZ.TenantManagement.Application.Features.Inquiries.Common.IInquiryStore? inquiryStore = null)
     : IRequestHandler<ScheduleDemoCommand, ApiResponse<DemoResponseDto>>
 {
     public Task<ApiResponse<DemoResponseDto>> Handle(ScheduleDemoCommand command, CancellationToken cancellationToken)
@@ -34,6 +36,7 @@ public partial class ScheduleDemoCommandHandler(ILogger<ScheduleDemoCommandHandl
             "Demo scheduled: Reference={ReferenceCode}, Email={Email}, Organization={Org}, Date={Date}, Slot={Slot}",
             referenceCode, command.Email.Trim(), command.OrganizationName.Trim(), date, timeSlot);
 
+        var now = DateTime.UtcNow;
         var responseDto = new DemoResponseDto
         {
             ReferenceCode = referenceCode,
@@ -41,9 +44,23 @@ public partial class ScheduleDemoCommandHandler(ILogger<ScheduleDemoCommandHandl
             OrganizationName = command.OrganizationName.Trim(),
             PreferredDate = date,
             PreferredTimeSlot = timeSlot,
-            SubmittedAtUtc = DateTime.UtcNow,
+            SubmittedAtUtc = now,
             Message = "Your demonstration request has been received. Our solutions team will confirm calendar details via email."
         };
+
+        inquiryStore?.AddDemo(new ERPEZ.TenantManagement.Application.Features.Inquiries.Common.DemoInquiryDto
+        {
+            ReferenceCode = referenceCode,
+            ContactName = command.ContactName.Trim(),
+            Email = command.Email.Trim(),
+            Phone = command.PhoneNumber?.Trim() ?? string.Empty,
+            OrganizationName = command.OrganizationName.Trim(),
+            PreferredDate = date,
+            PreferredTimeSlot = timeSlot,
+            Notes = command.Notes?.Trim() ?? string.Empty,
+            Status = "Confirmed",
+            SubmittedAtUtc = now
+        });
 
         return Task.FromResult(ApiResponse<DemoResponseDto>.Success(responseDto, "Demo scheduled successfully."));
     }
