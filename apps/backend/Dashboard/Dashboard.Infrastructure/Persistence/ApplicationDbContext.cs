@@ -368,7 +368,7 @@ public class ApplicationDbContext : DbContext
             .IsRequired();
 
         modelBuilder.Entity<DUKPITargetAssignment>()
-            .HasIndex(da => new { da.DeliveryUnitId, da.KPIId, da.KPITargetId })
+            .HasIndex(da => new { da.TenantId, da.DeliveryUnitId, da.KPIId, da.KPITargetId })
             .IsUnique();
 
         // OrganizationFundSource
@@ -1484,8 +1484,9 @@ public class ApplicationDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<RatingScaleLevel>()
-            .HasIndex(rl => new { rl.RatingScaleTemplateId, rl.RatingValue })
+            .HasIndex(rl => new { rl.TenantId, rl.RatingScaleTemplateId, rl.RatingValue })
             .IsUnique();
+
 
         modelBuilder.Entity<RatingScaleLevel>()
             .Property(rl => rl.MinValue)
@@ -2360,11 +2361,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<APPPPMP>()
             .ToTable("APP_PPMP_Selections", "planning");
 
-        modelBuilder.Entity<APPPPMP>()
-            .HasQueryFilter(x => !x.IsDeleted);
-
-        modelBuilder.Entity<APPSignatory>()
-            .HasQueryFilter(x => !x.IsDeleted);
 
         // OPCRItemRating
         modelBuilder.Entity<OPCRItemRating>()
@@ -3140,8 +3136,6 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<DocumentProfile>(e =>
         {
-            e.HasQueryFilter(x => !x.IsDeleted);
-
             e.Property(x => x.Name)
                 .IsRequired()
                 .HasMaxLength(256);
@@ -3164,8 +3158,6 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<DocumentProfileItem>(e =>
         {
-            e.HasQueryFilter(x => !x.IsDeleted);
-
             e.HasOne(i => i.MasterDocumentType)
                 .WithMany(d => d.DocumentProfileItems)
                 .HasForeignKey(i => i.MasterDocumentTypeId)
@@ -3177,8 +3169,6 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<ProjectDocumentChecklist>(e =>
         {
-            e.HasQueryFilter(x => !x.IsDeleted);
-
             e.Property(x => x.CustomDocumentName)
                 .HasMaxLength(256);
 

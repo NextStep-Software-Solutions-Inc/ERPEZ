@@ -71,6 +71,18 @@ public class TenantIndexStrategyAndVerificationTests
     [InlineData(typeof(APP), "TenantId", "APPNumber")]
     [InlineData(typeof(APR), "TenantId", "APRNumber")]
     [InlineData(typeof(RFQ), "TenantId", "RFQNumber")]
+    [InlineData(typeof(AOB), "TenantId", "AOBNumber")]
+    [InlineData(typeof(BACResolution), "TenantId", "ResolutionNumber")]
+    [InlineData(typeof(DirectAcquisition), "TenantId", "DANumber")]
+    [InlineData(typeof(DocumentProfile), "TenantId", "Name")]
+    [InlineData(typeof(LineItemBudget), "TenantId", "LIBNumber")]
+    [InlineData(typeof(PPMP), "TenantId", "PPMPNumber")]
+    [InlineData(typeof(RFQSupplier), "TenantId", "RFQId")]
+    [InlineData(typeof(BiddingSubmission), "TenantId", "ProcurementProjectId")]
+    [InlineData(typeof(BiddingEvaluation), "TenantId", "ProcurementProjectId")]
+    [InlineData(typeof(BiddingAwardRecommendation), "TenantId", "ProcurementProjectId")]
+    [InlineData(typeof(RatingScaleLevel), "TenantId", "RatingScaleTemplateId")]
+    [InlineData(typeof(DUKPITargetAssignment), "TenantId", "DeliveryUnitId")]
     public void OperationalEntities_WithBusinessKeys_HaveCompositeTenantIndex(Type entityType, string key1, string key2)
     {
         var entity = dbContext.Model.FindEntityType(entityType);
@@ -109,4 +121,55 @@ public class TenantIndexStrategyAndVerificationTests
         hasEmailIndex.Should().BeTrue("Supplier should have composite index (TenantId, Email)");
         hasPhilGepsIndex.Should().BeTrue("Supplier should have composite index (TenantId, PhilGEPSNumber)");
     }
+
+    [Fact]
+    public void AllTenantScopedEntities_HaveQueryFilterEnforcingTenantId()
+    {
+        var model = dbContext.Model;
+        var tenantScopedEntityTypes = model.GetEntityTypes()
+            .Where(e => typeof(TenantScopedEntity).IsAssignableFrom(e.ClrType) && e.BaseType == null)
+            .ToList();
+
+        var missingFilterEntities = new List<string>();
+
+        foreach (var entityType in tenantScopedEntityTypes)
+        {
+            var filter = entityType.GetQueryFilter();
+            if (filter == null || !filter.ToString().Contains("CurrentTenantId"))
+            {
+                missingFilterEntities.Add(entityType.ClrType.Name);
+            }
+        }
+
+        missingFilterEntities.Should().BeEmpty(
+            "every TenantScopedEntity across all domains must have a global query filter enforcing TenantId");
+    }
+
+    [Fact]
+    public void AllUniqueIndexes_OnTenantScopedEntities_AreCompositeWithTenantId()
+    {
+        var model = dbContext.Model;
+        var tenantScopedEntityTypes = model.GetEntityTypes()
+            .Where(e => typeof(TenantScopedEntity).IsAssignableFrom(e.ClrType) && e.BaseType == null)
+            .ToList();
+
+        var nonCompositeUniqueIndexes = new List<string>();
+
+        foreach (var entityType in tenantScopedEntityTypes)
+        {
+            var uniqueIndexes = entityType.GetIndexes().Where(i => i.IsUnique);
+            foreach (var index in uniqueIndexes)
+            {
+                var props = index.Properties.Select(p => p.Name).ToList();
+                if (!props.Contains("TenantId"))
+                {
+                    nonCompositeUniqueIndexes.Add($"{entityType.ClrType.Name}: [{string.Join(", ", props)}]");
+                }
+            }
+        }
+
+        nonCompositeUniqueIndexes.Should().BeEmpty(
+            "any unique business key constraint on a TenantScopedEntity must be composite with TenantId to allow multi-tenant isolation");
+    }
 }
+

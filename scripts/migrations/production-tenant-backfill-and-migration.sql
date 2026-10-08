@@ -406,9 +406,17 @@ BEGIN
     CREATE UNIQUE INDEX IF NOT EXISTS "IX_KPIAssignments_TenantId_FYActiveKPIId_OfficeId"
         ON planning."KPIAssignments" ("TenantId", "FYActiveKPIId", "OfficeId");
 
+    DROP INDEX IF EXISTS planning."IX_DUKPITargetAssignments_DeliveryUnitId_KPIId_KPITargetId";
+    CREATE UNIQUE INDEX IF NOT EXISTS "IX_DUKPITargetAssignments_TenantId_DeliveryUnitId_KPIId_KPITargetId"
+        ON planning."DUKPITargetAssignments" ("TenantId", "DeliveryUnitId", "KPIId", "KPITargetId");
+
     DROP INDEX IF EXISTS planning."IX_OPCRs_OfficeId_FiscalYearId";
     CREATE UNIQUE INDEX IF NOT EXISTS "IX_OPCRs_TenantId_OfficeId_FiscalYearId"
         ON planning."OPCRs" ("TenantId", "OfficeId", "FiscalYearId");
+
+    DROP INDEX IF EXISTS planning."IX_RatingScaleLevels_RatingScaleTemplateId_RatingValue";
+    CREATE UNIQUE INDEX IF NOT EXISTS "IX_RatingScaleLevels_TenantId_RatingScaleTemplateId_RatingVal"
+        ON planning."RatingScaleLevels" ("TenantId", "RatingScaleTemplateId", "RatingValue");
 
     DROP INDEX IF EXISTS planning."IX_OPCRItems_OPCRId_KPIAssignmentId";
     CREATE UNIQUE INDEX IF NOT EXISTS "IX_OPCRItems_TenantId_OPCRId_KPIAssignmentId"
