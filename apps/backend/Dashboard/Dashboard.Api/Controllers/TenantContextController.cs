@@ -88,27 +88,7 @@ public class TenantContextController(
         string? externalOrgIdClaim,
         CancellationToken cancellationToken)
     {
-        // 1. Client/gateway forwarded tenant name header
-        if (Request.Headers.TryGetValue("X-Tenant-Name", out var headerName) && !string.IsNullOrWhiteSpace(headerName))
-        {
-            var headerStr = headerName.ToString().Trim();
-            if (!string.IsNullOrWhiteSpace(headerStr))
-            {
-                return (headerStr, !string.IsNullOrWhiteSpace(externalOrgIdClaim) ? externalOrgIdClaim : "org_default");
-            }
-        }
-
-        // 2. Token-level organization claims
-        var claimOrgName = User.FindFirst("org_name")?.Value
-            ?? User.FindFirst("erpez:org_name")?.Value
-            ?? User.FindFirst("organization")?.Value;
-
-        if (!string.IsNullOrWhiteSpace(claimOrgName))
-        {
-            return (claimOrgName.Trim(), !string.IsNullOrWhiteSpace(externalOrgIdClaim) ? externalOrgIdClaim : "org_default");
-        }
-
-        // 3. Operational database active organization
+        // 1. Authoritative operational database active organization
         var org = dbContext.Organizations != null
             ? await dbContext.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.IsActive && !o.IsDeleted, cancellationToken)
             : null;
@@ -120,6 +100,27 @@ public class TenantContextController(
                 : (!string.IsNullOrWhiteSpace(org.Code) ? org.Code : "org_default");
 
             return (org.Name.Trim(), resolvedOrgId);
+        }
+
+        // 2. Cryptographically signed token-level organization claims (verified by JWT middleware)
+        var claimOrgName = User.FindFirst("org_name")?.Value
+            ?? User.FindFirst("erpez:org_name")?.Value
+            ?? User.FindFirst("organization")?.Value;
+
+        if (!string.IsNullOrWhiteSpace(claimOrgName))
+        {
+            return (claimOrgName.Trim(), !string.IsNullOrWhiteSpace(externalOrgIdClaim) ? externalOrgIdClaim : "org_default");
+        }
+
+        // 3. Client/gateway forwarded tenant name header (untrusted fallback, sanitized)
+        if (Request.Headers.TryGetValue("X-Tenant-Name", out var headerName) && !string.IsNullOrWhiteSpace(headerName))
+        {
+            var headerStr = headerName.ToString().Trim();
+            // Sanitize: enforce length limit and avoid control/header injection characters
+            if (!string.IsNullOrWhiteSpace(headerStr) && headerStr.Length <= 100)
+            {
+                return (headerStr, !string.IsNullOrWhiteSpace(externalOrgIdClaim) ? externalOrgIdClaim : "org_default");
+            }
         }
 
         // 4. Configured default or generic workspace fallback

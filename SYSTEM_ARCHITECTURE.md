@@ -132,17 +132,19 @@ The client-supplied `X-Tenant-Id` header is treated strictly as an **untrusted t
 
 ```text
 1. Client sends HTTP request with Bearer JWT and candidate X-Tenant-Id header.
-2. TenantResolutionMiddleware extracts candidate tenant ID and user identity claims.
-3. TenantAccessValidationMiddleware queries the Control Plane database:
+2. Gateway / Ingress Proxy Validation: Ingress reverse proxies (e.g., NGINX, YARP, Envoy, Traefik) must strip or strictly validate client-supplied headers such as `X-Tenant-Name` to prevent spoofing before requests reach the internal service mesh.
+3. TenantResolutionMiddleware extracts candidate tenant ID and user identity claims.
+4. TenantAccessValidationMiddleware queries the Control Plane database:
    - Authenticates caller identity and tenant membership.
    - Validates tenant status (Active, not Disabled).
    - Resolves tenant TenancyMode (SaaS vs. OnPremise).
    - Invariant: Control-plane access is permitted during resolution; NO operational database interaction occurs before tenant validation succeeds.
-4. TenantRequestContext is initialized as an authoritative scoped service with verified TenantId, TenancyMode, and permissions.
-5. CachedTenantConnectionResolver resolves connection metadata:
+5. TenantRequestContext is initialized as an authoritative scoped service with verified TenantId, TenancyMode, and permissions.
+6. Display info resolution in `TenantContextController` enforces strict authoritative precedence: operational DB (`Organizations`) first, cryptographically signed JWT claims (`org_name`) second, and untrusted client headers strictly as sanitized fallbacks.
+7. CachedTenantConnectionResolver resolves connection metadata:
    - If SaaS: Shared operational connection string.
    - If OnPremise: Dedicated operational connection string from TenantOperationalDatabases (with cache invalidation on tenant deactivation, credential rotation, or mode changes).
-6. Operational ApplicationDbContext is initialized with CurrentTenantId = TenantRequestContext.TenantId.
+8. Operational ApplicationDbContext is initialized with CurrentTenantId = TenantRequestContext.TenantId.
 ```
 
 ### 4.3. Data Isolation & Write Enforcement
@@ -189,13 +191,16 @@ PostgreSQL and EF Core/Npgsql are used across both planes:
 
 ### 5.1. Existing-Data Migration Strategy
 
-For environments with existing operational data, schema changes follow a deterministic, fail-closed multi-stage migration:
+For environments with existing operational data, schema changes follow a deterministic, fail-closed multi-stage migration executed inside an atomic PostgreSQL transaction (`BEGIN ... COMMIT` with `ON_ERROR_STOP on`) or dedicated maintenance window:
 1. **Schema Expansion**: Add `TenantId uuid NULL` to all `TenantScopedEntity` tables.
 2. **Deterministic Provenance Backfill**: Backfill `TenantId` using verifiable audit logs or legacy tenant mappings. Defaulting records to an arbitrary tenant is strictly restricted to verified single-tenant legacy deployments. If data provenance cannot be proven, the migration fails closed.
-3. **Integrity Validation**: Script verifies `SELECT COUNT(*) FROM {table} WHERE "TenantId" IS NULL` equals 0 across all tenant-scoped tables.
+3. **Integrity Validation**: Script verifies `SELECT COUNT(*) FROM {table} WHERE "TenantId" IS NULL` equals 0 across all tenant-scoped tables. Any non-zero count aborts the transaction immediately with rollback.
 4. **Schema Enforcement**: Alter `TenantId` column to `NOT NULL`.
 5. **Index Migration**: Replace single-column unique constraints with compound unique constraints (e.g., `(TenantId, Code)`, `(TenantId, Name)`).
 6. **Filter Activation**: Enable EF Core Global Query Filters and write-time interceptor enforcement.
+
+> [!IMPORTANT]
+> All DDL, DML backfills, and constraint updates run within an explicit transactional boundary (`scripts/migrations/production-tenant-backfill-and-migration.sql`). In the event of any validation failure or constraint violation, the entire migration aborts atomically, preventing partial schema states and data corruption.
 
 ## 6. Cross-cutting runtime services
 
