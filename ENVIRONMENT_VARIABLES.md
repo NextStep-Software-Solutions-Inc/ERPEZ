@@ -43,12 +43,25 @@ Keycloak provides OpenID Connect (OIDC) identity federation for operational tena
 
 #### Frontend (`apps/dashboard`):
 
-| Variable | Required | Description | Example / Default |
-|---|---|---|---|
-| `VITE_KEYCLOAK_URL` | Yes | Keycloak base URL | `https://keycloak.dev.nextstep-software.com` |
-| `VITE_KEYCLOAK_REALM` | Yes | Target Realm name | `erpez` |
-| `VITE_KEYCLOAK_CLIENT_ID` | Yes | OIDC Public Client ID | `web-client` |
-| `VITE_BACKEND_URL` | Yes | Dashboard backend API endpoint | `http://localhost:5245` |
+| Variable | Required | Description | Local | Dev / Preview | Production |
+|---|---|---|---|---|---|
+| `VITE_AUTH_PROVIDER` | No | Auth provider (`clerk` or `keycloak`) | `clerk` | `clerk` | `clerk` |
+| `VITE_CLERK_PUBLISHABLE_KEY` | If Clerk | Public key for Clerk JS SDK | `pk_test_...` | `pk_test_...` | `pk_live_...` |
+| `VITE_PLATFORM_ADMIN_EMAILS` | No | Comma-separated platform admin emails | `admin@erpez.dev` | `admin@erpez.dev` | *(prod admins)* |
+| `VITE_TENANT_MANAGEMENT_URL` | No | Target URL for Tenant Portal UI navigation | `http://localhost:5173` | `https://erpez-portal.vercel.app` | `https://erpez.net` |
+| `VITE_ERPEZ_BACKEND_URL` / `VITE_API_URL` | Yes | Dashboard backend API endpoint | `http://localhost:5245` | `https://erpez-app.api.dev.nextstep-software.com` | `https://app.api.erpez.net` |
+| `VITE_TENANT_API_URL` | Yes | Tenant Management backend API endpoint | `http://localhost:5246` | `https://erpez-portal.api.dev.nextstep-software.com` | `https://portal.api.erpez.net` |
+| `VITE_KEYCLOAK_URL` | If Keycloak | Keycloak base URL | `placeholder` | `https://keycloak.dev.nextstep-software.com` | `https://auth.erpez.net` |
+| `VITE_KEYCLOAK_REALM` | If Keycloak | Target Realm name | `erpez` | `erpez` | `erpez` |
+| `VITE_KEYCLOAK_CLIENT_ID` | If Keycloak | OIDC Public Client ID | `web-client` | `web-client` | `web-client` |
+| `VITE_ENABLE_DEV_PERSONAS` | No | Enable dev persona quick switcher | `true` | `false` | `false` |
+
+> [!NOTE]
+> When `VITE_TENANT_MANAGEMENT_URL` is omitted, `tenantEnv.ts` uses dynamic window location derivation:
+> - Production domains (`app.erpez.net` or `*.erpez.net`) resolve to `https://erpez.net`
+> - Dev domains (`*.dev.nextstep-software.com`) resolve to `https://erpez-portal.dev.nextstep-software.com`
+> - Vercel previews (`*.vercel.app`) resolve to `https://erpez-portal.vercel.app`
+> - Localhost (`localhost:3000`) resolves to `http://localhost:5173`
 
 ---
 
@@ -66,10 +79,16 @@ Clerk manages customer registration, multi-tenant workspace onboarding, and orga
 
 #### Frontend (`apps/tenant-management`):
 
-| Variable | Required | Description | Example / Default |
-|---|---|---|---|
-| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable public key | `pk_test_...` or `pk_live_...` |
-| `VITE_ERPEZ_BACKEND_URL` | Yes | Tenant Management API endpoint | `http://localhost:5246` |
+| Variable | Required | Description | Local | Dev / Preview | Production |
+|---|---|---|---|---|---|
+| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Public key for Clerk JS SDK | `pk_test_...` | `pk_test_...` | `pk_live_...` |
+| `VITE_PLATFORM_ADMIN_EMAILS` | No | Comma-separated platform admin emails | `admin@erpez.dev` | `admin@erpez.dev` | *(prod admins)* |
+| `VITE_ERP_DASHBOARD_URL` | No | Target URL for ERP Dashboard UI navigation | `http://localhost:3000` | `https://erpez-app.vercel.app` | `https://app.erpez.net` |
+| `VITE_ERPEZ_BACKEND_URL` | Yes | Tenant Management API endpoint | `http://localhost:5246` | `https://erpez-portal.api.dev.nextstep-software.com` | `https://portal.api.erpez.net` |
+| `VITE_DASHBOARD_BACKEND_URL` | Yes | Dashboard backend API endpoint | `http://localhost:5245` | `https://erpez-app.api.dev.nextstep-software.com` | `https://app.api.erpez.net` |
+
+> [!NOTE]
+> When `VITE_ERP_DASHBOARD_URL` is omitted, runtime hostname resolution maps `erpez.net` -> `https://app.erpez.net`, dev domains -> `https://erpez-app.dev.nextstep-software.com`, and localhost:5173 -> `http://localhost:3000`.
 
 ---
 
