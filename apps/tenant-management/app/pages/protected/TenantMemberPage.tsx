@@ -59,7 +59,7 @@ function TenantMemberPage() {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
-    const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+    const [selectedRoleId, setSelectedRoleId] = useState<string>('');
 
     // Post-Invite Token Dialog State
     const [invitationResult, setInvitationResult] = useState<{ email: string; token: string; expiresAt?: string } | null>(null);
@@ -170,7 +170,7 @@ function TenantMemberPage() {
                     email: email.trim(),
                     firstName: firstName.trim(),
                     lastName: lastName.trim(),
-                    roleIds: selectedRoleIds.length > 0 ? selectedRoleIds : undefined,
+                    roleIds: selectedRoleId ? [selectedRoleId] : undefined,
                 },
             });
 
@@ -178,7 +178,7 @@ function TenantMemberPage() {
             setFirstName('');
             setLastName('');
             setEmail('');
-            setSelectedRoleIds([]);
+            setSelectedRoleId('');
             await refetch();
 
             if (res?.data?.invitationToken) {
@@ -537,36 +537,32 @@ function TenantMemberPage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-700">Assignable Governance Roles</Label>
+                                <Label className="text-xs text-slate-700 font-medium">Assignable Governance Role</Label>
                                 <div className="max-h-48 overflow-y-auto space-y-1.5 border rounded-lg p-2.5 bg-slate-50/50">
-                                    {governanceAssignableRoles.map((role) => (
-                                        <label
-                                            key={role.id}
-                                            className="flex items-center space-x-2 text-xs cursor-pointer hover:bg-white p-1.5 rounded transition"
-                                        >
-                                            <Checkbox
-                                                checked={selectedRoleIds.includes(role.id)}
-                                                onCheckedChange={(checked) => {
-                                                    if (checked) {
-                                                        setSelectedRoleIds((prev) => [...prev, role.id]);
-                                                    } else {
-                                                        setSelectedRoleIds((prev) =>
-                                                            prev.filter((id) => id !== role.id)
-                                                        );
-                                                    }
-                                                }}
-                                            />
-                                            <span className="font-medium text-slate-800">{role.name}</span>
-                                            {role.isSystemRole && (
-                                                <Badge variant="outline" className="text-[10px] ml-auto py-0">
-                                                    System
-                                                </Badge>
-                                            )}
-                                        </label>
-                                    ))}
+                                    {governanceAssignableRoles.map((role) => {
+                                        const isSelected = selectedRoleId === role.id;
+                                        return (
+                                            <label
+                                                key={role.id}
+                                                className={`flex items-center space-x-2.5 text-xs cursor-pointer p-2 rounded-md transition ${
+                                                    isSelected
+                                                        ? "bg-blue-50/80 border border-blue-200 text-blue-900 font-medium"
+                                                        : "hover:bg-white border border-transparent text-slate-700"
+                                                }`}
+                                            >
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onCheckedChange={(checked) => {
+                                                        setSelectedRoleId(checked ? role.id : '');
+                                                    }}
+                                                />
+                                                <span className="font-medium text-slate-800">{role.name}</span>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                                 <p className="text-[11px] text-muted-foreground">
-                                    If no roles are selected, the default Tenant Member role will be assigned.
+                                    If no role is selected, the default Tenant Member role will be assigned.
                                 </p>
                             </div>
                         </div>
