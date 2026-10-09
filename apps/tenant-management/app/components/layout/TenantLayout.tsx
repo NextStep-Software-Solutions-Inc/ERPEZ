@@ -15,13 +15,14 @@ import { SearchForm } from "../SearchForm";
 import TenantGuard from "./TenantGuard";
 import { useTenant } from "~/providers/TenantProvider";
 import { useClerkAuth } from "~/providers/ClerkAuthProvider";
-import { Eye, LogOut } from "lucide-react";
+import { Eye, LogOut, ExternalLink } from "lucide-react";
 import { Button } from "~/components/ui/button";
 
 export default function TenantLayout() {
-    const { isSpectating, spectatingTenant, stopSpectating } = useTenant();
+    const { workspace, isSpectating, spectatingTenant, stopSpectating } = useTenant();
     const { isSuperAdmin } = useClerkAuth();
     const navigate = useNavigate();
+    const dashboardUrl = import.meta.env.VITE_ERP_DASHBOARD_URL || "http://localhost:3000";
 
     const handleExitSpectating = () => {
         stopSpectating();
@@ -37,18 +38,34 @@ export default function TenantLayout() {
             <SidebarProvider>
                 <AppSidebar />
                 <SidebarInset>
-                    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-white/80 backdrop-blur-sm">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator
-                            orientation="vertical"
-                            className="mr-2 data-[orientation=vertical]:h-4"
-                        />
-                        <Breadcrumb>
-                            <BreadcrumbList>
-                                <BreadcrumbItem />
-                            </BreadcrumbList>
-                        </Breadcrumb>
-                        <SearchForm />
+                    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 bg-white/80 backdrop-blur-sm">
+                        <div className="flex items-center gap-2">
+                            <SidebarTrigger className="-ml-1" />
+                            <Separator
+                                orientation="vertical"
+                                className="mr-2 data-[orientation=vertical]:h-4"
+                            />
+                            <Breadcrumb>
+                                <BreadcrumbList>
+                                    <BreadcrumbItem />
+                                </BreadcrumbList>
+                            </Breadcrumb>
+                            <SearchForm />
+                        </div>
+
+                        {workspace && (
+                            <div className="flex items-center gap-2">
+                                <a
+                                    href={`${dashboardUrl}/v2/dashboard?tenantId=${workspace.id}&tenantName=${encodeURIComponent(workspace.name)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 h-9 px-3.5 text-xs font-semibold text-white bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-xs transition-all"
+                                >
+                                    <ExternalLink className="size-3.5" />
+                                    <span>Open ERP Dashboard</span>
+                                </a>
+                            </div>
+                        )}
                     </header>
 
                     {isSpectating && spectatingTenant && (

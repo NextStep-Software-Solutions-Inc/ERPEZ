@@ -36,7 +36,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { workspace } = useWorkspace()
   const { hasPermission } = usePermissions()
   const { isSuperAdmin } = useClerkAuth()
-  const dashboardUrl = import.meta.env.VITE_ERP_DASHBOARD_URL || "http://localhost:3000"
 
   const activePlan = (workspace?.tenantSubscription?.plan || "Starter").toLowerCase();
 
@@ -51,19 +50,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar {...props}>
       <SidebarHeader>
         <VersionSwitcher />
-        {workspace && (
-          <div className="px-2 pt-1 pb-1">
-            <a
-              href={`${dashboardUrl}/v2/dashboard?tenantId=${workspace.id}&tenantName=${encodeURIComponent(workspace.name)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-2 px-3 text-xs font-semibold text-white bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-xs transition-all"
-            >
-              <LucideIcons.ExternalLink className="size-3.5" />
-              <span>Open ERP Dashboard</span>
-            </a>
-          </div>
-        )}
         {isSuperAdmin && (
           <div className="px-2 pb-1">
             <Link
