@@ -51,9 +51,7 @@ export default function InquiriesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQuote, setSelectedQuote] = useState<QuoteInquiry | null>(null);
 
-  const { data: response, isLoading, isFetching, refetch } = useInquiries({
-    pathParams: {},
-  });
+  const { data: response, isLoading, isFetching, refetch } = useInquiries({});
 
   const inquiriesData = response?.data;
   const quotes: QuoteInquiry[] = inquiriesData?.quotes ?? [];

@@ -80,7 +80,7 @@ public class ClaimTrialLicenseCommandHandlerTests
             ExpiresAt = DateTime.UtcNow.AddDays(25),
             BoundEmail = "billing@acme.com",
             AllowedDomain = "localhost",
-            Notes = "30-Day Full System Access Free Trial"
+            Notes = "30-Day Starter Free Trial"
         };
 
         tenantRepoMock.Setup(r => r.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
@@ -118,7 +118,7 @@ public class ClaimTrialLicenseCommandHandlerTests
         licenseRepoMock.Setup(r => r.GetActiveByTenantIdAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((LicenseKey?)null);
 
-        licenseServiceMock.Setup(l => l.GenerateKeyString("TRIAL", It.IsAny<string>(), It.IsAny<DateTime>(), Plan.Professional))
+        licenseServiceMock.Setup(l => l.GenerateKeyString("TRIAL", It.IsAny<string>(), It.IsAny<DateTime>(), Plan.Starter))
             .Returns("TRIAL-STD-20261029-BETA-5678");
         licenseServiceMock.Setup(l => l.ComputeSignature(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()))
             .Returns("HMAC_SIG_12345");
@@ -137,10 +137,10 @@ public class ClaimTrialLicenseCommandHandlerTests
         result.Data!.Key.Should().Be("TRIAL-STD-20261029-BETA-5678");
         result.Data.RemainingDays.Should().Be(30);
         result.Data.Status.Should().Be("Active");
-        result.Data.Plan.Should().Be("Professional");
+        result.Data.Plan.Should().Be("Starter");
 
-        licenseRepoMock.Verify(r => r.AddAsync(It.Is<LicenseKey>(lk => lk.Prefix == "TRIAL" && lk.Plan == Plan.Professional), It.IsAny<CancellationToken>()), Times.Once);
-        subRepoMock.Verify(s => s.AddAsync(It.Is<TenantSubscription>(ts => ts.Plan == Plan.Professional && ts.Amount == 0m), It.IsAny<CancellationToken>()), Times.Once);
+        licenseRepoMock.Verify(r => r.AddAsync(It.Is<LicenseKey>(lk => lk.Prefix == "TRIAL" && lk.Plan == Plan.Starter), It.IsAny<CancellationToken>()), Times.Once);
+        subRepoMock.Verify(s => s.AddAsync(It.Is<TenantSubscription>(ts => ts.Plan == Plan.Starter && ts.Amount == 0m), It.IsAny<CancellationToken>()), Times.Once);
         unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

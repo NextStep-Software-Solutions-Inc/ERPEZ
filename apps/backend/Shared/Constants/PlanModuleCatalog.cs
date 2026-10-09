@@ -27,9 +27,9 @@ public static class PlanModuleCatalog
     public static readonly IReadOnlyList<string> enterpriseModules = [moduleAms, modulePbms, modulePms];
 
     /// <summary>
-    /// 30-Day Free Trial: Evaluates the full operational platform (AMS + PBMS + PMS).
+    /// 30-Day Free Trial: Evaluates the Starter platform (AMS + PBMS).
     /// </summary>
-    public static readonly IReadOnlyList<string> trialModules = [moduleAms, modulePbms, modulePms];
+    public static readonly IReadOnlyList<string> trialModules = [moduleAms, modulePbms];
 
     /// <summary>
     /// Resolves the normalized list of active module codes for any given plan code or name.
