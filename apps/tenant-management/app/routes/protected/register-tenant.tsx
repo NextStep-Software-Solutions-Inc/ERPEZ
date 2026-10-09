@@ -7,7 +7,7 @@ import { Button } from "~/components/ui/button";
 
 export function meta() {
     return [
-        { title: "Register Tenant" },
+        { title: "Create Workspace" },
         { name: "description", content: "Register a new tenant in the system" },
     ];
 }
@@ -47,8 +47,8 @@ export default function RegisterTenantPage() {
                 <div className=" flex-1 flex flex-col items-center px-14 lg:px-24 md:px-20 ">
                     <div className="justify-center items-center min-h-[60vh] border border-white/20 w-md flex flex-col gap-8 p-4 backdrop-blur-md bg-white/10 shadow-lg rounded-lg">
                         <div className="flex flex-col gap-4 items-center justify-center">
-                            <h2 className="text-2xl font-bold text-gray-900">Register Tenant</h2>
-                            <p className="text-bg">Please provide your Tenant Details to get started</p>
+                            <h2 className="text-2xl font-bold text-gray-900">Create Workspace</h2>
+                            <p className="text-bg">Please provide your workspace details to get started</p>
                         </div>
                         <CreateTenantForm gradientButton />
                     </div>

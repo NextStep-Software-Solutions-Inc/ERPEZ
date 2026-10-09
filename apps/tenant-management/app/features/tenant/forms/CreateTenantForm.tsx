@@ -60,7 +60,7 @@ export default function CreateTenantForm({ onCreated, onClose, gradientButton }:
                         navigate('/overview');
                     },
                 }), {
-                loading: "Creating tenant...",
+                loading: "Creating workspace...",
             },
             );
         }
@@ -88,7 +88,7 @@ export default function CreateTenantForm({ onCreated, onClose, gradientButton }:
                 children={(field) => ( 
                     <div className="min-h-[3rem]">
                         <Label htmlFor={field.name} className="text-sm font-medium">
-                            Tenant/Company Name <span className="text-red-500">*</span>
+                            Tenant/Workspace Name <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id={field.name}
@@ -97,7 +97,7 @@ export default function CreateTenantForm({ onCreated, onClose, gradientButton }:
                             onChange={(e) => field.handleChange(e.target.value)}
                             onBlur={field.handleBlur}
                             required
-                            placeholder="Enter Tenant Name..."
+                            placeholder="Enter Workspace Name..."
                         />
                         <FieldInfo field={field} />
                     </div>
