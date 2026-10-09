@@ -26,7 +26,10 @@ import {
   fetchAssignableOperationalRoles,
   assignOperationalRoles,
 } from '@/services/api/operationalRoles'
-import { inviteTenantMember } from '@/services/api/tenantMembers'
+import {
+  inviteTenantMember,
+  fetchAssignableGovernanceRoles,
+} from '@/services/api/tenantMembers'
 import {
   UserPlus,
   Mail,
@@ -81,12 +84,18 @@ export function InviteWorkspaceMemberModal() {
     return null
   }
 
-  // Fetch available operational ERP roles
+  // Fetch available operational ERP roles (from Dashboard API)
   const { data: operationalRoles = [], isLoading: isLoadingOperationalRoles } =
     useQuery({
       queryKey: ['assignable-operational-roles'],
       queryFn: fetchAssignableOperationalRoles,
     })
+
+  // Fetch available tenant governance roles (from TenantManagement API)
+  const { data: governanceRoles = [] } = useQuery({
+    queryKey: ['assignable-governance-roles'],
+    queryFn: fetchAssignableGovernanceRoles,
+  })
 
   // Set intelligent role defaults (Viewer for member, System Admin for admin)
   useEffect(() => {
@@ -142,10 +151,24 @@ export function InviteWorkspaceMemberModal() {
     try {
       setIsSubmitting(true)
 
+      // Resolve governance role ID for TenantManagement.Api (e.g. Tenant Administrator vs Tenant Member)
+      const targetGovRole =
+        role === 'org:admin'
+          ? governanceRoles.find(
+              (r) =>
+                r.name.toLowerCase().includes('administrator') ||
+                r.name.toLowerCase().includes('admin'),
+            )
+          : governanceRoles.find((r) =>
+              r.name.toLowerCase().includes('member'),
+            )
+
+      const governanceRoleIds = targetGovRole?.id ? [targetGovRole.id] : undefined
+
       // 1. Send workspace invitation via TenantManagement.Api (calls Clerk user invitation and tracks Pending state in TenantMembers)
       const res = await inviteTenantMember({
         email: trimmedEmail,
-        roleIds: selectedRoleIds.length > 0 ? selectedRoleIds : undefined,
+        roleIds: governanceRoleIds,
       })
 
       // 2. Pre-assign operational roles in the planning database with IsActive = false (pending activation)

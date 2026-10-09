@@ -402,7 +402,11 @@ export default function OperationalRolesTab() {
           const isExpired = tm.invitationExpiresAtUtc ? new Date(tm.invitationExpiresAtUtc) < new Date() : false
           status = isExpired ? 'Expired' : 'Pending'
         } else if (tm.status === 'Active') {
-          status = u.isActive ? 'Active' : 'Disabled'
+          if (tm.externalIdentityId?.startsWith('inv_') || (!u.externalIdentityId && !u.isActive)) {
+            status = 'Pending'
+          } else {
+            status = u.isActive ? 'Active' : 'Disabled'
+          }
         }
       } else if (!u.externalIdentityId || !u.isActive) {
         status = 'Pending'
