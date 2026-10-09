@@ -87,8 +87,15 @@ Clerk manages customer registration, multi-tenant workspace onboarding, and orga
 ### `ConnectionStrings__DefaultConnection`
 
 - **Required:** Yes
-- **Description:** PostgreSQL connection string for the core master database.
+- **Description:** PostgreSQL connection string for the core operational database (or single database if running combined).
 - **Format:** `Host=localhost;Port=5432;Database=erpez_db;Username=your_user;Password=your_password`
+
+### `ConnectionStrings__ControlPlaneConnection` / `ConnectionStrings__TenantManagementConnection`
+
+- **Required:** Yes (in multi-database / microservice topologies where Tenant Management DB is separate from Dashboard DB)
+- **Description:** PostgreSQL connection string for the Tenant Management / Control Plane database. Used by Dashboard middlewares (`CachedTenantAccessService`, `KeycloakUserProvisioningMiddleware`) to validate tenant workspace status and cross-plane administrative access.
+- **Fallback Behavior:** If not explicitly set, falls back to `TenantManagementConnection`, then to `DefaultConnection` (with development fallback substituting `ERPEZ-DASHBOARD_DB` for `ERPEZ-TENANT_MANAGEMENT_DB`).
+- **Format:** `Host=localhost;Port=5432;Database=erpez_tenant_mgmt_db;Username=your_user;Password=your_password`
 
 ---
 
@@ -112,7 +119,8 @@ Prior to promoting any build from Development to Staging or Production:
 - [ ] **Allowed API Hosts**: Verify `TenantRouting__AllowedApiHosts` includes all custom domains and gateway hostnames.
 - [ ] **Keycloak OIDC**: Verify `JwtSettings__Authority` and `JwtSettings__Audience` match the target Keycloak realm.
 - [ ] **Clerk Keys**: Verify `VITE_CLERK_PUBLISHABLE_KEY` and `ClerkSettings__SecretKey` use production (`pk_live_`, `sk_live_`) keys.
-- [ ] **PostgreSQL**: Verify `ConnectionStrings__DefaultConnection` is pointed to the managed database cluster with SSL enforced (`SSL Mode=Require`).
+- [ ] **PostgreSQL Operational DB**: Verify `ConnectionStrings__DefaultConnection` is pointed to the managed database cluster with SSL enforced (`SSL Mode=Require`).
+- [ ] **PostgreSQL Control Plane DB**: Verify `ConnectionStrings__ControlPlaneConnection` is populated in Dashboard App Service / Kubernetes secrets if running distinct database instances.
 - [ ] **Blob Storage**: Verify `AzureBlobStorage__ConnectionString` points to the designated storage account.
 
 ---

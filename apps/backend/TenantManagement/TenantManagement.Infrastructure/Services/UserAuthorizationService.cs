@@ -167,12 +167,18 @@ public class UserAuthorizationService(
                                 !string.Equals(activeOperatingRole, "System Administrator", StringComparison.OrdinalIgnoreCase) &&
                                 !string.Equals(activeOperatingRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase);
 
-            var isPrivilegedAdmin = !isBoundedRole &&
-                                    ((!string.IsNullOrEmpty(normalizedCallerEmail) &&
-                                      (normalizedCallerEmail == "jeanmaureal@gmail.com" || normalizedCallerEmail == "superadmin@erpez.dev")) ||
-                                     string.Equals(activeOperatingRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                     string.Equals(activeOperatingRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                     string.Equals(activeOperatingRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase));
+            var userHasVerifiedAdminRole = assignedTenantRoles.Any(r =>
+                string.Equals(r.Name, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r.Name, "System Administrator", StringComparison.OrdinalIgnoreCase)) ||
+                platformRoles.Any(r => string.Equals(r, "Platform Administrator", StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(normalizedCallerEmail) &&
+                 (normalizedCallerEmail == "jeanmaureal@gmail.com" || normalizedCallerEmail == "superadmin@erpez.dev"));
+
+            var isPrivilegedAdmin = userHasVerifiedAdminRole && !isBoundedRole &&
+                (string.IsNullOrWhiteSpace(activeOperatingRole) ||
+                 string.Equals(activeOperatingRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(activeOperatingRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(activeOperatingRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase));
 
             if (isPrivilegedAdmin)
             {
