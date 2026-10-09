@@ -70,7 +70,7 @@ export default function SubscriptionPage() {
     (sub?.billingCycle?.toLowerCase().includes("year") ? "yearly" : "monthly");
   const isYearly = billingCycle === "yearly";
   const autoRenew = subscription?.autoRenew ?? sub?.autoRenew ?? false;
-  const amountCents = subscription?.amountCents || (sub?.amount ? Math.round(sub.amount * 100) : 29900);
+  const amountCents = subscription?.amountCents || (sub?.amount ? Math.round(sub.amount * 100) : 0);
   const currency = subscription?.currency || "PHP";
 
   // Authoritative Trial Detection
@@ -132,9 +132,17 @@ export default function SubscriptionPage() {
 
   // Formatted next billing date for paid plans
   const nextBillingDate =
-    status === "cancelled" || status === "expired"
+    status === "cancelled" || status === "expired" || (!autoRenew && !isTrial)
       ? "None scheduled"
-      : trialEndsAt;
+      : nextInvoice && nextInvoice.isApplicable && nextInvoice.dueDate !== "N/A"
+      ? nextInvoice.dueDate
+      : effectiveEndDate
+      ? new Date(effectiveEndDate).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "None scheduled";
 
   // Calculate monthly vs annual pricing for the post-trial rate
   const monthlyPriceCents = isYearly ? Math.round(amountCents / 10) : amountCents;
@@ -142,7 +150,7 @@ export default function SubscriptionPage() {
 
   // Payment method state
   const hasPaymentMethod =
-    (billingData?.paymentMethods && billingData.paymentMethods.length > 0) || false;
+    Boolean(billingData?.paymentMethods && billingData.paymentMethods.length > 0);
 
   // Interactive settings state
   const [emailNotification, setEmailNotification] = useState(true);
@@ -162,7 +170,7 @@ export default function SubscriptionPage() {
       await updateSubscription({ billingCycle: targetCycle });
       toast.success(
         targetCycle === "yearly"
-          ? `Switched to Annual billing (Save ${formatMoney(monthlyPriceCents * 2, currency)} after trial)`
+          ? "Switched to Annual billing"
           : "Switched to Monthly billing"
       );
     } catch {
@@ -231,6 +239,21 @@ export default function SubscriptionPage() {
     <Badge className="bg-slate-100 text-slate-700 border-slate-200">CANCELLED</Badge>
   );
 
+  if (isBillingLoading) {
+    return (
+      <PageContainer
+        title="Subscription"
+        description="Manage your plan, trial, billing and license"
+      >
+        <div className="space-y-6 animate-pulse">
+          <div className="h-44 bg-slate-100 rounded-xl" />
+          <div className="h-40 bg-slate-100 rounded-xl" />
+          <div className="h-32 bg-slate-100 rounded-xl" />
+        </div>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer
       title="Subscription"
@@ -256,12 +279,26 @@ export default function SubscriptionPage() {
                     We couldn't process your payment for {planName}. Update your payment method by{" "}
                     <strong>{gracePeriodEndsAt}</strong> to keep using {planName}.
                   </p>
-                  <p className="text-[11px] text-amber-700">
-                    Your access is still active. Amount due:{" "}
-                    <strong>{formatMoney(nextInvoice?.totalCents || 33488, currency)}</strong> (
-                    {formatMoney(nextInvoice?.subtotalCents || 29900, currency)} {planName} plan +{" "}
-                    {formatMoney(nextInvoice?.taxCents || 3588, currency)} estimated tax).
-                  </p>
+                  {nextInvoice && nextInvoice.totalCents > 0 ? (
+                    <p className="text-[11px] text-amber-700">
+                      Your access is still active. Amount due:{" "}
+                      <strong>{formatMoney(nextInvoice.totalCents, currency)}</strong>
+                      {nextInvoice.subtotalCents > 0 && (
+                        <>
+                          {" "}({formatMoney(nextInvoice.subtotalCents, currency)} {planName} plan
+                          {nextInvoice.taxCents > 0
+                            ? ` + ${formatMoney(nextInvoice.taxCents, currency)} estimated tax`
+                            : ""}
+                          )
+                        </>
+                      )}
+                      .
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-amber-700">
+                      Your access is still active. Please update your payment method to resolve this issue.
+                    </p>
+                  )}
                 </div>
               </div>
               <Button
@@ -354,10 +391,12 @@ export default function SubscriptionPage() {
                   <p className="font-bold text-slate-900 mt-0.5 text-base">{trialEndsAt}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs">Price after trial</p>
+                  <p className="text-muted-foreground text-xs">Trial duration</p>
                   <p className="font-semibold text-slate-900 mt-0.5">
-                    {formatMoney(monthlyPriceCents, currency)}
-                    <span className="text-xs font-normal text-muted-foreground">/month + tax</span>
+                    30 days{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      ({daysRemaining > 0 ? `${daysRemaining} left` : "Ends today"})
+                    </span>
                   </p>
                 </div>
                 <div>
@@ -416,10 +455,14 @@ export default function SubscriptionPage() {
                 <div>
                   <p className="text-muted-foreground text-xs">Base Plan Rate</p>
                   <p className="font-semibold text-slate-900 mt-0.5">
-                    {formatMoney(amountCents, currency)}
-                    <span className="text-xs font-normal text-muted-foreground">
-                      /{isYearly ? "year" : "mo"}
-                    </span>
+                    {amountCents > 0
+                      ? formatMoney(amountCents, currency)
+                      : "Quotation / Agreement"}
+                    {amountCents > 0 && (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        /{isYearly ? "year" : "mo"}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -428,7 +471,19 @@ export default function SubscriptionPage() {
             {/* Trial Payment Readiness Banner */}
             {isTrial && (
               <div className="pt-1">
-                {!hasPaymentMethod ? (
+                {status === "cancelled" || !autoRenew ? (
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-2.5 text-xs text-slate-600">
+                    <Info className="h-4 w-4 text-slate-500 shrink-0" />
+                    <span>Your {planName} access will end on {trialEndsAt}. You won't be charged.</span>
+                  </div>
+                ) : hasPaymentMethod ? (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center gap-2.5 text-xs text-emerald-800">
+                    <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>
+                      Payment method on file. Your trial ends on {trialEndsAt}. Contact the ERP-EZ team for subscription options after your trial.
+                    </span>
+                  </div>
+                ) : (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-start gap-2.5">
                       <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
@@ -451,77 +506,39 @@ export default function SubscriptionPage() {
                       Add Payment Method
                     </Button>
                   </div>
-                ) : autoRenew && status !== "cancelled" ? (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center gap-2.5 text-xs text-emerald-800">
-                    <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                    <span>Your saved payment method will be charged when your trial ends.</span>
-                  </div>
-                ) : (
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-2.5 text-xs text-slate-600">
-                    <Info className="h-4 w-4 text-slate-500 shrink-0" />
-                    <span>Your {planName} access will end on {trialEndsAt}. You won't be charged.</span>
-                  </div>
                 )}
               </div>
             )}
 
-            {/* Price After Trial Section (Refined: non-invoice framing, balanced visual weight) */}
-            {nextInvoice && nextInvoice.isApplicable && (
+            {/* Projected Next Invoice Section (Paid Plans only) */}
+            {!isTrial && nextInvoice && nextInvoice.isApplicable && (
               <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 p-3.5 rounded-lg">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    {isTrial ? (
-                      <Sparkles className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <Receipt className="h-4 w-4 text-emerald-600" />
-                    )}
+                    <Receipt className="h-4 w-4 text-emerald-600" />
                     <span className="text-xs font-semibold text-slate-700">
-                      {isTrial ? "Price after trial" : "Projected Next Invoice Total"}
+                      Projected Next Invoice Total
                     </span>
-                    {isTrial ? (
-                      <Badge
-                        variant="outline"
-                        className="border-slate-300 text-slate-600 bg-white text-[10px] py-0"
-                      >
-                        After trial only
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="border-blue-300 text-blue-700 bg-blue-50 text-[10px] py-0"
-                      >
-                        Due {nextInvoice.dueDate}
-                      </Badge>
-                    )}
+                    <Badge
+                      variant="outline"
+                      className="border-blue-300 text-blue-700 bg-blue-50 text-[10px] py-0"
+                    >
+                      Due {nextInvoice.dueDate}
+                    </Badge>
                   </div>
 
-                  {isTrial ? (
-                    <div>
-                      <p className="text-base font-bold text-slate-900">
-                        {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
-                        <span className="text-xs font-normal text-slate-600">
-                          {" "}
-                          / {isYearly ? "year" : "month"}
-                        </span>
-                        <span className="text-xs font-normal text-slate-500 ml-2">
-                          ({formatMoney(nextInvoice.subtotalCents, nextInvoice.currency)} plan +{" "}
-                          {formatMoney(nextInvoice.taxCents, nextInvoice.currency)} estimated tax)
-                        </span>
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        Your trial is free. You won't be charged during your trial.
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-lg font-extrabold text-slate-900">
-                      {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
+                  <p className="text-lg font-extrabold text-slate-900">
+                    {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
+                    {nextInvoice.subtotalCents > 0 && (
                       <span className="text-xs font-normal text-slate-500 ml-2">
-                        ({formatMoney(nextInvoice.subtotalCents, nextInvoice.currency)} plan +{" "}
-                        {formatMoney(nextInvoice.taxCents, nextInvoice.currency)}{" "}
-                        {Math.round(nextInvoice.taxRate * 100)}% VAT)
+                        ({formatMoney(nextInvoice.subtotalCents, nextInvoice.currency)} plan
+                        {nextInvoice.taxCents > 0
+                          ? ` + ${formatMoney(nextInvoice.taxCents, nextInvoice.currency)} ${Math.round(nextInvoice.taxRate * 100)}% VAT`
+                          : ""}
+                        )
                       </span>
-                    </p>
-                  )}
+                    )}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
@@ -541,7 +558,7 @@ export default function SubscriptionPage() {
                     className="text-xs h-8 gap-1.5 border-slate-300 text-slate-700 hover:bg-white"
                   >
                     <Receipt className="h-3.5 w-3.5 text-emerald-600" />
-                    {isTrial ? "Billing History" : "All Invoices"}
+                    All Invoices
                   </Button>
                 </div>
               </div>
@@ -575,11 +592,7 @@ export default function SubscriptionPage() {
               {isTrial ? (
                 autoRenew && status !== "cancelled" ? (
                   <>
-                    Your {planName} plan will continue at{" "}
-                    <strong className="text-slate-900">
-                      {formatMoney(monthlyPriceCents, currency)}/month + applicable tax
-                    </strong>{" "}
-                    after your trial ends on <strong className="text-slate-900">{trialEndsAt}</strong>.
+                    Your trial ends on <strong className="text-slate-900">{trialEndsAt}</strong>. Contact the ERP-EZ team for subscription options after your trial.
                   </>
                 ) : (
                   <>
@@ -602,10 +615,8 @@ export default function SubscriptionPage() {
                 <p className="text-xs text-muted-foreground">
                   {isTrial
                     ? autoRenew && status !== "cancelled"
-                      ? hasPaymentMethod
-                        ? "Your saved payment method will be charged when your trial ends."
-                        : `Add a payment method before your trial ends to continue with ${planName}.`
-                      : `Your account will not continue to a paid ${planName} subscription when the trial ends.`
+                      ? "Your workspace is configured to continue after the free trial. Contact the ERP-EZ team for subscription options."
+                      : `Your account will not continue after the trial ends.`
                     : "Automatically renew your subscription at the end of each billing period"}
                 </p>
               </div>
@@ -729,98 +740,87 @@ export default function SubscriptionPage() {
           </CardContent>
         </Card>
 
-        {/* Card 4: Billing after your trial */}
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CalendarFold className="h-5 w-5 text-blue-600" />
-              <CardTitle className="text-lg">
-                {isTrial ? "Billing after your trial" : "Billing Cycle"}
-              </CardTitle>
-            </div>
-            <CardDescription>
-              {isTrial
-                ? "Choose how you'd like to be billed after your free trial ends."
-                : `Change your billing frequency for the ${planName} plan. Select an option to switch.`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isTrial && (
-              <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-3 flex items-center gap-2.5 text-xs text-blue-800">
-                <Info className="h-4 w-4 text-blue-600 shrink-0" />
-                <span className="font-semibold">
-                  Your 30-day free trial is unaffected by this selection.
-                </span>
+        {/* Card 4: Billing Cycle (Paid Plans only) */}
+        {!isTrial && (
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CalendarFold className="h-5 w-5 text-blue-600" />
+                <CardTitle className="text-lg">Billing Cycle</CardTitle>
               </div>
-            )}
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {/* Monthly Option */}
-              <div
-                onClick={() => handleSelectCycle("monthly")}
-                className={`border rounded-xl p-4 flex justify-between items-center transition cursor-pointer ${
-                  !isYearly
-                    ? "border-blue-500 bg-blue-50/20 ring-2 ring-blue-500/20 shadow-xs"
-                    : "border-slate-200 hover:border-slate-300 bg-white"
-                }`}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-base text-slate-900">Monthly</h3>
-                    {!isYearly && (
-                      <Badge className="bg-blue-600 text-white text-[10px] py-0 px-2">
-                        <Check className="w-3 h-3 mr-1" />
-                        Active Cycle
-                      </Badge>
-                    )}
+              <CardDescription>
+                Change your billing frequency for the {planName} plan. Select an option to switch.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Monthly Option */}
+                <div
+                  onClick={() => handleSelectCycle("monthly")}
+                  className={`border rounded-xl p-4 flex justify-between items-center transition cursor-pointer ${
+                    !isYearly
+                      ? "border-blue-500 bg-blue-50/20 ring-2 ring-blue-500/20 shadow-xs"
+                      : "border-slate-200 hover:border-slate-300 bg-white"
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-base text-slate-900">Monthly</h3>
+                      {!isYearly && (
+                        <Badge className="bg-blue-600 text-white text-[10px] py-0 px-2">
+                          <Check className="w-3 h-3 mr-1" />
+                          Active Cycle
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Billed every month</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">Billed every month</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-lg text-slate-900">
-                    {formatMoney(monthlyPriceCents, currency)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">per month</p>
-                </div>
-              </div>
-
-              {/* Annual Option */}
-              <div
-                onClick={() => handleSelectCycle("yearly")}
-                className={`border rounded-xl p-4 flex justify-between items-center transition cursor-pointer ${
-                  isYearly
-                    ? "border-blue-500 bg-blue-50/20 ring-2 ring-blue-500/20 shadow-xs"
-                    : "border-slate-200 hover:border-slate-300 bg-white"
-                }`}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-base text-slate-900">Annual</h3>
-                    {isYearly && (
-                      <Badge className="bg-blue-600 text-white text-[10px] py-0 px-2">
-                        <Check className="w-3 h-3 mr-1" />
-                        Active Cycle
-                      </Badge>
-                    )}
-                    <Badge
-                      variant="outline"
-                      className="text-emerald-700 border-emerald-300 bg-emerald-50 text-[10px] py-0 font-semibold"
-                    >
-                      Save {formatMoney(monthlyPriceCents * 2, currency)}
-                    </Badge>
+                  <div className="text-right">
+                    <p className="font-bold text-lg text-slate-900">
+                      {formatMoney(monthlyPriceCents, currency)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">per month</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">Billed yearly (2 months free)</p>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-lg text-slate-900">
-                    {formatMoney(annualPriceCents, currency)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">per year</p>
+
+                {/* Annual Option */}
+                <div
+                  onClick={() => handleSelectCycle("yearly")}
+                  className={`border rounded-xl p-4 flex justify-between items-center transition cursor-pointer ${
+                    isYearly
+                      ? "border-blue-500 bg-blue-50/20 ring-2 ring-blue-500/20 shadow-xs"
+                      : "border-slate-200 hover:border-slate-300 bg-white"
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-base text-slate-900">Annual</h3>
+                      {isYearly && (
+                        <Badge className="bg-blue-600 text-white text-[10px] py-0 px-2">
+                          <Check className="w-3 h-3 mr-1" />
+                          Active Cycle
+                        </Badge>
+                      )}
+                      <Badge
+                        variant="outline"
+                        className="text-emerald-700 border-emerald-300 bg-emerald-50 text-[10px] py-0 font-semibold"
+                      >
+                        Save {formatMoney(monthlyPriceCents * 2, currency)}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Billed yearly (2 months free)</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-lg text-slate-900">
+                      {formatMoney(annualPriceCents, currency)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">per year</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Card 5: Trial Actions (Continue after trial clearly visible when OFF) */}
         <Card className="shadow-sm border-slate-200">
@@ -953,13 +953,13 @@ export default function SubscriptionPage() {
                   <p>
                     Your {planName} plan will continue after <strong>{trialEndsAt}</strong>.
                   </p>
-                  <p>
-                    Billing: <strong>{formatMoney(monthlyPriceCents, currency)}/month + applicable tax</strong>
+                  <p className="text-xs text-slate-600">
+                    Contact the ERP-EZ team for subscription options after your trial ends.
                   </p>
                   <p className="text-[11px] text-slate-500">
                     {hasPaymentMethod
-                      ? "Your saved payment method will be charged when your trial ends."
-                      : `Add a payment method before your trial ends to continue with ${planName}.`}
+                      ? "Payment method registered on file."
+                      : "No payment method is registered on file. You can add one anytime before your trial ends."}
                   </p>
                   <p className="text-[11px] text-emerald-700 font-semibold">
                     Continue after trial: ON
@@ -1005,13 +1005,12 @@ export default function SubscriptionPage() {
             </div>
             <DialogDescription className="text-xs text-slate-600 mt-2 space-y-2">
               <p>
-                Your free trial ends on <strong>{trialEndsAt}</strong>. Your {planName} plan will continue at{" "}
-                <strong>{formatMoney(monthlyPriceCents, currency)}/month + applicable tax</strong> after the trial.
+                Your free trial ends on <strong>{trialEndsAt}</strong>. Contact the ERP-EZ team for subscription options after your trial.
               </p>
               <p className="text-[11px] text-slate-500">
                 {hasPaymentMethod
-                  ? "Your saved payment method will be charged when your trial ends."
-                  : `Add a payment method before your trial ends to continue with ${planName}.`}
+                  ? "Payment method registered on file."
+                  : "No payment method is registered on file. You can add one anytime before your trial ends."}
               </p>
             </DialogDescription>
           </DialogHeader>
@@ -1037,7 +1036,7 @@ export default function SubscriptionPage() {
         }}
         isTrial={isTrial}
         planName={planName}
-        planRateText={`${formatMoney(monthlyPriceCents, currency)}/month + applicable tax`}
+        planRateText={!isTrial ? `${formatMoney(monthlyPriceCents, currency)}/month + applicable tax` : undefined}
         trialEndDate={trialEndsAt}
       />
     </PageContainer>

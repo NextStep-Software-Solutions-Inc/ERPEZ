@@ -133,16 +133,10 @@ export function useBillingData(
   const targetPlanName = subscriptionOverride.planName || baseSub?.planName || "Starter";
   const targetCycle = subscriptionOverride.billingCycle || baseSub?.billingCycle || "monthly";
 
-  // Base monthly cost in cents
-  let defaultMonthlyCents = baseSub?.amountCents || 29900;
+  // Base monthly cost in cents from authoritative subscription data
+  let defaultMonthlyCents = baseSub?.amountCents || 0;
   if (baseSub?.billingCycle === "yearly" && defaultMonthlyCents > 10000) {
     defaultMonthlyCents = Math.round(defaultMonthlyCents / 10);
-  }
-  if (subscriptionOverride.planName) {
-    const lower = subscriptionOverride.planName.toLowerCase();
-    if (lower.includes("starter")) defaultMonthlyCents = 29900;
-    else if (lower.includes("professional")) defaultMonthlyCents = 29900;
-    else if (lower.includes("enterprise")) defaultMonthlyCents = 49900;
   }
   const monthlyCostCents = subscriptionOverride.amountCents ?? defaultMonthlyCents;
   const computedAmountCents =
