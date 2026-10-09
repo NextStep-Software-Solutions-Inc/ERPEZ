@@ -116,6 +116,83 @@ Clerk manages customer registration, multi-tenant workspace onboarding, and orga
 - **Fallback Behavior:** If not explicitly set, falls back to `TenantManagementConnection`, then to `DefaultConnection` (with development fallback substituting `ERPEZ-DASHBOARD_DB` for `ERPEZ-TENANT_MANAGEMENT_DB`).
 - **Format:** `Host=localhost;Port=5432;Database=erpez_tenant_mgmt_db;Username=your_user;Password=your_password`
 
+### 4.1 Deployment Playbooks for `ControlPlaneConnection`
+
+Where microservice database isolation is required in Staging and Production, `ControlPlaneConnection` must be explicitly populated across deployment hosting targets.
+
+#### A. Azure App Service / Azure Container Apps
+In Azure App Service, ASP.NET Core hierarchical configuration automatically maps double underscores (`__`) from App Service Application Settings:
+
+1. **Via Azure CLI**:
+   ```bash
+   # Set as Application Setting (recommended for .NET Core configuration binding)
+   az webapp config appsettings set \
+     --resource-group <resource-group-name> \
+     --name <dashboard-api-app-name> \
+     --settings ConnectionStrings__ControlPlaneConnection="Host=<control-plane-db-host>;Port=5432;Database=erpez_tenant_mgmt_db;Username=<db-user>;Password=<db-password>;SSL Mode=Require;Trust Server Certificate=true"
+
+   # Or via Azure App Service Connection Strings:
+   az webapp config connection-string set \
+     --resource-group <resource-group-name> \
+     --name <dashboard-api-app-name> \
+     --connection-string-type PostgreSQL \
+     --settings ControlPlaneConnection="Host=<control-plane-db-host>;Port=5432;Database=erpez_tenant_mgmt_db;Username=<db-user>;Password=<db-password>;SSL Mode=Require;Trust Server Certificate=true"
+   ```
+
+2. **Via Azure Portal**:
+   - Navigate to **App Service** -> **Configuration** (or **Environment variables**).
+   - Under **App settings**, add a new setting:
+     - **Name**: `ConnectionStrings__ControlPlaneConnection`
+     - **Value**: PostgreSQL connection string for the Tenant Management / Control Plane database.
+     - **Deployment slot setting**: Check if setting differs between Staging slot and Production slot.
+   - Click **Save** and restart the App Service.
+
+3. **Key Vault Reference (Production Best Practice)**:
+   ```bash
+   ConnectionStrings__ControlPlaneConnection="@Microsoft.KeyVault(SecretUri=https://<your-keyvault-name>.vault.azure.net/secrets/ControlPlaneDbConnectionString/<version>)"
+   ```
+
+#### B. Kubernetes / Helm Playbook
+In Kubernetes environments, inject `ConnectionStrings__ControlPlaneConnection` from a Kubernetes Secret:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: erpez-dashboard-secrets
+  namespace: erpez-prod
+type: Opaque
+stringData:
+  ConnectionStrings__DefaultConnection: "Host=postgres-cluster;Port=5432;Database=erpez_dashboard_prod;Username=dashboard_app;Password=secret;"
+  ConnectionStrings__ControlPlaneConnection: "Host=postgres-cluster;Port=5432;Database=erpez_tenant_mgmt_prod;Username=dashboard_app;Password=secret;"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard-api
+  namespace: erpez-prod
+spec:
+  template:
+    spec:
+      containers:
+        - name: dashboard-api
+          image: erpez-registry.azurecr.io/dashboard-api:latest
+          envFrom:
+            - secretRef:
+                name: erpez-dashboard-secrets
+```
+
+#### C. Linux VPS / Docker Compose Playbook
+In Docker Compose deployments (as managed by `.github/workflows/deploy-dashboard-api-prod.yml`):
+
+1. **GitHub Secrets**: Add `CONTROL_PLANE_DB_CONNECTION_STRING` under **Repository Settings** -> **Secrets and variables** -> **Actions**.
+2. **Docker Compose Environment**:
+   ```yaml
+   environment:
+     - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+     - ConnectionStrings__ControlPlaneConnection=${CONTROL_PLANE_DB_CONNECTION_STRING:-${DB_CONNECTION_STRING}}
+   ```
+
 ---
 
 ## 5. Azure Blob Storage
