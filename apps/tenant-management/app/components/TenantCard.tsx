@@ -105,7 +105,7 @@ export function TenantCard({
                 </div>
                 <div className="flex justify-between items-center">
                     <p className="text-sm text-muted-foreground">Amount</p>
-                    <p className="text-emerald-600 font-medium">${displayAmount}/month</p>
+                    <p className="text-emerald-600 font-medium">₱{displayAmount}/month</p>
                 </div>
                 <div>
                     <p className="text-sm text-muted-foreground mb-1">Modules</p>

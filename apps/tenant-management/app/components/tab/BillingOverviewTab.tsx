@@ -101,7 +101,7 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
             </div>
             <CardDescription>
               {isTrial
-                ? "You're currently using Starter at no cost during your free trial"
+                ? `You're currently using ${subscription?.planName || "Starter"} at no cost during your free trial`
                 : "Authoritative active subscription details"}
             </CardDescription>
           </CardHeader>
@@ -120,14 +120,14 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
               <div className="text-right">
                 {isTrial ? (
                   <div>
-                    <p className="text-xl font-extrabold text-emerald-600">$0</p>
+                    <p className="text-xl font-extrabold text-emerald-600">₱0</p>
                     <p className="text-xs text-slate-500">during trial</p>
                   </div>
                 ) : (
                   <p className="text-xl font-extrabold text-blue-600">
                     {subscription
                       ? `${formatMoney(subscription.amountCents, subscription.currency)}`
-                      : "$299.00"}
+                      : "₱299.00"}
                     <span className="text-xs font-normal text-slate-500">
                       /{subscription?.billingCycle === "yearly" ? "yr" : "mo"}
                     </span>
@@ -165,7 +165,7 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Price after trial</dt>
                   <dd className="font-medium text-slate-800">
-                    {formatMoney(subscription?.amountCents || 29900, subscription?.currency || "USD")}/
+                    {formatMoney(subscription?.amountCents || 29900, subscription?.currency || "PHP")}/
                     {subscription?.billingCycle === "yearly" ? "yr" : "mo"} + tax
                   </dd>
                 </div>
@@ -207,7 +207,7 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
             </div>
             <CardDescription>
               {isTrial
-                ? "Your first charge would occur after your free trial if you continue with Starter"
+                ? `Your first charge would occur after your free trial if you continue with ${subscription?.planName || "Starter"}`
                 : "Upcoming projected billing summary"}
             </CardDescription>
           </CardHeader>

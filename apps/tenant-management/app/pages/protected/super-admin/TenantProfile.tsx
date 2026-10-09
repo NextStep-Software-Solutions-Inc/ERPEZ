@@ -148,7 +148,7 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="p-4 border rounded col-span-1 bg-white">
                         <div className="text-sm text-muted-foreground">Monthly Revenue</div>
-                        <div className="text-2xl font-semibold mt-2">${displayAmount}.00</div>
+                        <div className="text-2xl font-semibold mt-2">₱{displayAmount}.00</div>
                     </div>
                     <div className="p-4 border rounded col-span-1 bg-white">
                         <div className="text-sm text-muted-foreground">Active User</div>
@@ -294,7 +294,7 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                             <div className="font-medium">{displayStatus}</div>
 
                             <div className="text-sm text-muted-foreground">Monthly Cost</div>
-                            <div className="font-medium">${displayAmount}/month</div>
+                            <div className="font-medium">₱{displayAmount}/month</div>
                         </div>
 
                         <div className="mt-4">

@@ -13,7 +13,7 @@ import { calculateTax, decimalToCents } from "./money";
  */
 export function adaptTenantSubscription(
   tenant: Tenant | null,
-  currency = "USD"
+  currency = "PHP"
 ): SubscriptionAdapter | null {
   if (!tenant) return null;
 
@@ -74,7 +74,7 @@ export function adaptTenantSubscription(
     rawSub.amount === 0 ||
     (planName.toLowerCase().includes("starter") && (rawSub.amount === 0 || !rawSub.autoRenew));
 
-  // Starter post-trial plan rate is $299/mo (or $2,990/year)
+  // Starter post-trial plan rate is ₱299/mo (or ₱2,990/year)
   const amountCents = typeof rawSub.amount === "number" && rawSub.amount > 0
     ? decimalToCents(rawSub.amount)
     : 29900; // Starter post-trial base rate
@@ -134,7 +134,7 @@ export function calculateNextInvoice(
       isApplicable: false,
       planName: "No Active Plan",
       billingCycle: "monthly",
-      currency: "USD",
+      currency: "PHP",
       dueDate: "N/A",
       subtotalCents: 0,
       taxRate: 0,

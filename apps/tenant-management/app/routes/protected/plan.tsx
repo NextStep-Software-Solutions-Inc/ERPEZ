@@ -515,18 +515,18 @@ export default function PlanPage() {
                 <div className="flex justify-between">
                   <span className="text-slate-500">Base Subscription:</span>
                   <span className="font-semibold text-slate-800">
-                    ${confirmTotals.base.toFixed(2)}
+                    ₱{confirmTotals.base.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Applicable Tax (12% VAT):</span>
                   <span className="font-semibold text-slate-800">
-                    ${confirmTotals.tax.toFixed(2)}
+                    ₱{confirmTotals.tax.toFixed(2)}
                   </span>
                 </div>
                 <div className="border-t border-slate-200 pt-2 flex justify-between text-base font-bold text-slate-950">
                   <span>Estimated Total:</span>
-                  <span className="text-blue-600">${confirmTotals.total.toFixed(2)}</span>
+                  <span className="text-blue-600">₱{confirmTotals.total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
                   <span className="text-slate-500">Payment Timing:</span>
@@ -542,11 +542,11 @@ export default function PlanPage() {
               <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed">
                 {selectedPlan && getPlanTier(selectedPlan.name) < currentTier ? (
                   <span>
-                    <strong>Downgrade Terms:</strong> You will <strong>not</strong> be billed immediately. Because you have already paid for your current cycle, this new rate of <strong>${confirmTotals.total.toFixed(2)}</strong> will take effect on your next scheduled invoice.
+                    <strong>Downgrade Terms:</strong> You will <strong>not</strong> be billed immediately. Because you have already paid for your current cycle, this new rate of <strong>₱{confirmTotals.total.toFixed(2)}</strong> will take effect on your next scheduled invoice.
                   </span>
                 ) : (
                   <span>
-                    <strong>Upgrade Terms:</strong> Your new tier features will activate immediately upon confirmation. Your next statement will reflect the updated subscription rate of <strong>${confirmTotals.total.toFixed(2)}</strong>.
+                    <strong>Upgrade Terms:</strong> Your new tier features will activate immediately upon confirmation. Your next statement will reflect the updated subscription rate of <strong>₱{confirmTotals.total.toFixed(2)}</strong>.
                   </span>
                 )}
               </div>
@@ -658,7 +658,7 @@ export default function PlanPage() {
 
             <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-xs text-indigo-900 leading-relaxed">
               <strong>Instant Activation:</strong> If you prefer to immediately activate the
-              Enterprise cloud tier ($499.00/mo) for this sandbox tenant, you can switch right now.
+              Enterprise cloud tier (₱499.00/mo) for this sandbox tenant, you can switch right now.
             </div>
 
             <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">

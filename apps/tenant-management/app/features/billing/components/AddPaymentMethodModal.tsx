@@ -37,7 +37,7 @@ export const AddPaymentMethodModal: React.FC<AddPaymentMethodModalProps> = ({
   onAdd,
   isTrial = false,
   planName = "Starter",
-  planRateText = "$299/month + applicable tax",
+  planRateText = "₱299/month + applicable tax",
   trialEndDate,
 }) => {
   const [cardholderName, setCardholderName] = useState("");

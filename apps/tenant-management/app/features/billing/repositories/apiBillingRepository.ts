@@ -1,4 +1,4 @@
-﻿import { api } from "~/services/api";
+import { api } from "~/services/api";
 import type {
   BillingContact,
   CardBrand,
@@ -135,7 +135,7 @@ function mapInvoice(dto: BackendInvoiceDto): Invoice {
     taxRate: Number(dto.taxRate || 0),
     taxCents: Math.round(Number(dto.taxAmount || 0) * 100),
     totalCents: Math.round(Number(dto.totalAmount || 0) * 100),
-    currency: dto.currency || "USD",
+    currency: dto.currency || "PHP",
     status: (dto.status?.toLowerCase() || "draft") as InvoiceStatus,
     paymentMethodSummary: dto.paymentMethodSummary || undefined,
     items,

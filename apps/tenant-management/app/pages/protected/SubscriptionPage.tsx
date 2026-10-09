@@ -62,7 +62,7 @@ export default function SubscriptionPage() {
   const license = licenseResponse?.data;
 
   // Authoritative subscription properties unified with Billing & Invoice pages
-  const planName = subscription?.planName || sub?.plan || (license?.plan as string) || "Professional";
+  const planName = subscription?.planName || sub?.plan || (license?.plan as string) || "Starter";
   const rawStatus = subscription?.status || (sub?.status?.toLowerCase() as string) || "active";
   const status = rawStatus.toLowerCase();
   const billingCycle =
@@ -71,7 +71,7 @@ export default function SubscriptionPage() {
   const isYearly = billingCycle === "yearly";
   const autoRenew = subscription?.autoRenew ?? sub?.autoRenew ?? false;
   const amountCents = subscription?.amountCents || (sub?.amount ? Math.round(sub.amount * 100) : 29900);
-  const currency = subscription?.currency || "USD";
+  const currency = subscription?.currency || "PHP";
 
   // Authoritative Trial Detection
   const isTrial =
@@ -89,34 +89,46 @@ export default function SubscriptionPage() {
   const trialProgressPercent = Math.min(100, Math.max(7, Math.round((elapsedDays / totalTrialDays) * 100)));
 
   // Formatted trial end date
+  const effectiveEndDate = subscription?.endDate || sub?.endDate;
   const trialEndsAt =
     subscription?.trialEndsAt ||
     nextInvoice?.dueDate ||
-    (subscription?.endDate
-      ? new Date(subscription.endDate).toLocaleDateString("en-US", {
+    (effectiveEndDate
+      ? new Date(effectiveEndDate).toLocaleDateString("en-US", {
           month: "long",
           day: "numeric",
           year: "numeric",
         })
-      : "October 9, 2026");
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        }));
 
   const formattedShortEndDate =
-    subscription?.endDate
-      ? new Date(subscription.endDate).toLocaleDateString("en-US", {
+    effectiveEndDate
+      ? new Date(effectiveEndDate).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
         })
-      : "October 9";
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
 
   const gracePeriodEndsAt =
     subscription?.gracePeriodEndsAt ||
-    (subscription?.endDate
-      ? new Date(new Date(subscription.endDate).getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+    (effectiveEndDate
+      ? new Date(new Date(effectiveEndDate).getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
           month: "long",
           day: "numeric",
           year: "numeric",
         })
-      : "October 12, 2026");
+      : new Date(Date.now() + 33 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        }));
 
   // Formatted next billing date for paid plans
   const nextBillingDate =
@@ -331,7 +343,7 @@ export default function SubscriptionPage() {
                 <div>
                   <p className="text-muted-foreground text-xs">Current cost</p>
                   <p className="font-bold text-emerald-700 mt-0.5 text-base">
-                    $0{" "}
+                    ₱0{" "}
                     <span className="text-xs font-normal text-slate-500">
                       during your trial
                     </span>
