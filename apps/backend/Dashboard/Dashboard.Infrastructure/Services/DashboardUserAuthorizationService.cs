@@ -23,6 +23,8 @@ public class DashboardUserAuthorizationService(
     private const string cacheKeyPrefix = "perms:ams:";
     private static readonly TimeSpan slidingExpiration = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan absoluteExpiration = TimeSpan.FromMinutes(15);
+    // Tracks in-memory cache keys for localized eviction per instance.
+    // When horizontal multi-node container scaling is introduced, transition to distributed Redis cache tags.
     private static readonly ConcurrentDictionary<string, ConcurrentBag<string>> userCacheKeys = new();
 
     public async Task<bool> HasPermissionAsync(
