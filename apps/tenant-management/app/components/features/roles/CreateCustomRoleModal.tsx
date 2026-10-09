@@ -106,7 +106,7 @@ export function CreateCustomRoleModal({
       setSelectedKeys(new Set());
       onOpenChange(false);
       onSuccess();
-    } catch (err: any) {
+    } catch {
       // Handled by axios interceptor
     }
   };

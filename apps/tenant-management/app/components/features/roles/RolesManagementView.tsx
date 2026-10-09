@@ -24,8 +24,8 @@ import { usePermissions } from '~/hooks/usePermissions';
 const useAssignableRoles = createQueryHookFromTemplate(getAssignableRolesRequest);
 
 export function RolesManagementView() {
-  const { hasPermission } = usePermissions();
-  const canManageRoles = hasPermission('tenant.roles.manage');
+  const { hasPermission, isPlatformAdmin } = usePermissions();
+  const canManageRoles = isPlatformAdmin || hasPermission('tenant.roles.manage') || hasPermission('platform.settings.manage');
 
   const { data: rolesResponse, isLoading, refetch } = useAssignableRoles({});
   const roles: RoleSummary[] = rolesResponse?.data || [];
@@ -43,12 +43,12 @@ export function RolesManagementView() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-blue-600" />
-            Workspace Roles & Custom Permissions
+            Configured System & Custom Roles
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Manage system and custom governance roles for your workspace members. Roles grant access to workspace operations and billing.
+            System and custom roles available for assignment across workspaces.
           </p>
         </div>
 

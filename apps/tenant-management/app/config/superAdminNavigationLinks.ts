@@ -20,6 +20,7 @@ export const superAdminNavigationLinks: SuperAdminNavigationGroup[] = [
       { title: "Tenants", url: "super-admin/tenant-management", icon: "Building2", permission: "platform.tenants.view" },
       { title: "Inquiries & Leads", url: "super-admin/inquiries", icon: "Inbox", permission: "platform.settings.view" },
       { title: "Platform Users", url: "super-admin/users", icon: "Users", permission: "platform.users.view" },
+      { title: "Roles & Permissions", url: "super-admin/roles", icon: "Shield", permission: "platform.settings.view" },
       { title: "Platform Settings", url: "super-admin/settings", icon: "Settings", permission: "platform.settings.view" },
     ],
   },

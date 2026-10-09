@@ -19,7 +19,6 @@ export const navigationLinks: NavigationGroup[] = [
     items: [
       { title: "Overview", url: "overview", icon: "LayoutDashboard", permission: "tenant.workspace.view" },
       { title: "Members", url: "tenant-member", icon: "Users", permission: "tenant.members.view" },
-      { title: "Roles & Permissions", url: "roles", icon: "Shield", permission: "tenant.roles.view" },
     ],
   },
   {
