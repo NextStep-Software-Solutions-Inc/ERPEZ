@@ -16,7 +16,7 @@ import { UserMenu } from "~/components/navbar/UserMenu";
 import { HeroSectionCarousel } from "../section/HeroSectionCarousel";
 
 export default function Welcome() {
-    const { isAuthenticated, login } = useClerkAuth();
+    const { isAuthenticated, login, isSuperAdmin } = useClerkAuth();
 
     return (
         <>
