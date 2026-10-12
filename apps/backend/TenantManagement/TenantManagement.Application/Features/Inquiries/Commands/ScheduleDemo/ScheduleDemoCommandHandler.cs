@@ -11,21 +11,21 @@ public partial class ScheduleDemoCommandHandler(
     ERPEZ.TenantManagement.Application.Features.Inquiries.Common.IInquiryStore? inquiryStore = null)
     : IRequestHandler<ScheduleDemoCommand, ApiResponse<DemoResponseDto>>
 {
-    public Task<ApiResponse<DemoResponseDto>> Handle(ScheduleDemoCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse<DemoResponseDto>> Handle(ScheduleDemoCommand command, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(command.ContactName))
         {
-            return Task.FromResult(ApiResponse<DemoResponseDto>.Fail("Contact name is required."));
+            return ApiResponse<DemoResponseDto>.Fail("Contact name is required.");
         }
 
         if (string.IsNullOrWhiteSpace(command.OrganizationName))
         {
-            return Task.FromResult(ApiResponse<DemoResponseDto>.Fail("Organization name is required."));
+            return ApiResponse<DemoResponseDto>.Fail("Organization name is required.");
         }
 
         if (string.IsNullOrWhiteSpace(command.Email) || !EmailRegex().IsMatch(command.Email.Trim()))
         {
-            return Task.FromResult(ApiResponse<DemoResponseDto>.Fail("A valid work email address is required."));
+            return ApiResponse<DemoResponseDto>.Fail("A valid work email address is required.");
         }
 
         var referenceCode = $"DEMO-{DateTime.UtcNow:yyyyMMdd}-{RandomNumberGenerator.GetHexString(6).ToUpperInvariant()}";
@@ -48,21 +48,32 @@ public partial class ScheduleDemoCommandHandler(
             Message = "Your demonstration request has been received. Our solutions team will confirm calendar details via email."
         };
 
-        inquiryStore?.AddDemo(new ERPEZ.TenantManagement.Application.Features.Inquiries.Common.DemoInquiryDto
+        if (inquiryStore != null)
         {
-            ReferenceCode = referenceCode,
-            ContactName = command.ContactName.Trim(),
-            Email = command.Email.Trim(),
-            Phone = command.PhoneNumber?.Trim() ?? string.Empty,
-            OrganizationName = command.OrganizationName.Trim(),
-            PreferredDate = date,
-            PreferredTimeSlot = timeSlot,
-            Notes = command.Notes?.Trim() ?? string.Empty,
-            Status = "Confirmed",
-            SubmittedAtUtc = now
-        });
+            try
+            {
+                await inquiryStore.AddDemoAsync(new ERPEZ.TenantManagement.Application.Features.Inquiries.Common.DemoInquiryDto
+                {
+                    ReferenceCode = referenceCode,
+                    ContactName = command.ContactName.Trim(),
+                    Email = command.Email.Trim(),
+                    Phone = command.PhoneNumber?.Trim() ?? string.Empty,
+                    OrganizationName = command.OrganizationName.Trim(),
+                    PreferredDate = date,
+                    PreferredTimeSlot = timeSlot,
+                    Notes = command.Notes?.Trim() ?? string.Empty,
+                    Status = "Confirmed",
+                    SubmittedAtUtc = now
+                }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to persist Demo booking: ReferenceCode={ReferenceCode}, Email={Email}", referenceCode, command.Email);
+                return ApiResponse<DemoResponseDto>.Fail("We are temporarily unable to schedule your demonstration. Please try again shortly or contact support.");
+            }
+        }
 
-        return Task.FromResult(ApiResponse<DemoResponseDto>.Success(responseDto, "Demo scheduled successfully."));
+        return ApiResponse<DemoResponseDto>.Success(responseDto, "Demo scheduled successfully.");
     }
 
     [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase)]

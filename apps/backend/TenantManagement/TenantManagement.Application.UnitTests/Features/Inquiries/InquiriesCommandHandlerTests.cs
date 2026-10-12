@@ -1,7 +1,10 @@
 using ERPEZ.TenantManagement.Application.Features.Inquiries.Commands.RequestQuote;
 using ERPEZ.TenantManagement.Application.Features.Inquiries.Commands.ScheduleDemo;
 using ERPEZ.TenantManagement.Application.Features.Inquiries.Commands.SubscribeNewsletter;
+using ERPEZ.TenantManagement.Application.Features.Inquiries.Commands.UpdateInquiryStatus;
+using ERPEZ.TenantManagement.Application.Features.Inquiries.Common;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Xunit;
 
 namespace ERPEZ.TenantManagement.Application.UnitTests.Features.Inquiries;
@@ -143,5 +146,74 @@ public class InquiriesCommandHandlerTests
         var result = await handler.Handle(command, CancellationToken.None);
 
         Assert.False(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task RequestQuote_WhenStoreThrows_FailsGracefullyWithoutLeakingDetails()
+    {
+        var mockStore = new Mock<IInquiryStore>();
+        mockStore.Setup(s => s.AddQuoteAsync(It.IsAny<QuoteInquiryDto>(), It.IsAny<CancellationToken>()))
+            .Throws(new Exception("Fatal NpgsqlConnection timeout Host=10.0.0.1"));
+
+        var handler = new RequestQuoteCommandHandler(NullLogger<RequestQuoteCommandHandler>.Instance, mockStore.Object);
+        var command = new RequestQuoteCommand
+        {
+            ContactName = "Jane Doe",
+            Email = "jane@gov.ph",
+            OrganizationName = "Dept of Energy"
+        };
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.DoesNotContain("NpgsqlConnection", result.Message);
+        Assert.DoesNotContain("10.0.0.1", result.Message);
+    }
+
+    [Fact]
+    public async Task UpdateInquiryStatus_WhenInquiryExists_ReturnsSuccess()
+    {
+        var mockStore = new Mock<IInquiryStore>();
+        mockStore.Setup(s => s.UpdateStatusAsync("QT-20261008-ABC", "Qualified", "All valid", "admin@erpez.dev", It.IsAny<CancellationToken>()))
+            .Returns(Task.FromResult(true));
+
+        var handler = new UpdateInquiryStatusCommandHandler(
+            NullLogger<UpdateInquiryStatusCommandHandler>.Instance,
+            mockStore.Object);
+
+        var command = new UpdateInquiryStatusCommand
+        {
+            ReferenceCode = "QT-20261008-ABC",
+            Status = "Qualified",
+            Notes = "All valid",
+            AssignedTo = "admin@erpez.dev"
+        };
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task UpdateInquiryStatus_WhenNotFound_ReturnsFailure()
+    {
+        var mockStore = new Mock<IInquiryStore>();
+        mockStore.Setup(s => s.UpdateStatusAsync("QT-NON-EXISTENT", "Qualified", null, null, It.IsAny<CancellationToken>()))
+            .Returns(Task.FromResult(false));
+
+        var handler = new UpdateInquiryStatusCommandHandler(
+            NullLogger<UpdateInquiryStatusCommandHandler>.Instance,
+            mockStore.Object);
+
+        var command = new UpdateInquiryStatusCommand
+        {
+            ReferenceCode = "QT-NON-EXISTENT",
+            Status = "Qualified"
+        };
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("not found", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

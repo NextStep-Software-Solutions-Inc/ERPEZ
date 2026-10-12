@@ -1,6 +1,6 @@
-# ERPEZ Production Multi-Stage Tenant Migration, Index Strategy & Staging Verification
+﻿# ERPEZ Production Multi-Stage Tenant Migration, Index Strategy & Staging Verification
 
-This directory contains the production-grade migration scripts, execution runners, and staging verification tooling implementing the strategy defined in [SYSTEM_ARCHITECTURE.md](../../SYSTEM_ARCHITECTURE.md) (§5.1 Existing-Data Migration Strategy) and addressing PR review recommendations:
+This directory contains the production-grade migration scripts, execution runners, and staging verification tooling implementing the strategy defined in [SYSTEM_ARCHITECTURE.md](../../SYSTEM_ARCHITECTURE.md) (Â§5.1 Existing-Data Migration Strategy) and addressing PR review recommendations:
 
 1. **Recommendation 1: Multi-Stage Migration & Backfill Strategy**
    Ensure production deployment runs the multi-stage migration scripts detailed in `SYSTEM_ARCHITECTURE.md` to backfill and enforce `NOT NULL` constraints on `TenantId` columns without breaking existing single-tenant legacy records or causing data invisibility under EF Core global query filters.

@@ -12,21 +12,21 @@ public partial class RequestQuoteCommandHandler(
     ERPEZ.TenantManagement.Application.Features.Inquiries.Common.IInquiryStore? inquiryStore = null)
     : IRequestHandler<RequestQuoteCommand, ApiResponse<QuoteResponseDto>>
 {
-    public Task<ApiResponse<QuoteResponseDto>> Handle(RequestQuoteCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse<QuoteResponseDto>> Handle(RequestQuoteCommand command, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(command.ContactName))
         {
-            return Task.FromResult(ApiResponse<QuoteResponseDto>.Fail("Contact name is required."));
+            return ApiResponse<QuoteResponseDto>.Fail("Contact name is required.");
         }
 
         if (string.IsNullOrWhiteSpace(command.OrganizationName))
         {
-            return Task.FromResult(ApiResponse<QuoteResponseDto>.Fail("Organization name is required."));
+            return ApiResponse<QuoteResponseDto>.Fail("Organization name is required.");
         }
 
         if (string.IsNullOrWhiteSpace(command.Email) || !EmailRegex().IsMatch(command.Email.Trim()))
         {
-            return Task.FromResult(ApiResponse<QuoteResponseDto>.Fail("A valid work email address is required."));
+            return ApiResponse<QuoteResponseDto>.Fail("A valid work email address is required.");
         }
 
         var planTier = string.IsNullOrWhiteSpace(command.Tier) ? "Starter" : command.Tier.Trim();
@@ -62,25 +62,36 @@ public partial class RequestQuoteCommandHandler(
             Message = "Your customized scope quote has been generated. Our solutions team will reach out with commercial details."
         };
 
-        inquiryStore?.AddQuote(new ERPEZ.TenantManagement.Application.Features.Inquiries.Common.QuoteInquiryDto
+        if (inquiryStore != null)
         {
-            ReferenceCode = referenceCode,
-            ContactName = command.ContactName.Trim(),
-            Email = command.Email.Trim(),
-            Phone = command.Phone?.Trim() ?? command.PhoneNumber?.Trim() ?? string.Empty,
-            OrganizationName = command.OrganizationName.Trim(),
-            TeamSize = command.TeamSize ?? string.Empty,
-            PlanName = responseDto.PlanName,
-            Tier = responseDto.Tier,
-            DeploymentType = responseDto.DeploymentType,
-            RequestedModules = requested.ToList(),
-            ScopeSummary = scopeSummary,
-            EstimatedDelivery = deliveryTime,
-            Status = "Pending Review",
-            SubmittedAtUtc = now
-        });
+            try
+            {
+                await inquiryStore.AddQuoteAsync(new ERPEZ.TenantManagement.Application.Features.Inquiries.Common.QuoteInquiryDto
+                {
+                    ReferenceCode = referenceCode,
+                    ContactName = command.ContactName.Trim(),
+                    Email = command.Email.Trim(),
+                    Phone = command.Phone?.Trim() ?? command.PhoneNumber?.Trim() ?? string.Empty,
+                    OrganizationName = command.OrganizationName.Trim(),
+                    TeamSize = command.TeamSize ?? string.Empty,
+                    PlanName = responseDto.PlanName,
+                    Tier = responseDto.Tier,
+                    DeploymentType = responseDto.DeploymentType,
+                    RequestedModules = requested.ToList(),
+                    ScopeSummary = scopeSummary,
+                    EstimatedDelivery = deliveryTime,
+                    Status = "Pending Review",
+                    SubmittedAtUtc = now
+                }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to persist Quote inquiry: ReferenceCode={ReferenceCode}, Email={Email}", referenceCode, command.Email);
+                return ApiResponse<QuoteResponseDto>.Fail("We are temporarily unable to process your quote request. Please try again shortly or contact support.");
+            }
+        }
 
-        return Task.FromResult(ApiResponse<QuoteResponseDto>.Success(responseDto, "Quote request submitted successfully."));
+        return ApiResponse<QuoteResponseDto>.Success(responseDto, "Quote request submitted successfully.");
     }
 
     [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase)]

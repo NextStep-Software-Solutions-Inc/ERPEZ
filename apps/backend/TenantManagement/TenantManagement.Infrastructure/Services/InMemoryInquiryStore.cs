@@ -134,4 +134,116 @@ public class InMemoryInquiryStore : IInquiryStore
             Subscribers = GetSubscribers().ToList()
         };
     }
+
+    public Task AddQuoteAsync(QuoteInquiryDto quote, CancellationToken cancellationToken = default)
+    {
+        AddQuote(quote);
+        return Task.CompletedTask;
+    }
+
+    public Task AddDemoAsync(DemoInquiryDto demo, CancellationToken cancellationToken = default)
+    {
+        AddDemo(demo);
+        return Task.CompletedTask;
+    }
+
+    public Task AddSubscriberAsync(SubscriberInquiryDto subscriber, CancellationToken cancellationToken = default)
+    {
+        AddSubscriber(subscriber);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<QuoteInquiryDto>> GetQuotesAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetQuotes());
+    }
+
+    public Task<IReadOnlyList<DemoInquiryDto>> GetDemosAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetDemos());
+    }
+
+    public Task<IReadOnlyList<SubscriberInquiryDto>> GetSubscribersAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetSubscribers());
+    }
+
+    public Task<InquiriesSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetSummary());
+    }
+
+    public Task<InquiriesSummaryDto> GetSummaryAsync(string? inquiryType = null, string? status = null, string? search = null, CancellationToken cancellationToken = default)
+    {
+        var q = quotes.AsEnumerable();
+        var d = demos.AsEnumerable();
+        var s = subscribers.Values.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            q = q.Where(x => string.Equals(x.Status, status, StringComparison.OrdinalIgnoreCase));
+            d = d.Where(x => string.Equals(x.Status, status, StringComparison.OrdinalIgnoreCase));
+            s = s.Where(x => string.Equals(x.Status, status, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            q = q.Where(x => x.ContactName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                             x.Email.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                             x.OrganizationName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                             x.ReferenceCode.Contains(term, StringComparison.OrdinalIgnoreCase));
+            d = d.Where(x => x.ContactName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                             x.Email.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                             x.OrganizationName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                             x.ReferenceCode.Contains(term, StringComparison.OrdinalIgnoreCase));
+            s = s.Where(x => x.Email.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(inquiryType))
+        {
+            if (string.Equals(inquiryType, "quote", StringComparison.OrdinalIgnoreCase))
+            {
+                d = [];
+                s = [];
+            }
+            else if (string.Equals(inquiryType, "demo", StringComparison.OrdinalIgnoreCase))
+            {
+                q = [];
+                s = [];
+            }
+            else if (string.Equals(inquiryType, "subscriber", StringComparison.OrdinalIgnoreCase))
+            {
+                q = [];
+                d = [];
+            }
+        }
+
+        return Task.FromResult(new InquiriesSummaryDto
+        {
+            Quotes = q.OrderByDescending(x => x.SubmittedAtUtc).ToList(),
+            Demos = d.OrderByDescending(x => x.SubmittedAtUtc).ToList(),
+            Subscribers = s.OrderByDescending(x => x.SubscribedAtUtc).ToList()
+        });
+    }
+
+    public Task<bool> UpdateStatusAsync(string referenceCode, string newStatus, string? notes = null, string? assignedTo = null, CancellationToken cancellationToken = default)
+    {
+        var quote = quotes.FirstOrDefault(x => string.Equals(x.ReferenceCode, referenceCode, StringComparison.OrdinalIgnoreCase));
+        if (quote != null)
+        {
+            quote.Status = newStatus;
+            return Task.FromResult(true);
+        }
+
+        var demo = demos.FirstOrDefault(x => string.Equals(x.ReferenceCode, referenceCode, StringComparison.OrdinalIgnoreCase));
+        if (demo != null)
+        {
+            demo.Status = newStatus;
+            if (!string.IsNullOrWhiteSpace(notes)) demo.Notes = notes;
+            return Task.FromResult(true);
+        }
+
+        return Task.FromResult(false);
+    }
 }
