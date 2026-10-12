@@ -18,7 +18,6 @@ import { Link, useLocation } from "react-router"
 import { SuperAdminSidebarHeader } from "./SuperAdminSidebarHeader"
 import { usePermissions } from "~/hooks/usePermissions"
 import { useClerkAuth } from "~/providers/ClerkAuthProvider"
-import { ArrowLeft } from "lucide-react"
 import * as LucideIcons from "lucide-react"
 
 const getIcon = (iconName?: string) => {
@@ -36,15 +35,6 @@ export function SuperAdminAppSidebar({ tenant, tenantOrganization, ...props }: {
     <Sidebar {...props}>
       <SidebarHeader>
         <SuperAdminSidebarHeader />
-        <div className="px-2 pt-1 pb-1">
-          <Link
-            to="/overview"
-            className="flex items-center justify-center gap-2 w-full py-2 px-3 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-all"
-          >
-            <ArrowLeft className="size-3.5" />
-            <span>Return to Workspace</span>
-          </Link>
-        </div>
       </SidebarHeader>
       <SidebarContent>
         {superAdminNavigationLinks.map((item) => {

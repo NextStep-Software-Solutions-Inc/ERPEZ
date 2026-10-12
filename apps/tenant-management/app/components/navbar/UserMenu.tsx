@@ -74,26 +74,18 @@ export function UserMenu({ className = '', showDetails = true }: UserMenuProps) 
 
         <DropdownMenuSeparator />
 
-        {/* Portal Switcher - Only available for verified Super Admins */}
-        {isSuperAdmin && (
+        {/* Portal Switcher - Only available for verified Super Admins when viewing a tenant workspace */}
+        {isSuperAdmin && !isSuperAdminView && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
-                if (isSuperAdminView) {
-                  navigate('/overview');
-                } else {
-                  navigate('/super-admin/overview');
-                }
+                navigate('/super-admin/overview');
               }}
               className="text-xs cursor-pointer font-medium text-blue-600 focus:bg-blue-50 focus:text-blue-700 py-2"
             >
               <ArrowRightLeft className="mr-2 h-3.5 w-3.5" />
-              <span>
-                {isSuperAdminView
-                  ? 'Switch to Tenant Workspace'
-                  : 'Switch to Super Admin Portal'}
-              </span>
+              <span>Switch to Super Admin Portal</span>
             </DropdownMenuItem>
           </>
         )}
