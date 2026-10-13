@@ -59,9 +59,8 @@ export default function ContactSection() {
                     </div>
                     <h2 className="text-3xl font-bold mb-3 text-slate-900">Contact Us</h2>
                     <p className="text-gray-600 mb-6 leading-relaxed">
-                        Join organizations and government agencies across the Philippines using ERP-EZ to streamline their
-                        planning, budgeting, and procurement workflows. Get product announcements, security advisories,
-                        and compliance bulletins delivered directly to your inbox.
+                        Built for organizations and public-sector agencies to streamline their
+                        planning, budgeting, and procurement workflows. Register your email below to stay informed on product updates and platform announcements.
                     </p>
 
                     {!isSubscribed ? (
@@ -95,7 +94,7 @@ export default function ContactSection() {
                                 </Button>
                             </div>
                             <p className="text-xs text-gray-500">
-                                By subscribing, you consent to receive periodic ERP-EZ product releases and regulatory updates.
+                                By subscribing, your contact email will be recorded for future ERP-EZ product updates.
                             </p>
                         </form>
                     ) : (
@@ -103,10 +102,10 @@ export default function ContactSection() {
                             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                             <div>
                                 <p className="text-sm font-semibold text-emerald-900">
-                                    Subscription Active!
+                                    Email Registered!
                                 </p>
                                 <p className="text-xs text-emerald-700 mt-0.5">
-                                    We've registered <strong>{email}</strong>. You'll receive our next product release notes and regulatory advisories.
+                                    We've recorded <strong>{email}</strong> in our platform updates list.
                                 </p>
                             </div>
                         </div>

@@ -50,7 +50,7 @@ interface QuoteResult {
 }
 
 const AVAILABLE_MODULES = [
-  { id: "ams", name: "AMS (Account Management)", desc: "Identity, audit logs, and organization hierarchies", defaultChecked: true },
+  { id: "ams", name: "AMS (Account Management)", desc: "Identity, role-based access, and organization hierarchies", defaultChecked: true },
   { id: "pbms", name: "PBMS (Planning & Budget)", desc: "Budget calls, WFP, OPCR, and line item ceilings", defaultChecked: true },
   { id: "pms", name: "PMS (Procurement Management)", desc: "Purchase requests, BAC bidding, and purchase orders", defaultChecked: true },
 ];

@@ -43,7 +43,7 @@ const DEMO_TOPICS = [
   "Planning & Budget Execution (PBMS / WFP / OPCR)",
   "Procurement & Bidding Workflows (PMS / BAC / PO)",
   "Multi-Tenant Isolation & Role-Based Access Control",
-  "Sovereign Air-Gapped / On-Premise Architecture",
+  "Self-Hosted / On-Premise Architecture",
 ];
 
 export function ScheduleDemoModal({ isOpen, onClose }: ScheduleDemoModalProps) {

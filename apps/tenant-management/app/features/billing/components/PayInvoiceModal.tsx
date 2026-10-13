@@ -162,7 +162,7 @@ export const PayInvoiceModal: React.FC<PayInvoiceModalProps> = ({
         {/* Security / Simulation Assurance */}
         <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-md mt-2">
           <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-          <span>Simulated transaction tokenized with zero-logging guarantee.</span>
+          <span>Sandbox environment: settles this invoice using your selected test payment method.</span>
         </div>
 
         <DialogFooter className="pt-3 gap-2">

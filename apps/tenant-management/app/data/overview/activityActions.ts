@@ -6,21 +6,36 @@ export type ActivityItem = {
   time: string;
 };
 
-export function buildActivities(planName: string = "Starter"): ActivityItem[] {
+export function buildActivities(
+  planName: string = "Starter",
+  options?: {
+    startDate?: string;
+    isDisabled?: boolean;
+    tenantName?: string;
+  }
+): ActivityItem[] {
+  const formattedStart = options?.startDate
+    ? new Date(options.startDate).toLocaleDateString()
+    : "Configured";
+
   return [
     {
       id: "created",
       type: "success",
-      title: "Account created",
-      message: "Welcome to ERPEZ. Workspace successfully provisioned.",
-      time: "Just now",
+      title: "Workspace provisioned",
+      message: options?.tenantName
+        ? `${options.tenantName} workspace registered on ERPEZ.`
+        : "Welcome to ERPEZ. Workspace provisioned.",
+      time: formattedStart,
     },
     {
       id: "activated",
-      type: "info",
-      title: "Workspace active",
-      message: `${planName} plan operational.`,
-      time: "Just now",
+      type: options?.isDisabled ? "warning" : "info",
+      title: options?.isDisabled ? "Workspace suspended" : "Subscription status",
+      message: options?.isDisabled
+        ? "Workspace access is currently disabled by an administrator."
+        : `${planName} plan assigned to this workspace.`,
+      time: options?.isDisabled ? "Suspended" : "Active",
     },
   ];
 }

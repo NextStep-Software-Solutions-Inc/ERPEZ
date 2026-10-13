@@ -57,7 +57,12 @@ export function TenantCard({
     const displayAmount = tenant?.tenantSubscription?.amount ?? 0;
     const displayBilling =
         tenant?.tenantSetting?.billingContactEmail ?? billingProp ?? phone ?? "-";
-    const displayModules = modulesProp ?? [];
+    const displayModules =
+        modulesProp && modulesProp.length > 0
+            ? modulesProp
+            : tenant?.modules && tenant.modules.length > 0
+                ? tenant.modules.map((m) => m.key.toUpperCase())
+                : ["AMS"];
 
     const statusColor =
         displayStatus === "Active"
@@ -99,10 +104,12 @@ export function TenantCard({
                         </span>
                     </div>
                 )}
-                <div className="flex justify-between items-center">
-                    <p className="text-sm text-muted-foreground">Users</p>
-                    <p className="font-medium">{users ?? 0}</p>
-                </div>
+                {users !== undefined && (
+                    <div className="flex justify-between items-center">
+                        <p className="text-sm text-muted-foreground">Users</p>
+                        <p className="font-medium">{users}</p>
+                    </div>
+                )}
                 <div className="flex justify-between items-center">
                     <p className="text-sm text-muted-foreground">Amount</p>
                     <p className="text-emerald-600 font-medium">₱{displayAmount}/month</p>
@@ -110,15 +117,11 @@ export function TenantCard({
                 <div>
                     <p className="text-sm text-muted-foreground mb-1">Modules</p>
                     <div className="flex flex-wrap gap-2">
-                        {displayModules.length > 0 ? (
-                            displayModules.map((m, i) => (
-                                <Badge key={i} variant="outline">
-                                    {m}
-                                </Badge>
-                            ))
-                        ) : (
-                            <p className="text-sm text-muted-foreground">No Modules</p>
-                        )}
+                        {displayModules.map((m, i) => (
+                            <Badge key={i} variant="outline">
+                                {m}
+                            </Badge>
+                        ))}
                     </div>
                 </div>
 

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Switch } from "~/components/ui/switch";
-import { Separator } from "~/components/ui/separator";
 import {
   Settings,
   FileText,
@@ -151,11 +150,6 @@ export default function SubscriptionPage() {
   // Payment method state
   const hasPaymentMethod =
     Boolean(billingData?.paymentMethods && billingData.paymentMethods.length > 0);
-
-  // Interactive settings state
-  const [emailNotification, setEmailNotification] = useState(true);
-  const [usageAlerts, setUsageAlerts] = useState(true);
-  const [invoiceReminders, setInvoiceReminders] = useState(true);
 
   // Dialog & Modal states
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
@@ -602,7 +596,7 @@ export default function SubscriptionPage() {
                   </>
                 )
               ) : (
-                "Configure your renewal preferences and automated notifications"
+                "Configure your subscription renewal preferences"
               )}
             </CardDescription>
           </CardHeader>
@@ -624,64 +618,6 @@ export default function SubscriptionPage() {
                 checked={autoRenew && status !== "cancelled"}
                 onCheckedChange={handleToggleAutoRenew}
               />
-            </div>
-
-            <Separator className="my-3" />
-
-            <div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm text-slate-900">Email Notification</p>
-                  <p className="text-xs text-muted-foreground">
-                    Receive email updates about your subscription and billing
-                  </p>
-                </div>
-                <Switch
-                  checked={emailNotification}
-                  onCheckedChange={(val) => {
-                    setEmailNotification(val);
-                    toast.info(`Email notifications ${val ? "enabled" : "disabled"}`);
-                  }}
-                />
-              </div>
-              <Separator className="my-3" />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm text-slate-900">Usage Alerts</p>
-                  <p className="text-xs text-muted-foreground">
-                    Get notified when you’re approaching your usage limits
-                  </p>
-                </div>
-                <Switch
-                  checked={usageAlerts}
-                  onCheckedChange={(val) => {
-                    setUsageAlerts(val);
-                    toast.info(`Usage alerts ${val ? "enabled" : "disabled"}`);
-                  }}
-                />
-              </div>
-              <Separator className="my-3" />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm text-slate-900">Invoice Reminders</p>
-                  <p className="text-xs text-muted-foreground">
-                    Receive reminders about upcoming and overdue invoices
-                  </p>
-                </div>
-                <Switch
-                  checked={invoiceReminders}
-                  onCheckedChange={(val) => {
-                    setInvoiceReminders(val);
-                    toast.info(`Invoice reminders ${val ? "enabled" : "disabled"}`);
-                  }}
-                />
-              </div>
             </div>
           </CardContent>
         </Card>

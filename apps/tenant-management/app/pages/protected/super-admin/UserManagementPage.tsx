@@ -195,16 +195,6 @@ const INITIAL_FLEET_MEMBERS: FleetMember[] = [
         status: "Pending",
         joinedDate: "2026-03-10",
     },
-    {
-        id: "flt-005",
-        name: "Marcus Vance",
-        email: "m.vance@westtech.org",
-        workspaceId: "00000000-0000-0000-0000-000000000040",
-        workspaceName: "West Technology Systems",
-        role: "Tenant Auditor",
-        status: "Active",
-        joinedDate: "2026-03-14",
-    },
 ];
 
 export default function UserManagementPage() {
@@ -213,12 +203,11 @@ export default function UserManagementPage() {
 
     const [activeTab, setActiveTab] = useState<"platform" | "fleet">("platform");
     const [users, setUsers] = useState<PlatformUser[]>(INITIAL_PLATFORM_USERS);
-    const [fleetMembers, setFleetMembers] = useState<FleetMember[]>(INITIAL_FLEET_MEMBERS);
+    const [fleetMembers] = useState<FleetMember[]>(INITIAL_FLEET_MEMBERS);
     const [searchQuery, setSearchQuery] = useState("");
     const [fleetSearchQuery, setFleetSearchQuery] = useState("");
     const [selectedWorkspaceFilter, setSelectedWorkspaceFilter] = useState<string>("ALL");
     const [isAddOpen, setIsAddOpen] = useState(false);
-    const [isSyncing, setIsSyncing] = useState(false);
 
     // Invitation Token Modal State
     const [invitationResult, setInvitationResult] = useState<{
@@ -264,14 +253,6 @@ export default function UserManagementPage() {
             selectedWorkspaceFilter === "ALL" || m.workspaceName === selectedWorkspaceFilter;
         return matchesSearch && matchesWorkspace;
     });
-
-    const handleSyncClerk = () => {
-        setIsSyncing(true);
-        setTimeout(() => {
-            setIsSyncing(false);
-            toast.success("Clerk platform directory synchronized successfully.");
-        }, 1200);
-    };
 
     const [isInviting, setIsInviting] = useState(false);
 
@@ -419,16 +400,6 @@ export default function UserManagementPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleSyncClerk}
-                        disabled={isSyncing}
-                        className="flex items-center gap-2"
-                    >
-                        <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
-                        Sync Clerk Directory
-                    </Button>
                     <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                         <DialogTrigger asChild>
                             <Button className="btn-blue flex items-center gap-2">
@@ -728,46 +699,11 @@ export default function UserManagementPage() {
                                                             Platform Actions
                                                         </DropdownMenuLabel>
                                                         <DropdownMenuItem
-                                                            onClick={() => handleOpenEditRole(user)}
-                                                            className="cursor-pointer text-xs flex items-center gap-2"
-                                                        >
-                                                            <FolderLock className="w-3.5 h-3.5 text-blue-600" />
-                                                            Edit Platform Role
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
                                                             onClick={() => setViewingAccessUser(user)}
                                                             className="cursor-pointer text-xs flex items-center gap-2"
                                                         >
                                                             <Building2 className="w-3.5 h-3.5 text-slate-600" />
                                                             View Workspace Access
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onClick={() => {
-                                                                toast.success(`Clerk sync verified for @${user.username}`);
-                                                            }}
-                                                            className="cursor-pointer text-xs flex items-center gap-2"
-                                                        >
-                                                            <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
-                                                            Sync from Clerk
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
-                                                            onClick={() => toggleUserStatus(user.id)}
-                                                            className={`cursor-pointer text-xs flex items-center gap-2 ${
-                                                                user.isActive ? "text-rose-600" : "text-emerald-600"
-                                                            }`}
-                                                        >
-                                                            {user.isActive ? (
-                                                                <>
-                                                                    <UserX className="w-3.5 h-3.5" />
-                                                                    Suspend User
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <UserCheck className="w-3.5 h-3.5" />
-                                                                    Activate User
-                                                                </>
-                                                            )}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>

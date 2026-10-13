@@ -36,7 +36,7 @@ export default function SignUpPage() {
           <span className="text-blue-100">Made Simple</span>
         </h1>
         <p className="text-blue-50 text-sm max-w-md text-center mb-8">
-          Join thousands of organizations streamlining budgeting, planning, and procurement.
+          Streamline your organization's governance, budgeting, planning, and procurement in one unified platform.
         </p>
         <img
           src="/image/SignUp.png"

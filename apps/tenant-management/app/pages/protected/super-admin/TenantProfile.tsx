@@ -151,8 +151,10 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                         <div className="text-2xl font-semibold mt-2">₱{displayAmount}.00</div>
                     </div>
                     <div className="p-4 border rounded col-span-1 bg-white">
-                        <div className="text-sm text-muted-foreground">Active User</div>
-                        <div className="text-2xl font-semibold mt-2">1</div>
+                        <div className="text-sm text-muted-foreground">Enabled Modules</div>
+                        <div className="text-2xl font-semibold mt-2">
+                            {tenant.modules && tenant.modules.length > 0 ? tenant.modules.length : 1}
+                        </div>
                     </div>
                     <div className="p-4 border rounded col-span-1 bg-white">
                         <div className="text-sm text-muted-foreground">Allowed Domain</div>
@@ -163,7 +165,7 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                     <div className="p-4 border rounded col-span-1 bg-white">
                         <div className="text-sm text-muted-foreground">Deployment Mode</div>
                         <div className="text-base font-semibold mt-2">
-                            {license?.isAirGapped ? "Air-Gapped Sovereign" : "Datacenter Cloud"}
+                            {tenant.tenantSetting?.onPremise || license?.isAirGapped ? "Self-Hosted On-Premise" : "Cloud SaaS"}
                         </div>
                     </div>
                 </div>
@@ -220,7 +222,7 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                     ) : (
                         <div className="text-center py-6 bg-white rounded-lg border border-dashed text-slate-500 text-xs">
                             This tenant does not have an active cryptographic license key assigned yet.
-                            Click "Assign License" above to generate a sovereign key.
+                            Click "Assign License" above to generate a license key.
                         </div>
                     )}
                 </div>
@@ -277,11 +279,20 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-6 border rounded bg-white">
-                        <h2 className="text-lg font-medium mb-3">Contact Information</h2>
-                        <p className="flex items-center gap-2"><span className="opacity-70">Phone:</span> +36 920 2082 123</p>
-                        <p className="flex items-center gap-2"><span className="opacity-70">Email:</span> {tenant.tenantSetting?.billingContactEmail || "acmeCorporation@gmail.com"}</p>
-                        <p className="flex items-center gap-2"><span className="opacity-70">Address:</span> 123 Business Ave, New York, NY 001</p>
+                    <div className="p-6 border rounded bg-white space-y-2 text-sm">
+                        <h2 className="text-lg font-medium mb-3">Workspace Configuration & Contact</h2>
+                        <p className="flex items-center justify-between gap-2 border-b pb-2">
+                            <span className="text-muted-foreground">Billing Contact Email:</span>
+                            <span className="font-medium">{tenant.tenantSetting?.billingContactEmail || "Not configured"}</span>
+                        </p>
+                        <p className="flex items-center justify-between gap-2 border-b pb-2">
+                            <span className="text-muted-foreground">Workspace ID:</span>
+                            <span className="font-mono text-xs">{tenant.id}</span>
+                        </p>
+                        <p className="flex items-center justify-between gap-2">
+                            <span className="text-muted-foreground">Operational Endpoint:</span>
+                            <span className="font-mono text-xs">{tenant.tenantSetting?.baseURL || "Default Cloud Endpoint"}</span>
+                        </p>
                     </div>
 
                     <div className="p-6 border rounded bg-white">
@@ -298,10 +309,17 @@ function TenantProfile({ tenant, onTenantUpdated }: TenantProfileProps) {
                         </div>
 
                         <div className="mt-4">
-                            <p className="text-sm text-muted-foreground mb-1">Modules</p>
-                            <div className="flex gap-2">
-                                <span className="px-2 py-1 rounded border">AMS</span>
-                                <span className="px-2 py-1 rounded border">Planning</span>
+                            <p className="text-sm text-muted-foreground mb-1">Enabled Modules</p>
+                            <div className="flex flex-wrap gap-2">
+                                {tenant.modules && tenant.modules.length > 0 ? (
+                                    tenant.modules.map((m) => (
+                                        <span key={m.id || m.key} className="px-2 py-1 rounded border text-xs font-medium uppercase">
+                                            {m.key}
+                                        </span>
+                                    ))
+                                ) : (
+                                    <span className="px-2 py-1 rounded border text-xs font-medium">AMS</span>
+                                )}
                             </div>
                         </div>
                     </div>

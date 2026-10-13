@@ -156,9 +156,9 @@ export default function LicenseManagementPage() {
                     <div className="p-4 rounded-xl border border-red-300 bg-red-50 text-red-900 flex items-start gap-3 shadow-xs">
                         <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                         <div>
-                            <h4 className="font-bold text-sm">Domain Constraint Violation Detected!</h4>
+                            <h4 className="font-bold text-sm">Domain Constraint Mismatch Detected</h4>
                             <p className="text-xs text-red-700 mt-1">
-                                You are accessing this tenant via <strong>{currentHostname}</strong>, but the active license is cryptographically bound to <strong>{license.allowedDomain}</strong>. System authentication will be disabled if domain enforcement is active.
+                                You are accessing this tenant via <strong>{currentHostname}</strong>, while the active license is bound to <strong>{license.allowedDomain}</strong>. Please access the workspace from the authorized domain or update your license binding.
                             </p>
                         </div>
                     </div>
@@ -276,9 +276,9 @@ export default function LicenseManagementPage() {
                                         <div className="p-3 bg-slate-50 rounded-lg border text-xs">
                                             <div className="flex items-center gap-1.5 text-slate-500 mb-1">
                                                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                                <span>Air-Gapped Sovereign</span>
+                                                <span>License Scope</span>
                                             </div>
-                                            <p className="font-semibold text-slate-900">{license.isAirGapped ? "Yes (Offline Verified)" : "Cloud SaaS"}</p>
+                                            <p className="font-semibold text-slate-900">{license.isAirGapped ? "Self-Hosted Key" : "Cloud SaaS"}</p>
                                         </div>
 
                                         <div className="p-3 bg-slate-50 rounded-lg border text-xs">

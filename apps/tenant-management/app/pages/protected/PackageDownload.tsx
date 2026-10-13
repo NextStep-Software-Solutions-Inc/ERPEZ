@@ -41,9 +41,9 @@ export default function PackageDownloadPage() {
                                         <Server className="h-5 w-5 text-blue-600" />
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <span className="font-semibold text-balance">TenantFlow API Server</span>
+                                        <span className="font-semibold text-balance">ERP-EZ On-Premise Server</span>
                                         <p className="text-sm text-muted-foreground text-balance">
-                                            Standard API server for custom integration
+                                            Self-hosted deployment specifications & requirements
                                         </p>
                                         <Badge variant="outline" className="mt-2">on-premise</Badge>
                                     </div>
@@ -59,9 +59,9 @@ export default function PackageDownloadPage() {
                                         <Cloud className="h-5 w-5 text-blue-600" />
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <span className="font-semibold text-balance">TenantFlow Cloud Connector</span>
+                                        <span className="font-semibold text-balance">ERP-EZ Cloud Connector</span>
                                         <p className="text-sm text-muted-foreground text-balance">
-                                            Cloud deployment package with auto-scaling capabilities
+                                            Cloud deployment specifications & requirements
                                         </p>
                                         <Badge variant="outline" className="mt-2">cloud</Badge>
                                     </div>
