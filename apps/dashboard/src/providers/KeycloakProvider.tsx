@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type Keycloak from 'keycloak-js'
 import keycloak from '@/auth/keycloak'
 import { setTokenProvider, setTenantProvider, setRefreshProvider } from '@/auth/authBridge'
+import { getDashboardBackendUrl } from '@/config/env'
 import { UnifiedAuthContext } from '@/auth/UnifiedAuthContext'
 import type {
   UnifiedAuthContextType,
@@ -124,7 +125,7 @@ export function KeycloakProvider({
   const [availableTenants, setAvailableTenants] = useState<UnifiedTenantContext[]>([])
   const [tenantState, setTenantState] = useState<TenantState>('loading')
 
-  const backendUrl = import.meta.env.VITE_ERPEZ_BACKEND_URL || 'http://localhost:5245'
+  const backendUrl = getDashboardBackendUrl()
 
   // Register token & candidate tenant provider with unified auth bridge
   useEffect(() => {

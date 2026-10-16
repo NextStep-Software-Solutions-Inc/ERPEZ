@@ -8,6 +8,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
 using System.Linq.Expressions;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Queries.GetTenantMembersQuery;
 
@@ -23,11 +25,12 @@ public class GetTenantMembersQueryHandler(IUnitOfWork unitOfWork, ITenantContext
 
         var tenantId = tenantContext.TenantId.Value;
 
-        // Auto-reconcile pending members who already have an external identity bound or have signed in
+        // Auto-reconcile pending members who actually have a real Clerk user identity bound (e.g. user_...)
         var pendingWithIdentity = await unitOfWork.TenantMemberRepository.Query()
             .Where(tm => tm.TenantId == tenantId &&
                          tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Pending &&
                          !string.IsNullOrEmpty(tm.ExternalIdentityId) &&
+                         !tm.ExternalIdentityId.StartsWith("inv_") &&
                          !tm.IsDeleted)
             .ToListAsync(cancellationToken);
 
@@ -39,6 +42,28 @@ public class GetTenantMembersQueryHandler(IUnitOfWork unitOfWork, ITenantContext
                 pm.InvitationTokenHash = null;
                 pm.InvitationExpiresAtUtc = null;
                 pm.ConcurrencyStamp = Guid.NewGuid();
+            }
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        // Self-heal any erroneously auto-reconciled invitations whose ExternalIdentityId is still a pending invitation token
+        var misreconciledInvitations = await unitOfWork.TenantMemberRepository.Query()
+            .Where(tm => tm.TenantId == tenantId &&
+                         tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Active &&
+                         !string.IsNullOrEmpty(tm.ExternalIdentityId) &&
+                         tm.ExternalIdentityId.StartsWith("inv_") &&
+                         !tm.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        if (misreconciledInvitations.Count > 0)
+        {
+            foreach (var mi in misreconciledInvitations)
+            {
+                mi.Status = ERPEZ.TenantManagement.Domain.Enums.Status.Pending;
+                var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(mi.ExternalIdentityId.Trim()));
+                mi.InvitationTokenHash = Convert.ToHexString(hashBytes).ToLowerInvariant();
+                mi.InvitationExpiresAtUtc = DateTime.UtcNow.AddHours(48);
+                mi.ConcurrencyStamp = Guid.NewGuid();
             }
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }

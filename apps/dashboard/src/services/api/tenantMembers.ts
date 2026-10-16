@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { getStoredToken } from '@/auth/authBridge'
+import { getTenantApiUrl } from '@/config/env'
 
 export interface TenantMemberDto {
   id: string
@@ -27,8 +28,13 @@ export interface TenantDto {
   seatsUsed?: number
 }
 
-const getTenantApiUrl = () => {
-  return import.meta.env.VITE_TENANT_API_URL || 'http://localhost:5246'
+export interface GovernanceRoleDto {
+  id: string
+  name: string
+  description?: string
+  isSystemRole?: boolean
+  scope?: string
+  isAssignableToTenant?: boolean
 }
 
 const getAuthHeaders = async () => {
@@ -125,6 +131,21 @@ export async function fetchTenantMembers(): Promise<TenantMemberDto[]> {
     return Array.isArray(items) ? items : []
   } catch (err) {
     console.warn('Failed to fetch tenant members from TenantManagement.Api:', err)
+    return []
+  }
+}
+
+/**
+ * Fetch assignable governance roles (Tenant Administrator, Tenant Member, etc.) from TenantManagement.Api
+ */
+export async function fetchAssignableGovernanceRoles(): Promise<GovernanceRoleDto[]> {
+  try {
+    const headers = await getAuthHeaders()
+    const res = await axios.get(`${getTenantApiUrl()}/tenant-members/assignable-roles`, { headers })
+    const items = res.data?.data || []
+    return Array.isArray(items) ? items : []
+  } catch (err) {
+    console.warn('Failed to fetch assignable governance roles from TenantManagement.Api:', err)
     return []
   }
 }

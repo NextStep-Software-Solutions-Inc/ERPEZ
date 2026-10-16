@@ -12,6 +12,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+      - ConnectionStrings__ControlPlaneConnection=${CONTROL_PLANE_DB_CONNECTION_STRING:-${DB_CONNECTION_STRING}}
       - AzureBlobStorage__ConnectionString=${BLOB_CONNECTION_STRING}
 
 networks:

@@ -20,6 +20,8 @@ import * as LucideIcons from "lucide-react"
 import { useWorkspace } from "~/providers/TenantProvider"
 import { usePermissions } from "~/hooks/usePermissions"
 
+import { getDashboardUrl } from "~/config/env"
+
 export const data = {
   tenant: "Tenant Company",
   tenantOrganization: "Tenant Agency Name",
@@ -34,7 +36,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
   const { workspace } = useWorkspace()
   const { hasPermission } = usePermissions()
-  const dashboardUrl = import.meta.env.VITE_ERP_DASHBOARD_URL || "http://localhost:3000"
+  const dashboardUrl = getDashboardUrl()
 
   return (
     <Sidebar {...props}>

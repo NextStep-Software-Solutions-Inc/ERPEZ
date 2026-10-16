@@ -77,6 +77,7 @@ public class UserProvisioningService(
                 }
             }
 
+            var isPendingInvite = string.IsNullOrWhiteSpace(externalIdToSet);
             user = new User
             {
                 Id = request.UserId.HasValue && request.UserId.Value != Guid.Empty ? request.UserId.Value : Guid.NewGuid(),
@@ -85,7 +86,7 @@ public class UserProvisioningService(
                 Email = email,
                 FirstName = firstName,
                 LastName = lastName,
-                IsActive = true,
+                IsActive = !isPendingInvite,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = !string.IsNullOrWhiteSpace(performedBy) ? performedBy : "System"
             };

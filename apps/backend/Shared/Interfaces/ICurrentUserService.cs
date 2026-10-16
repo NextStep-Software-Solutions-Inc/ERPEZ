@@ -54,4 +54,9 @@ public interface ICurrentUserService
     /// Checks if the user is in a specific role.
     /// </summary>
     bool IsInRole(string role);
+
+    /// <summary>
+    /// Operating role explicitly requested via X-Operating-Role header for bounded execution.
+    /// </summary>
+    string? OperatingRole { get; }
 }

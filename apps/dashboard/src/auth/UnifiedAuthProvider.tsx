@@ -7,7 +7,16 @@ interface UnifiedAuthProviderProps {
 }
 
 export function UnifiedAuthProvider({ children }: UnifiedAuthProviderProps) {
-  const provider = (import.meta.env.VITE_AUTH_PROVIDER || 'keycloak').toLowerCase();
+  const isCloudOrDevHost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname.includes('vercel.app') ||
+      window.location.hostname.includes('erpez.') ||
+      window.location.hostname.includes('dev.nextstep-software.com'));
+
+  const provider = (
+    import.meta.env.VITE_AUTH_PROVIDER ||
+    (isCloudOrDevHost ? 'clerk' : import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ? 'clerk' : 'keycloak')
+  ).toLowerCase();
 
   if (provider === 'clerk') {
     return <ClerkAuthProvider>{children}</ClerkAuthProvider>;

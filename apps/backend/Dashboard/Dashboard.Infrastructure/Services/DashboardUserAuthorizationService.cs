@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using ERPEZ.Infrastructure.Persistence;
 using ERPEZ.Shared.Constants;
@@ -22,6 +23,9 @@ public class DashboardUserAuthorizationService(
     private const string cacheKeyPrefix = "perms:ams:";
     private static readonly TimeSpan slidingExpiration = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan absoluteExpiration = TimeSpan.FromMinutes(15);
+    // Tracks in-memory cache keys for localized eviction per instance.
+    // When horizontal multi-node container scaling is introduced, transition to distributed Redis cache tags.
+    private static readonly ConcurrentDictionary<string, ConcurrentBag<string>> userCacheKeys = new();
 
     public async Task<bool> HasPermissionAsync(
         string externalIdentityId,
@@ -50,7 +54,13 @@ public class DashboardUserAuthorizationService(
             return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
 
-        var cacheKey = $"{cacheKeyPrefix}{externalIdentityId.Trim().ToLowerInvariant()}";
+        string? activeRoleHeader = null;
+        if (httpContextAccessor?.HttpContext?.Request.Headers.TryGetValue("X-Operating-Role", out var opRoleHead) == true)
+        {
+            activeRoleHeader = opRoleHead.FirstOrDefault()?.Trim().ToLowerInvariant();
+        }
+
+        var cacheKey = $"{cacheKeyPrefix}{tenantId}_{externalIdentityId.Trim().ToLowerInvariant()}_{activeRoleHeader ?? "none"}";
 
         if (memoryCache.TryGetValue(cacheKey, out HashSet<string>? cachedPerms) && cachedPerms != null)
         {
@@ -86,19 +96,34 @@ public class DashboardUserAuthorizationService(
 
                 var isSuper = callerPrincipal.FindFirstValue("is_super_admin") ?? callerPrincipal.FindFirstValue("super_admin");
                 callerIsAdmin = (bool.TryParse(isSuper, out var s) && s) ||
-                    roleClaims.Any(r => r.Equals("org:admin", StringComparison.OrdinalIgnoreCase) ||
-                                        r.Equals("admin", StringComparison.OrdinalIgnoreCase) ||
-                                        r.Equals("Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                        r.Equals("TenantAdmin", StringComparison.OrdinalIgnoreCase) ||
-                                        r.Equals("DASHBOARD SYSTEM ADMIN", StringComparison.OrdinalIgnoreCase) ||
-                                        r.Equals("Workspace Admin", StringComparison.OrdinalIgnoreCase) ||
-                                        r.Equals("System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                        r.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
-                                        r.Equals("platform_administrator", StringComparison.OrdinalIgnoreCase));
+                    roleClaims.Any(r => RoleConstants.IsAnyAdmin(r));
             }
         }
 
-        if (callerIsAdmin)
+        // Check if user holds System Administrator role assignment in operational database
+        if (!callerIsAdmin && dbContext.UserRoleAssignments != null)
+        {
+            callerIsAdmin = await dbContext.UserRoleAssignments
+                .AsNoTracking()
+                .AnyAsync(ra => !ra.IsDeleted &&
+                                ra.Role != null &&
+                                !ra.Role.IsDeleted &&
+                                ra.Role.Name == RoleConstants.SystemAdministrator &&
+                                ra.User != null &&
+                                !ra.User.IsDeleted &&
+                                ra.User.IsActive &&
+                                (ra.User.ExternalIdentityId == externalIdentityId ||
+                                 ra.User.Username == externalIdentityId ||
+                                 (!string.IsNullOrEmpty(normalizedCallerEmail) && ra.User.Email.ToLower() == normalizedCallerEmail) ||
+                                 (ra.User.Email != null && ra.User.Email.ToLower() == externalIdentityId.ToLower())),
+                          cancellationToken);
+        }
+
+        var isExplicitBoundedRole = !string.IsNullOrWhiteSpace(activeRoleHeader) &&
+                                    !activeRoleHeader.Equals(RoleConstants.PlatformAdministrator, StringComparison.OrdinalIgnoreCase) &&
+                                    !activeRoleHeader.Equals(RoleConstants.SystemAdministrator, StringComparison.OrdinalIgnoreCase);
+
+        if (callerIsAdmin && !isExplicitBoundedRole)
         {
             var allPerms = Permissions.GetAllPermissions().ToHashSet(StringComparer.OrdinalIgnoreCase);
             var cacheOptionsAdmin = new MemoryCacheEntryOptions
@@ -107,6 +132,7 @@ public class DashboardUserAuthorizationService(
                 AbsoluteExpirationRelativeToNow = absoluteExpiration
             };
             memoryCache.Set(cacheKey, allPerms, cacheOptionsAdmin);
+            userCacheKeys.GetOrAdd(externalIdentityId.Trim().ToLowerInvariant(), _ => new ConcurrentBag<string>()).Add(cacheKey);
             return allPerms;
         }
 
@@ -114,7 +140,7 @@ public class DashboardUserAuthorizationService(
 
         if (dbContext.UserRoleAssignments != null)
         {
-            var assignedPermissions = await dbContext.UserRoleAssignments
+            var query = dbContext.UserRoleAssignments
                 .AsNoTracking()
                 .Where(ra => !ra.IsDeleted &&
                              ra.User != null &&
@@ -126,8 +152,15 @@ public class DashboardUserAuthorizationService(
                              !ra.User.IsDeleted &&
                              ra.Role != null &&
                              ra.Role.IsActive &&
-                             !ra.Role.IsDeleted)
-                .SelectMany(ra => ra.Role.Permissions)
+                             !ra.Role.IsDeleted);
+
+            if (isExplicitBoundedRole)
+            {
+                query = query.Where(ra => ra.Role!.Name.ToLower() == activeRoleHeader);
+            }
+
+            var assignedPermissions = await query
+                .SelectMany(ra => ra.Role!.Permissions)
                 .Where(p => !p.IsDeleted)
                 .Select(p => p.PermissionKey)
                 .Distinct()
@@ -187,6 +220,7 @@ public class DashboardUserAuthorizationService(
         };
 
         memoryCache.Set(cacheKey, permissionsSet, cacheOptions);
+        userCacheKeys.GetOrAdd(externalIdentityId.Trim().ToLowerInvariant(), _ => new ConcurrentBag<string>()).Add(cacheKey);
 
         return permissionsSet;
     }
@@ -198,7 +232,18 @@ public class DashboardUserAuthorizationService(
             return;
         }
 
-        var cacheKey = $"{cacheKeyPrefix}{externalIdentityId.Trim().ToLowerInvariant()}";
-        memoryCache.Remove(cacheKey);
+        var normalizedId = externalIdentityId.Trim().ToLowerInvariant();
+
+        if (userCacheKeys.TryRemove(normalizedId, out var keys))
+        {
+            foreach (var key in keys)
+            {
+                memoryCache.Remove(key);
+            }
+        }
+
+        memoryCache.Remove($"{cacheKeyPrefix}{normalizedId}");
+        memoryCache.Remove($"{cacheKeyPrefix}{tenantId}_{normalizedId}_none");
+        memoryCache.Remove($"{cacheKeyPrefix}_{normalizedId}_none");
     }
 }

@@ -27,6 +27,10 @@ import {
   assignOperationalRoles,
 } from '@/services/api/operationalRoles'
 import {
+  inviteTenantMember,
+  fetchAssignableGovernanceRoles,
+} from '@/services/api/tenantMembers'
+import {
   UserPlus,
   Mail,
   Clock,
@@ -35,6 +39,9 @@ import {
   Users,
   Info,
   Shield,
+  CheckCircle2,
+  Check,
+  Copy,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -46,20 +53,49 @@ export function InviteWorkspaceMemberModal() {
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
+  const [invitationResult, setInvitationResult] = useState<{
+    email: string
+    token: string
+    expiresAt?: string
+  } | null>(null)
+  const [hasCopied, setHasCopied] = useState(false)
 
   const {
     inviteWorkspaceMember,
     revokeWorkspaceInvitation,
     workspaceInvitations = [],
     activeTenant,
+    activeRole,
+    role: currentAuthRole,
+    isSuperAdmin,
+    user: currentAuthUser,
   } = useUnifiedAuth()
 
-  // Fetch available operational ERP roles
+  const currentRole = activeRole || currentAuthRole || ''
+  const isDashboardAdmin =
+    Boolean(isSuperAdmin) ||
+    currentRole === 'System Administrator' ||
+    currentRole === 'Dashboard System Admin' ||
+    currentRole === 'Workspace Admin' ||
+    currentRole === 'Workspace Administrator' ||
+    Boolean(currentAuthUser?.publicMetadata?.isSuperAdmin)
+
+  if (!isDashboardAdmin) {
+    return null
+  }
+
+  // Fetch available operational ERP roles (from Dashboard API)
   const { data: operationalRoles = [], isLoading: isLoadingOperationalRoles } =
     useQuery({
       queryKey: ['assignable-operational-roles'],
       queryFn: fetchAssignableOperationalRoles,
     })
+
+  // Fetch available tenant governance roles (from TenantManagement API)
+  const { data: governanceRoles = [] } = useQuery({
+    queryKey: ['assignable-governance-roles'],
+    queryFn: fetchAssignableGovernanceRoles,
+  })
 
   // Set intelligent role defaults (Viewer for member, System Admin for admin)
   useEffect(() => {
@@ -115,10 +151,27 @@ export function InviteWorkspaceMemberModal() {
     try {
       setIsSubmitting(true)
 
-      // 1. Send workspace invitation via unified auth provider
-      await inviteWorkspaceMember(trimmedEmail, role)
+      // Resolve governance role ID for TenantManagement.Api (e.g. Tenant Administrator vs Tenant Member)
+      const targetGovRole =
+        role === 'org:admin'
+          ? governanceRoles.find(
+              (r) =>
+                r.name.toLowerCase().includes('administrator') ||
+                r.name.toLowerCase().includes('admin'),
+            )
+          : governanceRoles.find((r) =>
+              r.name.toLowerCase().includes('member'),
+            )
 
-      // 2. Pre-assign operational roles in the planning database
+      const governanceRoleIds = targetGovRole?.id ? [targetGovRole.id] : undefined
+
+      // 1. Send workspace invitation via TenantManagement.Api (calls Clerk user invitation and tracks Pending state in TenantMembers)
+      const res = await inviteTenantMember({
+        email: trimmedEmail,
+        roleIds: governanceRoleIds,
+      })
+
+      // 2. Pre-assign operational roles in the planning database with IsActive = false (pending activation)
       if (selectedRoleIds.length > 0) {
         try {
           await assignOperationalRoles({
@@ -134,14 +187,25 @@ export function InviteWorkspaceMemberModal() {
       queryClient.invalidateQueries({ queryKey: ['tenant-members'] })
       queryClient.invalidateQueries({ queryKey: ['workspace-users'] })
       queryClient.invalidateQueries({ queryKey: ['ams-all-role-assignments'] })
-      toast.success(`Invitation sent successfully to ${trimmedEmail} with operational role delegation.`)
+
+      const token = res?.data?.invitationToken || res?.invitationToken
+      if (token) {
+        setInvitationResult({
+          email: trimmedEmail,
+          token,
+          expiresAt: res?.data?.invitationExpiresAtUtc || res?.invitationExpiresAtUtc,
+        })
+      } else {
+        toast.success(`Invitation sent successfully to ${trimmedEmail} via Clerk.`)
+        setIsOpen(false)
+      }
       setEmail('')
       setRole('org:member')
       setSelectedRoleIds([])
-      setIsOpen(false)
     } catch (error: any) {
       console.error('Failed to invite member:', error)
       const message =
+        error?.response?.data?.message ||
         error?.errors?.[0]?.message ||
         error?.message ||
         'Failed to send invitation. Please verify permissions or seat quota.'
@@ -178,7 +242,90 @@ export function InviteWorkspaceMemberModal() {
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[560px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="p-6 pb-4 border-b">
+        {invitationResult ? (
+          <>
+            <DialogHeader className="p-6 pb-4 border-b">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-bold text-slate-900">
+                    Invitation Dispatched
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                    {activeTenant?.name ? `Workspace: ${activeTenant.name}` : 'Workspace Invitation'}
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="p-6 space-y-5 overflow-y-auto">
+              <div className="p-4 rounded-xl bg-emerald-50/90 border border-emerald-200 text-xs text-emerald-950 space-y-2">
+                <div className="font-semibold text-emerald-950 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>Invitation registered for: <strong>{invitationResult.email}</strong></span>
+                </div>
+                <p className="leading-relaxed text-emerald-800">
+                  The member has been added in the Control Plane with status <strong>Pending</strong>. Their pre-delegated operational roles will activate automatically upon acceptance.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
+                  <span>Direct Acceptance Link</span>
+                  {hasCopied && (
+                    <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Copied to clipboard!
+                    </span>
+                  )}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={`${typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':5173') : 'http://localhost:5173'}/accept-invitation?token=${invitationResult.token}`}
+                    className="text-xs font-mono bg-slate-50 select-all h-9"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const portalOrigin = typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':5173') : 'http://localhost:5173'
+                      const url = `${portalOrigin}/accept-invitation?token=${invitationResult.token}`
+                      navigator.clipboard.writeText(url)
+                      setHasCopied(true)
+                      toast.success('Invitation link copied!')
+                      setTimeout(() => setHasCopied(false), 3000)
+                    }}
+                    className="gap-1.5 text-xs shrink-0 h-9 px-3"
+                  >
+                    {hasCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{hasCopied ? 'Copied' : 'Copy Link'}</span>
+                  </Button>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  If Clerk automated email dispatch is active, an email was sent. You can also share this direct link directly with the user.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="p-4 border-t bg-slate-50/50 flex items-center justify-end">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setInvitationResult(null)
+                  setIsOpen(false)
+                }}
+              >
+                Done
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader className="p-6 pb-4 border-b">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-primary/10 text-primary rounded-lg">
               <Users className="h-5 w-5" />
@@ -413,6 +560,8 @@ export function InviteWorkspaceMemberModal() {
             )}
           </Button>
         </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )
