@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClerkAuth } from '~/providers/ClerkAuthProvider';
 import { SignIn, SignUp } from '@clerk/clerk-react';
+import { getDashboardUrl } from '~/config/env';
 
 export function meta() {
   return [
@@ -71,7 +72,7 @@ export default function AcceptInvitationRoute() {
       }
       await queryClient.invalidateQueries();
       toast.success('Invitation accepted! Taking you to your ERP workspace...');
-      const dashboardUrl = (window as any).ENV?.VITE_DASHBOARD_URL || import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000';
+      const dashboardUrl = getDashboardUrl();
       setTimeout(() => {
         window.location.href = `${dashboardUrl}/v2/overview`;
       }, 1200);
@@ -117,7 +118,7 @@ export default function AcceptInvitationRoute() {
 
   // State 1: Authenticated & Successfully Accepted
   if (isSuccess) {
-    const dashboardUrl = (window as any).ENV?.VITE_DASHBOARD_URL || import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000';
+    const dashboardUrl = getDashboardUrl();
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
         <Card className="w-full max-w-md shadow-xl border-slate-200 dark:border-slate-800 text-center p-6">

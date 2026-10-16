@@ -26,6 +26,8 @@ import {
   type TenantMemberDto,
 } from '@/services/api/tenantMembers';
 import { fetchMyOperationalRoles } from '@/services/api/operationalRoles';
+import { getTenantApiUrl } from '@/config/env';
+import { ROLES, isWorkspaceAdminRole, isTenantAdminRole, isPlatformAdminRole } from '@/constants/roles';
 import axios from 'axios';
 
 interface ClerkAuthProviderProps {
@@ -87,7 +89,16 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     }
     return null;
   });
+  const [loadTimeout, setLoadTimeout] = useState(false);
   const hasAutoActivatedRef = useRef(false);
+
+  useEffect(() => {
+    if (isLoaded) return;
+    const timer = setTimeout(() => {
+      setLoadTimeout(true);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [isLoaded]);
 
   // Fetch tenants and members from TenantManagement.Api upon signing in
   useEffect(() => {
@@ -414,15 +425,20 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
 
   const userEmail = user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || '';
 
-  // Synchronize authenticated user email to storage for backend platform admin identification
+  // Synchronize authenticated user email, name and active role to storage for backend identification
   useEffect(() => {
     if (userEmail && typeof window !== 'undefined') {
       try {
         localStorage.setItem('erpez_user_email', userEmail);
         sessionStorage.setItem('erpez_user_email', userEmail);
+        const name = user?.fullName || user?.firstName || user?.username || '';
+        if (name) {
+          localStorage.setItem('erpez_user_name', name);
+          sessionStorage.setItem('erpez_user_name', name);
+        }
       } catch {}
     }
-  }, [userEmail]);
+  }, [userEmail, user?.fullName, user?.firstName, user?.username]);
 
   const configuredAdminEmails = (
     (import.meta.env.VITE_PLATFORM_ADMIN_EMAILS as string | undefined) ||
@@ -440,28 +456,38 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     user?.publicMetadata?.role === 'super-admin'
   );
 
-  const isOrgAdmin = useMemo(() => {
-    if (isPlatformAdmin) return true;
-    if (user?.publicMetadata?.isSuperAdmin) return true;
+  const isTenantAdmin = useMemo(() => {
+    if (!activeTenant) return false;
+
+    // 1. Check TenantManagement members for active tenant
+    const tmSelf = tmMembers.find(
+      (m) =>
+        (m.userId && user?.id && m.userId.toLowerCase() === user.id.toLowerCase()) ||
+        (m.email && userEmail && m.email.toLowerCase() === userEmail)
+    );
+    if (tmSelf) {
+      const roleUpper = (tmSelf.role || '').toUpperCase();
+      if (
+        roleUpper === 'TENANTADMIN' ||
+        roleUpper === 'TENANT ADMINISTRATOR' ||
+        roleUpper === 'DASHBOARD SYSTEM ADMIN' ||
+        tmSelf.roles?.some((r: string) => {
+          const u = r.toUpperCase();
+          return u === 'TENANTADMIN' || u === 'TENANT ADMINISTRATOR' || u === 'DASHBOARD SYSTEM ADMIN';
+        })
+      ) {
+        return true;
+      }
+    }
+
+    // 2. Check Clerk Organization membership for active organization
     const activeOrgId = organization?.id || activeTenant?.externalOrgId || activeTenant?.id;
     const membership = userMemberships?.data?.find((m: any) => m.organization?.id === activeOrgId);
     if (membership?.role === 'org:admin' || membership?.role === 'admin') return true;
     if (organization && (organization as any).membership?.role === 'org:admin') return true;
-    const tmSelf = tmMembers.find(
-      (m) =>
-        (m.userId && user?.id && m.userId.toLowerCase() === user.id.toLowerCase()) ||
-        (m.email && user?.primaryEmailAddress?.emailAddress && m.email.toLowerCase() === user.primaryEmailAddress.emailAddress.toLowerCase())
-    );
-    if (
-      tmSelf &&
-      (tmSelf.role === 'TenantAdmin' ||
-       tmSelf.role === 'DASHBOARD SYSTEM ADMIN' ||
-       tmSelf.roles?.some((r: string) => r.toUpperCase().includes('ADMIN')))
-    ) {
-      return true;
-    }
+
     return false;
-  }, [isPlatformAdmin, user, organization, activeTenant, userMemberships?.data, tmMembers]);
+  }, [user?.id, userEmail, activeTenant, tmMembers, organization, userMemberships?.data]);
 
   const [assignedOperationalRoles, setAssignedOperationalRoles] = useState<string[]>([]);
 
@@ -487,56 +513,91 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     };
   }, [isSignedIn, user?.id, activeTenant?.id]);
 
-  const derivedRoles = useMemo(() => {
+  // Workspace-scoped roles strictly granted within activeTenant
+  const workspaceRoles = useMemo(() => {
     const list: string[] = [];
-    const metaRoles = (user?.publicMetadata?.roles as string[]) || [];
-    list.push(...metaRoles);
 
-    if (isPlatformAdmin) {
-      list.push('Platform Administrator', 'Tenant Administrator', 'System Administrator');
-    } else if (isOrgAdmin) {
-      list.push('Tenant Administrator', 'System Administrator');
+    // Tenant governance role if user is explicitly an authorized tenant admin of this workspace
+    if (isTenantAdmin) {
+      list.push(ROLES.TENANT_ADMINISTRATOR);
+      // The Tenant Administrator / Owner who registered the workspace has full workspace admin access
+      list.push(ROLES.SYSTEM_ADMINISTRATOR);
     }
 
+    // Operational roles returned from active tenant database (e.g. Planning Officer, Inventory Manager, etc.)
     if (assignedOperationalRoles.length > 0) {
-      list.push(...assignedOperationalRoles);
+      const filteredOperational = assignedOperationalRoles.filter(
+        (r) => r !== ROLES.EMPLOYEE_VIEWER || (!isTenantAdmin && assignedOperationalRoles.length === 1)
+      );
+      list.push(...filteredOperational);
     }
 
+    // Fallback if user has no assigned operational roles and is not a tenant admin
     if (list.length === 0) {
-      list.push('Employee / Viewer');
+      list.push(ROLES.EMPLOYEE_VIEWER);
     }
 
     return Array.from(new Set(list));
-  }, [user?.publicMetadata?.roles, isPlatformAdmin, isOrgAdmin, assignedOperationalRoles]);
+  }, [isTenantAdmin, assignedOperationalRoles]);
+
+  // Global-scoped roles (independent of any specific workspace)
+  const globalRoles = useMemo(() => {
+    if (isPlatformAdmin) {
+      return [ROLES.PLATFORM_ADMINISTRATOR];
+    }
+    return [];
+  }, [isPlatformAdmin]);
+
+  // Combined roles available to the user
+  const derivedRoles = useMemo(() => {
+    return Array.from(new Set([...workspaceRoles, ...globalRoles]));
+  }, [workspaceRoles, globalRoles]);
 
   const [activeRole, setActiveRole] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('erpez_active_role');
       if (saved) return saved;
     }
-    return isPlatformAdmin ? 'Platform Administrator' : isOrgAdmin ? 'Tenant Administrator' : 'System Administrator';
+    return isPlatformAdmin ? ROLES.PLATFORM_ADMINISTRATOR : isTenantAdmin ? ROLES.TENANT_ADMINISTRATOR : ROLES.EMPLOYEE_VIEWER;
   });
 
-  // Automatically sync activeRole when real operational roles load
+  // Automatically validate and sync activeRole to available roles in the current tenant context
   useEffect(() => {
-    if (assignedOperationalRoles.length > 0 && !isPlatformAdmin && !isOrgAdmin) {
-      const saved = typeof window !== 'undefined' ? sessionStorage.getItem('erpez_active_role') : null;
-      if (!saved || saved === 'Employee / Viewer' || !assignedOperationalRoles.includes(saved)) {
-        const primary = assignedOperationalRoles[0];
-        setActiveRole(primary);
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('erpez_active_role', primary);
-        }
+    const allAvailable = [...workspaceRoles, ...globalRoles];
+    if (allAvailable.length === 0) return;
+
+    // Check if the current activeRole is valid in the current context
+    const isValid = allAvailable.includes(activeRole);
+    if (!isValid) {
+      // Prioritize primary operational workspace role if available (e.g. Planning Officer)
+      const primaryOperational = assignedOperationalRoles.find((r) => r !== 'Employee / Viewer');
+      const nextRole =
+        primaryOperational ||
+        workspaceRoles[0] ||
+        (isPlatformAdmin ? 'Platform Administrator' : 'Employee / Viewer');
+
+      setActiveRole(nextRole);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('erpez_active_role', nextRole);
+        localStorage.setItem('erpez_active_role', nextRole);
       }
     }
-  }, [assignedOperationalRoles, isPlatformAdmin, isOrgAdmin]);
+  }, [workspaceRoles, globalRoles, activeRole, assignedOperationalRoles, isPlatformAdmin]);
 
   const switchActiveRole = useCallback((newRole: string) => {
     setActiveRole(newRole);
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('erpez_active_role', newRole);
+      localStorage.setItem('erpez_active_role', newRole);
     }
   }, []);
+
+  useEffect(() => {
+    if (activeRole && typeof window !== 'undefined') {
+      sessionStorage.setItem('erpez_active_role', activeRole);
+      localStorage.setItem('erpez_active_role', activeRole);
+    }
+  }, [activeRole]);
 
   const unifiedUser: UnifiedUser | null = useMemo(() => {
     if (!user) return null;
@@ -701,7 +762,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
           : null;
         if (candidateId) headers['X-Tenant-Id'] = candidateId;
 
-        const apiUrl = import.meta.env.VITE_TENANT_API_URL || 'http://localhost:5246';
+        const apiUrl = getTenantApiUrl();
         await axios.post(`${apiUrl}/tenant-members/${invitationId}/invitation/revoke`, {}, { headers });
         const updated = await fetchTenantMembers();
         setTmMembers(updated);
@@ -747,7 +808,7 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     activeRole,
     switchActiveRole,
     tenantId: activeTenant?.id || null,
-    isSuperAdmin: activeRole === 'Platform Administrator' ? true : (activeRole === 'System Administrator' || activeRole === 'Tenant Administrator' ? false : (Boolean(user?.publicMetadata?.isSuperAdmin) || isPlatformAdmin)),
+    isSuperAdmin: activeRole === 'Platform Administrator',
     activeDevUser: '',
     login: () => {
       clerk.openSignIn();
@@ -764,10 +825,30 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-background p-6">
+        <div className="max-w-md w-full text-center space-y-4">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-          <p className="mt-4 text-sm text-muted-foreground">Initializing Clerk authentication...</p>
+          <p className="text-sm font-medium text-foreground">Initializing Clerk authentication...</p>
+          {loadTimeout && (
+            <div className="p-4 rounded-lg border border-amber-500/20 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300 text-left space-y-2 animate-in fade-in duration-300">
+              <p className="font-semibold text-sm">Authentication is taking longer than usual</p>
+              <p className="text-muted-foreground">The application is waiting for Clerk&apos;s authentication service to initialize:</p>
+              <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                <li>Check DevTools Console (<kbd className="px-1 py-0.5 rounded bg-muted">F12</kbd>) for network blocks or CORS errors.</li>
+                <li>Disable adblockers / Brave Shields for <code className="px-1 rounded bg-muted">localhost</code> and <code className="px-1 rounded bg-muted">*.clerk.accounts.dev</code>.</li>
+                <li>Verify your internet connection to Clerk&apos;s account portal.</li>
+              </ul>
+              <div className="pt-2 flex justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="px-3 py-1.5 text-xs font-semibold rounded bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                >
+                  Reload Page
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

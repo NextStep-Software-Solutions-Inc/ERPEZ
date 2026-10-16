@@ -63,10 +63,35 @@ public sealed class CurrentUserService(
 
     public bool IsAuthenticated => httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
 
+    public string? OperatingRole
+    {
+        get
+        {
+            if (httpContextAccessor?.HttpContext?.Request.Headers.TryGetValue("X-Operating-Role", out var opRole) == true)
+            {
+                var val = opRole.FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(val))
+                {
+                    return val.Trim();
+                }
+            }
+            return null;
+        }
+    }
+
     public bool IsSuperAdmin
     {
         get
         {
+            var operatingRole = OperatingRole;
+            if (!string.IsNullOrWhiteSpace(operatingRole) &&
+                !operatingRole.Equals("Platform Administrator", StringComparison.OrdinalIgnoreCase) &&
+                !operatingRole.Equals("System Administrator", StringComparison.OrdinalIgnoreCase))
+            {
+                // Explicit bounded operational role execution (e.g. Planning Officer) suppresses global superadmin bypass
+                return false;
+            }
+
             var user = httpContextAccessor.HttpContext?.User;
             if (user == null) return false;
 

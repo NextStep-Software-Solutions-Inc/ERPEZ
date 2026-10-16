@@ -169,6 +169,7 @@ jobs:
 
           # Deploy via docker compose
           export DB_CONNECTION_STRING="${{ secrets.ERPEZ_DB_CONNECTION_STRING }}"
+          export CONTROL_PLANE_DB_CONNECTION_STRING="${{ secrets.CONTROL_PLANE_DB_CONNECTION_STRING }}"
           export BLOB_CONNECTION_STRING="${{ secrets.AZURE_BLOB_STORAGE_CONNECTION_STRING }}"
           cd /opt/docker-stack/dashboard-api-prod
           docker compose down

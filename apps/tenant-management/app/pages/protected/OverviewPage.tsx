@@ -12,6 +12,7 @@ import { createQueryHookFromTemplate } from "erpez-shared-lib"
 import { getTenantLicenseRequest } from "~/features/license/handlers/getTenantLicenseRequest"
 
 import { planLabel } from "~/lib/tenant"
+import { getDashboardUrl } from "~/config/env"
 
 const useTenantLicense = createQueryHookFromTemplate(getTenantLicenseRequest);
 
@@ -70,7 +71,7 @@ export default function OverviewPage() {
                 break
             case "erp": {
                 const targetTenantId = tenant?.id;
-                const dashboardUrl = import.meta.env.VITE_ERP_DASHBOARD_URL || "http://localhost:3000";
+                const dashboardUrl = getDashboardUrl();
                 window.open(`${dashboardUrl}/v2/dashboard?tenantId=${targetTenantId}`, "_blank");
                 break;
             }

@@ -43,7 +43,18 @@ public class AcceptInvitationCommandHandler(
             member = await unitOfWork.TenantMemberRepository.Query()
                 .Include(m => m.RoleAssignments).ThenInclude(ra => ra.Role)
                 .FirstOrDefaultAsync(m => m.Email.ToLower() == normalizedCallerEmail &&
-                                          m.Status == Status.Pending &&
+                                          (m.Status == Status.Pending || (m.Status == Status.Active && m.ExternalIdentityId.StartsWith("inv_"))) &&
+                                          !m.IsDeleted, cancellationToken);
+        }
+
+        // 2c. Fallback: If token passed directly matches the stored Clerk invitation ID
+        if (member == null)
+        {
+            var rawToken = command.InvitationToken.Trim();
+            member = await unitOfWork.TenantMemberRepository.Query()
+                .Include(m => m.RoleAssignments).ThenInclude(ra => ra.Role)
+                .FirstOrDefaultAsync(m => m.ExternalIdentityId == rawToken &&
+                                          m.ExternalIdentityId.StartsWith("inv_") &&
                                           !m.IsDeleted, cancellationToken);
         }
 
@@ -59,7 +70,7 @@ public class AcceptInvitationCommandHandler(
         }
 
         // 4. Status check
-        if (member.Status != Status.Pending)
+        if (member.Status != Status.Pending && !(member.Status == Status.Active && member.ExternalIdentityId.StartsWith("inv_")))
         {
             throw new ValidationException($"Invitation cannot be accepted because member is in status '{member.Status}'.");
         }

@@ -94,7 +94,22 @@ public class CachedTenantAccessService(
             return cachedResult;
         }
 
-        var controlConnStr = configuration.GetConnectionString("DefaultConnection");
+        var controlConnStr = configuration.GetConnectionString("ControlPlaneConnection")
+            ?? configuration.GetConnectionString("TenantManagementConnection");
+
+        if (string.IsNullOrWhiteSpace(controlConnStr))
+        {
+            var defConn = configuration.GetConnectionString("DefaultConnection");
+            if (!string.IsNullOrWhiteSpace(defConn) && defConn.Contains("ERPEZ-DASHBOARD_DB", StringComparison.OrdinalIgnoreCase))
+            {
+                controlConnStr = defConn.Replace("ERPEZ-DASHBOARD_DB", "ERPEZ-TENANT_MANAGEMENT_DB", StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                controlConnStr = defConn;
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(controlConnStr))
         {
             return TenantAccessResult.Fail("Control plane connection string is missing.", "CONFIG_ERROR", 500);
@@ -118,7 +133,7 @@ public class CachedTenantAccessService(
                 JOIN "Tenants" t ON tm."TenantId" = t."Id"
                 LEFT JOIN "TenantSettings" ts ON ts."TenantId" = t."Id" AND ts."IsDeleted" = false
                 WHERE tm."TenantId" = @tenantId 
-                  AND (tm."ExternalIdentityId" = @externalId OR tm."UserId" = @externalId)
+                  AND (tm."ExternalIdentityId" = @externalId OR tm."UserId" = @externalId OR (tm."Email" IS NOT NULL AND LOWER(tm."Email") = LOWER(@externalId)))
                   AND t."IsDeleted" = false
                 LIMIT 1;
             """;

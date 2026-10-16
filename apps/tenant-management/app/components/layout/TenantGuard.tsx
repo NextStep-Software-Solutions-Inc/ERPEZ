@@ -4,6 +4,7 @@ import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import LoadingSpinner from "../LoadingSpinner";
 import { Button } from "~/components/ui/button";
 import NoTenantEmptyState from "./NoTenantEmptyState";
+import { getDashboardUrl } from "~/config/env";
 
 interface TenantGuardProps {
     children: React.ReactNode;
@@ -19,7 +20,7 @@ function TenantGuard({ children }: TenantGuardProps) {
 
     useEffect(() => {
         if (!isLoading && myTenant && !isTenantAdmin) {
-            const dashboardUrl = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:3000';
+            const dashboardUrl = getDashboardUrl();
             window.location.href = `${dashboardUrl}/v2/overview`;
         }
     }, [isLoading, myTenant, isTenantAdmin]);
