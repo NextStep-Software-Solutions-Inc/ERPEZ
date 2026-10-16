@@ -278,6 +278,8 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
          sessionStorage.getItem('erpez_tenant_slug') ||
          localStorage.getItem('erpez_tenant_slug'))
       : null;
+    const targetTenantId =
+      selectedTenantId || (storedCandidate && guidRegex.test(storedCandidate) ? storedCandidate : null);
 
     // 1. If a specific tenant is targeted/selected, prioritize matching from availableTenants or tmTenants
     if (targetTenantId) {
