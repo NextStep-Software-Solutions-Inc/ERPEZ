@@ -249,37 +249,18 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
   );
 }
 
+const DEFAULT_DEV_CLERK_PUBLISHABLE_KEY =
+  'pk_test_YWRhcHRpbmctc3RhbGxpb24tMjYuY2xlcmsuYWNjb3VudHMuZGV2JA';
+
 /**
  * Main Clerk Auth Provider. Enforces live Clerk authentication with zero offline bypass mode.
  */
 export function ClerkAuthProvider({ children, onInitialized }: ClerkAuthProviderProps) {
-  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-  const isClerkConfigured = Boolean(
-    publishableKey &&
-    publishableKey.startsWith('pk_') &&
-    !publishableKey.includes('placeholder')
-  );
-
-  if (!isClerkConfigured) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 text-slate-800 text-center font-sans">
-        <div className="max-w-md p-8 bg-white rounded-xl shadow-lg border border-red-200">
-          <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Clerk Authentication Required</h2>
-          <p className="text-sm text-slate-600 mb-4">
-            The Tenant Management portal requires live Clerk authentication. Offline mode and fake personas are disabled.
-          </p>
-          <p className="text-xs text-slate-500 bg-slate-100 p-3 rounded font-mono break-all">
-            Set VITE_CLERK_PUBLISHABLE_KEY in your environment to proceed.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const envKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const publishableKey =
+    envKey && envKey.startsWith('pk_') && !envKey.includes('placeholder')
+      ? envKey
+      : DEFAULT_DEV_CLERK_PUBLISHABLE_KEY;
 
   return (
     <ClerkProvider publishableKey={publishableKey}>
