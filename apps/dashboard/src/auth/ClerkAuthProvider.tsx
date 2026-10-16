@@ -272,7 +272,12 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
     const storedCandidate = typeof window !== 'undefined'
       ? sessionStorage.getItem('erpez_candidate_tenant_id') || localStorage.getItem('erpez_tenant_id')
       : null;
-    const targetTenantId = selectedTenantId || (storedCandidate && guidRegex.test(storedCandidate) ? storedCandidate : null);
+    const targetSlug = typeof window !== 'undefined'
+      ? (new URLSearchParams(window.location.search).get('slug') ||
+         new URLSearchParams(window.location.search).get('tenantSlug') ||
+         sessionStorage.getItem('erpez_tenant_slug') ||
+         localStorage.getItem('erpez_tenant_slug'))
+      : null;
 
     // 1. If a specific tenant is targeted/selected, prioritize matching from availableTenants or tmTenants
     if (targetTenantId) {
@@ -285,10 +290,41 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
           id: match.id,
           externalOrgId: (match as any).externalOrgId || match.id,
           name: match.name,
-          slug: match.slug || undefined,
+          slug: match.slug || targetSlug || undefined,
           authProvider: 'clerk',
         };
       }
+    }
+
+    // 1b. If a specific slug is targeted, match by slug
+    if (targetSlug) {
+      const matchBySlug =
+        availableTenants.find((t) => t.slug && t.slug.toLowerCase() === targetSlug.toLowerCase()) ||
+        tmTenants.find((t) => t.slug && t.slug.toLowerCase() === targetSlug.toLowerCase());
+
+      if (matchBySlug) {
+        return {
+          id: matchBySlug.id,
+          externalOrgId: (matchBySlug as any).externalOrgId || matchBySlug.id,
+          name: matchBySlug.name,
+          slug: matchBySlug.slug || targetSlug,
+          authProvider: 'clerk',
+        };
+      }
+    }
+
+    // 1c. If targetTenantId was specified (e.g. spectator mode), preserve it even while lists are loading
+    if (targetTenantId) {
+      const candidateName = typeof window !== 'undefined'
+        ? sessionStorage.getItem('erpez_tenant_name') || localStorage.getItem('erpez_tenant_name')
+        : null;
+      return {
+        id: targetTenantId,
+        externalOrgId: targetTenantId,
+        name: candidateName || (organization?.name ?? 'Workspace'),
+        slug: targetSlug || organization?.slug || undefined,
+        authProvider: 'clerk',
+      };
     }
 
     // 2. If Clerk has an active organization, match it
@@ -870,16 +906,25 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ClerkAuthProvider({ children, publishableKey }: ClerkAuthProviderProps) {
-  const key = publishableKey || import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const DEFAULT_DEV_CLERK_PUBLISHABLE_KEY =
+  'pk_test_YWRhcHRpbmctc3RhbGxpb24tMjYuY2xlcmsuYWNjb3VudHMuZGV2JA';
 
-  if (!key || key.includes('placeholder')) {
-    console.warn('VITE_CLERK_PUBLISHABLE_KEY is not configured or is placeholder.');
+export function ClerkAuthProvider({ children, publishableKey }: ClerkAuthProviderProps) {
+  const envKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const key =
+    publishableKey ||
+    (envKey && !envKey.includes('placeholder') ? envKey : DEFAULT_DEV_CLERK_PUBLISHABLE_KEY);
+
+  if (!envKey || envKey.includes('placeholder')) {
+    console.warn(
+      'VITE_CLERK_PUBLISHABLE_KEY is not configured or is placeholder. Using development fallback key.'
+    );
   }
 
   return (
-    <ClerkProvider publishableKey={key || 'pk_test_placeholder'}>
+    <ClerkProvider publishableKey={key}>
       <ClerkInnerAdapter>{children}</ClerkInnerAdapter>
     </ClerkProvider>
   );
 }
+

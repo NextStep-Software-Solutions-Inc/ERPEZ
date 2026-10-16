@@ -14,6 +14,7 @@ if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search);
     const tenantParam = urlParams.get('tenantId');
     const tenantName = urlParams.get('tenantName');
+    const tenantSlug = urlParams.get('slug') || urlParams.get('tenantSlug');
     const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     if (tenantParam && guidRegex.test(tenantParam)) {
@@ -23,6 +24,10 @@ if (typeof window !== 'undefined') {
         sessionStorage.setItem('erpez_tenant_name', tenantName);
         localStorage.setItem('erpez_tenant_name', tenantName);
       }
+    }
+    if (tenantSlug) {
+      sessionStorage.setItem('erpez_tenant_slug', tenantSlug);
+      localStorage.setItem('erpez_tenant_slug', tenantSlug);
     }
   } catch {
     // Ignore storage errors
@@ -36,20 +41,32 @@ function TenantContextInitializer() {
       const urlParams = new URLSearchParams(window.location.search)
       const tenantParam = urlParams.get('tenantId')
       const tenantName = urlParams.get('tenantName')
+      const tenantSlug = urlParams.get('slug') || urlParams.get('tenantSlug')
       const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+      let hasCleaned = false
+
       if (tenantParam && guidRegex.test(tenantParam)) {
-        // Store candidate tenant in sessionStorage (session continuity) and localStorage
         sessionStorage.setItem('erpez_candidate_tenant_id', tenantParam)
         localStorage.setItem('erpez_tenant_id', tenantParam)
         if (tenantName) {
           sessionStorage.setItem('erpez_tenant_name', tenantName)
           localStorage.setItem('erpez_tenant_name', tenantName)
         }
-
-        // Cleanly scrub tenantId & tenantName params from browser URL
         urlParams.delete('tenantId')
         urlParams.delete('tenantName')
+        hasCleaned = true
+      }
+
+      if (tenantSlug) {
+        sessionStorage.setItem('erpez_tenant_slug', tenantSlug)
+        localStorage.setItem('erpez_tenant_slug', tenantSlug)
+        urlParams.delete('slug')
+        urlParams.delete('tenantSlug')
+        hasCleaned = true
+      }
+
+      if (hasCleaned) {
         const remainingQuery = urlParams.toString()
         const newUrl = window.location.pathname + (remainingQuery ? `?${remainingQuery}` : '') + window.location.hash
         window.history.replaceState({}, document.title, newUrl)

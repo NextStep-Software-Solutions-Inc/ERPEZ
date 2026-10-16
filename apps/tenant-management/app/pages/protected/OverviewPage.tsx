@@ -61,8 +61,10 @@ export default function OverviewPage() {
                 break
             case "erp": {
                 const targetTenantId = tenant?.id;
-                const dashboardUrl = getDashboardUrl();
-                window.open(`${dashboardUrl}/v2/dashboard?tenantId=${targetTenantId}`, "_blank");
+                const dedicatedBase = tenant?.tenantSetting?.baseURL?.trim() || getDashboardUrl();
+                const tenantSlug = (tenant as any)?.slug || tenant?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                const slugParam = tenantSlug ? `&slug=${encodeURIComponent(tenantSlug)}` : '';
+                window.open(`${dedicatedBase}/v2/dashboard?tenantId=${targetTenantId}${slugParam}`, "_blank");
                 break;
             }
             case "license":
