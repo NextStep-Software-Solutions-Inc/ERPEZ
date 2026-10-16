@@ -71,7 +71,9 @@ export default function OverviewPage() {
                 break
             case "erp": {
                 const targetTenantId = tenant?.id;
-                const dedicatedBase = tenant?.tenantSetting?.baseURL?.trim() || getDashboardUrl();
+                const rawBase = tenant?.tenantSetting?.baseURL?.trim();
+                const isApiUrl = rawBase && (rawBase.includes(':5245') || rawBase.includes(':5246') || rawBase.includes('.api.'));
+                const dedicatedBase = (rawBase && !isApiUrl) ? rawBase : getDashboardUrl();
                 const tenantSlug = (tenant as any)?.slug || tenant?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                 const slugParam = tenantSlug ? `&slug=${encodeURIComponent(tenantSlug)}` : '';
                 window.open(`${dedicatedBase}/v2/dashboard?tenantId=${targetTenantId}${slugParam}`, "_blank");

@@ -54,7 +54,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <VersionSwitcher />
         {workspace && (() => {
-          const dedicatedBase = workspace.tenantSetting?.baseURL?.trim() || dashboardUrl;
+          const rawBase = workspace.tenantSetting?.baseURL?.trim();
+          const isApiUrl = rawBase && (rawBase.includes(':5245') || rawBase.includes(':5246') || rawBase.includes('.api.'));
+          const dedicatedBase = (rawBase && !isApiUrl) ? rawBase : dashboardUrl;
           const tenantSlug = (workspace as any).slug || workspace.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
           const slugParam = tenantSlug ? `&slug=${encodeURIComponent(tenantSlug)}` : '';
           return (
