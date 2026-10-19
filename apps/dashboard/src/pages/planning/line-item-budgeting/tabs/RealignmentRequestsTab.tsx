@@ -23,6 +23,7 @@ import {
   useApproveLIBAmendment,
   useReturnLIBAmendment,
   useRealignmentPdf,
+  formatModificationReason,
 } from '@/features/planning/line-item-budgeting/realignment'
 import { useQueryClient } from '@tanstack/react-query'
 import type { LIBAmendment } from '@/features/planning/line-item-budgeting/line-item-budget/types/type'
@@ -168,7 +169,7 @@ export function RealignmentRequestsTab() {
                       <TableCell>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-xs font-medium text-slate-900">
-                            {amendment.reason}
+                            {formatModificationReason(amendment.reason)}
                           </span>
                           {amendment.justification && (
                             <span className="text-[10px] text-slate-500 line-clamp-1 max-w-[250px]">

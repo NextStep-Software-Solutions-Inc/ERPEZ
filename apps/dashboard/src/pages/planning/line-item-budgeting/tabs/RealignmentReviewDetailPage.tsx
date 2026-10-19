@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArrowLeft, CheckCircle, XCircle, Loader2, Info, ArrowRight, Activity as ActivityIcon, Layers, FileText, Download, Eye } from 'lucide-react'
 import type { LIBAmendment } from '@/features/planning/line-item-budgeting/line-item-budget/types/type'
-import { useRealignmentPdf } from '@/features/planning/line-item-budgeting/realignment'
+import { useRealignmentPdf, formatModificationReason } from '@/features/planning/line-item-budgeting/realignment'
 import { DraftAmendmentActivityView } from '@/features/planning/line-item-budgeting/realignment/components/DraftAmendmentActivityView'
 import { DraftAmendmentProjectView } from '@/features/planning/line-item-budgeting/realignment/components/DraftAmendmentProjectView'
 import {
@@ -412,7 +412,7 @@ export function RealignmentReviewDetailPage({
           <div>
             <span className="font-extrabold text-slate-500 uppercase tracking-wide block mb-1">Reason Category</span>
             <Badge variant="outline" className="bg-slate-50 text-slate-700 font-semibold px-2.5 py-0.5">
-              {amendment.reason}
+              {formatModificationReason(amendment.reason)}
             </Badge>
           </div>
           <div>
