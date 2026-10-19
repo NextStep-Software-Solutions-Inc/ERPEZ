@@ -54,7 +54,9 @@ public static class LibRealignmentMapper
             ? Regex.Replace(resolvedOrgCode.Trim().ToUpperInvariant(), @"[^A-Z0-9]", "")
             : "SUC";
 
-        if (string.IsNullOrWhiteSpace(cleanAgencyCode))
+        if (string.IsNullOrWhiteSpace(cleanAgencyCode) ||
+            cleanAgencyCode.StartsWith("STATEUNIV", StringComparison.OrdinalIgnoreCase) ||
+            cleanAgencyCode.Equals("SUCS", StringComparison.OrdinalIgnoreCase))
         {
             cleanAgencyCode = "SUC";
         }

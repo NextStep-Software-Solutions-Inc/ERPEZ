@@ -14,6 +14,7 @@ import {
   useReturnLIBAmendment,
 } from '../hooks/useLIBAmendments'
 import { useRealignmentPdf } from '../hooks/useRealignmentPdf'
+import { RealignmentPdfPreviewDialog } from '../dialogs/RealignmentPdfPreviewDialog'
 import { DraftAmendmentActivityView } from './DraftAmendmentActivityView'
 import { DraftAmendmentProjectView } from './DraftAmendmentProjectView'
 import type { LIBAmendment } from '../../line-item-budget/types/type'
@@ -65,7 +66,16 @@ export function AmendmentEditPanel({
   const { mutateAsync: returnAmendment, isPending: isReturning } =
     useReturnLIBAmendment()
   const { mutateAsync: deleteCloneBudget } = useDeleteLIB()
-  const { downloadPdf, previewPdf, isGenerating } = useRealignmentPdf()
+  const {
+    downloadPdf,
+    previewPdf,
+    previewPdfUrl,
+    previewFileName,
+    isPreviewOpen,
+    setIsPreviewOpen,
+    isPreviewLoading,
+    isGenerating,
+  } = useRealignmentPdf()
 
   const [showReturnRemarks, setShowReturnRemarks] = useState(false)
   const [returnRemarksText, setReturnRemarksText] = useState('')
@@ -313,7 +323,7 @@ export function AmendmentEditPanel({
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
             <Button
               variant="outline"
-              onClick={() => previewPdf(amendment.id)}
+              onClick={() => previewPdf(amendment.id, originalLib.libNumber)}
               disabled={isGenerating || isSubmitting}
               className="text-xs h-9 gap-1.5 font-semibold border-slate-300 text-slate-700 hover:bg-slate-50"
             >
@@ -360,7 +370,7 @@ export function AmendmentEditPanel({
           <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => previewPdf(amendment.id)}
+              onClick={() => previewPdf(amendment.id, originalLib.libNumber)}
               disabled={isGenerating}
               className="text-xs h-9 gap-1.5 font-semibold border-slate-300 text-slate-700 hover:bg-slate-50"
             >
@@ -464,6 +474,14 @@ export function AmendmentEditPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RealignmentPdfPreviewDialog
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        pdfUrl={previewPdfUrl}
+        fileName={previewFileName}
+        isLoading={isPreviewLoading}
+      />
     </div>
   )
 }

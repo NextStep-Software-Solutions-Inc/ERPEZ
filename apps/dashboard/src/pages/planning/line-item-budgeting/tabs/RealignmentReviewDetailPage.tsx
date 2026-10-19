@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArrowLeft, CheckCircle, XCircle, Loader2, Info, ArrowRight, Activity as ActivityIcon, Layers, FileText, Download, Eye } from 'lucide-react'
 import type { LIBAmendment } from '@/features/planning/line-item-budgeting/line-item-budget/types/type'
 import { useRealignmentPdf, formatModificationReason } from '@/features/planning/line-item-budgeting/realignment'
+import { RealignmentPdfPreviewDialog } from '@/features/planning/line-item-budgeting/realignment/dialogs/RealignmentPdfPreviewDialog'
 import { DraftAmendmentActivityView } from '@/features/planning/line-item-budgeting/realignment/components/DraftAmendmentActivityView'
 import { DraftAmendmentProjectView } from '@/features/planning/line-item-budgeting/realignment/components/DraftAmendmentProjectView'
 import {
@@ -43,7 +44,16 @@ export function RealignmentReviewDetailPage({
   isReturning,
 }: RealignmentReviewDetailPageProps) {
   const { toast } = useToast()
-  const { downloadPdf, previewPdf, isGenerating } = useRealignmentPdf()
+  const {
+    downloadPdf,
+    previewPdf,
+    previewPdfUrl,
+    previewFileName,
+    isPreviewOpen,
+    setIsPreviewOpen,
+    isPreviewLoading,
+    isGenerating,
+  } = useRealignmentPdf()
   const [draftLib, setDraftLib] = useState<LIBDetails | null>(null)
   const [originalLib, setOriginalLib] = useState<LIBDetails | null>(null)
   const [isLoadingDraft, setIsLoadingDraft] = useState<boolean>(true)
@@ -377,7 +387,7 @@ export function RealignmentReviewDetailPage({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => previewPdf(amendment.id)}
+            onClick={() => previewPdf(amendment.id, amendment.lineItemBudget?.libNumber)}
             disabled={isGenerating}
             className="h-8 text-xs font-semibold gap-1.5 shadow-2xs border-slate-300 text-slate-700 hover:bg-slate-50"
           >
@@ -557,6 +567,14 @@ export function RealignmentReviewDetailPage({
           </Button>
         </div>
       )}
+
+      <RealignmentPdfPreviewDialog
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        pdfUrl={previewPdfUrl}
+        fileName={previewFileName}
+        isLoading={isPreviewLoading}
+      />
     </div>
   )
 }

@@ -19,6 +19,11 @@ export function useRealignmentPdf() {
   const { mutateAsync: downloadDocument } = useDownloadDocument()
   const [generatingId, setGeneratingId] = useState<string | null>(null)
 
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null)
+  const [previewFileName, setPreviewFileName] = useState<string>('Modification_of_Budget.pdf')
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+
   const downloadPdf = async (realignmentId: string, libNumber?: string) => {
     setGeneratingId(realignmentId)
     try {
@@ -68,8 +73,15 @@ export function useRealignmentPdf() {
     }
   }
 
-  const previewPdf = async (realignmentId: string) => {
+  const previewPdf = async (realignmentId: string, libNumber?: string) => {
+    setIsPreviewOpen(true)
+    setIsPreviewLoading(true)
     setGeneratingId(realignmentId)
+    setPreviewFileName(
+      libNumber
+        ? `Modification_of_Budget_${libNumber}.pdf`
+        : `Modification_of_Budget_${realignmentId.slice(0, 8)}.pdf`,
+    )
     try {
       const response = await api.get<Blob>(
         `/api/planning/lib-realignments/${realignmentId}/pdf`,
@@ -77,8 +89,12 @@ export function useRealignmentPdf() {
           responseType: 'blob',
         },
       )
+      // Revoke any previous object URL
+      if (previewPdfUrl) {
+        URL.revokeObjectURL(previewPdfUrl)
+      }
       const blobUrl = URL.createObjectURL(response.data)
-      window.open(blobUrl, '_blank')
+      setPreviewPdfUrl(blobUrl)
     } catch (err) {
       console.error('Failed to preview realignment PDF:', err)
       toast({
@@ -86,14 +102,30 @@ export function useRealignmentPdf() {
         description: 'Failed to preview Modification of Budget PDF.',
         variant: 'destructive',
       })
+      setIsPreviewOpen(false)
     } finally {
+      setIsPreviewLoading(false)
       setGeneratingId(null)
+    }
+  }
+
+  const closePreview = () => {
+    setIsPreviewOpen(false)
+    if (previewPdfUrl) {
+      URL.revokeObjectURL(previewPdfUrl)
+      setPreviewPdfUrl(null)
     }
   }
 
   return {
     downloadPdf,
     previewPdf,
+    previewPdfUrl,
+    previewFileName,
+    isPreviewOpen,
+    setIsPreviewOpen,
+    isPreviewLoading,
+    closePreview,
     isGenerating: !!generatingId,
     generatingId,
   }

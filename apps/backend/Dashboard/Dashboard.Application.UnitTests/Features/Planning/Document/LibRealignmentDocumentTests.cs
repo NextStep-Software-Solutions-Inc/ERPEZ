@@ -102,6 +102,11 @@ public class LibRealignmentDocumentTests
         var dtoClsu = LibRealignmentMapper.MapToLibRealignmentPdfDataDto(
             amendment, originalLib, proposedLib, organizationCode: "CLSU");
         dtoClsu.DocumentCode.Should().Be("FM-CLSU-FDP-002");
+
+        // Act & Assert: STATEUNIVE normalizes to SUC
+        var dtoStateUnive = LibRealignmentMapper.MapToLibRealignmentPdfDataDto(
+            amendment, originalLib, proposedLib, organizationCode: "STATEUNIVE");
+        dtoStateUnive.DocumentCode.Should().Be("FM-SUC-FDP-002");
     }
 
     [Fact]
