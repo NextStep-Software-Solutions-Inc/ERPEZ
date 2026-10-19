@@ -14,6 +14,7 @@ public class TenantContextService(IHttpContextAccessor? httpContextAccessor = nu
 {
     public TenantAccessContext? AccessContext { get; private set; }
     public TenantDatabaseConnectionInfo? ConnectionInfo { get; private set; }
+    public ERPEZ.Shared.Enums.TenancyMode TenancyMode => AccessContext?.TenancyMode ?? ERPEZ.Shared.Enums.TenancyMode.SaaS;
 
     public Guid? TenantId
     {

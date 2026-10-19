@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Serves as an APP-specific signatory assignment linking to master personnel records (User + PersonnelPosition).
 /// Includes snapshot display fields (Name, Position, Department) to protect historical APP documents from position changes.
 /// </summary>
-public class APPSignatory : BaseEntity
+public class APPSignatory : TenantScopedEntity
 {
     public APPSignatory() { }
 

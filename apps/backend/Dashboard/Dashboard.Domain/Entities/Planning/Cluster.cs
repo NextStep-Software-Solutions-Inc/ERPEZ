@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class Cluster : BaseEntity
+public class Cluster : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// OrderIndex drives drag-and-drop sort order in both the Admin UI
 /// and the resulting supplier portal upload slots.
 /// </summary>
-public class DocumentProfileItem : BaseEntity
+public class DocumentProfileItem : TenantScopedEntity
 {
     public Guid DocumentProfileId    { get; set; }
     public Guid MasterDocumentTypeId { get; set; }

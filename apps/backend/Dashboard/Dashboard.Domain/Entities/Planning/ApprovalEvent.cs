@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Approval Event - Audit trail for PPMP approval workflow
 /// Tracks each approval action (submit, approve, reject, return) with actor details and notes
 /// </summary>
-public class ApprovalEvent : BaseEntity
+public class ApprovalEvent : TenantScopedEntity
 {
     public ApprovalEvent() { }
     

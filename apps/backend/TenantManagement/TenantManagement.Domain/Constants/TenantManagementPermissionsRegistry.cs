@@ -22,7 +22,10 @@ public static class PlatformPermissions
         settingsManage,
         subscriptionsManage,
         licensesManage,
-        auditLogsView
+        auditLogsView,
+        "admin.tenants.manage",
+        "admin.system.admin.manage",
+        "admin.system.admin.view"
     };
 
     public static readonly IReadOnlySet<string> auditor = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -76,7 +79,18 @@ public static class TenantPermissions
         licensesView,
         licensesManage,
         modulesView,
-        modulesManage
+        modulesManage,
+        // Cross-domain aliases for backward compatibility with shared Admin permissions
+        ERPEZ.Shared.Constants.Permissions.Admin.rolesManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.membersManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.tenantsManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.usersManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.orgStructureView,
+        ERPEZ.Shared.Constants.Permissions.Admin.orgStructureManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.systemAdminView,
+        ERPEZ.Shared.Constants.Permissions.Admin.systemAdminManage,
+        ERPEZ.Shared.Constants.Permissions.Admin.operationalRolesView,
+        ERPEZ.Shared.Constants.Permissions.Admin.operationalRolesManage
     };
 
     public static readonly IReadOnlySet<string> billingAdmin = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -118,6 +132,12 @@ public static class TenantManagementPermissionsRegistry
 
             // Tenant Scope Roles
             ["Tenant Administrator"] = TenantPermissions.all,
+            ["TenantAdmin"] = TenantPermissions.all,
+            ["System Administrator"] = TenantPermissions.all,
+            ["Workspace Admin"] = TenantPermissions.all,
+            ["Org Admin"] = TenantPermissions.all,
+            ["admin"] = TenantPermissions.all,
+            ["Owner"] = TenantPermissions.all,
             ["Billing Administrator"] = TenantPermissions.billingAdmin,
             ["Tenant Auditor"] = TenantPermissions.auditor,
             ["Tenant Member"] = TenantPermissions.member,

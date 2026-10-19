@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type Keycloak from 'keycloak-js'
 import keycloak from '@/auth/keycloak'
 import { setTokenProvider, setTenantProvider, setRefreshProvider } from '@/auth/authBridge'
+import { getDashboardBackendUrl } from '@/config/env'
 import { UnifiedAuthContext } from '@/auth/UnifiedAuthContext'
 import type {
   UnifiedAuthContextType,
@@ -124,7 +125,7 @@ export function KeycloakProvider({
   const [availableTenants, setAvailableTenants] = useState<UnifiedTenantContext[]>([])
   const [tenantState, setTenantState] = useState<TenantState>('loading')
 
-  const backendUrl = import.meta.env.VITE_ERPEZ_BACKEND_URL || 'http://localhost:5245'
+  const backendUrl = getDashboardBackendUrl()
 
   // Register token & candidate tenant provider with unified auth bridge
   useEffect(() => {
@@ -453,6 +454,12 @@ export function KeycloakProvider({
     authReady: authState === 'authenticated',
     tenantContextReady: tenantState === 'resolved',
     user: unifiedUser,
+    workspaceMembers: [],
+    workspaceInvitations: [],
+    inviteWorkspaceMember: async () => {
+      throw new Error('Workspace member invitation is only available in SaaS / Clerk mode.');
+    },
+    revokeWorkspaceInvitation: async () => {},
     activeTenant,
     availableTenants,
     switchTenant,
@@ -472,6 +479,8 @@ export function KeycloakProvider({
     lastName,
     role: roles[0] || null,
     roles,
+    activeRole: roles[0] || 'User',
+    switchActiveRole: () => {},
     tenantId: activeTenant?.id || tenantId,
     isSuperAdmin,
     activeDevUser,

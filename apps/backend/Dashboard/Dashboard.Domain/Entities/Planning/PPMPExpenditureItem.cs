@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// PPMP Expenditure Item - Expenditure items within a PPMP activity
 /// Represents a procurement item group that may or may not be procurable
 /// </summary>
-public class PPMPExpenditureItem : BaseEntity
+public class PPMPExpenditureItem : TenantScopedEntity
 {
     public PPMPExpenditureItem() { }
 

@@ -1,3 +1,4 @@
+using ERPEZ.Shared.Enums;
 using ERPEZ.Shared.Models;
 
 namespace ERPEZ.Shared.Interfaces;
@@ -9,9 +10,24 @@ namespace ERPEZ.Shared.Interfaces;
 public interface ITenantConnectionResolver
 {
     /// <summary>
-    /// Asynchronously resolves and decrypts the operational database connection descriptor for an authorized tenant.
+    /// Asynchronously resolves operational database connection descriptor for an authorized tenant.
     /// </summary>
     Task<TenantDatabaseConnectionInfo?> ResolveConnectionInfoAsync(
         Guid authorizedTenantId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asynchronously resolves operational database connection descriptor for an authorized tenant,
+    /// optimizing resolution based on known TenancyMode.
+    /// </summary>
+    Task<TenantDatabaseConnectionInfo?> ResolveConnectionInfoAsync(
+        Guid authorizedTenantId,
+        TenancyMode? tenancyMode,
+        CancellationToken cancellationToken = default) => ResolveConnectionInfoAsync(authorizedTenantId, cancellationToken);
+
+    /// <summary>
+    /// Explicitly evicts cached connection metadata for the specified tenant.
+    /// Triggered on credential rotation, tenancy mode changes, or tenant deactivation.
+    /// </summary>
+    void InvalidateConnection(Guid tenantId);
 }

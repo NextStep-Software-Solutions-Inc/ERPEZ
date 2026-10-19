@@ -4,7 +4,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class WFP : BaseEntity
+public class WFP : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid OfficeId { get; set; }

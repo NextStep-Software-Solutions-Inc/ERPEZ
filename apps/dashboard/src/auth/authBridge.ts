@@ -15,5 +15,16 @@ export const setRefreshProvider = (provider: (minValidity?: number) => Promise<b
 };
 
 export const getAuthToken = () => tokenProvider();
+export const getStoredToken = async (): Promise<string | null> => {
+  try {
+    const token = await tokenProvider();
+    if (token) return token;
+  } catch {}
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('erpez_auth_token');
+  }
+  return null;
+};
 export const getCandidateTenantId = () => tenantProvider();
 export const refreshAuthToken = (minValidity?: number) => refreshProvider(minValidity);
+

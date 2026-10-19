@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Line Item for a Supplier's Bid/Quotation linked to an RFQItem.
 /// </summary>
-public class SupplierBidItem : BaseEntity
+public class SupplierBidItem : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid SupplierBidId { get; set; }

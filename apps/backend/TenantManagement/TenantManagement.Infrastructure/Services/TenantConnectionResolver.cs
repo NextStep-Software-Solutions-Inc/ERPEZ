@@ -1,3 +1,4 @@
+using ERPEZ.Shared.Enums;
 using ERPEZ.Shared.Interfaces;
 using ERPEZ.Shared.Models;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
@@ -10,7 +11,7 @@ namespace ERPEZ.TenantManagement.Infrastructure.Services;
 /// <summary>
 /// Post-authorization connection resolver.
 /// Retrieves trusted operational database connection metadata for an authorized tenant.
-/// Decrypts credentials once per request into scoped memory.
+/// Differentiates SaaS (shared operational database) from On-Premise (decrypted dedicated database).
 /// </summary>
 public class TenantConnectionResolver(
     ApplicationDbContext dbContext,
@@ -18,11 +19,46 @@ public class TenantConnectionResolver(
     IConfiguration configuration,
     IHostEnvironment env) : ITenantConnectionResolver
 {
-    public async Task<TenantDatabaseConnectionInfo?> ResolveConnectionInfoAsync(
+    public Task<TenantDatabaseConnectionInfo?> ResolveConnectionInfoAsync(
         Guid authorizedTenantId,
         CancellationToken cancellationToken = default)
     {
-        // Query dedicated TenantOperationalDatabase entity strictly post-authorization
+        return ResolveConnectionInfoAsync(authorizedTenantId, null, cancellationToken);
+    }
+
+    public async Task<TenantDatabaseConnectionInfo?> ResolveConnectionInfoAsync(
+        Guid authorizedTenantId,
+        TenancyMode? tenancyMode,
+        CancellationToken cancellationToken = default)
+    {
+        var sharedConnStr = configuration.GetConnectionString("OperationalConnection")
+            ?? configuration.GetConnectionString("DefaultConnection");
+
+        // 1. If TenancyMode is known to be SaaS, return shared operational connection immediately
+        if (tenancyMode == TenancyMode.SaaS)
+        {
+            if (!string.IsNullOrWhiteSpace(sharedConnStr))
+            {
+                return new TenantDatabaseConnectionInfo(authorizedTenantId, sharedConnStr);
+            }
+        }
+
+        // 2. Query tenant deployment mode if unspecified
+        var tenant = await dbContext.Tenants!
+            .AsNoTracking()
+            .Where(t => t.Id == authorizedTenantId && !t.IsDeleted)
+            .Select(t => new { t.TenancyMode })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (tenant?.TenancyMode == TenancyMode.SaaS)
+        {
+            if (!string.IsNullOrWhiteSpace(sharedConnStr))
+            {
+                return new TenantDatabaseConnectionInfo(authorizedTenantId, sharedConnStr);
+            }
+        }
+
+        // 3. Dedicated On-Premise operational database resolution
         var opDb = await dbContext.TenantOperationalDatabases!
             .AsNoTracking()
             .Where(db => db.TenantId == authorizedTenantId && !db.IsDeleted)
@@ -68,7 +104,7 @@ public class TenantConnectionResolver(
         {
             if (env.IsDevelopment())
             {
-                resolvedConnectionString = configuration.GetConnectionString("DefaultConnection");
+                resolvedConnectionString = sharedConnStr;
             }
         }
 
@@ -77,6 +113,11 @@ public class TenantConnectionResolver(
             throw new InvalidOperationException($"No valid database connection string found for authorized tenant {authorizedTenantId}.");
         }
 
-        return new TenantDatabaseConnectionInfo(authorizedTenantId, resolvedConnectionString);
+        return new TenantDatabaseConnectionInfo(authorizedTenantId, resolvedConnectionString, tenancyMode ?? TenancyMode.OnPremise);
+    }
+
+    public void InvalidateConnection(Guid tenantId)
+    {
+        // Scoped direct resolver does not maintain cross-request cache.
     }
 }

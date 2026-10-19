@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Market Scoping Activity Attachment - stores file attachments for market scoping activities.
 /// </summary>
-public class MarketScopingActivityAttachment : BaseEntity
+public class MarketScopingActivityAttachment : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid MarketScopingActivityId { get; set; }

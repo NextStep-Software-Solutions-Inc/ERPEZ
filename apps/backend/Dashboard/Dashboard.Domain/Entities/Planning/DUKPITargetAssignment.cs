@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class DUKPITargetAssignment : BaseEntity
+public class DUKPITargetAssignment : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid KPIId { get; set; }

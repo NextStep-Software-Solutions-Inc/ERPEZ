@@ -4,7 +4,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class FunctionAllocation : BaseEntity
+public class FunctionAllocation : TenantScopedEntity
 {
 
     [Sieve(CanFilter = true, CanSort = true)]

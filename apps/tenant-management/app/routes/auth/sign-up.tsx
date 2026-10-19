@@ -1,7 +1,8 @@
 import { ArrowLeft, UserPlus } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { Button } from "~/components/ui/button";
+import { useEffect } from "react";
 import { SignUp } from "@clerk/clerk-react";
 
 export function meta() {
@@ -12,7 +13,19 @@ export function meta() {
 }
 
 export default function SignUpPage() {
-  const { register, isClerkLive } = useClerkAuth();
+  const { isAuthenticated, isSuperAdmin, register, isClerkLive } = useClerkAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const redirectParam = searchParams.get("redirect");
+  const pendingToken = typeof window !== "undefined" ? sessionStorage.getItem("pending_invitation_token") : null;
+  const redirectTarget = redirectParam || (pendingToken ? `/accept-invitation?token=${encodeURIComponent(pendingToken)}` : (isSuperAdmin ? "/super-admin/overview" : "/overview"));
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(redirectTarget);
+    }
+  }, [isAuthenticated, redirectTarget, navigate]);
 
   return (
     <div className="flex h-screen w-full">
@@ -56,7 +69,7 @@ export default function SignUpPage() {
           <div className="pt-4 space-y-3">
             {isClerkLive ? (
               <div className="flex justify-center">
-                <SignUp routing="hash" fallbackRedirectUrl="/overview" />
+                <SignUp routing="hash" fallbackRedirectUrl={redirectTarget} />
               </div>
             ) : (
               <Button

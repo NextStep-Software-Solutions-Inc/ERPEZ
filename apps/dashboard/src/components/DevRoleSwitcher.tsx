@@ -107,10 +107,13 @@ export const DevRoleSwitcher: React.FC = () => {
     setMounted(true)
   }, [])
 
+  const isClerk = (import.meta.env.VITE_AUTH_PROVIDER || '').toLowerCase() === 'clerk'
+  const isDevPersonasEnabled = import.meta.env.VITE_ENABLE_DEV_PERSONAS === 'true'
+
+  if (!mounted || isClerk || !isDevPersonasEnabled) return null
+
   const activePersona = PERSONAS.find((p) => p.id === activeDevUser) || PERSONAS[0]
   const ActiveIcon = activePersona.icon
-
-  if (!mounted) return null
 
   const handleSelect = async (persona: PersonaOption) => {
     if (persona.id === activeDevUser) return

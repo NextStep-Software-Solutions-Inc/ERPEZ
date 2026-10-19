@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Note: AllocationMonth uses enum (January-December) for simplified monthly tracking.
 ///       The system automatically maps the month to the corresponding fiscal year dates.
 /// </summary>
-public class PPMPItemAllocation : BaseEntity
+public class PPMPItemAllocation : TenantScopedEntity
 {
     public PPMPItemAllocation() { }
     

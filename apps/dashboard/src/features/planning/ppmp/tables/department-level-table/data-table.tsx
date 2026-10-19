@@ -298,16 +298,17 @@ export function DataTable<TData, TValue>({
             </DropdownMenu>
           </div>
         </div>
-        <div>
-          <Button
-            onClick={onCreateNew}
-            disabled={!onCreateNew}
-            size="sm"
-            className="h-9"
-          >
-            Create New PPMP
-          </Button>
-        </div>
+        {onCreateNew && (
+          <div>
+            <Button
+              onClick={onCreateNew}
+              size="sm"
+              className="h-9"
+            >
+              Create New PPMP
+            </Button>
+          </div>
+        )}
       </div>
       <div className="overflow-hidden rounded-md border">
         <Table>

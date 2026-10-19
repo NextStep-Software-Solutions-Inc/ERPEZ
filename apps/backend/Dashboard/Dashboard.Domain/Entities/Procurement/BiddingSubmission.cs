@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Represents a supplier's submitted bid proposal for a Public Bidding procurement project.
 /// Preserves the immutable original submission data as submitted before the deadline.
 /// </summary>
-public class BiddingSubmission : BaseEntity
+public class BiddingSubmission : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ProcurementProjectId { get; set; }

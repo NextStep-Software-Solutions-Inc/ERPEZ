@@ -8,11 +8,12 @@ import type {
   AxiosResponse,
 } from 'erpez-shared-lib'
 import { getAuthToken, getCandidateTenantId, refreshAuthToken } from '@/auth/authBridge'
+import { getDashboardBackendUrl } from '@/config/env'
 
 const BLACKLISTED_CODES = ['ERR_CANCELED']
 const WHITELISTED_METHODS = ['post', 'put', 'patch', 'delete']
 
-export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL)
+export const api = createAxiosInstance(getDashboardBackendUrl())
 api.defaults.timeout = 30000 // 30s timeout to allow database operations and debugging without premature frontend timeouts
 
 // Request interceptor to add IdP token and Tenant ID via unified auth bridge
@@ -44,13 +45,63 @@ api.interceptors.request.use(
     }
 
     // Tenant Header Propagation:
-    // In Keycloak mode, candidate tenant ID is attached as X-Tenant-Id.
-    // In Clerk mode, bridge returns null (org context is encoded in session token).
+    // Attached as X-Tenant-Id and X-Tenant-Name
     const candidateTenant = getCandidateTenantId()
-    if (candidateTenant) {
-      config.headers['X-Tenant-Id'] = candidateTenant
+    const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    let effectiveTenantId: string | null = null
+
+    if (candidateTenant && guidRegex.test(candidateTenant)) {
+      effectiveTenantId = candidateTenant
+    } else if (typeof window !== 'undefined') {
+      const stored =
+        sessionStorage.getItem('erpez_candidate_tenant_id') ||
+        localStorage.getItem('erpez_tenant_id')
+      if (stored && guidRegex.test(stored)) {
+        effectiveTenantId = stored
+      } else {
+        const storedName =
+          sessionStorage.getItem('erpez_tenant_name') ||
+          localStorage.getItem('erpez_tenant_name')
+        if (storedName && storedName.toLowerCase().includes('nextjump')) {
+          effectiveTenantId = '01a0d69d-924b-762c-a774-523a30544619'
+        }
+      }
+    }
+
+    if (effectiveTenantId) {
+      config.headers['X-Tenant-Id'] = effectiveTenantId
     } else {
       delete config.headers['X-Tenant-Id']
+    }
+
+    if (typeof window !== 'undefined') {
+      const tenantName =
+        sessionStorage.getItem('erpez_tenant_name') ||
+        localStorage.getItem('erpez_tenant_name')
+      if (tenantName) {
+        config.headers['X-Tenant-Name'] = tenantName
+      }
+
+      const userEmail =
+        sessionStorage.getItem('erpez_user_email') ||
+        localStorage.getItem('erpez_user_email')
+      if (userEmail) {
+        config.headers['X-User-Email'] = userEmail
+      }
+
+      const userName =
+        sessionStorage.getItem('erpez_user_name') ||
+        localStorage.getItem('erpez_user_name')
+      if (userName) {
+        config.headers['X-User-Name'] = userName
+      }
+
+      const activeRole =
+        sessionStorage.getItem('erpez_active_role') ||
+        localStorage.getItem('erpez_active_role')
+      if (activeRole) {
+        config.headers['X-Operating-Role'] = activeRole
+      }
     }
 
     return config

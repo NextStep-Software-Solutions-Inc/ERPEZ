@@ -56,6 +56,8 @@ public static class DependencyInjection
         services.AddScoped<ITenantConnectionProvider, TenantConnectionProvider>();
         services.AddScoped<ITenantAccessService, TenantAccessService>();
         services.AddScoped<ITenantConnectionResolver, TenantConnectionResolver>();
+        services.AddScoped<ITenantBackgroundScopeActivator, TenantBackgroundScopeActivator>();
+        services.AddSingleton<ITenantScopeFactory, TenantScopeFactory>();
         services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
         services.AddSingleton<ERPEZ.Shared.Interfaces.IExternalIdentityNormalizer, ERPEZ.Shared.Security.ClerkIdentityNormalizer>();
         services.AddSingleton<ERPEZ.Shared.Interfaces.IExternalIdentityNormalizer, ERPEZ.Shared.Security.KeycloakIdentityNormalizer>();

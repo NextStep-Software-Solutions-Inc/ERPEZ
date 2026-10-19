@@ -1,4 +1,4 @@
-import { Building2, ChevronsUpDown, Check, AlertCircle, Loader2 } from "lucide-react";
+import { Building2, ChevronsUpDown, Check, AlertCircle, Loader2, LogOut } from "lucide-react";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -13,9 +13,11 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { useWorkspace } from "~/providers/TenantProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 
 export function VersionSwitcher() {
-  const { workspace, workspaces, selectWorkspace, isLoading, userWorkspaceRoles } = useWorkspace();
+  const { workspace, workspaces, selectWorkspace, isLoading, userWorkspaceRoles, isSpectating, stopSpectating } = useWorkspace();
+  const { isSuperAdmin } = useClerkAuth();
 
   if (isLoading) {
     return (
@@ -50,8 +52,8 @@ export function VersionSwitcher() {
   const displayRole = rawRole === "Tenant Administrator" ? "Workspace Administrator" : rawRole;
   const activePlan = workspace?.tenantSubscription?.plan || "Starter";
 
-  // If user belongs to only 1 workspace, show a clean static display without interactive dropdown
-  if (workspaces.length === 1) {
+  // If user belongs to only 1 workspace and is not super admin/spectating, show a clean static display without interactive dropdown
+  if (workspaces.length <= 1 && !isSuperAdmin && !isSpectating) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
@@ -77,7 +79,7 @@ export function VersionSwitcher() {
     );
   }
 
-  // Multiple workspaces: show full workspace switcher dropdown
+  // Multiple workspaces or platform admin / spectator: show full workspace switcher dropdown
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -150,6 +152,32 @@ export function VersionSwitcher() {
                 </DropdownMenuItem>
               );
             })}
+            {isSuperAdmin && (
+              <>
+                <DropdownMenuSeparator className="my-1 bg-slate-100" />
+                {isSpectating && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      stopSpectating();
+                      window.location.href = "/super-admin/tenant-management";
+                    }}
+                    className="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-amber-700 hover:bg-amber-50 text-xs font-semibold"
+                  >
+                    <LogOut className="size-3.5" />
+                    <span>Exit Spectator Mode</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={() => {
+                    window.location.href = "/super-admin/tenant-management";
+                  }}
+                  className="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-blue-700 hover:bg-blue-50 text-xs font-semibold"
+                >
+                  <Building2 className="size-3.5" />
+                  <span>All Platform Workspaces</span>
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

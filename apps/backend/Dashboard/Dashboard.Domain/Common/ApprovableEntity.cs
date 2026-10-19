@@ -6,10 +6,10 @@ using ERPEZ.Domain.Enums;
 
 /// <summary>
 /// Base class for entities that require approval workflow. 
-/// Inherits from BaseEntity and implements IApprovable. 
-/// Used by: LineItemBudget, PPMP, APP
+/// Inherits from TenantScopedEntity and implements IApprovable. 
+/// Used by: LineItemBudget, PPMP, APP, APR, PurchaseRequest, ConsolidatedPR
 /// </summary>
-public abstract class ApprovableEntity : BaseEntity, IApprovable
+public abstract class ApprovableEntity : TenantScopedEntity, IApprovable
 {
     protected ApprovableEntity() { }
     

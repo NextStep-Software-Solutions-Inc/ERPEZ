@@ -24,7 +24,7 @@ export const initialModules: ModuleDef[] = [
     id: "pms",
     title: "PMS - Procurement Management System",
     description:
-      "Manage the entire purchasing process from requesting quotes and placing orders to tracking deliveries and processing invoices. Streamline procurement, ensure cost-effectiveness, and maintain strong supplier relationships.",
+      "Manage the entire purchasing process from purchase requests (PR) and RFQ bidding to BAC resolutions, Notice of Award (NOA), and purchase orders. Streamline procurement, ensure compliance, and maintain strong supplier relationships.",
     enabled: true,
   },
   {

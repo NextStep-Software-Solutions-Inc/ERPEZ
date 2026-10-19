@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class FiscalYear : BaseEntity
+public class FiscalYear : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public int Year { get; set; }

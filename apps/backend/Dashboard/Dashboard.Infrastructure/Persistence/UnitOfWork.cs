@@ -503,7 +503,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await ExecuteInTransactionAsync(operation, System.Data.IsolationLevel.ReadCommitted, cancellationToken);
+    }
+
+    public async Task ExecuteInTransactionAsync(Func<Task> operation, System.Data.IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(isolationLevel, cancellationToken);
         try
         {
             await operation();

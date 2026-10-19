@@ -67,6 +67,8 @@ public static class DependencyInjection
         services.AddScoped<ERPEZ.Shared.Interfaces.ITenantConnectionProvider, ERPEZ.Shared.Services.TenantConnectionProvider>();
         services.AddScoped<ERPEZ.Shared.Interfaces.ITenantConnectionResolver, ERPEZ.Shared.Services.CachedTenantConnectionResolver>();
         services.AddScoped<ERPEZ.Shared.Interfaces.ITenantAccessService, ERPEZ.Shared.Services.CachedTenantAccessService>();
+        services.AddScoped<ERPEZ.Shared.Interfaces.ITenantBackgroundScopeActivator, ERPEZ.Shared.Services.TenantBackgroundScopeActivator>();
+        services.AddSingleton<ERPEZ.Shared.Interfaces.ITenantScopeFactory, ERPEZ.Shared.Services.TenantScopeFactory>();
 
         // ── Current User ────────────────────────────────────────────────────────────
         // Fully qualified — avoids the alias collision that caused CS0246/CS0311
@@ -161,6 +163,7 @@ public static class DependencyInjection
         services.AddScoped<IFundSourceExcelImporter, FundSourceExcelImporter>();
         services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();
         services.AddScoped<IPositionImportService, PositionImportService>();
+        services.AddScoped<IUserProvisioningService, UserProvisioningService>();
         services.AddHostedService<TempFileCleanupService>();
 
         // ── Document Generation ─────────────────────────────────────────────────────
@@ -233,7 +236,8 @@ public static class DependencyInjection
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()
             .UseRecommendedSerializerSettings()
-            .UsePostgreSqlStorage(c => c.UseNpgsqlConnection(connectionString)));
+            .UsePostgreSqlStorage(c => c.UseNpgsqlConnection(connectionString))
+            .UseFilter(new ERPEZ.Infrastructure.Services.HangfireTenantJobFilter()));
 
         services.AddHangfireServer();
 
@@ -252,6 +256,8 @@ public static class DependencyInjection
                     "CREATE SCHEMA IF NOT EXISTS planning; " +
                     "CREATE SCHEMA IF NOT EXISTS procurement;");
                 await dbContext.Database.MigrateAsync();
+
+                dbContext.CurrentTenantId = ApplicationDbContext.DefaultTestTenantId;
 
                 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                 await ERPEZ.Infrastructure.Persistence.Seeders.ProcurementActivityTypeSeeder.SeedAsync(unitOfWork);

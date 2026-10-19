@@ -14,16 +14,22 @@ import { Outlet, useNavigate } from "react-router";
 import { SearchForm } from "../SearchForm";
 import TenantGuard from "./TenantGuard";
 import { useTenant } from "~/providers/TenantProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { Eye, LogOut } from "lucide-react";
 import { Button } from "~/components/ui/button";
 
 export default function TenantLayout() {
     const { isSpectating, spectatingTenant, stopSpectating } = useTenant();
+    const { isSuperAdmin } = useClerkAuth();
     const navigate = useNavigate();
 
     const handleExitSpectating = () => {
         stopSpectating();
-        navigate("/super-admin/tenant-management");
+        if (isSuperAdmin) {
+            navigate("/super-admin/tenant-management");
+        } else {
+            navigate("/overview");
+        }
     };
 
     return (

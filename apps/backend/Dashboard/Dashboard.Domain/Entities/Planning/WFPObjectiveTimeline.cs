@@ -4,7 +4,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class WFPObjectiveTimeline : BaseEntity
+public class WFPObjectiveTimeline : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid WFPObjectiveActivityId { get; set; }

@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import {
   UserX,
   UserCheck,
   Trash2,
+  RotateCw,
 } from "lucide-react";
 import { type TenantMember } from "./table/types";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ interface MemberDetailModalProps {
   onClose: () => void;
   onEdit?: (member: TenantMember) => void;
   onToggleStatus?: (member: TenantMember) => void;
+  onResendInvitation?: (member: TenantMember) => void;
   onDelete?: (member: TenantMember) => void;
   isSelf?: boolean;
 }
@@ -42,6 +44,7 @@ export function MemberDetailModal({
   onClose,
   onEdit,
   onToggleStatus,
+  onResendInvitation,
   onDelete,
   isSelf = false,
 }: MemberDetailModalProps) {
@@ -61,6 +64,7 @@ export function MemberDetailModal({
 
   const isPending = member.status === "Pending";
   const isActive = member.status === "Active";
+  const isExpired = isPending && !!member.invitationExpiresAtUtc && new Date(member.invitationExpiresAtUtc).getTime() < Date.now();
 
   const copyId = () => {
     if (!member.id) return;
@@ -107,7 +111,13 @@ export function MemberDetailModal({
                     Active Member
                   </Badge>
                 )}
-                {isPending && (
+                {isExpired && (
+                  <Badge className="bg-rose-100 text-rose-800 border-rose-200 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 text-rose-600" />
+                    Invitation Expired
+                  </Badge>
+                )}
+                {!isExpired && isPending && (
                   <Badge className="bg-amber-100 text-amber-800 border-amber-200 flex items-center gap-1">
                     <Clock className="h-3 w-3 text-amber-600" />
                     Invitation Pending
@@ -117,6 +127,12 @@ export function MemberDetailModal({
                   <Badge className="bg-rose-100 text-rose-800 border-rose-200 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3 text-rose-600" />
                     Disabled Access
+                  </Badge>
+                )}
+                {member.status === "Cancelled" && (
+                  <Badge className="bg-slate-100 text-slate-700 border-slate-200 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 text-slate-600" />
+                    Cancelled / Revoked
                   </Badge>
                 )}
               </div>
@@ -175,8 +191,8 @@ export function MemberDetailModal({
             {isPending && member.invitationExpiresAtUtc && (
               <div className="flex justify-between items-center text-slate-600 border-t pt-2">
                 <span className="text-slate-400">Invitation Expires:</span>
-                <span className="text-amber-700 font-medium">
-                  {new Date(member.invitationExpiresAtUtc).toLocaleString()}
+                <span className={`font-medium ${isExpired ? "text-rose-600 font-semibold" : "text-amber-700"}`}>
+                  {new Date(member.invitationExpiresAtUtc).toLocaleString()} {isExpired && "(Expired)"}
                 </span>
               </div>
             )}
@@ -185,6 +201,20 @@ export function MemberDetailModal({
 
         <DialogFooter className="pt-3 gap-2 flex-col sm:flex-row">
           <div className="flex items-center gap-2 mr-auto">
+            {onResendInvitation && (isPending || member.status === "Cancelled") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onClose();
+                  onResendInvitation(member);
+                }}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 text-xs h-8"
+              >
+                <RotateCw className="h-3.5 w-3.5 mr-1" />
+                Resend Invitation
+              </Button>
+            )}
             {onDelete && !isSelf && (
               <Button
                 variant="outline"

@@ -10,7 +10,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Sourced exclusively from an approved Notice of Award.
 /// Winning Supplier, Procurement Project, and Total Amount are normalized and derived authoritatively through NoticeOfAward.
 /// </summary>
-public class Contract : BaseEntity
+public class Contract : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string ContractNumber { get; set; } = string.Empty;

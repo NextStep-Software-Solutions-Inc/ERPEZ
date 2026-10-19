@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Market Scoping History - audit trail for status changes on market scoping records.
 /// Tracks all status transitions with timestamp and user information.
 /// </summary>
-public class MarketScopingHistory : BaseEntity
+public class MarketScopingHistory : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid MarketScopingId { get; set; }

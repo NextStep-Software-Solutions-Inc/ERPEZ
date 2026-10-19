@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Represents the assignment/distribution of FYActiveKPI targets to Offices (Level 2).
 /// This is where Planning distributes agency targets down to delivery units.
 /// </summary>
-public class KPIAssignment : BaseEntity
+public class KPIAssignment : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FYActiveKPIId { get; set; }

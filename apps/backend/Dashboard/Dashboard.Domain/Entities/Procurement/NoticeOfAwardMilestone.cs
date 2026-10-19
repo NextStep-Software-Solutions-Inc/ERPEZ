@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Represents a contract execution milestone logged against an issued Notice of Award.
 /// </summary>
-public class NoticeOfAwardMilestone : BaseEntity
+public class NoticeOfAwardMilestone : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid NoticeOfAwardId { get; set; }

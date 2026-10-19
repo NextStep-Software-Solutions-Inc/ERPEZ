@@ -8,7 +8,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Represents a scheduled bidding activity for a procurement project.
 /// </summary>
-public class BiddingActivitySchedule : BaseEntity
+public class BiddingActivitySchedule : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ProcurementProjectId { get; set; }

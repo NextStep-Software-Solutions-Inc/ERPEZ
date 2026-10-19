@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents fiscal year-specific procurement policy configurations with snapshotted thresholds.
 /// </summary>
-public class ProcurementPolicyConfig : BaseEntity
+public class ProcurementPolicyConfig : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FiscalYearId { get; set; }

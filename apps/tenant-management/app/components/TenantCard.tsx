@@ -139,7 +139,7 @@ export function TenantCard({
                             size="sm"
                             className="text-xs bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200 font-semibold gap-1"
                             onClick={() => {
-                                startSpectating({ id, name });
+                                startSpectating({ id, name, ...(tenant ?? {}) });
                                 navigate('/overview');
                             }}
                             title="Spectate and manage this workspace"

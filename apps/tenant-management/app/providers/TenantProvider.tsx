@@ -2,10 +2,13 @@ import { createContext, useContext, useState, useEffect, useMemo, type ReactNode
 import { createQueryHookFromTemplate } from 'erpez-shared-lib';
 import { useQueryClient } from '@tanstack/react-query';
 import { getMyTenantRequest } from '~/features/tenant/handlers/getMyTenantRequest';
+import { getTenantsRequest } from '~/features/tenant/handlers/getTenantsRequest';
 import type { Tenant } from '~/features/tenant/type/Tenant';
 import { useAuthReady } from './AuthProvider';
+import { useClerkAuth } from './ClerkAuthProvider';
 
 const useMyTenant = createQueryHookFromTemplate(getMyTenantRequest);
+const useAllTenants = createQueryHookFromTemplate(getTenantsRequest);
 
 export interface WorkspaceContextType {
     // Canonical Workspace Plane accessors
@@ -17,8 +20,8 @@ export interface WorkspaceContextType {
 
     // Spectator Mode
     isSpectating: boolean;
-    spectatingTenant: { id: string; name: string } | null;
-    startSpectating: (tenant: { id: string; name: string }) => void;
+    spectatingTenant: ({ id: string; name: string } & Partial<Tenant>) | null;
+    startSpectating: (tenant: { id: string; name: string } & Partial<Tenant>) => void;
     stopSpectating: () => void;
 
     // Backward-compatibility aliases for existing codebase
@@ -38,16 +41,20 @@ const LOCAL_STORAGE_SPECTATING_KEY = "erpez_spectating_tenant";
 
 function TenantProviderContent({ children }: { children: ReactNode }) {
     const queryClient = useQueryClient();
+    const { isTokenReady } = useAuthReady();
+    const { isSuperAdmin, isInitialized: isAuthInitialized } = useClerkAuth();
     const { data: myTenant, isLoading, error, refetch } = useMyTenant({
         pathParams: {},
         queryParams: { pageSize: 50, pageNumber: 1 },
+        enabled: isTokenReady,
+    });
+    const { data: allTenants } = useAllTenants({
+        pathParams: {},
+        queryParams: { pageSize: 50, pageNumber: 1 },
+        enabled: isTokenReady && isSuperAdmin,
     });
 
-    const workspaces: Tenant[] = useMemo(() => {
-        return myTenant?.data || [];
-    }, [myTenant?.data]);
-
-    const [spectatingTenant, setSpectatingTenant] = useState<{ id: string; name: string } | null>(() => {
+    const [spectatingTenant, setSpectatingTenant] = useState<({ id: string; name: string } & Partial<Tenant>) | null>(() => {
         if (typeof window !== 'undefined') {
             try {
                 const stored = localStorage.getItem(LOCAL_STORAGE_SPECTATING_KEY);
@@ -59,14 +66,42 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
         return null;
     });
 
-    const isSpectating = !!spectatingTenant;
+    // Spectator mode is strictly restricted to platform administrators
+    const isSpectating = Boolean(isSuperAdmin && spectatingTenant);
+
+    // If the authenticated user is not a platform administrator, purge any stale spectator state immediately
+    useEffect(() => {
+        if (isAuthInitialized && !isSuperAdmin && spectatingTenant) {
+            setSpectatingTenant(null);
+            try {
+                localStorage.removeItem(LOCAL_STORAGE_SPECTATING_KEY);
+            } catch {
+                // Ignore storage errors
+            }
+        }
+    }, [isAuthInitialized, isSuperAdmin, spectatingTenant]);
+
+    const workspaces: Tenant[] = useMemo(() => {
+        const sourceList = (isSuperAdmin && allTenants?.data && allTenants.data.length > 0)
+            ? allTenants.data
+            : (myTenant?.data || []);
+
+        const list: Tenant[] = [...sourceList];
+        if (isSpectating && spectatingTenant && !list.some((w) => w.id === spectatingTenant.id)) {
+            list.unshift({
+                ...spectatingTenant,
+                id: spectatingTenant.id,
+                name: spectatingTenant.name,
+                isDeleted: false,
+                isDisabled: false,
+            } as unknown as Tenant);
+        }
+        return list;
+    }, [isSuperAdmin, allTenants?.data, myTenant?.data, isSpectating, spectatingTenant]);
 
     const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
         if (typeof window !== 'undefined') {
             try {
-                if (spectatingTenant?.id) {
-                    return spectatingTenant.id;
-                }
                 return localStorage.getItem(LOCAL_STORAGE_TENANT_KEY);
             } catch {
                 return null;
@@ -79,7 +114,7 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
 
     // Reconcile selectedWorkspaceId with verified accessible workspaces from backend
     useEffect(() => {
-        if (spectatingTenant) {
+        if (isSpectating && spectatingTenant) {
             setSelectedWorkspaceId(spectatingTenant.id);
             setIsStaleSelection(false);
             return;
@@ -107,13 +142,14 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
                 // Ignore storage errors
             }
         }
-    }, [isLoading, workspaces, selectedWorkspaceId, spectatingTenant]);
+    }, [isLoading, workspaces, selectedWorkspaceId, isSpectating, spectatingTenant]);
 
     const activeWorkspace = useMemo(() => {
-        if (spectatingTenant) {
+        if (isSpectating && spectatingTenant) {
             const found = workspaces.find((w) => w.id === spectatingTenant.id);
             if (found) return found;
             return {
+                ...spectatingTenant,
                 id: spectatingTenant.id,
                 name: spectatingTenant.name,
                 isDeleted: false,
@@ -122,12 +158,12 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
         }
         if (workspaces.length === 0) return null;
         return workspaces.find((w) => w.id === selectedWorkspaceId) || workspaces[0] || null;
-    }, [workspaces, selectedWorkspaceId, spectatingTenant]);
+    }, [workspaces, selectedWorkspaceId, isSpectating, spectatingTenant]);
 
     // Extract caller's roles inside the active workspace
     const userWorkspaceRoles: string[] = useMemo(() => {
-        if (spectatingTenant) {
-            return ['Platform Administrator'];
+        if (isSpectating) {
+            return ['Platform Administrator', 'Tenant Administrator'];
         }
         if (!activeWorkspace) return [];
         const member = (activeWorkspace as any).tenantMembers?.[0];
@@ -135,13 +171,22 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
         if (member.roles && member.roles.length > 0) return member.roles;
         if (member.role) return [member.role];
         return [];
-    }, [activeWorkspace, spectatingTenant]);
+    }, [activeWorkspace, isSpectating]);
 
     const selectWorkspace = (workspaceId: string) => {
         const target = workspaces.find((w) => w.id === workspaceId);
-        if (!target && (!spectatingTenant || spectatingTenant.id !== workspaceId)) {
+        if (!target && (!isSpectating || !spectatingTenant || spectatingTenant.id !== workspaceId)) {
             console.warn(`[Workspace Switcher] Cannot switch to unauthorized or unknown workspace: ${workspaceId}`);
             return;
+        }
+
+        if (isSpectating && target) {
+            setSpectatingTenant(target);
+            try {
+                localStorage.setItem(LOCAL_STORAGE_SPECTATING_KEY, JSON.stringify(target));
+            } catch {
+                // Ignore storage errors
+            }
         }
 
         setSelectedWorkspaceId(workspaceId);
@@ -156,7 +201,11 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
         queryClient.invalidateQueries();
     };
 
-    const startSpectating = (tenantInfo: { id: string; name: string }) => {
+    const startSpectating = (tenantInfo: { id: string; name: string } & Partial<Tenant>) => {
+        if (!isSuperAdmin) {
+            console.warn('[Spectator Mode] Cannot start spectating: caller is not a Platform Administrator.');
+            return;
+        }
         setSpectatingTenant(tenantInfo);
         setSelectedWorkspaceId(tenantInfo.id);
         setIsStaleSelection(false);

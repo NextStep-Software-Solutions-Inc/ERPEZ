@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents a budget call (proposal/revision) for a specific Fiscal Year.
 /// </summary>
-public class BudgetCall : BaseEntity
+public class BudgetCall : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FiscalYearId { get; set; }

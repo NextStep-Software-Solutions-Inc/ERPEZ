@@ -100,6 +100,8 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
             TotalAmount         = pr.TotalAmount,
             OfficeId            = pr.OfficeId,
             OfficeName          = pr.Office != null ? pr.Office.Name : string.Empty,
+            APRId               = pr.APRId ?? activeItems.FirstOrDefault(i => i.APRItem != null)?.APRItem?.APRId,
+            APRNumber           = pr.APR?.APRNumber ?? activeItems.FirstOrDefault(i => i.APRItem?.APR != null)?.APRItem?.APR?.APRNumber,
             UACSCode            = pr.UACSCodeCombination?.CombinationCode,
             FundSource          = pr.FundSource?.Name,
             ProcurementCategory = pr.ProcurementCategory?.Name,

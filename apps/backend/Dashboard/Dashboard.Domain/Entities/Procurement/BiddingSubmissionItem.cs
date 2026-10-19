@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// (such as a Goods Price Schedule or Infrastructure Bill of Quantities).
 /// Keeps authoritative project item specifications (ABC, description, project quantity) separate from the supplier's offer.
 /// </summary>
-public class BiddingSubmissionItem : BaseEntity
+public class BiddingSubmissionItem : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid BiddingSubmissionId { get; set; }

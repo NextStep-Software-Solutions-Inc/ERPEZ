@@ -13,6 +13,7 @@ public sealed class TenantRequestContext(IHttpContextAccessor? httpContextAccess
 {
     public TenantAccessContext? AccessContext { get; private set; }
     public TenantDatabaseConnectionInfo? ConnectionInfo { get; private set; }
+    public ERPEZ.Shared.Enums.TenancyMode TenancyMode => AccessContext?.TenancyMode ?? ERPEZ.Shared.Enums.TenancyMode.SaaS;
 
     public Guid? TenantId
     {

@@ -41,7 +41,7 @@ export function RoutePermissionGuard({
   if (isSuperAdmin) return <>{children}</>
 
   // Still resolving tenant context or loading permissions — render nothing to avoid flash
-  if (tenantState === 'loading' || isLoading || !tenantId || (status === 'idle' && !isLoaded)) {
+  if (tenantState === 'loading' || isLoading || (status === 'idle' && !isLoaded)) {
     return null
   }
 
