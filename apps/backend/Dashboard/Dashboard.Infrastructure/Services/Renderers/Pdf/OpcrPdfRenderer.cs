@@ -47,8 +47,9 @@ internal sealed class OpcrPdfRenderer : BasePdfRenderer, IDocumentRenderer<OpcrD
                                $"the period {request.PeriodCovered}").FontSize(8);
                     });
 
-                    h.Item().PaddingTop(6).Text(request.CommitmentPersonName).Bold().FontSize(8);
-                    h.Item().Text(request.CommitmentPersonPosition).FontSize(7).Italic();
+                    h.Item().PaddingTop(14).MaxWidth(180).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                        .Text(request.CommitmentPersonName).Bold().FontSize(8);
+                    h.Item().PaddingTop(2).Text(request.CommitmentPersonPosition).FontSize(7).Italic();
                 });
 
                 // ── Content ───────────────────────────────────────────────

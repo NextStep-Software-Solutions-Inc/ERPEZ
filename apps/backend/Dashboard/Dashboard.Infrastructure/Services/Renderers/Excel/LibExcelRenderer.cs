@@ -51,6 +51,15 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
             RenderSectionV(sheet, request, ref currentRow);
         }
 
+        if (request.Signatories is { Count: > 0 })
+        {
+            var sigRow = currentRow + 3;
+            for (var i = 0; i < request.Signatories.Count; i++)
+            {
+                RenderSignatoryBlock(sheet, sigRow, 1 + (i * 4), request.Signatories[i]);
+            }
+        }
+
         sheet.Columns().AdjustToContents();
         using var ms = new MemoryStream();
         workbook.SaveAs(ms);

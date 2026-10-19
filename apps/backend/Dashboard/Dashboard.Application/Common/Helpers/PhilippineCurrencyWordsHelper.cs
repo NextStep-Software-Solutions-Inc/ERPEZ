@@ -295,7 +295,6 @@ public static partial class DocumentSignatoryResolver
 
     public static async Task<ResolvedSignatory?> ResolveSubmitterSignatoryAsync(
         IUnitOfWork? unitOfWork,
-        string entityType,
         Guid entityId,
         Guid? fallbackOfficeId = null,
         CancellationToken cancellationToken = default)
@@ -303,23 +302,35 @@ public static partial class DocumentSignatoryResolver
         if (unitOfWork?.ApprovalEventRepository != null && entityId != Guid.Empty)
         {
             var events = await unitOfWork.ApprovalEventRepository.FindAllAsync(
-                e => e.EntityId == entityId &&
-                     string.Equals(e.EntityType, entityType, StringComparison.OrdinalIgnoreCase),
+                e => e.PPMPId == entityId && !e.IsDeleted,
                 cancellationToken);
 
             var submitEvent = events?
                 .Where(e => string.Equals(e.Action, "Submitted", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(e.Action, "Submit", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(e.Action, "Created", StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(e => e.ActionAt)
+                .OrderByDescending(e => e.Timestamp)
                 .FirstOrDefault()
-                ?? events?.OrderBy(e => e.ActionAt).FirstOrDefault();
+                ?? events?.OrderBy(e => e.Timestamp).FirstOrDefault();
 
-            if (submitEvent?.ActionByUserId != null && submitEvent.ActionByUserId != Guid.Empty)
+            if (submitEvent != null)
             {
-                var resolved = await ResolveUserSignatoryAsync(unitOfWork, submitEvent.ActionByUserId.Value, cancellationToken);
-                if (resolved != null && !string.IsNullOrWhiteSpace(resolved.FullName))
-                    return resolved;
+                if (submitEvent.ActorId != Guid.Empty)
+                {
+                    var resolved = await ResolveUserSignatoryAsync(unitOfWork, submitEvent.ActorId, cancellationToken);
+                    if (resolved != null && !string.IsNullOrWhiteSpace(resolved.FullName))
+                        return resolved;
+                }
+
+                if (!string.IsNullOrWhiteSpace(submitEvent.ActorName))
+                {
+                    return new ResolvedSignatory
+                    {
+                        UserId = submitEvent.ActorId != Guid.Empty ? submitEvent.ActorId : null,
+                        FullName = submitEvent.ActorName.Trim(),
+                        PositionTitle = submitEvent.Role
+                    };
+                }
             }
         }
 
