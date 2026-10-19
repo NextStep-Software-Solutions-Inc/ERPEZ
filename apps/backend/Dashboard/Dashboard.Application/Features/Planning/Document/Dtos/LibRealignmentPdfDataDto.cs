@@ -1,9 +1,15 @@
+using ERPEZ.Application.Common.Interfaces;
+
 namespace ERPEZ.Application.Features.Planning.Document.Dtos;
 
-public class LibRealignmentPdfDataDto
+public class LibRealignmentPdfDataDto : IAgencyLetterheadAware
 {
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+
     // Document Metadata
-    public string DocumentCode { get; set; } = "FM-USTP-FDP-002";
+    public string DocumentCode { get; set; } = "FM-SUC-FDP-002";
     public string RevisionNo { get; set; } = "00";
     public string EffectiveDate { get; set; } = "04.01.22";
     public string FiscalYear { get; set; } = string.Empty;

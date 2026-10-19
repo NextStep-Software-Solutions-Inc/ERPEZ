@@ -1,10 +1,19 @@
+using ERPEZ.Application.Common.Interfaces;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Application.Common.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.Document.Dtos;
 
-public class MarketScopingDataDto
+public class MarketScopingDataDto : IAgencyLetterheadAware
 {
+    public string? ProcuringEntityName
+    {
+        get => ProcuringEntity;
+        set => ProcuringEntity = value ?? string.Empty;
+    }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+
     public string ProcuringEntity { get; set; } = string.Empty;
     public string ImplementingUnit { get; set; } = string.Empty;
     public string RepresentativeNameAndDesignation { get; set; } = string.Empty;

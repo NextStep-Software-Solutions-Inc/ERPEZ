@@ -19,6 +19,148 @@ public abstract class BasePdfRenderer
         return ms.ToArray();
     }
 
+    protected static string CleanEntityName(string? rawName)
+    {
+        if (string.IsNullOrWhiteSpace(rawName)) return "Central Mindanao University";
+        var trimmed = rawName.Trim();
+        if (trimmed.Equals("USTP", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("Agency Name", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("[Agency Name]", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("PROCURING ENTITY", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Contains("Workspace", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Central Mindanao University";
+        }
+        return trimmed;
+    }
+
+    /// <summary>
+    /// Renders standard government agency letterhead with logo on the left (e.g. PO, PR, RFQ, APP, PPMP).
+    /// </summary>
+    protected static void RenderAgencyHeader(
+        ColumnDescriptor col,
+        string? procuringEntityName,
+        string? procuringEntityAddress = null,
+        byte[]? logoBytes = null,
+        string? appendixText = null,
+        string? documentTitle = null,
+        string? documentSubtitle = null,
+        bool showUnderline = true,
+        float titleFontSize = 12.5f)
+    {
+        if (!string.IsNullOrWhiteSpace(appendixText))
+        {
+            col.Item().AlignRight().Text(appendixText).FontSize(8.5f).Italic();
+        }
+
+        var entityName = CleanEntityName(procuringEntityName);
+
+        if (logoBytes != null && logoBytes.Length > 0)
+        {
+            col.Item().Row(r =>
+            {
+                r.ConstantItem(48).Height(48).AlignMiddle().Image(logoBytes).FitArea();
+
+                r.RelativeItem().PaddingLeft(12).AlignMiddle().Column(c =>
+                {
+                    c.Item().Text("Republic of the Philippines").FontSize(8f).FontColor(Colors.Grey.Darken2);
+                    c.Item().Text(entityName).Bold().FontSize(11.5f);
+
+                    if (!string.IsNullOrWhiteSpace(procuringEntityAddress))
+                    {
+                        c.Item().Text(procuringEntityAddress).FontSize(8f);
+                    }
+                });
+            });
+        }
+        else
+        {
+            col.Item().AlignCenter().Text("Republic of the Philippines").FontSize(8f).FontColor(Colors.Grey.Darken2);
+            col.Item().AlignCenter().Text(entityName).Bold().FontSize(11.5f);
+
+            if (!string.IsNullOrWhiteSpace(procuringEntityAddress))
+            {
+                col.Item().AlignCenter().Text(procuringEntityAddress).FontSize(8f);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(documentTitle))
+        {
+            col.Item().PaddingTop(6).AlignCenter().Text(documentTitle).Bold().FontSize(titleFontSize);
+
+            if (!string.IsNullOrWhiteSpace(documentSubtitle))
+            {
+                col.Item().PaddingTop(1).AlignCenter().Text(documentSubtitle).FontSize(8.5f).Italic();
+            }
+
+            if (showUnderline)
+            {
+                col.Item().PaddingTop(2).AlignCenter().MaxWidth(180).LineHorizontal(1.5f).LineColor(Colors.Black);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Renders centered formal agency header with centered logo on top (e.g. NOA, NTP, Contract, BAC Resolution).
+    /// </summary>
+    protected static void RenderCenteredAgencyHeader(
+        ColumnDescriptor col,
+        string? procuringEntityName,
+        string? procuringEntityAddress = null,
+        byte[]? logoBytes = null,
+        string? officeName = null,
+        string? documentTitle = null,
+        string? documentSubtitle = null,
+        float titleFontSize = 13.5f)
+    {
+        if (logoBytes != null && logoBytes.Length > 0)
+        {
+            col.Item().AlignCenter().Height(44).Image(logoBytes).FitArea();
+        }
+
+        var entityName = CleanEntityName(procuringEntityName);
+
+        col.Item().PaddingTop(1).AlignCenter()
+            .Text("Republic of the Philippines")
+            .FontSize(8.5f).FontColor(Colors.Grey.Darken2);
+
+        col.Item().PaddingTop(1).AlignCenter()
+            .Text(entityName)
+            .Bold().FontSize(11f).FontColor(Colors.Grey.Darken4);
+
+        if (!string.IsNullOrWhiteSpace(procuringEntityAddress))
+        {
+            col.Item().PaddingTop(1).AlignCenter()
+                .Text(procuringEntityAddress)
+                .FontSize(8f).FontColor(Colors.Grey.Darken2);
+        }
+
+        if (!string.IsNullOrWhiteSpace(officeName) &&
+            !officeName.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase))
+        {
+            col.Item().PaddingTop(1).AlignCenter()
+                .Text(officeName)
+                .FontSize(8.5f).FontColor(Colors.Grey.Darken2);
+        }
+
+        col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten1);
+
+        if (!string.IsNullOrWhiteSpace(documentTitle))
+        {
+            col.Item().PaddingTop(10).AlignCenter()
+                .Text(documentTitle)
+                .Bold().FontSize(titleFontSize);
+
+            if (!string.IsNullOrWhiteSpace(documentSubtitle))
+            {
+                col.Item().PaddingTop(2).AlignCenter()
+                    .Text(documentSubtitle)
+                    .FontSize(8.5f).Italic().FontColor(Colors.Grey.Darken2);
+            }
+        }
+    }
+
     protected static IContainer TableHeaderCell(IContainer c) =>
         c.Border(0.5f).BorderColor(Colors.Grey.Medium)
         .Background(Colors.Grey.Lighten2)

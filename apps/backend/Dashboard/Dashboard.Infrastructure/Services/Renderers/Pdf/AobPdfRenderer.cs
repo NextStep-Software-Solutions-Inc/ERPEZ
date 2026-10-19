@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -33,13 +33,16 @@ public sealed class AobPdfRenderer : BasePdfRenderer, IDocumentRenderer<AobDataD
                 // ── HEADER ──────────────────────────────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    col.Item().AlignCenter()
-                        .Text("ABSTRACT OF QUOTATION")
-                        .Bold().FontSize(12).LetterSpacing(0.04f);
-
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text($"({request.ModeOfProcurement})")
-                        .Bold().FontSize(9);
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "ABSTRACT OF QUOTATION",
+                        documentSubtitle: $"({request.ModeOfProcurement})",
+                        showUnderline: true,
+                        titleFontSize: 12f);
 
                     col.Item().PaddingTop(10).Column(meta =>
                     {

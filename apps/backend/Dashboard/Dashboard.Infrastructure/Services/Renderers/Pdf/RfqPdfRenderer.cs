@@ -21,7 +21,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
     public Task<byte[]> RenderAsync(RfqDataDto request, CancellationToken cancellationToken = default)
     {
         var phCulture = new CultureInfo("en-PH");
-        var logoBytes = LoadDefaultLogo();
+        var logoBytes = request.LogoBytes ?? LoadDefaultLogo();
 
         var pdf = Document.Create(doc =>
         {
@@ -336,14 +336,16 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
     private static void RenderHeaderLogo(ColumnDescriptor col, byte[]? logoBytes, string procuringEntity, string? address = null)
     {
+        var cleanEntity = CleanEntityName(procuringEntity);
+
         col.Item().Row(r =>
         {
             if (logoBytes != null && logoBytes.Length > 0)
             {
-                r.AutoItem().Height(35).Image(logoBytes);
+                r.ConstantItem(44).Height(44).AlignMiddle().Image(logoBytes).FitArea();
                 r.RelativeItem().PaddingLeft(10).AlignMiddle().Column(c =>
                 {
-                    c.Item().Text(procuringEntity.ToUpper()).Bold().FontSize(10.5f);
+                    c.Item().Text(cleanEntity.ToUpper()).Bold().FontSize(10.5f);
                     if (!string.IsNullOrWhiteSpace(address) && !address.StartsWith("["))
                     {
                         c.Item().Text(address).FontSize(8);
@@ -354,7 +356,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
             {
                 r.RelativeItem().AlignCenter().Column(c =>
                 {
-                    c.Item().Text(procuringEntity.ToUpper()).Bold().FontSize(10.5f);
+                    c.Item().Text(cleanEntity.ToUpper()).Bold().FontSize(10.5f);
                     if (!string.IsNullOrWhiteSpace(address) && !address.Trim().StartsWith("["))
                     {
                         c.Item().Text(address.Trim()).FontSize(8);

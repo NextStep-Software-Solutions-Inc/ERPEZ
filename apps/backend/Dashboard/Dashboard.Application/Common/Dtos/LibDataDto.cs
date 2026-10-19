@@ -1,12 +1,17 @@
-// ERPEZ.Application/Common/Dtos/LibDataDto.cs
+using ERPEZ.Application.Common.Interfaces;
+
 namespace ERPEZ.Application.Common.Dtos;
 
 /// <summary>
 /// Top-level DTO used by the LIB document renderers (PDF and Excel).
 /// Covers all five sections of the Line Item Budget document.
 /// </summary>
-public record LibDataDto
+public record LibDataDto : IAgencyLetterheadAware
 {
+    public string?   ProcuringEntityName { get; set; }
+    public string?   ProcuringEntityAddress { get; set; }
+    public byte[]?   LogoBytes     { get; set; }
+
     public string    LIBNumber     { get; init; } = string.Empty;
     public string    OfficeName    { get; init; } = string.Empty;
     public string    FiscalYear    { get; init; } = string.Empty;

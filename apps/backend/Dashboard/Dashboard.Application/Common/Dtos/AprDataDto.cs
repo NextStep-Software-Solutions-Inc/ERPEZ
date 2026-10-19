@@ -4,11 +4,26 @@ using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Common.Dtos;
 
-public class AprDataDto
+public class AprDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadAware
 {
     public Guid OfficeId { get; set; }
-    public string RequestingAgencyName { get; set; } = "University of Science and Technology of Southern Philippines";
-    public string RequestingAgencyAddress { get; set; } = "Claveria, Misamis Oriental";
+
+    public string? ProcuringEntityName
+    {
+        get => RequestingAgencyName;
+        set => RequestingAgencyName = value ?? string.Empty;
+    }
+
+    public string? ProcuringEntityAddress
+    {
+        get => RequestingAgencyAddress;
+        set => RequestingAgencyAddress = value ?? string.Empty;
+    }
+
+    public byte[]? LogoBytes { get; set; }
+
+    public string RequestingAgencyName { get; set; } = string.Empty;
+    public string RequestingAgencyAddress { get; set; } = string.Empty;
     public string TelNos { get; set; } = string.Empty;
     public string AgencyAccountCode { get; set; } = string.Empty;
     public string AgencyControlNumber { get; set; } = string.Empty;

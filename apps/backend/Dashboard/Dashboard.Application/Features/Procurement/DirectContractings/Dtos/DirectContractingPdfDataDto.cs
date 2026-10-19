@@ -3,9 +3,13 @@ using System.Collections.Generic;
 
 namespace ERPEZ.Application.Features.Procurement.DirectContractings.Dtos;
 
-public class DirectContractingPdfDataDto
+public class DirectContractingPdfDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadAware
 {
     public Guid DirectContractingId { get; set; }
+
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
 
     // Header information
     public string AgencyName { get; set; } = "Republic of the Philippines";

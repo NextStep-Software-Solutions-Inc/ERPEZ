@@ -58,8 +58,12 @@ public class BacResolutionGroupDto
     public List<BacResolutionItemDetailDto> Items { get; set; } = new();
 }
 
-public class BacResolutionDataDto
+public class BacResolutionDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadAware
 {
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+
     public string ResolutionNumber { get; set; } = string.Empty;
     public string ResolutionType { get; set; } = string.Empty;
     public DateTime DateResolved { get; set; }

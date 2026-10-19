@@ -3,6 +3,8 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using MediatR;
 
+using ERPEZ.Application.Common.Interfaces;
+
 namespace ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIBAmendment;
 
 public record GenerateLIBAmendmentDocumentCommand : IRequest<ApiResponse<Guid>>
@@ -12,8 +14,12 @@ public record GenerateLIBAmendmentDocumentCommand : IRequest<ApiResponse<Guid>>
     public string GeneratedBy { get; set; } = string.Empty;
 }
 
-public class LibAmendmentDataDto
+public class LibAmendmentDataDto : IAgencyLetterheadAware
 {    
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+
     public string LIBNumber     { get; set; } = string.Empty;
     public string OfficeName    { get; set; } = string.Empty;    
     public string FiscalYear    { get; set; } = string.Empty;    

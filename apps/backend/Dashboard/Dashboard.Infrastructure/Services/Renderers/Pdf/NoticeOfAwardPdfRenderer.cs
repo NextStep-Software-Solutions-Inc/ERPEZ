@@ -20,7 +20,7 @@ public sealed class NoticeOfAwardPdfRenderer : BasePdfRenderer, IDocumentRendere
         NoticeOfAwardDataDto request,
         CancellationToken cancellationToken = default)
     {
-        var logoBytes = LoadDefaultLogo();
+        var logoBytes = request.LogoBytes ?? LoadDefaultLogo();
 
         var pdf = Document.Create(doc =>
         {
@@ -33,24 +33,12 @@ public sealed class NoticeOfAwardPdfRenderer : BasePdfRenderer, IDocumentRendere
                 // -- 1. Universal Agency Header with Logo ----------------------
                 page.Header().Column(col =>
                 {
-                    if (logoBytes != null && logoBytes.Length > 0)
-                    {
-                        col.Item().AlignCenter().Height(42).Image(logoBytes);
-                    }
-
-                    col.Item().AlignCenter()
-                        .Text("Republic of the Philippines")
-                        .FontSize(9).FontColor(Colors.Grey.Darken2);
-
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text("[Agency Letterhead with Logo]")
-                        .Bold().FontSize(11).FontColor(Colors.Grey.Darken4);
-
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text("OFFICE OF THE HEAD OF THE PROCURING ENTITY")
-                        .FontSize(9).FontColor(Colors.Grey.Darken2);
-
-                    col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten1);
+                    RenderCenteredAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        logoBytes,
+                        officeName: "OFFICE OF THE HEAD OF THE PROCURING ENTITY");
                 });
 
                 // -- 2. Body Content ------------------------------------------

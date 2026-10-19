@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using ERPEZ.Application.Common.Interfaces;
 
 namespace ERPEZ.Application.Features.Procurement.Contracts.Dtos;
 
-public class ContractDataDto
+public class ContractDataDto : IAgencyLetterheadAware
 {
     public Guid Id { get; set; }
     public string ContractNumber { get; set; } = string.Empty;
@@ -12,9 +13,10 @@ public class ContractDataDto
     public string Status { get; set; } = string.Empty;
 
     // Procuring Entity Information
-    public string ProcuringEntityName { get; set; } = "University of Science and Technology of Southern Philippines";
-    public string ProcuringEntityOffice { get; set; } = "Office of the President / University System";
-    public string ProcuringEntityAddress { get; set; } = "C.M. Recto Avenue, Lapasan, Cagayan de Oro City 9000 Philippines";
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityOffice { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
 
     // Supplier Information
     public Guid SupplierId { get; set; }

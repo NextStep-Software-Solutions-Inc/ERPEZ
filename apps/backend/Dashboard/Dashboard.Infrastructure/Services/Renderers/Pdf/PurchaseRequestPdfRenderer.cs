@@ -35,15 +35,15 @@ public sealed class PurchaseRequestPdfRenderer : BasePdfRenderer, IDocumentRende
                 // ── Page Header ────────────────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    col.Item().AlignRight().Text("Appendix 60").FontSize(8).Italic();
-
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text("[Agency Letterhead with Logo]")
-                        .Bold().FontSize(9.5f).Italic();
-
-                    col.Item().PaddingTop(4).PaddingBottom(6).AlignCenter()
-                        .Text("PURCHASE REQUEST")
-                        .Bold().FontSize(12);
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName ?? request.EntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: "Appendix 60",
+                        documentTitle: "PURCHASE REQUEST",
+                        showUnderline: false,
+                        titleFontSize: 12f);
 
                     // ── Metadata Grid ──────────────────────────────────────
                     col.Item().Border(1).BorderColor(Colors.Black).Table(metaTable =>

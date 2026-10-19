@@ -3,8 +3,12 @@ using System.Collections.Generic;
 
 namespace ERPEZ.Application.Common.Dtos;
 
-public class AppDataDto
+public class AppDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadAware
 {
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+
     public string APPNumber { get; set; } = string.Empty;
     public string FiscalYear { get; set; } = string.Empty;
     public string Batch { get; set; } = string.Empty;

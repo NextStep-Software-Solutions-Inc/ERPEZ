@@ -1,9 +1,22 @@
+using System;
+using System.Collections.Generic;
+using ERPEZ.Application.Common.Interfaces;
+
 namespace ERPEZ.Application.Common.Dtos;
 
-public class PurchaseRequestDataDto
+public class PurchaseRequestDataDto : IAgencyLetterheadAware
 {
     public Guid OfficeId { get; set; }
-    public string EntityName { get; set; } = "University of Science and Technology of Southern Philippines";
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+
+    public string EntityName
+    {
+        get => ProcuringEntityName ?? string.Empty;
+        set => ProcuringEntityName = value;
+    }
+
     public string FundCluster { get; set; } = string.Empty;
     public string UacsCode { get; set; } = string.Empty;
     public string OfficeSection { get; set; } = string.Empty;

@@ -1,10 +1,15 @@
 using System;
+using ERPEZ.Application.Common.Interfaces;
 
 namespace ERPEZ.Application.Features.Procurement.NoticeOfAwards.Dtos;
 
-public class NoticeOfAwardDataDto
+public class NoticeOfAwardDataDto : IAgencyLetterheadAware
 {
     public Guid Id { get; set; }
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+
     public string NoaNumber { get; set; } = string.Empty;
     public DateTime? Date { get; set; }
     public DateTime? DateBid { get; set; }

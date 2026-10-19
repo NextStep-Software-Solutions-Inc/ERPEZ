@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using ERPEZ.Application.Common.Interfaces;
 using ERPEZ.Application.Features.Procurement.Contracts.Dtos;
 
 namespace ERPEZ.Application.Features.Procurement.NoticeToProceeds.Dtos;
@@ -8,7 +9,7 @@ namespace ERPEZ.Application.Features.Procurement.NoticeToProceeds.Dtos;
 /// Data DTO passed to NoticeToProceedPdfRenderer for GPPB-compliant document rendering.
 /// Captures frozen snapshot data for issued NTPs or live projected data for drafts.
 /// </summary>
-public class NoticeToProceedDataDto
+public class NoticeToProceedDataDto : IAgencyLetterheadAware
 {
     public Guid Id { get; set; }
     public string NTPNumber { get; set; } = string.Empty;
@@ -22,9 +23,10 @@ public class NoticeToProceedDataDto
     public string Status { get; set; } = string.Empty;
 
     // Procuring Entity Information
-    public string ProcuringEntityName { get; set; } = "University of Science and Technology of Southern Philippines";
-    public string ProcuringEntityOffice { get; set; } = "Office of the President / University System";
-    public string ProcuringEntityAddress { get; set; } = "C.M. Recto Avenue, Lapasan, Cagayan de Oro City 9000 Philippines";
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityOffice { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
 
     // Contractor / Winning Bidder Information
     public Guid SupplierId { get; set; }

@@ -68,28 +68,28 @@ public sealed class LibRealignmentPdfRenderer : BasePdfRenderer, IDocumentRender
 
     private static void RenderHeader(IContainer container, LibRealignmentPdfDataDto request, byte[]? logoBytes)
     {
+        var effectiveLogo = (request.LogoBytes != null && request.LogoBytes.Length > 0)
+            ? request.LogoBytes
+            : logoBytes;
+
         container.Row(row =>
         {
-            // Left: University / Agency Logo (only if logoBytes != null, no hardcoded SVG fallback)
-            if (logoBytes != null && logoBytes.Length > 0)
+            // Left: University / Agency Logo
+            if (effectiveLogo != null && effectiveLogo.Length > 0)
             {
-                row.ConstantItem(50).AlignMiddle().AlignCenter().Height(40).Image(logoBytes);
+                row.ConstantItem(50).AlignMiddle().AlignCenter().Height(40).Image(effectiveLogo).FitArea();
             }
 
-            // Middle: Dynamic Organization Name or Italicized Letterhead Placeholder
+            var entityName = CleanEntityName(request.ProcuringEntityName ?? request.OrganizationName ?? request.AgencyName);
+
+            // Middle: Dynamic Organization Name & Letterhead
             row.RelativeItem().PaddingLeft(6).PaddingRight(6).AlignMiddle().AlignCenter().Column(mid =>
             {
-                if (!string.IsNullOrWhiteSpace(request.OrganizationName))
+                mid.Item().AlignCenter().Text("Republic of the Philippines").FontSize(7.5f).FontColor(Colors.Grey.Darken2);
+                mid.Item().AlignCenter().Text(entityName).Bold().FontSize(9.5f);
+                if (!string.IsNullOrWhiteSpace(request.ProcuringEntityAddress))
                 {
-                    mid.Item().AlignCenter().Text(request.OrganizationName.ToUpperInvariant()).Bold().FontSize(10);
-                }
-                else if (!string.IsNullOrWhiteSpace(request.AgencyName))
-                {
-                    mid.Item().AlignCenter().Text($"[{request.AgencyName} with Logo]").Bold().FontSize(9.5f).Italic();
-                }
-                else
-                {
-                    mid.Item().AlignCenter().Text("[Agency Letterhead with Logo]").Bold().FontSize(9.5f).Italic();
+                    mid.Item().AlignCenter().Text(request.ProcuringEntityAddress).FontSize(7.5f).FontColor(Colors.Grey.Darken2);
                 }
             });
 

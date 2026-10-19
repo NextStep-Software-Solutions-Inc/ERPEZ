@@ -71,30 +71,12 @@ public sealed class ContractPdfRenderer : BasePdfRenderer, IDocumentRenderer<Con
                 // ── 1. Official Letterhead ───────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    if (logoBytes != null && logoBytes.Length > 0)
-                    {
-                        col.Item().AlignCenter().Height(40).Image(logoBytes);
-                    }
-
-                    col.Item().AlignCenter()
-                        .Text("Republic of the Philippines")
-                        .FontSize(8.5f).FontColor(Colors.Grey.Darken2);
-
-                    if (!string.IsNullOrWhiteSpace(entityName))
-                    {
-                        col.Item().PaddingTop(1).AlignCenter()
-                            .Text(entityName)
-                            .Bold().FontSize(10.5f).FontColor(Colors.Grey.Darken4);
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(request.ProcuringEntityOffice))
-                    {
-                        col.Item().PaddingTop(1).AlignCenter()
-                            .Text(request.ProcuringEntityOffice)
-                            .FontSize(8.5f).FontColor(Colors.Grey.Darken2);
-                    }
-
-                    col.Item().PaddingTop(3).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten1);
+                    RenderCenteredAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes ?? logoBytes,
+                        officeName: request.ProcuringEntityOffice);
                 });
 
                 // ── 2. Contract Body ─────────────────────────────────────────

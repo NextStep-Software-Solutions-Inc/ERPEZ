@@ -55,12 +55,37 @@ public sealed class AprPdfRenderer : BasePdfRenderer, IDocumentRenderer<AprDataD
                         metaTable.Cell().RowSpan(2).BorderRight(1).BorderColor(Colors.Black).Padding(3).Column(c =>
                         {
                             c.Item().Text("NAME AND ADDRESS\nOF\nREQUESTING AGENCY").FontSize(6.5f).Bold();
-                            c.Item().PaddingTop(2).Text(string.IsNullOrWhiteSpace(request.RequestingAgencyName) ? "—" : request.RequestingAgencyName).FontSize(7.5f).SemiBold();
-                            if (!string.IsNullOrWhiteSpace(request.RequestingAgencyAddress))
+
+                            var cleanAgency = CleanEntityName(request.RequestingAgencyName);
+
+                            if (request.LogoBytes != null && request.LogoBytes.Length > 0)
                             {
-                                c.Item().Text(request.RequestingAgencyAddress).FontSize(7);
+                                c.Item().PaddingTop(2).Row(r =>
+                                {
+                                    r.ConstantItem(32).Height(32).AlignMiddle().Image(request.LogoBytes).FitArea();
+                                    r.RelativeItem().PaddingLeft(6).AlignMiddle().Column(ac =>
+                                    {
+                                        ac.Item().Text(cleanAgency).FontSize(7.5f).SemiBold();
+                                        if (!string.IsNullOrWhiteSpace(request.RequestingAgencyAddress))
+                                        {
+                                            ac.Item().Text(request.RequestingAgencyAddress).FontSize(7);
+                                        }
+                                    });
+                                });
                             }
-                            c.Item().PaddingTop(4).Text($"TEL. NOS. {request.TelNos}").FontSize(6.5f).Bold();
+                            else
+                            {
+                                c.Item().PaddingTop(2).Text(cleanAgency).FontSize(7.5f).SemiBold();
+                                if (!string.IsNullOrWhiteSpace(request.RequestingAgencyAddress))
+                                {
+                                    c.Item().Text(request.RequestingAgencyAddress).FontSize(7);
+                                }
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(request.TelNos))
+                            {
+                                c.Item().PaddingTop(4).Text($"TEL. NOS. {request.TelNos}").FontSize(6.5f).Bold();
+                            }
                         });
 
                         // Right Cell Top: Agency Acct Code

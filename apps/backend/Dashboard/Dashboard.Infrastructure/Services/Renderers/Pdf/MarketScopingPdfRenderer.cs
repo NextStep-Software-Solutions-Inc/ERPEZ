@@ -26,9 +26,15 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
 
                 page.Header().Column(col =>
                 {
-                    col.Item().AlignCenter().Text("Agency Letterhead with Logo").Bold().FontSize(9.5f);
-                    col.Item().PaddingTop(10).AlignCenter().Text("MARKET SCOPING CHECKLIST").Bold().FontSize(12);
-                    col.Item().PaddingTop(10).PaddingBottom(10).LineHorizontal(1).LineColor(Colors.Blue.Darken2);
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "MARKET SCOPING CHECKLIST",
+                        showUnderline: true,
+                        titleFontSize: 12f);
                 });
 
                 page.Content().Column(col =>
@@ -43,7 +49,7 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
                             c.RelativeColumn(2);
                         });
 
-                        DrawRow(table, "Name of Procuring Entity", request.ProcuringEntity);
+                        DrawRow(table, "Name of Procuring Entity", CleanEntityName(request.ProcuringEntity));
                         DrawRow(table, "End-User/Implementing Unit", request.ImplementingUnit);
                         DrawRow(table, "Name & Designation of Representative", request.RepresentativeNameAndDesignation);
                     });
