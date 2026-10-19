@@ -100,7 +100,7 @@ public sealed class LibRealignmentPdfRenderer : BasePdfRenderer, IDocumentRender
                     .Text("Document Code No.").Bold().FontSize(7).FontColor(Colors.White);
 
                 iso.Item().Padding(2).AlignCenter()
-                    .Text(string.IsNullOrWhiteSpace(request.DocumentCode) ? "FM-USTP-FDP-002" : request.DocumentCode)
+                    .Text(string.IsNullOrWhiteSpace(request.DocumentCode) ? "FM-SUC-FDP-002" : request.DocumentCode)
                     .Bold().FontSize(8);
 
                 iso.Item().Row(r =>
@@ -118,7 +118,7 @@ public sealed class LibRealignmentPdfRenderer : BasePdfRenderer, IDocumentRender
                     r.RelativeItem(1).BorderRight(1).BorderColor(headerNavy).Padding(2).AlignCenter()
                         .Text(string.IsNullOrWhiteSpace(request.RevisionNo) ? "00" : request.RevisionNo).FontSize(8);
                     r.RelativeItem(1.2f).BorderRight(1).BorderColor(headerNavy).Padding(2).AlignCenter()
-                        .Text(string.IsNullOrWhiteSpace(request.EffectiveDate) ? "04.01.22" : request.EffectiveDate).FontSize(8);
+                        .Text(string.IsNullOrWhiteSpace(request.EffectiveDate) ? "—" : request.EffectiveDate).FontSize(8);
                     r.RelativeItem(1).Padding(2).AlignCenter()
                         .Text(t =>
                         {

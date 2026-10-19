@@ -31,17 +31,26 @@ public class GenerateLibRealignmentPdfCommandHandler(
 
         string? organizationName = originalLib.Office?.Organization?.Name
             ?? proposedLib.Office?.Organization?.Name;
+        string? organizationCode = originalLib.Office?.Organization?.Code
+            ?? proposedLib.Office?.Organization?.Code;
 
         if (string.IsNullOrWhiteSpace(organizationName) && unitOfWork.OrganizationRepository != null)
         {
             var topOrg = await unitOfWork.OrganizationRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)
                 ?? await unitOfWork.OrganizationRepository.FindAsync(o => !o.IsDeleted, cancellationToken);
             organizationName = topOrg?.Name;
+            organizationCode ??= topOrg?.Code;
         }
 
         var agencyName = originalLib.Office?.Name ?? proposedLib.Office?.Name;
 
-        var dto = LibRealignmentMapper.MapToLibRealignmentPdfDataDto(amendment, originalLib, proposedLib, organizationName, agencyName);
+        var dto = LibRealignmentMapper.MapToLibRealignmentPdfDataDto(
+            amendment,
+            originalLib,
+            proposedLib,
+            organizationName,
+            agencyName,
+            organizationCode);
 
         var bytes = await rendererService.RenderAsync(dto, DocumentType.LibRealignment, request.Format, cancellationToken);
 

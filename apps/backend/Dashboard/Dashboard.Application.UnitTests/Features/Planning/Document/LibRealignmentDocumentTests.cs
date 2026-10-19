@@ -77,14 +77,47 @@ public class LibRealignmentDocumentTests
         // Act
         var dto = LibRealignmentMapper.MapToLibRealignmentPdfDataDto(amendment, originalLib, proposedLib);
 
-        // Assert
-        dto.DocumentCode.Should().Be("FM-USTP-FDP-002");
+        // Assert: Unapproved amendment with no explicit org defaults to SUC and dash effectivity
+        dto.DocumentCode.Should().Be("FM-SUC-FDP-002");
         dto.RevisionNo.Should().Be("00");
-        dto.EffectiveDate.Should().Be("04.01.22");
+        dto.EffectiveDate.Should().Be("—");
         dto.FiscalYear.Should().Be("2024");
         dto.DeliveryUnit.Should().Be("Innovation and Technology Solutions Division");
         dto.ReasonKey.Should().Be("UnforeseenModification");
         dto.Justification.Should().Be("Booth Rental for the National Innovation Day 2024- NorMinRIPE- May 24, 2024");
+    }
+
+    [Fact]
+    public void Mapper_ShouldGenerateDynamicDocumentCode_BasedOnClientOrganization()
+    {
+        // Arrange
+        var (amendment, originalLib, proposedLib) = CreateSampleRealignmentData();
+
+        // Act & Assert: USTP
+        var dtoUstp = LibRealignmentMapper.MapToLibRealignmentPdfDataDto(
+            amendment, originalLib, proposedLib, organizationCode: "USTP");
+        dtoUstp.DocumentCode.Should().Be("FM-USTP-FDP-002");
+
+        // Act & Assert: Other SUC (e.g. CLSU, MSU)
+        var dtoClsu = LibRealignmentMapper.MapToLibRealignmentPdfDataDto(
+            amendment, originalLib, proposedLib, organizationCode: "CLSU");
+        dtoClsu.DocumentCode.Should().Be("FM-CLSU-FDP-002");
+    }
+
+    [Fact]
+    public void Mapper_ShouldSetDynamicEffectiveDate_WhenApprovedInMonthDateYearFormat()
+    {
+        // Arrange
+        var (amendment, originalLib, proposedLib) = CreateSampleRealignmentData();
+        var approvalTimestamp = new DateTime(2026, 10, 19, 14, 30, 0, DateTimeKind.Utc);
+        amendment.Status = "Approved";
+        amendment.UpdatedAt = approvalTimestamp;
+
+        // Act
+        var dto = LibRealignmentMapper.MapToLibRealignmentPdfDataDto(amendment, originalLib, proposedLib);
+
+        // Assert: Format is month-date-year (MM-dd-yyyy)
+        dto.EffectiveDate.Should().Be("10-19-2026");
     }
 
     [Fact]

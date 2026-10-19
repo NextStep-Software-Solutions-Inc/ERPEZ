@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
 using ERPEZ.Domain.Entities.Planning;
 using LibEntity = ERPEZ.Domain.Entities.Planning.LineItemBudget;
@@ -11,7 +12,8 @@ public static class LibRealignmentMapper
         LibEntity originalLib,
         LibEntity proposedLib,
         string? organizationName = null,
-        string? agencyName = null)
+        string? agencyName = null,
+        string? organizationCode = null)
     {
         var fiscalYear = originalLib.FiscalYearEntity?.Year.ToString()
             ?? proposedLib.FiscalYearEntity?.Year.ToString()
@@ -31,14 +33,53 @@ public static class LibRealignmentMapper
                 ? proposedLib.Office.Name
                 : (!string.IsNullOrWhiteSpace(resolvedAgencyName) ? resolvedAgencyName : "Delivery Unit"));
 
+        var resolvedOrgCode = !string.IsNullOrWhiteSpace(organizationCode)
+            ? organizationCode
+            : (originalLib.Office?.Organization?.Code
+                ?? proposedLib.Office?.Organization?.Code
+                ?? originalLib.Office?.Code
+                ?? proposedLib.Office?.Code);
+
+        // If code is still empty, attempt to extract abbreviation from parentheses in org name (e.g., "State Universities and Colleges (SUCS)")
+        if (string.IsNullOrWhiteSpace(resolvedOrgCode) && !string.IsNullOrWhiteSpace(resolvedOrgName))
+        {
+            var match = Regex.Match(resolvedOrgName, @"\(([^)]+)\)");
+            if (match.Success)
+            {
+                resolvedOrgCode = match.Groups[1].Value.Trim();
+            }
+        }
+
+        var cleanAgencyCode = !string.IsNullOrWhiteSpace(resolvedOrgCode)
+            ? Regex.Replace(resolvedOrgCode.Trim().ToUpperInvariant(), @"[^A-Z0-9]", "")
+            : "SUC";
+
+        if (string.IsNullOrWhiteSpace(cleanAgencyCode))
+        {
+            cleanAgencyCode = "SUC";
+        }
+
+        var documentCode = $"FM-{cleanAgencyCode}-FDP-002";
+
+        string effectiveDate;
+        if (string.Equals(amendment.Status, "Approved", StringComparison.OrdinalIgnoreCase))
+        {
+            var approvalDate = amendment.UpdatedAt ?? amendment.CreatedAt;
+            effectiveDate = approvalDate != default ? approvalDate.ToString("MM-dd-yyyy") : DateTime.UtcNow.ToString("MM-dd-yyyy");
+        }
+        else
+        {
+            effectiveDate = "—";
+        }
+
         var part2 = MapPart2(originalLib, proposedLib);
         var part3 = MapPart3(proposedLib, originalLib);
 
         return new LibRealignmentPdfDataDto
         {
-            DocumentCode = "FM-USTP-FDP-002",
+            DocumentCode = documentCode,
             RevisionNo = "00",
-            EffectiveDate = "04.01.22",
+            EffectiveDate = effectiveDate,
             FiscalYear = fiscalYear,
             OrganizationName = resolvedOrgName,
             AgencyName = resolvedAgencyName,
