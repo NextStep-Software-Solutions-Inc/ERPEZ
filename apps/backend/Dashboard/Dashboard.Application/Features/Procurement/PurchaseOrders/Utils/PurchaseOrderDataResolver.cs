@@ -37,7 +37,9 @@ public static class PurchaseOrderDataResolver
                 : (da?.ConsolidatedPR?.CPRNumber ?? purchaseOrder.SourceDocumentId.ToString());
         }
 
-        // 2. Resolve procuring entity name from database (matching Contract / NTP implementations)
+        // 2. Resolve procuring entity name, address, and logo from Agency letterhead or database fallback
+        var agency = await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
+
         var topOrg = await unitOfWork.OrganizationRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)
             ?? await unitOfWork.OrganizationRepository.FindAsync(o => !o.IsDeleted, cancellationToken);
 
@@ -50,12 +52,22 @@ public static class PurchaseOrderDataResolver
             ?? string.Empty;
 
         // Never use 'SuperAdmin Workspace' or sample 'USTP'
-        string procuringEntityName = !string.IsNullOrWhiteSpace(candidate) &&
+        string fallbackEntityName = !string.IsNullOrWhiteSpace(candidate) &&
                                      !candidate.Equals("USTP", StringComparison.OrdinalIgnoreCase) &&
                                      !candidate.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
                                      !candidate.Contains("Workspace", StringComparison.OrdinalIgnoreCase)
             ? candidate
             : "Agency Name";
+
+        string procuringEntityName = agency != null && !string.IsNullOrWhiteSpace(agency.Name)
+            ? agency.Name.Trim()
+            : fallbackEntityName;
+
+        string? procuringEntityAddress = !string.IsNullOrWhiteSpace(agency?.Address)
+            ? agency.Address.Trim()
+            : null;
+
+        byte[]? logoBytes = agency?.LogoImage;
 
         string procuringEntityOffice = rootOffice != null &&
                                        !string.IsNullOrWhiteSpace(rootOffice.Name) &&
@@ -112,6 +124,8 @@ public static class PurchaseOrderDataResolver
 
             ProcuringEntityName = procuringEntityName,
             ProcuringEntityOffice = procuringEntityOffice,
+            ProcuringEntityAddress = procuringEntityAddress,
+            LogoBytes = logoBytes,
 
             SupplierId = purchaseOrder.SupplierId,
             SupplierName = supplier?.Name ?? "Winning Supplier",

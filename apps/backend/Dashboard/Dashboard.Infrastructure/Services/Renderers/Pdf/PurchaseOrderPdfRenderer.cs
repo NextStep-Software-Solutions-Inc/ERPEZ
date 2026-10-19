@@ -24,9 +24,15 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
         PurchaseOrderDataDto request,
         CancellationToken cancellationToken = default)
     {
+        var pdf = CreateDocument(request);
+        return Task.FromResult(pdf.GeneratePdf());
+    }
+
+    public Document CreateDocument(PurchaseOrderDataDto request)
+    {
         var phCulture = new CultureInfo("en-PH");
 
-        var pdf = Document.Create(doc =>
+        return Document.Create(doc =>
         {
             doc.Page(page =>
             {
@@ -39,8 +45,6 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
                 {
                     col.Item().AlignRight().Text("Appendix 61").FontSize(8.5f).Italic();
 
-                    col.Item().AlignCenter().Text("PURCHASE ORDER").Bold().FontSize(12.5f);
-
                     var entityName = !string.IsNullOrWhiteSpace(request.ProcuringEntityName) &&
                                      !request.ProcuringEntityName.Equals("USTP", StringComparison.OrdinalIgnoreCase) &&
                                      !request.ProcuringEntityName.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
@@ -48,17 +52,40 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
                         ? request.ProcuringEntityName
                         : "Agency Name";
 
-                    col.Item().PaddingTop(1).AlignCenter()
-                        .Text(entityName)
-                        .Bold().FontSize(11.5f);
-
-                    if (!string.IsNullOrWhiteSpace(request.ProcuringEntityOffice) &&
-                        !request.ProcuringEntityOffice.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase))
+                    if (request.LogoBytes != null && request.LogoBytes.Length > 0)
                     {
-                        col.Item().AlignCenter().Text(request.ProcuringEntityOffice).FontSize(8.5f);
+                        col.Item().Row(r =>
+                        {
+                            r.ConstantItem(48).Height(48).AlignMiddle().Image(request.LogoBytes).FitArea();
+
+                            r.RelativeItem().PaddingLeft(12).AlignMiddle().Column(c =>
+                            {
+                                c.Item().Text("Republic of the Philippines").FontSize(8f).FontColor(Colors.Grey.Darken2);
+                                c.Item().Text(entityName).Bold().FontSize(11.5f);
+
+                                if (!string.IsNullOrWhiteSpace(request.ProcuringEntityAddress))
+                                {
+                                    c.Item().Text(request.ProcuringEntityAddress).FontSize(8f);
+                                }
+                            });
+                        });
+
+                        col.Item().PaddingTop(6).AlignCenter().Text("PURCHASE ORDER").Bold().FontSize(12.5f);
+                    }
+                    else
+                    {
+                        col.Item().AlignCenter().Text("Republic of the Philippines").FontSize(8f).FontColor(Colors.Grey.Darken2);
+                        col.Item().AlignCenter().Text(entityName).Bold().FontSize(11.5f);
+
+                        if (!string.IsNullOrWhiteSpace(request.ProcuringEntityAddress))
+                        {
+                            col.Item().AlignCenter().Text(request.ProcuringEntityAddress).FontSize(8f);
+                        }
+
+                        col.Item().PaddingTop(6).AlignCenter().Text("PURCHASE ORDER").Bold().FontSize(12.5f);
                     }
 
-                    col.Item().PaddingTop(3).AlignCenter().MaxWidth(200).LineHorizontal(1.5f).LineColor(Colors.Black);
+                    col.Item().PaddingTop(2).AlignCenter().MaxWidth(180).LineHorizontal(1.5f).LineColor(Colors.Black);
                 });
 
                 // ── Body Content ───────────────────────────────────────────
@@ -286,8 +313,6 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
                 });
             });
         });
-
-        return Task.FromResult(pdf.GeneratePdf());
     }
 
     private static IContainer POHeaderCell(IContainer c) =>

@@ -18,6 +18,8 @@ public class PurchaseOrderDataDto
 
     public string ProcuringEntityName { get; set; } = "Agency Name";
     public string ProcuringEntityOffice { get; set; } = string.Empty;
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
 
     public Guid SupplierId { get; set; }
     public string SupplierName { get; set; } = string.Empty;

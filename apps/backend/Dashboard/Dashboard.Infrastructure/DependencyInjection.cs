@@ -111,6 +111,7 @@ public static class DependencyInjection
         services.AddScoped<IOfficeRepository, OfficeRepository>();
         services.AddScoped<IDeliveryUnitRepository, DeliveryUnitRepository>();
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+        services.AddScoped<IAgencyRepository, AgencyRepository>();
         services.AddScoped<IFundSourceRepository, FundSourceRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
@@ -164,6 +165,7 @@ public static class DependencyInjection
         services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();
         services.AddScoped<IPositionImportService, PositionImportService>();
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
+        services.AddScoped<IAgencyLetterheadService, AgencyLetterheadService>();
         services.AddHostedService<TempFileCleanupService>();
 
         // ── Document Generation ─────────────────────────────────────────────────────
