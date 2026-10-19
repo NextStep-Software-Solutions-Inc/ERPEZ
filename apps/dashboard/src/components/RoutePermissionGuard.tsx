@@ -1,10 +1,11 @@
-﻿/**
+/**
  * RoutePermissionGuard
  * Renders children only when the current user holds the required permission(s).
  * Falls back to an AccessDenied view while loading or when access is denied.
  */
 import React from 'react'
 import { usePermissions } from '@/hooks/usePermissions'
+import { useUnifiedAuth } from '@/auth/UnifiedAuthContext'
 import { ShieldAlert } from 'lucide-react'
 
 interface RoutePermissionGuardProps {
@@ -32,14 +33,22 @@ export function RoutePermissionGuard({
   children,
   message,
 }: RoutePermissionGuardProps) {
-  const { isSuperAdmin, hasPermission, hasAnyPermission, isLoading, isLoaded, isError } =
+  const { isSuperAdmin, hasPermission, hasAnyPermission, isLoading, isLoaded, isError, status } =
     usePermissions()
+  const { tenantState, tenantId } = useUnifiedAuth()
 
   // SuperAdmin bypasses all guards
   if (isSuperAdmin) return <>{children}</>
 
-  // Still loading — render nothing to avoid flash
-  if (isLoading) return null
+  // Still resolving tenant context or loading permissions — render nothing to avoid flash
+  if (tenantState === 'loading' || isLoading || (status === 'idle' && !isLoaded)) {
+    return null
+  }
+
+  // Active workspace cannot be resolved or is unavailable
+  if (tenantState === 'unavailable') {
+    return <AccessDeniedFallback message="No active workspace available. Please select or join a workspace." />
+  }
 
   // Error loading permissions — fail closed
   if (isError || !isLoaded) return <AccessDeniedFallback message="Unable to verify permissions. Please refresh the page." />

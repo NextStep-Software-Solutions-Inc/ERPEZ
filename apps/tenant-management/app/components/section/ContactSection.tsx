@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, Send } from "lucide-react"
+import { Mail, MapPin, Send } from "lucide-react"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 
@@ -40,32 +40,51 @@ export default function ContactSection() {
                         Ready to see ERP EZ in action? Our team is here to help you get started.
                     </p>
                     <ul className="space-y-5 mb-6">
-                        <li className="flex items-center gap-4">
-                            <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
+                        <li className="flex items-start gap-4">
+                            <div className="p-3 bg-blue-100 text-blue-600 rounded-lg shrink-0 mt-0.5">
                                 <Mail className="w-5 h-5" />
                             </div>
-                            <div>
-                                <p className="font-medium">Email Us</p>
-                                <p className="text-sm text-gray-600">ERP@gmail.com</p>
+                            <div className="flex-1">
+                                <p className="font-medium text-gray-900 mb-1.5">Email Us</p>
+                                <div className="space-y-1.5 text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-gray-400 w-16 shrink-0">Connect:</span>
+                                        <a
+                                            href="mailto:connect@nextstep-software.com"
+                                            className="text-gray-700 hover:text-blue-600 font-medium transition-colors break-all sm:break-normal"
+                                        >
+                                            connect@nextstep-software.com
+                                        </a>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-gray-400 w-16 shrink-0">Support:</span>
+                                        <a
+                                            href="mailto:erpez@nextstep-software.com"
+                                            className="text-gray-700 hover:text-blue-600 font-medium transition-colors break-all sm:break-normal"
+                                        >
+                                            erpez@nextstep-software.com
+                                        </a>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-gray-400 w-16 shrink-0">Sales:</span>
+                                        <a
+                                            href="mailto:sales@nextstep-software.com"
+                                            className="text-gray-700 hover:text-blue-600 font-medium transition-colors break-all sm:break-normal"
+                                        >
+                                            sales@nextstep-software.com
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </li>
-                        <li className="flex items-center gap-4">
-                            <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
-                                <Phone className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className="font-medium">Call Us</p>
-                                <p className="text-sm text-gray-600">+63 912 1890 123</p>
-                            </div>
-                        </li>
-                        <li className="flex items-center gap-4">
-                            <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
+                        <li className="flex items-start gap-4">
+                            <div className="p-3 bg-blue-100 text-blue-600 rounded-lg shrink-0">
                                 <MapPin className="w-5 h-5" />
                             </div>
                             <div>
                                 <p className="font-medium">Visit Us</p>
-                                <p className="text-sm text-gray-600">
-                                    Cagayan de Oro City, Philippines 9000
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    Door #5, Cuerquis Apartment San Miguel Street Camaman-an, Cagayan de Oro, Philippines, 9000
                                 </p>
                             </div>
                         </li>

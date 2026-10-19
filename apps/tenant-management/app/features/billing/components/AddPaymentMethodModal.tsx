@@ -24,6 +24,10 @@ interface AddPaymentMethodModalProps {
   hasExistingMethods: boolean;
   onClose: () => void;
   onAdd: (input: CreatePaymentMethodInput) => Promise<void>;
+  isTrial?: boolean;
+  planName?: string;
+  planRateText?: string;
+  trialEndDate?: string;
 }
 
 export const AddPaymentMethodModal: React.FC<AddPaymentMethodModalProps> = ({
@@ -31,6 +35,10 @@ export const AddPaymentMethodModal: React.FC<AddPaymentMethodModalProps> = ({
   hasExistingMethods,
   onClose,
   onAdd,
+  isTrial = false,
+  planName = "Starter",
+  planRateText = "$299/month + applicable tax",
+  trialEndDate,
 }) => {
   const [cardholderName, setCardholderName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -118,7 +126,13 @@ export const AddPaymentMethodModal: React.FC<AddPaymentMethodModalProps> = ({
         cvc: cvc.trim(),
         setAsDefault: !hasExistingMethods || setAsDefault,
       });
-      toast.success("Payment method added successfully");
+      if (isTrial) {
+        toast.success(
+          `Payment method added successfully. Your ${planName} trial remains free${trialEndDate ? ` until ${trialEndDate}` : ""}.`
+        );
+      } else {
+        toast.success("Payment method added successfully");
+      }
       onClose();
       // Reset form
       setCardholderName("");
@@ -127,7 +141,13 @@ export const AddPaymentMethodModal: React.FC<AddPaymentMethodModalProps> = ({
       setExpiryYear("");
       setCvc("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed adding payment method");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : isTrial
+          ? "We couldn't add your payment method. Please try again. No charge was made."
+          : "Failed adding payment method"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -139,23 +159,37 @@ export const AddPaymentMethodModal: React.FC<AddPaymentMethodModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-bold">
             <CreditCard className="h-5 w-5 text-blue-600" />
-            Add Payment Method
+            {isTrial ? "Add a payment method" : "Add Payment Method"}
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500">
-            Add a credit or debit card for subscription billing and one-click invoice settlements.
+            {isTrial
+              ? `Add a payment method to continue with ${planName} after your free trial ends.`
+              : "Add a credit or debit card for subscription billing and one-click invoice settlements."}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Prominent Sandbox / Simulated Gateway Warning */}
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 flex items-start gap-2.5 my-2">
-          <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold">Developer Sandbox / Simulated Mode</p>
-            <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
-              In a production deployment, card entry is tokenized directly via a PCI-DSS certified gateway (e.g. Stripe, Adyen). Do not enter real sensitive payment credentials here. Use the test presets below.
+        {/* Trial Reassurance Banner */}
+        {isTrial ? (
+          <div className="bg-blue-50/80 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 space-y-1 my-2">
+            <p className="font-semibold text-blue-950">Your trial remains free</p>
+            <p className="text-[11px] text-blue-800 leading-relaxed">
+              You won't be charged during your free trial. If you continue with {planName}, you'll be charged{" "}
+              <strong>{planRateText}</strong> after your trial ends{trialEndDate ? ` on ${trialEndDate}` : ""}.
             </p>
+            <p className="text-[11px] text-emerald-700 font-semibold">No charge was made.</p>
           </div>
-        </div>
+        ) : (
+          /* Prominent Sandbox / Simulated Gateway Warning */
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 flex items-start gap-2.5 my-2">
+            <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold">Developer Sandbox / Simulated Mode</p>
+              <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+                In a production deployment, card entry is tokenized directly via a PCI-DSS certified gateway (e.g. Stripe, Adyen). Do not enter real sensitive payment credentials here. Use the test presets below.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Quick Test Card Presets */}
         <div className="space-y-1">

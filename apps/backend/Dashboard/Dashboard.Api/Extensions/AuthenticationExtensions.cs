@@ -1,4 +1,5 @@
 using ERPEZ.Api.Configuration;
+using ERPEZ.Shared.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -17,45 +18,13 @@ public static class AuthenticationExtensions
     /// <summary>
     /// Registers JWT Bearer authentication and Swagger security definitions.
     /// </summary>
-    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddJwtAuthentication(
+        this IServiceCollection services, 
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
-        // Bind JWT settings from configuration
         services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
-        var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>();
-
-        var devSecurityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-            System.Text.Encoding.UTF8.GetBytes(devSigningKey));
-
-        // Configure JWT Bearer Authentication
-        services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            var isRemoteKeycloak = jwtSettings != null 
-                && !string.IsNullOrWhiteSpace(jwtSettings.Authority) 
-                && !jwtSettings.Authority.Contains("your-jwt-issuer.com");
-
-            if (isRemoteKeycloak)
-            {
-                options.Authority = jwtSettings!.Authority;
-                options.Audience = jwtSettings.Audience;
-                options.RequireHttpsMetadata = false;
-            }
-
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-            {
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ValidateLifetime = false,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = devSecurityKey
-            };
-        });
-
-        return services;
+        return services.AddDualIdPAuthentication(configuration, environment);
     }
 
     /// <summary>

@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Market Scoping Parameter - represents parameter evaluation for market scoping.
 /// Hierarchy: MarketScoping → MarketScopingParameter → MarketScopingParameterAttachment
 /// </summary>
-public class MarketScopingParameter : BaseEntity
+public class MarketScopingParameter : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid MarketScopingId { get; set; }

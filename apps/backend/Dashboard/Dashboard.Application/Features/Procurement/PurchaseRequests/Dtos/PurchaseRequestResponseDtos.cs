@@ -14,6 +14,11 @@ public record PurchaseRequestSummaryResponse
     public DateOnly CreatedDate   { get; init; }
     public Guid     OfficeId      { get; init; }
     public string   OfficeName    { get; init; } = string.Empty;
+    public string?  ReturnRemarks { get; init; }
+    public DateTime? ReturnedDate { get; init; }
+    public string?  ReturnedBy    { get; init; }
+    public Guid?    APRId         { get; init; }
+    public string?  APRNumber     { get; init; }
 }
 
 public record PurchaseRequestDetailResponse
@@ -28,9 +33,14 @@ public record PurchaseRequestDetailResponse
     public decimal  TotalAmount         { get; init; }
     public Guid     OfficeId            { get; init; }
     public string   OfficeName          { get; init; } = string.Empty;
+    public Guid?    APRId               { get; init; }
+    public string?  APRNumber           { get; init; }
     public string?  UACSCode            { get; init; }
     public string?  FundSource         { get; init; }
     public string?  ProcurementCategory { get; init; }
+    public string?  ReturnRemarks       { get; init; }
+    public DateTime? ReturnedDate       { get; init; }
+    public string?  ReturnedBy          { get; init; }
     public List<PRItemDetailResponse> Items { get; init; } = [];
     public List<ConsolidatedPRBacResolutionResponse>? BacResolutions { get; init; } = [];
 }

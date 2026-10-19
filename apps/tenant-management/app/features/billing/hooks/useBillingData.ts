@@ -130,7 +130,7 @@ export function useBillingData(
 
   // Derived subscription from authoritative backend data with client overrides
   const baseSub = adaptTenantSubscription(tenant);
-  const targetPlanName = subscriptionOverride.planName || baseSub?.planName || "Enterprise";
+  const targetPlanName = subscriptionOverride.planName || baseSub?.planName || "Starter";
   const targetCycle = subscriptionOverride.billingCycle || baseSub?.billingCycle || "monthly";
 
   // Base monthly cost in cents
@@ -140,9 +140,9 @@ export function useBillingData(
   }
   if (subscriptionOverride.planName) {
     const lower = subscriptionOverride.planName.toLowerCase();
-    if (lower.includes("starter")) defaultMonthlyCents = 9900;
+    if (lower.includes("starter")) defaultMonthlyCents = 29900;
     else if (lower.includes("professional")) defaultMonthlyCents = 29900;
-    else if (lower.includes("enterprise")) defaultMonthlyCents = 29900;
+    else if (lower.includes("enterprise")) defaultMonthlyCents = 49900;
   }
   const monthlyCostCents = subscriptionOverride.amountCents ?? defaultMonthlyCents;
   const computedAmountCents =
@@ -159,6 +159,10 @@ export function useBillingData(
             : baseSub.autoRenew,
         status: subscriptionOverride.status || baseSub.status,
         amountCents: computedAmountCents,
+        isTrial:
+          subscriptionOverride.status === "active" && !baseSub.isTrial
+            ? false
+            : baseSub.isTrial,
       }
     : null;
 

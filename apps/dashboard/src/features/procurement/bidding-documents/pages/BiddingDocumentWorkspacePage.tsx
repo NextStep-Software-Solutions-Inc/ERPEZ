@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { format, parseISO } from 'date-fns'
+import { ExternalLink } from 'lucide-react'
 import { PROCUREMENT_CATEGORY_LABELS } from '../../bidding-schedule/types'
 import { useBiddingSchedule } from '../../bidding-schedule/handlers/hooks'
 import {
@@ -260,7 +261,7 @@ export function BiddingDocumentWorkspacePage({
               <Button asChild variant="outline" className="gap-2">
                 <Link
                   to="/v2/bac-resolutions"
-                  search={{ selectedResolutionId: bacResolution.id }}
+                  search={{ id: bacResolution.id }}
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open BAC Resolution

@@ -52,7 +52,10 @@ public static class MiddlewareExtensions
         // 6.2 Authoritative Tenant Access Gatekeeper (validates invariants & resolves connection info post-authorization)
         app.UseMiddleware<ERPEZ.Shared.Middlewares.TenantAccessValidationMiddleware>();
 
-        // 7. Authorization (after authentication)
+        // 6.3 Keycloak Just-In-Time User Provisioning into Dashboard DB (runs before Authorization so JIT roles are provisioned prior to permission evaluation)
+        app.UseMiddleware<ERPEZ.Infrastructure.Middlewares.KeycloakUserProvisioningMiddleware>();
+
+        // 7. Authorization (after authentication & JIT provisioning)
         app.UseAuthorization();
 
         // 8. Response caching/compression (after auth, before endpoints)

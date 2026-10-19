@@ -12,7 +12,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Captures reputable retail/online merchant info, final cost, transaction date,
 /// and payment/reimbursement payee specifications.
 /// </summary>
-public class DirectPurchaseEntry : BaseEntity
+public class DirectPurchaseEntry : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid DirectAcquisitionId { get; set; }

@@ -11,7 +11,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 ///       The procurement project name and code in an APP item should be copied directly 
 ///       from the corresponding PPMP item.
 /// </summary>
-public class PPMPItem : BaseEntity
+public class PPMPItem : TenantScopedEntity
 {
     public PPMPItem() { }
     

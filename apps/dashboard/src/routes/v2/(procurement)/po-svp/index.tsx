@@ -1,19 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { PurchaseOrdersSvpPage } from '@/features/procurement/purchase-orders/pages'
-import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
-import { PERMISSIONS } from '@/constants/permissions'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/v2/(procurement)/po-svp/')({
-  component: PoSvpRoute,
+  beforeLoad: () => {
+    throw redirect({
+      to: '/v2/purchase-orders',
+      search: { mode: 'svp' },
+    })
+  },
+  component: () => null,
 })
-
-function PoSvpRoute() {
-  return (
-    <RoutePermissionGuard
-      permission={PERMISSIONS.Procurement.Po.Manage}
-      message="You do not have permission to view Purchase Orders (SVP)."
-    >
-      <PurchaseOrdersSvpPage />
-    </RoutePermissionGuard>
-  )
-}

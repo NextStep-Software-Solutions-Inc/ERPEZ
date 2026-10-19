@@ -1278,26 +1278,8 @@ export const menusConfig = {
         icon: ClipBoard,
         child: [
           {
-            title: 'Purchase Orders (All)',
+            title: 'Purchase Orders',
             href: '/v2/purchase-orders',
-            icon: ClipBoard2,
-            permission: PERMISSIONS.Procurement.Po.Manage,
-          },
-          {
-            title: 'PO : SVP',
-            href: '/v2/po-svp',
-            icon: ClipBoard2,
-            permission: PERMISSIONS.Procurement.Po.Manage,
-          },
-          {
-            title: 'PO: PUBLIC BIDDING',
-            href: '/v2/po-public-bidding',
-            icon: ClipBoard2,
-            permission: PERMISSIONS.Procurement.Po.Manage,
-          },
-          {
-            title: 'PO: Direct Acquisition',
-            href: '/v2/po-direct-acquisition',
             icon: ClipBoard2,
             permission: PERMISSIONS.Procurement.Po.Manage,
           },
@@ -1691,26 +1673,8 @@ export const menusConfig = {
         icon: ClipBoard,
         child: [
           {
-            title: 'Purchase Orders (All)',
+            title: 'Purchase Orders',
             href: '/v2/purchase-orders',
-            icon: ClipBoard2,
-            permission: PERMISSIONS.Procurement.Po.Manage,
-          },
-          {
-            title: 'PO : SVP',
-            href: '/v2/po-svp',
-            icon: ClipBoard2,
-            permission: PERMISSIONS.Procurement.Po.Manage,
-          },
-          {
-            title: 'PO: PUBLIC BIDDING',
-            href: '/v2/po-public-bidding',
-            icon: ClipBoard2,
-            permission: PERMISSIONS.Procurement.Po.Manage,
-          },
-          {
-            title: 'PO: Direct Acquisition',
-            href: '/v2/po-direct-acquisition',
             icon: ClipBoard2,
             permission: PERMISSIONS.Procurement.Po.Manage,
           },

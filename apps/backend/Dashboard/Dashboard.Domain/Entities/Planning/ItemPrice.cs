@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Represents the price schedule for a procurement item in a specific fiscal year.
 /// Ensures only one price record exists per ProcurementItem per FiscalYear.
 /// </summary>
-public class ItemPrice : BaseEntity
+public class ItemPrice : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal UnitPrice { get; set; }

@@ -4,7 +4,7 @@ using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class GeneratedDocument : BaseEntity
+public class GeneratedDocument : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public DocumentType DocumentType { get; set; }

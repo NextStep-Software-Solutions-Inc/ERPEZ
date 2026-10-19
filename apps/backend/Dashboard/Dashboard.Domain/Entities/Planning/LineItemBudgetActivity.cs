@@ -11,7 +11,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Note: If an activity is from an OPCR or WFP, the name should be copied from the source.  
 ///       If it's a new, ad-hoc activity, the user must provide a name.
 /// </summary>
-public class LineItemBudgetActivity : BaseEntity
+public class LineItemBudgetActivity : TenantScopedEntity
 {
     public LineItemBudgetActivity() { }
     

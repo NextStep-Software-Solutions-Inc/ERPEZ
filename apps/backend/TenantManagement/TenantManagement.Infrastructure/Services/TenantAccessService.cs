@@ -8,25 +8,38 @@ using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
+using Microsoft.Extensions.Configuration;
+
 namespace ERPEZ.TenantManagement.Infrastructure.Services;
 
 /// <summary>
-/// Authoritative gatekeeper evaluating tenant governance, domain constraints,
-/// license validity, and caller membership before operational database credentials can be accessed.
+/// Authoritative gatekeeper evaluating tenant governance, API host boundaries,
+/// client origin constraints, license validity, and caller membership before operational database credentials can be accessed.
 /// Never materializes or exposes DbConnectionString.
 /// </summary>
 public class TenantAccessService(
     ApplicationDbContext dbContext,
-    ILicenseService licenseService) : ITenantAccessService
+    ILicenseService licenseService,
+    IApiHostValidator apiHostValidator,
+    IClientOriginMatcher clientOriginMatcher,
+    IConfiguration? configuration = null) : ITenantAccessService
 {
     public async Task<TenantAccessResult> EvaluateAccessAsync(
-        ClaimsPrincipal user,
-        Guid candidateTenantId,
-        string requestHost,
+        TenantAccessRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return TenantAccessResult.Fail(
+                "Request was cancelled by client.",
+                "REQUEST_CANCELLED",
+                499);
+        }
+
+        try
+        {
         // 1. Authentication Prerequisite
-        if (user?.Identity?.IsAuthenticated != true)
+        if (request.User?.Identity?.IsAuthenticated != true)
         {
             return TenantAccessResult.Fail(
                 "Authentication credentials missing or invalid.",
@@ -34,8 +47,8 @@ public class TenantAccessService(
                 401);
         }
 
-        var externalIdentityId = user.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? user.FindFirstValue("sub");
+        var externalIdentityId = request.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? request.User.FindFirstValue("sub");
 
         if (string.IsNullOrWhiteSpace(externalIdentityId))
         {
@@ -45,32 +58,81 @@ public class TenantAccessService(
                 401);
         }
 
-        // 2. Server-side Membership Authorization (sub -> TenantMember -> TenantId)
-        var isMember = await dbContext.TenantMembers!
-            .AsNoTracking()
-            .AnyAsync(tm => tm.TenantId == candidateTenantId &&
-                            (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId) &&
-                            tm.Status == Status.Active &&
-                            !tm.IsDeleted, cancellationToken);
-
-        if (!isMember)
+        // 2. API Host Validation: "Which API endpoint was reached?"
+        if (!apiHostValidator.IsAllowed(request.ApiHost))
         {
             return TenantAccessResult.Fail(
-                "Caller is not an active authorized member of this tenant.",
-                "TENANT_MEMBERSHIP_REQUIRED",
+                $"API host '{request.ApiHost}' is not authorized.",
+                "API_HOST_VIOLATION",
                 403);
         }
 
-        // 3. Tenant Existence & Governance (Notice: DbConnectionString is NEVER materialized here)
+        // 3. Server-side Membership Authorization (sub -> TenantMember -> TenantId)
+        var isSuperAdminClaim = request.User.FindFirstValue("is_super_admin")
+            ?? request.User.FindFirstValue("super_admin")
+            ?? request.User.FindFirstValue("is_platform_admin");
+        var roleClaim = request.User.FindFirstValue(ClaimTypes.Role) ?? request.User.FindFirstValue("role");
+        var userEmail = request.User.FindFirstValue(ClaimTypes.Email)
+            ?? request.User.FindFirstValue("email")
+            ?? request.User.FindFirstValue("primary_email_address");
+        var normalizedEmail = userEmail?.Trim().ToLowerInvariant();
+
+        var configuredPlatformEmails = (configuration?["PlatformAdmin:Emails"]
+            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
+            ?? "jeanmaureal@gmail.com,superadmin@erpez.dev")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(e => e.ToLowerInvariant());
+
+        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) && configuredPlatformEmails.Contains(normalizedEmail);
+
+        var isPlatformAdmin = (bool.TryParse(isSuperAdminClaim, out var isSa) && isSa) ||
+            request.User.IsInRole("SuperAdmin") ||
+            request.User.IsInRole("Platform Administrator") ||
+            string.Equals(roleClaim, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(roleClaim, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
+            isPlatformAdminByEmail;
+
+        IdentityProvider? memberProvider = null;
+        if (!isPlatformAdmin)
+        {
+            var member = await dbContext.TenantMembers!
+                .AsNoTracking()
+                .Where(tm => tm.TenantId == request.TenantId &&
+                             (tm.ExternalIdentityId == externalIdentityId || tm.UserId == externalIdentityId))
+                .Select(tm => new { tm.Status, tm.IsDeleted, tm.Provider })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (member == null)
+            {
+                return TenantAccessResult.Fail(
+                    "Caller is not an active authorized member of this tenant.",
+                    "TENANT_MEMBERSHIP_REQUIRED",
+                    403);
+            }
+
+            if (member.Status != Status.Active || member.IsDeleted)
+            {
+                return TenantAccessResult.Fail(
+                    "Caller's tenant membership is inactive or has been revoked.",
+                    "TENANT_MEMBERSHIP_INACTIVE",
+                    403);
+            }
+
+            memberProvider = member.Provider;
+        }
+
+        // 4. Tenant Existence & Governance (Notice: DbConnectionString is NEVER materialized here)
         var tenantInfo = await dbContext.Tenants!
             .AsNoTracking()
-            .Where(t => t.Id == candidateTenantId && !t.IsDeleted)
+            .Where(t => t.Id == request.TenantId && !t.IsDeleted)
             .Select(t => new
             {
                 t.Id,
                 t.Name,
                 t.IsDisabled,
                 t.ProvisioningState,
+                t.TenancyMode,
+                t.AuthProvider,
                 AllowedDomain = t.TenantSetting != null ? t.TenantSetting.AllowedDomain : string.Empty
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -83,8 +145,17 @@ public class TenantAccessService(
                 404);
         }
 
-        // 4. Tenant Disabled Check
-        if (tenantInfo.IsDisabled)
+        // Model A Enforcement: IdentityProvider must match
+        if (!isPlatformAdmin && memberProvider.HasValue && memberProvider.Value != tenantInfo.AuthProvider)
+        {
+            return TenantAccessResult.Fail(
+                "Caller's identity provider does not match the tenant's authentication provider.",
+                "PROVIDER_MISMATCH",
+                403);
+        }
+
+        // 5. Tenant Disabled Check
+        if (tenantInfo.IsDisabled || tenantInfo.ProvisioningState == TenantProvisioningState.Disabled)
         {
             return TenantAccessResult.Fail(
                 "Tenant access has been disabled by administrator.",
@@ -92,7 +163,7 @@ public class TenantAccessService(
                 403);
         }
 
-        // 5. Tenant Provisioning Readiness Check
+        // 6. Tenant Provisioning Readiness Check
         if (tenantInfo.ProvisioningState != TenantProvisioningState.Ready)
         {
             return TenantAccessResult.Fail(
@@ -101,25 +172,53 @@ public class TenantAccessService(
                 503);
         }
 
-        // 6. Host Domain Constraint Check (using DNS label-boundary matcher)
-        if (!HostMatcher.IsHostAllowed(requestHost, tenantInfo.AllowedDomain))
+        // 7. Operational Database Readiness Check (required for On-Premise or if an operational DB record exists)
+        var opDb = await dbContext.TenantOperationalDatabases!
+            .AsNoTracking()
+            .Where(db => db.TenantId == request.TenantId && !db.IsDeleted)
+            .Select(db => new { db.ProvisioningState })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if ((tenantInfo.TenancyMode == TenancyMode.OnPremise && opDb == null) ||
+            (opDb != null && opDb.ProvisioningState != TenantProvisioningState.Ready))
         {
             return TenantAccessResult.Fail(
-                $"Domain constraint violation: Host '{requestHost}' is not authorized for this tenant.",
-                "DOMAIN_VIOLATION",
+                "Tenant operational database is currently being provisioned.",
+                "TENANT_PROVISIONING",
+                503);
+        }
+
+        // 8. Client Origin Validation: "Which web origin initiated this request?"
+        if (request.ClientOrigin == null)
+        {
+            return TenantAccessResult.Fail(
+                "A valid client origin is required for tenant access.",
+                "ORIGIN_REQUIRED",
                 403);
         }
 
-        // 7. License & Expiration Check
+        var allowedDomain = !string.IsNullOrWhiteSpace(tenantInfo.AllowedDomain)
+            ? tenantInfo.AllowedDomain
+            : "localhost";
+
+        if (!clientOriginMatcher.IsAllowed(request.ClientOrigin, allowedDomain))
+        {
+            return TenantAccessResult.Fail(
+                "Client origin is not authorized for this tenant.",
+                "ORIGIN_VIOLATION",
+                403);
+        }
+
+        // 9. License & Expiration Check
         var license = await dbContext.LicenseKeys!
             .AsNoTracking()
-            .Where(lk => lk.TenantId == candidateTenantId && !lk.IsDeleted)
+            .Where(lk => lk.TenantId == request.TenantId && !lk.IsDeleted)
             .OrderByDescending(lk => lk.ExpiresAt)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (license != null)
         {
-            var validation = licenseService.ValidateLicense(license, requestHost);
+            var validation = licenseService.ValidateLicense(license, request.ClientOrigin.Host);
             if (!validation.IsValid)
             {
                 return TenantAccessResult.Fail(
@@ -135,9 +234,46 @@ public class TenantAccessService(
             tenantInfo.Name,
             tenantInfo.ProvisioningState,
             tenantInfo.AllowedDomain,
-            license?.Status.ToString() ?? "Active"
+            license?.Status.ToString() ?? "Active",
+            tenantInfo.TenancyMode
         );
 
         return TenantAccessResult.Success(accessContext);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return TenantAccessResult.Fail(
+                "Request was cancelled by client.",
+                "REQUEST_CANCELLED",
+                499);
+        }
+    }
+
+    /// <summary>
+    /// Deprecated legacy overload. Scheduled for removal under tracking ticket [SEC-DEP-001] in v1.1.0.
+    /// All active callers must use <see cref="EvaluateAccessAsync(TenantAccessRequest, CancellationToken)"/>.
+    /// </summary>
+    [Obsolete("Use EvaluateAccessAsync(TenantAccessRequest, CancellationToken) instead. Scheduled for removal in v1.1.0 under tracking ticket [SEC-DEP-001].")]
+    public Task<TenantAccessResult> EvaluateAccessAsync(
+        ClaimsPrincipal user,
+        Guid candidateTenantId,
+        string requestHost,
+        CancellationToken cancellationToken = default)
+    {
+        Uri? origin = null;
+        if (!string.IsNullOrWhiteSpace(requestHost))
+        {
+            if (requestHost.Contains("://"))
+            {
+                _ = Uri.TryCreate(requestHost, UriKind.Absolute, out origin);
+            }
+            else
+            {
+                _ = Uri.TryCreate($"https://{requestHost}", UriKind.Absolute, out origin);
+            }
+        }
+
+        var request = new TenantAccessRequest(user, candidateTenantId, requestHost, origin);
+        return EvaluateAccessAsync(request, cancellationToken);
     }
 }

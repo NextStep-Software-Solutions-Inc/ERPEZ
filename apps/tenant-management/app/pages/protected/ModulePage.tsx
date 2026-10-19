@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { User, ShoppingCart, NotepadText, PackageOpen, Loader2 } from "lucide-react";
+import { User, ShoppingCart, NotepadText, PackageOpen, Loader2, Clock } from "lucide-react";
 import { Switch } from "~/components/ui/switch";
 import React from "react";
 import { PageContainer } from "~/components/PageContainer";
@@ -10,6 +10,46 @@ import { updateTenantModulesRequest } from "~/features/module/handlers/updateTen
 import { useTenant } from "~/providers/TenantProvider";
 import { initialModules } from "~/data/module/initialModule";
 import { toast } from "sonner";
+
+interface ModuleMeta {
+    title: string;
+    description: string;
+    isComingSoon?: boolean;
+    order: number;
+}
+
+const MODULE_METADATA: Record<string, ModuleMeta> = {
+    ams: {
+        title: "Account Management System",
+        description: "Manages user accounts, organizational hierarchy, roles, and access control across the system.",
+        isComingSoon: false,
+        order: 1,
+    },
+    pbms: {
+        title: "Planning and Budget Management System",
+        description: "Handles strategic planning, annual budget preparation, performance KPIs, and commitment controls.",
+        isComingSoon: false,
+        order: 2,
+    },
+    planning: {
+        title: "Planning and Budget Management System",
+        description: "Handles strategic planning, annual budget preparation, performance KPIs, and commitment controls.",
+        isComingSoon: false,
+        order: 2,
+    },
+    pms: {
+        title: "Procurement Management System",
+        description: "Covers the procurement lifecycle from purchase requests (PR) and RFQ bidding to BAC awards and purchase orders.",
+        isComingSoon: false,
+        order: 3,
+    },
+    sams: {
+        title: "Supply and Asset Management System",
+        description: "Manages inventory, stock monitoring, and issuance of supplies and assets throughout their lifecycle.",
+        isComingSoon: true,
+        order: 4,
+    },
+};
 
 const useAllModules = createQueryHookFromTemplate(getModulesRequest);
 const useTenantDetails = createQueryHookFromTemplate(getTenantRequest);
@@ -31,23 +71,54 @@ export default function ModulePage() {
 
     const updateModulesMutation = useUpdateTenantModules();
 
-    // Available modules from DB or fallback to initialModules
+    // Available modules enriched with curated metadata, ordered deterministically
     const systemModules = React.useMemo(() => {
-        if (modulesResponse?.data && modulesResponse.data.length > 0) {
-            return modulesResponse.data.map(m => ({
-                id: (m.key || m.name || "").toLowerCase(),
-                key: (m.key || m.name || "").toLowerCase(),
-                title: m.name,
-                description: m.description || ""
-            }));
+        const raw = (modulesResponse?.data && modulesResponse.data.length > 0)
+            ? modulesResponse.data.map(m => {
+                const key = (m.key || m.name || "").toLowerCase();
+                const meta = MODULE_METADATA[key];
+                return {
+                    id: key,
+                    key,
+                    title: meta?.title || m.name,
+                    description: meta?.description || m.description || "",
+                    isComingSoon: Boolean(meta?.isComingSoon),
+                    order: meta?.order ?? 99,
+                };
+            })
+            : initialModules.map(m => {
+                const key = m.id.toLowerCase();
+                const meta = MODULE_METADATA[key];
+                return {
+                    id: key,
+                    key,
+                    title: meta?.title || m.title,
+                    description: meta?.description || m.description,
+                    isComingSoon: Boolean(meta?.isComingSoon),
+                    order: meta?.order ?? 99,
+                };
+            });
+
+        // Ensure SAMS is always represented as Coming Soon if not returned by backend
+        const presentKeys = new Set(raw.map(m => m.key));
+        if (!presentKeys.has("sams")) {
+            raw.push({
+                id: "sams",
+                key: "sams",
+                title: MODULE_METADATA.sams.title,
+                description: MODULE_METADATA.sams.description,
+                isComingSoon: true,
+                order: MODULE_METADATA.sams.order,
+            });
         }
-        return initialModules.map(m => ({
-            id: m.id,
-            key: m.id,
-            title: m.title,
-            description: m.description
-        }));
+
+        return raw.sort((a, b) => a.order - b.order);
     }, [modulesResponse]);
+
+    // Operational modules (excluding Coming Soon roadmap modules)
+    const operationalModules = React.useMemo(() => {
+        return systemModules.filter(m => !m.isComingSoon);
+    }, [systemModules]);
 
     // Active module keys for this tenant from backend
     const activeModuleKeys = React.useMemo(() => {
@@ -71,6 +142,11 @@ export default function ModulePage() {
             return;
         }
 
+        if (key === "sams") {
+            toast.info("Supply and Asset Management System (SAMS) is in active development.");
+            return;
+        }
+
         const nextKeys = new Set(localActiveKeys);
         if (checked) {
             nextKeys.add(key);
@@ -84,9 +160,11 @@ export default function ModulePage() {
         if (!activeTenantId) return;
 
         try {
+            // Only submit operational keys to backend
+            const payloadKeys = Array.from(nextKeys).filter(k => k !== "sams");
             await updateModulesMutation.mutateAsync({
                 pathParams: { id: activeTenantId },
-                payload: Array.from(nextKeys)
+                payload: payloadKeys
             });
             await refetchTenant();
         } catch {
@@ -95,7 +173,8 @@ export default function ModulePage() {
         }
     };
 
-    const activeCount = localActiveKeys.size;
+    // Calculate active operational modules (e.g., 3/3)
+    const activeOperationalCount = operationalModules.filter(m => localActiveKeys.has(m.key)).length;
     const isLoading = isLoadingModules || isLoadingTenant;
 
     return (
@@ -107,7 +186,7 @@ export default function ModulePage() {
                     {updateModulesMutation.isPending && <Loader2 className="h-4 w-4 animate-spin text-blue-600" />}
                     <span>Active Modules</span>{" "}
                     <span className="text-blue-600 font-semibold">
-                        {activeCount}/{systemModules.length}
+                        {activeOperationalCount}/{operationalModules.length}
                     </span>
                 </div>
             }>
@@ -131,45 +210,69 @@ export default function ModulePage() {
                 ) : (
                     <div className="grid gap-6 sm:grid-cols-2">
                         {systemModules.map((mod) => {
-                            const isEnabled = localActiveKeys.has(mod.key);
+                            const isEnabled = localActiveKeys.has(mod.key) && !mod.isComingSoon;
+                            const isComingSoon = mod.isComingSoon;
+
                             return (
                                 <Card
                                     key={mod.key}
-                                    className={`relative ${
-                                        !isEnabled
-                                            ? ""
-                                            : "bg-gradient-to-t from-[var(--button-green)]/10 to-[var(--button-blue)]/10"
+                                    className={`relative transition-all duration-200 ${
+                                        isComingSoon
+                                            ? "border-dashed border-slate-300 bg-slate-50/70 hover:bg-slate-50"
+                                            : !isEnabled
+                                            ? "border-slate-200"
+                                            : "border-blue-200/60 bg-gradient-to-t from-[var(--button-green)]/10 to-[var(--button-blue)]/10 shadow-xs"
                                     }`}
                                 >
-                                    <CardHeader className="flex flex-row items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-10 w-10 flex items-center justify-center rounded-md bg-gradient-to-tl from-[var(--button-green)]/20 to-[var(--button-blue)]/20">
-                                                {mod.key === "ams" && <User className="h-6 w-6 text-blue-500" />}
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className={`h-10 w-10 flex items-center justify-center rounded-lg ${
+                                                    isComingSoon
+                                                        ? "bg-amber-100/70 text-amber-700"
+                                                        : "bg-gradient-to-tl from-[var(--button-green)]/20 to-[var(--button-blue)]/20 text-blue-600"
+                                                }`}
+                                            >
+                                                {mod.key === "ams" && <User className="h-5 w-5" />}
                                                 {(mod.key === "pbms" || mod.key === "planning") && (
-                                                    <NotepadText className="h-6 w-6 text-blue-500" />
+                                                    <NotepadText className="h-5 w-5" />
                                                 )}
-                                                {mod.key === "pms" && <ShoppingCart className="h-6 w-6 text-blue-500" />}
-                                                {mod.key === "sams" && <PackageOpen className="h-6 w-6 text-blue-500" />}
+                                                {mod.key === "pms" && <ShoppingCart className="h-5 w-5" />}
+                                                {mod.key === "sams" && <PackageOpen className="h-5 w-5" />}
                                             </div>
 
-                                            <CardTitle className="text-sm font-semibold">
+                                            <CardTitle className="text-sm font-semibold text-slate-900">
                                                 {mod.title}
                                             </CardTitle>
                                         </div>
-                                        <Switch
-                                            checked={isEnabled}
-                                            disabled={mod.key === "ams" || updateModulesMutation.isPending}
-                                            onCheckedChange={(checked) => {
-                                                toggleModule(mod.key, checked);
-                                            }}
-                                            aria-label={mod.key === "ams" ? `${mod.title} (disabled)` : undefined}
-                                            className="data-[state=checked]:bg-blue-700"
-                                        />
+
+                                        {isComingSoon ? (
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/80 shadow-2xs">
+                                                <Clock className="w-3 h-3 text-amber-600" />
+                                                Coming Soon
+                                            </span>
+                                        ) : (
+                                            <Switch
+                                                checked={isEnabled}
+                                                disabled={mod.key === "ams" || updateModulesMutation.isPending}
+                                                onCheckedChange={(checked) => {
+                                                    toggleModule(mod.key, checked);
+                                                }}
+                                                aria-label={mod.key === "ams" ? `${mod.title} (disabled)` : undefined}
+                                                className="data-[state=checked]:bg-blue-700"
+                                            />
+                                        )}
                                     </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm text-muted-foreground">
+                                    <CardContent className="space-y-3 pt-0">
+                                        <p className="text-sm text-muted-foreground leading-relaxed">
                                             {mod.description}
                                         </p>
+                                        {isComingSoon && (
+                                            <div className="flex items-center gap-2 text-xs font-medium text-amber-800 bg-amber-50/80 border border-amber-200/60 rounded-md px-3 py-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                                                <span>In active development · Scheduled for an upcoming release</span>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
                             );

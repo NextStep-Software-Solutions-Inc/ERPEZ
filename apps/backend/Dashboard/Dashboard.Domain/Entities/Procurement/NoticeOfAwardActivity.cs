@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using ERPEZ.Domain.Common;
 using Sieve.Attributes;
 
@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Audit trail activity entry for Notice of Award workflow events.
 /// </summary>
-public class NoticeOfAwardActivity : BaseEntity
+public class NoticeOfAwardActivity : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid NoticeOfAwardId { get; set; }

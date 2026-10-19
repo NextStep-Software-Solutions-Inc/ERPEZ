@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Represents a single level/tier within a RatingScaleTemplate (e.g., 1-5 rating).
 /// Defines the score range and description for each rating value.
 /// </summary>
-public class RatingScaleLevel : BaseEntity
+public class RatingScaleLevel : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid RatingScaleTemplateId { get; set; }

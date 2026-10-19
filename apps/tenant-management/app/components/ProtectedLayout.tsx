@@ -1,9 +1,9 @@
-import { useKeycloak } from '~/providers/KeycloakProvider';
+import { useClerkAuth } from '~/providers/ClerkAuthProvider';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import LoadingSpinner from '~/components/LoadingSpinner';
 
 export default function ProtectedLayout() {
-    const { isAuthenticated, isInitialized, isSuperAdmin } = useKeycloak();
+    const { isAuthenticated, isInitialized, isSuperAdmin } = useClerkAuth();
     const location = useLocation();
 
     if (!isInitialized) {

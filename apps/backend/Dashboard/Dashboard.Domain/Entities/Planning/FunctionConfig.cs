@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// <summary>
 /// Represents SPMS weight boundaries for Strategic, Core Function, and Support functions per Fiscal Year.
 /// </summary>
-public class FunctionConfig : BaseEntity
+public class FunctionConfig : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FiscalYearId { get; set; }

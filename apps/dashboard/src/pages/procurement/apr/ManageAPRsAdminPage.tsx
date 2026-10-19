@@ -149,7 +149,6 @@ export function ManageAPRsAdminPage() {
       setSelectedAPR(null)
       refetch()
     } catch (err: any) {
-      console.error('Failed to approve APR:', err)
       const msg = err?.response?.data?.message || err?.message || 'Failed to approve APR'
       toast.error(msg)
     }
@@ -174,7 +173,6 @@ export function ManageAPRsAdminPage() {
       setSelectedAPR(null)
       refetch()
     } catch (err: any) {
-      console.error('Failed to return APR:', err)
       const msg = err?.response?.data?.message || err?.message || 'Failed to return APR'
       toast.error(msg)
     }

@@ -7,18 +7,17 @@ import {
 } from 'erpez-shared-lib';
 import { toast } from 'sonner';
 import { extractErrorMessage, extractSuccessMessage } from './utils/messages';
+import { getDashboardBackendUrl } from '~/config/env';
 
 const BLACKLISTED_CODES = ['ERR_CANCELED'];
 const WHITELISTED_METHODS = ['post', 'put', 'patch', 'delete'];
 
-export const dashboardApi = createAxiosInstance(
-  import.meta.env.VITE_DASHBOARD_BACKEND_URL || 'http://localhost:5245'
-);
+export const dashboardApi = createAxiosInstance(getDashboardBackendUrl());
 
 dashboardApi.interceptors.request.use(
   (config) => {
     let token: string | null = null;
-    let tenantId = '00000000-0000-0000-0000-000000000001';
+    let tenantId: string | null = null;
 
     if (typeof window !== 'undefined') {
       try {
@@ -26,7 +25,7 @@ dashboardApi.interceptors.request.use(
         if (storedToken && storedToken.startsWith('ey')) {
           token = storedToken;
         }
-        tenantId = localStorage.getItem('erpez_tenant_id') || tenantId;
+        tenantId = localStorage.getItem('erpez_tenant_id');
       } catch {
         // Ignore
       }

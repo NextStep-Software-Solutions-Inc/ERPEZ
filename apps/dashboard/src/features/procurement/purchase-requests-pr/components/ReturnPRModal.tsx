@@ -35,7 +35,7 @@ type ReturnPRFormData = z.infer<typeof returnPRSchema>
 interface ReturnPRModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onReturn: (remarks: string) => void
+  onReturn: (remarks: string) => void | Promise<void>
 }
 
 export function ReturnPRModal({ open, onOpenChange, onReturn }: ReturnPRModalProps) {
@@ -51,7 +51,7 @@ export function ReturnPRModal({ open, onOpenChange, onReturn }: ReturnPRModalPro
   const onSubmit = async (data: ReturnPRFormData) => {
     setIsSubmitting(true)
     try {
-      onReturn(data.remarks)
+      await onReturn(data.remarks)
       form.reset()
       onOpenChange(false)
     } finally {
@@ -61,7 +61,7 @@ export function ReturnPRModal({ open, onOpenChange, onReturn }: ReturnPRModalPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent onCloseAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <AlertCircle className="h-5 w-5" />

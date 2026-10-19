@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Header for a Supplier's Bid/Quotation submission for a specific RFQ.
 /// </summary>
-public class SupplierBid : BaseEntity
+public class SupplierBid : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid RFQId { get; set; }

@@ -11,7 +11,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Notice of Award (NOA) Header.
 /// Represents the formal notice issued to the winning bidder following BAC resolution approval.
 /// </summary>
-public class NoticeOfAward : BaseEntity
+public class NoticeOfAward : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string NOANumber { get; set; } = string.Empty;

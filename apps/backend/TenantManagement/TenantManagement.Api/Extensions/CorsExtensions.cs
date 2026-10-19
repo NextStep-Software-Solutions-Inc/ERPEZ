@@ -18,9 +18,10 @@ public static class CorsExtensions
             options.AddPolicy("development",
                 builder =>
                 {
-                    builder.AllowAnyOrigin()
+                    builder.SetIsOriginAllowed(_ => true)
                            .AllowAnyMethod()
-                           .AllowAnyHeader();
+                           .AllowAnyHeader()
+                           .AllowCredentials();
                 });
 
             options.AddPolicy("production",

@@ -45,12 +45,15 @@ function makePRMutationWithRefresh<TData, TVariables>(
     const mutation = baseHook()
 
     const invalidatePRCaches = () => {
-    void queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         predicate: (query) => {
-        const key = query.queryKey[0]
-        return typeof key === 'string' && key.startsWith('/purchase-requests')
+          const key = query.queryKey[0]
+          return (
+            typeof key === 'string' &&
+            (key.startsWith('/purchase-requests') || key.startsWith('/aprs'))
+          )
         },
-    })
+      })
     }
 
     return {

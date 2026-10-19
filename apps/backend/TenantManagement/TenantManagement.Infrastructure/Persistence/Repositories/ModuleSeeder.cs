@@ -12,31 +12,31 @@ public class ModuleSeeder(IUnitOfWork unitOfWork) : IBaseSeeder
         {
             new()
             {
-                Key = "sams",
-                Name = "Supply and Asset Management System",
-                Description = "Manages inventory, stock monitoring, and issuance of supplies and assets.",
+                Key = "ams",
+                Name = "Account Management System",
+                Description = "Manages user accounts, roles, and access control across the system.",
                 IsActive = true
             },
             new()
             {
                 Key = "pbms",
                 Name = "Planning and Budget Management System",
-                Description = "Handles planning, budget preparation, and scheduling of procurement and related processes.",
+                Description = "Handles strategic planning, annual budget preparation, performance KPIs, and commitment controls.",
                 IsActive = true
             },
             new()
             {
                 Key = "pms",
                 Name = "Procurement Management System",
-                Description = "Covers the full procurement process from requisition to purchase order and delivery.",
+                Description = "Covers the procurement lifecycle from purchase requests (PR) and RFQ bidding to BAC awards and purchase orders.",
                 IsActive = true
             },
             new()
             {
-                Key = "ams",
-                Name = "Account Management System",
-                Description = "Manages user accounts, roles, and access control across the system.",
-                IsActive = true
+                Key = "sams",
+                Name = "Supply and Asset Management System",
+                Description = "Manages inventory, stock monitoring, and issuance of supplies and assets.",
+                IsActive = false
             },
         };
 

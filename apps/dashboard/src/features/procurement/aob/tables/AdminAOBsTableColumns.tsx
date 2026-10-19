@@ -52,7 +52,21 @@ export function getAdminAOBsTableColumns({
     {
       accessorKey: 'rfqNumber',
       header: 'RFQ Reference',
-      cell: ({ row }) => <span className="text-sm">{row.getValue('rfqNumber') || '—'}</span>,
+      cell: ({ row }) => {
+        const val = row.getValue('rfqNumber') as string | undefined
+        const raw = row.original as any
+        const displayValue =
+          val ||
+          raw.rfqNumber ||
+          (Array.isArray(raw.rfqNumbers) && raw.rfqNumbers.length > 0
+            ? raw.rfqNumbers.filter(Boolean).join(', ')
+            : '') ||
+          (Array.isArray(raw.rfqs) && raw.rfqs.length > 0
+            ? raw.rfqs.map((r: any) => r.rfqNumber).filter(Boolean).join(', ')
+            : '') ||
+          '—'
+        return <span className="text-sm">{displayValue}</span>
+      },
     },
     {
       accessorKey: 'awardCriterion',

@@ -12,29 +12,31 @@ flowchart LR
     Dash[Dashboard<br/>React + Vite]
     TenantUi[Tenant Management<br/>React Router + Vite]
     Tail[Dashtail<br/>Next.js application]
-    IdP[Keycloak / JWT issuer]
+    IdP[Clerk / Keycloak JWT issuer]
     DashboardApi[Dashboard API<br/>ASP.NET Core]
     TenantApi[Tenant Management API<br/>ASP.NET Core]
-    Control[(Control-plane PostgreSQL)]
-    TenantDb[(Tenant operational<br/>PostgreSQL database)]
+    Control[(Control-plane PostgreSQL<br/>Tenants, RBAC, Subscriptions)]
+    SharedDb[(SaaS Shared Operational DB<br/>TenantId Row-Level Isolation)]
+    DedicatedDb[(On-Premise Dedicated DB<br/>Physical DB per tenant)]
     Blob[Azure Blob Storage]
     Ext[PS-DBM / PhilGEPS]
     Jobs[Hangfire workers]
 
     User --> Dash & TenantUi & Tail
-    Dash & TenantUi -->|Bearer JWT; tenant header where configured| DashboardApi
-    TenantUi -->|Bearer JWT; tenant header| TenantApi
+    Dash & TenantUi -->|Bearer JWT; untrusted X-Tenant-Id| DashboardApi
+    TenantUi -->|Bearer JWT; untrusted X-Tenant-Id| TenantApi
     Dash & TenantUi --> IdP
-    DashboardApi -->|tenant governance and RBAC queries| Control
+    DashboardApi -->|tenant validation & RBAC against control plane| Control
     TenantApi --> Control
-    DashboardApi -->|resolved connection string| TenantDb
+    DashboardApi -->|If TenancyMode == SaaS| SharedDb
+    DashboardApi -->|If TenancyMode == OnPremise| DedicatedDb
     DashboardApi --> Blob
     DashboardApi --> Ext
     DashboardApi & TenantApi --> Jobs
-    Jobs --> Control & TenantDb & Ext
+    Jobs --> Control & SharedDb & DedicatedDb & Ext
 ```
 
-The Dashboard API also references and registers `TenantManagement.Infrastructure`. Consequently, the ERP API can resolve tenant access and authorization directly against the control-plane database; this is currently an in-process project dependency, not an HTTP call to the Tenant Management API.
+The Dashboard API references and registers `TenantManagement.Infrastructure`. Consequently, the ERP API can resolve tenant access, tenancy mode, and authorization directly against the control-plane database; this is an in-process project dependency, not an HTTP call to the Tenant Management API. Operational data access occurs strictly after tenant access evaluation is complete.
 
 ## 2. Repository and deployable units
 
@@ -107,41 +109,110 @@ The API exposes many resource-oriented controllers. Swagger is available in Deve
 
 ## 4. Multi-tenancy, identity, and authorization
 
-### Tenant routing model
+### 4.1. Hybrid Tenancy Architecture (SaaS & On-Premise)
 
-Tenant Management acts as a control plane. It stores tenant metadata and the information required to authorize a tenant request. The Dashboard API's operational `ApplicationDbContext` gets its connection string from a scoped `ITenantConnectionProvider`.
+ERPEZ supports a **Hybrid Multi-Tenancy Architecture** offering two distinct operational models while maintaining a unified domain codebase:
 
-1. JWT authentication establishes the caller identity.
-2. `TenantResolutionMiddleware` extracts a candidate tenant from JWT claims or the request header and rejects conflicts.
-3. `TenantAccessValidationMiddleware` validates tenant-access invariants and initializes `TenantRequestContext` with authorized tenant and connection information.
-4. `TenantConnectionProvider` returns that scoped connection string to the ERP EF Core context.
-5. If no authorized context exists, the provider fails closed. A default connection is permitted only in Development when `TenantRouting:AllowDevelopmentFallback` is enabled.
+1. **Cloud SaaS Mode (`TenancyMode.SaaS`)**:
+   - **Persistence**: Single shared operational PostgreSQL database (or pooled regional cluster).
+   - **Isolation**: Logical row-level isolation via mandatory `TenantId` on all `TenantScopedEntity` tables, enforced automatically by EF Core runtime Global Query Filters and write-time interceptors.
+   - **Provisioning**: Instant zero-touch workspace onboarding. No physical database DDL is executed on user signup.
+   - **Routing**: `TenantConnectionResolver` routes all SaaS requests to the shared operational database connection string (`OperationalConnection`).
 
-This gives the operational ERP data plane database-per-tenant behavior at request scope, while the tenant-management database remains the central control plane.
+2. **Sovereign On-Premise Mode (`TenancyMode.OnPremise`)**:
+   - **Persistence**: Dedicated physical database per tenant (`erpez_tenant_{tenantId}`).
+   - **Isolation**: Physical database separation via dedicated credentials stored in `TenantOperationalDatabases`.
+   - **Credential Security & Encryption**:
+     - Operational connection strings are encrypted at rest using **authenticated AES-256-GCM** via `AesGcmSecretEncryptionService`.
+     - Payloads are structured as `Base64(Nonce[12] + CipherText + Tag[16])` to prevent ciphertext tampering.
+     - Each record tracks an `EncryptionKeyVersion` integer to enable cryptographic key rotation without database downtime.
+     - In production on-premise deployments, master keys are securely provisioned via enterprise secret management services (e.g., Azure Key Vault, AWS Secrets Manager, HashiCorp Vault, or Kubernetes / Docker secrets) using `ENCRYPTION_MASTER_KEY_V{version}` or `Encryption:Keys:V{version}`.
+     - In non-development environments, the system strictly enforces **fail-closed initialization** via `EncryptionConfigurationValidator.Validate()`; missing master keys abort host startup immediately.
+   - **Provisioning**: Asynchronous provisioning via Hangfire worker (`TenantDatabaseProvisioner`) that creates the physical PostgreSQL database and applies operational migrations.
+   - **Routing & Invalidation**: `CachedTenantConnectionResolver` queries the control-plane database, decrypts credentials using `ISecretEncryptionService`, and caches the resolved connection string in-memory (`IMemoryCache`) for 10 minutes. Caches are immediately invalidated (`InvalidateConnection`) upon tenant deactivation, credential rotation, or tenancy mode changes.
+   - **Defense in Depth**: Even in on-premise dedicated databases, entities still carry `TenantId` and enforce the same query filters and write validations, maintaining architectural symmetry across environments.
 
-### RBAC model
+### 4.2. Request Lifecycle & Authoritative Security Boundary
+
+The client-supplied `X-Tenant-Id` header is treated strictly as an **untrusted tenant selection request**. It never directly dictates database access.
+
+```text
+1. Client sends HTTP request with Bearer JWT and candidate X-Tenant-Id header.
+2. Gateway / Ingress Proxy Validation: Ingress reverse proxies (e.g., NGINX, YARP, Envoy, Traefik) must strip or strictly validate client-supplied headers such as `X-Tenant-Name` to prevent spoofing before requests reach the internal service mesh.
+3. TenantResolutionMiddleware extracts candidate tenant ID and user identity claims.
+4. TenantAccessValidationMiddleware queries the Control Plane database:
+   - Authenticates caller identity and tenant membership.
+   - Validates tenant status (Active, not Disabled).
+   - Resolves tenant TenancyMode (SaaS vs. OnPremise).
+   - Invariant: Control-plane access is permitted during resolution; NO operational database interaction occurs before tenant validation succeeds.
+5. TenantRequestContext is initialized as an authoritative scoped service with verified TenantId, TenancyMode, and permissions.
+6. Display info resolution in `TenantContextController` enforces strict authoritative precedence: operational DB (`Organizations`) first, cryptographically signed JWT claims (`org_name`) second, and untrusted client headers strictly as sanitized fallbacks.
+7. CachedTenantConnectionResolver resolves connection metadata:
+   - If SaaS: Shared operational connection string.
+   - If OnPremise: Dedicated operational connection string from TenantOperationalDatabases (with cache invalidation on tenant deactivation, credential rotation, or mode changes).
+8. Operational ApplicationDbContext is initialized with CurrentTenantId = TenantRequestContext.TenantId.
+```
+
+### 4.3. Data Isolation & Write Enforcement
+
+Operational entities are explicitly partitioned into two hierarchies (see [TENANT_ENTITY_CLASSIFICATION.md](TENANT_ENTITY_CLASSIFICATION.md)):
+- **`TenantScopedEntity : BaseEntity`**: Business transactions, procurement documents, planning records, and office structures belonging to a specific tenant. Requires `TenantId`.
+- **`BaseEntity`**: Global reference data, national standards (CSC Salary Grades, UACS Chart of Accounts), and national catalogs (PS-DBM products/depots). Shared across all tenants without `TenantId`.
+
+**Isolation Mechanisms**:
+- **Reads**: EF Core runtime Global Query Filter `e => e.TenantId == CurrentTenantId` dynamically evaluated per `DbContext` instance.
+- **Writes**: `AuditingInterceptor` enforces strict tenant protection:
+  - `Added`: `TenantId` is **always overwritten** with the authenticated `CurrentTenantId` (ignoring untrusted payloads).
+  - `Modified`: `TenantId` is **strictly immutable**. Any mutation attempt throws a `SecurityException`.
+  - `Deleted`: Soft-deletes and hard-deletes require `entry.Entity.TenantId == CurrentTenantId`.
+- **Query Filter Bypasses**: Ordinary application services are prohibited from using `IgnoreQueryFilters()` on tenant-scoped operational data. Administrative tools or soft-delete lookups requiring filter overrides must explicitly preserve tenant filtering (`.Where(e => e.TenantId == CurrentTenantId)`).
+
+### 4.4. Background Jobs (Hangfire) Tenant Isolation
+
+Background workers operate outside HTTP request pipelines. Tenant context propagation is enforced deterministically:
+- **`ITenantBackgroundScopeActivator` & `ITenantScopeFactory`**: Services can create isolated scopes (`CreateTenantScopeAsync(tenantId)` or `CreateGlobalScopeAsync()`) that resolve connection parameters and initialize `ITenantRequestContext` prior to `ApplicationDbContext` instantiation.
+- **`HangfireTenantJobFilter` (`JobFilterAttribute, IServerFilter`)**: Automatically intercepts Hangfire jobs during `OnPerforming`.
+  - When job arguments include a `Guid tenantId` or `ITenantScopedJob`, the filter activates the tenant's context and connection parameters in the job's service scope.
+  - When no tenant parameter is present (e.g., PS-DBM catalogue sync), the filter activates the global system context, permitting access to global catalogs on the shared database while maintaining strict fail-closed protections.
+- Tenancy must never be derived via unscoped database queries or hardcoded IDs.
+
+### 4.5. RBAC Model
 
 The shared `HasPermission` mechanism uses dynamic authorization policies and `PermissionAuthorizationHandler`.
-
-- The subject comes from the JWT `NameIdentifier` or `sub` claim.
-- A super-admin claim/role can satisfy a requirement globally.
-- Other callers require a resolved tenant plus a permission validated through `IUserAuthorizationService`.
-- Permission checks fail closed when identity or tenant context is missing.
-
-Frontend clients attach Keycloak access tokens; the tenant-management UI additionally sends `X-Tenant-Id`. UI guards improve navigation behavior, but the API permission attributes and middleware are the security boundary.
+- Subject identity comes from the JWT (`NameIdentifier` or `sub`).
+- Global SuperAdmin claims can satisfy platform requirements.
+- Standard users require an active tenant context and permissions validated through `IUserAuthorizationService` against the control plane.
+- In-code static permission registries (`PlatformPermissions`, `TenantPermissions`) prevent dynamic database permission tampering.
 
 ## 5. Data, persistence, and lifecycle
 
-PostgreSQL and EF Core/Npgsql are used by both services. Each service owns an `ApplicationDbContext`, migrations, repositories, and a unit of work.
+PostgreSQL and EF Core/Npgsql are used across both planes:
 
-| Database role | Owner/context | Main contents |
-| --- | --- | --- |
-| Control plane | `TenantManagement.Infrastructure.Persistence.ApplicationDbContext` | Tenant configuration, membership and RBAC catalogue/assignments, subscriptions, licences, billing/payment records, audit log. |
-| Operational tenant plane | `Dashboard.Infrastructure.Persistence.ApplicationDbContext` | ERP planning, procurement, reference/master, financial, workflow, and PS-DBM catalog/sync data for the resolved tenant. |
+| Database role | Owner / Context | Main contents | Tenancy Model |
+| :--- | :--- | :--- | :--- |
+| **Control plane** | `TenantManagement.Infrastructure.Persistence.ApplicationDbContext` | Tenant metadata, memberships, subscriptions, licenses, billing, and `TenantOperationalDatabases` credentials. | Dedicated control DB. Governs identity, mode, and entitlements. |
+| **Operational plane (SaaS)** | `Dashboard.Infrastructure.Persistence.ApplicationDbContext` | ERP planning, procurement, office trees, and budgets for all SaaS tenants. | Single shared database with row-level `TenantId` isolation and composite uniqueness. |
+| **Operational plane (On-Prem)** | `Dashboard.Infrastructure.Persistence.ApplicationDbContext` | ERP operational data for a single sovereign client. | Dedicated physical database (`erpez_tenant_{id}`). |
+| **Global reference data** | `Dashboard.Infrastructure.Persistence.ApplicationDbContext` | PS-DBM product catalogs, UNSPSC codes, UOM, and national UACS chart of accounts. | Stored once in operational plane; globally queryable across all tenants. |
 
-Persistence-wide conventions are supplied by `AuditingInterceptor`: it sets creator/updater timestamps and users, converts soft-deletable deletes to updates, and normalizes unspecified `DateTime` values to UTC. `TenantAuditLog` is specifically enforced as append-only by the control-plane context.
+### 5.1. Existing-Data Migration Strategy
 
-Development startup attempts to migrate and seed both contexts. The Dashboard API also seeds procurement test data on startup. Production migration execution should therefore be treated as an explicit deployment concern rather than assumed from the application startup path.
+For environments with existing operational data, schema changes follow a deterministic, fail-closed multi-stage migration executed inside an atomic PostgreSQL transaction (`BEGIN ... COMMIT` with `ON_ERROR_STOP on`) or dedicated maintenance window:
+1. **Schema Expansion**: Add `TenantId uuid NULL` to all `TenantScopedEntity` tables.
+2. **Deterministic Provenance Backfill**: Backfill `TenantId` using verifiable audit logs or legacy tenant mappings. Defaulting records to an arbitrary tenant is strictly restricted to verified single-tenant legacy deployments. If data provenance cannot be proven, the migration fails closed.
+3. **Integrity Validation**: Script verifies `SELECT COUNT(*) FROM {table} WHERE "TenantId" IS NULL` equals 0 across all tenant-scoped tables. Any non-zero count aborts the transaction immediately with rollback.
+4. **Schema Enforcement**: Alter `TenantId` column to `NOT NULL`.
+5. **Index Migration**: Replace single-column unique constraints with compound unique constraints (e.g., `(TenantId, Code)`, `(TenantId, Name)`).
+6. **Filter Activation**: Enable EF Core Global Query Filters and write-time interceptor enforcement.
+
+> [!IMPORTANT]
+> **Production Database Initialization Routine**:
+> In Development environments, EF Core automatically applies migrations on container boot. In contrast, Production deployment pipelines and database initialization routines intentionally omit runtime auto-migration on container startup to prevent concurrency races across replicas. Instead, production initialization and upgrade routines must execute the strict transactional migration script (`scripts/migrations/production-tenant-backfill-and-migration.sql`) using `run-production-migration.sh` (or `.ps1`) with `ON_ERROR_STOP on`.
+> 
+> Running within an atomic PostgreSQL transaction (`BEGIN ... COMMIT`) guarantees:
+> 1. Large legacy single-tenant datasets across all 136 operational tables are deterministically backfilled to the verified target `TenantId`.
+> 2. Fail-closed assertion queries verify that zero records remain with `NULL` or empty GUIDs before applying `NOT NULL` constraints.
+> 3. If any statement or constraint fails, the entire transaction aborts atomically with `ROLLBACK`, completely eliminating partial state failures, data invisibility, or un-scoped operational records.
 
 ## 6. Cross-cutting runtime services
 
@@ -165,11 +236,12 @@ Important configuration categories are:
 
 - `ConnectionStrings:DefaultConnection` — control-plane connection and the development fallback; Dashboard's tenant provider normally switches to the authorized operational connection per request.
 - `TenantRouting` — governs whether the development fallback is allowed.
+- `Encryption:Keys:V{n}` or `ENCRYPTION_MASTER_KEY_V{n}` — master encryption keys used by `AesGcmSecretEncryptionService` to secure on-premise operational database connection strings at rest. Supports versioned key rotation (`V1`, `V2`, etc.) and integration with enterprise secret managers (Azure Key Vault, AWS Secrets Manager, HashiCorp Vault, Kubernetes secrets). Non-development environments enforce fail-closed startup validation.
 - `JwtSettings` — authority/audience configuration for external identity-provider use.
 - `Cors` — environment-specific frontend origin policy.
 - `AzureBlobStorage` — file container and connection settings.
 
-Secrets must remain outside source control, using user secrets locally and deployment secret injection in hosted environments.
+Secrets must remain outside source control, using user secrets locally and deployment secret injection in hosted environments. Operational database credentials for sovereign on-premise tenants must always be encrypted via `ISecretEncryptionService` prior to persisting to `TenantOperationalDatabases`.
 
 ## 8. Current architecture considerations
 

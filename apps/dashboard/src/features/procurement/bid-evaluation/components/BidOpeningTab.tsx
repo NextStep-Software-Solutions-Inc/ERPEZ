@@ -17,7 +17,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { RecordBidOpeningDialog } from '../dialogs/RecordBidOpeningDialog'
-import { useProjectBiddingSubmissions } from '../hooks/useBidEvaluationApi'
+import { useProjectBidEvaluation, useProjectBiddingSubmissions } from '../hooks/useBidEvaluationApi'
 import type { BiddingSubmissionResponse } from '../types/bidEvaluationApi.types'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -50,6 +50,24 @@ export function BidOpeningTab({
     error,
     refetch,
   } = useProjectBiddingSubmissions(projectId)
+
+  const { data: evaluation } = useProjectBidEvaluation(projectId)
+
+  const isWinnerDeclared =
+    Boolean(evaluation?.awardRecommendation) ||
+    (evaluation?.evaluatedBids ?? []).some(
+      (b) =>
+        b.status === 'Passed_PostQual' ||
+        (b.postQualification && b.postQualification.status === 'Passed' && b.isResponsive)
+    )
+
+  const winningSupplierName =
+    evaluation?.awardRecommendation?.winningSupplierName ||
+    evaluation?.evaluatedBids?.find(
+      (b) =>
+        b.status === 'Passed_PostQual' ||
+        (b.postQualification && b.postQualification.status === 'Passed' && b.isResponsive)
+    )?.supplierName
 
   const [selectedSubmission, setSelectedSubmission] = useState<BiddingSubmissionResponse | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -176,6 +194,20 @@ export function BidOpeningTab({
       </div>
 
       {/* 2. SUBMISSIONS & OPENING TABLE */}
+      {isWinnerDeclared && (
+        <Alert className="border-amber-300 bg-amber-50 text-amber-900 shadow-xs">
+          <Lock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <AlertTitle className="text-xs font-bold flex items-center gap-1.5">
+              Bidding Session Concluded & Locked for Modifications
+            </AlertTitle>
+            <AlertDescription className="text-xs mt-0.5">
+              An award recommendation has already been established for this project{winningSupplierName ? ` (Winning Bidder: ${winningSupplierName})` : ''}. In compliance with Philippine Procurement Law (RA 9184 / RA 12009) and COA audit guidelines, all bid opening records, eligibility determinations, and as-read financial amounts are locked in view-only mode to safeguard audit trail integrity.
+            </AlertDescription>
+          </div>
+        </Alert>
+      )}
+
       <Card className="border border-default-200 shadow-sm bg-white overflow-hidden">
         <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-default-100 bg-default-50/50">
           <div>
@@ -419,12 +451,21 @@ export function BidOpeningTab({
                           </Button>
                           <Button
                             size="sm"
-                            variant={hasOpening ? 'outline' : 'default'}
-                            color={hasOpening ? 'default' : 'primary'}
+                            variant={hasOpening || isWinnerDeclared ? 'outline' : 'default'}
+                            color={hasOpening || isWinnerDeclared ? 'default' : 'primary'}
                             onClick={() => handleOpenDialog(sub)}
-                            className="h-8 text-xs font-semibold"
+                            className="h-8 text-xs font-semibold gap-1"
                           >
-                            {hasOpening ? 'Edit Record' : 'Record Opening'}
+                            {isWinnerDeclared ? (
+                              <>
+                                <Lock className="h-3 w-3 text-muted-foreground" />
+                                View Record
+                              </>
+                            ) : hasOpening ? (
+                              'Edit Record'
+                            ) : (
+                              'Record Opening'
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -517,6 +558,7 @@ export function BidOpeningTab({
         projectId={projectId}
         submission={selectedSubmission}
         biddingActivityScheduleId={biddingActivityScheduleId}
+        isReadOnly={isWinnerDeclared}
       />
     </div>
   )

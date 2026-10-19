@@ -335,6 +335,8 @@ export function NoticeOfAwardDetailsPage({
           onOpenChange={setReturnOpen}
           noaId={noticeOfAward.id}
           noaNumber={noticeOfAward.noaNumber}
+          supplierName={noticeOfAward.supplierName}
+          totalAmount={noticeOfAward.totalAmount}
           onReturn={async (payload) => {
             setIsMutating(true)
             try {
@@ -363,6 +365,8 @@ export function NoticeOfAwardDetailsPage({
           onOpenChange={setApproveOpen}
           noaId={noticeOfAward.id}
           noaNumber={noticeOfAward.noaNumber}
+          supplierName={noticeOfAward.supplierName}
+          totalAmount={noticeOfAward.totalAmount}
           onApprove={async (payload) => {
             setIsMutating(true)
             try {

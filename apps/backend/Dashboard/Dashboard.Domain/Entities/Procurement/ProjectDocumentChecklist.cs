@@ -2,7 +2,7 @@ using ERPEZ.Domain.Common;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
-public class ProjectDocumentChecklist : BaseEntity
+public class ProjectDocumentChecklist : TenantScopedEntity
 {
     public Guid ProcurementProjectId { get; set; }
 

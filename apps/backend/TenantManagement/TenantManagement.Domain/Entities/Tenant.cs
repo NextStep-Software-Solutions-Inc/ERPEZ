@@ -14,6 +14,16 @@ public class Tenant : BaseEntity
     public bool IsDisabled { get; set; } = false;
     [Sieve(CanFilter = true, CanSort = true)]
     public ERPEZ.Shared.Enums.TenantProvisioningState ProvisioningState { get; set; } = ERPEZ.Shared.Enums.TenantProvisioningState.Ready;
+    [Sieve(CanFilter = true, CanSort = true)]
+    public ERPEZ.Shared.Enums.TenancyMode TenancyMode { get; set; } = ERPEZ.Shared.Enums.TenancyMode.SaaS;
+    [Sieve(CanFilter = true, CanSort = true)]
+    public ERPEZ.Shared.Enums.IdentityProvider AuthProvider { get; set; } = ERPEZ.Shared.Enums.IdentityProvider.Keycloak;
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ExternalOrgId { get; set; }
+    public DateTime? LastSuccessfulWebhookProcessingAtUtc { get; set; }
+    public DateTime? LastFullReconciliationAtUtc { get; set; }
+    public ERPEZ.Shared.Enums.MembershipProjectionStatus MembershipProjectionStatus { get; set; } = ERPEZ.Shared.Enums.MembershipProjectionStatus.Healthy;
+    public string? LastProcessedEventId { get; set; }
     public virtual List<Module> Modules { get; set; } = [];
     public virtual TenantSetting TenantSetting { get; set; } = null!;
     public virtual List<TenantSubscription> TenantSubscriptions { get; set; } = [];
@@ -21,4 +31,5 @@ public class Tenant : BaseEntity
     public virtual List<LicenseKey> LicenseKeys { get; set; } = [];
     public virtual List<TenantInvoice> TenantInvoices { get; set; } = [];
     public virtual List<TenantPaymentMethod> TenantPaymentMethods { get; set; } = [];
+    public virtual TenantOperationalDatabase? OperationalDatabase { get; set; }
 }

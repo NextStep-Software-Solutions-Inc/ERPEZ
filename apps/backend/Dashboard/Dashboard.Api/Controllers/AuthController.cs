@@ -6,7 +6,7 @@ using System.Text;
 using ERPEZ.Api.Extensions;
 using ERPEZ.Application.Features.Auth.Queries.GetCurrentUserPermissions;
 using ERPEZ.Shared.Common;
-using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
+using ERPEZ.Api.Configuration;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -43,13 +43,13 @@ public class AuthController(ISender mediator, IWebHostEnvironment env) : Control
             return NotFound();
         }
 
-        var users = DevTenantAndMemberSeeder.DevPersonas.Select(p => new
+        var users = AmsDevPersonas.DevPersonas.Select(p => new
         {
             p.UserId,
             p.ExternalIdentityId,
             p.DisplayName,
             p.Email,
-            TenantId = DevTenantAndMemberSeeder.DevTenantId,
+            TenantId = AmsDevPersonas.DevTenantId,
             Roles = p.RoleNames,
             IsSuperAdmin = p.UserId == "dev_superadmin"
         });
@@ -72,12 +72,12 @@ public class AuthController(ISender mediator, IWebHostEnvironment env) : Control
         }
 
         var username = request?.Username ?? "dev_planner";
-        var tenantId = request?.TenantId ?? DevTenantAndMemberSeeder.DevTenantId;
+        var tenantId = request?.TenantId ?? AmsDevPersonas.DevTenantId;
 
-        var persona = DevTenantAndMemberSeeder.DevPersonas.FirstOrDefault(p =>
+        var persona = AmsDevPersonas.DevPersonas.FirstOrDefault(p =>
             p.UserId.Equals(username, StringComparison.OrdinalIgnoreCase) ||
             p.ExternalIdentityId.Equals(username, StringComparison.OrdinalIgnoreCase))
-            ?? DevTenantAndMemberSeeder.DevPersonas.First(p => p.UserId == "dev_planner");
+            ?? AmsDevPersonas.DevPersonas.First(p => p.UserId == "dev_planner");
 
         var isSuperAdmin = persona.UserId == "dev_superadmin";
 

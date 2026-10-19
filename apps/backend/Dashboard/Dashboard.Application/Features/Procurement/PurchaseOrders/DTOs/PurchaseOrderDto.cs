@@ -14,6 +14,8 @@ public class PurchaseOrderDto
     public string SourceDocumentNumber { get; set; } = string.Empty;
     public Guid SupplierId { get; set; }
     public string SupplierName { get; set; } = string.Empty;
+    public string? SupplierAddress { get; set; }
+    public string? SupplierTin { get; set; }
     public string? Description { get; set; }
     public DateOnly Date { get; set; }
     public string? PlaceOfDelivery { get; set; }

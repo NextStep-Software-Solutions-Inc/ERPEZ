@@ -17,9 +17,11 @@ import { getAssignableRolesRequest } from '~/features/tenant-member/handlers/get
 import { updateTenantMemberRolesRequest } from '~/features/tenant-member/handlers/updateTenantMemberRolesRequest';
 import { toggleTenantMemberStatusRequest } from '~/features/tenant-member/handlers/toggleTenantMemberStatusRequest';
 import { revokeTenantMemberInvitationRequest } from '~/features/tenant-member/handlers/revokeTenantMemberInvitationRequest';
+import { resendTenantMemberInvitationRequest } from '~/features/tenant-member/handlers/resendTenantMemberInvitationRequest';
 import { deleteTenantMemberRequest } from '~/features/tenant-member/handlers/deleteTenantMemberRequest';
 import { useTenant } from '~/providers/TenantProvider';
-import { useKeycloak } from '~/providers/KeycloakProvider';
+import { useClerkAuth } from '~/providers/ClerkAuthProvider';
+import { usePermissions } from '~/hooks/usePermissions';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
@@ -35,6 +37,7 @@ import {
 } from '~/components/ui/dialog';
 import { UserPlus, Loader2, Copy, Check, Users, ArrowUpRight, AlertCircle, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { RolesManagementView } from '~/components/features/roles/RolesManagementView';
 
 const useTenantMembers = createQueryHookFromTemplate(getTenantMembersRequest);
 const useAssignableRoles = createQueryHookFromTemplate(getAssignableRolesRequest);
@@ -42,12 +45,17 @@ const useCreateMember = createMutationHookFromTemplate(createTenantMemberRequest
 const useUpdateRoles = createMutationHookFromTemplate(updateTenantMemberRolesRequest);
 const useToggleStatus = createMutationHookFromTemplate(toggleTenantMemberStatusRequest);
 const useRevokeInvitation = createMutationHookFromTemplate(revokeTenantMemberInvitationRequest);
+const useResendInvitation = createMutationHookFromTemplate(resendTenantMemberInvitationRequest);
 const useDeleteMember = createMutationHookFromTemplate(deleteTenantMemberRequest);
 
 function TenantMemberPage() {
     const navigate = useNavigate();
     const { tenant } = useTenant();
-    const { user } = useKeycloak();
+    const { user } = useClerkAuth();
+    const { hasPermission } = usePermissions();
+    const canManageMembers = hasPermission('tenant.members.manage');
+
+    const [activeTab, setActiveTab] = useState<'members' | 'roles'>('members');
 
     // Invite Modal State
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -84,6 +92,7 @@ function TenantMemberPage() {
     const updateRolesMutation = useUpdateRoles();
     const toggleStatusMutation = useToggleStatus();
     const revokeInvitationMutation = useRevokeInvitation();
+    const resendInvitationMutation = useResendInvitation();
     const deleteMemberMutation = useDeleteMember();
 
     const data: TenantMember[] = React.useMemo(() => {
@@ -96,14 +105,37 @@ function TenantMemberPage() {
             email: m.email || '',
             userId: m.userId,
             externalIdentityId: m.externalIdentityId,
-            role: m.role || (m.roles && m.roles[0]) || 'End User',
-            roles: m.roles && m.roles.length > 0 ? m.roles : (m.role ? [m.role] : ['End User']),
+            role: m.role || (m.roles && m.roles[0]) || 'Tenant Member',
+            roles: m.roles && m.roles.length > 0 ? m.roles : (m.role ? [m.role] : ['Tenant Member']),
             roleIds: m.roleIds || [],
             status: m.status || 'Active',
             concurrencyStamp: m.concurrencyStamp || '',
             invitationExpiresAtUtc: m.invitationExpiresAtUtc,
         }));
     }, [membersResponse]);
+
+    // Governance Admins vs Operational Users separation
+    const [viewMode, setViewMode] = useState<'admins' | 'all'>('admins');
+
+    const isGovernanceAdmin = (m: TenantMember) => {
+        const adminRoleKeywords = ['administrator', 'auditor', 'billing', 'admin'];
+        const roles = (m.roles || [m.role]).map((r) => (r || '').toLowerCase());
+        return roles.some((r) => adminRoleKeywords.some((kw) => r.includes(kw)));
+    };
+
+    const adminMembers = React.useMemo(() => data.filter(isGovernanceAdmin), [data]);
+    const operationalCount = data.length - adminMembers.length;
+
+    const displayMembers = React.useMemo(() => {
+        return viewMode === 'admins' ? adminMembers : data;
+    }, [viewMode, adminMembers, data]);
+
+    const governanceAssignableRoles = React.useMemo(() => {
+        return assignableRoles.filter((r: any) => {
+            const lower = (r.name || '').toLowerCase();
+            return !lower.includes('planning') && !lower.includes('procurement') && !lower.includes('viewer');
+        });
+    }, [assignableRoles]);
 
     // Seat capacity calculations based on active subscription
     // Starter: 10 seats, Professional: 50 seats, Enterprise: Unlimited
@@ -217,6 +249,25 @@ function TenantMemberPage() {
         }
     };
 
+    const handleResendInvitation = async (member: TenantMember) => {
+        try {
+            const res = await resendInvitationMutation.mutateAsync({
+                pathParams: { id: member.id },
+            });
+            toast.success(`Invitation resent to ${member.email}`);
+            if (res?.data?.invitationToken) {
+                setInvitationResult({
+                    email: res.data.email,
+                    token: res.data.invitationToken,
+                    expiresAt: res.data.invitationExpiresAtUtc,
+                });
+            }
+            await refetch();
+        } catch {
+            // Handled by interceptor
+        }
+    };
+
     const handleConfirmDelete = async (memberId: string) => {
         try {
             await deleteMemberMutation.mutateAsync({
@@ -248,11 +299,15 @@ function TenantMemberPage() {
             onEditRoles: (member) => setEditingMember(member),
             onToggleStatus: handleToggleStatus,
             onRevokeInvitation: handleRevokeInvitation,
+            onResendInvitation: handleResendInvitation,
             onDelete: (member) => setDeletingMember(member),
             currentUserId: user?.id,
             currentUserEmail: user?.email,
+            canManage: canManageMembers,
         });
-    }, [user?.id, user?.email]);
+    }, [user?.id, user?.email, canManageMembers]);
+
+    const [hasCopiedLink, setHasCopiedLink] = useState(false);
 
     const copyTokenToClipboard = () => {
         if (!invitationResult?.token) return;
@@ -262,23 +317,65 @@ function TenantMemberPage() {
         setTimeout(() => setHasCopiedToken(false), 2000);
     };
 
+    const copyLinkToClipboard = () => {
+        if (!invitationResult?.token) return;
+        const link = `${window.location.origin}/accept-invitation?token=${encodeURIComponent(invitationResult.token)}`;
+        navigator.clipboard.writeText(link);
+        setHasCopiedLink(true);
+        toast.success('Invitation link copied to clipboard.');
+        setTimeout(() => setHasCopiedLink(false), 2000);
+    };
+
     return (
         <PageContainer
             title="Members"
             description={`Manage members of ${tenant?.name || 'this workspace'}, assign workspace roles, and govern access permissions.`}
             actions={
-                <Button
-                    onClick={handleOpenInvite}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                >
-                    <UserPlus className="h-4 w-4" />
-                    Invite Member
-                </Button>
+                canManageMembers ? (
+                    <Button
+                        onClick={handleOpenInvite}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                    >
+                        <UserPlus className="h-4 w-4" />
+                        Invite Member
+                    </Button>
+                ) : null
             }
         >
             <div className="space-y-6">
-                {/* Plan Seat Usage Indicator Banner */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('members')}
+                        className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+                            activeTab === 'members'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                    >
+                        <Users className="w-3.5 h-3.5" />
+                        Workspace Members ({data.length})
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('roles')}
+                        className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+                            activeTab === 'roles'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                    >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        Roles & Permissions ({assignableRoles.length})
+                    </button>
+                </div>
+
+                {activeTab === 'roles' ? (
+                    <RolesManagementView />
+                ) : (
+                    <>
+                        {/* Plan Seat Usage Indicator Banner */}
+                        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-blue-600" />
@@ -307,6 +404,18 @@ function TenantMemberPage() {
                                 </>
                             )}
                         </p>
+                        <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 font-medium border border-blue-100">
+                                <ShieldCheck className="w-3 h-3 text-blue-600" />
+                                {adminMembers.length} Tenant {adminMembers.length === 1 ? 'Administrator' : 'Administrators'}
+                            </span>
+                            {operationalCount > 0 && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium border border-slate-200">
+                                    <Users className="w-3 h-3 text-slate-600" />
+                                    {operationalCount} Operational Workspace {operationalCount === 1 ? 'User' : 'Users'} (managed in ERPEZ)
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {seatCapacity !== Infinity ? (
@@ -353,13 +462,49 @@ function TenantMemberPage() {
                     )}
                 </div>
 
+                {/* Sub-view Filter: Admins vs All */}
+                <div className="flex items-center justify-between gap-3">
+                    <div className="inline-flex items-center rounded-lg bg-slate-100 p-1 text-xs">
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('admins')}
+                            className={`px-3 py-1 rounded-md transition-all ${
+                                viewMode === 'admins'
+                                    ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                                    : 'text-slate-600 hover:text-slate-900 font-medium'
+                            }`}
+                        >
+                            Tenant Administrators ({adminMembers.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('all')}
+                            className={`px-3 py-1 rounded-md transition-all ${
+                                viewMode === 'all'
+                                    ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                                    : 'text-slate-600 hover:text-slate-900 font-medium'
+                            }`}
+                        >
+                            All Workspace Users ({data.length})
+                        </button>
+                    </div>
+
+                    {operationalCount > 0 && viewMode === 'admins' && (
+                        <p className="text-xs text-muted-foreground hidden sm:block">
+                            Showing administrative users. {operationalCount} operational {operationalCount === 1 ? 'member' : 'members'} managed in ERPEZ Dashboard.
+                        </p>
+                    )}
+                </div>
+
                 {/* Table Component */}
                 <TemplateTable
                     columns={columns}
-                    data={data}
+                    data={displayMembers}
                     readonly
                     toolbar={(table) => <Toolbar table={table} />}
                 />
+                    </>
+                )}
             </div>
 
             {/* Invite Member Dialog */}
@@ -367,12 +512,25 @@ function TenantMemberPage() {
                 <DialogContent className="sm:max-w-lg">
                     <form onSubmit={handleInviteMember}>
                         <DialogHeader>
-                            <DialogTitle className="text-lg font-bold">Invite Tenant Member</DialogTitle>
+                            <DialogTitle className="text-lg font-bold">Invite Tenant Administrator</DialogTitle>
                             <DialogDescription className="text-xs">
-                                Send a secure invitation link to grant tenant access with assigned roles.
+                                Send a secure invitation link to grant tenant account administration access.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4 py-4 text-xs">
+
+                        {/* Control Plane Separation Notice */}
+                        <div className="p-3 my-2 bg-blue-50/70 border border-blue-100 rounded-lg text-xs text-blue-900 space-y-1">
+                            <p className="font-semibold flex items-center gap-1.5 text-blue-950">
+                                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                                Governance Role Scope
+                            </p>
+                            <p className="text-[11px] leading-relaxed text-blue-800">
+                                This invitation grants administrative privileges for this Tenant Management Portal (billing, licenses, settings).
+                                To invite operational staff and assign operational roles (such as Planning Officer, Procurement Officer, or Employee / Viewer), manage users directly within the <strong>ERPEZ Workspace Dashboard</strong> under <em>Organization &gt; Operational Roles</em>.
+                            </p>
+                        </div>
+
+                        <div className="space-y-4 py-2 text-xs">
                             <div className="space-y-1.5">
                                 <Label htmlFor="email" className="text-xs text-slate-700">
                                     Email Address *
@@ -381,7 +539,7 @@ function TenantMemberPage() {
                                     id="email"
                                     type="email"
                                     required
-                                    placeholder="colleague@organization.gov.ph"
+                                    placeholder="administrator@organization.gov.ph"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="text-xs"
@@ -415,9 +573,9 @@ function TenantMemberPage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-700">Assignable Roles</Label>
+                                <Label className="text-xs text-slate-700">Assignable Governance Roles</Label>
                                 <div className="max-h-48 overflow-y-auto space-y-1.5 border rounded-lg p-2.5 bg-slate-50/50">
-                                    {assignableRoles.map((role) => (
+                                    {governanceAssignableRoles.map((role) => (
                                         <label
                                             key={role.id}
                                             className="flex items-center space-x-2 text-xs cursor-pointer hover:bg-white p-1.5 rounded transition"
@@ -444,7 +602,7 @@ function TenantMemberPage() {
                                     ))}
                                 </div>
                                 <p className="text-[11px] text-muted-foreground">
-                                    If no roles are selected, the default End User role will be assigned.
+                                    If no roles are selected, the default Tenant Member role will be assigned.
                                 </p>
                             </div>
                         </div>
@@ -483,32 +641,59 @@ function TenantMemberPage() {
                             An invitation has been generated for <strong>{invitationResult?.email}</strong>.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-3 py-3 text-xs">
-                        <Label className="text-xs text-slate-700">Single-Use Invitation Token</Label>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                readOnly
-                                value={invitationResult?.token || ''}
-                                className="font-mono text-xs bg-slate-50"
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-9 w-9 shrink-0"
-                                onClick={copyTokenToClipboard}
-                                title="Copy token"
-                            >
-                                {hasCopiedToken ? (
-                                    <Check className="h-4 w-4 text-emerald-600" />
-                                ) : (
-                                    <Copy className="h-4 w-4" />
-                                )}
-                            </Button>
+                    <div className="space-y-4 py-3 text-xs">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs text-slate-700 font-semibold">Invitation Link</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    readOnly
+                                    value={invitationResult?.token ? `${window.location.origin}/accept-invitation?token=${encodeURIComponent(invitationResult.token)}` : ''}
+                                    className="font-mono text-xs bg-slate-50"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0 cursor-pointer"
+                                    onClick={copyLinkToClipboard}
+                                    title="Copy link"
+                                >
+                                    {hasCopiedLink ? (
+                                        <Check className="h-4 w-4 text-emerald-600" />
+                                    ) : (
+                                        <Copy className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            </div>
                         </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-xs text-slate-700 font-semibold">Single-Use Invitation Token</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    readOnly
+                                    value={invitationResult?.token || ''}
+                                    className="font-mono text-xs bg-slate-50"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0 cursor-pointer"
+                                    onClick={copyTokenToClipboard}
+                                    title="Copy token"
+                                >
+                                    {hasCopiedToken ? (
+                                        <Check className="h-4 w-4 text-emerald-600" />
+                                    ) : (
+                                        <Copy className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+
                         <p className="text-[11px] text-muted-foreground">
-                            This cryptographic token is valid for 48 hours and can only be used once to bind an
-                            authenticated account.
+                            This cryptographic invitation is valid for 48 hours and can only be used once by the invited email address.
                         </p>
                     </div>
                     <DialogFooter>
@@ -529,6 +714,7 @@ function TenantMemberPage() {
                     setEditingMember(m);
                 }}
                 onToggleStatus={handleToggleStatus}
+                onResendInvitation={handleResendInvitation}
                 onDelete={(m) => {
                     setDetailMember(null);
                     setDeletingMember(m);

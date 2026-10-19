@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
@@ -12,7 +12,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Upstream procurement details (Supplier, ProcurementProject, BACResolution, Amount)
 /// are normalized through Contract -> NoticeOfAward, with immutable snapshots frozen upon issuance.
 /// </summary>
-public class NoticeToProceed : BaseEntity
+public class NoticeToProceed : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string NTPNumber { get; set; } = string.Empty;

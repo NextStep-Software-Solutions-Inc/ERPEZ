@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearch, useNavigate } from '@tanstack/react-router'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,7 +15,28 @@ import { useSuppliers } from '@/components/features/planning/procurement-library
 const useSupplierRFQInvitations = createQueryHookFromTemplate(getSupplierRFQInvitationsRequest)
 
 export function RFQItemPage() {
-  const [viewing, setViewing] = useState<string | null>(null)
+  const searchParams = useSearch({ strict: false }) as { rfqId?: string }
+  const navigate = useNavigate()
+  const viewing = searchParams?.rfqId ?? null
+
+  const handleView = (id: string) => {
+    navigate({
+      to: '/v2/supplier-portal/rfq-item',
+      search: (prev: any) => ({ ...prev, rfqId: id }),
+    })
+  }
+
+  const handleBack = () => {
+    navigate({
+      to: '/v2/supplier-portal/rfq-item',
+      search: (prev: any) => {
+        const next = { ...prev }
+        delete next.rfqId
+        return next
+      },
+    })
+  }
+
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [page, setPage] = useState(1)
   const pageSize = 5
@@ -108,7 +130,7 @@ export function RFQItemPage() {
       <RFQDetailsPage
         rfqId={viewing}
         supplierId={activeSupplierId}
-        onBack={() => setViewing(null)}
+        onBack={handleBack}
         isSupplierPortal={true}
       />
     )
@@ -284,7 +306,7 @@ export function RFQItemPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setViewing(r.id)}
+                            onClick={() => handleView(r.id)}
                             className="gap-1.5"
                           >
                             <Eye className="h-3.5 w-3.5" />

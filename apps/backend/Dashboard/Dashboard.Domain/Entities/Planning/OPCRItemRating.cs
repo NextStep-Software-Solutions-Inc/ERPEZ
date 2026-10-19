@@ -4,7 +4,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class OPCRItemRating : BaseEntity
+public class OPCRItemRating : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid OPCRItemId { get; set; }

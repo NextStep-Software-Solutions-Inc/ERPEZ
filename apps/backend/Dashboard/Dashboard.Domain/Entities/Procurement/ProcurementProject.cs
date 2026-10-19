@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// <summary>
 /// Represents a procurement project derived from a consolidated PR.
 /// </summary>
-public class ProcurementProject : BaseEntity
+public class ProcurementProject : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string Title { get; set; } = string.Empty;

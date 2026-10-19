@@ -24,6 +24,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       {
         title: 'ERPEZ Dashboard',
       },
+      {
+        name: 'google',
+        content: 'notranslate',
+      },
     ],
   }),
 
@@ -32,7 +36,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" translate="no" className="notranslate">
       <head>
         <HeadContent />
       </head>

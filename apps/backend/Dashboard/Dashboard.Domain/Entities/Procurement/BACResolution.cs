@@ -11,7 +11,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// 1. Pre-bidding: Mode/Proceeding decision (BiddingAwardRecommendationId is null)
 /// 2. Post-qualification: Award Recommendation resolution (BiddingAwardRecommendationId points to authoritative award recommendation)
 /// </summary>
-public class BACResolution : BaseEntity
+public class BACResolution : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ProcurementProjectId { get; set; }

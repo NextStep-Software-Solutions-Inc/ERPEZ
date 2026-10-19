@@ -34,6 +34,8 @@ export interface PRHeaderDetails {
   // For out-of-stock PRs originating from APR/CNAS
   cnasReferenceNumber?: string
   sourceAPR?: string
+  aprId?: string
+  aprNumber?: string
   // Multi-source BAC Resolution references
   appItemId?: string
   bacResolutionId?: string
@@ -60,7 +62,7 @@ export interface PRItem {
   itemName: string
   category: string
   quantity: number
-  unitOfMeasure: string
+  unitOfMeasure?: string
   unitPrice: number
   totalAmount: number
   description?: string
@@ -77,15 +79,17 @@ export interface PRItem {
   aprNumber?: string
   aprOffice?: string
   aprTotalAmount?: number
+  ppmpItemId?: string
+  aprItemId?: string
   // Optional APR group info when the PR contains an APR as a single grouped entry
   aprGroup?: {
     id?: string
     aprId?: string
-    aprNumber: string
+    aprNumber?: string
     officeCode?: string
     officeName?: string
     totalAmount?: number
-    items: PRItem[]
+    items?: PRItem[]
   }
   // APR-specific metadata (when this PRItem was created from an APR item)
   originalNeeded?: number
@@ -100,6 +104,7 @@ export interface PRItem {
 
 export interface PurchaseRequest {
   id: string
+  prNumber?: string
   type: PRType
   status: PRStatus
   headerDetails: PRHeaderDetails
@@ -107,12 +112,17 @@ export interface PurchaseRequest {
   totalAmount: number
   officeCode?: string
   officeName?: string
+  aprId?: string
+  aprNumber?: string
   isIndependent?: boolean
   dateSubmitted?: string
   createdBy: string
   createdAt: string
   updatedAt: string
   remarks?: string
+  returnRemarks?: string
+  returnedDate?: string
+  returnedBy?: string
   torAttachment?: PRAttachment | null
   signedPdfUrl?: string
   // BAC Multi-source metadata

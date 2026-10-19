@@ -56,15 +56,34 @@ public class DashboardController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status404NotFound)]
-    [HasPermission(Permissions.Planning.viewGlobalDashboard)]
+    [HasPermission(Permissions.Planning.viewOfficeDashboard)]
     public async Task<IActionResult> GetOfficeDashboard(
         [FromQuery] Guid fiscalYearId,
-        [FromQuery] Guid? officeId = null)
+        [FromQuery] string? officeId = null)
     {
+        Guid? parsedOfficeId = Guid.TryParse(officeId, out var validGuid) ? validGuid : null;
+
+        if (!parsedOfficeId.HasValue)
+        {
+            var claimOfficeId = HttpContext?.User?.FindFirst("office_id")?.Value
+                ?? HttpContext?.User?.FindFirst("department_id")?.Value;
+
+            if (Guid.TryParse(claimOfficeId, out var claimGuid))
+            {
+                parsedOfficeId = claimGuid;
+            }
+            else
+            {
+                // Fallback to planning dashboard overview when caller has no bound office GUID
+                // (e.g., System Administrator or fallback office code like "dept-001").
+                return await GetPlanningDashboard(fiscalYearId);
+            }
+        }
+
         var query = new GetOfficeDashboardQuery
         {
             FiscalYearId = fiscalYearId,
-            OfficeId = officeId
+            OfficeId = parsedOfficeId
         };
 
         var result = await mediator.Send(query);

@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Procurement;
 /// Used for Alternative Methods of Procurement (Shopping, Small Value Procurement, etc.)
 /// and Bidding comparative matrix evaluations per GPPB rules.
 /// </summary>
-public class AOB : BaseEntity
+public class AOB : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public string AOBNumber { get; set; } = string.Empty;

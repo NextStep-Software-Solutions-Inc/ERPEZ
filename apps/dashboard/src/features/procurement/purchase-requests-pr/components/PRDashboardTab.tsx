@@ -47,6 +47,7 @@ import { EditPRModal } from './EditPRModal'
 import { usePurchaseRequests, usePurchaseRequestStats, useDeletePurchaseRequest } from '../handlers/hooks'
 import { fromApiStatus, fromApiPrType, toApiPrType } from '../types/apiTypes'
 import { useDashboardRole } from '@/hooks/useDashboardRole'
+import { resolveRelationalAPR } from '../utils/aprReference'
 
 const STATUS_BADGE_CONFIG: Record<PRStatus, { label: string; color?: any; variant?: any }> = {
   draft: { label: 'Draft', color: 'secondary' },
@@ -121,6 +122,10 @@ export function PRDashboardTab({
       createdAt: item.createdDate,
       updatedAt: item.createdDate,
       createdBy: '',
+      remarks: (item.status === 'Approved' || item.status === 'Submitted' || item.status === 'ForBACUtilization') ? undefined : item.returnRemarks,
+      returnRemarks: (item.status === 'Approved' || item.status === 'Submitted' || item.status === 'ForBACUtilization') ? undefined : item.returnRemarks,
+      returnedDate: (item.status === 'Approved' || item.status === 'Submitted' || item.status === 'ForBACUtilization') ? undefined : item.returnedDate,
+      returnedBy: (item.status === 'Approved' || item.status === 'Submitted' || item.status === 'ForBACUtilization') ? undefined : item.returnedBy,
     } as PurchaseRequest))
   }, [prListResponse])
 
@@ -211,25 +216,31 @@ export function PRDashboardTab({
   // these are simple placeholders — replace with store actions as needed.
   const handleApprovePR = (id: string) => {
     if (!window.confirm('Approve this PR?')) return
-    // TODO: call store action to update PR status to 'approved'
     // e.g. approvePurchaseRequest?.(id)
-    console.log('Approved PR', id)
   }
 
   const handleReturnPR = (id: string) => {
     if (!window.confirm('Return this PR?')) return
-    // TODO: call store action to update PR status to 'returned'
     // e.g. returnPurchaseRequest?.(id)
-    console.log('Returned PR', id)
   }
 
-  // Helper: displayStatus prefers 'returned' when remarks exist to ensure consistency across views
+  // Helper: displayStatus respects approved, submitted, for-bac-utilization ground truth
   const getDisplayStatus = (p: PurchaseRequest) => {
+    if (!p) return 'draft'
+    if (p.status === 'approved' || p.status === 'submitted' || p.status === 'for-bac-utilization') {
+      return p.status
+    }
+    if (p.status === 'returned') {
+      return 'returned'
+    }
     try {
-      if (p && (p as any).remarks && (p as any).remarks.toString().trim().length > 0) {
+      if (
+        ((p as any).remarks && (p as any).remarks.toString().trim().length > 0) ||
+        ((p as any).returnRemarks && (p as any).returnRemarks.toString().trim().length > 0)
+      ) {
         return 'returned' as PRStatus
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     return p.status
@@ -397,7 +408,24 @@ export function PRDashboardTab({
                           aria-label={`Select row ${pr.headerDetails.prNumber}`}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{pr.headerDetails.prNumber}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">
+                          {pr.headerDetails.prNumber}
+                        </div>
+                        {prType === 'out-of-stock' && (
+                          <div className="mt-1">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
+                            >
+                              {(() => {
+                                const { aprNumber } = resolveRelationalAPR(pr)
+                                return aprNumber ? `APR: ${aprNumber}` : 'Sourced from APR'
+                              })()}
+                            </Badge>
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         <TooltipProvider>
                           <Tooltip>

@@ -26,6 +26,13 @@ public record AOBResponse
 
     [JsonPropertyName("rfqIds")]
     public List<Guid> RFQIds { get; init; } = [];
+
+    [JsonPropertyName("rfqNumbers")]
+    public List<string> RFQNumbers { get; init; } = [];
+
+    [JsonPropertyName("rfqNumber")]
+    public string? RFQNumber { get; init; }
+
     public List<AOBAwardedItemResponse> AwardedItems { get; init; } = [];
 }
 
@@ -49,6 +56,9 @@ public record AOBDetailResponse
     public string? PAPCode { get; init; }
     public string? ApproverName { get; init; }
     public string? ApproverTitle { get; init; }
+
+    [JsonPropertyName("rfqNumber")]
+    public string? RFQNumber { get; init; }
 
     [JsonPropertyName("rfqs")]
     public List<AOBRFQDetailResponse> RFQs { get; init; } = [];

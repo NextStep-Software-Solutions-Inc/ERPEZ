@@ -16,14 +16,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -58,11 +50,9 @@ import {
   ChevronLeft,
   MoreVertical,
   Plus,
-  Trash2,
   Send,
   CheckCircle,
   AlertCircle,
-  ChevronDown,
   Calendar,
   DollarSign,
   Download,
@@ -73,10 +63,7 @@ import {
   Eye,
   ExternalLink,
   Loader2,
-  ShoppingBag,
   Boxes,
-  Package,
-  FilePlus,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
@@ -91,17 +78,21 @@ import { PurchaseRequest, PRItem, PRStatus } from '../types'
 import type { UpdatePurchaseRequestItemPayload, PRBacResolutionApi } from '../types/apiTypes'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
 import { AddItemsModal } from './AddItemsModal'
-import { AddNonCSEItemModal, IndependentItemShoppingModal, FALLBACK_NON_CSE_ITEMS, FALLBACK_PROCUREMENT_MODES } from './IndependentItemShoppingModal'
+import { AddNonCSEItemModal, FALLBACK_NON_CSE_ITEMS, FALLBACK_PROCUREMENT_MODES } from './IndependentItemShoppingModal'
 import { EditPRModal } from './EditPRModal'
 import { ReturnPRModal } from './ReturnPRModal'
 import { ApprovePRModal } from './ApprovePRModal'
 import { PRAttachmentsPanel } from './PRAttachmentsPanel'
+import { PRReturnRemarksBanner } from './PRReturnRemarksBanner'
+import { PRPPMPItemsSection } from './PRPPMPItemsSection'
+import { PRAPRItemsSection } from './PRAPRItemsSection'
 import { RequestItemDialog } from '@/features/planning/ppmp/catalog/dialogs/RequestItemDialog'
 import type { RequestItemFormValues } from '@/features/planning/ppmp/catalog/forms/requestItemFormSchema'
 import { useNonCSEItems } from '@/features/planning/ppmp/catalog/hooks/useNonCSEItemQueries'
 import { useProcurementModes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementModes'
 import { purchaseRequestRequiresTor } from '../utils/torAttachment'
 import { openSignedDocument } from '../utils/openSignedDocument'
+import { resolveRelationalAPR } from '../utils/aprReference'
 
 import api from '@/services/api'
 
@@ -212,7 +203,11 @@ export function PRDetailsPage({
   isManagePRView: isManagePRViewProp,
 }: PRDetailsPageProps) {
   const storeIsManagePRView = usePurchaseRequestStore((s) => s.isManagePRView)
-  const isManagePRView = isManagePRViewProp ?? storeIsManagePRView
+  const isManagePRView =
+    isManagePRViewProp ??
+    (typeof window !== 'undefined' && window.location.pathname.includes('/v2/manage-prs')
+      ? storeIsManagePRView
+      : false)
   const { activePR, updatePurchaseRequest, setActivePR } =
     usePurchaseRequestStore()
   const statusMutation = useUpdatePurchaseRequestStatus()
@@ -222,7 +217,7 @@ export function PRDetailsPage({
   const [isExporting, setIsExporting] = useState(false)
   // Always fetch fresh data from the server so edits (purpose, items) are reflected
   // after mutations without requiring a full page reload.
-  const { data: freshPRResponse } = usePurchaseRequest({
+  const { data: freshPRResponse, isError: isFreshPRError, refetch: refetchFreshPR } = usePurchaseRequest({
     pathParams: { id: initialPR.id }
   })
 
@@ -318,10 +313,10 @@ export function PRDetailsPage({
         )
         const catalogMatch =
           (nonCseCatalogResponse?.data ?? []).find(
-            (c) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
+            (c: any) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
           ) ??
           FALLBACK_NON_CSE_ITEMS.find(
-            (c) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
+            (c: any) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
           )
 
         const itemCategory =
@@ -362,6 +357,18 @@ export function PRDetailsPage({
           ppmpDocName: i.ppmpNumber
             ? `${i.ppmpNumber} — ${i.officeName || apiData.officeName || ''}`
             : undefined,
+          aprId: i.aprId || existingLocalItem?.aprId || (i as any)?.aprItemId || (i as any)?.aprItem?.aprId,
+          aprItemId: i.aprItemId || (i as any)?.aprItem?.id,
+          aprNumber: i.aprNumber || existingLocalItem?.aprNumber || (i as any)?.aprItem?.apr?.aprNumber || (i as any)?.apr?.aprNumber,
+          aprOffice:
+            i.aprOfficeName ||
+            i.officeName ||
+            (i as any)?.aprItem?.apr?.office?.name ||
+            (i as any)?.apr?.office?.name ||
+            existingLocalItem?.aprOffice ||
+            apiData.officeName ||
+            base.headerDetails?.officeName ||
+            'General Administration',
         })
       }
     }
@@ -372,6 +379,12 @@ export function PRDetailsPage({
       status: fromApiStatus(apiData.status),
       type: fromApiPrType(apiData.prType),
       totalAmount: apiData.totalAmount,
+      aprId: apiData.aprId ?? base.aprId,
+      aprNumber: apiData.aprNumber ?? base.aprNumber,
+      remarks: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : (apiData.returnRemarks || base.remarks),
+      returnRemarks: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : apiData.returnRemarks,
+      returnedDate: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : apiData.returnedDate,
+      returnedBy: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : apiData.returnedBy,
       bacResolutions: apiData.bacResolutions ?? base.bacResolutions ?? [],
       headerDetails: {
         ...base.headerDetails,
@@ -379,11 +392,13 @@ export function PRDetailsPage({
         description: apiData.description ?? '',
         purpose: apiData.purpose ?? '',
         date: apiData.requestedDate,
-        uacs: apiData.uacsCode ?? base.headerDetails.uacs ?? '',
-        fundCluster: apiData.fundSource ?? base.headerDetails.fundCluster ?? '',
-        procurementCategoryName: apiData.procurementCategory ?? base.headerDetails.procurementCategoryName ?? '',
-        officeId: apiData.officeId ?? base.headerDetails.officeId,
-        officeName: apiData.officeName ?? base.headerDetails.officeName,
+        uacs: apiData.uacsCode ?? base.headerDetails?.uacs ?? '',
+        fundCluster: apiData.fundSource ?? base.headerDetails?.fundCluster ?? '',
+        procurementCategoryName: apiData.procurementCategory ?? base.headerDetails?.procurementCategoryName ?? '',
+        officeId: apiData.officeId ?? base.headerDetails?.officeId,
+        officeName: apiData.officeName ?? base.headerDetails?.officeName,
+        aprId: apiData.aprId ?? base.headerDetails?.aprId,
+        aprNumber: apiData.aprNumber ?? base.headerDetails?.aprNumber,
       },
       items: deduplicatedItems,
     }
@@ -397,7 +412,10 @@ export function PRDetailsPage({
       // Handle legacy grouped APR structure (optimistic items added before server sync)
       if (group.aprGroup && group.aprGroup.items) {
         return group.aprGroup.items.flatMap((aprItem): UpdatePurchaseRequestItemPayload[] => {
-          const monthsMap = aprItem.monthlyQuantities || (aprItem.month ? { [aprItem.month]: aprItem.quantity } : {})
+          const effectiveMonth = aprItem.month || (aprItem.monthlyQuantities && Object.keys(aprItem.monthlyQuantities)[0]) || 'January'
+          const monthsMap = (aprItem.monthlyQuantities && Object.keys(aprItem.monthlyQuantities).length > 0)
+            ? aprItem.monthlyQuantities
+            : { [effectiveMonth]: aprItem.quantity }
           return Object.entries(monthsMap).filter(([, qty]) => qty > 0).map(([m, qty]) => ({
             aprItemId: aprItem.itemId || aprItem.id,
             name: aprItem.itemName,
@@ -478,16 +496,24 @@ export function PRDetailsPage({
     }
   }, [rawPr])
 
-  // Derive a display status: if remarks exist but status wasn't set to 'returned', prefer showing Returned
+  // Ground truth: PR status from DB. Only display 'returned' if pr.status is strictly 'returned' (or draft with returnRemarks).
+  // Once a PR is 'approved' or 'submitted', it is definitely NOT returned.
   const getDisplayStatus = (p: typeof pr) => {
-    try {
-      if (p && p.remarks && p.remarks.toString().trim().length > 0) {
-        return 'returned' as PRStatus
-      }
-    } catch {
-      // ignore
+    if (!p) return 'draft'
+    if (p.status === 'approved' || p.status === 'submitted' || p.status === 'for-bac-utilization') {
+      return p.status
     }
-    return p?.status
+    if (p.status === 'returned') {
+      return 'returned'
+    }
+    if (
+      p.status === 'draft' &&
+      ((p.remarks && p.remarks.toString().trim().length > 0) ||
+        ((p as any).returnRemarks && (p as any).returnRemarks.toString().trim().length > 0))
+    ) {
+      return 'returned'
+    }
+    return p.status || 'draft'
   }
   const displayStatus = getDisplayStatus(pr)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -541,6 +567,103 @@ export function PRDetailsPage({
       unitOfMeasure: item.unitOfMeasure || 'unit',
     })
     setRequestItemModalOpen(true)
+  }
+
+  const { aprId: relationalAprId, aprNumber: relationalAprNumber } = useMemo(
+    () => resolveRelationalAPR(pr),
+    [pr]
+  )
+
+  const [isImportingSourceApr, setIsImportingSourceApr] = useState(false)
+
+  const handleImportItemsFromSourceAPR = async () => {
+    try {
+      setIsImportingSourceApr(true)
+      const res = await api.get<{ succeeded: boolean; data: any[] }>(
+        `/purchase-requests/${pr.id}/eligible-aprs`
+      )
+      const aprs = res.data?.data || []
+      const matched = aprs.find(
+        (a: any) =>
+          (relationalAprId && a.aprId.toLowerCase() === relationalAprId.toLowerCase()) ||
+          (relationalAprNumber && a.aprNumber.toLowerCase() === relationalAprNumber.toLowerCase())
+      ) || aprs[0]
+
+      if (!matched || !matched.items || matched.items.length === 0) {
+        toast.error('No eligible deficit items found for this APR.')
+        return
+      }
+
+      const deficitItems = matched.items.filter((it: any) => it.deficit > 0)
+      if (deficitItems.length === 0) {
+        toast.error('All items in this APR have already been covered.')
+        return
+      }
+
+      const nested: PRItem[] = deficitItems.map((it: any) => ({
+        id: it.aprItemId,
+        itemId: it.aprItemId,
+        itemName: it.itemName,
+        category: it.category || 'Consolidated APR',
+        quantity: it.deficit,
+        unitOfMeasure: it.unit || 'unit',
+        unitPrice: it.unitPrice,
+        totalAmount: it.deficit * (it.unitPrice || 0),
+        month: 'January',
+        monthlyQuantities: { January: it.deficit },
+        fund: it.fund || '',
+        source: 'apr' as const,
+        aprId: matched.aprId,
+        aprNumber: matched.aprNumber,
+        aprOffice: matched.officeName,
+      }))
+
+      const aprGroupItem: PRItem = {
+        id: `apr-group-${matched.aprId}`,
+        itemId: `apr-group-${matched.aprId}`,
+        itemName: `APR #${matched.aprNumber} (${matched.officeName})`,
+        category: 'Consolidated APR',
+        quantity: nested.length,
+        unitOfMeasure: 'group',
+        unitPrice: nested.reduce((s: number, it: PRItem) => s + it.totalAmount, 0),
+        totalAmount: nested.reduce((s: number, it: PRItem) => s + it.totalAmount, 0),
+        source: 'apr',
+        aprId: matched.aprId,
+        aprNumber: matched.aprNumber,
+        aprOffice: matched.officeName,
+        aprGroup: {
+          id: matched.aprId,
+          aprId: matched.aprId,
+          aprNumber: matched.aprNumber,
+          officeName: matched.officeName,
+          totalAmount: nested.reduce((s: number, it: PRItem) => s + it.totalAmount, 0),
+          items: nested,
+        },
+      }
+
+      handleAddItems([aprGroupItem])
+
+      // Persist to backend immediately
+      const payloadItems = buildPayloadItems([aprGroupItem])
+      await updateApi({
+        pathParams: { id: pr.id },
+        queryParams: { id: pr.id },
+        payload: {
+          description: pr.headerDetails.description || '',
+          purpose: pr.headerDetails.purpose || '',
+          ...(pr.headerDetails.procurementCategoryId ? { procurementCategoryId: pr.headerDetails.procurementCategoryId } : {}),
+          requestedDate: pr.headerDetails.date || new Date().toISOString(),
+          items: payloadItems,
+        },
+      })
+
+      setHasUnsavedChanges(false)
+      toast.success(`Successfully imported ${deficitItems.length} item(s) from ${matched.aprNumber}!`)
+    } catch {
+      toast.error('Failed to import items from APR.')
+    } finally {
+      setIsImportingSourceApr(false)
+    }
   }
 
   const navigate = useNavigate()
@@ -657,8 +780,77 @@ export function PRDetailsPage({
     }
   }, [groupedPPMPs.length])
 
+  // Group items by APR (for out-of-stock PRs)
+  const groupedAPRs = useMemo(() => {
+    if (pr.type !== 'out-of-stock') return []
+
+    // 1. If items already have aprGroup wrapper (e.g. freshly added via modal before server sync)
+    const wrappedGroups = (pr.items || []).filter((i) => i.aprGroup)
+    if (wrappedGroups.length > 0) {
+      return wrappedGroups
+    }
+
+    // 2. Otherwise, group flat items by APR (from server or after save)
+    const flatItems = (pr.items || []).filter((i) => !i.aprGroup)
+    if (flatItems.length === 0) return []
+
+    const map = new Map<string, PRItem[]>()
+    for (const item of flatItems) {
+      const key = item.aprNumber || item.aprId || 'APR-2026-0001'
+      if (!map.has(key)) {
+        map.set(key, [])
+      }
+      map.get(key)!.push(item)
+    }
+
+    return Array.from(map.entries()).map(([aprKey, items], idx) => {
+      const first = items[0]
+      const aprId = first.aprId || `apr-${idx}`
+      const aprNumber = first.aprNumber || (aprKey.startsWith('APR') ? aprKey : `APR-${aprKey}`)
+      const officeName = first.aprOffice || pr.headerDetails?.officeName || 'Innovation and Technology Solutions Division'
+      const totalAmount = items.reduce((s, it) => s + (it.totalAmount || 0), 0)
+
+      return {
+        id: `apr-group-${aprKey}`,
+        itemId: `apr-group-${aprKey}`,
+        itemName: `${aprNumber} (${officeName})`,
+        category: 'Consolidated APR',
+        quantity: items.length,
+        unitOfMeasure: 'group',
+        unitPrice: totalAmount,
+        totalAmount,
+        source: 'apr' as const,
+        aprId,
+        aprNumber,
+        aprOffice: officeName,
+        aprGroup: {
+          id: aprId,
+          aprId,
+          aprNumber,
+          officeName,
+          totalAmount,
+          items,
+        },
+      } as PRItem
+    })
+  }, [pr.items, pr.type, pr.headerDetails?.officeName])
+
   // Count APR-grouped PR items (for out-of-stock/consolidated PRs)
-  const aprGroupCount = (pr.items || []).filter((i) => i.aprGroup).length
+  const aprGroupCount = groupedAPRs.length
+
+  // Auto-expand all APR groups by default so items are immediately visible
+  useEffect(() => {
+    if (groupedAPRs.length > 0) {
+      setExpandedPPMPs((prev) => {
+        const next = new Set(prev)
+        for (const g of groupedAPRs) {
+          const aprId = g.aprGroup?.id || g.aprGroup?.aprId || ''
+          if (aprId) next.add(aprId)
+        }
+        return next
+      })
+    }
+  }, [groupedAPRs])
 
   const toggleExpandPPMP = (ppmpId: string) => {
     const newExpanded = new Set(expandedPPMPs)
@@ -757,13 +949,14 @@ export function PRDetailsPage({
 
   const openDeleteAPRGroupDialog = (
     aprGroupNumber: string,
+    displayName: string,
     items: PRItem[],
   ) => {
     const itemIds = items.map((i) => i.id)
     setDeleteConfirmDialog({
       isOpen: true,
       ppmpId: aprGroupNumber,
-      ppmpName: `APR #${aprGroupNumber}`,
+      ppmpName: displayName || `APR #${aprGroupNumber}`,
       itemIds,
       type: 'apr',
     })
@@ -820,6 +1013,200 @@ export function PRDetailsPage({
       ppmpName: null,
       itemIds: [],
       type: 'ppmp',
+    })
+  }
+
+  const handleUpdateItemProcurementMode = (
+    item: PRItem,
+    selectedModeName?: string,
+    modeId?: string,
+  ) => {
+    const updatedItems = pr.items.map((pi) => {
+      if (pi.id === item.id) {
+        return {
+          ...pi,
+          procurementModeName: selectedModeName,
+          procurementModeId: modeId || (selectedModeName ? pi.procurementModeId : undefined),
+        }
+      }
+      return pi
+    })
+    updatePurchaseRequest(pr.id, {
+      items: updatedItems,
+    })
+    setActivePR({
+      ...pr,
+      items: updatedItems,
+    })
+    setHasUnsavedChanges(true)
+  }
+
+  const handleUpdatePPMPItemQuantity = (item: PRItem, val: number) => {
+    const unitPrice = item.unitPrice ?? item.estimatedUnitPrice ?? 0
+    const updatedItems = pr.items.map((pi) => {
+      if (pi.id === item.id) {
+        const setQty = pi.setQuantity ?? (pi.quantity > 0 ? pi.quantity : val)
+        const remainingQty = Math.max(0, setQty - val)
+        return {
+          ...pi,
+          quantity: val,
+          setQuantity: setQty,
+          remainingQuantity: remainingQty,
+          totalAmount: val * unitPrice,
+        }
+      }
+      return pi
+    })
+
+    const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+    updatePurchaseRequest(pr.id, {
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setActivePR({
+      ...pr,
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setHasUnsavedChanges(true)
+  }
+
+  const handleDeletePPMPItem = (item: PRItem) => {
+    const updatedItems = pr.items.filter((pi) => pi.id !== item.id)
+    const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+    updatePurchaseRequest(pr.id, {
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setActivePR({
+      ...pr,
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setHasUnsavedChanges(true)
+    toast.success('Item Removed', {
+      description: `${item.itemName} (${item.month}) removed from PR.`,
+    })
+  }
+
+  const handleUpdateAPRMonthlyQuantity = (
+    groupItemId: string,
+    innerItem: PRItem,
+    month: string,
+    val: number,
+  ) => {
+    const hasWrapper = pr.items.some((pi) => pi.id === groupItemId && Boolean(pi.aprGroup))
+    const updatedItems: PRItem[] = hasWrapper
+      ? pr.items.map((pi) => {
+          if (pi.id !== groupItemId) return pi
+          const updatedAprGroup: PRItem['aprGroup'] = {
+            ...(pi.aprGroup || {}),
+            items: (pi.aprGroup?.items || []).map((inner: PRItem) => {
+              if (inner.id !== innerItem.id) return inner
+              const prevMonthly =
+                inner.monthlyQuantities && Object.keys(inner.monthlyQuantities).length > 0
+                  ? { ...inner.monthlyQuantities }
+                  : inner.month
+                    ? { [inner.month]: inner.quantity }
+                    : {}
+              const nextMonthly = { ...prevMonthly, [month]: val }
+              const computedQty = ORDERED_MONTHS.reduce(
+                (s: number, mm: string) => s + (nextMonthly[mm] || 0),
+                0,
+              )
+              return {
+                ...inner,
+                monthlyQuantities: nextMonthly,
+                editedNeeded: computedQty,
+                quantity: computedQty,
+                outOfStockQuantity: computedQty,
+                totalAmount: computedQty * (inner.unitPrice || 0),
+              }
+            }),
+          }
+          const newGroupTotal = (updatedAprGroup.items || []).reduce(
+            (s: number, it: PRItem) => s + (it.totalAmount || 0),
+            0,
+          )
+          const newGroupQty = (updatedAprGroup.items || []).reduce(
+            (s: number, it: PRItem) => s + (it.quantity || 0),
+            0,
+          )
+          return {
+            ...pi,
+            aprGroup: updatedAprGroup,
+            quantity: newGroupQty,
+            totalAmount: newGroupTotal,
+          }
+        })
+      : pr.items.map((pi) => {
+          if (pi.id !== innerItem.id && pi.itemId !== innerItem.itemId) return pi
+          const prevMonthly =
+            pi.monthlyQuantities && Object.keys(pi.monthlyQuantities).length > 0
+              ? { ...pi.monthlyQuantities }
+              : pi.month
+                ? { [pi.month]: pi.quantity }
+                : {}
+          const nextMonthly = { ...prevMonthly, [month]: val }
+          const computedQty = ORDERED_MONTHS.reduce(
+            (s: number, mm: string) => s + (nextMonthly[mm] || 0),
+            0,
+          )
+          return {
+            ...pi,
+            monthlyQuantities: nextMonthly,
+            editedNeeded: computedQty,
+            quantity: computedQty,
+            outOfStockQuantity: computedQty,
+            totalAmount: computedQty * (pi.unitPrice || 0),
+          }
+        })
+
+    const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+    updatePurchaseRequest(pr.id, {
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setActivePR({
+      ...pr,
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setHasUnsavedChanges(true)
+  }
+
+  const handleDeleteAPRItem = (groupItemId: string, innerItem: PRItem) => {
+    const hasWrapper = pr.items.some((pi) => pi.id === groupItemId && Boolean(pi.aprGroup))
+    const updatedItems: PRItem[] = hasWrapper
+      ? pr.items
+          .map((pi) => {
+            if (pi.id !== groupItemId) return pi
+            const remaining = (pi.aprGroup?.items || []).filter((inner) => inner.id !== innerItem.id)
+            const newTotal = remaining.reduce((s, it) => s + (it.totalAmount || 0), 0)
+            const newQty = remaining.reduce((s, it) => s + (it.quantity || 0), 0)
+            return {
+              ...pi,
+              aprGroup: { ...(pi.aprGroup || {}), items: remaining },
+              quantity: newQty,
+              totalAmount: newTotal,
+            }
+          })
+          .filter((pi) => !pi.aprGroup || (pi.aprGroup.items && pi.aprGroup.items.length > 0))
+      : pr.items.filter((pi) => pi.id !== innerItem.id && pi.itemId !== innerItem.itemId)
+
+    const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+    updatePurchaseRequest(pr.id, {
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setActivePR({
+      ...pr,
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setHasUnsavedChanges(true)
+    toast.success('Item Removed', {
+      description: `${innerItem.itemName} removed from PR.`,
     })
   }
 
@@ -928,7 +1315,7 @@ export function PRDetailsPage({
           queryParams: { id: pr.id },
           payload: { prId: pr.id, newStatus: 'Submitted' },
         })
-        updatePurchaseRequest(pr.id, { status: 'submitted', updatedAt: new Date().toISOString() })
+        updatePurchaseRequest(pr.id, { status: 'submitted', remarks: undefined, updatedAt: new Date().toISOString() })
       })(),
       {
         loading: 'Submitting Purchase Request...',
@@ -939,8 +1326,8 @@ export function PRDetailsPage({
     setShowSubmitConfirmDialog(false)
   }
 
-  const handleReturnPR = (remarks: string) => {
-    toast.promise(
+  const handleReturnPR = async (remarks: string) => {
+    await toast.promise(
       statusMutation.mutateAsync({
         pathParams: { id: pr.id },
         queryParams: { id: pr.id },
@@ -957,14 +1344,14 @@ export function PRDetailsPage({
     setShowReturnModal(false)
   }
 
-  const handleApprovePR = (signedPdfUrl: string) => {
-    toast.promise(
+  const handleApprovePR = async (signedPdfUrl: string) => {
+    await toast.promise(
       statusMutation.mutateAsync({
         pathParams: { id: pr.id },
         queryParams: { id: pr.id },
         payload: { prId: pr.id, newStatus: 'Approved' },
       }).then(() => {
-        updatePurchaseRequest(pr.id, { status: 'approved', signedPdfUrl, updatedAt: new Date().toISOString() })
+        updatePurchaseRequest(pr.id, { status: 'approved', signedPdfUrl, remarks: undefined, updatedAt: new Date().toISOString() })
       }),
       {
         loading: 'Approving Purchase Request...',
@@ -1022,7 +1409,6 @@ export function PRDetailsPage({
         toast.error('Failed to generate PR document.', { id: toastId })
       }
     } catch (err: unknown) {
-      console.error('❌ PR document generation error:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to generate Purchase Request PDF.', { id: toastId })
     } finally {
       setIsExporting(false)
@@ -1030,11 +1416,12 @@ export function PRDetailsPage({
   }
 
   const StatusIcon = STATUS_BADGE_CONFIG[displayStatus].icon
-  const canAddItems = pr.status === 'draft'
-  const canSubmit = pr.status === 'draft' && pr.items.length > 0
+  const isDraftOrReturned = pr.status === 'draft' || pr.status === 'returned' || displayStatus === 'returned'
+  const isEditable = isDraftOrReturned && !isManagePRView
+  const canAddItems = isEditable
+  const canSubmit = isEditable && pr.items.length > 0
   const canReturn = pr.status === 'submitted' && Boolean(isManagePRView)
   const canApprove = pr.status === 'submitted' && Boolean(isManagePRView)
-  const canEditNeeded = pr.status === 'draft' && !isManagePRView
 
   return (
     <div className="space-y-6 pb-10">
@@ -1050,6 +1437,23 @@ export function PRDetailsPage({
           Back
         </Button>
       </div>
+
+      {isFreshPRError && (
+        <div className="flex items-center justify-between p-3.5 px-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+            <span>Could not refresh purchase request from server. Displaying cached details.</span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => refetchFreshPR()}
+            className="h-7 px-3 text-xs border-amber-300 hover:bg-amber-100"
+          >
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* PR Header Card - Modern Design */}
       <Card className="border-0 shadow-md bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -1071,6 +1475,25 @@ export function PRDetailsPage({
                 {pr.approvalOrigin === 'APPROVED_VIA_BAC' && (
                   <Badge className="bg-emerald-600 text-white font-semibold text-xs px-3 py-1">
                     Approved via BAC Resolution ({pr.bacResolutionNumber || 'Path A'})
+                  </Badge>
+                )}
+                {pr.type === 'out-of-stock' && (
+                  <Badge
+                    variant="outline"
+                    className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 font-semibold text-xs px-3 py-1 gap-1.5 flex items-center dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
+                  >
+                    <Boxes className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>
+                      {(() => {
+                        const aprNum =
+                          relationalAprNumber ||
+                          groupedAPRs[0]?.aprNumber ||
+                          groupedAPRs[0]?.aprGroup?.aprNumber ||
+                          pr.headerDetails?.aprNumber ||
+                          pr.aprNumber
+                        return aprNum ? `Sourced from APR: ${aprNum}` : 'Sourced from Approved APR (Out-of-Stock CSE)'
+                      })()}
+                    </span>
                   </Badge>
                 )}
               </div>
@@ -1160,11 +1583,11 @@ export function PRDetailsPage({
               {canSubmit && (
                 <Button
                   size="sm"
-                  className="gap-2 h-8 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="gap-2 h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
                   onClick={handleSubmitPR}
                 >
                   <Send className="h-4 w-4" />
-                  Submit
+                  {pr.status === 'returned' || displayStatus === 'returned' ? 'Resubmit PR' : 'Submit'}
                 </Button>
               )}
               <DropdownMenu>
@@ -1178,7 +1601,7 @@ export function PRDetailsPage({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {pr.status === 'draft' && (
+                  {isEditable && (
                     <DropdownMenuItem onClick={() => setShowEditModal(true)}>
                       <Edit2 className="h-4 w-4 mr-2" />
                       Edit Details
@@ -1202,6 +1625,16 @@ export function PRDetailsPage({
           </div>
         </CardHeader>
       </Card>
+
+      {/* Return Reason Card — shown when PR has been returned (matching RFQ style) */}
+      <PRReturnRemarksBanner
+        displayStatus={displayStatus}
+        prStatus={pr.status}
+        returnedDate={pr.returnedDate}
+        returnedBy={pr.returnedBy}
+        returnRemarks={pr.returnRemarks}
+        remarks={pr.remarks}
+      />
 
       {/* PR Details Grid */}
       <Card className="border-0 shadow-lg overflow-hidden">
@@ -1527,10 +1960,7 @@ export function PRDetailsPage({
                         return `${ppmpCount} Office PPMP${ppmpCount !== 1 ? 's' : ''} selected`
                       })()
                     : (() => {
-                        const aprCount = (pr.items || []).filter(
-                          (i) => i.aprGroup,
-                        ).length
-                        return `${aprCount} APR${aprCount !== 1 ? 's' : ''} selected`
+                        return `${aprGroupCount} APR${aprGroupCount !== 1 ? 's' : ''} selected`
                       })()}
               </CardDescription>
             </div>
@@ -1649,13 +2079,40 @@ export function PRDetailsPage({
             <div className="text-center py-10">
               <p className="text-muted-foreground mb-4">No APRs added yet</p>
               {canAddItems && (
-                <Button
-                  onClick={() => setShowAddItems(true)}
-                  variant="outline"
-                  size="sm"
-                >
-                  Add APR
-                </Button>
+                sourceAprNumberFromDesc || sourceAprIdFromDesc ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Button
+                      onClick={handleImportItemsFromSourceAPR}
+                      disabled={isImportingSourceApr}
+                      size="sm"
+                      className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                    >
+                      {isImportingSourceApr ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Boxes className="h-4 w-4" />
+                      )}
+                      Import Deficit Items from {sourceAprNumberFromDesc || 'Source APR'}
+                    </Button>
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Other APR
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => setShowAddItems(true)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Add APR
+                  </Button>
+                )
               )}
             </div>
           ) : pr.items.length === 0 ? (
@@ -1701,562 +2158,36 @@ export function PRDetailsPage({
               )}
             </div>
           ) : pr.type === 'non-cse' ? (
-            <div className="space-y-4">
-              <div className="space-y-4">
-                {filteredGroupedPPMPs.map(({ ppmpId, items }) => {
-                  const isExpanded = expandedPPMPs.has(ppmpId)
-                  const ppmpTotal = items.reduce(
-                    (sum, item) => sum + item.totalAmount,
-                    0,
-                  )
-                  const hasAnyMonth = items.some((i) => Boolean(i.month))
-
-                  return (
-                    <div
-                      key={ppmpId}
-                      className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow my-3"
-                    >
-                      <div
-                        className="px-6 py-4 min-h-[68px] flex items-center gap-3 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 dark:hover:from-slate-900 dark:hover:to-slate-800 cursor-pointer transition bg-gradient-to-r from-slate-50/30 to-slate-100/30 dark:from-slate-900/10 dark:to-slate-800/10"
-                        onClick={() => toggleExpandPPMP(ppmpId)}
-                      >
-                        <ChevronDown
-                          className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold truncate text-slate-900 dark:text-slate-50">
-                            {items[0]?.ppmpDocName ||
-                              (ppmpId === 'independent-items'
-                                ? items.every((i) => i.source === 'catalog' || masterCatalogIdentifiers.has((i.itemName || '').trim().toLowerCase()))
-                                  ? 'Master Catalog Items'
-                                  : items.every((i) => (i.source === 'custom' || (!i.source && !i.ppmpItemId && !i.aprItemId)) && !masterCatalogIdentifiers.has((i.itemName || '').trim().toLowerCase()))
-                                    ? 'Custom / Ad-hoc Items'
-                                    : 'Custom / Catalog Items (Independent)'
-                                : 'Office PPMP')}
-                          </div>
-                          <div className="text-xs truncate text-slate-600 dark:text-slate-400">
-                            {items.length} item(s)
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 ml-3">
-                          <Badge
-                            color="default"
-                            className="text-sm font-semibold"
-                          >
-                            ₱{ppmpTotal.toLocaleString()}
-                          </Badge>
-
-                          {pr.status === 'draft' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                              title={`Delete ${ppmpId === 'independent-items' ? 'all independent items' : 'PPMP group'}`}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                openDeletePPMPDialog(
-                                  ppmpId,
-                                  items[0]?.ppmpDocName ?? (ppmpId === 'independent-items' ? 'Independent Items' : 'Office PPMP'),
-                                  items.map((it) => it.id),
-                                )
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {isExpanded && (
-                        <div className="border-t bg-muted/10 overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="bg-muted/40">
-                                <TableHead>Item Name</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead className="min-w-[190px]">Mode of Procurement</TableHead>
-                                <TableHead>Fund</TableHead>
-                                {hasAnyMonth && <TableHead className="text-center">Month</TableHead>}
-                                <TableHead className="text-center w-32">Req Qty</TableHead>
-                                <TableHead>Unit Price</TableHead>
-                                <TableHead className="text-right">
-                                  Total Amount
-                                </TableHead>
-                                {pr.status === 'draft' && (
-                                  <TableHead className="text-center w-64">
-                                    Actions
-                                  </TableHead>
-                                )}
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {items.map((item) => {
-                                const unitPrice =
-                                  item.unitPrice ?? item.estimatedUnitPrice ?? 0
-
-                                const isCatalogItem =
-                                  item.source === 'catalog' ||
-                                  (!item.ppmpDocId &&
-                                    masterCatalogIdentifiers.has((item.itemName || '').trim().toLowerCase()))
-                                const isCustomItem = !isCatalogItem && item.source === 'custom'
-
-                                return (
-                                  <TableRow key={item.id}>
-                                    <TableCell className="font-medium">
-                                      <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-                                            {item.itemName}
-                                          </span>
-                                          {isCustomItem && (
-                                            <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 text-[10px] font-semibold py-0 px-1.5">
-                                              Custom / Ad-hoc
-                                            </Badge>
-                                          )}
-                                          {isCatalogItem && (
-                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 text-[10px] font-semibold py-0 px-1.5">
-                                              Master Catalog
-                                            </Badge>
-                                          )}
-                                          {item.source === 'ppmp' && (
-                                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 text-[10px] font-semibold py-0 px-1.5">
-                                              Office PPMP
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        {item.description && (
-                                          <span className="text-xs text-muted-foreground line-clamp-1">
-                                            {item.description}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>{item.category}</TableCell>
-                                    <TableCell className="min-w-[190px]">
-                                      {pr.status === 'draft' ? (
-                                        <Select
-                                          value={item.procurementModeName || 'unassigned'}
-                                          onValueChange={(val) => {
-                                            const selectedModeName = val === 'unassigned' ? undefined : val
-                                            const matchedMode = (modesResponse?.data ?? []).find(
-                                              (m) => m.name?.trim().toLowerCase() === val.trim().toLowerCase()
-                                            )
-                                            const updatedItems = pr.items.map((pi) => {
-                                              if (pi.id === item.id) {
-                                                return {
-                                                  ...pi,
-                                                  procurementModeName: selectedModeName,
-                                                  procurementModeId: matchedMode?.id || (selectedModeName ? pi.procurementModeId : undefined),
-                                                }
-                                              }
-                                              return pi
-                                            })
-                                            updatePurchaseRequest(pr.id, {
-                                              items: updatedItems,
-                                            })
-                                            setHasUnsavedChanges(true)
-                                          }}
-                                        >
-                                          <SelectTrigger className="h-8 text-xs w-[180px] bg-white dark:bg-slate-900 border-slate-200">
-                                            <SelectValue placeholder="Select MoP" />
-                                          </SelectTrigger>
-                                          <SelectContent className="max-h-56">
-                                            <SelectItem value="unassigned" className="text-xs text-muted-foreground">
-                                              Select MoP
-                                            </SelectItem>
-                                            {procurementModeOptions.map((mode) => (
-                                              <SelectItem key={mode} value={mode} className="text-xs">
-                                                {mode}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      ) : item.procurementModeName ? (
-                                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-semibold whitespace-nowrap">
-                                          {item.procurementModeName}
-                                        </Badge>
-                                      ) : (
-                                        <span className="text-xs text-muted-foreground">—</span>
-                                      )}
-                                    </TableCell>
-                                    <TableCell>{item.fund || '—'}</TableCell>
-                                    {hasAnyMonth && (
-                                      <TableCell className="text-center">
-                                        {item.month || '—'}
-                                      </TableCell>
-                                    )}
-                                    <TableCell className="text-center">
-                                      <div className="flex flex-col items-center justify-center gap-1">
-                                        <div className="flex items-center justify-center gap-1.5">
-                                          <Input
-                                            type="number"
-                                            min={1}
-                                            value={item.quantity || 0}
-                                            onChange={(e) => {
-                                              const v = parseInt(e.target.value || '0', 10)
-                                              const val = Number.isNaN(v) ? 0 : Math.max(0, v)
-                                              
-                                              const updatedItems = pr.items.map((pi) => {
-                                                if (pi.id === item.id) {
-                                                  const setQty = pi.setQuantity ?? (pi.quantity > 0 ? pi.quantity : val)
-                                                  const remainingQty = Math.max(0, setQty - val)
-                                                  return {
-                                                    ...pi,
-                                                    quantity: val,
-                                                    setQuantity: setQty,
-                                                    remainingQuantity: remainingQty,
-                                                    totalAmount: val * unitPrice,
-                                                  }
-                                                }
-                                                return pi
-                                              })
-                                              
-                                              const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
-                                              updatePurchaseRequest(pr.id, {
-                                                items: updatedItems,
-                                                totalAmount: newTotal,
-                                              })
-                                              setHasUnsavedChanges(true)
-                                            }}
-                                            disabled={pr.status !== 'draft'}
-                                            className="h-8 w-20 text-center font-medium tabular-nums"
-                                          />
-                                          <span className="text-xs text-muted-foreground pointer-events-none">
-                                            {item.unitOfMeasure || 'pcs'}
-                                          </span>
-                                        </div>
-                                        {item.setQuantity !== undefined && item.setQuantity > 0 && (
-                                          <span className="text-[10px] text-muted-foreground whitespace-nowrap block">
-                                            Rem: <span className="font-semibold text-primary">{item.remainingQuantity ?? Math.max(0, item.setQuantity - (item.quantity || 0))}</span> / {item.setQuantity}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      ₱{unitPrice.toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                      ₱
-                                      {(
-                                        (item.quantity || 0) * unitPrice
-                                      ).toLocaleString()}
-                                    </TableCell>
-                                    {pr.status === 'draft' && (
-                                      <TableCell className="text-center">
-                                        <div className="flex items-center justify-center gap-1.5">
-                                          {isCustomItem && (
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              className="h-7 text-xs px-2.5 gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50 hover:text-violet-800 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/50"
-                                              title="Propose this item to the Master Catalog"
-                                              onClick={() => handleOpenSubmitItemRequest(item)}
-                                            >
-                                              <FilePlus className="h-3.5 w-3.5" />
-                                              <span>Submit as Item Request</span>
-                                            </Button>
-                                          )}
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                                            title={`Remove ${item.itemName}`}
-                                            onClick={() => {
-                                              const updatedItems = pr.items.filter((pi) => pi.id !== item.id)
-                                              const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
-                                              updatePurchaseRequest(pr.id, {
-                                                items: updatedItems,
-                                                totalAmount: newTotal,
-                                              })
-                                              setHasUnsavedChanges(true)
-                                              toast.success('Item Removed', {
-                                                description: `${item.itemName} (${item.month}) removed from PR.`,
-                                              })
-                                            }}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        </div>
-                                      </TableCell>
-                                    )}
-                                  </TableRow>
-                                )
-                              })}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            <PRPPMPItemsSection
+              filteredGroupedPPMPs={filteredGroupedPPMPs}
+              expandedPPMPs={expandedPPMPs}
+              toggleExpandPPMP={toggleExpandPPMP}
+              isEditable={isEditable}
+              masterCatalogIdentifiers={masterCatalogIdentifiers}
+              modesResponseData={modesResponse?.data}
+              procurementModeOptions={procurementModeOptions}
+              onUpdateProcurementMode={handleUpdateItemProcurementMode}
+              onUpdateItemQuantity={handleUpdatePPMPItemQuantity}
+              onDeleteItem={handleDeletePPMPItem}
+              onDeletePPMPGroup={openDeletePPMPDialog}
+              onOpenSubmitItemRequest={handleOpenSubmitItemRequest}
+            />
           ) : (
-            <div className="space-y-3">
-              <div className="space-y-4">
-                {(pr.items || [])
-                  .filter((i) => i.aprGroup)
-                  .map((groupItem) => {
-                    const aprId = groupItem.aprGroup!.id || groupItem.aprGroup!.aprId || ''
-                    const isExpanded = expandedPPMPs.has(aprId)
-                    const nested: PRItem[] = (groupItem.aprGroup!.items ||
-                      []) as PRItem[]
-                    const aprTotal =
-                      groupItem.totalAmount ||
-                      nested.reduce(
-                        (s: number, ni: PRItem) => s + (ni.totalAmount || 0),
-                        0,
-                      )
-
-                    return (
-                      <div
-                        key={groupItem.id}
-                        className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow my-3"
-                      >
-                        <div
-                          className="px-6 py-4 min-h-[68px] flex items-center gap-3 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 cursor-pointer transition bg-gradient-to-r from-slate-50/30 to-slate-100/30"
-                          onClick={() => toggleExpandPPMP(aprId)}
-                        >
-                          <ChevronDown
-                            className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold truncate">
-                              {groupItem.aprGroup!.aprNumber} •{' '}
-                              {groupItem.aprGroup!.officeName}
-                            </div>
-                            <div className="text-xs truncate text-slate-600">
-                              {nested.length} item(s)
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3 ml-3">
-                            <Badge
-                              color="default"
-                              className="text-sm font-semibold"
-                            >
-                              ₱{aprTotal.toLocaleString()}
-                            </Badge>
-                            {canAddItems && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 p-0 text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  openDeleteAPRDialog(
-                                    aprId,
-                                    `${groupItem.aprGroup!.aprNumber} • ${groupItem.aprGroup!.officeName}`,
-                                    nested,
-                                  )
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-
-                        {isExpanded && (
-                          <div className="border-t bg-muted/10 overflow-x-auto">
-                            <Table style={{ minWidth: '1600px' }}>
-                              <TableHeader>
-                                <TableRow className="bg-muted/40">
-                                  <TableHead className="min-w-[150px] sticky left-0 bg-muted/40 z-10">Item Name</TableHead>
-                                  <TableHead className="min-w-[140px]">Category</TableHead>
-                                  <TableHead className="min-w-[110px]">Fund</TableHead>
-                                  {ORDERED_MONTHS.map((m: string) => (
-                                    <TableHead key={m} className="text-center min-w-[80px]">
-                                      <span className="flex flex-col items-center gap-0.5">
-                                        <span>{m.slice(0, 3)}</span>
-                                        {canEditNeeded && (
-                                          <span className="text-[9px] font-normal text-primary/60 leading-none">editable</span>
-                                        )}
-                                      </span>
-                                    </TableHead>
-                                  ))}
-                                  <TableHead className="text-center min-w-[110px]">
-                                    Total Qty
-                                  </TableHead>
-                                  <TableHead className="min-w-[110px]">Unit Price</TableHead>
-                                  <TableHead className="text-right min-w-[120px]">
-                                    Total Amount
-                                  </TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {nested.map((ni) => {
-                                  const unitPrice = ni.unitPrice || 0
-
-                                  const monthlyQty =
-                                    ni.monthlyQuantities &&
-                                    Object.keys(ni.monthlyQuantities).length > 0
-                                      ? ni.monthlyQuantities
-                                      : ni.month
-                                        ? { [ni.month]: ni.quantity }
-                                        : {}
-
-                                  const monthlySum = ORDERED_MONTHS.reduce(
-                                    (s: number, mm: string) =>
-                                      s + ((monthlyQty && (monthlyQty[mm] || 0)) || 0),
-                                    0,
-                                  )
-
-                                  const requiredTotal =
-                                    monthlySum > 0 ? monthlySum : (ni.originalNeeded || ni.quantity || 0)
-
-                                  const alreadyGot = ni.totalGot || 0
-                                  const deficitQty = Math.max(requiredTotal - alreadyGot, 0)
-                                  const lineTotal = deficitQty * unitPrice
-
-                                  return (
-                                    <TableRow key={ni.id}>
-                                      <TableCell className="font-medium">
-                                        {ni.itemName}
-                                      </TableCell>
-                                      <TableCell>{ni.category}</TableCell>
-                                      <TableCell>{ni.fund || '—'}</TableCell>
-
-                                      {ORDERED_MONTHS.map((m: string) => {
-                                        const currentVal =
-                                          ni.monthlyQuantities &&
-                                          typeof ni.monthlyQuantities[m] === 'number'
-                                            ? ni.monthlyQuantities[m]
-                                            : monthlyQty[m] || 0
-
-                                        return (
-                                          <TableCell
-                                            key={`${ni.id}-${m}`}
-                                            className="text-center px-2 py-2 group/cell hover:bg-primary/5 transition-colors rounded"
-                                          >
-                                            <div className="inline-flex items-baseline gap-0.5">
-                                              <input
-                                                type="number"
-                                                min={0}
-                                                value={currentVal}
-                                                title="Click to edit"
-                                                onChange={(e) => {
-                                                  const v = parseInt(e.target.value || '0', 10)
-                                                  const val = Number.isNaN(v) ? 0 : v
-
-                                                  const updatedItems = pr.items.map((pi) => {
-                                                    if (pi.id !== groupItem.id) return pi
-                                                    const updatedAprGroup = {
-                                                      ...pi.aprGroup!,
-                                                      items: (pi.aprGroup!.items || []).map(
-                                                        (inner: PRItem) => {
-                                                          if (inner.id !== ni.id) return inner
-                                                          const prevMonthly =
-                                                            inner.monthlyQuantities &&
-                                                            Object.keys(inner.monthlyQuantities).length > 0
-                                                              ? { ...inner.monthlyQuantities }
-                                                              : inner.month
-                                                                ? { [inner.month]: inner.quantity }
-                                                                : {}
-                                                          const nextMonthly = { ...prevMonthly, [m]: val }
-                                                          const computedQty = ORDERED_MONTHS.reduce(
-                                                            (s: number, mm: string) =>
-                                                              s + (nextMonthly[mm] || 0),
-                                                            0,
-                                                          )
-                                                            return {
-                                                            ...inner,
-                                                            monthlyQuantities: nextMonthly,
-                                                            editedNeeded: computedQty,
-                                                            quantity: computedQty,
-                                                            outOfStockQuantity: computedQty,
-                                                            totalAmount: computedQty * (inner.unitPrice || 0),
-                                                            }
-                                                        },
-                                                      ),
-                                                    }
-                                                    const newGroupTotal = (updatedAprGroup.items || []).reduce(
-                                                      (s: number, it: PRItem) => s + (it.totalAmount || 0),
-                                                      0,
-                                                    )
-                                                    const newGroupQty = (updatedAprGroup.items || []).reduce(
-                                                      (s: number, it: PRItem) => s + (it.quantity || 0),
-                                                      0,
-                                                    )
-                                                    return {
-                                                      ...pi,
-                                                      aprGroup: updatedAprGroup,
-                                                      quantity: newGroupQty,
-                                                      totalAmount: newGroupTotal,
-                                                      }
-                                                  })
-
-                                                  const newTotal = updatedItems.reduce(
-                                                    (s, it) => s + (it.totalAmount || 0),
-                                                    0,
-                                                  )
-                                                  updatePurchaseRequest(pr.id, {
-                                                    items: updatedItems,
-                                                    totalAmount: newTotal,
-                                                  })
-                                                  setHasUnsavedChanges(true)
-                                                }}
-                                                readOnly={!canEditNeeded}
-                                                disabled={!canEditNeeded}
-                                                className={`w-8 text-center tabular-nums text-sm bg-transparent border-none outline-none p-0 caret-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${canEditNeeded ? 'cursor-text focus:outline-none focus:border-b-2 focus:border-primary' : 'cursor-default opacity-70'}`}
-                                              />
-                                              <span className="text-sm text-slate-600 dark:text-slate-400 pointer-events-none">
-                                                {ni.unitOfMeasure || 'pcs'}
-                                              </span>
-                                            </div>
-                                          </TableCell>
-                                        )
-                                      })}
-
-                                      <TableCell className="text-center">
-                                        <Badge color="default" className="tabular-nums">
-                                          {ORDERED_MONTHS.reduce((s: number, m: string) => {
-                                            const cellVal =
-                                              ni.monthlyQuantities &&
-                                              typeof ni.monthlyQuantities[m] === 'number'
-                                                ? ni.monthlyQuantities[m]
-                                                : monthlyQty[m] || 0
-                                            return s + cellVal
-                                          }, 0)} {ni.unitOfMeasure || 'pcs'}
-                                        </Badge>
-                                      </TableCell>
-
-                                      <TableCell>
-                                        ₱{unitPrice.toLocaleString()}
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        ₱{(lineTotal || 0).toLocaleString()}
-                                      </TableCell>
-                                    </TableRow>
-                                  )
-                                })}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-              </div>
-            </div>
+            <PRAPRItemsSection
+              groupedAPRs={groupedAPRs}
+              expandedPPMPs={expandedPPMPs}
+              toggleExpandPPMP={toggleExpandPPMP}
+              isEditable={isEditable}
+              canAddItems={canAddItems}
+              defaultOfficeName={pr.headerDetails?.officeName}
+              onUpdateMonthlyQuantity={handleUpdateAPRMonthlyQuantity}
+              onDeleteItem={handleDeleteAPRItem}
+              onDeleteAPRGroup={openDeleteAPRGroupDialog}
+            />
           )}
         </CardContent>
       </Card>
 
-      {/* Return Remarks */}
-      {displayStatus === 'returned' && pr.remarks && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="text-lg text-destructive">
-              Return Remarks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{pr.remarks}</p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Modals */}
       <AddItemsModal

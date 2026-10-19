@@ -27,6 +27,7 @@ import {
 import { useNavigate } from "react-router";
 import { useTenant } from "~/providers/TenantProvider";
 import { useBillingData } from "~/features/billing/hooks/useBillingData";
+import { PurchaseLicenseModal } from "~/features/license/components/PurchaseLicenseModal";
 import { toast } from "sonner";
 
 export default function PlanPage() {
@@ -56,6 +57,7 @@ export default function PlanPage() {
   const [selectedPlan, setSelectedPlan] = useState<PlanItem | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isEnterpriseModalOpen, setIsEnterpriseModalOpen] = useState(false);
+  const [isPurchaseLicenseModalOpen, setIsPurchaseLicenseModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Enterprise consultation form state
@@ -112,10 +114,8 @@ export default function PlanPage() {
       if (isCustom(plan.price)) {
         setIsEnterpriseModalOpen(true);
       } else {
-        toast.info(
-          `To deploy ${plan.name}, proceed to License Management to generate an on-premise cryptographic key.`
-        );
-        navigate("/license-management");
+        setSelectedPlan(plan);
+        setIsPurchaseLicenseModalOpen(true);
       }
       return;
     }
@@ -685,6 +685,20 @@ export default function PlanPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* On-Premise Self-Service License Purchase Modal */}
+      <PurchaseLicenseModal
+        isOpen={isPurchaseLicenseModalOpen}
+        onClose={() => setIsPurchaseLicenseModalOpen(false)}
+        initialPlan={
+          selectedPlan?.tier ||
+          (selectedPlan?.name?.toLowerCase().includes("foundation") ? "Starter" : "Professional")
+        }
+        onSuccess={() => {
+          setIsPurchaseLicenseModalOpen(false);
+          navigate("/license-management");
+        }}
+      />
     </div>
   );
 }

@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class LIBAmendmentRequest : BaseEntity
+public class LIBAmendmentRequest : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid LineItemBudgetId { get; set; }

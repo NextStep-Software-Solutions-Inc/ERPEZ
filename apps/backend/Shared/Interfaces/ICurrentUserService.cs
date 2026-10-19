@@ -6,7 +6,7 @@ namespace ERPEZ.Shared.Interfaces;
 public interface ICurrentUserService
 {
     /// <summary>
-    /// The external identity ID from JWT (sub claim), representing Keycloak subject ID.
+    /// The external identity ID from JWT (sub claim), representing federated subject ID (e.g., Clerk user ID or Keycloak subject ID).
     /// </summary>
     string? ExternalIdentityId { get; }
 
@@ -54,4 +54,9 @@ public interface ICurrentUserService
     /// Checks if the user is in a specific role.
     /// </summary>
     bool IsInRole(string role);
+
+    /// <summary>
+    /// Operating role explicitly requested via X-Operating-Role header for bounded execution.
+    /// </summary>
+    string? OperatingRole { get; }
 }

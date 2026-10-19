@@ -21,6 +21,8 @@ import {
   uploadPoDocument,
 } from '../handlers'
 import { downloadPurchaseOrderBlob } from '../utils/downloadPurchaseOrderBlob'
+import { downloadPurchaseOrderPdf } from '../handlers/generatePurchaseOrderDocumentRequest'
+import { printPurchaseOrder } from '../utils/printPurchaseOrder'
 import { normalizePoStatus } from './PurchaseOrderStatusBadge'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type {
@@ -57,6 +59,8 @@ type PurchaseOrderWorkspaceProps = {
   mode: PurchaseOrderMode
   role: PurchaseOrderRole
   defaultFilter?: PurchaseOrderListFilter
+  initialModeTab?: 'all' | 'svp' | 'public-bidding' | 'direct-acquisition'
+  onModeTabChange?: (tab: 'all' | 'svp' | 'public-bidding' | 'direct-acquisition') => void
 }
 
 export function PurchaseOrderWorkspace({
@@ -65,10 +69,25 @@ export function PurchaseOrderWorkspace({
   mode,
   role,
   defaultFilter = 'all',
+  initialModeTab,
+  onModeTabChange,
 }: PurchaseOrderWorkspaceProps) {
   const [search, setSearch] = useState('')
   const [activeFilter, setActiveFilter] = useState<PurchaseOrderListFilter>(defaultFilter)
-  const [selectedModeTab, setSelectedModeTab] = useState<'all' | 'svp' | 'public-bidding' | 'direct-acquisition'>('all')
+  const [selectedModeTab, setSelectedModeTab] = useState<'all' | 'svp' | 'public-bidding' | 'direct-acquisition'>(
+    initialModeTab || 'all'
+  )
+
+  useEffect(() => {
+    if (initialModeTab && initialModeTab !== selectedModeTab) {
+      setSelectedModeTab(initialModeTab)
+    }
+  }, [initialModeTab])
+
+  const handleTabChange = (val: 'all' | 'svp' | 'public-bidding' | 'direct-acquisition') => {
+    setSelectedModeTab(val)
+    onModeTabChange?.(val)
+  }
 
   const effectiveMode = mode === 'all' ? selectedModeTab : mode
 
@@ -323,7 +342,7 @@ export function PurchaseOrderWorkspace({
             <div className="border-b pb-4">
               <Tabs
                 value={selectedModeTab}
-                onValueChange={(val) => setSelectedModeTab(val as any)}
+                onValueChange={(val) => handleTabChange(val as any)}
                 className="w-full"
               >
                 <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl">
@@ -466,12 +485,20 @@ export function PurchaseOrderWorkspace({
               rows={filteredRows}
               role={role}
               mode={mode}
-              onPrint={(purchaseOrderId) => {
+              onPrint={async (purchaseOrderId) => {
                 const po = purchaseOrders.find((p) => p.id === purchaseOrderId)
                 if (po) {
-                  // If printable document exists or mock download
-                  const blob = new Blob([JSON.stringify(po, null, 2)], { type: 'application/json' })
-                  downloadPurchaseOrderBlob({ blob, filename: `${po.poNumber || 'PO'}.json` })
+                  try {
+                    await downloadPurchaseOrderPdf(
+                      po.id,
+                      `${po.poNumber || 'PO'}_Purchase_Order.pdf`
+                    )
+                    toast.success('Official Purchase Order PDF downloaded.')
+                  } catch (err: any) {
+                    console.warn('Server PDF download failed, opening print preview:', err)
+                    printPurchaseOrder(po)
+                    toast.info('Opened document print preview.')
+                  }
                 }
               }}
               onSubmit={(purchaseOrderId) => {
@@ -547,6 +574,7 @@ export function PurchaseOrderWorkspace({
         }}
         onSubmit={handleApproveConfirm}
         isSubmitting={approveMutation.isPending}
+        poNumber={purchaseOrders.find((p) => p.id === selectedPurchaseOrderId)?.poNumber}
       />
     </div>
   )

@@ -3,11 +3,11 @@ import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { Menu } from "lucide-react";
 import { NavbarMenu } from "./NavbarMenu";
 import { Link } from "react-router";
-import { useKeycloak } from "~/providers/KeycloakProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { UserMenu } from "~/components/navbar/UserMenu";
 
 export const NavigationSheet = () => {
-    const { isAuthenticated, login } = useKeycloak();
+    const { isAuthenticated, login } = useClerkAuth();
 
     return (
         <Sheet>

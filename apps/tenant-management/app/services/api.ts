@@ -7,30 +7,52 @@ import {
 } from "erpez-shared-lib";
 import { toast } from "sonner";
 import { extractErrorMessage, extractSuccessMessage } from "./utils/messages";
+import { getTenantBackendUrl } from "~/config/env";
 
 const BLACKLISTED_CODES = ["ERR_CANCELED"];
 const WHITELISTED_METHODS = ["post", "put", "patch", "delete"];
 
-export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL || "http://localhost:5246");
+export const api = createAxiosInstance(getTenantBackendUrl());
 
 let authToken: string | null = null;
+let authTokenGetter: (() => Promise<string | null>) | null = null;
 
 export const setAuthToken = (token: string | null) => {
   authToken = token;
 };
 
+export const setAuthTokenGetter = (getter: (() => Promise<string | null>) | null) => {
+  authTokenGetter = getter;
+};
+
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     let token = authToken;
-    let tenantId = "00000000-0000-0000-0000-000000000001";
+
+    if (authTokenGetter) {
+      try {
+        const fresh = await authTokenGetter();
+        if (fresh) {
+          token = fresh;
+          authToken = fresh;
+        }
+      } catch {
+        // Fall back to current in-memory token
+      }
+    }
+
+    let tenantId: string | null = null;
+
+    let userEmail: string | null = null;
 
     if (typeof window !== "undefined") {
       try {
         const storedToken = localStorage.getItem("erpez_auth_token");
-        if (storedToken && storedToken.startsWith("ey")) {
+        if (!token && storedToken && storedToken.startsWith("ey")) {
           token = storedToken;
         }
-        tenantId = localStorage.getItem("erpez_tenant_id") || tenantId;
+        tenantId = localStorage.getItem("erpez_tenant_id");
+        userEmail = localStorage.getItem("erpez_user_email") || sessionStorage.getItem("erpez_user_email");
       } catch {
         // Ignore localStorage access errors
       }
@@ -41,6 +63,9 @@ api.interceptors.request.use(
     }
     if (tenantId) {
       config.headers["X-Tenant-Id"] = tenantId;
+    }
+    if (userEmail) {
+      config.headers["X-User-Email"] = userEmail;
     }
     return config;
   },

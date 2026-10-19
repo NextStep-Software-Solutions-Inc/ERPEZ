@@ -9,7 +9,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Self-rating or final rating for OPCR Activities
 /// Note: Rating status moved to OPCR entity level
 /// </summary>
-public class OPCRActivityRating : BaseEntity
+public class OPCRActivityRating : TenantScopedEntity
 {
     public OPCRActivityRating() { }
     

@@ -11,12 +11,12 @@ import PlanSection from "~/components/section/PlanSection";
 import FAQSection from "~/components/section/FAQSection";
 import ContactSection from "~/components/section/ContactSection";
 import Footer from "~/components/footer/Footer";
-import { useKeycloak } from "~/providers/KeycloakProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { UserMenu } from "~/components/navbar/UserMenu";
 import { HeroSectionCarousel } from "../section/HeroSectionCarousel";
 
 export default function Welcome() {
-    const { isAuthenticated, login } = useKeycloak();
+    const { isAuthenticated, login } = useClerkAuth();
 
     return (
         <>

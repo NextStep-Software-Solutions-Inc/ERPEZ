@@ -10,7 +10,6 @@ public interface IUnitOfWork
     ITenantMemberRepository TenantMemberRepository { get; }
     ITenantSubscriptionRepository TenantSubscriptionRepository { get; }
     IRoleRepository RoleRepository { get; }
-    IPermissionRepository PermissionRepository { get; }
     ILicenseKeyRepository LicenseKeyRepository { get; }
     ITenantAuditRepository TenantAuditRepository { get; }
     ITenantInvoiceRepository TenantInvoiceRepository { get; }

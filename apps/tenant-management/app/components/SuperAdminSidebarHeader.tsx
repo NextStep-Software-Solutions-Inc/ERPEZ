@@ -1,4 +1,4 @@
-import { useKeycloak } from "~/providers/KeycloakProvider";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { GalleryVerticalEnd } from "lucide-react";
 
 import {
@@ -8,7 +8,7 @@ import {
 } from "~/components/ui/sidebar";
 
 export function SuperAdminSidebarHeader() {
-  const { user } = useKeycloak();
+  const { user } = useClerkAuth();
 
   return (
     <SidebarMenu>

@@ -19,7 +19,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// 4. For each Rating, the Planning Unit creates an Evaluation record to
 ///    "Confirm" the score or not. 
 /// </summary>
-public class OPCRActivityEvaluation : BaseEntity
+public class OPCRActivityEvaluation : TenantScopedEntity
 {
     public OPCRActivityEvaluation() { }
     

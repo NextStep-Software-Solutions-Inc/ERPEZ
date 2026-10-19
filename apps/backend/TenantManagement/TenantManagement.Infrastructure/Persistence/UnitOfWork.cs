@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Sieve.Services;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
+
 public sealed class UnitOfWork : IUnitOfWork, IDisposable
 {
     private readonly ApplicationDbContext context;
@@ -14,7 +15,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ITenantSubscriptionRepository TenantSubscriptionRepository { get; }
     public IModuleRepository ModuleRepository { get; }
     public IRoleRepository RoleRepository { get; }
-    public IPermissionRepository PermissionRepository { get; }
     public ILicenseKeyRepository LicenseKeyRepository { get; }
     public ITenantAuditRepository TenantAuditRepository { get; }
     public ITenantInvoiceRepository TenantInvoiceRepository { get; }
@@ -32,7 +32,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         ICurrentUserService currentUser,
         IModuleRepository moduleRepository,
         IRoleRepository roleRepository,
-        IPermissionRepository permissionRepository,
         ILicenseKeyRepository licenseKeyRepository,
         ITenantAuditRepository tenantAuditRepository,
         ITenantInvoiceRepository tenantInvoiceRepository,
@@ -46,7 +45,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         ModuleRepository = moduleRepository ?? throw new ArgumentNullException(nameof(moduleRepository));
         TenantSubscriptionRepository = tenantSubscriptionRepository ?? throw new ArgumentNullException(nameof(tenantSubscriptionRepository));
         RoleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
-        PermissionRepository = permissionRepository ?? throw new ArgumentNullException(nameof(permissionRepository));
         LicenseKeyRepository = licenseKeyRepository ?? throw new ArgumentNullException(nameof(licenseKeyRepository));
         TenantAuditRepository = tenantAuditRepository ?? throw new ArgumentNullException(nameof(tenantAuditRepository));
         TenantInvoiceRepository = tenantInvoiceRepository ?? throw new ArgumentNullException(nameof(tenantInvoiceRepository));

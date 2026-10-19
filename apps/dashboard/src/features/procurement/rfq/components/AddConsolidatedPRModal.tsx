@@ -174,13 +174,26 @@ export function AddConsolidatedPRModal({
     }
   }, [open, currentModeOfProcurementName, fetchConsolidatedPrItemsForRFQ])
 
-  // Group and map flat items into ConsolidatedPR objects
+const isNonRfqMode = (modeName?: string | null): boolean => {
+  if (!modeName) return false
+  const lower = modeName.toLowerCase()
+  return (
+    lower.includes('bidding') ||
+    lower.includes('direct contracting') ||
+    lower.includes('direct acquisition') ||
+    lower.includes('repeat order')
+  )
+}
+
+  // Group and map flat items into ConsolidatedPR objects (filtered to RFQ-eligible modes under RA 12009)
   const approvedPRs = useMemo(() => {
     const prMap = new Map<string, any>()
-    flatItems.forEach((item: ConsolidatedPRItem) => {
-      const prId = item.consolidatedPRId
-      if (!prMap.has(prId)) {
-        prMap.set(prId, {
+    flatItems
+      .filter((item: ConsolidatedPRItem) => !isNonRfqMode(item.procurementModeName))
+      .forEach((item: ConsolidatedPRItem) => {
+        const prId = item.consolidatedPRId
+        if (!prMap.has(prId)) {
+          prMap.set(prId, {
           id: prId,
           prNumber: item.cprNumber || prId,
           purpose: `Consolidated PR`,

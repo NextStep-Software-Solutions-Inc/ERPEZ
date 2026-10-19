@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 using PlanningObject = ERPEZ.Domain.Entities.Planning.Object;
@@ -10,7 +10,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Note: LIB detail is usually quarterly, but let's allow for flexibility;
 ///       users should be able to choose between monthly and quarterly
 /// </summary>
-public class LineItemBudgetDetail : BaseEntity
+public class LineItemBudgetDetail : TenantScopedEntity
 {
     public LineItemBudgetDetail() { }
     

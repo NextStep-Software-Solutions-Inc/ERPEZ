@@ -35,7 +35,7 @@ public static class DevTenantAndMemberSeeder
             "Super Administrator (Dev)",
             "superadmin@erpez.dev",
             TenantMemberRole.Admin,
-            ["Tenant Administrator"]
+            ["Tenant Administrator", "Platform Administrator"]
         ),
         new(
             Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"),
@@ -439,6 +439,39 @@ public static class DevTenantAndMemberSeeder
                 {
                     existingTenant.Modules.Add(module);
                 }
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        // 3c. Ensure all existing registered tenants have at least one active default subscription
+        if (dbContext.Tenants != null && dbContext.TenantSubscriptions != null)
+        {
+            var tenantsWithoutSub = await dbContext.Tenants
+                .Include(t => t.TenantSubscriptions)
+                .Where(t => !t.TenantSubscriptions.Any())
+                .ToListAsync(cancellationToken);
+
+            foreach (var t in tenantsWithoutSub)
+            {
+                var newSub = new TenantSubscription
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = t.Id,
+                    Plan = Plan.Starter,
+                    Status = Status.Active,
+                    Amount = 0m,
+                    StartDate = t.CreatedAt == default ? DateTime.UtcNow : t.CreatedAt,
+                    EndDate = (t.CreatedAt == default ? DateTime.UtcNow : t.CreatedAt).AddYears(1),
+                    BillingCycle = BillingCycle.Monthly,
+                    AutoRenew = true,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "system"
+                };
+                await dbContext.TenantSubscriptions.AddAsync(newSub, cancellationToken);
+            }
+
+            if (tenantsWithoutSub.Count > 0)
+            {
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
         }

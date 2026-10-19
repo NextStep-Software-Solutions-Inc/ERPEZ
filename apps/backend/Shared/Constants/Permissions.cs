@@ -95,6 +95,15 @@ public static class Permissions
         public const string supplierManage = "procurement.supplier.manage";
     }
 
+    public static class Platform
+    {
+        public const string pricingView = "platform.pricing.view";
+        public const string pricingManage = "platform.pricing.manage";
+        public const string subscribersView = "platform.subscribers.view";
+        public const string fleetManage = "platform.fleet.manage";
+        public const string databaseSiloManage = "platform.database_silos.manage";
+    }
+
     public static class Admin
     {
         public const string tenantsManage = "admin.tenants.manage";
@@ -105,6 +114,10 @@ public static class Permissions
         public const string orgStructureManage = "admin.org_structure.manage";
         public const string systemAdminView = "admin.system_admin.view";
         public const string systemAdminManage = "admin.system_admin.manage";
+
+        // Dedicated Operational Role Assignment Boundary
+        public const string operationalRolesView = "admin.operational_roles.view";
+        public const string operationalRolesManage = "admin.operational_roles.manage";
     }
 
     /// <summary>
@@ -197,7 +210,16 @@ public static class Permissions
             Admin.orgStructureView,
             Admin.orgStructureManage,
             Admin.systemAdminView,
-            Admin.systemAdminManage
+            Admin.systemAdminManage,
+            Admin.operationalRolesView,
+            Admin.operationalRolesManage,
+
+            // Platform
+            Platform.pricingView,
+            Platform.pricingManage,
+            Platform.subscribersView,
+            Platform.fleetManage,
+            Platform.databaseSiloManage
         ];
     }
 }

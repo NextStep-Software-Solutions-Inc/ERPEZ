@@ -38,11 +38,18 @@ import {
   selectedPpmpForSupplementalAtom,
 } from '../../atoms/ppmpStateAtoms'
 
+import { usePermissions } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/constants/permissions'
+
 const useToggleFinal = createMutationHookFromTemplate(
   togglePpmpFinalizationRequest,
 )
 
 function PpmpActions({ ppmp }: { ppmp: PPMP }) {
+  const { hasPermission } = usePermissions()
+  const canUpdate = hasPermission(PERMISSIONS.Procurement.Ppmp.Update) || hasPermission(PERMISSIONS.Procurement.Ppmp.Manage)
+  const canDelete = hasPermission(PERMISSIONS.Procurement.Ppmp.Delete) || hasPermission(PERMISSIONS.Procurement.Ppmp.Manage)
+  const canManage = hasPermission(PERMISSIONS.Procurement.Ppmp.Manage)
   const queryClient = useQueryClient()
   const setSelectedForDelete = useSetAtom(selectedPpmpForDeleteAtom)
   const setDeleteOpen = useSetAtom(deletePpmpDialogOpenAtom)
@@ -188,7 +195,7 @@ function PpmpActions({ ppmp }: { ppmp: PPMP }) {
           Export as PDF
         </DropdownMenuItem>
 
-        {isApproved && ppmp.ppmpType !== 'Supplemental' && !ppmp.sourcePPMPId && (
+        {canManage && isApproved && ppmp.ppmpType !== 'Supplemental' && !ppmp.sourcePPMPId && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -220,17 +227,21 @@ function PpmpActions({ ppmp }: { ppmp: PPMP }) {
           </>
         )}
 
-        <DropdownMenuSeparator />
+        {(canUpdate || canDelete) && <DropdownMenuSeparator />}
 
-        <DropdownMenuItem onClick={handleEdit}>
-          <FilePen className="mr-2 h-4 w-4" />
-          Edit
-        </DropdownMenuItem>
+        {canUpdate && (
+          <DropdownMenuItem onClick={handleEdit}>
+            <FilePen className="mr-2 h-4 w-4" />
+            Edit
+          </DropdownMenuItem>
+        )}
 
-        <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete
-        </DropdownMenuItem>
+        {canDelete && (
+          <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

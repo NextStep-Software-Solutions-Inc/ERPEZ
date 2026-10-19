@@ -1,3 +1,5 @@
+using ERPEZ.Shared.Enums;
+
 namespace ERPEZ.Shared.Models;
 
 /// <summary>
@@ -7,6 +9,7 @@ namespace ERPEZ.Shared.Models;
 public sealed record TenantDatabaseConnectionInfo(
     Guid TenantId,
     string ConnectionString,
+    TenancyMode TenancyMode = TenancyMode.SaaS,
     int MaxPoolSize = 50,
     int ConnectionTimeoutSeconds = 15
 );

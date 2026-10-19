@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
-public class Rating : BaseEntity
+public class Rating : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public int NumericalRating { get; set; }

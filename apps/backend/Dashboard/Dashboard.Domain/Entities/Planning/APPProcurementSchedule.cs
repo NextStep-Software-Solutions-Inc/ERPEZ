@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Procurement schedule/timeline for APP items
 /// Links to specific procurement activity types
 /// </summary>
-public class APPProcurementSchedule : BaseEntity
+public class APPProcurementSchedule : TenantScopedEntity
 {
     public APPProcurementSchedule() { }
     

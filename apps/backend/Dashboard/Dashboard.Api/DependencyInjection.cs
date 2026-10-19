@@ -1,17 +1,16 @@
 using ERPEZ.Api.Configuration;
 using ERPEZ.Api.Extensions;
+using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Infrastructure.Services;
 using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Interceptors;
 using ERPEZ.Shared.Interfaces;
 using ERPEZ.Shared.Middlewares;
 using ERPEZ.Shared.Services;
-using ERPEZ.TenantManagement.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Text.Json.Serialization;
-using TenantDbContext = ERPEZ.TenantManagement.Infrastructure.Persistence.ApplicationDbContext;
 
 namespace ERPEZ.Api;
 
@@ -36,21 +35,7 @@ public static class DependencyInjection
             });
 
         services.AddEndpointsApiExplorer();
-        services.AddJwtAuthentication(configuration);
-
-        // Dynamic Authorization & Tenant Services
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        services.AddDbContext<TenantDbContext>((sp, options) =>
-        {
-            options.UseNpgsql(connectionString);
-            options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
-
-            if (env != null && env.IsDevelopment())
-            {
-                options.ConfigureWarnings(w =>
-                    w.Ignore(RelationalEventId.PendingModelChangesWarning));
-            }
-        });
+        services.AddJwtAuthentication(configuration, env);
 
         services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
         {
@@ -59,12 +44,14 @@ public static class DependencyInjection
                                       Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost;
         });
 
+        services.AddHttpClient("TenantManagementApi");
         services.AddMemoryCache();
         services.AddScoped<TenantRequestContext>();
         services.AddScoped<ITenantContextService>(sp => sp.GetRequiredService<TenantRequestContext>());
         services.AddScoped<ITenantRequestContext>(sp => sp.GetRequiredService<TenantRequestContext>());
         services.AddScoped<ITenantConnectionProvider, TenantConnectionProvider>();
-        services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
+        services.AddScoped<IUserAuthorizationService, DashboardUserAuthorizationService>();
+        services.AddScoped<ILicenseConsumptionService, LicenseConsumptionService>();
         services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddAuthorization();

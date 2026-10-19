@@ -157,7 +157,7 @@ export function ApproveAOBDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md max-h-96 overflow-y-auto">
+      <AlertDialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Approve AOB</AlertDialogTitle>
           <AlertDialogDescription>
@@ -329,15 +329,19 @@ export function ApproveAOBDialog({
         </Form>
 
         {/* Dialog Footer */}
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSubmitting}>
+        <AlertDialogFooter className="gap-2 sm:gap-2 pt-2">
+          <AlertDialogCancel
+            variant="outline"
+            disabled={isSubmitting}
+            className="h-10 px-5 text-sm font-medium border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
             form="approve-aob-form"
             type="submit"
             disabled={isSubmitting || !isAllItemsAwarded}
-            className="bg-green-600 hover:bg-green-700"
+            className="h-10 px-6 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white min-w-[140px] shadow-sm"
           >
             {isSubmitting ? 'Approving...' : 'Approve AOB'}
           </AlertDialogAction>

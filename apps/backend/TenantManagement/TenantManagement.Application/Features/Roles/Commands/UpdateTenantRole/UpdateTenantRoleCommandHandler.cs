@@ -2,6 +2,7 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Constants;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.TenantManagement.Domain.Constants;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -35,7 +36,6 @@ public class UpdateTenantRoleCommandHandler(
         }
 
         var role = await unitOfWork.RoleRepository.Query()
-            .Include(r => r.RolePermissions).ThenInclude(rp => rp.Permission)
             .FirstOrDefaultAsync(r => r.Id == command.Id, cancellationToken)
             ?? throw new NotFoundException("Role not found.");
 
@@ -56,7 +56,7 @@ public class UpdateTenantRoleCommandHandler(
 
         var isTenantAdmin = await unitOfWork.TenantMemberRepository.Query()
             .AnyAsync(tm => tm.TenantId == tenantId &&
-                            tm.ExternalIdentityId == actorExternalId &&
+                            (tm.ExternalIdentityId == actorExternalId || tm.UserId == actorExternalId) &&
                             tm.Status == Status.Active &&
                             !tm.IsDeleted &&
                             tm.RoleAssignments.Any(ra => ra.Role.NormalizedName == "TENANT ADMINISTRATOR"),
@@ -66,7 +66,8 @@ public class UpdateTenantRoleCommandHandler(
 
         if (!isTenantAdmin)
         {
-            if (!actorPermissions.Contains(Permissions.Admin.rolesManage))
+            if (!actorPermissions.Contains(TenantPermissions.rolesManage) &&
+                !actorPermissions.Contains(Permissions.Admin.rolesManage))
             {
                 throw new ForbiddenException("You do not have permission to manage tenant roles.");
             }
@@ -90,29 +91,24 @@ public class UpdateTenantRoleCommandHandler(
             throw new ConflictException($"Another role named '{command.Name}' already exists in this tenant.");
         }
 
+        var invalidKeys = command.PermissionKeys
+            .Where(k => !TenantPermissions.all.Contains(k))
+            .ToList();
+        if (invalidKeys.Count > 0)
+        {
+            throw new ValidationException($"Invalid tenant permission keys: {string.Join(", ", invalidKeys)}");
+        }
+
         var beforeState = new
         {
             role.Name,
-            Permissions = role.RolePermissions.Select(rp => rp.Permission.Key).ToList()
+            Permissions = role.Permissions ?? []
         };
 
         role.Name = command.Name.Trim();
         role.NormalizedName = normalizedName;
         role.Description = command.Description;
-
-        var permissions = await unitOfWork.PermissionRepository.Query()
-            .Where(p => command.PermissionKeys.Contains(p.Key))
-            .ToListAsync(cancellationToken);
-
-        role.RolePermissions.Clear();
-        foreach (var p in permissions)
-        {
-            role.RolePermissions.Add(new RolePermission
-            {
-                RoleId = role.Id,
-                PermissionId = p.Id
-            });
-        }
+        role.Permissions = command.PermissionKeys.Distinct().ToList();
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

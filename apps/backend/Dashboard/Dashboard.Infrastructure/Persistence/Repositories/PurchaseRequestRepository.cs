@@ -31,6 +31,7 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             .Include(pr => pr.FundSource)
             .Include(pr => pr.UACSCodeCombination)
             .Include(pr => pr.ProcurementCategory)
+            .Include(pr => pr.APR)
             .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
                 .ThenInclude(i => i.PPMPItem)
                     .ThenInclude(pi => pi!.NonCSEItem)
@@ -92,6 +93,28 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
                 .ThenInclude(i => i.ConsolidatedPRItems.Where(ci => !ci.IsDeleted))
                     .ThenInclude(ci => ci.ProcurementMode)
+            .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
+                .ThenInclude(i => i.APRItem)
+                    .ThenInclude(ai => ai!.APR)
+                        .ThenInclude(a => a.Office)
+            .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
+                .ThenInclude(i => i.APRItem)
+                    .ThenInclude(ai => ai!.APPItem)
+                        .ThenInclude(app => app!.ProcurementMode)
+            .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
+                .ThenInclude(i => i.APRItem)
+                    .ThenInclude(ai => ai!.PPMPItem)
+                        .ThenInclude(pi => pi!.ProcurementMode)
+            .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
+                .ThenInclude(i => i.APRItem)
+                    .ThenInclude(ai => ai!.PPMPItem)
+                        .ThenInclude(pi => pi!.CSEItem)
+                            .ThenInclude(c => c!.UOM)
+            .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
+                .ThenInclude(i => i.APRItem)
+                    .ThenInclude(ai => ai!.PPMPItem)
+                        .ThenInclude(pi => pi!.CSEItem)
+                            .ThenInclude(c => c!.ItemCategory)
             .Include(pr => pr.ApprovalEvents.OrderByDescending(ae => ae.Timestamp))
             .AsSplitQuery();
     }
@@ -303,7 +326,7 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             .ToList();
     }
 
-    public async Task<List<EligibleAPRItemResult>> GetEligibleOutOfStockItemsAsync(Guid officeId, CancellationToken cancellationToken = default)
+    public async Task<List<EligibleAPRItemResult>> GetEligibleOutOfStockItemsAsync(Guid officeId, Guid? currentPRId = null, CancellationToken cancellationToken = default)
     {
         var reservedQty = await context.Set<PRItem>()
             .Where(i =>
@@ -311,7 +334,8 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
                 i.PurchaseRequest.OfficeId == officeId &&
                 !i.PurchaseRequest.IsDeleted &&
                 i.PurchaseRequest.Status != StatusEnum.Returned &&
-                i.PurchaseRequest.PRType == PRType.OutOfStockCSE)
+                i.PurchaseRequest.PRType == PRType.OutOfStockCSE &&
+                (!currentPRId.HasValue || i.PurchaseRequestId != currentPRId.Value))
             .GroupBy(i => i.APRItemId!.Value)
             .Select(g => new { APRItemId = g.Key, ReservedQty = g.Sum(i => i.RequestedQuantity) })
             .ToDictionaryAsync(x => x.APRItemId, x => x.ReservedQty, cancellationToken);

@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 /// Represents a snapshot of KPIMeasurement for a specific fiscal year.
 /// Cloned from Master KPIMeasurement during activation to ensure immutability.
 /// </summary>
-public class FYActiveKPIMeasurement : BaseEntity
+public class FYActiveKPIMeasurement : TenantScopedEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FYActiveKPIId { get; set; }

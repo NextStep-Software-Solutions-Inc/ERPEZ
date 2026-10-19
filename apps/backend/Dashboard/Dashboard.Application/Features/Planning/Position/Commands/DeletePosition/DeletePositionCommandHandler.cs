@@ -13,7 +13,7 @@ public class DeletePositionCommandHandler(IUnitOfWork unitOfWork)
         var position = await unitOfWork.PositionRepository.GetByIdAsync(request.Id, cancellationToken);
 
         if (position == null)
-            throw new NotFoundException($"Position with ID '{request.Id}' not found.");
+            return ApiResponse<Unit>.Fail($"Position with ID '{request.Id}' not found.");
 
         unitOfWork.PositionRepository.Remove(position);
         await unitOfWork.SaveChangesAsync(cancellationToken);
