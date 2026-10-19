@@ -74,6 +74,8 @@ public class PermissionAuthorizationHandler(
         // 3. Resolve Tenant Context
         var activeTenantId = tenantContext.TenantId;
 
+        var orgRole = context.User.FindFirstValue("org_role");
+
         // Workspace System Administrator & Tenant Administrator Role Authority:
         // Caller MUST actually possess an administrator role (via token role claims or verified platform admin)
         // before honoring an administrative operating role from the X-Operating-Role header.
@@ -81,6 +83,7 @@ public class PermissionAuthorizationHandler(
                                      context.User.IsInRole("Tenant Administrator") ||
                                      string.Equals(userRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
                                      string.Equals(userRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
+                                     ERPEZ.Shared.Constants.RoleConstants.IsAnyAdmin(orgRole) ||
                                      isVerifiedPlatformAdmin;
 
         var isWorkspaceOrTenantAdmin = userPossessesAdminRole &&
@@ -96,7 +99,9 @@ public class PermissionAuthorizationHandler(
              requirement.Permission == "tenant.roles.manage" ||
              requirement.Permission == ERPEZ.Shared.Constants.Permissions.Admin.membersManage ||
              requirement.Permission == ERPEZ.Shared.Constants.Permissions.Admin.rolesManage ||
-             requirement.Permission == ERPEZ.Shared.Constants.Permissions.Admin.operationalRolesManage))
+             requirement.Permission == ERPEZ.Shared.Constants.Permissions.Admin.operationalRolesManage ||
+             requirement.Permission == ERPEZ.Shared.Constants.Permissions.Planning.viewGlobalDashboard ||
+             requirement.Permission == ERPEZ.Shared.Constants.Permissions.Planning.viewOfficeDashboard))
         {
             context.Succeed(requirement);
             return;
@@ -107,6 +112,15 @@ public class PermissionAuthorizationHandler(
             externalIdentityId, 
             activeTenantId, 
             requirement.Permission);
+
+        if (!hasPermission &&
+            string.Equals(requirement.Permission, ERPEZ.Shared.Constants.Permissions.Planning.viewOfficeDashboard, StringComparison.OrdinalIgnoreCase))
+        {
+            hasPermission = await authorizationService.HasPermissionAsync(
+                externalIdentityId,
+                activeTenantId,
+                ERPEZ.Shared.Constants.Permissions.Planning.viewGlobalDashboard);
+        }
 
         if (hasPermission)
         {
