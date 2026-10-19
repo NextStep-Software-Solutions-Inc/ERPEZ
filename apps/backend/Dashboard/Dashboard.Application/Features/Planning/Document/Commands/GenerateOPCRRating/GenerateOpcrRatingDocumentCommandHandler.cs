@@ -1,3 +1,4 @@
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
 using ERPEZ.Application.Features.Planning.Document.Mappers;
@@ -27,19 +28,28 @@ public class GenerateOpcrRatingDocumentCommandHandler(
             ?? throw new NotFoundException("OPCR not found.");
 
         // ── 2. Map ──────────────────────────────────────────────────────────
-        var dataDto = OpcrMapper.MapToBaseDto(opcr, includeRatings: true);
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, opcr.OfficeId, opcr.FiscalYearId, "OPCR", cancellationToken);
+        var pmt = await DocumentSignatoryResolver
+            .ResolvePmtSignatoriesAsync(unitOfWork, opcr.FiscalYear?.Year, cancellationToken);
+        var officeHead = await DocumentSignatoryResolver
+            .ResolveOfficeHeadSignatoryAsync(unitOfWork, opcr.OfficeId, cancellationToken);
+        var dataDto = OpcrMapper.MapToBaseDto(opcr, includeRatings: true, workflowApprovers: wf, pmtSignatories: pmt, officeHead: officeHead);
 
         // ── 3. Populate legend from GeneralRatingScale for this fiscal year ───
-        var generalScales = await unitOfWork.GeneralRatingScaleRepository.GetListAsync(
-            unitOfWork.GeneralRatingScaleRepository
-                .Query(g => g.FiscalYearId == opcr.FiscalYearId)
-                .OrderByDescending(g => g.MinScore)
-                .Select(g => new { g.AdjectivalRatingName, g.MinScore, g.MaxScore }),
-            cancellationToken);
+        if (unitOfWork.GeneralRatingScaleRepository != null)
+        {
+            var generalScales = await unitOfWork.GeneralRatingScaleRepository.GetListAsync(
+                unitOfWork.GeneralRatingScaleRepository
+                    .Query(g => g.FiscalYearId == opcr.FiscalYearId)
+                    .OrderByDescending(g => g.MinScore)
+                    .Select(g => new { g.AdjectivalRatingName, g.MinScore, g.MaxScore }),
+                cancellationToken);
 
-        dataDto.RatingScaleLegend = generalScales
-            .Select(g => $"{g.MinScore:N2}–{g.MaxScore:N2} — {g.AdjectivalRatingName}")
-            .ToList();
+            dataDto.RatingScaleLegend = (generalScales ?? [])
+                .Select(g => $"{g.MinScore:N2}–{g.MaxScore:N2} — {g.AdjectivalRatingName}")
+                .ToList();
+        }
 
         // ── 4. Compute overall summary row ─────────────────────────────────
         AppendOverallSummary(dataDto);

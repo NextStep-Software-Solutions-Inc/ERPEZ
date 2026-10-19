@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
@@ -101,77 +102,60 @@ public class GeneratePurchaseRequestDocumentCommandHandler(
             : itemDtos.Sum(i => i.TotalCost);
 
         // Dynamic Signatories Resolution
-        var matrix = await unitOfWork.WorkflowMatrixRepository.FindAsync(
-            m => m.OfficeId == pr.OfficeId && !m.IsDeleted,
-            cancellationToken);
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, pr.OfficeId, null, "PR", cancellationToken);
 
-        string recName = "[Recommending Approver]";
-        string recPos = "Recommending Approver";
+        var submitEvent = pr.ApprovalEvents?
+            .Where(e => !e.IsDeleted &&
+                        (string.Equals(e.Action, "Submitted", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(e.Action, "Submit", StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(e => e.Timestamp)
+            .FirstOrDefault();
 
-        if (matrix != null && matrix.RecommendingApproverPositionId != Guid.Empty)
-        {
-            var recPosEntity = await unitOfWork.PositionRepository.GetByIdAsync(matrix.RecommendingApproverPositionId, cancellationToken);
-            if (recPosEntity != null)
-            {
-                recPos = recPosEntity.Title;
-                var recPersonnel = await unitOfWork.PersonnelPositionRepository.FindAsync(
-                    pp => pp.PositionId == recPosEntity.Id && !pp.IsDeleted, cancellationToken);
-                if (recPersonnel?.UserId != null)
-                {
-                    var recUser = await unitOfWork.UserRepository.GetByIdAsync(recPersonnel.UserId, cancellationToken);
-                    if (recUser != null && !string.IsNullOrWhiteSpace(recUser.FullName))
-                        recName = recUser.FullName;
-                }
-            }
-        }
+        var requestedByUser = await DocumentSignatoryResolver
+            .ResolveUserSignatoryAsync(unitOfWork, submitEvent?.ActorId, cancellationToken);
 
-        string finalName = "[Head of Procuring Entity]";
-        string finalPos = "Head of Procuring Entity";
+        var financeSignatory = await DocumentSignatoryResolver
+            .ResolveFinanceSignatoryAsync(unitOfWork, cancellationToken);
 
-        if (matrix != null && matrix.FinalApproverPositionId != Guid.Empty)
-        {
-            var finalPosEntity = await unitOfWork.PositionRepository.GetByIdAsync(matrix.FinalApproverPositionId, cancellationToken);
-            if (finalPosEntity != null)
-            {
-                finalPos = finalPosEntity.Title;
-                var finalPersonnel = await unitOfWork.PersonnelPositionRepository.FindAsync(
-                    pp => pp.PositionId == finalPosEntity.Id && !pp.IsDeleted, cancellationToken);
-                if (finalPersonnel?.UserId != null)
-                {
-                    var finalUser = await unitOfWork.UserRepository.GetByIdAsync(finalPersonnel.UserId, cancellationToken);
-                    if (finalUser != null && !string.IsNullOrWhiteSpace(finalUser.FullName))
-                        finalName = finalUser.FullName;
-                }
-            }
-        }
+        string reqName = !string.IsNullOrWhiteSpace(requestedByUser?.FullName)
+            ? requestedByUser.FullName
+            : (!string.IsNullOrWhiteSpace(submitEvent?.ActorName)
+                ? submitEvent.ActorName
+                : (!string.IsNullOrWhiteSpace(pr.CreatedBy) ? pr.CreatedBy : (pr.Office?.Name ?? "END-USER")));
 
-        // Funds available - look up finance user / position
-        string fundsName = "[Budget Officer / FMS Director]";
-        string fundsPos = "Financial Management Services";
+        string reqPos = !string.IsNullOrWhiteSpace(requestedByUser?.PositionTitle)
+            ? requestedByUser.PositionTitle
+            : (!string.IsNullOrWhiteSpace(submitEvent?.Role) ? submitEvent.Role : (pr.Office?.Name ?? "Requesting Office"));
 
-        var financeUsers = await unitOfWork.UserRepository.FindAllAsync(
-            u => !u.IsDeleted && (u.Office != null && (u.Office.Code == "FMS" || u.Office.Name.Contains("Finance"))),
-            cancellationToken);
-        var fUser = financeUsers.FirstOrDefault();
-        if (fUser != null && !string.IsNullOrWhiteSpace(fUser.FullName))
-        {
-            fundsName = fUser.FullName;
-            var posAssignment = await unitOfWork.PersonnelPositionRepository.FindAsync(
-                pp => pp.UserId == fUser.Id && !pp.IsDeleted, cancellationToken);
-            if (posAssignment?.PositionId != null)
-            {
-                var pos = await unitOfWork.PositionRepository.GetByIdAsync(posAssignment.PositionId, cancellationToken);
-                if (pos != null) fundsPos = pos.Title;
-            }
-        }
+        string recName = !string.IsNullOrWhiteSpace(wf.RecommendingApprover?.FullName)
+            ? wf.RecommendingApprover.FullName
+            : "[Recommending Approver]";
+        string recPos = !string.IsNullOrWhiteSpace(wf.RecommendingApprover?.PositionTitle)
+            ? wf.RecommendingApprover.PositionTitle
+            : "Recommending Approver";
+
+        string finalName = !string.IsNullOrWhiteSpace(wf.FinalApprover?.FullName)
+            ? wf.FinalApprover.FullName
+            : "[Head of Procuring Entity]";
+        string finalPos = !string.IsNullOrWhiteSpace(wf.FinalApprover?.PositionTitle)
+            ? wf.FinalApprover.PositionTitle
+            : "Head of Procuring Entity";
+
+        string fundsName = !string.IsNullOrWhiteSpace(financeSignatory?.FullName)
+            ? financeSignatory.FullName
+            : "[Budget Officer / FMS Director]";
+        string fundsPos = !string.IsNullOrWhiteSpace(financeSignatory?.PositionTitle)
+            ? financeSignatory.PositionTitle
+            : "Financial Management Services";
 
         var signatories = new List<SignatoryDto>
         {
             new()
             {
                 Label = "Requested by:",
-                PrintedName = !string.IsNullOrWhiteSpace(pr.CreatedBy) ? pr.CreatedBy : (pr.Office?.Name ?? "END-USER"),
-                Position = pr.Office?.Name ?? "Requesting Office",
+                PrintedName = reqName,
+                Position = reqPos,
                 Designation = "END-USER",
                 Date = pr.RequestedDate.ToDateTime(TimeOnly.MinValue)
             },

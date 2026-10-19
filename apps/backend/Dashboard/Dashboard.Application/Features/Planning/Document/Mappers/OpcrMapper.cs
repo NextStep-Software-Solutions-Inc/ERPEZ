@@ -1,5 +1,6 @@
 // ERPEZ.Application/Features/Planning/Document/Mappers/OpcrMapper.cs
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
 using OPCREntity            = ERPEZ.Domain.Entities.Planning.OPCR;
 using OPCRItemEntity        = ERPEZ.Domain.Entities.Planning.OPCRItem;
@@ -20,7 +21,12 @@ internal static class OpcrMapper
 
     // ── Entry point ───────────────────────────────────────────────────────────
 
-    internal static OpcrDataDto MapToBaseDto(OPCREntity opcr, bool includeRatings)
+    internal static OpcrDataDto MapToBaseDto(
+        OPCREntity opcr,
+        bool includeRatings,
+        ResolvedWorkflowApprovers? workflowApprovers = null,
+        ResolvedPmtSignatories? pmtSignatories = null,
+        ResolvedSignatory? officeHead = null)
     {
         var fiscalYear    = opcr.FiscalYear?.Year.ToString() ?? string.Empty;
         var periodCovered = BuildPeriodCovered(fiscalYear);
@@ -42,13 +48,25 @@ internal static class OpcrMapper
             .SelectMany(i => i.OPCRActivities.Where(a => !a.IsDeleted))
             .Sum(a => a.Budget);
 
+        var commitmentName = !string.IsNullOrWhiteSpace(opcr.CommitmentPersonName)
+            ? opcr.CommitmentPersonName
+            : (!string.IsNullOrWhiteSpace(officeHead?.FullName)
+                ? officeHead.FullName
+                : (workflowApprovers?.RecommendingApprover?.FullName ?? string.Empty));
+
+        var commitmentPos = !string.IsNullOrWhiteSpace(opcr.CommitmentPersonPosition)
+            ? opcr.CommitmentPersonPosition
+            : (!string.IsNullOrWhiteSpace(officeHead?.PositionTitle)
+                ? officeHead.PositionTitle
+                : (workflowApprovers?.RecommendingApprover?.PositionTitle ?? string.Empty));
+
         return new OpcrDataDto
         {
             OfficeName               = opcr.Office?.Name                   ?? string.Empty,
             OfficeCode               = opcr.Office?.Code                   ?? string.Empty,
             AgencyName               = opcr.Office?.Organization?.Name     ?? string.Empty,
-            CommitmentPersonName     = opcr.CommitmentPersonName ?? string.Empty,
-            CommitmentPersonPosition = opcr.CommitmentPersonPosition ?? string.Empty,
+            CommitmentPersonName     = commitmentName,
+            CommitmentPersonPosition = commitmentPos,
             FiscalYear               = fiscalYear,
             PeriodCovered            = periodCovered,
             RatingPeriod             = opcr.FiscalYear?.Year.ToString()    ?? string.Empty,
@@ -56,8 +74,8 @@ internal static class OpcrMapper
             FunctionCategories       = functionCategories,
             TotalBudget              = totalBudget,
             Signatories              = includeRatings
-                                        ? BuildRatingSignatories()
-                                        : BuildProposedSignatories(opcr)
+                                        ? BuildRatingSignatories(workflowApprovers, pmtSignatories)
+                                        : BuildProposedSignatories(opcr, workflowApprovers, officeHead)
         };
     }
 
@@ -255,42 +273,87 @@ internal static class OpcrMapper
 
     // ── Signatories ────────────────────────────────────────────────────────────
 
-    private static List<SignatoryDto> BuildProposedSignatories(OPCREntity opcr) =>
+    private static List<SignatoryDto> BuildProposedSignatories(
+        OPCREntity opcr,
+        ResolvedWorkflowApprovers? wf = null,
+        ResolvedSignatory? officeHead = null) =>
     [
         new SignatoryDto
         {
             Label       = "Submitted by:",
-            PrintedName = opcr.CommitmentPersonName ?? string.Empty,
-            Position    = opcr.CommitmentPersonPosition ?? string.Empty,
+            PrintedName = !string.IsNullOrWhiteSpace(opcr.CommitmentPersonName)
+                            ? opcr.CommitmentPersonName
+                            : (officeHead?.FullName ?? wf?.RecommendingApprover?.FullName ?? string.Empty),
+            Position    = !string.IsNullOrWhiteSpace(opcr.CommitmentPersonPosition)
+                            ? opcr.CommitmentPersonPosition
+                            : (officeHead?.PositionTitle ?? wf?.RecommendingApprover?.PositionTitle ?? string.Empty),
             Designation = opcr.Office?.Name ?? string.Empty,
             Date        = opcr.SubmittedDate
         },
         new SignatoryDto
         {
             Label       = "Recommending Approval:",
-            PrintedName = string.Empty,
-            Position    = string.Empty,
+            PrintedName = wf?.RecommendingApprover?.FullName ?? string.Empty,
+            Position    = wf?.RecommendingApprover?.PositionTitle ?? string.Empty,
             Designation = "Concerned Campus Vice President/Chancellor",
             Date        = null
         },
         new SignatoryDto
         {
             Label       = "Approved by:",
-            PrintedName = string.Empty,
-            Position    = string.Empty,
+            PrintedName = wf?.FinalApprover?.FullName ?? string.Empty,
+            Position    = wf?.FinalApprover?.PositionTitle ?? string.Empty,
             Designation = "President",
             Date        = opcr.ApprovedDate
         }
     ];
 
-    private static List<SignatoryDto> BuildRatingSignatories() =>
-    [
-        new SignatoryDto { Label = "Assessed by:",     Designation = "Cluster Presiding Officer, PMT" },
-        new SignatoryDto { Label = "Assisted by:",     Designation = "Member, PMT"                    },
-        new SignatoryDto { Label = "Reviewed by:",     Designation = "PMT Chairman"                   },
-        new SignatoryDto { Label = "Reviewed by:",     Designation = "PMT Co-Chairman"                },
-        new SignatoryDto { Label = "Final Rating by:", Designation = "Head of the Agency"             }
-    ];
+    private static List<SignatoryDto> BuildRatingSignatories(
+        ResolvedWorkflowApprovers? wf = null,
+        ResolvedPmtSignatories? pmt = null)
+    {
+        var firstMember  = pmt?.Members.FirstOrDefault();
+        var secondMember = pmt?.Members.Skip(1).FirstOrDefault() ?? firstMember;
+
+        return
+        [
+            new SignatoryDto
+            {
+                Label       = "Assessed by:",
+                PrintedName = firstMember?.FullName ?? pmt?.Chairperson?.FullName ?? string.Empty,
+                Position    = firstMember?.PositionTitle ?? string.Empty,
+                Designation = "Cluster Presiding Officer, PMT"
+            },
+            new SignatoryDto
+            {
+                Label       = "Assisted by:",
+                PrintedName = secondMember?.FullName ?? string.Empty,
+                Position    = secondMember?.PositionTitle ?? string.Empty,
+                Designation = "Member, PMT"
+            },
+            new SignatoryDto
+            {
+                Label       = "Reviewed by:",
+                PrintedName = pmt?.Chairperson?.FullName ?? wf?.RecommendingApprover?.FullName ?? string.Empty,
+                Position    = pmt?.Chairperson?.PositionTitle ?? wf?.RecommendingApprover?.PositionTitle ?? string.Empty,
+                Designation = "PMT Chairman"
+            },
+            new SignatoryDto
+            {
+                Label       = "Reviewed by:",
+                PrintedName = pmt?.ViceChairperson?.FullName ?? string.Empty,
+                Position    = pmt?.ViceChairperson?.PositionTitle ?? string.Empty,
+                Designation = "PMT Co-Chairman"
+            },
+            new SignatoryDto
+            {
+                Label       = "Final Rating by:",
+                PrintedName = wf?.FinalApprover?.FullName ?? string.Empty,
+                Position    = wf?.FinalApprover?.PositionTitle ?? string.Empty,
+                Designation = "Head of the Agency"
+            }
+        ];
+    }
 
     // ── Formatting ─────────────────────────────────────────────────────────────
 

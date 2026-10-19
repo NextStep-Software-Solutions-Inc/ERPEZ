@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
@@ -18,6 +19,8 @@ public record AOBReferenceMetadata
     public string? PAPCode { get; init; }
     public string? ApproverName { get; init; }
     public string? ApproverTitle { get; init; }
+    public string? EndUserRepName { get; init; }
+    public string? TechRepName { get; init; }
 }
 
 public static class AOBReferenceResolver
@@ -38,32 +41,67 @@ public static class AOBReferenceResolver
             ?? allRfqItems.Select(i => i.CPRItem?.ConsolidatedPRId).FirstOrDefault(id => id.HasValue && id.Value != Guid.Empty);
 
         ProcurementProject? project = null;
-        if (cprId.HasValue && cprId.Value != Guid.Empty)
+        if (cprId.HasValue && cprId.Value != Guid.Empty && unitOfWork.ProcurementProjectRepository != null)
         {
-            project = await unitOfWork.ProcurementProjectRepository.Query()
-                .AsNoTracking()
-                .Include(p => p.BACResolutions.Where(r => !r.IsDeleted))
-                .Include(p => p.ConsolidatedPR)
-                .Include(p => p.APPItem)
-                .Include(p => p.APPItemLinks.Where(l => !l.IsDeleted))
-                    .ThenInclude(l => l.APPItem)
-                .FirstOrDefaultAsync(p => p.ConsolidatedPRId == cprId.Value && p.Status != "Cancelled" && !p.IsDeleted, cancellationToken);
+            var projQuery = unitOfWork.ProcurementProjectRepository.Query();
+            if (projQuery != null)
+            {
+                try
+                {
+                    project = await projQuery
+                        .AsNoTracking()
+                        .Include(p => p.BACResolutions.Where(r => !r.IsDeleted))
+                        .Include(p => p.ConsolidatedPR)
+                        .Include(p => p.APPItem)
+                        .Include(p => p.EndUserRepresentative)
+                        .Include(p => p.TechRepresentative)
+                        .Include(p => p.APPItemLinks.Where(l => !l.IsDeleted))
+                            .ThenInclude(l => l.APPItem)
+                        .FirstOrDefaultAsync(p => p.ConsolidatedPRId == cprId.Value && p.Status != "Cancelled" && !p.IsDeleted, cancellationToken);
+                }
+                catch (InvalidOperationException)
+                {
+                    project = projQuery.FirstOrDefault(p => p.ConsolidatedPRId == cprId.Value && p.Status != "Cancelled" && !p.IsDeleted);
+                }
+            }
+            project ??= await unitOfWork.ProcurementProjectRepository.FindAsync(
+                p => p.ConsolidatedPRId == cprId.Value && p.Status != "Cancelled" && !p.IsDeleted,
+                cancellationToken);
         }
 
-        if (project == null && aobId != Guid.Empty)
+        if (project == null && aobId != Guid.Empty && unitOfWork.AOBProcurementProjectMappingRepository != null)
         {
-            var mapping = await unitOfWork.AOBProcurementProjectMappingRepository.Query()
-                .AsNoTracking()
-                .Include(m => m.ProcurementProject)
-                    .ThenInclude(p => p.BACResolutions.Where(r => !r.IsDeleted))
-                .Include(m => m.ProcurementProject)
-                    .ThenInclude(p => p.ConsolidatedPR)
-                .Include(m => m.ProcurementProject)
-                    .ThenInclude(p => p.APPItem)
-                .Include(m => m.ProcurementProject)
-                    .ThenInclude(p => p.APPItemLinks.Where(l => !l.IsDeleted))
-                        .ThenInclude(l => l.APPItem)
-                .FirstOrDefaultAsync(m => m.AOBId == aobId && !m.IsDeleted, cancellationToken);
+            var mapQuery = unitOfWork.AOBProcurementProjectMappingRepository.Query();
+            AOBProcurementProjectMapping? mapping = null;
+            if (mapQuery != null)
+            {
+                try
+                {
+                    mapping = await mapQuery
+                        .AsNoTracking()
+                        .Include(m => m.ProcurementProject)
+                            .ThenInclude(p => p.BACResolutions.Where(r => !r.IsDeleted))
+                        .Include(m => m.ProcurementProject)
+                            .ThenInclude(p => p.ConsolidatedPR)
+                        .Include(m => m.ProcurementProject)
+                            .ThenInclude(p => p.APPItem)
+                        .Include(m => m.ProcurementProject)
+                            .ThenInclude(p => p.EndUserRepresentative)
+                        .Include(m => m.ProcurementProject)
+                            .ThenInclude(p => p.TechRepresentative)
+                        .Include(m => m.ProcurementProject)
+                            .ThenInclude(p => p.APPItemLinks.Where(l => !l.IsDeleted))
+                                .ThenInclude(l => l.APPItem)
+                        .FirstOrDefaultAsync(m => m.AOBId == aobId && !m.IsDeleted, cancellationToken);
+                }
+                catch (InvalidOperationException)
+                {
+                    mapping = mapQuery.FirstOrDefault(m => m.AOBId == aobId && !m.IsDeleted);
+                }
+            }
+            mapping ??= await unitOfWork.AOBProcurementProjectMappingRepository.FindAsync(
+                m => m.AOBId == aobId && !m.IsDeleted,
+                cancellationToken);
 
             project = mapping?.ProcurementProject;
         }
@@ -84,25 +122,41 @@ public static class AOBReferenceResolver
 
         string? approverName = null;
         string? approverTitle = null;
-        if (approvedBy.HasValue && approvedBy.Value != Guid.Empty)
-        {
-            var approverUser = await unitOfWork.UserRepository.Query()
-                .Include(u => u.PersonnelPositions.Where(pp => pp.IsActive && !pp.IsDeleted))
-                    .ThenInclude(pp => pp.Position)
-                .FirstOrDefaultAsync(u => u.Id == approvedBy.Value, cancellationToken);
 
-            if (approverUser != null)
-            {
-                if (!string.IsNullOrWhiteSpace(approverUser.FullName))
-                {
-                    approverName = approverUser.FullName;
-                }
-                var activePosition = approverUser.PersonnelPositions.FirstOrDefault()?.Position;
-                if (!string.IsNullOrWhiteSpace(activePosition?.Title))
-                {
-                    approverTitle = activePosition.Title;
-                }
-            }
+        var resolvedApprover = await DocumentSignatoryResolver
+            .ResolveUserSignatoryAsync(unitOfWork, approvedBy, cancellationToken);
+
+        if (resolvedApprover == null || string.IsNullOrWhiteSpace(resolvedApprover.FullName))
+        {
+            var projectOfficeId = project?.APPItem?.OfficeId
+                ?? project?.APPItemLinks.Select(l => l.APPItem?.OfficeId).FirstOrDefault(id => id.HasValue && id.Value != Guid.Empty);
+            var wf = await DocumentSignatoryResolver
+                .ResolveWorkflowApproversAsync(unitOfWork, projectOfficeId, null, null, cancellationToken);
+            resolvedApprover = wf.FinalApprover ?? resolvedApprover;
+        }
+
+        if (resolvedApprover != null)
+        {
+            if (!string.IsNullOrWhiteSpace(resolvedApprover.FullName))
+                approverName = resolvedApprover.FullName;
+            if (!string.IsNullOrWhiteSpace(resolvedApprover.PositionTitle))
+                approverTitle = resolvedApprover.PositionTitle;
+        }
+
+        var endUserRepName = project?.EndUserRepresentative?.FullName;
+        if (string.IsNullOrWhiteSpace(endUserRepName) && project?.EndUserRepresentativeId.HasValue == true)
+        {
+            var endUser = await DocumentSignatoryResolver
+                .ResolveUserSignatoryAsync(unitOfWork, project.EndUserRepresentativeId, cancellationToken);
+            endUserRepName = endUser?.FullName;
+        }
+
+        var techRepName = project?.TechRepresentative?.FullName;
+        if (string.IsNullOrWhiteSpace(techRepName) && project?.TechRepresentativeId.HasValue == true)
+        {
+            var techUser = await DocumentSignatoryResolver
+                .ResolveUserSignatoryAsync(unitOfWork, project.TechRepresentativeId, cancellationToken);
+            techRepName = techUser?.FullName;
         }
 
         return new AOBReferenceMetadata
@@ -112,7 +166,9 @@ public static class AOBReferenceResolver
             PRNumber = prNumber,
             PAPCode = papCode,
             ApproverName = approverName,
-            ApproverTitle = approverTitle
+            ApproverTitle = approverTitle,
+            EndUserRepName = endUserRepName,
+            TechRepName = techRepName
         };
     }
 }

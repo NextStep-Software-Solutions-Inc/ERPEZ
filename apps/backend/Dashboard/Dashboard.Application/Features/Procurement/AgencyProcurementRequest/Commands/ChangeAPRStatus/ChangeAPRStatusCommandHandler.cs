@@ -1,11 +1,15 @@
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Interfaces;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.ChangeAPRStatus;
 
-public class ChangeAPRStatusCommandHandler(IUnitOfWork unitOfWork)
+public class ChangeAPRStatusCommandHandler(
+    IUnitOfWork unitOfWork,
+    ICurrentUserService? currentUser = null)
     : IRequestHandler<ChangeAPRStatusCommand, ApiResponse<Guid>>
 {
     // Allowed target statuses per current status
@@ -28,15 +32,29 @@ public class ChangeAPRStatusCommandHandler(IUnitOfWork unitOfWork)
 
         apr.Status = request.Status;
 
+        string? actorName = null;
+        if (!string.IsNullOrWhiteSpace(currentUser?.ExternalIdentityId) && unitOfWork.UserRepository != null)
+        {
+            var user = await unitOfWork.UserRepository.GetByExternalIdentityIdAsync(currentUser.ExternalIdentityId, cancellationToken);
+            actorName = user?.FullName;
+        }
+
+        if (string.IsNullOrWhiteSpace(actorName) && apr.OfficeId != Guid.Empty)
+        {
+            var wf = await DocumentSignatoryResolver.ResolveWorkflowApproversAsync(
+                unitOfWork, apr.OfficeId, apr.FiscalYearId, "APR", cancellationToken);
+            actorName = wf.FinalApprover?.FullName;
+        }
+
         if (request.Status == StatusEnum.Approved)
         {
             apr.ApprovedDate = DateTime.UtcNow;
-            apr.ApprovedBy = "Procurement Officer";
+            apr.ApprovedBy = !string.IsNullOrWhiteSpace(actorName) ? actorName : "Procurement Officer";
         }
         else if (request.Status == StatusEnum.Returned)
         {
             apr.ReturnedDate = DateTime.UtcNow;
-            apr.ReturnedBy = "Procurement Officer";
+            apr.ReturnedBy = !string.IsNullOrWhiteSpace(actorName) ? actorName : "Procurement Officer";
             if (!string.IsNullOrWhiteSpace(request.Remarks))
             {
                 apr.ReturnRemarks = request.Remarks;

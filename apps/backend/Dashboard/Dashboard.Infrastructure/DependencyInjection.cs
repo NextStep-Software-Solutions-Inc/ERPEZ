@@ -263,6 +263,7 @@ public static class DependencyInjection
                 await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedAsync(dbContext); 
                 await ERPEZ.Infrastructure.Persistence.Seeders.OrganizationStructureSeeder.SeedAsync(dbContext);
                 await ERPEZ.Infrastructure.Persistence.Seeders.AmsRoleSeeder.SeedAsync(dbContext);
+                await ERPEZ.Infrastructure.Persistence.Seeders.ApprovalAndSignatorySeeder.SeedAsync(dbContext);
             }
             catch (InvalidOperationException ex)
             {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Features.Procurement.AOBs.Common;
 using ERPEZ.Application.Features.Procurement.AOBs.Dtos;
 using ERPEZ.Application.Interfaces.Services;
@@ -217,50 +218,71 @@ public class GenerateAOBDocumentCommandHandler(
             });
         }
 
-        // 8. Construct 6-slot BAC Committee Signatories
+        // 8. Reference numbers, approvers, and 6-slot BAC Committee Signatories
+        var metadata = await AOBReferenceResolver.ResolveAsync(
+            unitOfWork, aob.Id, aob.ApprovedBy, rfqs, cancellationToken);
+
+        var bacMembers = await DocumentSignatoryResolver
+            .ResolveActiveBacMembersAsync(unitOfWork, cancellationToken);
+
+        var chairMember = bacMembers.FirstOrDefault(m =>
+            string.Equals(m.Role, "Chairperson", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(m.Role, "Chairman", StringComparison.OrdinalIgnoreCase));
+
+        var viceChairMember = bacMembers.FirstOrDefault(m =>
+            m.Role.Contains("Vice", StringComparison.OrdinalIgnoreCase));
+
+        var regularMembers = bacMembers.Where(m =>
+            !string.Equals(m.Role, "Chairperson", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(m.Role, "Chairman", StringComparison.OrdinalIgnoreCase) &&
+            !m.Role.Contains("Vice", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var regMember1 = regularMembers.ElementAtOrDefault(0);
+        var regMember2 = regularMembers.ElementAtOrDefault(1);
+        var regMember3 = regularMembers.ElementAtOrDefault(2);
+
         var signatories = new List<AobSignatoryDataDto>
         {
             new()
             {
-                Name = ctx.BacChairpersonName,
-                Title = ctx.BacChairpersonTitle,
+                Name = !string.IsNullOrWhiteSpace(chairMember?.FullName) ? chairMember.FullName : ctx.BacChairpersonName,
+                Title = !string.IsNullOrWhiteSpace(chairMember?.Position) ? chairMember.Position : ctx.BacChairpersonTitle,
                 Role = "BAC Chairperson"
             },
             new()
             {
-                Name = "[BAC VICE CHAIRPERSON]",
-                Title = "BAC Vice Chairperson",
+                Name = !string.IsNullOrWhiteSpace(viceChairMember?.FullName) ? viceChairMember.FullName : "[BAC VICE CHAIRPERSON]",
+                Title = !string.IsNullOrWhiteSpace(viceChairMember?.Position) ? viceChairMember.Position : "BAC Vice Chairperson",
                 Role = "BAC Vice Chairperson"
             },
             new()
             {
-                Name = "[BAC REGULAR MEMBER]",
-                Title = "BAC Regular Member",
+                Name = !string.IsNullOrWhiteSpace(regMember1?.FullName) ? regMember1.FullName : "[BAC REGULAR MEMBER]",
+                Title = !string.IsNullOrWhiteSpace(regMember1?.Position) ? regMember1.Position : "BAC Regular Member",
                 Role = "BAC Regular Member"
             },
             new()
             {
-                Name = "[BAC REGULAR MEMBER]",
-                Title = "BAC Regular Member",
+                Name = !string.IsNullOrWhiteSpace(regMember2?.FullName) ? regMember2.FullName : "[BAC REGULAR MEMBER]",
+                Title = !string.IsNullOrWhiteSpace(regMember2?.Position) ? regMember2.Position : "BAC Regular Member",
                 Role = "BAC Regular Member"
             },
             new()
             {
-                Name = "[PROVISIONAL MEMBER]",
+                Name = !string.IsNullOrWhiteSpace(metadata.EndUserRepName)
+                    ? metadata.EndUserRepName
+                    : (!string.IsNullOrWhiteSpace(regMember3?.FullName) ? regMember3.FullName : "[PROVISIONAL MEMBER]"),
                 Title = "Provisional Member, End-user Rep",
                 Role = "Provisional Member, End-user Rep"
             },
             new()
             {
-                Name = "[PROVISIONAL MEMBER]",
+                Name = !string.IsNullOrWhiteSpace(metadata.TechRepName) ? metadata.TechRepName : "[PROVISIONAL MEMBER]",
                 Title = "Provisional Member, Tech Rep",
                 Role = "Provisional Member, Tech Rep"
             }
         };
-
-        // Reference numbers & approvers
-        var metadata = await AOBReferenceResolver.ResolveAsync(
-            unitOfWork, aob.Id, aob.ApprovedBy, rfqs, cancellationToken);
 
         var rfqNumber = !string.IsNullOrWhiteSpace(metadata.RFQNumber) ? metadata.RFQNumber : (primaryRfq?.RFQNumber ?? "[RFQ NUMBER]");
         var prNumber = !string.IsNullOrWhiteSpace(metadata.PRNumber) ? metadata.PRNumber : (primaryRfq?.ConsolidatedPR?.CPRNumber ?? "[PR NUMBER]");
