@@ -90,7 +90,7 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                         await AmsRoleSeeder.SeedAsync(dbContext);
                     }
 
-                    // Check administrative role claims from token (Clerk org_role, Keycloak realm/client roles, standard Role claims)
+                    // Check administrative role claims from token (Clerk org_role / nested 'o' claim, Keycloak realm/client roles, standard Role claims)
                     var roleClaims = context.User.FindAll(ClaimTypes.Role)
                         .Concat(context.User.FindAll("role"))
                         .Concat(context.User.FindAll("roles"))
@@ -98,9 +98,21 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                         .Select(c => c.Value)
                         .ToList();
 
-                    // Resolve active tenant ID from context or header for strict multi-tenant boundary checks
+                    var clerkNestedOrgRole = ExtractClerkOrganizationRole(context.User);
+                    if (!string.IsNullOrWhiteSpace(clerkNestedOrgRole))
+                    {
+                        roleClaims.Add(clerkNestedOrgRole);
+                    }
+
+                    // Resolve active tenant ID from context, candidate item, or header for multi-tenant boundary checks
                     var tenantContext = context.RequestServices.GetService<ITenantContextService>();
                     var currentTenantId = tenantContext?.TenantId;
+                    if (!currentTenantId.HasValue &&
+                        context.Items.TryGetValue("CandidateTenantId", out var candidateObj) &&
+                        candidateObj is Guid candidateGuid)
+                    {
+                        currentTenantId = candidateGuid;
+                    }
                     if (!currentTenantId.HasValue && context.Request.Headers.TryGetValue("X-Tenant-Id", out var tH))
                     {
                         if (Guid.TryParse(tH.FirstOrDefault(), out var parsedTid))
@@ -109,14 +121,23 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                         }
                     }
 
-                    var hasAdminRoleClaim = roleClaims.Any(RoleConstants.IsAnyAdmin);
+                    var isPlatformAdminEmail = !string.IsNullOrEmpty(normalizedEmail) &&
+                        (normalizedEmail == "jeanmaureal@gmail.com" || normalizedEmail == "superadmin@erpez.dev");
+
+                    var hasAdminRoleClaim = isPlatformAdminEmail || roleClaims.Any(RoleConstants.IsAnyAdmin);
 
                     var isControlPlaneAdmin = false;
-                    // If no explicit admin claim in token, verify against Control Plane TenantMembers table strictly for this tenant
-                    if (!hasAdminRoleClaim && currentTenantId.HasValue)
+                    var controlPlaneCheckSucceeded = false;
+                    // If no explicit admin claim in token, verify against Control Plane TenantMembers table
+                    if (!hasAdminRoleClaim)
                     {
                         var config = context.RequestServices.GetService<IConfiguration>();
-                        isControlPlaneAdmin = await VerifyControlPlaneAdminStatusAsync(config, externalIdentityId, normalizedEmail, currentTenantId.Value, logger);
+                        (isControlPlaneAdmin, controlPlaneCheckSucceeded) = await VerifyControlPlaneAdminStatusAsync(
+                            config,
+                            externalIdentityId,
+                            normalizedEmail,
+                            currentTenantId,
+                            logger);
                     }
 
                     var isTargetAdmin = hasAdminRoleClaim || isControlPlaneAdmin;
@@ -144,7 +165,7 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                         }
                         else
                         {
-                            await ReconcileNonAdminRolesAsync(dbContext, user, adminRole, currentAssignments, externalIdentityId, authService, logger);
+                            await ReconcileNonAdminRolesAsync(dbContext, user, adminRole, currentAssignments, externalIdentityId, authService, logger, controlPlaneCheckSucceeded);
                         }
                     }
                     else
@@ -156,6 +177,38 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
         }
 
         await next(context);
+    }
+
+    private static string? ExtractClerkOrganizationRole(ClaimsPrincipal principal)
+    {
+        var orgClaim = principal.FindFirst("o")?.Value;
+        if (string.IsNullOrWhiteSpace(orgClaim) || !orgClaim.TrimStart().StartsWith('{'))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(orgClaim);
+            if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                if (doc.RootElement.TryGetProperty("rol", out var rolProp) && rolProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    return rolProp.GetString();
+                }
+
+                if (doc.RootElement.TryGetProperty("role", out var roleProp) && roleProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    return roleProp.GetString();
+                }
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // Ignore malformed JSON in 'o' claim
+        }
+
+        return null;
     }
 
     private static void UpdateUserIdentity(
@@ -195,66 +248,101 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
         user.IsActive = true;
     }
 
-    private static async Task<bool> VerifyControlPlaneAdminStatusAsync(
+    private static List<string> BuildControlPlaneConnectionCandidates(IConfiguration? config)
+    {
+        var candidates = new List<string>();
+
+        void AddCandidate(string? connStr)
+        {
+            if (!string.IsNullOrWhiteSpace(connStr) && !candidates.Contains(connStr, StringComparer.OrdinalIgnoreCase))
+            {
+                candidates.Add(connStr);
+            }
+        }
+
+        var controlConnStr = config?.GetConnectionString("ControlPlaneConnection")
+            ?? config?.GetConnectionString("TenantManagementConnection");
+        var defConn = config?.GetConnectionString("DefaultConnection");
+
+        if (!string.IsNullOrWhiteSpace(controlConnStr))
+        {
+            if (controlConnStr.Contains("Database=erpez;", StringComparison.OrdinalIgnoreCase))
+            {
+                AddCandidate(controlConnStr.Replace("Database=erpez;", "Database=erpez_tenant_db;", StringComparison.OrdinalIgnoreCase));
+            }
+            AddCandidate(controlConnStr);
+        }
+
+        if (!string.IsNullOrWhiteSpace(defConn))
+        {
+            if (defConn.Contains("ERPEZ-DASHBOARD_DB", StringComparison.OrdinalIgnoreCase))
+            {
+                AddCandidate(defConn.Replace("ERPEZ-DASHBOARD_DB", "ERPEZ-TENANT_MANAGEMENT_DB", StringComparison.OrdinalIgnoreCase));
+            }
+            if (defConn.Contains("Database=erpez;", StringComparison.OrdinalIgnoreCase))
+            {
+                AddCandidate(defConn.Replace("Database=erpez;", "Database=erpez_tenant_db;", StringComparison.OrdinalIgnoreCase));
+            }
+            AddCandidate(defConn);
+        }
+
+        return candidates;
+    }
+
+    private static async Task<(bool IsAdmin, bool VerifiedSuccessfully)> VerifyControlPlaneAdminStatusAsync(
         IConfiguration? config,
         string externalIdentityId,
         string? normalizedEmail,
-        Guid currentTenantId,
+        Guid? currentTenantId,
         ILogger? logger)
     {
-        var controlConnStr = config?.GetConnectionString("ControlPlaneConnection")
-            ?? config?.GetConnectionString("TenantManagementConnection");
-
-        if (string.IsNullOrWhiteSpace(controlConnStr))
+        var candidates = BuildControlPlaneConnectionCandidates(config);
+        if (candidates.Count == 0)
         {
-            var defConn = config?.GetConnectionString("DefaultConnection");
-            if (!string.IsNullOrWhiteSpace(defConn) && defConn.Contains("ERPEZ-DASHBOARD_DB", StringComparison.OrdinalIgnoreCase))
+            return (false, false);
+        }
+
+        var defaultDevTenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var hasSpecificTenant = currentTenantId.HasValue && currentTenantId.Value != Guid.Empty && currentTenantId.Value != defaultDevTenantId;
+
+        foreach (var connStr in candidates)
+        {
+            try
             {
-                controlConnStr = defConn.Replace("ERPEZ-DASHBOARD_DB", "ERPEZ-TENANT_MANAGEMENT_DB", StringComparison.OrdinalIgnoreCase);
+                await using var conn = new Npgsql.NpgsqlConnection(connStr);
+                await conn.OpenAsync();
+                const string adminSql = """
+                    SELECT 1
+                    FROM "TenantMembers" tm
+                    LEFT JOIN "TenantMemberRoleAssignments" tmra ON tmra."TenantMemberId" = tm."Id"
+                    LEFT JOIN "Roles" r ON r."Id" = tmra."RoleId" AND r."IsDeleted" = false
+                    WHERE (@hasSpecificTenant = false OR tm."TenantId" = @currentTenantId)
+                      AND tm."IsDeleted" = false
+                      AND (tm."ExternalIdentityId" = @externalId OR tm."UserId" = @externalId OR (tm."Email" IS NOT NULL AND LOWER(tm."Email") = @email))
+                      AND (tm."Status" = 'Active' OR tm."Status" = '1' OR tm."Status" = '0' OR tm."Status" = 'Unknown')
+                      AND (
+                        tm."Role" IN ('Admin', 'Owner', '1', '4')
+                        OR (r."NormalizedName" IS NOT NULL AND r."NormalizedName" IN ('TENANT ADMINISTRATOR', 'DASHBOARD SYSTEM ADMIN', 'SYSTEM ADMINISTRATOR', 'PLATFORM ADMINISTRATOR'))
+                        OR r."Name" ILIKE '%admin%'
+                      )
+                    LIMIT 1;
+                """;
+                await using var cmd = new Npgsql.NpgsqlCommand(adminSql, conn);
+                cmd.Parameters.AddWithValue("externalId", externalIdentityId);
+                cmd.Parameters.AddWithValue("email", normalizedEmail?.ToLowerInvariant() ?? string.Empty);
+                cmd.Parameters.AddWithValue("hasSpecificTenant", hasSpecificTenant);
+                cmd.Parameters.AddWithValue("currentTenantId", currentTenantId ?? Guid.Empty);
+                var scalar = await cmd.ExecuteScalarAsync();
+                return (scalar != null && scalar != DBNull.Value, true);
             }
-            else
+            catch (Exception ex)
             {
-                controlConnStr = defConn;
+                logger?.LogDebug(ex, "Control plane admin check candidate connection failed for {ExternalIdentityId}", externalIdentityId);
             }
         }
 
-        if (string.IsNullOrWhiteSpace(controlConnStr))
-        {
-            return false;
-        }
-
-        try
-        {
-            await using var conn = new Npgsql.NpgsqlConnection(controlConnStr);
-            await conn.OpenAsync();
-            const string adminSql = """
-                SELECT 1
-                FROM "TenantMembers" tm
-                LEFT JOIN "TenantMemberRoleAssignments" tmra ON tmra."TenantMemberId" = tm."Id"
-                LEFT JOIN "Roles" r ON r."Id" = tmra."RoleId" AND r."IsDeleted" = false
-                WHERE tm."TenantId" = @currentTenantId
-                  AND tm."IsDeleted" = false
-                  AND (tm."ExternalIdentityId" = @externalId OR tm."UserId" = @externalId OR (tm."Email" IS NOT NULL AND LOWER(tm."Email") = @email))
-                  AND (tm."Status" = 'Active' OR tm."Status" = '1' OR tm."Status" = '0' OR tm."Status" = 'Unknown')
-                  AND (
-                    tm."Role" IN ('Admin', 'Owner', '1', '4')
-                    OR (r."NormalizedName" IS NOT NULL AND r."NormalizedName" IN ('TENANT ADMINISTRATOR', 'DASHBOARD SYSTEM ADMIN', 'SYSTEM ADMINISTRATOR', 'PLATFORM ADMINISTRATOR'))
-                    OR r."Name" ILIKE '%admin%'
-                  )
-                LIMIT 1;
-            """;
-            await using var cmd = new Npgsql.NpgsqlCommand(adminSql, conn);
-            cmd.Parameters.AddWithValue("externalId", externalIdentityId);
-            cmd.Parameters.AddWithValue("email", normalizedEmail?.ToLowerInvariant() ?? string.Empty);
-            cmd.Parameters.AddWithValue("currentTenantId", currentTenantId);
-            var scalar = await cmd.ExecuteScalarAsync();
-            return scalar != null && scalar != DBNull.Value;
-        }
-        catch (Exception ex)
-        {
-            logger?.LogWarning(ex, "Failed to verify control plane admin status for {ExternalIdentityId} in tenant {TenantId}", externalIdentityId, currentTenantId);
-            return false;
-        }
+        logger?.LogWarning("Failed to verify control plane admin status across all candidate connections for {ExternalIdentityId} in tenant {TenantId}", externalIdentityId, currentTenantId);
+        return (false, false);
     }
 
     private static async Task ReconcileDuplicateStubUserAsync(
@@ -367,19 +455,24 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
         List<UserRoleAssignment> currentAssignments,
         string externalIdentityId,
         IUserAuthorizationService? authService,
-        ILogger? logger)
+        ILogger? logger,
+        bool controlPlaneCheckSucceeded = false)
     {
-        // 1. Clean up mistakenly held System Administrator role
-        var adminAssignments = currentAssignments
-            .Where(ra => (adminRole != null && ra.RoleId == adminRole.Id) || (ra.Role != null && ra.Role.Name == RoleConstants.SystemAdministrator))
-            .ToList();
-
-        if (adminAssignments.Count > 0)
+        // 1. Clean up mistakenly held System Administrator role only if Control Plane check definitively succeeded
+        if (controlPlaneCheckSucceeded)
         {
-            dbContext.UserRoleAssignments!.RemoveRange(adminAssignments);
-            await SafeSaveChangesAsync(dbContext, logger);
-            currentAssignments.RemoveAll(ra => adminAssignments.Contains(ra));
-            authService?.InvalidateUserPermissions(externalIdentityId, null);
+            var adminAssignments = currentAssignments
+                .Where(ra => ((adminRole != null && ra.RoleId == adminRole.Id) || (ra.Role != null && ra.Role.Name == RoleConstants.SystemAdministrator)) &&
+                             (ra.CreatedBy == "AutoProvisioning" || ra.CreatedBy == "KeycloakJIT"))
+                .ToList();
+
+            if (adminAssignments.Count > 0)
+            {
+                dbContext.UserRoleAssignments!.RemoveRange(adminAssignments);
+                await SafeSaveChangesAsync(dbContext, logger);
+                currentAssignments.RemoveAll(ra => adminAssignments.Contains(ra));
+                authService?.InvalidateUserPermissions(externalIdentityId, null);
+            }
         }
 
         // 2. If user has explicit operational business roles, remove redundant Employee / Viewer
