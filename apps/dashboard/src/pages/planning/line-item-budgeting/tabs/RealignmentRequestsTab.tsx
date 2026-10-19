@@ -200,7 +200,7 @@ export function RealignmentRequestsTab() {
                           <Button
                             variant="outline"
                             size="sm"
-                            title="Download Modification of Budget PDF (FM-USTP-FDP-002)"
+                            title="Download Modification of Budget PDF"
                             className="h-8 w-8 p-0 text-slate-600 hover:text-red-600 hover:border-red-200 shadow-xs"
                             onClick={() =>
                               downloadPdf(

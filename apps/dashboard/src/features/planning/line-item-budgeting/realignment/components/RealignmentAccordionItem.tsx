@@ -205,7 +205,7 @@ export function RealignmentAccordionItem({
                           className="cursor-pointer font-medium text-red-600 focus:text-red-700"
                         >
                           <FileText className="w-3.5 h-3.5 mr-2 text-red-500" />{' '}
-                          Export Realignment PDF (FM-USTP-FDP-002)
+                          Export Realignment PDF
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
@@ -278,13 +278,43 @@ export function RealignmentAccordionItem({
                         </Button>
                       )}
 
-                      <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-0.5 select-none">
+                      <div
+                        className={`flex items-center gap-1.5 border rounded-lg px-2 py-0.5 select-none ${
+                          activeAmendment.status === 'Submitted'
+                            ? 'bg-blue-50 border-blue-200'
+                            : activeAmendment.status === 'Returned'
+                              ? 'bg-rose-50 border-rose-200'
+                              : 'bg-indigo-50 border-indigo-100'
+                        }`}
+                      >
                         <span className="flex h-1.5 w-1.5 relative">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-indigo-650"></span>
+                          {activeAmendment.status === 'Draft' && (
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                          )}
+                          <span
+                            className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
+                              activeAmendment.status === 'Submitted'
+                                ? 'bg-blue-600'
+                                : activeAmendment.status === 'Returned'
+                                  ? 'bg-rose-600'
+                                  : 'bg-indigo-650'
+                            }`}
+                          ></span>
                         </span>
-                        <span className="text-[9px] text-indigo-700 font-extrabold uppercase tracking-wider">
-                          Active Realignment Draft
+                        <span
+                          className={`text-[9px] font-extrabold uppercase tracking-wider ${
+                            activeAmendment.status === 'Submitted'
+                              ? 'text-blue-700'
+                              : activeAmendment.status === 'Returned'
+                                ? 'text-rose-700'
+                                : 'text-indigo-700'
+                          }`}
+                        >
+                          {activeAmendment.status === 'Submitted'
+                            ? 'Submitted Realignment'
+                            : activeAmendment.status === 'Returned'
+                              ? 'Returned Realignment'
+                              : 'Active Realignment Draft'}
                         </span>
                       </div>
                     </div>

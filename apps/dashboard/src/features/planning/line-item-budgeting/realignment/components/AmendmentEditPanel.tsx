@@ -267,14 +267,29 @@ export function AmendmentEditPanel({
         {/* Floating Top Accent Badges */}
         <div className="absolute top-0 right-6 -translate-y-1/2 flex items-center gap-1.5 z-10">
           <span className="flex h-2.5 w-2.5 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span>
+            {!isReadOnly && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+            )}
+            <span
+              className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                isReadOnly ? 'bg-blue-600' : 'bg-indigo-600'
+              }`}
+            ></span>
           </span>
-          <Badge className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[9px] uppercase tracking-wider px-2.5 py-0.5 border-none shadow-sm">
-            Realignment Sandbox
+          <Badge
+            className={`${
+              isReadOnly
+                ? 'bg-blue-600 hover:bg-blue-700'
+                : 'bg-indigo-600 hover:bg-indigo-700'
+            } text-white font-extrabold text-[9px] uppercase tracking-wider px-2.5 py-0.5 border-none shadow-sm`}
+          >
+            {isReadOnly ? 'Submitted Realignment (Read-Only)' : 'Realignment Sandbox'}
           </Badge>
-          <Badge variant="outline" className="bg-violet-50 text-violet-750 font-bold text-[9px] uppercase px-2.5 py-0.5 border-violet-100 shadow-sm">
-            Draft v{draftLib.version} Clone
+          <Badge
+            variant="outline"
+            className="bg-violet-50 text-violet-750 font-bold text-[9px] uppercase px-2.5 py-0.5 border-violet-100 shadow-sm"
+          >
+            {isReadOnly ? `Submitted v${draftLib.version}` : `Draft v${draftLib.version} Clone`}
           </Badge>
         </div>
 
