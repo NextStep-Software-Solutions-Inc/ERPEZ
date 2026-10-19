@@ -75,16 +75,21 @@ public class PermissionAuthorizationHandler(
         var activeTenantId = tenantContext.TenantId;
 
         var orgRole = context.User.FindFirstValue("org_role");
+        var claimTenantRaw = context.User.FindFirstValue("tenant_id") ?? context.User.FindFirstValue("tenantId");
+        var isTokenScopedToActiveTenant = activeTenantId.HasValue &&
+                                          Guid.TryParse(claimTenantRaw, out var claimTenantId) &&
+                                          claimTenantId == activeTenantId.Value;
 
         // Workspace System Administrator & Tenant Administrator Role Authority:
-        // Caller MUST actually possess an administrator role (via token role claims or verified platform admin)
+        // Caller MUST actually possess an administrator role (via token role claims scoped to the active tenant, or verified platform admin)
         // before honoring an administrative operating role from the X-Operating-Role header.
-        var userPossessesAdminRole = context.User.IsInRole("System Administrator") ||
-                                     context.User.IsInRole("Tenant Administrator") ||
-                                     string.Equals(userRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                     string.Equals(userRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                     ERPEZ.Shared.Constants.RoleConstants.IsAnyAdmin(orgRole) ||
-                                     isVerifiedPlatformAdmin;
+        var userPossessesAdminRole = isVerifiedPlatformAdmin ||
+                                     (isTokenScopedToActiveTenant &&
+                                      (context.User.IsInRole("System Administrator") ||
+                                       context.User.IsInRole("Tenant Administrator") ||
+                                       string.Equals(userRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
+                                       string.Equals(userRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
+                                       ERPEZ.Shared.Constants.RoleConstants.IsAnyAdmin(orgRole)));
 
         var isWorkspaceOrTenantAdmin = userPossessesAdminRole &&
             (string.IsNullOrWhiteSpace(activeOperatingRole) ||

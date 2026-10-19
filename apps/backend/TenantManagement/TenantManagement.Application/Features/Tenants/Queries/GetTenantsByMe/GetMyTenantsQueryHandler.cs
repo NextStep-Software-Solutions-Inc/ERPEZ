@@ -31,15 +31,19 @@ public class GetMyTenantsQueryHandler(
         var externalSubject = currentUserService.ExternalIdentityId;
         var lookupSubject = !string.IsNullOrWhiteSpace(externalSubject) ? externalSubject : currentUserService.UserId;
 
-        // Auto-reconcile any pending memberships for this authenticated caller
+        // Auto-reconcile any pending or unlinked memberships for this authenticated caller
         if (!string.IsNullOrWhiteSpace(currentUserService.Email))
         {
             var normalizedEmail = currentUserService.Email.Trim().ToLowerInvariant();
             var pendingMembers = await unitOfWork.TenantMemberRepository.Query()
                 .Include(tm => tm.RoleAssignments)
                 .Where(tm => tm.Email.ToLower() == normalizedEmail &&
-                             tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Pending &&
-                             !tm.IsDeleted)
+                             !tm.IsDeleted &&
+                             (tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Pending ||
+                              (tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Active &&
+                               !string.IsNullOrWhiteSpace(lookupSubject) &&
+                               tm.ExternalIdentityId != lookupSubject &&
+                               (string.IsNullOrEmpty(tm.ExternalIdentityId) || tm.ExternalIdentityId.StartsWith("inv_")))))
                 .OrderByDescending(tm => tm.CreatedAt)
                 .ToListAsync(cancellationToken);
 
@@ -57,8 +61,23 @@ public class GetMyTenantsQueryHandler(
 
                 foreach (var group in pendingMembers.GroupBy(pm => (pm.TenantId, pm.Provider)))
                 {
-                    var targetMember = existingMembers.FirstOrDefault(
-                        em => em.TenantId == group.Key.TenantId && em.Provider == group.Key.Provider);
+                    var matchingExisting = existingMembers
+                        .Where(em => em.TenantId == group.Key.TenantId && em.Provider == group.Key.Provider)
+                        .ToList();
+
+                    // Detach lookupSubject from any existing member row in the same tenant that belongs to a different email
+                    foreach (var mismatched in matchingExisting.Where(em =>
+                        !string.IsNullOrWhiteSpace(em.Email) &&
+                        !string.Equals(em.Email.Trim(), normalizedEmail, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        mismatched.ExternalIdentityId = string.Empty;
+                        mismatched.UserId = mismatched.Email.Trim().ToLowerInvariant();
+                        mismatched.ConcurrencyStamp = Guid.NewGuid();
+                    }
+
+                    var targetMember = matchingExisting.FirstOrDefault(em =>
+                        string.IsNullOrWhiteSpace(em.Email) ||
+                        string.Equals(em.Email.Trim(), normalizedEmail, StringComparison.OrdinalIgnoreCase));
 
                     if (targetMember is null)
                     {
@@ -73,11 +92,12 @@ public class GetMyTenantsQueryHandler(
                         targetMember.InvitationExpiresAtUtc = null;
                         targetMember.ConcurrencyStamp = Guid.NewGuid();
                     }
-                    else if (targetMember.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Pending)
+                    else
                     {
                         targetMember.Status = ERPEZ.TenantManagement.Domain.Enums.Status.Active;
                         if (!string.IsNullOrWhiteSpace(lookupSubject))
                         {
+                            targetMember.ExternalIdentityId = lookupSubject;
                             targetMember.UserId = lookupSubject;
                         }
                         targetMember.InvitationTokenHash = null;
@@ -117,8 +137,7 @@ public class GetMyTenantsQueryHandler(
         }
         else if (string.IsNullOrWhiteSpace(lookupSubject))
         {
-            var defaultId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-            customFilter = t => t.Id == defaultId;
+            customFilter = t => false;
         }
         else
         {
