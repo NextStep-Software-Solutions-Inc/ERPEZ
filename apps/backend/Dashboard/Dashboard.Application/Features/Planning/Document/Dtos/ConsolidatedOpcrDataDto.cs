@@ -13,6 +13,7 @@ public class ConsolidatedOpcrDataDto : IAgencyLetterheadAware
     }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public string AgencyName   { get; set; } = string.Empty;
     public string FiscalYear   { get; set; } = string.Empty;

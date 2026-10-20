@@ -11,6 +11,7 @@ public record LibDataDto : IAgencyLetterheadAware
     public string?   ProcuringEntityName { get; set; }
     public string?   ProcuringEntityAddress { get; set; }
     public byte[]?   LogoBytes     { get; set; }
+    public string?   LetterheadAlignment { get; set; }
 
     public string    LIBNumber     { get; init; } = string.Empty;
     public string    OfficeName    { get; init; } = string.Empty;

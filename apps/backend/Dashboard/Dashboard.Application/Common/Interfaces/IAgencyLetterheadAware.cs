@@ -8,4 +8,5 @@ public interface IAgencyLetterheadAware
     string? ProcuringEntityName { get; set; }
     string? ProcuringEntityAddress { get; set; }
     byte[]? LogoBytes { get; set; }
+    string? LetterheadAlignment { get; set; }
 }

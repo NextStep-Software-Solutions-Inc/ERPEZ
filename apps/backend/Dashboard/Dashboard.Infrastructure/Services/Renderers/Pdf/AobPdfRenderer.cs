@@ -45,7 +45,8 @@ public sealed class AobPdfRenderer : BasePdfRenderer, IDocumentRenderer<AobDataD
                             ? $"({request.ModeOfProcurement})"
                             : null,
                         showUnderline: true,
-                        titleFontSize: 12f);
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
 
                     col.Item().PaddingTop(8).Column(meta =>
                     {

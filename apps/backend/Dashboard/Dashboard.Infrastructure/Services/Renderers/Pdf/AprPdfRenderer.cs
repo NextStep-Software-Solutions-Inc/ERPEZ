@@ -46,7 +46,8 @@ public sealed class AprPdfRenderer : BasePdfRenderer, IDocumentRenderer<AprDataD
                         appendixText: null,
                         documentTitle: "AGENCY PROCUREMENT REQUEST",
                         showUnderline: false,
-                        titleFontSize: 11f);
+                        titleFontSize: 11f,
+                        alignment: request.LetterheadAlignment);
 
                     // ── 2. Requesting Agency Box Grid ──────────────────────
                     col.Item().PaddingTop(3).Border(1).BorderColor(Colors.Black).Table(metaTable =>

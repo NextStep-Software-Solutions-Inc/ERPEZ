@@ -42,7 +42,8 @@ public sealed class NoticeToProceedPdfRenderer : BasePdfRenderer, IDocumentRende
                         request.ProcuringEntityName,
                         request.ProcuringEntityAddress,
                         logoBytes,
-                        officeName: null);
+                        officeName: null,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // -- 2. Body Content ------------------------------------------

@@ -42,7 +42,8 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                         logoBytes,
                         officeName: null,
                         documentTitle: $"BAC Resolution No. {request.ResolutionNumber}",
-                        titleFontSize: 11f);
+                        titleFontSize: 11f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // ── Body Content ─────────────────────────────────────────────

@@ -37,7 +37,8 @@ internal sealed class AppPdfRenderer : BasePdfRenderer, IDocumentRenderer<AppDat
                         appendixText: null,
                         documentTitle: $"ANNUAL PROCUREMENT PLAN FOR FY {request.FiscalYear}",
                         showUnderline: false,
-                        titleFontSize: 11f);
+                        titleFontSize: 11f,
+                        alignment: request.LetterheadAlignment);
 
                     var indicativeBox = request.IsIndicative ? "☑" : "☐";
                     var finalBox      = request.IsFinal ? "☑" : "☐";

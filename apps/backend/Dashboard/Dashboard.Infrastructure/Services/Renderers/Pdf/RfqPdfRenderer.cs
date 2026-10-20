@@ -55,7 +55,8 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                         documentTitle: "INVITATION / REQUEST FOR SUBMISSION OF PRICE QUOTATION",
                         documentSubtitle: "Posted in PhilGEPS Website/Conspicuous Place at the Procuring Entity",
                         showUnderline: true,
-                        titleFontSize: 11.5f);
+                        titleFontSize: 11.5f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 page.Content().PaddingTop(14).Column(col =>
@@ -139,7 +140,8 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                         appendixText: null,
                         documentTitle: "REQUEST FOR QUOTATION",
                         showUnderline: true,
-                        titleFontSize: 11.5f);
+                        titleFontSize: 11.5f,
+                        alignment: request.LetterheadAlignment);
 
                     // Metadata Row
                     col.Item().PaddingTop(6).Row(row =>

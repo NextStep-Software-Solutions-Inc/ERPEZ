@@ -12,6 +12,7 @@
         }
         public string? ProcuringEntityAddress { get; set; }
         public byte[]? LogoBytes { get; set; }
+        public string? LetterheadAlignment { get; set; }
 
         public string OfficeName               { get; set; } = string.Empty;
         public string OfficeCode               { get; set; } = string.Empty;

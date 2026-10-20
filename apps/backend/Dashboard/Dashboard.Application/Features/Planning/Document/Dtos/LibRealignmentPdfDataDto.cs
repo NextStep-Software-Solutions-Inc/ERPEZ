@@ -7,6 +7,7 @@ public class LibRealignmentPdfDataDto : IAgencyLetterheadAware
     public string? ProcuringEntityName { get; set; }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     // Document Metadata
     public string DocumentCode { get; set; } = "FM-SUC-FDP-002";

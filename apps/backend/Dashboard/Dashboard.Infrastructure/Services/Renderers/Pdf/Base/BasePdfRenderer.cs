@@ -44,6 +44,7 @@ public abstract class BasePdfRenderer
 
     /// <summary>
     /// Renders standard government agency letterhead with logo on the left (e.g. PO, PR, RFQ, APP, PPMP).
+    /// Respects the organization's LetterheadAlignment preference (Default/Left/Center).
     /// </summary>
     protected static void RenderAgencyHeader(
         ColumnDescriptor col,
@@ -54,8 +55,34 @@ public abstract class BasePdfRenderer
         string? documentTitle = null,
         string? documentSubtitle = null,
         bool showUnderline = true,
-        float titleFontSize = 12.5f)
+        float titleFontSize = 12.5f,
+        string? alignment = null)
     {
+        if (string.Equals(alignment, "Center", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!string.IsNullOrWhiteSpace(appendixText))
+            {
+                col.Item().AlignRight().Text(appendixText).FontSize(8.5f).Italic();
+            }
+
+            RenderCenteredAgencyHeader(
+                col,
+                procuringEntityName,
+                procuringEntityAddress,
+                logoBytes,
+                officeName: null,
+                documentTitle: documentTitle,
+                documentSubtitle: documentSubtitle,
+                titleFontSize: titleFontSize,
+                alignment: "Center");
+
+            if (showUnderline && !string.IsNullOrWhiteSpace(documentTitle))
+            {
+                col.Item().PaddingTop(2).AlignCenter().MaxWidth(180).LineHorizontal(1.5f).LineColor(Colors.Black);
+            }
+            return;
+        }
+
         if (!string.IsNullOrWhiteSpace(appendixText))
         {
             col.Item().AlignRight().Text(appendixText).FontSize(8.5f).Italic();
@@ -110,6 +137,7 @@ public abstract class BasePdfRenderer
 
     /// <summary>
     /// Renders centered formal agency header with centered logo on top (e.g. NOA, NTP, Contract, BAC Resolution).
+    /// Respects the organization's LetterheadAlignment preference (Default/Left/Center).
     /// </summary>
     protected static void RenderCenteredAgencyHeader(
         ColumnDescriptor col,
@@ -119,8 +147,69 @@ public abstract class BasePdfRenderer
         string? officeName = null,
         string? documentTitle = null,
         string? documentSubtitle = null,
-        float titleFontSize = 13.5f)
+        float titleFontSize = 13.5f,
+        string? alignment = null)
     {
+        if (string.Equals(alignment, "Left", StringComparison.OrdinalIgnoreCase))
+        {
+            var cleanLeftName = CleanEntityName(procuringEntityName);
+            if (logoBytes != null && logoBytes.Length > 0)
+            {
+                col.Item().Row(r =>
+                {
+                    r.ConstantItem(48).Height(48).AlignMiddle().Image(logoBytes).FitArea();
+
+                    r.RelativeItem().PaddingLeft(12).AlignMiddle().Column(c =>
+                    {
+                        c.Item().Text("Republic of the Philippines").FontSize(8f).FontColor(Colors.Grey.Darken2);
+                        c.Item().Text(cleanLeftName).Bold().FontSize(11.5f);
+
+                        if (!string.IsNullOrWhiteSpace(procuringEntityAddress))
+                        {
+                            c.Item().Text(procuringEntityAddress).FontSize(8f);
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(officeName))
+                        {
+                            c.Item().Text(officeName).FontSize(8f);
+                        }
+                    });
+                });
+            }
+            else
+            {
+                col.Item().Text("Republic of the Philippines").FontSize(8f).FontColor(Colors.Grey.Darken2);
+                col.Item().Text(cleanLeftName).Bold().FontSize(11.5f);
+
+                if (!string.IsNullOrWhiteSpace(procuringEntityAddress))
+                {
+                    col.Item().Text(procuringEntityAddress).FontSize(8f);
+                }
+
+                if (!string.IsNullOrWhiteSpace(officeName))
+                {
+                    col.Item().Text(officeName).FontSize(8f);
+                }
+            }
+
+            col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten1);
+
+            if (!string.IsNullOrWhiteSpace(documentTitle))
+            {
+                col.Item().PaddingTop(10).AlignCenter()
+                    .Text(documentTitle)
+                    .Bold().FontSize(titleFontSize);
+
+                if (!string.IsNullOrWhiteSpace(documentSubtitle))
+                {
+                    col.Item().PaddingTop(2).AlignCenter()
+                        .Text(documentSubtitle)
+                        .FontSize(9.5f).FontColor(Colors.Grey.Darken3);
+                }
+            }
+            return;
+        }
+
         if (logoBytes != null && logoBytes.Length > 0)
         {
             col.Item().AlignCenter().Height(44).Image(logoBytes).FitArea();
@@ -166,7 +255,7 @@ public abstract class BasePdfRenderer
             {
                 col.Item().PaddingTop(2).AlignCenter()
                     .Text(documentSubtitle)
-                    .FontSize(8.5f).Italic().FontColor(Colors.Grey.Darken2);
+                    .FontSize(9.5f).FontColor(Colors.Grey.Darken3);
             }
         }
     }

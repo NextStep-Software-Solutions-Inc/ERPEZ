@@ -19,6 +19,7 @@ public class LibAmendmentDataDto : IAgencyLetterheadAware
     public string? ProcuringEntityName { get; set; }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public string LIBNumber     { get; set; } = string.Empty;
     public string OfficeName    { get; set; } = string.Empty;    

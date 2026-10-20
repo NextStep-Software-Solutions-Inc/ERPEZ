@@ -7,6 +7,7 @@ public class PpmpDataDto : IAgencyLetterheadAware
     public string?            ProcuringEntityName { get; set; }
     public string?            ProcuringEntityAddress { get; set; }
     public byte[]?            LogoBytes   { get; set; }
+    public string?            LetterheadAlignment { get; set; }
 
     public Guid               OfficeId    { get; set; }   // ← was AgencyId
     public string             PpmpNumber  { get; set; } = string.Empty;

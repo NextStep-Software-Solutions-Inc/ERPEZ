@@ -57,6 +57,11 @@ public class DocumentRendererService(IServiceProvider serviceProvider) : IDocume
                     {
                         dto.ProcuringEntityName = agency.Name.Trim();
                     }
+
+                    if (!string.IsNullOrWhiteSpace(agency.LetterheadAlignment))
+                    {
+                        dto.LetterheadAlignment = agency.LetterheadAlignment.Trim();
+                    }
                 }
             }
         }

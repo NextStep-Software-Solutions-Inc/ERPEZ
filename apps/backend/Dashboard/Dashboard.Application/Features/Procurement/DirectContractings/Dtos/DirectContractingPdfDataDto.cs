@@ -10,6 +10,7 @@ public class DirectContractingPdfDataDto : ERPEZ.Application.Common.Interfaces.I
     public string? ProcuringEntityName { get; set; }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     // Header information
     public string AgencyName { get; set; } = "Republic of the Philippines";

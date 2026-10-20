@@ -13,6 +13,7 @@ public class MarketScopingDataDto : IAgencyLetterheadAware
     }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public string ProcuringEntity { get; set; } = string.Empty;
     public string ImplementingUnit { get; set; } = string.Empty;

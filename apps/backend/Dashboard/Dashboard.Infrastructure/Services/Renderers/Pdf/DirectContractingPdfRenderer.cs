@@ -43,7 +43,8 @@ public sealed class DirectContractingPdfRenderer : BasePdfRenderer, IDocumentRen
                         officeName: request.AgencySubHeader,
                         documentTitle: request.DocumentTitle,
                         documentSubtitle: $"Control / DC No.: {request.DocumentControlNumber}",
-                        titleFontSize: 12f);
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // ── Body Content ─────────────────────────────────────────────────

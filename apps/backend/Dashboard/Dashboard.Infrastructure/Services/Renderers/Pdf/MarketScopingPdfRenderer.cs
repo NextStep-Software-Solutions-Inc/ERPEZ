@@ -34,7 +34,8 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
                         appendixText: null,
                         documentTitle: "MARKET SCOPING CHECKLIST",
                         showUnderline: true,
-                        titleFontSize: 12f);
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 page.Content().Column(col =>

@@ -38,7 +38,8 @@ internal sealed class OpcrPdfRenderer : BasePdfRenderer, IDocumentRenderer<OpcrD
                         documentTitle: "OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)",
                         documentSubtitle: $"Proposed {request.OfficeName} OPCR FY {request.FiscalYear}",
                         showUnderline: true,
-                        titleFontSize: 10f);
+                        titleFontSize: 10f,
+                        alignment: request.LetterheadAlignment);
 
                     // Commitment statement
                     h.Item().PaddingTop(6).Text(t =>

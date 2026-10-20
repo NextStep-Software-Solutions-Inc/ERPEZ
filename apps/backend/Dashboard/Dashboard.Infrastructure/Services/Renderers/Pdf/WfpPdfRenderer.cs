@@ -40,7 +40,8 @@ internal sealed class WfpPdfRenderer
                         appendixText: null,
                         documentTitle: "WORK PLAN",
                         showUnderline: true,
-                        titleFontSize: 12f);
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
 
                     // ── Title row ────────────────────────────────────────────
                     h.Item().PaddingTop(4).Row(r =>

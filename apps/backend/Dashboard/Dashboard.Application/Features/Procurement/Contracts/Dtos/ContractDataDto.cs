@@ -17,6 +17,7 @@ public class ContractDataDto : IAgencyLetterheadAware
     public string? ProcuringEntityOffice { get; set; }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     // Supplier Information
     public Guid SupplierId { get; set; }

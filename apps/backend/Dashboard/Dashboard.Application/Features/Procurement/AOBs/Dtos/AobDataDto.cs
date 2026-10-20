@@ -58,6 +58,7 @@ public class AobDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadA
     public string? ProcuringEntityName { get; set; }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public Guid AOBId { get; set; }
     public string AOBNumber { get; set; } = string.Empty;

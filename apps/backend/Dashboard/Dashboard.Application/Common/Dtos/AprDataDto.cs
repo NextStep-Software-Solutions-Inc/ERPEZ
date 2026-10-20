@@ -21,6 +21,7 @@ public class AprDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadA
     }
 
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public string RequestingAgencyName { get; set; } = string.Empty;
     public string RequestingAgencyAddress { get; set; } = string.Empty;

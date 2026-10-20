@@ -35,7 +35,8 @@ internal sealed class PpmpPdfRenderer : BasePdfRenderer, IDocumentRenderer<PpmpD
                         request.ProcuringEntityAddress,
                         request.LogoBytes,
                         appendixText: null,
-                        documentTitle: null);
+                        documentTitle: null,
+                        alignment: request.LetterheadAlignment);
 
                     var titlePrefix = request.IsSupplemental
                         ? "SUPPLEMENTAL PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP) NO. "

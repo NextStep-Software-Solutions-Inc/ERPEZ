@@ -9,6 +9,7 @@ public class NoticeOfAwardDataDto : IAgencyLetterheadAware
     public string? ProcuringEntityName { get; set; }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public string NoaNumber { get; set; } = string.Empty;
     public DateTime? Date { get; set; }

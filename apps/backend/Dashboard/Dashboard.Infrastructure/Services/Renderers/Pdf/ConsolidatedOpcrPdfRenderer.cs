@@ -43,7 +43,8 @@ internal sealed class ConsolidatedOpcrPdfRenderer
                         documentTitle: "CONSOLIDATED OFFICE PERFORMANCE COMMITMENT AND REVIEW",
                         documentSubtitle: periodSub,
                         showUnderline: true,
-                        titleFontSize: 11f);
+                        titleFontSize: 11f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // ── Content ───────────────────────────────────────────────

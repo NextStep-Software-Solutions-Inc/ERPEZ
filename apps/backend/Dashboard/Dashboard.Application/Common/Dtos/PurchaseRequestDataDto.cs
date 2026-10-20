@@ -10,6 +10,7 @@ public class PurchaseRequestDataDto : IAgencyLetterheadAware
     public string? ProcuringEntityName { get; set; }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public string EntityName
     {

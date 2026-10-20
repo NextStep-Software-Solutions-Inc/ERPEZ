@@ -46,7 +46,8 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                         documentTitle: "LINE ITEM BUDGET FORM",
                         documentSubtitle: $"FOR FISCAL YEAR {request.FiscalYear}",
                         showUnderline: false,
-                        titleFontSize: 10f);
+                        titleFontSize: 10f,
+                        alignment: request.LetterheadAlignment);
 
                     if (!string.IsNullOrWhiteSpace(request.OfficeName))
                     {

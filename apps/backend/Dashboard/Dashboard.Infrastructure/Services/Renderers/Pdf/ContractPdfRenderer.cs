@@ -74,7 +74,8 @@ public sealed class ContractPdfRenderer : BasePdfRenderer, IDocumentRenderer<Con
                         request.ProcuringEntityName,
                         request.ProcuringEntityAddress,
                         request.LogoBytes ?? logoBytes,
-                        officeName: null);
+                        officeName: null,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // ── 2. Contract Body ─────────────────────────────────────────

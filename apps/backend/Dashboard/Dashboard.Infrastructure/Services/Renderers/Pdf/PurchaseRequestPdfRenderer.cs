@@ -43,7 +43,8 @@ public sealed class PurchaseRequestPdfRenderer : BasePdfRenderer, IDocumentRende
                         appendixText: "Appendix 60",
                         documentTitle: "PURCHASE REQUEST",
                         showUnderline: false,
-                        titleFontSize: 12f);
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
 
                     // ── Metadata Grid ──────────────────────────────────────
                     col.Item().Border(1).BorderColor(Colors.Black).Table(metaTable =>

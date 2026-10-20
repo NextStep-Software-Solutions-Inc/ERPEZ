@@ -8,6 +8,7 @@ public class AppDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadA
     public string? ProcuringEntityName { get; set; }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public string APPNumber { get; set; } = string.Empty;
     public string FiscalYear { get; set; } = string.Empty;

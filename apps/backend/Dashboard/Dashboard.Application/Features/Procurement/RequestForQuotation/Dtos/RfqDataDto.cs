@@ -39,6 +39,7 @@ public class RfqDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadA
     }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public Guid RFQId { get; set; }
     public string RFQNumber { get; set; } = string.Empty;

@@ -63,6 +63,7 @@ public class BacResolutionDataDto : ERPEZ.Application.Common.Interfaces.IAgencyL
     public string? ProcuringEntityName { get; set; }
     public string? ProcuringEntityAddress { get; set; }
     public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public string ResolutionNumber { get; set; } = string.Empty;
     public string ResolutionType { get; set; } = string.Empty;

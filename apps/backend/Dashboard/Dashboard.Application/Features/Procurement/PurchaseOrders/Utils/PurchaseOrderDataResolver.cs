@@ -126,6 +126,7 @@ public static class PurchaseOrderDataResolver
             ProcuringEntityOffice = procuringEntityOffice,
             ProcuringEntityAddress = procuringEntityAddress,
             LogoBytes = logoBytes,
+            LetterheadAlignment = agency?.LetterheadAlignment ?? "Default",
 
             SupplierId = purchaseOrder.SupplierId,
             SupplierName = supplier?.Name ?? "Winning Supplier",
