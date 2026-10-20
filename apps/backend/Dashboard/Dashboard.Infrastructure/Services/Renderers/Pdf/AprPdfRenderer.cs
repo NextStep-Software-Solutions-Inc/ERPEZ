@@ -36,11 +36,7 @@ public sealed class AprPdfRenderer : BasePdfRenderer, IDocumentRenderer<AprDataD
                 page.Content().Column(col =>
                 {
                     // ── 1. Top Meta Header & Letterhead ─────────────────────
-                    col.Item().Row(r =>
-                    {
-                        r.RelativeItem().Text("APR FORM revised May 2015").FontSize(7).SemiBold();
-                        r.RelativeItem().AlignRight().Text("FORM NO. 002").FontSize(8).Bold();
-                    });
+                    col.Item().AlignRight().Text("FORM NO. 002").FontSize(8).Bold();
 
                     RenderAgencyHeader(
                         col,
