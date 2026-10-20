@@ -208,14 +208,21 @@ internal sealed class WfpPdfRenderer
                     });
 
                     // ── Signatories ───────────────────────────────────────────
-                    col.Item().PaddingTop(24).Row(row =>
+                    if (request.Signatories is { Count: > 0 })
                     {
-                        WfpSignatoryBlock(row, "Prepared by:", "Project Leader");
-                        row.ConstantItem(20);
-                        WfpSignatoryBlock(row, "Funds Available:", "FMS Director");
-                        row.ConstantItem(20);
-                        WfpSignatoryBlock(row, "Approved:", "Chancellor");
-                    });
+                        RenderSignatories(col, request.Signatories);
+                    }
+                    else
+                    {
+                        col.Item().PaddingTop(24).Row(row =>
+                        {
+                            WfpSignatoryBlock(row, "Prepared by:", string.Empty, "Project Leader");
+                            row.ConstantItem(20);
+                            WfpSignatoryBlock(row, "Funds Available:", string.Empty, "FMS Director");
+                            row.ConstantItem(20);
+                            WfpSignatoryBlock(row, "Approved:", string.Empty, "Chancellor");
+                        });
+                    }
                 });
 
                 page.Footer().AlignCenter().Text(t =>
@@ -233,13 +240,14 @@ internal sealed class WfpPdfRenderer
     // Helpers
     // =========================================================================
 
-    private static void WfpSignatoryBlock(RowDescriptor row, string label, string position)
+    private static void WfpSignatoryBlock(RowDescriptor row, string label, string printedName, string position)
     {
         row.RelativeItem().Column(sc =>
         {
             sc.Item().Text(label).Bold().FontSize(8);
-            sc.Item().PaddingTop(32).BorderBottom(1).BorderColor(Colors.Black).Text(string.Empty);
-            sc.Item().Text("Signature over Printed Name").FontSize(7).Italic();
+            sc.Item().PaddingTop(32).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                .Text(printedName).Bold().FontSize(9);
+            sc.Item().PaddingTop(2).Text("Signature over Printed Name").FontSize(7).Italic();
             sc.Item().PaddingTop(2).Text(position).FontSize(7);
         });
     }

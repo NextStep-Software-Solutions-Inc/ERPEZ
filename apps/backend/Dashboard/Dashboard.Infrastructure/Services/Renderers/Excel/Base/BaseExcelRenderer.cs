@@ -61,11 +61,15 @@ internal abstract class BaseExcelRenderer
         IXLWorksheet ws, int startRow, int startCol, SignatoryDto sig)
     {
         ws.Cell(startRow,     startCol).Value = sig.Label;
-        ws.Cell(startRow + 3, startCol).Value = "Signature over Printed Name";
-        ws.Cell(startRow + 4, startCol).Value = sig.PrintedName;
+        ws.Cell(startRow,     startCol).Style.Font.Bold = true;
+        ws.Cell(startRow + 3, startCol).Value = sig.PrintedName;
+        ws.Cell(startRow + 3, startCol).Style.Font.Bold = true;
+        ws.Cell(startRow + 3, startCol).Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+        ws.Cell(startRow + 4, startCol).Value = "Signature over Printed Name";
+        ws.Cell(startRow + 4, startCol).Style.Font.Italic = true;
+        ws.Cell(startRow + 4, startCol).Style.Font.FontSize = 8;
         ws.Cell(startRow + 5, startCol).Value = sig.Position;
         ws.Cell(startRow + 6, startCol).Value = sig.Designation;
         ws.Cell(startRow + 7, startCol).Value = $"Date: {sig.Date?.ToString("MM/dd/yyyy") ?? ""}";
-        ws.Cell(startRow + 3, startCol).Style.Border.BottomBorder = XLBorderStyleValues.Thin;
     }
 }

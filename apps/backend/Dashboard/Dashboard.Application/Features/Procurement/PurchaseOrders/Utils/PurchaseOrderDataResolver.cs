@@ -17,34 +17,53 @@ public static class PurchaseOrderDataResolver
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken = default)
     {
-        // 1. Resolve source document number
+        // 1. Resolve source document number (and optional source approver)
         string sourceDocNumber = string.Empty;
+        string? sourceApproverName = null;
+        Guid? sourceApproverId = null;
+
         if (purchaseOrder.SourceDocumentType == SourceDocumentTypeEnum.AOB)
         {
-            var aob = await unitOfWork.AOBRepository.FindAsync(a => a.Id == purchaseOrder.SourceDocumentId, cancellationToken);
+            var aob = unitOfWork.AOBRepository != null
+                ? await unitOfWork.AOBRepository.FindAsync(a => a.Id == purchaseOrder.SourceDocumentId, cancellationToken)
+                : null;
             sourceDocNumber = aob?.AOBNumber ?? string.Empty;
+            sourceApproverId = aob?.ApprovedBy;
         }
         else if (purchaseOrder.SourceDocumentType == SourceDocumentTypeEnum.NOA)
         {
-            var noa = await unitOfWork.NoticeOfAwardRepository.FindAsync(n => n.Id == purchaseOrder.SourceDocumentId, cancellationToken);
+            var noa = unitOfWork.NoticeOfAwardRepository != null
+                ? await unitOfWork.NoticeOfAwardRepository.FindAsync(n => n.Id == purchaseOrder.SourceDocumentId, cancellationToken)
+                : null;
             sourceDocNumber = noa?.NOANumber ?? string.Empty;
+            sourceApproverName = noa?.ApprovedByName;
+            sourceApproverId = noa?.ApprovedById;
         }
         else if (purchaseOrder.SourceDocumentType == SourceDocumentTypeEnum.BAC_RESOLUTION)
         {
-            var da = await unitOfWork.DirectAcquisitionRepository.GetByIdWithConsolidatedPRAsync(purchaseOrder.SourceDocumentId, cancellationToken);
+            var da = unitOfWork.DirectAcquisitionRepository != null
+                ? await unitOfWork.DirectAcquisitionRepository.GetByIdWithConsolidatedPRAsync(purchaseOrder.SourceDocumentId, cancellationToken)
+                : null;
             sourceDocNumber = !string.IsNullOrWhiteSpace(da?.DANumber)
                 ? da.DANumber
                 : (da?.ConsolidatedPR?.CPRNumber ?? purchaseOrder.SourceDocumentId.ToString());
+            sourceApproverId = da?.ReviewedByUserId;
         }
 
         // 2. Resolve procuring entity name, address, and logo from Agency letterhead or database fallback
-        var agency = await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
+        var agency = unitOfWork.AgencyRepository != null
+            ? await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken)
+            : null;
 
-        var topOrg = await unitOfWork.OrganizationRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)
-            ?? await unitOfWork.OrganizationRepository.FindAsync(o => !o.IsDeleted, cancellationToken);
+        var topOrg = unitOfWork.OrganizationRepository != null
+            ? (await unitOfWork.OrganizationRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)
+               ?? await unitOfWork.OrganizationRepository.FindAsync(o => !o.IsDeleted, cancellationToken))
+            : null;
 
-        var rootOffice = await unitOfWork.OfficeRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)
-            ?? await unitOfWork.OfficeRepository.FindAsync(o => !o.IsDeleted, cancellationToken);
+        var rootOffice = unitOfWork.OfficeRepository != null
+            ? (await unitOfWork.OfficeRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)
+               ?? await unitOfWork.OfficeRepository.FindAsync(o => !o.IsDeleted, cancellationToken))
+            : null;
 
         var candidate = topOrg?.Name?.Trim()
             ?? (rootOffice?.Organization != null ? rootOffice.Organization.Name?.Trim() : null)
@@ -112,6 +131,25 @@ public static class PurchaseOrderDataResolver
                 Amount = i.Amount > 0 ? i.Amount : (i.Quantity * i.UnitPrice)
             }).ToList() ?? [];
 
+        // 4. Resolve Approver (HOPE / Authorized Representative)
+        var approverId = purchaseOrder.ApprovedById ?? sourceApproverId;
+        var resolvedApprover = await DocumentSignatoryResolver.ResolveUserSignatoryAsync(unitOfWork, approverId, cancellationToken);
+
+        if (resolvedApprover == null || string.IsNullOrWhiteSpace(resolvedApprover.FullName))
+        {
+            var wf = await DocumentSignatoryResolver.ResolveWorkflowApproversAsync(
+                unitOfWork, rootOffice?.Id, null, null, cancellationToken);
+            resolvedApprover = wf.FinalApprover ?? resolvedApprover;
+        }
+
+        var approvedByName = !string.IsNullOrWhiteSpace(resolvedApprover?.FullName)
+            ? resolvedApprover.FullName
+            : (sourceApproverName ?? string.Empty);
+
+        var approvedByPosition = !string.IsNullOrWhiteSpace(resolvedApprover?.PositionTitle)
+            ? resolvedApprover.PositionTitle
+            : "Head of the Procuring Entity";
+
         return new PurchaseOrderDataDto
         {
             Id = purchaseOrder.Id,
@@ -141,8 +179,8 @@ public static class PurchaseOrderDataResolver
             TotalAmount = totalAmount,
             AmountInWords = amountInWords,
 
-            ApprovedByName = string.Empty,
-            ApprovedByPosition = "Head of the Procuring Entity",
+            ApprovedByName = approvedByName,
+            ApprovedByPosition = approvedByPosition,
             ApprovedAt = purchaseOrder.ApprovedAt,
 
             Items = items

@@ -1,4 +1,5 @@
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
@@ -219,11 +220,25 @@ public class GenerateAppDocumentCommandHandler(
             }).ToList();
         }
 
-        // Fallback to global personnel position lookup only if no APP-specific signatories exist
+        // Fallback to global personnel position / BAC / WorkflowMatrix lookup if no APP-specific signatories exist
         var signatories = new List<SignatoryDto>();
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, null, app.FiscalYearId, "APP", cancellationToken);
+        var bacMembers = await DocumentSignatoryResolver
+            .ResolveActiveBacMembersAsync(unitOfWork, cancellationToken);
 
         // Prepared by (BAC Secretariat)
         var preparedBy = await FindSignatoryAsync("BAC Secretariat", "Prepared by:", cancellationToken);
+        if (preparedBy.PrintedName == "TBD" && wf.RecommendingApprover != null && !string.IsNullOrWhiteSpace(wf.RecommendingApprover.FullName))
+        {
+            preparedBy = new SignatoryDto
+            {
+                Label       = "Prepared by:",
+                PrintedName = wf.RecommendingApprover.FullName,
+                Position    = wf.RecommendingApprover.PositionTitle,
+                Designation = wf.RecommendingApprover.FunctionalTitle
+            };
+        }
         signatories.Add(preparedBy);
 
         // Recommended by (BAC Chairperson)
@@ -232,6 +247,22 @@ public class GenerateAppDocumentCommandHandler(
         {
             recommendedBy = await FindSignatoryAsync("BAC Chair", "Recommended by:", cancellationToken);
         }
+        if (recommendedBy.PrintedName == "TBD")
+        {
+            var bacChair = bacMembers.FirstOrDefault(m =>
+                string.Equals(m.Role, "Chairperson", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(m.Role, "Chairman", StringComparison.OrdinalIgnoreCase));
+            if (bacChair != null && !string.IsNullOrWhiteSpace(bacChair.FullName))
+            {
+                recommendedBy = new SignatoryDto
+                {
+                    Label       = "Recommended by:",
+                    PrintedName = bacChair.FullName,
+                    Position    = !string.IsNullOrWhiteSpace(bacChair.Position) ? bacChair.Position : "BAC Chairperson",
+                    Designation = "BAC Chairperson"
+                };
+            }
+        }
         signatories.Add(recommendedBy);
 
         // Approved by (Head of the Procuring Entity)
@@ -239,6 +270,16 @@ public class GenerateAppDocumentCommandHandler(
         if (approvedBy.PrintedName == "TBD")
         {
             approvedBy = await FindSignatoryAsync("HOPE", "Approved by:", cancellationToken);
+        }
+        if (approvedBy.PrintedName == "TBD" && wf.FinalApprover != null && !string.IsNullOrWhiteSpace(wf.FinalApprover.FullName))
+        {
+            approvedBy = new SignatoryDto
+            {
+                Label       = "Approved by:",
+                PrintedName = wf.FinalApprover.FullName,
+                Position    = !string.IsNullOrWhiteSpace(wf.FinalApprover.PositionTitle) ? wf.FinalApprover.PositionTitle : "Head of the Procuring Entity",
+                Designation = wf.FinalApprover.FunctionalTitle
+            };
         }
         signatories.Add(approvedBy);
 
@@ -261,7 +302,9 @@ public class GenerateAppDocumentCommandHandler(
 
     private async Task<SignatoryDto> FindSignatoryAsync(string positionTitle, string label, CancellationToken cancellationToken)
     {
-        var assignment = await unitOfWork.PersonnelPositionRepository.GetActiveByPositionTitleAsync(positionTitle, cancellationToken);
+        var assignment = unitOfWork.PersonnelPositionRepository != null
+            ? await unitOfWork.PersonnelPositionRepository.GetActiveByPositionTitleAsync(positionTitle, cancellationToken)
+            : null;
 
         if (assignment?.User != null)
         {

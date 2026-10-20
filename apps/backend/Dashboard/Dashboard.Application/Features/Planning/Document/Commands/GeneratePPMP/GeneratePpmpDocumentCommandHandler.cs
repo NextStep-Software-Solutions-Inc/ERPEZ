@@ -1,4 +1,5 @@
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Domain.Entities.Planning; 
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Enums;
@@ -38,7 +39,8 @@ public class GeneratePpmpDocumentCommandHandler(
         }
 
         // ── 2. Map ──────────────────────────────────────────────────────
-        var dataDto = MapToDataDto(ppmp, sourcePpmp);
+        var signatories = await BuildSignatoriesAsync(ppmp, cancellationToken);
+        var dataDto = MapToDataDto(ppmp, sourcePpmp, signatories);
 
         // ── 3. Render ───────────────────────────────────────────────────
         var bytes = await rendererService.RenderAsync(
@@ -70,7 +72,10 @@ public class GeneratePpmpDocumentCommandHandler(
 
     // ── Mapping ──────────────────────────────────────────────────────────────
 
-    private static PpmpDataDto MapToDataDto(PpmpEntity ppmp, PpmpEntity? sourcePpmp = null)
+    private static PpmpDataDto MapToDataDto(
+        PpmpEntity ppmp,
+        PpmpEntity? sourcePpmp = null,
+        List<SignatoryDto>? resolvedSignatories = null)
     {
         var activityItems = ppmp.PPMPActivities
             .Where(a => !a.IsDeleted)
@@ -100,7 +105,7 @@ public class GeneratePpmpDocumentCommandHandler(
 
         var rows        = allItems.Select(item => MapToRow(item, ppmp, sourceItems)).ToList();
         var totalBudget = rows.Sum(r => r.EstimatedBudget);
-        var signatories = BuildSignatories(ppmp);
+        var signatories = resolvedSignatories ?? BuildSignatories(ppmp);
 
         return new PpmpDataDto
         {
@@ -271,17 +276,107 @@ public class GeneratePpmpDocumentCommandHandler(
         };
     }
 
+    private async Task<List<SignatoryDto>> BuildSignatoriesAsync(PpmpEntity ppmp, CancellationToken cancellationToken)
+    {
+        var events = ppmp.ApprovalEvents.Where(e => !e.IsDeleted).ToList();
+
+        var preparer = events
+            .Where(e => e.Action.Equals("Submit", StringComparison.OrdinalIgnoreCase) ||
+                        e.Action.Equals("Submitted", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(e => e.Timestamp)
+            .FirstOrDefault();
+
+        var financeEvent = events
+            .Where(e => e.Action.Equals("Recommend", StringComparison.OrdinalIgnoreCase) ||
+                        e.Action.Equals("Recommended", StringComparison.OrdinalIgnoreCase) ||
+                        e.Role.Contains("Finance", StringComparison.OrdinalIgnoreCase) ||
+                        e.Role.Contains("Budget", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(e => e.Timestamp)
+            .FirstOrDefault();
+
+        var approver = events
+            .Where(e => e.Action.Equals("Approve", StringComparison.OrdinalIgnoreCase) ||
+                        e.Action.Equals("Approved", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(e => e.Timestamp)
+            .FirstOrDefault();
+
+        var workflowApprovers = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, ppmp.OfficeId, ppmp.FiscalYearId, "PPMP", cancellationToken);
+
+        var officeHead = await DocumentSignatoryResolver
+            .ResolveOfficeHeadSignatoryAsync(unitOfWork, ppmp.OfficeId, cancellationToken);
+
+        var financeSignatory = await DocumentSignatoryResolver
+            .ResolveFinanceSignatoryAsync(unitOfWork, cancellationToken);
+
+        var preparerName = !string.IsNullOrWhiteSpace(preparer?.ActorName)
+            ? preparer.ActorName
+            : (officeHead?.FullName ?? (!string.IsNullOrWhiteSpace(ppmp.CreatedBy) ? ppmp.CreatedBy : (workflowApprovers.RecommendingApprover?.FullName ?? string.Empty)));
+
+        var preparerPos = !string.IsNullOrWhiteSpace(officeHead?.PositionTitle)
+            ? officeHead.PositionTitle
+            : (!string.IsNullOrWhiteSpace(workflowApprovers.RecommendingApprover?.PositionTitle)
+                ? workflowApprovers.RecommendingApprover.PositionTitle
+                : (ppmp.Office?.Name ?? string.Empty));
+
+        var fundsName = !string.IsNullOrWhiteSpace(financeEvent?.ActorName)
+            ? financeEvent.ActorName
+            : (financeSignatory?.FullName ?? string.Empty);
+
+        var fundsPos = !string.IsNullOrWhiteSpace(financeSignatory?.PositionTitle)
+            ? financeSignatory.PositionTitle
+            : (!string.IsNullOrWhiteSpace(financeEvent?.Role) ? financeEvent.Role : string.Empty);
+
+        var approverName = !string.IsNullOrWhiteSpace(approver?.ActorName)
+            ? approver.ActorName
+            : (workflowApprovers.FinalApprover?.FullName ?? string.Empty);
+
+        var approverPos = !string.IsNullOrWhiteSpace(workflowApprovers.FinalApprover?.PositionTitle)
+            ? workflowApprovers.FinalApprover.PositionTitle
+            : (ppmp.Office?.Name ?? string.Empty);
+
+        return
+        [
+            new SignatoryDto
+            {
+                Label       = "Prepared by:",
+                PrintedName = preparerName,
+                Position    = preparerPos,
+                Designation = "End-User or Implementing Unit",
+                Date        = preparer?.Timestamp ?? ppmp.SubmittedDate
+            },
+            new SignatoryDto
+            {
+                Label       = "Funds Available:",
+                PrintedName = fundsName,
+                Position    = fundsPos,
+                Designation = "Director, Financial Management Services",
+                Date        = financeEvent?.Timestamp
+            },
+            new SignatoryDto
+            {
+                Label       = "Submitted by:",
+                PrintedName = approverName,
+                Position    = approverPos,
+                Designation = "Head of the End-User or Implementing Unit",
+                Date        = approver?.Timestamp ?? ppmp.ApprovedDate
+            }
+        ];
+    }
+
     private static List<SignatoryDto> BuildSignatories(PpmpEntity ppmp)
     {
         var events = ppmp.ApprovalEvents.Where(e => !e.IsDeleted).ToList();
 
         var preparer = events
-            .Where(e => e.Action.Equals("Submit", StringComparison.OrdinalIgnoreCase))
+            .Where(e => e.Action.Equals("Submit", StringComparison.OrdinalIgnoreCase) ||
+                        e.Action.Equals("Submitted", StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(e => e.Timestamp)
             .FirstOrDefault();
 
         var approver = events
-            .Where(e => e.Action.Equals("Approve", StringComparison.OrdinalIgnoreCase))
+            .Where(e => e.Action.Equals("Approve", StringComparison.OrdinalIgnoreCase) ||
+                        e.Action.Equals("Approved", StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(e => e.Timestamp)
             .FirstOrDefault();
 
@@ -294,11 +389,11 @@ public class GeneratePpmpDocumentCommandHandler(
                 Position    = ppmp.Office?.Name   ?? string.Empty,
                 Designation = "End-User or Implementing Unit",
                 Date        = preparer?.Timestamp
-                        },
+            },
             new SignatoryDto
             {
                 Label       = "Funds Available:",
-                PrintedName = string.Empty, // populated from finance approval event if available
+                PrintedName = string.Empty,
                 Position    = string.Empty,
                 Designation = "Director, Financial Management Services",
                 Date        = null

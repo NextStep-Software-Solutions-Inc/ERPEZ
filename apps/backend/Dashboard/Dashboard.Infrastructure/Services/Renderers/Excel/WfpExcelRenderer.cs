@@ -168,12 +168,21 @@ internal sealed class WfpExcelRenderer
         currentRow++;
 
         // ── Signatories ───────────────────────────────────────────────────────
-        // Hard-coded to match PDF: Prepared by / Funds Available / Approved
-        // — mirrors PDF WfpSignatoryBlock calls
         var sigRow = currentRow + 2;
-        WriteSignatoryBlock(ws, sigRow, 1, "Prepared by:",     "Project Leader");
-        WriteSignatoryBlock(ws, sigRow, 4, "Funds Available:", "FMS Director");
-        WriteSignatoryBlock(ws, sigRow, 7, "Approved:",        "Chancellor");
+        if (request.Signatories is { Count: > 0 })
+        {
+            for (var i = 0; i < request.Signatories.Count; i++)
+            {
+                var sig = request.Signatories[i];
+                WriteSignatoryBlock(ws, sigRow, 1 + (i * 3), sig.Label, sig.PrintedName, sig.Position);
+            }
+        }
+        else
+        {
+            WriteSignatoryBlock(ws, sigRow, 1, "Prepared by:",     string.Empty, "Project Leader");
+            WriteSignatoryBlock(ws, sigRow, 4, "Funds Available:", string.Empty, "FMS Director");
+            WriteSignatoryBlock(ws, sigRow, 7, "Approved:",        string.Empty, "Chancellor");
+        }
 
         ws.Columns().AdjustToContents();
         using var ms = new MemoryStream();
@@ -186,16 +195,18 @@ internal sealed class WfpExcelRenderer
     // =========================================================================
 
     /// <summary>
-    /// Mirrors PDF's WfpSignatoryBlock: label → blank signature line → "Signature over Printed Name" → position.
+    /// Mirrors PDF's WfpSignatoryBlock: label → printed name on underline → "Signature over Printed Name" → position.
     /// </summary>
     private static void WriteSignatoryBlock(
-        IXLWorksheet ws, int row, int col, string label, string position)
+        IXLWorksheet ws, int row, int col, string label, string printedName, string position)
     {
         ws.Cell(row, col).Value           = label;
         ws.Cell(row, col).Style.Font.Bold = true;
 
         var sigLineRow = row + 4;
         ws.Range(sigLineRow, col, sigLineRow, col + 2).Merge();
+        ws.Cell(sigLineRow, col).Value                          = printedName;
+        ws.Cell(sigLineRow, col).Style.Font.Bold                = true;
         ws.Cell(sigLineRow, col).Style.Border.BottomBorder      = XLBorderStyleValues.Thin;
         ws.Cell(sigLineRow, col).Style.Border.BottomBorderColor = XLColor.Black;
 

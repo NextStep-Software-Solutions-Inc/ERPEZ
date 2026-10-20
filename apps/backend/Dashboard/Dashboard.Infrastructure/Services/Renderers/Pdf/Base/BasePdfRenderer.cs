@@ -279,11 +279,12 @@ public abstract class BasePdfRenderer
                 row.RelativeItem().Column(sc =>
                 {
                     sc.Item().Text(sig.Label).Bold().FontSize(9);
-                    sc.Item().PaddingTop(24).MaxWidth(160).BorderBottom(1).BorderColor(Colors.Black).Text("");
-                    sc.Item().Text("Signature over Printed Name").FontSize(7).Italic();
-                    sc.Item().Text(sig.PrintedName).Bold().FontSize(9);
+                    sc.Item().PaddingTop(24).MaxWidth(180).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                        .Text(sig.PrintedName).Bold().FontSize(9);
+                    sc.Item().PaddingTop(2).Text("Signature over Printed Name").FontSize(7).Italic();
                     sc.Item().Text(sig.Position).FontSize(8);
-                    sc.Item().Text(sig.Designation).FontSize(8).Italic();
+                    if (!string.IsNullOrWhiteSpace(sig.Designation))
+                        sc.Item().Text(sig.Designation).FontSize(8).Italic();
                     sc.Item().Text($"Date: {sig.Date?.ToString("MM/dd/yyyy") ?? ""}").FontSize(8);
                 });
             }

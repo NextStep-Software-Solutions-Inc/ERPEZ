@@ -57,8 +57,9 @@ internal sealed class OpcrRatingPdfRenderer : BasePdfRenderer, IDocumentRenderer
                     {
                         r.RelativeItem().Column(sig =>
                         {
-                            sig.Item().Text(request.CommitmentPersonName).Bold().FontSize(8);
-                            sig.Item().Text("Head/Focal Person, Delivery Unit").FontSize(7);
+                            sig.Item().PaddingTop(12).MaxWidth(180).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                                .Text(request.CommitmentPersonName).Bold().FontSize(8);
+                            sig.Item().PaddingTop(2).Text(string.IsNullOrWhiteSpace(request.CommitmentPersonPosition) ? "Head/Focal Person, Delivery Unit" : request.CommitmentPersonPosition).FontSize(7);
                             sig.Item().Text("Date:").FontSize(7);
                         });
 

@@ -70,13 +70,13 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                         RenderSectionIV(col, request);
                         RenderSectionV(col, request);
                         RenderChart(col, request);
-                        RenderLibSignatories(col);
+                        RenderLibSignatories(col, request.Signatories);
                     }
                     else if (IsProjectScope(request))
                     {
                         RenderProjectSectionI(col, request.ProjectScope!);
                         col.Item().PageBreak();
-                        RenderProjectSignatories(col);
+                        RenderProjectSignatories(col, request.Signatories);
                     }
                     // No legacy branch — only Activity and Project are supported.
                 });
@@ -762,39 +762,52 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
     // Signatories
     // =========================================================================
 
-    private static void RenderLibSignatories(ColumnDescriptor col)
+    private static void RenderLibSignatories(ColumnDescriptor col, List<SignatoryDto>? signatories)
     {
+        if (signatories is { Count: > 0 })
+        {
+            RenderSignatories(col, signatories);
+            return;
+        }
+
         col.Item().PaddingTop(24).Row(row =>
         {
-            SignatoryBlock(row, "Submitted by:",           "Budget Officer / Head of Office");
+            SignatoryBlock(row, "Submitted by:",           string.Empty, "Budget Officer / Head of Office");
             row.ConstantItem(10);
-            SignatoryBlock(row, "Recommending Approval:",  "Vice Chancellor / Director");
+            SignatoryBlock(row, "Recommending Approval:",  string.Empty, "Vice Chancellor / Director");
             row.ConstantItem(10);
-            SignatoryBlock(row, "Funds Available:",        "Director, Financial Management Services");
+            SignatoryBlock(row, "Funds Available:",        string.Empty, "Director, Financial Management Services");
             row.ConstantItem(10);
-            SignatoryBlock(row, "Approved by:",            "President, USTP System");
+            SignatoryBlock(row, "Approved by:",            string.Empty, "President, USTP System");
         });
     }
 
-    private static void RenderProjectSignatories(ColumnDescriptor col)
+    private static void RenderProjectSignatories(ColumnDescriptor col, List<SignatoryDto>? signatories)
     {
+        if (signatories is { Count: > 0 })
+        {
+            RenderSignatories(col, signatories);
+            return;
+        }
+
         col.Item().PaddingTop(24).Row(row =>
         {
-            SignatoryBlock(row, "Prepared by:",  "Project Leader");
+            SignatoryBlock(row, "Prepared by:",    string.Empty, "Project Leader");
             row.ConstantItem(10);
-            SignatoryBlock(row, "Funds Available:", "FMS Director");
+            SignatoryBlock(row, "Funds Available:", string.Empty, "FMS Director");
             row.ConstantItem(10);
-            SignatoryBlock(row, "Approved:",     "Chancellor");
+            SignatoryBlock(row, "Approved:",       string.Empty, "Chancellor");
         });
     }
 
-    private static void SignatoryBlock(RowDescriptor row, string label, string position)
+    private static void SignatoryBlock(RowDescriptor row, string label, string printedName, string position)
     {
         row.RelativeItem().Column(sc =>
         {
             sc.Item().Text(label).Bold().FontSize(8);
-            sc.Item().PaddingTop(32).BorderBottom(1).BorderColor(Colors.Black).Text(string.Empty);
-            sc.Item().Text("Signature over Printed Name").FontSize(7).Italic();
+            sc.Item().PaddingTop(32).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                .Text(printedName).Bold().FontSize(9);
+            sc.Item().PaddingTop(2).Text("Signature over Printed Name").FontSize(7).Italic();
             sc.Item().PaddingTop(2).Text(position).FontSize(7);
         });
     }

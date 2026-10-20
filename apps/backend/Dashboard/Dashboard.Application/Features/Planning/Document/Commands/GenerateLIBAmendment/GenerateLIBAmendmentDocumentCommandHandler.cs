@@ -1,3 +1,5 @@
+using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
@@ -30,7 +32,8 @@ public class GenerateLIBAmendmentDocumentCommandHandler(
         var proposedLib = await unitOfWork.LineItemBudgetRepository.GetByIdWithDetailsAsync(amendment.ProposedLineItemBudgetId, cancellationToken)
             ?? throw new NotFoundException("Proposed Line Item Budget not found.");
 
-        var dataDto = MapToLibAmendmentDataDto(amendment, originalLib, proposedLib);
+        var signatories = await BuildSignatoriesAsync(originalLib, cancellationToken);
+        var dataDto = MapToLibAmendmentDataDto(amendment, originalLib, proposedLib, signatories);
 
         var bytes = await rendererService.RenderAsync(dataDto, DocumentType.BudgetModification, request.Format, cancellationToken);
         var extension = request.Format == ExportFormat.Excel ? "xlsx" : "pdf";
@@ -55,10 +58,47 @@ public class GenerateLIBAmendmentDocumentCommandHandler(
         return ApiResponse<Guid>.Success(record.Id, "LIB Amendment document generated successfully.");
     }
 
+    private async Task<List<SignatoryDto>> BuildSignatoriesAsync(
+        LibEntity originalLib,
+        CancellationToken cancellationToken)
+    {
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, originalLib.OfficeId, originalLib.FiscalYearId, "LIB", cancellationToken);
+
+        var officeHead = await DocumentSignatoryResolver
+            .ResolveOfficeHeadSignatoryAsync(unitOfWork, originalLib.OfficeId, cancellationToken);
+
+        var finance = await DocumentSignatoryResolver
+            .ResolveFinanceSignatoryAsync(unitOfWork, cancellationToken);
+
+        var preparedByName = !string.IsNullOrWhiteSpace(originalLib.CreatedBy)
+            ? originalLib.CreatedBy
+            : (officeHead?.FullName ?? wf.RecommendingApprover?.FullName ?? "Engr. Alex L. Maureal");
+        var preparedByPos = officeHead?.PositionTitle ?? originalLib.Office?.Name ?? wf.RecommendingApprover?.PositionTitle ?? "Head, Innovation and Technology Solutions Division";
+
+        var financeName = !string.IsNullOrWhiteSpace(finance?.FullName) ? finance.FullName : "Cherry Ann S. Villarte, CPA";
+        var financePos = !string.IsNullOrWhiteSpace(finance?.PositionTitle) ? finance.PositionTitle : "Director, Finance Division";
+
+        var recName = !string.IsNullOrWhiteSpace(wf.RecommendingApprover?.FullName) ? wf.RecommendingApprover.FullName : "Atty. Dionel O. Albina";
+        var recPos = !string.IsNullOrWhiteSpace(wf.RecommendingApprover?.PositionTitle) ? wf.RecommendingApprover.PositionTitle : "Chancellor, USTP CDO";
+
+        var finalName = !string.IsNullOrWhiteSpace(wf.FinalApprover?.FullName) ? wf.FinalApprover.FullName : "Dr. Ambrosio B. Cultura II";
+        var finalPos = !string.IsNullOrWhiteSpace(wf.FinalApprover?.PositionTitle) ? wf.FinalApprover.PositionTitle : "System President";
+
+        return
+        [
+            new ERPEZ.Application.Common.Dtos.SignatoryDto { Label = "Prepared by:", PrintedName = preparedByName, Position = preparedByPos },
+            new ERPEZ.Application.Common.Dtos.SignatoryDto { Label = "Certified by:", PrintedName = financeName, Position = financePos },
+            new ERPEZ.Application.Common.Dtos.SignatoryDto { Label = "Recommended by:", PrintedName = recName, Position = recPos },
+            new ERPEZ.Application.Common.Dtos.SignatoryDto { Label = "Approved by:", PrintedName = finalName, Position = finalPos }
+        ];
+    }
+
     private static LibAmendmentDataDto MapToLibAmendmentDataDto(
         LIBAmendmentRequest amendment, 
         LibEntity originalLib, 
-        LibEntity proposedLib)
+        LibEntity proposedLib,
+        List<ERPEZ.Application.Common.Dtos.SignatoryDto>? signatories = null)
     {
         return new LibAmendmentDataDto
         {
@@ -69,13 +109,7 @@ public class GenerateLIBAmendmentDocumentCommandHandler(
             Justification = amendment.Justification,
             ApprovedBudget = MapBudgetSection(originalLib),
             ProposedBudget = MapBudgetSection(proposedLib),
-            Signatories = 
-            [
-                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = string.Empty, Position = !string.IsNullOrWhiteSpace(originalLib.Office?.Name) ? $"Head, {originalLib.Office.Name}" : "Head of Office" },
-                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = string.Empty, Position = "Director, Financial Management Services" },
-                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = string.Empty, Position = "Chancellor" },
-                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = string.Empty, Position = "President" }
-            ]
+            Signatories = signatories ?? []
         };
     }
 

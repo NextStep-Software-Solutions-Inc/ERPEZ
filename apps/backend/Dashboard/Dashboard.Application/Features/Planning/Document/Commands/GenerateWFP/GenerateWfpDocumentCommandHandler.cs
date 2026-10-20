@@ -12,6 +12,7 @@ using ActivityEntity     = ERPEZ.Domain.Entities.Planning.WFPObjectiveActivity;
 using TimelineEntity     = ERPEZ.Domain.Entities.Planning.WFPObjectiveTimeline;
 using GeneratedDocumentEntity = ERPEZ.Domain.Entities.Planning.GeneratedDocument;
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Helpers;
 
 namespace ERPEZ.Application.Features.Planning.Document.Commands.GenerateWFP;
 
@@ -34,7 +35,8 @@ public class GenerateWfpDocumentCommandHandler(
             .GetOrphanActivitiesAsync(request.WfpId, cancellationToken);
 
         // ── 2. Map ───────────────────────────────────────────────────────────
-        var dataDto = MapToWfpDataDto(wfp, orphanActivities);
+        var signatories = await BuildSignatoriesAsync(wfp, cancellationToken);
+        var dataDto = MapToWfpDataDto(wfp, orphanActivities, signatories);
 
         // ── 3. Render ────────────────────────────────────────────────────────
         var bytes = await rendererService.RenderAsync(
@@ -68,7 +70,10 @@ public class GenerateWfpDocumentCommandHandler(
     // Mapping
     // ═════════════════════════════════════════════════════════════════════════
 
-    private static WfpDataDto MapToWfpDataDto(WfpEntity wfp, List<ActivityEntity> orphanActivities)
+    private static WfpDataDto MapToWfpDataDto(
+        WfpEntity wfp,
+        List<ActivityEntity> orphanActivities,
+        List<SignatoryDto>? signatories = null)
     {
         var objectiveDtos = wfp.WFPObjectives
             .OrderBy(o => o.Description) // no explicit ordering field on WFPObjective; stable fallback
@@ -94,8 +99,58 @@ public class GenerateWfpDocumentCommandHandler(
             ProjectEndDate   = wfp.ProjectEndDate,
             DurationMonths   = CalculateDurationMonths(wfp.ProjectStartDate, wfp.ProjectEndDate),
             Objectives       = objectiveDtos,
-            Signatories      = []
+            Signatories      = signatories ?? []
         };
+    }
+
+    private async Task<List<SignatoryDto>> BuildSignatoriesAsync(WfpEntity wfp, CancellationToken cancellationToken)
+    {
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, wfp.OfficeId, null, "WFP", cancellationToken);
+
+        var officeHead = await DocumentSignatoryResolver
+            .ResolveOfficeHeadSignatoryAsync(unitOfWork, wfp.OfficeId, cancellationToken);
+
+        var preparedByName = !string.IsNullOrWhiteSpace(wfp.ProjectOwner)
+            ? wfp.ProjectOwner
+            : (!string.IsNullOrWhiteSpace(wfp.CreatedBy) ? wfp.CreatedBy : (officeHead?.FullName ?? wf.RecommendingApprover?.FullName ?? string.Empty));
+
+        var preparedByPos = officeHead?.PositionTitle ?? wfp.Office?.Name ?? string.Empty;
+
+        var recName = wf.RecommendingApprover?.FullName ?? string.Empty;
+        var recPos  = !string.IsNullOrWhiteSpace(wf.RecommendingApprover?.PositionTitle)
+            ? wf.RecommendingApprover.PositionTitle
+            : "Recommending Approver";
+
+        var finalName = wf.FinalApprover?.FullName ?? string.Empty;
+        var finalPos  = !string.IsNullOrWhiteSpace(wf.FinalApprover?.PositionTitle)
+            ? wf.FinalApprover.PositionTitle
+            : "Head of the Agency / Approving Authority";
+
+        return
+        [
+            new SignatoryDto
+            {
+                Label       = "Prepared by:",
+                PrintedName = preparedByName,
+                Position    = preparedByPos,
+                Designation = "Project Owner / End-User Unit"
+            },
+            new SignatoryDto
+            {
+                Label       = "Recommending Approval:",
+                PrintedName = recName,
+                Position    = recPos,
+                Designation = "Recommending Approver"
+            },
+            new SignatoryDto
+            {
+                Label       = "Approved by:",
+                PrintedName = finalName,
+                Position    = finalPos,
+                Designation = "Final Approver"
+            }
+        ];
     }
 
     private static WfpObjectiveDto BuildObjectiveDto(ObjectiveEntity objective)
