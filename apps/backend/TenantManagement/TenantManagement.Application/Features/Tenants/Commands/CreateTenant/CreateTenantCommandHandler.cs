@@ -55,9 +55,10 @@ public sealed class CreateTenantCommandHandler(
             } : null
         };
 
-        // Provision full system access: all active system modules (PBMS, PMS, SAMS, AMS)
+        // Provision 30-Day Starter Trial modules (AMS, PBMS) excluding unreleased SAMS
+        var trialModuleKeys = ERPEZ.Shared.Constants.PlanModuleCatalog.trialModules;
         var allModules = await unitOfWork.ModuleRepository.ToListAsync(
-            unitOfWork.ModuleRepository.Query(m => m.IsActive), cancellationToken);
+            unitOfWork.ModuleRepository.Query(m => m.IsActive && trialModuleKeys.Contains(m.Key.ToLower())), cancellationToken);
         if (allModules != null && allModules.Count > 0)
         {
             foreach (var m in allModules)
@@ -71,7 +72,7 @@ public sealed class CreateTenantCommandHandler(
             if (defaultModule != null) tenant.Modules.Add(defaultModule);
         }
 
-        // 30-day Free Trial Subscription
+        // 30-day Free Trial Subscription (Starter tier: AMS + PBMS)
         var trialDays = 30;
         var trialExpiry = DateTime.UtcNow.AddDays(trialDays);
         var subscription = new TenantSubscription
@@ -106,7 +107,7 @@ public sealed class CreateTenantCommandHandler(
                 ExpiresAt = trialExpiry,
                 Status = LicenseStatus.Active,
                 Signature = signature,
-                Notes = $"{trialDays}-Day Full System Access Free Trial"
+                Notes = $"{trialDays}-Day Starter Free Trial"
             };
             tenant.LicenseKeys.Add(license);
         }

@@ -12,7 +12,6 @@ import {
   Eye,
   CheckCircle2,
   Clock,
-  DollarSign,
   Receipt,
   X,
 } from "lucide-react";
@@ -68,7 +67,7 @@ export default function InvoicePage() {
       }
     });
 
-    const currency = invoices[0]?.currency || "USD";
+    const currency = invoices[0]?.currency || "PHP";
 
     return {
       totalInvoiced: formatMoney(totalInvoicedCents, currency),

@@ -28,6 +28,7 @@ import { useNavigate } from "react-router";
 import { useTenant } from "~/providers/TenantProvider";
 import { useBillingData } from "~/features/billing/hooks/useBillingData";
 import { PurchaseLicenseModal } from "~/features/license/components/PurchaseLicenseModal";
+import { api } from "~/services/api";
 import { toast } from "sonner";
 
 export default function PlanPage() {
@@ -177,37 +178,50 @@ export default function PlanPage() {
     }
   };
 
-  // Direct switch or inquiry for Enterprise
-  const handleActivateEnterpriseDirectly = async () => {
+  const handleEnterpriseConsultationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const company = enterpriseCompany.trim() || tenant?.name || "Organization";
+    const email = enterpriseEmail.trim() || tenant?.tenantSetting?.billingContactEmail || "";
+
+    if (!email) {
+      toast.error("Please provide a valid contact email address.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const cycle = isAnnual ? "yearly" : "monthly";
-      const baseCents = isAnnual ? 499000 : 49900;
-
-      await updateSubscription({
-        planName: "SaaS Enterprise",
-        amountCents: baseCents,
-        billingCycle: cycle,
-        status: "active",
-        autoRenew: true,
+      const response = await api.post<{
+        succeeded: boolean;
+        data?: { referenceCode?: string };
+        message?: string;
+      }>("/inquiries/quote", {
+        planName: selectedPlan?.name || "SaaS Enterprise",
+        tier: selectedPlan?.tier || "Enterprise",
+        deploymentType,
+        contactName: company,
+        email,
+        organizationName: company,
+        teamSize: enterpriseTeamSize.trim() || "100+",
+        requestedModules: ["ams", "pbms", "pms"],
+        notes: enterpriseNote.trim() || undefined,
       });
 
-      toast.success("Welcome to SaaS Enterprise! Cloud isolation and dedicated quota activated.");
-      setIsEnterpriseModalOpen(false);
-      navigate("/billing");
-    } catch (err) {
-      toast.error("Failed to activate Enterprise plan");
+      if (response.data?.succeeded) {
+        const refCode = response.data.data?.referenceCode;
+        toast.success(
+          refCode
+            ? `Enterprise inquiry registered (Ref: ${refCode}).`
+            : "Enterprise inquiry registered!"
+        );
+        setIsEnterpriseModalOpen(false);
+      } else {
+        toast.error(response.data?.message || "Failed to submit enterprise inquiry.");
+      }
+    } catch {
+      toast.error("Could not submit enterprise inquiry. Please verify your connection.");
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleEnterpriseConsultationSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success(
-      "Enterprise inquiry submitted! An ERPez Solutions Specialist will contact you within 24 hours."
-    );
-    setIsEnterpriseModalOpen(false);
   };
 
   const confirmTotals = calculatePlanTotals(selectedPlan);
@@ -268,12 +282,12 @@ export default function PlanPage() {
             }`}
           >
             <Server className="w-4 h-4" />
-            Air-Gapped On-Premise
+            Self-Hosted On-Premise
           </button>
         </div>
 
-        {/* SaaS Monthly vs Annual Toggle */}
-        {deploymentType === "saas" && (
+        {/* SaaS Monthly vs Annual Toggle (only when plans define annualPrice) */}
+        {deploymentType === "saas" && saasPlans.some((p) => Boolean(p.annualPrice)) && (
           <div className="pt-6 flex items-center justify-center gap-3">
             <span
               onClick={() => setIsAnnual(false)}
@@ -515,18 +529,18 @@ export default function PlanPage() {
                 <div className="flex justify-between">
                   <span className="text-slate-500">Base Subscription:</span>
                   <span className="font-semibold text-slate-800">
-                    ${confirmTotals.base.toFixed(2)}
+                    ₱{confirmTotals.base.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Applicable Tax (12% VAT):</span>
                   <span className="font-semibold text-slate-800">
-                    ${confirmTotals.tax.toFixed(2)}
+                    ₱{confirmTotals.tax.toFixed(2)}
                   </span>
                 </div>
                 <div className="border-t border-slate-200 pt-2 flex justify-between text-base font-bold text-slate-950">
                   <span>Estimated Total:</span>
-                  <span className="text-blue-600">${confirmTotals.total.toFixed(2)}</span>
+                  <span className="text-blue-600">₱{confirmTotals.total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
                   <span className="text-slate-500">Payment Timing:</span>
@@ -542,11 +556,11 @@ export default function PlanPage() {
               <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-blue-900 leading-relaxed">
                 {selectedPlan && getPlanTier(selectedPlan.name) < currentTier ? (
                   <span>
-                    <strong>Downgrade Terms:</strong> You will <strong>not</strong> be billed immediately. Because you have already paid for your current cycle, this new rate of <strong>${confirmTotals.total.toFixed(2)}</strong> will take effect on your next scheduled invoice.
+                    <strong>Downgrade Terms:</strong> You will <strong>not</strong> be billed immediately. Because you have already paid for your current cycle, this new rate of <strong>₱{confirmTotals.total.toFixed(2)}</strong> will take effect on your next scheduled invoice.
                   </span>
                 ) : (
                   <span>
-                    <strong>Upgrade Terms:</strong> Your new tier features will activate immediately upon confirmation. Your next statement will reflect the updated subscription rate of <strong>${confirmTotals.total.toFixed(2)}</strong>.
+                    <strong>Upgrade Terms:</strong> Your new tier features will activate immediately upon confirmation. Your next statement will reflect the updated subscription rate of <strong>₱{confirmTotals.total.toFixed(2)}</strong>.
                   </span>
                 )}
               </div>
@@ -652,34 +666,32 @@ export default function PlanPage() {
                 id="notes"
                 value={enterpriseNote}
                 onChange={(e) => setEnterpriseNote(e.target.value)}
-                placeholder="e.g., AI copilot integration, multi-subsidiary isolation, SLA guarantees"
+                placeholder="e.g., Multi-subsidiary isolation, dedicated database setup, procurement scope"
               />
-            </div>
-
-            <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-xs text-indigo-900 leading-relaxed">
-              <strong>Instant Activation:</strong> If you prefer to immediately activate the
-              Enterprise cloud tier ($499.00/mo) for this sandbox tenant, you can switch right now.
             </div>
 
             <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleActivateEnterpriseDirectly}
+                onClick={() => setIsEnterpriseModalOpen(false)}
                 disabled={isSubmitting}
-                className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
               >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  "Activate Enterprise Tier Now"
-                )}
+                Cancel
               </Button>
               <Button
                 type="submit"
+                disabled={isSubmitting}
                 className="bg-slate-900 hover:bg-slate-800 text-white font-semibold"
               >
-                Submit Consultation Request
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Consultation Request"
+                )}
               </Button>
             </DialogFooter>
           </form>

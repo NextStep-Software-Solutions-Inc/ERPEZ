@@ -31,30 +31,101 @@ public class GetMyTenantsQueryHandler(
         var externalSubject = currentUserService.ExternalIdentityId;
         var lookupSubject = !string.IsNullOrWhiteSpace(externalSubject) ? externalSubject : currentUserService.UserId;
 
-        // Auto-reconcile any pending memberships for this authenticated caller
+        // Auto-reconcile any pending or unlinked memberships for this authenticated caller
         if (!string.IsNullOrWhiteSpace(currentUserService.Email))
         {
             var normalizedEmail = currentUserService.Email.Trim().ToLowerInvariant();
             var pendingMembers = await unitOfWork.TenantMemberRepository.Query()
+                .Include(tm => tm.RoleAssignments)
                 .Where(tm => tm.Email.ToLower() == normalizedEmail &&
-                             tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Pending &&
-                             !tm.IsDeleted)
+                             !tm.IsDeleted &&
+                             (tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Pending ||
+                              (tm.Status == ERPEZ.TenantManagement.Domain.Enums.Status.Active &&
+                               !string.IsNullOrWhiteSpace(lookupSubject) &&
+                               tm.ExternalIdentityId != lookupSubject &&
+                               (string.IsNullOrEmpty(tm.ExternalIdentityId) || tm.ExternalIdentityId.StartsWith("inv_")))))
+                .OrderByDescending(tm => tm.CreatedAt)
                 .ToListAsync(cancellationToken);
 
             if (pendingMembers.Count > 0)
             {
-                foreach (var pm in pendingMembers)
+                var pendingTenantIds = pendingMembers.Select(pm => pm.TenantId).Distinct().ToList();
+                var existingMembers = !string.IsNullOrWhiteSpace(lookupSubject)
+                    ? await unitOfWork.TenantMemberRepository.Query()
+                        .Include(tm => tm.RoleAssignments)
+                        .Where(tm => pendingTenantIds.Contains(tm.TenantId) &&
+                                     tm.ExternalIdentityId == lookupSubject &&
+                                     !tm.IsDeleted)
+                        .ToListAsync(cancellationToken)
+                    : [];
+
+                foreach (var group in pendingMembers.GroupBy(pm => (pm.TenantId, pm.Provider)))
                 {
-                    pm.Status = ERPEZ.TenantManagement.Domain.Enums.Status.Active;
-                    if (!string.IsNullOrWhiteSpace(lookupSubject))
+                    var matchingExisting = existingMembers
+                        .Where(em => em.TenantId == group.Key.TenantId && em.Provider == group.Key.Provider)
+                        .ToList();
+
+                    // Detach lookupSubject from any existing member row in the same tenant that belongs to a different email
+                    foreach (var mismatched in matchingExisting.Where(em =>
+                        !string.IsNullOrWhiteSpace(em.Email) &&
+                        !string.Equals(em.Email.Trim(), normalizedEmail, StringComparison.OrdinalIgnoreCase)))
                     {
-                        pm.ExternalIdentityId = lookupSubject;
-                        pm.UserId = lookupSubject;
+                        mismatched.ExternalIdentityId = string.Empty;
+                        mismatched.UserId = mismatched.Email.Trim().ToLowerInvariant();
+                        mismatched.ConcurrencyStamp = Guid.NewGuid();
                     }
-                    pm.InvitationTokenHash = null;
-                    pm.InvitationExpiresAtUtc = null;
-                    pm.ConcurrencyStamp = Guid.NewGuid();
+
+                    var targetMember = matchingExisting.FirstOrDefault(em =>
+                        string.IsNullOrWhiteSpace(em.Email) ||
+                        string.Equals(em.Email.Trim(), normalizedEmail, StringComparison.OrdinalIgnoreCase));
+
+                    if (targetMember is null)
+                    {
+                        targetMember = group.First();
+                        targetMember.Status = ERPEZ.TenantManagement.Domain.Enums.Status.Active;
+                        if (!string.IsNullOrWhiteSpace(lookupSubject))
+                        {
+                            targetMember.ExternalIdentityId = lookupSubject;
+                            targetMember.UserId = lookupSubject;
+                        }
+                        targetMember.InvitationTokenHash = null;
+                        targetMember.InvitationExpiresAtUtc = null;
+                        targetMember.ConcurrencyStamp = Guid.NewGuid();
+                    }
+                    else
+                    {
+                        targetMember.Status = ERPEZ.TenantManagement.Domain.Enums.Status.Active;
+                        if (!string.IsNullOrWhiteSpace(lookupSubject))
+                        {
+                            targetMember.ExternalIdentityId = lookupSubject;
+                            targetMember.UserId = lookupSubject;
+                        }
+                        targetMember.InvitationTokenHash = null;
+                        targetMember.InvitationExpiresAtUtc = null;
+                        targetMember.ConcurrencyStamp = Guid.NewGuid();
+                    }
+
+                    foreach (var duplicate in group.Where(pm => pm.Id != targetMember.Id))
+                    {
+                        foreach (var roleAssignment in duplicate.RoleAssignments)
+                        {
+                            if (targetMember.RoleAssignments.All(ra => ra.RoleId != roleAssignment.RoleId))
+                            {
+                                targetMember.RoleAssignments.Add(new TenantMemberRoleAssignment
+                                {
+                                    TenantMemberId = targetMember.Id,
+                                    RoleId = roleAssignment.RoleId
+                                });
+                            }
+                        }
+
+                        duplicate.IsDeleted = true;
+                        duplicate.InvitationTokenHash = null;
+                        duplicate.InvitationExpiresAtUtc = null;
+                        duplicate.ConcurrencyStamp = Guid.NewGuid();
+                    }
                 }
+
                 await unitOfWork.SaveChangesAsync(cancellationToken);
             }
         }
@@ -66,8 +137,7 @@ public class GetMyTenantsQueryHandler(
         }
         else if (string.IsNullOrWhiteSpace(lookupSubject))
         {
-            var defaultId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-            customFilter = t => t.Id == defaultId;
+            customFilter = t => false;
         }
         else
         {

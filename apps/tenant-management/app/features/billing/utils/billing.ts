@@ -13,7 +13,7 @@ import { calculateTax, decimalToCents } from "./money";
  */
 export function adaptTenantSubscription(
   tenant: Tenant | null,
-  currency = "USD"
+  currency = "PHP"
 ): SubscriptionAdapter | null {
   if (!tenant) return null;
 
@@ -34,7 +34,7 @@ export function adaptTenantSubscription(
     return {
       planName: "Starter",
       status: "active",
-      amountCents: 29900,
+      amountCents: 0,
       currency,
       billingCycle: "monthly",
       startDate: now.toISOString(),
@@ -74,10 +74,9 @@ export function adaptTenantSubscription(
     rawSub.amount === 0 ||
     (planName.toLowerCase().includes("starter") && (rawSub.amount === 0 || !rawSub.autoRenew));
 
-  // Starter post-trial plan rate is $299/mo (or $2,990/year)
   const amountCents = typeof rawSub.amount === "number" && rawSub.amount > 0
     ? decimalToCents(rawSub.amount)
-    : 29900; // Starter post-trial base rate
+    : 0;
 
   const startDate = rawSub.startDate || new Date().toISOString();
   const endDate = rawSub.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -134,7 +133,7 @@ export function calculateNextInvoice(
       isApplicable: false,
       planName: "No Active Plan",
       billingCycle: "monthly",
-      currency: "USD",
+      currency: "PHP",
       dueDate: "N/A",
       subtotalCents: 0,
       taxRate: 0,
@@ -145,7 +144,23 @@ export function calculateNextInvoice(
     };
   }
 
-  // Cancelled or expired subscriptions have no upcoming invoice
+  // Trials, cancelled, or expired subscriptions have no upcoming invoice charge scheduled
+  if (subscription.isTrial) {
+    return {
+      isApplicable: false,
+      planName: subscription.planName,
+      billingCycle: subscription.billingCycle,
+      currency: subscription.currency,
+      dueDate: "N/A",
+      subtotalCents: 0,
+      taxRate: 0,
+      taxCents: 0,
+      totalCents: 0,
+      explanation: "Active free trial. No invoice scheduled.",
+      isTrial: true,
+    };
+  }
+
   if (subscription.status === "cancelled" || subscription.status === "expired") {
     return {
       isApplicable: false,
@@ -161,7 +176,7 @@ export function calculateNextInvoice(
         subscription.status === "cancelled"
           ? "Subscription is cancelled. No upcoming billing scheduled."
           : "Subscription has expired.",
-      isTrial: subscription.isTrial,
+      isTrial: false,
     };
   }
 

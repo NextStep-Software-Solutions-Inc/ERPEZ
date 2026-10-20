@@ -64,7 +64,7 @@ export interface Invoice {
   taxRate: number;      // e.g. 0.12 (12%) or 0.00
   taxCents: number;
   totalCents: number;
-  currency: string;     // e.g. "USD"
+  currency: string;     // e.g. "PHP"
   status: InvoiceStatus;
   paymentMethodSummary?: string;
   items: InvoiceItem[];

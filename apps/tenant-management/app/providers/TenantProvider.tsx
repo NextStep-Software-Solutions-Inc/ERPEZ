@@ -43,16 +43,26 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
     const queryClient = useQueryClient();
     const { isTokenReady } = useAuthReady();
     const { isSuperAdmin, isInitialized: isAuthInitialized } = useClerkAuth();
-    const { data: myTenant, isLoading, error, refetch } = useMyTenant({
+    const { data: myTenant, isLoading: isMyTenantLoading, error: myTenantError, refetch: refetchMyTenant } = useMyTenant({
         pathParams: {},
         queryParams: { pageSize: 50, pageNumber: 1 },
         enabled: isTokenReady,
     });
-    const { data: allTenants } = useAllTenants({
+    const { data: allTenants, isLoading: isAllTenantsLoading, error: allTenantsError, refetch: refetchAllTenants } = useAllTenants({
         pathParams: {},
         queryParams: { pageSize: 50, pageNumber: 1 },
         enabled: isTokenReady && isSuperAdmin,
     });
+
+    const isLoading = isMyTenantLoading || (isSuperAdmin ? isAllTenantsLoading : false);
+    const error = myTenantError || (isSuperAdmin ? allTenantsError : null);
+
+    const refetchWorkspaces = async () => {
+        if (isSuperAdmin) {
+            return await Promise.all([refetchMyTenant(), refetchAllTenants()]);
+        }
+        return await refetchMyTenant();
+    };
 
     const [spectatingTenant, setSpectatingTenant] = useState<({ id: string; name: string } & Partial<Tenant>) | null>(() => {
         if (typeof window !== 'undefined') {
@@ -257,7 +267,7 @@ function TenantProviderContent({ children }: { children: ReactNode }) {
 
         isLoading,
         error,
-        refetchWorkspaces: refetch,
+        refetchWorkspaces,
     };
 
     return (

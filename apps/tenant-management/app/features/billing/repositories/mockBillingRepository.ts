@@ -60,7 +60,7 @@ function getInitialState(tenantId: string): TenantBillingStorage {
         taxRate: 0.12,
         taxCents: 3588,
         totalCents: 33488,
-        currency: "USD",
+        currency: "PHP",
         status: "pending",
         items: [
           {
@@ -85,7 +85,7 @@ function getInitialState(tenantId: string): TenantBillingStorage {
         taxRate: 0.12,
         taxCents: 3588,
         totalCents: 33488,
-        currency: "USD",
+        currency: "PHP",
         status: "paid",
         paymentMethodSummary: "Visa ending in 4242",
         items: [
@@ -111,7 +111,7 @@ function getInitialState(tenantId: string): TenantBillingStorage {
         taxRate: 0.12,
         taxCents: 3588,
         totalCents: 33488,
-        currency: "USD",
+        currency: "PHP",
         status: "paid",
         paymentMethodSummary: "Visa ending in 4242",
         items: [
@@ -137,7 +137,7 @@ function getInitialState(tenantId: string): TenantBillingStorage {
         taxRate: 0.12,
         taxCents: 1188,
         totalCents: 11088,
-        currency: "USD",
+        currency: "PHP",
         status: "paid",
         paymentMethodSummary: "Mastercard ending in 8888",
         items: [

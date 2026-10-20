@@ -11,7 +11,8 @@ namespace ERPEZ.Shared.Authorization;
 public class PermissionAuthorizationHandler(
     IUserAuthorizationService authorizationService,
     ITenantContextService tenantContext,
-    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null) : AuthorizationHandler<PermissionRequirement>
+    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null,
+    Microsoft.Extensions.Configuration.IConfiguration? configuration = null) : AuthorizationHandler<PermissionRequirement>
 {
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
@@ -27,7 +28,7 @@ public class PermissionAuthorizationHandler(
             return;
         }
 
-        // 2. SuperAdmin global bypass check
+        // 2. SuperAdmin / Platform Administrator verified identity check
         var isSuperAdminClaim = context.User.FindFirstValue("is_super_admin") 
             ?? context.User.FindFirstValue("super_admin")
             ?? context.User.FindFirstValue("is_platform_admin");
@@ -51,15 +52,25 @@ public class PermissionAuthorizationHandler(
             activeOperatingRole = opRoleHeader.FirstOrDefault()?.Trim();
         }
 
-        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) &&
-            (normalizedEmail == "jeanmaureal@gmail.com" || normalizedEmail == "superadmin@erpez.dev");
+        var configuredEmailsRaw = configuration?["PlatformAdmin:Emails"] 
+            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS");
 
-        var isVerifiedPlatformAdmin = (bool.TryParse(isSuperAdminClaim, out var isSuperAdmin) && isSuperAdmin) ||
-                                      context.User.IsInRole("SuperAdmin") ||
-                                      context.User.IsInRole("Platform Administrator") ||
-                                      string.Equals(userRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                      string.Equals(userRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
-                                      isPlatformAdminByEmail;
+        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) &&
+            ((!string.IsNullOrWhiteSpace(configuredEmailsRaw) &&
+              configuredEmailsRaw
+                  .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                  .Select(e => e.ToLowerInvariant())
+                  .Contains(normalizedEmail)) ||
+             normalizedEmail == "jeanmaureal@gmail.com" || normalizedEmail == "superadmin@erpez.dev");
+
+        var isVerifiedPlatformAdmin = isPlatformAdminByEmail ||
+            (bool.TryParse(isSuperAdminClaim, out var isSuperAdmin) && isSuperAdmin) ||
+            context.User.IsInRole("SuperAdmin") ||
+            context.User.IsInRole("Platform Administrator") ||
+            context.User.IsInRole("platform_administrator") ||
+            string.Equals(userRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(userRole, "platform_administrator", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(userRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
 
         // Operating as Platform Administrator is only permitted if caller's identity is verified as a platform admin
         var isOperatingAsPlatformAdmin = isVerifiedPlatformAdmin &&
@@ -74,14 +85,22 @@ public class PermissionAuthorizationHandler(
         // 3. Resolve Tenant Context
         var activeTenantId = tenantContext.TenantId;
 
+        var orgRole = context.User.FindFirstValue("org_role");
+        var claimTenantRaw = context.User.FindFirstValue("tenant_id") ?? context.User.FindFirstValue("tenantId");
+        var isTokenScopedToActiveTenant = activeTenantId.HasValue &&
+                                          Guid.TryParse(claimTenantRaw, out var claimTenantId) &&
+                                          claimTenantId == activeTenantId.Value;
+
         // Workspace System Administrator & Tenant Administrator Role Authority:
-        // Caller MUST actually possess an administrator role (via token role claims or verified platform admin)
+        // Caller MUST actually possess an administrator role (via token role claims scoped to the active tenant, or verified platform admin)
         // before honoring an administrative operating role from the X-Operating-Role header.
-        var userPossessesAdminRole = context.User.IsInRole("System Administrator") ||
-                                     context.User.IsInRole("Tenant Administrator") ||
-                                     string.Equals(userRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                     string.Equals(userRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                     isVerifiedPlatformAdmin;
+        var userPossessesAdminRole = isVerifiedPlatformAdmin ||
+                                     (isTokenScopedToActiveTenant &&
+                                      (context.User.IsInRole("System Administrator") ||
+                                       context.User.IsInRole("Tenant Administrator") ||
+                                       string.Equals(userRole, "System Administrator", StringComparison.OrdinalIgnoreCase) ||
+                                       string.Equals(userRole, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
+                                       ERPEZ.Shared.Constants.RoleConstants.IsAnyAdmin(orgRole)));
 
         var isWorkspaceOrTenantAdmin = userPossessesAdminRole &&
             (string.IsNullOrWhiteSpace(activeOperatingRole) ||
@@ -96,7 +115,9 @@ public class PermissionAuthorizationHandler(
              requirement.Permission == "tenant.roles.manage" ||
              requirement.Permission == ERPEZ.Shared.Constants.Permissions.Admin.membersManage ||
              requirement.Permission == ERPEZ.Shared.Constants.Permissions.Admin.rolesManage ||
-             requirement.Permission == ERPEZ.Shared.Constants.Permissions.Admin.operationalRolesManage))
+             requirement.Permission == ERPEZ.Shared.Constants.Permissions.Admin.operationalRolesManage ||
+             requirement.Permission == ERPEZ.Shared.Constants.Permissions.Planning.viewGlobalDashboard ||
+             requirement.Permission == ERPEZ.Shared.Constants.Permissions.Planning.viewOfficeDashboard))
         {
             context.Succeed(requirement);
             return;
@@ -107,6 +128,15 @@ public class PermissionAuthorizationHandler(
             externalIdentityId, 
             activeTenantId, 
             requirement.Permission);
+
+        if (!hasPermission &&
+            string.Equals(requirement.Permission, ERPEZ.Shared.Constants.Permissions.Planning.viewOfficeDashboard, StringComparison.OrdinalIgnoreCase))
+        {
+            hasPermission = await authorizationService.HasPermissionAsync(
+                externalIdentityId,
+                activeTenantId,
+                ERPEZ.Shared.Constants.Permissions.Planning.viewGlobalDashboard);
+        }
 
         if (hasPermission)
         {

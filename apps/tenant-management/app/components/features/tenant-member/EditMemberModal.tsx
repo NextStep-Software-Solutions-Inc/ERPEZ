@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -50,7 +50,7 @@ export function EditMemberModal({
 }: EditMemberModalProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<string>("");
 
   useEffect(() => {
     if (member) {
@@ -59,7 +59,7 @@ export function EditMemberModal({
       const initialLast = member.lastName || nameParts.slice(1).join(" ") || "";
       setFirstName(initialFirst);
       setLastName(initialLast);
-      setSelectedRoleIds(member.roleIds || []);
+      setSelectedRoleId(member.roleIds?.[0] || "");
     }
   }, [member]);
 
@@ -67,8 +67,8 @@ export function EditMemberModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedRoleIds.length === 0) {
-      toast.error("At least one role must be assigned to the member.");
+    if (!selectedRoleId) {
+      toast.error("A role must be assigned to the member.");
       return;
     }
 
@@ -76,7 +76,7 @@ export function EditMemberModal({
       await onSave(member.id, {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        roleIds: selectedRoleIds,
+        roleIds: [selectedRoleId],
         concurrencyStamp: member.concurrencyStamp,
       });
       onClose();
@@ -138,44 +138,30 @@ export function EditMemberModal({
               </div>
             </div>
 
-            {/* Assigned Roles List */}
+            {/* Assigned Role */}
             <div className="space-y-1.5">
-              <Label className="text-xs text-slate-700 flex items-center justify-between">
-                <span>Role Assignments *</span>
-                <span className="text-[11px] text-slate-400 font-normal">
-                  {selectedRoleIds.length} selected
-                </span>
-              </Label>
+              <Label className="text-xs text-slate-700">Role Assignment *</Label>
               <div className="max-h-48 overflow-y-auto space-y-1.5 border border-slate-200 rounded-lg p-2.5 bg-slate-50/50">
                 {assignableRoles.map((role) => {
-                  const isChecked = selectedRoleIds.includes(role.id);
+                  const isSelected = selectedRoleId === role.id;
                   return (
                     <label
                       key={role.id}
-                      className={`flex items-center justify-between p-2 rounded-md transition cursor-pointer text-xs ${
-                        isChecked
+                      className={`flex items-center p-2 rounded-md transition cursor-pointer text-xs ${
+                        isSelected
                           ? "bg-blue-50/80 border border-blue-200 font-medium text-blue-900"
                           : "hover:bg-white hover:border-slate-200 border border-transparent text-slate-700"
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
                         <Checkbox
-                          checked={isChecked}
+                          checked={isSelected}
                           onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedRoleIds((prev) => [...prev, role.id]);
-                            } else {
-                              setSelectedRoleIds((prev) => prev.filter((id) => id !== role.id));
-                            }
+                            setSelectedRoleId(checked ? role.id : "");
                           }}
                         />
                         <span>{role.name}</span>
                       </div>
-                      {role.isSystemRole && (
-                        <Badge variant="outline" className="text-[10px] py-0 text-slate-500 border-slate-300">
-                          System
-                        </Badge>
-                      )}
                     </label>
                   );
                 })}

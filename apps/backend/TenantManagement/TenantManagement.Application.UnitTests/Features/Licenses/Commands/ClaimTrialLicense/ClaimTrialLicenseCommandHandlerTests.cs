@@ -80,7 +80,7 @@ public class ClaimTrialLicenseCommandHandlerTests
             ExpiresAt = DateTime.UtcNow.AddDays(25),
             BoundEmail = "billing@acme.com",
             AllowedDomain = "localhost",
-            Notes = "30-Day Full System Access Free Trial"
+            Notes = "30-Day Starter Free Trial"
         };
 
         tenantRepoMock.Setup(r => r.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))

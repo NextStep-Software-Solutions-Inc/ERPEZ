@@ -2,11 +2,11 @@ import type { CardBrand } from "../types";
 
 /**
  * Formats an integer value in cents into a localized currency string.
- * e.g. 29900 -> "$299.00"
+ * e.g. 29900 -> "₱299.00"
  */
-export function formatMoney(cents: number, currency = "USD"): string {
+export function formatMoney(cents: number, currency = "PHP"): string {
   const amount = cents / 100;
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: currency,
     minimumFractionDigits: 2,

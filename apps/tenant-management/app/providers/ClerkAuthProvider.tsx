@@ -136,13 +136,14 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
   const userEmail = clerkUser?.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || '';
   const configuredAdminEmails = (
     (import.meta.env.VITE_PLATFORM_ADMIN_EMAILS as string | undefined) ||
-    'jeanmaureal@gmail.com,superadmin@erpez.dev'
+    (import.meta.env.VITE_SUPER_ADMIN_EMAILS as string | undefined) ||
+    ''
   )
     .split(',')
     .map((e: string) => e.trim().toLowerCase())
     .filter(Boolean);
 
-  const isEmailAdmin = Boolean(userEmail && configuredAdminEmails.includes(userEmail));
+  const isEmailAdmin = Boolean(userEmail && configuredAdminEmails.length > 0 && configuredAdminEmails.includes(userEmail));
 
   const metadataRoles = (clerkUser?.publicMetadata?.roles as string[]) ||
     (clerkUser?.publicMetadata?.role ? [clerkUser.publicMetadata.role as string] : []);
@@ -156,11 +157,10 @@ function ClerkBridgeInner({ children, onInitialized }: ClerkAuthProviderProps) {
     null;
 
   const isSuperAdmin = Boolean(
-    isEmailAdmin ||
+    clerkUser?.publicMetadata?.isSuperAdmin === true ||
     role === 'super-admin' ||
     role === 'platform_administrator' ||
-    role === 'Platform Administrator' ||
-    clerkUser?.publicMetadata?.isSuperAdmin === true
+    role === 'Platform Administrator'
   );
 
   const mappedUser: AuthUser | null = isSignedIn && clerkUser

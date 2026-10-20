@@ -107,9 +107,9 @@ export default function BillingPaymentTab() {
       <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 flex items-start gap-3 text-amber-900">
         <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
         <div className="text-xs space-y-1">
-          <p className="font-semibold text-amber-950">Developer Sandbox / Mock Payment Gateway</p>
+          <p className="font-semibold text-amber-950">Developer Sandbox / Test Billing Mode</p>
           <p className="text-[11px] text-amber-800 leading-relaxed">
-            In production environments, payment methods are tokenized directly via PCI-DSS certified payment processors (e.g. Stripe, Adyen). For this sandbox tenant, simulated cards are stored in your tenant-scoped session without transmitting sensitive financial information.
+            This environment uses a simulated billing gateway for testing subscription and invoice workflows. Do not enter real credit or debit card credentials—use the test card presets provided in the Add Payment Method dialog.
           </p>
         </div>
       </div>
