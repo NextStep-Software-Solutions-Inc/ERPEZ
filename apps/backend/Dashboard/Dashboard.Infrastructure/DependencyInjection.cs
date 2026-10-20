@@ -111,6 +111,7 @@ public static class DependencyInjection
         services.AddScoped<IOfficeRepository, OfficeRepository>();
         services.AddScoped<IDeliveryUnitRepository, DeliveryUnitRepository>();
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+        services.AddScoped<IAgencyRepository, AgencyRepository>();
         services.AddScoped<IFundSourceRepository, FundSourceRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
@@ -164,6 +165,7 @@ public static class DependencyInjection
         services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();
         services.AddScoped<IPositionImportService, PositionImportService>();
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
+        services.AddScoped<IAgencyLetterheadService, AgencyLetterheadService>();
         services.AddHostedService<TempFileCleanupService>();
 
         // ── Document Generation ─────────────────────────────────────────────────────
@@ -197,6 +199,9 @@ public static class DependencyInjection
 
         // Budget Modification — PDF
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIBAmendment.LibAmendmentDataDto>, LibAmendmentPdfRenderer>();
+
+        // LIB Realignment — PDF (ISO FM-USTP-FDP-002)
+        services.AddScoped<IDocumentRenderer<LibRealignmentPdfDataDto>, LibRealignmentPdfRenderer>();
 
         // BAC Resolution — PDF
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.Projects.Commands.GenerateBacResolutionDocument.BacResolutionDataDto>, BacResolutionPdfRenderer>();
@@ -263,6 +268,7 @@ public static class DependencyInjection
                 await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedAsync(dbContext); 
                 await ERPEZ.Infrastructure.Persistence.Seeders.OrganizationStructureSeeder.SeedAsync(dbContext);
                 await ERPEZ.Infrastructure.Persistence.Seeders.AmsRoleSeeder.SeedAsync(dbContext);
+                await ERPEZ.Infrastructure.Persistence.Seeders.ApprovalAndSignatorySeeder.SeedAsync(dbContext);
             }
             catch (InvalidOperationException ex)
             {

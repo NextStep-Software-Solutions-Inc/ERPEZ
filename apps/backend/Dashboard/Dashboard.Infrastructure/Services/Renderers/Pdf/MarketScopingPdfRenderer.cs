@@ -26,9 +26,16 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
 
                 page.Header().Column(col =>
                 {
-                    col.Item().AlignCenter().Text("Agency Letterhead with Logo").Bold().FontSize(9.5f);
-                    col.Item().PaddingTop(10).AlignCenter().Text("MARKET SCOPING CHECKLIST").Bold().FontSize(12);
-                    col.Item().PaddingTop(10).PaddingBottom(10).LineHorizontal(1).LineColor(Colors.Blue.Darken2);
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "MARKET SCOPING CHECKLIST",
+                        showUnderline: true,
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 page.Content().Column(col =>
@@ -43,7 +50,7 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
                             c.RelativeColumn(2);
                         });
 
-                        DrawRow(table, "Name of Procuring Entity", request.ProcuringEntity);
+                        DrawRow(table, "Name of Procuring Entity", CleanEntityName(request.ProcuringEntity));
                         DrawRow(table, "End-User/Implementing Unit", request.ImplementingUnit);
                         DrawRow(table, "Name & Designation of Representative", request.RepresentativeNameAndDesignation);
                     });
@@ -176,8 +183,9 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
         row.RelativeItem().Column(sc =>
         {
             sc.Item().Text(headerLabel).FontSize(10);
-            sc.Item().PaddingTop(30).BorderBottom(1).BorderColor(Colors.Black).Text(string.Empty);
-            sc.Item().Text(sig.PrintedName).Bold();
+            sc.Item().PaddingTop(30).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                .Text(sig.PrintedName).Bold();
+            sc.Item().PaddingTop(2).Text("Signature over Printed Name").FontSize(8).Italic();
             sc.Item().Text(sig.Position);
             if (sig.Date.HasValue)
             {

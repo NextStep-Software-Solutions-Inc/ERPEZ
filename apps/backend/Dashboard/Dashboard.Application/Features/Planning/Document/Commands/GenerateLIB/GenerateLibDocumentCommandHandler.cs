@@ -1,4 +1,5 @@
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
@@ -48,7 +49,8 @@ public class GenerateLibDocumentCommandHandler(
         }
 
         // ── 2. Map ───────────────────────────────────────────────────────────
-        var dataDto = MapToLibDataDto(lib, wfp);
+        var signatories = await BuildSignatoriesAsync(lib, cancellationToken);
+        var dataDto = MapToLibDataDto(lib, wfp, signatories);
 
         if (string.Equals(NormalizeScope(lib.Scope), nameof(LIBScopeEnum.Project), StringComparison.OrdinalIgnoreCase))
         {
@@ -94,7 +96,10 @@ public class GenerateLibDocumentCommandHandler(
     // Mapping
     // ═════════════════════════════════════════════════════════════════════════
 
-    private static LibDataDto MapToLibDataDto(LibEntity lib, Domain.Entities.Planning.WFP? wfp = null)
+    private static LibDataDto MapToLibDataDto(
+        LibEntity lib,
+        Domain.Entities.Planning.WFP? wfp = null,
+        List<SignatoryDto>? signatories = null)
     {
         var allDetails = CollectAllDetails(lib);
 
@@ -181,8 +186,64 @@ public class GenerateLibDocumentCommandHandler(
             AccountGroupSummaries = accountGroupSummaries,
             QuarterSummaries      = quarterSummaries,
             FundSourceSummary     = fundSourceSummary,
-            Signatories           = []
+            Signatories           = signatories ?? []
         };
+    }
+
+    private async Task<List<SignatoryDto>> BuildSignatoriesAsync(LibEntity lib, CancellationToken cancellationToken)
+    {
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, lib.OfficeId, lib.FiscalYearId, "LIB", cancellationToken);
+
+        var officeHead = await DocumentSignatoryResolver
+            .ResolveOfficeHeadSignatoryAsync(unitOfWork, lib.OfficeId, cancellationToken);
+
+        var finance = await DocumentSignatoryResolver
+            .ResolveFinanceSignatoryAsync(unitOfWork, cancellationToken);
+
+        var preparedByName = !string.IsNullOrWhiteSpace(lib.CreatedBy)
+            ? lib.CreatedBy
+            : (officeHead?.FullName ?? wf.RecommendingApprover?.FullName ?? string.Empty);
+
+        var preparedByPos = officeHead?.PositionTitle ?? lib.Office?.Name ?? wf.RecommendingApprover?.PositionTitle ?? string.Empty;
+
+        var recName = wf.RecommendingApprover?.FullName ?? finance?.FullName ?? string.Empty;
+        var recPos = !string.IsNullOrWhiteSpace(wf.RecommendingApprover?.PositionTitle)
+            ? wf.RecommendingApprover.PositionTitle
+            : (finance?.PositionTitle ?? "Recommending Approver");
+
+        var finalName = wf.FinalApprover?.FullName ?? string.Empty;
+        var finalPos = !string.IsNullOrWhiteSpace(wf.FinalApprover?.PositionTitle)
+            ? wf.FinalApprover.PositionTitle
+            : "Head of the Agency / Approving Authority";
+
+        return
+        [
+            new SignatoryDto
+            {
+                Label       = "Prepared by:",
+                PrintedName = preparedByName,
+                Position    = preparedByPos,
+                Designation = "End-User / Implementing Unit",
+                Date        = lib.SubmittedDate
+            },
+            new SignatoryDto
+            {
+                Label       = "Recommending Approval:",
+                PrintedName = recName,
+                Position    = recPos,
+                Designation = "Recommending Approver",
+                Date        = lib.SubmittedDate
+            },
+            new SignatoryDto
+            {
+                Label       = "Approved by:",
+                PrintedName = finalName,
+                Position    = finalPos,
+                Designation = "Final Approver",
+                Date        = lib.ApprovedDate
+            }
+        ];
     }
 
     // ─────────────────────────────────────────────────────────────────────────

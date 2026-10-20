@@ -1,9 +1,19 @@
     // ERPEZ.Application/Features/Planning/Document/Dtos/OpcrDataDto.cs
     using ERPEZ.Application.Common.Dtos;
+    using ERPEZ.Application.Common.Interfaces;
     namespace ERPEZ.Application.Features.Planning.Document.Dtos;
 
-    public class OpcrDataDto
+    public class OpcrDataDto : IAgencyLetterheadAware
     {
+        public string? ProcuringEntityName
+        {
+            get => AgencyName;
+            set => AgencyName = value ?? string.Empty;
+        }
+        public string? ProcuringEntityAddress { get; set; }
+        public byte[]? LogoBytes { get; set; }
+        public string? LetterheadAlignment { get; set; }
+
         public string OfficeName               { get; set; } = string.Empty;
         public string OfficeCode               { get; set; } = string.Empty;
         public string AgencyName               { get; set; } = string.Empty;

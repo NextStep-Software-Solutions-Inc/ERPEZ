@@ -21,10 +21,24 @@ public sealed class RFQDocumentContextService(
         Guid startingOfficeId,
         CancellationToken cancellationToken = default)
     {
-        // 1. Walk the office hierarchy up to the root to get the head office / procuring entity
         string? mainOrgOrHeadOfficeName = null;
         string? mainOrgOrHeadOfficeAddress = null;
 
+        // 0. Primary source of truth: Tenant Agency settings
+        var agency = await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
+        if (agency != null)
+        {
+            if (!string.IsNullOrWhiteSpace(agency.Name))
+            {
+                mainOrgOrHeadOfficeName = agency.Name.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(agency.Address))
+            {
+                mainOrgOrHeadOfficeAddress = agency.Address.Trim();
+            }
+        }
+
+        // 1. Walk the office hierarchy up to the root to get the head office / procuring entity
         var currentOffice = await unitOfWork.OfficeRepository.GetByIdWithDetailsAsync(startingOfficeId, cancellationToken);
         if (currentOffice != null)
         {

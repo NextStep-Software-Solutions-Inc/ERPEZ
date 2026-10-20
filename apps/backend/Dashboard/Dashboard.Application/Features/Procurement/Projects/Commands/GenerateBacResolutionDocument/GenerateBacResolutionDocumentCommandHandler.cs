@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Entities.Procurement;
@@ -58,8 +59,13 @@ public class BacResolutionGroupDto
     public List<BacResolutionItemDetailDto> Items { get; set; } = new();
 }
 
-public class BacResolutionDataDto
+public class BacResolutionDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadAware
 {
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
+
     public string ResolutionNumber { get; set; } = string.Empty;
     public string ResolutionType { get; set; } = string.Empty;
     public DateTime DateResolved { get; set; }
@@ -436,7 +442,8 @@ public class GenerateBacResolutionDocumentCommandHandler(
         }
 
         // Hydrate active BAC Members
-        var bacMemberEntities = await unitOfWork.BACMemberRepository.FindAllAsync(m => m.IsActive, cancellationToken);
+        var bacMemberEntities = await ERPEZ.Application.Common.Helpers.DocumentSignatoryResolver
+            .ResolveActiveBacMembersAsync(unitOfWork, cancellationToken);
         var bacMembers = bacMemberEntities
             .OrderBy(m => m.Order)
             .Select(m => new BacMemberDto
@@ -448,8 +455,25 @@ public class GenerateBacResolutionDocumentCommandHandler(
             })
             .ToList();
 
-        var headOfAgencyName = configuration["BacDocument:HeadOfAgencyName"] ?? string.Empty;
-        var headOfAgencyTitle = configuration["BacDocument:HeadOfAgencyTitle"] ?? "HEAD OF THE PROCURING ENTITY";
+        var latestApprovedEvent = project.ApprovalEvents?
+            .Where(e => !e.IsDeleted &&
+                        (string.Equals(e.Action, "Approved", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(e.Action, "Approve", StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(e => e.Timestamp)
+            .FirstOrDefault();
+
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, officeId != Guid.Empty ? officeId : null, null, null, cancellationToken);
+
+        var headOfAgencyName = !string.IsNullOrWhiteSpace(latestApprovedEvent?.ActorName)
+            ? latestApprovedEvent.ActorName
+            : (!string.IsNullOrWhiteSpace(wf.FinalApprover?.FullName)
+                ? wf.FinalApprover.FullName
+                : (configuration["BacDocument:HeadOfAgencyName"] ?? string.Empty));
+
+        var headOfAgencyTitle = !string.IsNullOrWhiteSpace(wf.FinalApprover?.PositionTitle)
+            ? wf.FinalApprover.PositionTitle
+            : (configuration["BacDocument:HeadOfAgencyTitle"] ?? "HEAD OF THE PROCURING ENTITY");
 
         var dataDto = new BacResolutionDataDto
         {

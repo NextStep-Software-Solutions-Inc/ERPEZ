@@ -20,5 +20,6 @@ public enum DocumentType
     DirectContracting,
     Contract,
     NoticeToProceed,
-    PurchaseOrder
+    PurchaseOrder,
+    LibRealignment
 }

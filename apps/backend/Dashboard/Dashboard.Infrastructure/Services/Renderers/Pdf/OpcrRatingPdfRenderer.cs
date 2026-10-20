@@ -29,12 +29,17 @@ internal sealed class OpcrRatingPdfRenderer : BasePdfRenderer, IDocumentRenderer
                 // ── Header ────────────────────────────────────────────────
                 page.Header().Column(h =>
                 {
-                    h.Item().AlignCenter()
-                        .Text("OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)")
-                        .Bold().FontSize(10);
-
-                    h.Item().PaddingTop(2).AlignCenter()
-                        .Text($"FY {request.FiscalYear}").FontSize(8);
+                    RenderAgencyHeader(
+                        h,
+                        request.ProcuringEntityName ?? request.AgencyName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)",
+                        documentSubtitle: $"FY {request.FiscalYear}",
+                        showUnderline: true,
+                        titleFontSize: 10f,
+                        alignment: request.LetterheadAlignment);
 
                     // Declaration statement (ratings variant differs from proposed)
                     h.Item().PaddingTop(6).Text(t =>
@@ -52,8 +57,9 @@ internal sealed class OpcrRatingPdfRenderer : BasePdfRenderer, IDocumentRenderer
                     {
                         r.RelativeItem().Column(sig =>
                         {
-                            sig.Item().Text(request.CommitmentPersonName).Bold().FontSize(8);
-                            sig.Item().Text("Head/Focal Person, Delivery Unit").FontSize(7);
+                            sig.Item().PaddingTop(12).MaxWidth(180).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                                .Text(request.CommitmentPersonName).Bold().FontSize(8);
+                            sig.Item().PaddingTop(2).Text(string.IsNullOrWhiteSpace(request.CommitmentPersonPosition) ? "Head/Focal Person, Delivery Unit" : request.CommitmentPersonPosition).FontSize(7);
                             sig.Item().Text("Date:").FontSize(7);
                         });
 

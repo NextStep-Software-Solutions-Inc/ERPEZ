@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.Document.Dtos;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -33,7 +34,14 @@ public class GenerateConsolidatedOpcrDocumentCommandHandler(
                 "No OPCRs found in this consolidation.");
 
         // ── 2. Map ────────────────────────────────────────────────────────
-        var dataDto = MapToDto(consolidation, request.RatingPeriod);
+        var firstOfficeId = consolidation.OPCRs.FirstOrDefault()?.OfficeId;
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, firstOfficeId, consolidation.FiscalYearId, "OPCR", cancellationToken);
+        var pmt = await DocumentSignatoryResolver
+            .ResolvePmtSignatoriesAsync(unitOfWork, consolidation.FiscalYear?.Year, cancellationToken);
+        var signatories = BuildSignatories(wf, pmt, request.GeneratedBy);
+
+        var dataDto = MapToDto(consolidation, request.RatingPeriod, signatories);
 
         // ── 3. Render ─────────────────────────────────────────────────────
         var bytes = await rendererService.RenderAsync(
@@ -67,7 +75,8 @@ public class GenerateConsolidatedOpcrDocumentCommandHandler(
 
     private static ConsolidatedOpcrDataDto MapToDto(
         Domain.Entities.Planning.OPCRConsolidation consolidation,
-        string ratingPeriod)
+        string ratingPeriod,
+        List<SignatoryDto>? signatories = null)
     {
         var opcrs      = consolidation.OPCRs.Where(o => !o.IsDeleted).ToList();
         var agencyName = opcrs.FirstOrDefault()?.Office?.Organization?.Name ?? string.Empty;
@@ -99,7 +108,7 @@ public class GenerateConsolidatedOpcrDocumentCommandHandler(
             RatingPeriod = ratingPeriod,
             TotalBudget  = kpiGroups.Sum(k => k.KpiTotalBudget),
             KpiGroups    = kpiGroups,
-            Signatories  = BuildSignatories()
+            Signatories  = signatories ?? BuildSignatories()
         };
     }
 
@@ -187,10 +196,31 @@ public class GenerateConsolidatedOpcrDocumentCommandHandler(
         };
     }
 
-    private static List<SignatoryDto> BuildSignatories() =>
+    private static List<SignatoryDto> BuildSignatories(
+        ResolvedWorkflowApprovers? wf = null,
+        ResolvedPmtSignatories? pmt = null,
+        string? generatedBy = null) =>
     [
-        new SignatoryDto { Label = "Consolidated by:",      Designation = "Planning Officer"          },
-        new SignatoryDto { Label = "Recommending Approval:", Designation = "Chancellor / Vice President" },
-        new SignatoryDto { Label = "Approved by:",           Designation = "President"                 }
+        new SignatoryDto
+        {
+            Label       = "Consolidated by:",
+            PrintedName = pmt?.Members.FirstOrDefault()?.FullName ?? (!string.IsNullOrWhiteSpace(generatedBy) ? generatedBy : string.Empty),
+            Position    = pmt?.Members.FirstOrDefault()?.PositionTitle ?? string.Empty,
+            Designation = "Planning Officer"
+        },
+        new SignatoryDto
+        {
+            Label       = "Recommending Approval:",
+            PrintedName = wf?.RecommendingApprover?.FullName ?? pmt?.Chairperson?.FullName ?? string.Empty,
+            Position    = wf?.RecommendingApprover?.PositionTitle ?? pmt?.Chairperson?.PositionTitle ?? string.Empty,
+            Designation = "Chancellor / Vice President"
+        },
+        new SignatoryDto
+        {
+            Label       = "Approved by:",
+            PrintedName = wf?.FinalApprover?.FullName ?? string.Empty,
+            Position    = wf?.FinalApprover?.PositionTitle ?? string.Empty,
+            Designation = "President"
+        }
     ];
 }

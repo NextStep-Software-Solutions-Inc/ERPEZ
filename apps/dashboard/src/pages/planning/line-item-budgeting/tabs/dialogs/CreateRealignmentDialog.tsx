@@ -19,6 +19,10 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import {
+  MODIFICATION_REASONS,
+  formatModificationReason,
+} from '@/features/planning/line-item-budgeting/realignment'
 
 // Hierarchical Budget Interfaces
 interface BudgetItem {
@@ -154,12 +158,6 @@ interface CreateRealignmentDialogProps {
   onOpenChange: (open: boolean) => void
   onCreate: (request: RealignmentRequest) => void
 }
-
-const MODIFICATION_REASONS = [
-  'UnforeseenModification',
-  'Reassessment',
-  'AdditionalRequirements',
-]
 
 export function CreateRealignmentDialog({
   open,
@@ -723,7 +721,7 @@ export function CreateRealignmentDialog({
               <SelectContent>
                 {MODIFICATION_REASONS.map((reason) => (
                   <SelectItem key={reason} value={reason}>
-                    {reason}
+                    {formatModificationReason(reason)}
                   </SelectItem>
                 ))}
               </SelectContent>

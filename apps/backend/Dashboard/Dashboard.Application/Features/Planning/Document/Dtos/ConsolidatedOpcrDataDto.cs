@@ -1,10 +1,20 @@
 // ERPEZ.Application/Features/Planning/Document/Dtos/ConsolidatedOpcrDataDto.cs
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Interfaces;
 
 namespace ERPEZ.Application.Features.Planning.Document.Dtos;
 
-public class ConsolidatedOpcrDataDto
+public class ConsolidatedOpcrDataDto : IAgencyLetterheadAware
 {
+    public string? ProcuringEntityName
+    {
+        get => AgencyName;
+        set => AgencyName = value ?? string.Empty;
+    }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
+
     public string AgencyName   { get; set; } = string.Empty;
     public string FiscalYear   { get; set; } = string.Empty;
     public string RatingPeriod { get; set; } = string.Empty;

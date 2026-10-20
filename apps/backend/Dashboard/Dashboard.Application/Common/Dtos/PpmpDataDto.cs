@@ -1,8 +1,14 @@
-// ERPEZ.Application/Common/Dtos/PpmpDataDto.cs
+using ERPEZ.Application.Common.Interfaces;
+
 namespace ERPEZ.Application.Common.Dtos;
 
-public class PpmpDataDto
+public class PpmpDataDto : IAgencyLetterheadAware
 {
+    public string?            ProcuringEntityName { get; set; }
+    public string?            ProcuringEntityAddress { get; set; }
+    public byte[]?            LogoBytes   { get; set; }
+    public string?            LetterheadAlignment { get; set; }
+
     public Guid               OfficeId    { get; set; }   // ← was AgencyId
     public string             PpmpNumber  { get; set; } = string.Empty;
     public string             FiscalYear  { get; set; } = string.Empty;

@@ -2482,6 +2482,7 @@ public class ApplicationDbContext : DbContext
             e.Property(x => x.Name).HasMaxLength(500).IsRequired();
             e.Property(x => x.Address).HasMaxLength(1000);
             e.Property(x => x.LogoImage).HasColumnType("bytea");
+            e.Property(x => x.LetterheadAlignment).HasMaxLength(50).HasDefaultValue("Default");
         });
 
         modelBuilder.Entity<GeneratedDocument>(e =>

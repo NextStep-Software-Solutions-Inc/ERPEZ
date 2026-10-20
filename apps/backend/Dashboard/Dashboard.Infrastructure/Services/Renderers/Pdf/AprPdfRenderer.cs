@@ -35,15 +35,22 @@ public sealed class AprPdfRenderer : BasePdfRenderer, IDocumentRenderer<AprDataD
                 // ── Page Content ───────────────────────────────────────────
                 page.Content().Column(col =>
                 {
-                    // ── 1. Top Meta Header ─────────────────────────────────
-                    col.Item().Row(r =>
-                    {
-                        r.RelativeItem().Text("APR FORM revised May 2015").FontSize(7).SemiBold();
-                        r.RelativeItem().AlignRight().Text("FORM NO. 002").FontSize(8).Bold();
-                    });
+                    // ── 1. Top Meta Header & Letterhead ─────────────────────
+                    col.Item().AlignRight().Text("FORM NO. 002").FontSize(8).Bold();
+
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName ?? request.RequestingAgencyName,
+                        request.ProcuringEntityAddress ?? request.RequestingAgencyAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "AGENCY PROCUREMENT REQUEST",
+                        showUnderline: false,
+                        titleFontSize: 11f,
+                        alignment: request.LetterheadAlignment);
 
                     // ── 2. Requesting Agency Box Grid ──────────────────────
-                    col.Item().PaddingTop(2).Border(1).BorderColor(Colors.Black).Table(metaTable =>
+                    col.Item().PaddingTop(3).Border(1).BorderColor(Colors.Black).Table(metaTable =>
                     {
                         metaTable.ColumnsDefinition(c =>
                         {
@@ -54,47 +61,45 @@ public sealed class AprPdfRenderer : BasePdfRenderer, IDocumentRenderer<AprDataD
                         // Left Cell: Name & Address & Tel Nos
                         metaTable.Cell().RowSpan(2).BorderRight(1).BorderColor(Colors.Black).Padding(3).Column(c =>
                         {
-                            c.Item().Text("NAME AND ADDRESS\nOF\nREQUESTING AGENCY").FontSize(6.5f).Bold();
-                            c.Item().PaddingTop(2).Text(string.IsNullOrWhiteSpace(request.RequestingAgencyName) ? "—" : request.RequestingAgencyName).FontSize(7.5f).SemiBold();
-                            if (!string.IsNullOrWhiteSpace(request.RequestingAgencyAddress))
+                            c.Item().Text("NAME AND ADDRESS OF REQUESTING AGENCY:").FontSize(6.5f).Bold();
+
+                            var cleanAgency = CleanEntityName(request.ProcuringEntityName ?? request.RequestingAgencyName);
+                            var cleanAddr = !string.IsNullOrWhiteSpace(request.ProcuringEntityAddress)
+                                ? request.ProcuringEntityAddress
+                                : request.RequestingAgencyAddress;
+
+                            c.Item().PaddingTop(1).Text(cleanAgency).FontSize(8f).SemiBold();
+                            if (!string.IsNullOrWhiteSpace(cleanAddr))
                             {
-                                c.Item().Text(request.RequestingAgencyAddress).FontSize(7);
+                                c.Item().Text(cleanAddr).FontSize(7f);
                             }
-                            c.Item().PaddingTop(4).Text($"TEL. NOS. {request.TelNos}").FontSize(6.5f).Bold();
+
+                            if (!string.IsNullOrWhiteSpace(request.TelNos))
+                            {
+                                c.Item().PaddingTop(2).Text($"TEL. NOS. {request.TelNos}").FontSize(6.5f).Bold();
+                            }
                         });
 
                         // Right Cell Top: Agency Acct Code
                         metaTable.Cell().BorderBottom(1).BorderColor(Colors.Black).Padding(3).Row(r =>
                         {
-                            r.AutoItem().Text("AGENCY ACCT.\nCODE").FontSize(6.5f).Bold();
+                            r.AutoItem().Text("AGENCY ACCT. CODE:").FontSize(6.5f).Bold();
                             r.RelativeItem().PaddingLeft(6).AlignMiddle().Text(string.IsNullOrWhiteSpace(request.AgencyAccountCode) ? "" : request.AgencyAccountCode).FontSize(7.5f).SemiBold();
                         });
 
                         // Right Cell Bottom: Agency Control No
                         metaTable.Cell().Padding(3).Row(r =>
                         {
-                            r.AutoItem().Text("AGENCY CONTROL No.").FontSize(6.5f).Bold();
+                            r.AutoItem().Text("AGENCY CONTROL NO.:").FontSize(6.5f).Bold();
                             r.RelativeItem().PaddingLeft(6).AlignMiddle().Text(string.IsNullOrWhiteSpace(request.AgencyControlNumber) ? "" : request.AgencyControlNumber).FontSize(7.5f).SemiBold();
                         });
                     });
 
-                    // ── 3. Title Row Box ───────────────────────────────────
-                    col.Item().BorderLeft(1).BorderRight(1).BorderBottom(1).BorderColor(Colors.Black).Table(titleTable =>
+                    // ── 3. PS APR No. Bar ───────────────────────────────────
+                    col.Item().BorderLeft(1).BorderRight(1).BorderBottom(1).BorderColor(Colors.Black).Padding(3).Row(r =>
                     {
-                        titleTable.ColumnsDefinition(c =>
-                        {
-                            c.RelativeColumn(3.2f);
-                            c.RelativeColumn(2.0f);
-                        });
-
-                        titleTable.Cell().BorderRight(1).BorderColor(Colors.Black).Padding(4).AlignCenter().AlignMiddle()
-                            .Text("AGENCY PROCUREMENT REQUEST").Bold().FontSize(10.5f);
-
-                        titleTable.Cell().Padding(4).AlignMiddle().Row(r =>
-                        {
-                            r.AutoItem().Text("PS APR No.").FontSize(7.5f).Bold();
-                            r.RelativeItem().PaddingLeft(6).Text(string.IsNullOrWhiteSpace(request.PSAprNumber) ? "" : request.PSAprNumber).FontSize(8).Bold();
-                        });
+                        r.AutoItem().Text("PS APR NO.:").FontSize(7.5f).Bold();
+                        r.RelativeItem().PaddingLeft(6).Text(string.IsNullOrWhiteSpace(request.PSAprNumber) ? "" : request.PSAprNumber).FontSize(8).Bold();
                     });
 
                     // ── 4. To and Date Prepared ────────────────────────────

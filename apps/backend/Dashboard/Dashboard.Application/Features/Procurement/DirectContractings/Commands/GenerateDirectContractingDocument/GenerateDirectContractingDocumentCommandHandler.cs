@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Dtos;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.Planning;
@@ -309,21 +310,39 @@ public class GenerateDirectContractingDocumentCommandHandler(
             signatories.Add(new DirectContractingPdfSignatoryDto { Name = string.Empty, Position = "BAC Chairperson", Role = "Chairperson", Order = 4 });
         }
 
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, officeId != Guid.Empty ? officeId : null, null, null, cancellationToken);
+
+        var reviewedBySignatory = await DocumentSignatoryResolver
+            .ResolveUserSignatoryAsync(unitOfWork, dc.ReviewedByUserId, cancellationToken);
+
         var headOfAgencyName = !string.IsNullOrWhiteSpace(request.HeadOfAgencyName)
             ? request.HeadOfAgencyName
-            : (configuration["BacDocument:HeadOfAgencyName"] ?? string.Empty);
+            : (!string.IsNullOrWhiteSpace(wf.FinalApprover?.FullName)
+                ? wf.FinalApprover.FullName
+                : (!string.IsNullOrWhiteSpace(reviewedBySignatory?.FullName)
+                    ? reviewedBySignatory.FullName
+                    : (configuration["BacDocument:HeadOfAgencyName"] ?? string.Empty)));
 
         var headOfAgencyTitle = !string.IsNullOrWhiteSpace(request.HeadOfAgencyTitle)
             ? request.HeadOfAgencyTitle
-            : (configuration["BacDocument:HeadOfAgencyTitle"] ?? "HEAD OF THE PROCURING ENTITY");
+            : (!string.IsNullOrWhiteSpace(wf.FinalApprover?.PositionTitle)
+                ? wf.FinalApprover.PositionTitle
+                : (!string.IsNullOrWhiteSpace(reviewedBySignatory?.PositionTitle)
+                    ? reviewedBySignatory.PositionTitle
+                    : (configuration["BacDocument:HeadOfAgencyTitle"] ?? "HEAD OF THE PROCURING ENTITY")));
 
         var secretariatHeadName = !string.IsNullOrWhiteSpace(request.BacSecretariatHeadName)
             ? request.BacSecretariatHeadName
-            : (configuration["BacDocument:BacSecretariatHeadName"] ?? string.Empty);
+            : (!string.IsNullOrWhiteSpace(wf.RecommendingApprover?.FullName)
+                ? wf.RecommendingApprover.FullName
+                : (configuration["BacDocument:BacSecretariatHeadName"] ?? string.Empty));
 
         var secretariatHeadTitle = !string.IsNullOrWhiteSpace(request.BacSecretariatHeadTitle)
             ? request.BacSecretariatHeadTitle
-            : (configuration["BacDocument:BacSecretariatHeadTitle"] ?? "Head, BAC Secretariat");
+            : (!string.IsNullOrWhiteSpace(wf.RecommendingApprover?.PositionTitle)
+                ? wf.RecommendingApprover.PositionTitle
+                : (configuration["BacDocument:BacSecretariatHeadTitle"] ?? "Head, BAC Secretariat"));
 
         // 6. Build PDF Data DTO
         var dataDto = new DirectContractingPdfDataDto

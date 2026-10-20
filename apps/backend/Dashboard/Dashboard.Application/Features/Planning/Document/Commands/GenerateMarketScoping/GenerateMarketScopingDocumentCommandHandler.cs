@@ -1,4 +1,5 @@
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.Planning;
@@ -29,7 +30,15 @@ public class GenerateMarketScopingDocumentCommandHandler(
         var settingsQuery = unitOfWork.MarketScopingActivitySettingsRepository.Query(x => x.IsActive && !x.IsDeleted);
         var allSettings = await unitOfWork.MarketScopingActivitySettingsRepository.ToListAsync(settingsQuery, cancellationToken);
 
-        var dataDto = MapToDto(form, user, allSettings);
+        var officeId = form.TargetLineItemBudgetActivity?.LineItemBudget?.OfficeId
+            ?? user?.OfficeId;
+
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, officeId, null, null, cancellationToken);
+
+        var approver = wf.FinalApprover ?? wf.RecommendingApprover;
+
+        var dataDto = MapToDto(form, user, allSettings, approver);
 
         var bytes = await rendererService.RenderAsync(
             dataDto, DocumentType.MarketScoping, request.Format, cancellationToken);
@@ -38,10 +47,6 @@ public class GenerateMarketScopingDocumentCommandHandler(
         var fileName = $"MarketScoping_{form.ProjectName.Replace(' ', '_')}_{DateTime.UtcNow:yyyyMMddHHmmss}.{extension}";
         var path = await storageService.SaveAsync(bytes, fileName, cancellationToken);
 
-        // Try to get OfficeId from the user explicitly
-        var officeId = form.TargetLineItemBudgetActivity?.LineItemBudget?.OfficeId 
-            ?? user?.OfficeId;
-            
         if (officeId == null)
         {
             throw new ValidationException("Cannot determine OfficeId for the Market Scoping Form. The user must be assigned to an office.");
@@ -66,15 +71,24 @@ public class GenerateMarketScopingDocumentCommandHandler(
         return ApiResponse<Guid>.Success(record.Id, "Market Scoping document generated successfully.");
     }
 
-    private static MarketScopingDataDto MapToDto(MarketScoping form, ERPEZ.Domain.Entities.Planning.User? user, List<ERPEZ.Domain.Entities.Planning.MarketScopingActivitySettings> allSettings)
+    private static MarketScopingDataDto MapToDto(
+        MarketScoping form,
+        ERPEZ.Domain.Entities.Planning.User? user,
+        List<ERPEZ.Domain.Entities.Planning.MarketScopingActivitySettings> allSettings,
+        ResolvedSignatory? approver = null)
     {
         var implementingUnit = user?.Office?.Name ?? string.Empty;
-        var procuringEntity = string.IsNullOrWhiteSpace(user?.Office?.Organization?.Name) 
-            ? "Name of Procuring Entity" 
-            : user.Office.Organization.Name; 
+        var procuringEntity = string.Empty; 
         var repName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : string.Empty;
         var activePosition = user?.PersonnelPositions?.FirstOrDefault(p => p.IsActive)?.Position;
         var repDesignation = activePosition?.Title ?? string.Empty;
+
+        var approvedByName = !string.IsNullOrWhiteSpace(approver?.FullName)
+            ? approver.FullName
+            : "Head, End-User or Implementing Unit";
+        var approvedByPos = !string.IsNullOrWhiteSpace(approver?.PositionTitle)
+            ? approver.PositionTitle
+            : "Approver";
 
         return new MarketScopingDataDto
         {
@@ -141,8 +155,8 @@ public class GenerateMarketScopingDocumentCommandHandler(
             
             ApprovedBy = new SignatoryDto
             {
-                PrintedName = "Head, End-User or Implementing Unit", // This might need to come from workflow/approval events
-                Position = "Approver",
+                PrintedName = approvedByName,
+                Position = approvedByPos,
                 Date = form.Status == StatusEnum.Approved ? DateTime.UtcNow : null
             }
         };

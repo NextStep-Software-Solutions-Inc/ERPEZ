@@ -32,9 +32,16 @@ internal sealed class WfpPdfRenderer
 
                 page.Header().Column(h =>
                 {
-                    h.Item().AlignCenter().Text("WORK PLAN").Bold().FontSize(12);
-                    // Funding body label — matches sample ("National Telecommunications Commission Funded Special Project")
-                    // Currently not a WFP entity field; render FundSource name if available, else omit.
+                    RenderAgencyHeader(
+                        h,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "WORK PLAN",
+                        showUnderline: true,
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
 
                     // ── Title row ────────────────────────────────────────────
                     h.Item().PaddingTop(4).Row(r =>
@@ -201,14 +208,21 @@ internal sealed class WfpPdfRenderer
                     });
 
                     // ── Signatories ───────────────────────────────────────────
-                    col.Item().PaddingTop(24).Row(row =>
+                    if (request.Signatories is { Count: > 0 })
                     {
-                        WfpSignatoryBlock(row, "Prepared by:", "Project Leader");
-                        row.ConstantItem(20);
-                        WfpSignatoryBlock(row, "Funds Available:", "FMS Director");
-                        row.ConstantItem(20);
-                        WfpSignatoryBlock(row, "Approved:", "Chancellor");
-                    });
+                        RenderSignatories(col, request.Signatories);
+                    }
+                    else
+                    {
+                        col.Item().PaddingTop(24).Row(row =>
+                        {
+                            WfpSignatoryBlock(row, "Prepared by:", string.Empty, "Project Leader");
+                            row.ConstantItem(20);
+                            WfpSignatoryBlock(row, "Funds Available:", string.Empty, "FMS Director");
+                            row.ConstantItem(20);
+                            WfpSignatoryBlock(row, "Approved:", string.Empty, "Chancellor");
+                        });
+                    }
                 });
 
                 page.Footer().AlignCenter().Text(t =>
@@ -226,13 +240,14 @@ internal sealed class WfpPdfRenderer
     // Helpers
     // =========================================================================
 
-    private static void WfpSignatoryBlock(RowDescriptor row, string label, string position)
+    private static void WfpSignatoryBlock(RowDescriptor row, string label, string printedName, string position)
     {
         row.RelativeItem().Column(sc =>
         {
             sc.Item().Text(label).Bold().FontSize(8);
-            sc.Item().PaddingTop(32).BorderBottom(1).BorderColor(Colors.Black).Text(string.Empty);
-            sc.Item().Text("Signature over Printed Name").FontSize(7).Italic();
+            sc.Item().PaddingTop(32).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                .Text(printedName).Bold().FontSize(9);
+            sc.Item().PaddingTop(2).Text("Signature over Printed Name").FontSize(7).Italic();
             sc.Item().PaddingTop(2).Text(position).FontSize(7);
         });
     }

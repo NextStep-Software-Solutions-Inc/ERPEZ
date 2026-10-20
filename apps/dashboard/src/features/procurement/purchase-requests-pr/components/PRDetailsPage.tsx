@@ -2079,7 +2079,7 @@ export function PRDetailsPage({
             <div className="text-center py-10">
               <p className="text-muted-foreground mb-4">No APRs added yet</p>
               {canAddItems && (
-                sourceAprNumberFromDesc || sourceAprIdFromDesc ? (
+                relationalAprNumber || relationalAprId ? (
                   <div className="flex items-center justify-center gap-2">
                     <Button
                       onClick={handleImportItemsFromSourceAPR}
@@ -2092,7 +2092,7 @@ export function PRDetailsPage({
                       ) : (
                         <Boxes className="h-4 w-4" />
                       )}
-                      Import Deficit Items from {sourceAprNumberFromDesc || 'Source APR'}
+                      Import Deficit Items from {relationalAprNumber || 'Source APR'}
                     </Button>
                     <Button
                       onClick={() => setShowAddItems(true)}

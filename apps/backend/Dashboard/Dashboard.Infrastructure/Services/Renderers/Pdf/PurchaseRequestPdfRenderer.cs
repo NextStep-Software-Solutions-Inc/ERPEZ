@@ -35,15 +35,16 @@ public sealed class PurchaseRequestPdfRenderer : BasePdfRenderer, IDocumentRende
                 // ── Page Header ────────────────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    col.Item().AlignRight().Text("Appendix 60").FontSize(8).Italic();
-
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text("[Agency Letterhead with Logo]")
-                        .Bold().FontSize(9.5f).Italic();
-
-                    col.Item().PaddingTop(4).PaddingBottom(6).AlignCenter()
-                        .Text("PURCHASE REQUEST")
-                        .Bold().FontSize(12);
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName ?? request.EntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: "Appendix 60",
+                        documentTitle: "PURCHASE REQUEST",
+                        showUnderline: false,
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
 
                     // ── Metadata Grid ──────────────────────────────────────
                     col.Item().Border(1).BorderColor(Colors.Black).Table(metaTable =>
@@ -184,33 +185,22 @@ public sealed class PurchaseRequestPdfRenderer : BasePdfRenderer, IDocumentRende
                         var fundSig = request.Signatories.ElementAtOrDefault(2) ?? new SignatoryDto { Label = "Funds Available:", PrintedName = "CHERRY ANN S. VILLARTE, CPA", Designation = "Director, Financial Management Services" };
                         var appSig = request.Signatories.ElementAtOrDefault(3) ?? new SignatoryDto { Label = "Approved by:", PrintedName = "ATTY. DIONEL O. ALBINA", Designation = "Chancellor, USTP-CDO" };
 
-                        sigTable.Cell().BorderRight(0.5f).Padding(4).Column(sc =>
+                        void RenderPrSigCell(IContainer cell, SignatoryDto sig)
                         {
-                            sc.Item().Text(reqSig.Label).FontSize(7.5f).SemiBold();
-                            sc.Item().PaddingTop(20).Text(reqSig.PrintedName).Bold().FontSize(8);
-                            sc.Item().Text(reqSig.Designation).FontSize(7).Italic();
-                        });
+                            cell.Padding(4).Column(sc =>
+                            {
+                                sc.Item().Text(sig.Label).FontSize(7.5f).SemiBold();
+                                sc.Item().PaddingTop(20).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                                    .Text(sig.PrintedName).Bold().FontSize(8);
+                                sc.Item().PaddingTop(1).Text("Signature over Printed Name").FontSize(6.5f).Italic();
+                                sc.Item().Text(sig.Designation).FontSize(7).Italic();
+                            });
+                        }
 
-                        sigTable.Cell().BorderRight(0.5f).Padding(4).Column(sc =>
-                        {
-                            sc.Item().Text(recSig.Label).FontSize(7.5f).SemiBold();
-                            sc.Item().PaddingTop(20).Text(recSig.PrintedName).Bold().FontSize(8);
-                            sc.Item().Text(recSig.Designation).FontSize(7).Italic();
-                        });
-
-                        sigTable.Cell().BorderRight(0.5f).Padding(4).Column(sc =>
-                        {
-                            sc.Item().Text(fundSig.Label).FontSize(7.5f).SemiBold();
-                            sc.Item().PaddingTop(20).Text(fundSig.PrintedName).Bold().FontSize(8);
-                            sc.Item().Text(fundSig.Designation).FontSize(7).Italic();
-                        });
-
-                        sigTable.Cell().Padding(4).Column(sc =>
-                        {
-                            sc.Item().Text(appSig.Label).FontSize(7.5f).SemiBold();
-                            sc.Item().PaddingTop(20).Text(appSig.PrintedName).Bold().FontSize(8);
-                            sc.Item().Text(appSig.Designation).FontSize(7).Italic();
-                        });
+                        RenderPrSigCell(sigTable.Cell().BorderRight(0.5f), reqSig);
+                        RenderPrSigCell(sigTable.Cell().BorderRight(0.5f), recSig);
+                        RenderPrSigCell(sigTable.Cell().BorderRight(0.5f), fundSig);
+                        RenderPrSigCell(sigTable.Cell(), appSig);
                     });
                 });
 

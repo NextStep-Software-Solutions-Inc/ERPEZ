@@ -22,7 +22,7 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
         BacResolutionDataDto request,
         CancellationToken cancellationToken = default)
     {
-        var logoBytes = LoadDefaultLogo();
+        var logoBytes = request.LogoBytes ?? LoadDefaultLogo();
 
         var pdf = Document.Create(doc =>
         {
@@ -35,18 +35,15 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                 // ── Header ──────────────────────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    if (logoBytes != null && logoBytes.Length > 0)
-                    {
-                        col.Item().AlignCenter().Height(50).Image(logoBytes);
-                    }
-
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text("[Agency Letterhead with Logo]")
-                        .Bold().FontSize(9.5f).Italic();
-
-                    col.Item().PaddingTop(6).AlignCenter()
-                        .Text($"BAC Resolution No. {request.ResolutionNumber}")
-                        .Bold().FontSize(10);
+                    RenderCenteredAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        logoBytes,
+                        officeName: null,
+                        documentTitle: $"BAC Resolution No. {request.ResolutionNumber}",
+                        titleFontSize: 11f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // ── Body Content ─────────────────────────────────────────────
@@ -395,32 +392,18 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                             {
                                 row.RelativeItem().Column(sc =>
                                 {
-                                    if (!string.IsNullOrWhiteSpace(left.Name))
-                                    {
-                                        sc.Item().Text(left.Name).Bold();
-                                        sc.Item().Text(left.Position).FontSize(8);
-                                    }
-                                    else
-                                    {
-                                        sc.Item().PaddingTop(18).MaxWidth(180).LineHorizontal(1).LineColor(Colors.Black);
-                                        sc.Item().PaddingTop(3).Text(left.Position).FontSize(8);
-                                    }
+                                    sc.Item().PaddingTop(18).MaxWidth(180).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                                        .Text(left.Name).Bold();
+                                    sc.Item().PaddingTop(2).Text(left.Position).FontSize(8);
                                 });
 
                                 if (right != null)
                                 {
                                     row.RelativeItem().Column(sc =>
                                     {
-                                        if (!string.IsNullOrWhiteSpace(right.Name))
-                                        {
-                                            sc.Item().Text(right.Name).Bold();
-                                            sc.Item().Text(right.Position).FontSize(8);
-                                        }
-                                        else
-                                        {
-                                            sc.Item().PaddingTop(18).MaxWidth(180).LineHorizontal(1).LineColor(Colors.Black);
-                                            sc.Item().PaddingTop(3).Text(right.Position).FontSize(8);
-                                        }
+                                        sc.Item().PaddingTop(18).MaxWidth(180).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2)
+                                            .Text(right.Name).Bold();
+                                        sc.Item().PaddingTop(2).Text(right.Position).FontSize(8);
                                     });
                                 }
                                 else
@@ -447,22 +430,20 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
 
                         slip.Item().PaddingTop(24).AlignCenter().Column(head =>
                         {
-                            if (!string.IsNullOrWhiteSpace(request.HeadOfAgencyName) &&
-                                !request.HeadOfAgencyName.Contains("CULTURA", StringComparison.OrdinalIgnoreCase))
-                            {
-                                head.Item().Text(request.HeadOfAgencyName.ToUpper()).Bold().FontSize(10);
-                            }
-                            else
-                            {
-                                head.Item().MaxWidth(220).LineHorizontal(1).LineColor(Colors.Black);
-                            }
+                            var headName = !string.IsNullOrWhiteSpace(request.HeadOfAgencyName) &&
+                                           !request.HeadOfAgencyName.Contains("CULTURA", StringComparison.OrdinalIgnoreCase)
+                                ? request.HeadOfAgencyName.ToUpper()
+                                : string.Empty;
+
+                            head.Item().MinWidth(220).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2).AlignCenter()
+                                .Text(headName).Bold().FontSize(10);
 
                             var title = !string.IsNullOrWhiteSpace(request.HeadOfAgencyTitle) &&
                                         !request.HeadOfAgencyTitle.Contains("USTP", StringComparison.OrdinalIgnoreCase)
                                 ? request.HeadOfAgencyTitle.ToUpper()
                                 : "HEAD OF THE PROCURING ENTITY";
 
-                            head.Item().PaddingTop(3).Text(title).FontSize(8);
+                            head.Item().PaddingTop(3).AlignCenter().Text(title).FontSize(8);
                         });
                     });
                 });
@@ -504,10 +485,10 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
     {
         var list = new List<SignatoryItem>();
 
-        // 1. Provisional Representatives (names omitted for generic client presentation)
+        // 1. Provisional Representatives
         list.Add(new SignatoryItem
         {
-            Name = string.Empty,
+            Name = request.EndUserRepName ?? string.Empty,
             Position = !string.IsNullOrWhiteSpace(request.EndUserRepPosition)
                 ? request.EndUserRepPosition
                 : "Provisional Member, End-user Rep"
@@ -515,13 +496,13 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
 
         list.Add(new SignatoryItem
         {
-            Name = string.Empty,
+            Name = request.TechRepName ?? string.Empty,
             Position = !string.IsNullOrWhiteSpace(request.TechRepPosition)
                 ? request.TechRepPosition
                 : "Provisional Member, Tech Rep"
         });
 
-        // 2. BAC Members (names omitted for generic client presentation)
+        // 2. BAC Members
         if (request.BacMembers != null && request.BacMembers.Any())
         {
             foreach (var member in request.BacMembers)
@@ -532,14 +513,13 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
 
                 list.Add(new SignatoryItem
                 {
-                    Name = string.Empty,
+                    Name = member.FullName ?? string.Empty,
                     Position = position
                 });
             }
         }
         else
         {
-            // Default BAC Members structure without personal names
             list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC REGULAR MEMBER" });
             list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC REGULAR MEMBER" });
             list.Add(new SignatoryItem { Name = string.Empty, Position = "BAC VICE CHAIRPERSON" });

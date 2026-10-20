@@ -28,13 +28,11 @@ public sealed class ContractPdfRenderer : BasePdfRenderer, IDocumentRenderer<Con
         var monthName = contractDate.ToString("MMMM");
         var year = contractDate.ToString("yyyy");
 
-        var entityName = !string.IsNullOrWhiteSpace(request.ProcuringEntityName)
-            ? request.ProcuringEntityName.Trim()
-            : string.Empty;
+        var entityName = CleanEntityName(request.ProcuringEntityName);
 
         var entityAddress = !string.IsNullOrWhiteSpace(request.ProcuringEntityAddress)
             ? request.ProcuringEntityAddress.Trim()
-            : string.Empty;
+            : "University Town, Musuan, Maramag, Bukidnon, Philippines";
 
         var supplierName = !string.IsNullOrWhiteSpace(request.SupplierName)
             ? request.SupplierName.Trim()
@@ -71,30 +69,13 @@ public sealed class ContractPdfRenderer : BasePdfRenderer, IDocumentRenderer<Con
                 // ── 1. Official Letterhead ───────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    if (logoBytes != null && logoBytes.Length > 0)
-                    {
-                        col.Item().AlignCenter().Height(40).Image(logoBytes);
-                    }
-
-                    col.Item().AlignCenter()
-                        .Text("Republic of the Philippines")
-                        .FontSize(8.5f).FontColor(Colors.Grey.Darken2);
-
-                    if (!string.IsNullOrWhiteSpace(entityName))
-                    {
-                        col.Item().PaddingTop(1).AlignCenter()
-                            .Text(entityName)
-                            .Bold().FontSize(10.5f).FontColor(Colors.Grey.Darken4);
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(request.ProcuringEntityOffice))
-                    {
-                        col.Item().PaddingTop(1).AlignCenter()
-                            .Text(request.ProcuringEntityOffice)
-                            .FontSize(8.5f).FontColor(Colors.Grey.Darken2);
-                    }
-
-                    col.Item().PaddingTop(3).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten1);
+                    RenderCenteredAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes ?? logoBytes,
+                        officeName: null,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // ── 2. Contract Body ─────────────────────────────────────────
