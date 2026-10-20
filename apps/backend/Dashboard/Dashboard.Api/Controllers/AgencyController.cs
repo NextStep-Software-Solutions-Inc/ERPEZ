@@ -26,7 +26,6 @@ public class AgencyController(IAgencyLetterheadService letterheadService) : Cont
     private const long maxLogoSizeBytes = 5 * 1024 * 1024; // 5 MB
 
     [HttpGet("letterhead")]
-    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(ApiResponse<AgencyLetterheadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLetterhead(CancellationToken cancellationToken)
     {

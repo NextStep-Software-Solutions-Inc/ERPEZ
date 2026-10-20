@@ -34,11 +34,21 @@ function formatCurrency(amount: number | null | undefined): string {
   })}`
 }
 
+export interface AOBPrintLetterhead {
+  name?: string
+  address?: string
+  logoUrl?: string | null
+}
+
 /**
  * Generate HTML for printable Abstract of Quotation document
  * Exactly matches the government standard template
  */
-export function generateAOBPrintHTML(aob: AOB, bidMatrix: BidMatrix | null | undefined): string {
+export function generateAOBPrintHTML(
+  aob: AOB,
+  bidMatrix: BidMatrix | null | undefined,
+  letterhead?: AOBPrintLetterhead
+): string {
   const lineItems = bidMatrix?.lineItems || []
   const suppliers = bidMatrix?.suppliers || []
 
@@ -249,9 +259,23 @@ export function generateAOBPrintHTML(aob: AOB, bidMatrix: BidMatrix | null | und
         </style>
       </head>
       <body>
+        <div class="letterhead-container" style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px;">
+          ${
+            letterhead?.logoUrl
+              ? `<img src="${escapeHtml(letterhead.logoUrl)}" alt="Agency Logo" style="width: 48px; height: 48px; object-fit: contain; flex-shrink: 0;" />`
+              : `<div style="width: 44px; height: 44px; border: 1px dashed #aaa; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold; color: #888; flex-shrink: 0;">SEAL</div>`
+          }
+          <div style="flex: 1;">
+            <div style="font-size: 8px; text-transform: uppercase; color: #555; font-weight: 600; letter-spacing: 0.5px;">Republic of the Philippines</div>
+            <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #111;">${escapeHtml(letterhead?.name || 'CENTRAL MINDANAO UNIVERSITY')}</div>
+            <div style="font-size: 8px; color: #555; margin-top: 1px;">${escapeHtml(letterhead?.address || 'University Town, Musuan, Maramag, Bukidnon, Philippines')}</div>
+          </div>
+        </div>
+
         <div class="document-title">
           <h1>ABSTRACT OF QUOTATION</h1>
           <h2>(${escapeHtml(modeOfProcurement)})</h2>
+          <div style="margin: 4px auto 0; height: 1.5px; width: 180px; background: #000;"></div>
         </div>
 
         <div class="metadata-block">
@@ -432,14 +456,18 @@ export function generateAOBPrintHTML(aob: AOB, bidMatrix: BidMatrix | null | und
 /**
  * Open print dialog with the official Abstract of Quotation document
  */
-export function printAOB(aob: AOB, bidMatrix: BidMatrix | null | undefined): void {
+export function printAOB(
+  aob: AOB,
+  bidMatrix: BidMatrix | null | undefined,
+  letterhead?: AOBPrintLetterhead
+): void {
   if (typeof window === 'undefined') {
     console.error('Print functionality is only available in browser environment')
     return
   }
 
   try {
-    const htmlContent = generateAOBPrintHTML(aob, bidMatrix)
+    const htmlContent = generateAOBPrintHTML(aob, bidMatrix, letterhead)
     const printWindow = window.open('', '_blank')
 
     if (!printWindow) {
