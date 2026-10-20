@@ -11,14 +11,15 @@ using ERPEZ.Application.Features.Planning.PerformanceMeasure.Queries.GetPMs;
 using ERPEZ.Application.Features.Planning.PerformanceMeasure.Queries.GetPMById;
 using ERPEZ.Application.Features.Planning.PerformanceMeasure.Commands.UpdatePM;
 using ERPEZ.Application.Features.Planning.PerformanceMeasure.Commands.DeletePM;
-
+using ERPEZ.Api.Attributes;
 
 namespace ERPEZ.Api.Controllers
 {
     [Route("performance-measures")]
     [ApiController]
     [Authorize]
-public class PerformanceMeasureController(ISender mediator) : ControllerBase
+    [RequireModule("pbms")]
+    public class PerformanceMeasureController(ISender mediator) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]

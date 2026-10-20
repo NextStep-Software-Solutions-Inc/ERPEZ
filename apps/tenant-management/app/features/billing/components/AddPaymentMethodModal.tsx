@@ -37,7 +37,7 @@ export const AddPaymentMethodModal: React.FC<AddPaymentMethodModalProps> = ({
   onAdd,
   isTrial = false,
   planName = "Starter",
-  planRateText = "$299/month + applicable tax",
+  planRateText,
   trialEndDate,
 }) => {
   const [cardholderName, setCardholderName] = useState("");
@@ -173,10 +173,9 @@ export const AddPaymentMethodModal: React.FC<AddPaymentMethodModalProps> = ({
           <div className="bg-blue-50/80 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 space-y-1 my-2">
             <p className="font-semibold text-blue-950">Your trial remains free</p>
             <p className="text-[11px] text-blue-800 leading-relaxed">
-              You won't be charged during your free trial. If you continue with {planName}, you'll be charged{" "}
-              <strong>{planRateText}</strong> after your trial ends{trialEndDate ? ` on ${trialEndDate}` : ""}.
+              You won't be charged during your free trial. Your payment method will be securely saved on file.
             </p>
-            <p className="text-[11px] text-emerald-700 font-semibold">No charge was made.</p>
+            <p className="text-[11px] text-emerald-700 font-semibold">No charge is made today.</p>
           </div>
         ) : (
           /* Prominent Sandbox / Simulated Gateway Warning */

@@ -33,7 +33,7 @@ const modules: ModuleItem[] = [
             "Multi-tenant workspace isolation",
             "Single Sign-On (SSO) & RBAC roles",
             "Offices, departments & suppliers",
-            "Immutable audit logging & activity trails",
+            "Granular permission & workspace member controls",
         ],
     },
     {
@@ -53,7 +53,7 @@ const modules: ModuleItem[] = [
             "Annual budget preparation & ceilings",
             "Strategic performance goals & KPIs",
             "Commitment forms & rating scales",
-            "Real-time budget realignment tracking",
+            "Departmental budget allocation & approval workflows",
         ],
     },
     {

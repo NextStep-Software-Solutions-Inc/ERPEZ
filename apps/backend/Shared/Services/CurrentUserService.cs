@@ -28,21 +28,7 @@ public sealed class CurrentUserService(
                 ?? user?.FindFirstValue("email")
                 ?? user?.FindFirstValue("primary_email_address");
 
-            if (!string.IsNullOrWhiteSpace(claimEmail))
-            {
-                return claimEmail;
-            }
-
-            if (httpContextAccessor.HttpContext?.Request.Headers.TryGetValue("X-User-Email", out var emailHeader) == true)
-            {
-                var val = emailHeader.FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(val))
-                {
-                    return val.Trim();
-                }
-            }
-
-            return null;
+            return !string.IsNullOrWhiteSpace(claimEmail) ? claimEmail.Trim() : null;
         }
     }
 
@@ -119,8 +105,10 @@ public sealed class CurrentUserService(
 
             if (user.IsInRole("SuperAdmin") || 
                 user.IsInRole("Platform Administrator") ||
+                user.IsInRole("platform_administrator") ||
                 string.Equals(user.FindFirstValue(ClaimTypes.Role), "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(user.FindFirstValue("role"), "Platform Administrator", StringComparison.OrdinalIgnoreCase))
+                string.Equals(user.FindFirstValue("role"), "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(user.FindFirstValue("role"), "platform_administrator", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
@@ -128,15 +116,19 @@ public sealed class CurrentUserService(
             var email = Email?.Trim().ToLowerInvariant();
             if (!string.IsNullOrEmpty(email))
             {
-                var configuredPlatformEmails = (configuration?["PlatformAdmin:Emails"] 
-                    ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS")
-                    ?? "jeanmaureal@gmail.com,superadmin@erpez.dev")
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(e => e.ToLowerInvariant());
+                var configuredEmailsRaw = configuration?["PlatformAdmin:Emails"] 
+                    ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS");
 
-                if (configuredPlatformEmails.Contains(email))
+                if (!string.IsNullOrWhiteSpace(configuredEmailsRaw))
                 {
-                    return true;
+                    var configuredPlatformEmails = configuredEmailsRaw
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .Select(e => e.ToLowerInvariant());
+
+                    if (configuredPlatformEmails.Contains(email))
+                    {
+                        return true;
+                    }
                 }
             }
 

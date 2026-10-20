@@ -38,7 +38,10 @@ export default function OverviewPage() {
         label: tenant?.isDisabled ? "Inactive" : "Active",
         color: tenant?.isDisabled ? "red" : "green",
     };
-    const lastUpdated = "Today";
+    const isOnPrem = Boolean(tenant?.tenantSetting?.onPremise);
+    const activeModulesCount = tenant?.modules?.length || 1;
+    const deploymentMode = isOnPrem ? "On-Premise" : "Cloud SaaS";
+    const deploymentHint = `${activeModulesCount} active module${activeModulesCount === 1 ? "" : "s"} enabled`;
     const licenseHint = hasLicense
         ? `Valid until ${new Date(license!.expiresAt).toLocaleDateString()}`
         : "Standard cloud subscription active";
@@ -49,11 +52,18 @@ export default function OverviewPage() {
         planName,
         statusLabel: status.label,
         statusColor: status.color,
-        lastUpdated,
+        lastUpdated: deploymentMode,
+        updatedTitle: "Deployment Mode",
+        updatedHint: deploymentHint,
         licenseHint,
     });
 
-    const quickActions = buildQuickActions()
+    const activePlan = (rawPlan || "Starter").toLowerCase();
+    const isStarter = activePlan.includes("starter");
+
+    const quickActions = buildQuickActions().filter(
+        (action) => !(action.id === "downloads" && isStarter)
+    );
     const handleAction = (id: string) => { 
         switch (id) {
             case "upgrade":
@@ -101,8 +111,8 @@ export default function OverviewPage() {
 
                                     <div className="flex items-center justify-start">
                                         <div className="flex items-center gap-2">
-                                            <div className={`h-3 w-3 rounded-full bg-green-700`} />
-                                            <p className="text-2xl font-bold m-0 text-green-700">{c.value.label}</p>
+                                            <div className={`h-3 w-3 rounded-full ${c.value.color === "red" ? "bg-red-600" : "bg-green-700"}`} />
+                                            <p className={`text-2xl font-bold m-0 ${c.value.color === "red" ? "text-red-600" : "text-green-700"}`}>{c.value.label}</p>
                                         </div>
                                     </div>
                             )}

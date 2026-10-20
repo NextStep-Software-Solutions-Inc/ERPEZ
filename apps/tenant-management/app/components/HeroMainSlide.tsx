@@ -1,4 +1,4 @@
-import { Play } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { NavLink } from "react-router";
 
@@ -20,21 +20,23 @@ export default function HeroMainSlide() {
                     and Procurement into one powerful, intelligent system.
                 </p>
                 <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-                    <NavLink to="/billing">
-                    <Button
-                        size="lg"
-                        className="h-11 px-6 text-sm bg-blue-700 font-semibold shadow-sm sm:h-12 sm:px-7"
-                    >
-                        Start Free Trial
-                    </Button>
+                    <NavLink to="/sign-up">
+                        <Button
+                            size="lg"
+                            className="h-11 px-6 text-sm bg-blue-700 font-semibold shadow-sm sm:h-12 sm:px-7"
+                        >
+                            Start Free Trial
+                        </Button>
                     </NavLink>
-                    <Button
-                        variant="outline"
-                        size="lg"
-                        className="h-11 px-6 text-sm sm:h-12 sm:px-7"
-                    >
-                        <Play className="mr-2 h-4 w-4" /> Watch Demo
-                    </Button>
+                    <a href="#feature">
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            className="h-11 px-6 text-sm sm:h-12 sm:px-7"
+                        >
+                            Explore Modules <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    </a>
                 </div>
             </div>
         </div>

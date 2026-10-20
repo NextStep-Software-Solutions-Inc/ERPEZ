@@ -6,15 +6,22 @@ import {
 
 const endpoint = '/roles/:id';
 
+export interface DeleteCustomRolePayload {
+  tenantId?: string;
+}
+
 export const deleteCustomRoleRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
   APIResponse<boolean>,
   undefined,
-  undefined
+  DeleteCustomRolePayload | undefined
 > = {
   endpoint,
-  fetcher: async ({ finalUrl }) => {
-    const response = await api.delete<APIResponse<boolean>>(finalUrl);
+  fetcher: async ({ finalUrl, payload }) => {
+    const response = await api.delete<APIResponse<boolean>>(
+      finalUrl,
+      payload?.tenantId ? { headers: { 'X-Tenant-Id': payload.tenantId } } : undefined
+    );
     return response.data;
   },
 };

@@ -480,12 +480,13 @@ function ClerkInnerAdapter({ children }: { children: React.ReactNode }) {
 
   const configuredAdminEmails = (
     (import.meta.env.VITE_PLATFORM_ADMIN_EMAILS as string | undefined) ||
-    'jeanmaureal@gmail.com,superadmin@erpez.dev'
+    (import.meta.env.VITE_SUPER_ADMIN_EMAILS as string | undefined) ||
+    ''
   )
     .split(',')
     .map((e: string) => e.trim().toLowerCase())
     .filter(Boolean);
-  const isEmailAdmin = Boolean(userEmail && configuredAdminEmails.includes(userEmail));
+  const isEmailAdmin = Boolean(userEmail && configuredAdminEmails.length > 0 && configuredAdminEmails.includes(userEmail));
   const isPlatformAdmin = Boolean(
     isEmailAdmin ||
     user?.publicMetadata?.isSuperAdmin ||

@@ -83,6 +83,30 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
 
   const recentInvoices = invoices.slice(0, 3);
 
+  // Check if billing data confirms an upcoming charge (e.g. scheduled invoice or future pending bill)
+  const nowMidnight = new Date();
+  nowMidnight.setHours(0, 0, 0, 0);
+
+  const upcomingCharge =
+    nextInvoice.isApplicable && nextInvoice.totalCents > 0
+      ? {
+          amount: formatMoney(nextInvoice.totalCents, nextInvoice.currency),
+          dueDate: nextInvoice.dueDate,
+        }
+      : (() => {
+          const upcomingPendingInv = invoices.find((inv) => {
+            if (inv.status !== "pending") return false;
+            const due = new Date(inv.dueDate);
+            return !isNaN(due.getTime()) && due.getTime() >= nowMidnight.getTime();
+          });
+          return upcomingPendingInv
+            ? {
+                amount: formatMoney(upcomingPendingInv.totalCents, upcomingPendingInv.currency),
+                dueDate: upcomingPendingInv.dueDate,
+              }
+            : null;
+        })();
+
   return (
     <div className="space-y-6">
       {/* Top 2 Cards: Current Plan & Next Invoice */}
@@ -101,7 +125,7 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
             </div>
             <CardDescription>
               {isTrial
-                ? "You're currently using Starter at no cost during your free trial"
+                ? `You're currently using ${subscription?.planName || "Starter"} at no cost during your free trial`
                 : "Authoritative active subscription details"}
             </CardDescription>
           </CardHeader>
@@ -120,17 +144,19 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
               <div className="text-right">
                 {isTrial ? (
                   <div>
-                    <p className="text-xl font-extrabold text-emerald-600">$0</p>
+                    <p className="text-xl font-extrabold text-emerald-600">₱0</p>
                     <p className="text-xs text-slate-500">during trial</p>
                   </div>
                 ) : (
                   <p className="text-xl font-extrabold text-blue-600">
-                    {subscription
+                    {subscription && subscription.amountCents > 0
                       ? `${formatMoney(subscription.amountCents, subscription.currency)}`
-                      : "$299.00"}
-                    <span className="text-xs font-normal text-slate-500">
-                      /{subscription?.billingCycle === "yearly" ? "yr" : "mo"}
-                    </span>
+                      : "Subscription Active"}
+                    {subscription && subscription.amountCents > 0 && (
+                      <span className="text-xs font-normal text-slate-500">
+                        /{subscription?.billingCycle === "yearly" ? "yr" : "mo"}
+                      </span>
+                    )}
                   </p>
                 )}
               </div>
@@ -158,18 +184,13 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
                 <dd className="font-semibold text-slate-800">
                   {isCancelledOrExpired
                     ? "None scheduled"
-                    : subscription?.trialEndsAt || nextInvoice.dueDate}
+                    : isTrial
+                    ? subscription?.trialEndsAt || "Scheduled expiration"
+                    : nextInvoice.isApplicable && nextInvoice.dueDate !== "N/A"
+                    ? nextInvoice.dueDate
+                    : "None scheduled"}
                 </dd>
               </div>
-              {isTrial && (
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Price after trial</dt>
-                  <dd className="font-medium text-slate-800">
-                    {formatMoney(subscription?.amountCents || 29900, subscription?.currency || "USD")}/
-                    {subscription?.billingCycle === "yearly" ? "yr" : "mo"} + tax
-                  </dd>
-                </div>
-              )}
             </dl>
 
             <Button
@@ -182,111 +203,162 @@ export const BillingOverviewTab: React.FC<BillingOverviewTabProps> = ({
           </CardContent>
         </Card>
 
-        {/* Next Invoice / Price After Trial Card */}
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-emerald-600" />
-                <CardTitle className="text-base font-semibold">
-                  {isTrial ? "Price after trial" : "Next Invoice"}
-                </CardTitle>
-              </div>
-              {nextInvoice.isApplicable && (
-                <Badge
-                  variant="outline"
-                  className={
-                    isTrial
-                      ? "border-slate-300 text-slate-600 bg-white text-[10px]"
-                      : "border-emerald-300 text-emerald-700 bg-emerald-50 text-[10px]"
-                  }
-                >
-                  {isTrial ? "After trial only" : `Due ${nextInvoice.dueDate}`}
-                </Badge>
-              )}
-            </div>
-            <CardDescription>
-              {isTrial
-                ? "Your first charge would occur after your free trial if you continue with Starter"
-                : "Upcoming projected billing summary"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {nextInvoice.isApplicable ? (
-              <>
-                <div className="flex items-center justify-between">
-                  <p className="text-xl font-bold text-slate-900">
-                    {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
-                    <span className="text-xs font-normal text-slate-600">
-                      {" "}
-                      / {nextInvoice.billingCycle === "yearly" ? "year" : "month"}
-                    </span>
-                  </p>
-                  <span className="text-xs text-slate-500">
-                    Includes {Math.round(nextInvoice.taxRate * 100)}% estimated tax
-                  </span>
+        {/* Trial Period or Next Invoice Card */}
+        {isTrial ? (
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-emerald-600" />
+                  <CardTitle className="text-base font-semibold">Trial Period</CardTitle>
                 </div>
-
-                <dl className="grid gap-2 text-sm border-t border-slate-100 pt-3">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">
-                      {nextInvoice.planName} ({nextInvoice.billingCycle})
-                    </dt>
-                    <dd className="font-medium">
-                      {formatMoney(nextInvoice.subtotalCents, nextInvoice.currency)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">
-                      Estimated Tax ({Math.round(nextInvoice.taxRate * 100)}% VAT)
-                    </dt>
-                    <dd className="font-medium">
-                      {formatMoney(nextInvoice.taxCents, nextInvoice.currency)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between font-bold border-t border-slate-200 pt-2 text-slate-900">
-                    <dt>{isTrial ? "Price after trial" : "Total Estimated Due"}</dt>
-                    <dd className="text-blue-600">
-                      {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
-                    </dd>
-                  </div>
-                </dl>
-
-                {isTrial && (
-                  <p className="text-[11px] text-slate-500">
-                    Your trial is free. You won't be charged during your trial.
-                  </p>
-                )}
-
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/invoice")}
-                  className="w-full flex items-center justify-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
-                >
-                  {isTrial ? "View Billing History" : "View All Invoices"}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </>
-            ) : (
-              <div className="py-6 text-center space-y-2">
-                <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto" />
-                <p className="font-semibold text-slate-800 text-sm">
-                  {nextInvoice.explanation || "No upcoming invoice scheduled"}
-                </p>
-                <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                  Your subscription is currently not renewing automatically. Reactive or change plan anytime.
-                </p>
-                <Button
-                  size="sm"
-                  onClick={() => navigate("/plan")}
-                  className="mt-2 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Reactivate Subscription
-                </Button>
+                <Badge variant="outline" className="border-emerald-300 text-emerald-700 bg-emerald-50 text-[10px] font-semibold">
+                  30-Day Free Trial
+                </Badge>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <CardDescription>
+                {subscription?.trialEndsAt
+                  ? `Your trial ends on ${subscription.trialEndsAt}. Contact the ERP-EZ team for subscription options after your trial.`
+                  : "Your free trial is currently active. Contact the ERP-EZ team for subscription options."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xl font-bold text-slate-900">
+                    {subscription?.trialDaysRemaining !== undefined
+                      ? `${subscription.trialDaysRemaining} Days Remaining`
+                      : "Free Trial"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Valid until {subscription?.trialEndsAt || "scheduled expiration"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-extrabold text-emerald-600">₱0</p>
+                  <p className="text-xs text-slate-500">Total Due Today</p>
+                </div>
+              </div>
+
+              <dl className="grid gap-2 text-sm border-t border-slate-100 pt-3">
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Trial Plan</dt>
+                  <dd className="font-medium text-slate-800">{subscription?.planName || "Starter"}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Current Billing Charges</dt>
+                  <dd className="font-medium text-emerald-700">None during trial</dd>
+                </div>
+                <div className="flex justify-between font-semibold border-t border-slate-200 pt-2 text-slate-900">
+                  <dt>Upcoming Scheduled Charge</dt>
+                  <dd className={upcomingCharge ? "text-slate-900 font-semibold" : "text-slate-600 font-normal"}>
+                    {upcomingCharge
+                      ? `${upcomingCharge.amount} (Due ${upcomingCharge.dueDate})`
+                      : "None scheduled"}
+                  </dd>
+                </div>
+              </dl>
+
+              <Button
+                variant="outline"
+                onClick={() => navigate("/invoice")}
+                className="w-full flex items-center justify-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50 mt-2"
+              >
+                View Billing History
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-emerald-600" />
+                  <CardTitle className="text-base font-semibold">Next Invoice</CardTitle>
+                </div>
+                {nextInvoice.isApplicable && (
+                  <Badge
+                    variant="outline"
+                    className="border-emerald-300 text-emerald-700 bg-emerald-50 text-[10px]"
+                  >
+                    Due {nextInvoice.dueDate}
+                  </Badge>
+                )}
+              </div>
+              <CardDescription>Upcoming projected billing summary</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {nextInvoice.isApplicable ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xl font-bold text-slate-900">
+                      {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
+                      <span className="text-xs font-normal text-slate-600">
+                        {" "}
+                        / {nextInvoice.billingCycle === "yearly" ? "year" : "month"}
+                      </span>
+                    </p>
+                    <span className="text-xs text-slate-500">
+                      Includes {Math.round(nextInvoice.taxRate * 100)}% estimated tax
+                    </span>
+                  </div>
+
+                  <dl className="grid gap-2 text-sm border-t border-slate-100 pt-3">
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">
+                        {nextInvoice.planName} ({nextInvoice.billingCycle})
+                      </dt>
+                      <dd className="font-medium">
+                        {formatMoney(nextInvoice.subtotalCents, nextInvoice.currency)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">
+                        Estimated Tax ({Math.round(nextInvoice.taxRate * 100)}% VAT)
+                      </dt>
+                      <dd className="font-medium">
+                        {formatMoney(nextInvoice.taxCents, nextInvoice.currency)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between font-bold border-t border-slate-200 pt-2 text-slate-900">
+                      <dt>Total Estimated Due</dt>
+                      <dd className="text-blue-600">
+                        {formatMoney(nextInvoice.totalCents, nextInvoice.currency)}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/invoice")}
+                    className="w-full flex items-center justify-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+                  >
+                    View All Invoices
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <div className="py-6 text-center space-y-2">
+                  <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto" />
+                  <p className="font-semibold text-slate-800 text-sm">
+                    {nextInvoice.explanation || "No upcoming invoice scheduled"}
+                  </p>
+                  <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                    Your subscription is currently not renewing automatically. Reactivate or change plan anytime.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate("/plan")}
+                    className="mt-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Reactivate Subscription
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Middle Row: Payment Method Summary & Billing Contact */}

@@ -14,7 +14,7 @@ export default function CreateTenantDialog() {
         <ResponsiveDialog
             open={open}
             onOpenChange={setOpen}
-            title="Create Tenant"
+            title="Create Workspace"
             description="">
             <CreateTenantForm onCreated={handleTenantCreated} onClose={() => setOpen(false)} />
         </ResponsiveDialog>

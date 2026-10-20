@@ -10,7 +10,7 @@ export const initialModules: ModuleDef[] = [
     id: "ams",
     title: "AMS - Account Management System",
     description:
-      "Manage tenants, users, roles/permissions, offices, departments, suppliers, and regions. Enable single sign-on (SSO), role-based access control, automated notifications, and audit logging across the entire suite.",
+      "Manage tenants, users, roles/permissions, offices, departments, suppliers, and regions. Enable single sign-on (SSO), role-based access control, and workspace member governance across the entire suite.",
     enabled: true,
   },
   {
@@ -32,6 +32,6 @@ export const initialModules: ModuleDef[] = [
     title: "SAMS - Supply and Assets Management System",
     description:
       "Comprehensive system to track, monitor, and manage both physical and digital assets throughout their entire lifecycle. Handle physical flow of supplies, manage inventory levels, and oversee maintenance, usage, and disposal.",
-    enabled: true,
+    enabled: false,
   },
 ];

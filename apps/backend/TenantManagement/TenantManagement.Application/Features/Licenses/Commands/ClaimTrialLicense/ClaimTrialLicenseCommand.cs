@@ -76,7 +76,7 @@ public class ClaimTrialLicenseCommandHandler(
             return ApiResponse<LicenseKeyDto>.Success(existingDto, "Active 30-day trial license already provisioned for this tenant.");
         }
 
-        // Provision a new 30-day Free Trial License Key
+        // Provision a new 30-day Free Trial License Key (Starter Tier: AMS + PBMS)
         var trialExpiry = DateTime.UtcNow.AddDays(trialDurationDays);
         var keyString = licenseService.GenerateKeyString("TRIAL", contactEmail, trialExpiry, Plan.Starter);
         var signature = licenseService.ComputeSignature(keyString, contactEmail, domain, trialExpiry);
@@ -97,7 +97,7 @@ public class ClaimTrialLicenseCommandHandler(
             ActivatedAt = DateTime.UtcNow,
             Status = LicenseStatus.Active,
             Signature = signature,
-            Notes = $"{trialDurationDays}-Day Full System Access Free Trial",
+            Notes = $"{trialDurationDays}-Day Starter Free Trial",
             CreatedAt = DateTime.UtcNow,
             CreatedBy = currentUserService.UserId ?? "system"
         };

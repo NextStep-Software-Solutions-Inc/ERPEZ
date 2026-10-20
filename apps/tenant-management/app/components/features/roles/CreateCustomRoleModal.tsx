@@ -25,12 +25,16 @@ interface CreateCustomRoleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  tenantId?: string;
+  tenantName?: string;
 }
 
 export function CreateCustomRoleModal({
   open,
   onOpenChange,
   onSuccess,
+  tenantId,
+  tenantName,
 }: CreateCustomRoleModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -97,6 +101,7 @@ export function CreateCustomRoleModal({
           name: name.trim(),
           description: description.trim() || undefined,
           permissionKeys: Array.from(selectedKeys),
+          tenantId,
         },
       });
 
@@ -106,7 +111,7 @@ export function CreateCustomRoleModal({
       setSelectedKeys(new Set());
       onOpenChange(false);
       onSuccess();
-    } catch (err: any) {
+    } catch {
       // Handled by axios interceptor
     }
   };
@@ -125,7 +130,9 @@ export function CreateCustomRoleModal({
                   Create Custom Workspace Role
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-500 mt-0.5">
-                  Define a granular role tailored to your team's operational responsibilities.
+                  {tenantName
+                    ? `Define a granular custom role for ${tenantName}.`
+                    : "Define a granular role tailored to your team's operational responsibilities."}
                 </DialogDescription>
               </div>
             </div>

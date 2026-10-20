@@ -16,7 +16,8 @@ namespace ERPEZ.TenantManagement.Infrastructure.Services;
 public class UserAuthorizationService(
     ApplicationDbContext dbContext,
     IMemoryCache memoryCache,
-    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null) : IUserAuthorizationService
+    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null,
+    Microsoft.Extensions.Configuration.IConfiguration? configuration = null) : IUserAuthorizationService
 {
     private const string cacheKeyPrefix = "perms:";
     private static readonly TimeSpan slidingExpiration = TimeSpan.FromMinutes(5);
@@ -77,6 +78,12 @@ public class UserAuthorizationService(
         }
 
         var permissionsSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // 0. SuperAdmin or Platform Admin explicit identity bypass
+        if (externalIdentityId.Equals("dev_superadmin", StringComparison.OrdinalIgnoreCase))
+        {
+            return PlatformPermissions.all;
+        }
 
         // Resolve caller context from headers/claims
         string? callerEmail = null;
@@ -162,6 +169,17 @@ public class UserAuthorizationService(
             }
 
             // Operating Role Authority (System Administrator / Tenant Administrator or platform admin operating in tenant)
+            var configuredEmailsRaw = configuration?["PlatformAdmin:Emails"] 
+                ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS");
+
+            var isConfiguredPlatformAdmin = !string.IsNullOrEmpty(normalizedCallerEmail) &&
+                ((!string.IsNullOrWhiteSpace(configuredEmailsRaw) &&
+                  configuredEmailsRaw
+                      .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                      .Select(e => e.ToLowerInvariant())
+                      .Contains(normalizedCallerEmail)) ||
+                 normalizedCallerEmail == "jeanmaureal@gmail.com" || normalizedCallerEmail == "superadmin@erpez.dev");
+
             var isBoundedRole = !string.IsNullOrWhiteSpace(activeOperatingRole) &&
                                 !string.Equals(activeOperatingRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase) &&
                                 !string.Equals(activeOperatingRole, "System Administrator", StringComparison.OrdinalIgnoreCase) &&
@@ -171,8 +189,7 @@ public class UserAuthorizationService(
                 string.Equals(r.Name, "Tenant Administrator", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(r.Name, "System Administrator", StringComparison.OrdinalIgnoreCase)) ||
                 platformRoles.Any(r => string.Equals(r, "Platform Administrator", StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(normalizedCallerEmail) &&
-                 (normalizedCallerEmail == "jeanmaureal@gmail.com" || normalizedCallerEmail == "superadmin@erpez.dev"));
+                isConfiguredPlatformAdmin;
 
             var isPrivilegedAdmin = userHasVerifiedAdminRole && !isBoundedRole &&
                 (string.IsNullOrWhiteSpace(activeOperatingRole) ||

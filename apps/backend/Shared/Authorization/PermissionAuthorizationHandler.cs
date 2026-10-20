@@ -11,7 +11,8 @@ namespace ERPEZ.Shared.Authorization;
 public class PermissionAuthorizationHandler(
     IUserAuthorizationService authorizationService,
     ITenantContextService tenantContext,
-    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null) : AuthorizationHandler<PermissionRequirement>
+    Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null,
+    Microsoft.Extensions.Configuration.IConfiguration? configuration = null) : AuthorizationHandler<PermissionRequirement>
 {
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
@@ -27,7 +28,7 @@ public class PermissionAuthorizationHandler(
             return;
         }
 
-        // 2. SuperAdmin global bypass check
+        // 2. SuperAdmin / Platform Administrator verified identity check
         var isSuperAdminClaim = context.User.FindFirstValue("is_super_admin") 
             ?? context.User.FindFirstValue("super_admin")
             ?? context.User.FindFirstValue("is_platform_admin");
@@ -51,15 +52,25 @@ public class PermissionAuthorizationHandler(
             activeOperatingRole = opRoleHeader.FirstOrDefault()?.Trim();
         }
 
-        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) &&
-            (normalizedEmail == "jeanmaureal@gmail.com" || normalizedEmail == "superadmin@erpez.dev");
+        var configuredEmailsRaw = configuration?["PlatformAdmin:Emails"] 
+            ?? Environment.GetEnvironmentVariable("PLATFORM_ADMIN_EMAILS");
 
-        var isVerifiedPlatformAdmin = (bool.TryParse(isSuperAdminClaim, out var isSuperAdmin) && isSuperAdmin) ||
-                                      context.User.IsInRole("SuperAdmin") ||
-                                      context.User.IsInRole("Platform Administrator") ||
-                                      string.Equals(userRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
-                                      string.Equals(userRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
-                                      isPlatformAdminByEmail;
+        var isPlatformAdminByEmail = !string.IsNullOrEmpty(normalizedEmail) &&
+            ((!string.IsNullOrWhiteSpace(configuredEmailsRaw) &&
+              configuredEmailsRaw
+                  .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                  .Select(e => e.ToLowerInvariant())
+                  .Contains(normalizedEmail)) ||
+             normalizedEmail == "jeanmaureal@gmail.com" || normalizedEmail == "superadmin@erpez.dev");
+
+        var isVerifiedPlatformAdmin = isPlatformAdminByEmail ||
+            (bool.TryParse(isSuperAdminClaim, out var isSuperAdmin) && isSuperAdmin) ||
+            context.User.IsInRole("SuperAdmin") ||
+            context.User.IsInRole("Platform Administrator") ||
+            context.User.IsInRole("platform_administrator") ||
+            string.Equals(userRole, "Platform Administrator", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(userRole, "platform_administrator", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(userRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
 
         // Operating as Platform Administrator is only permitted if caller's identity is verified as a platform admin
         var isOperatingAsPlatformAdmin = isVerifiedPlatformAdmin &&

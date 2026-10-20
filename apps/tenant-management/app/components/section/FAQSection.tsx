@@ -48,9 +48,9 @@ export default function FAQSection() {
       <div className="max-w-4xl mx-auto text-center mt-10 text-sm">
         <p>
           Can&#39;t find the answer you&#39;re looking for? Reach out to our{" "}
-          <span className="font-semibold underline cursor-pointer hover:text-green-300 transition-colors">
+          <a href="#contact" className="font-semibold underline cursor-pointer hover:text-green-300 transition-colors">
             customer support team
-          </span>.
+          </a>.
         </p>
       </div>
     </section>

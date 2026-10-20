@@ -249,8 +249,8 @@ export function PurchaseLicenseModal({
                   }`}
                 >
                   <p className="font-bold text-sm text-slate-900">Foundation</p>
-                  <p className="text-xs text-slate-500 mt-0.5">AMS (Account Management)</p>
-                  <p className="font-extrabold text-blue-600 mt-2 text-base">$1,499/yr</p>
+                  <p className="text-xs text-slate-500 mt-0.5">AMS + PBMS (Account & Budget)</p>
+                  <p className="font-extrabold text-blue-600 mt-2 text-base">₱1,499/yr</p>
                 </div>
                 <div
                   onClick={() => setSelectedTier("Professional")}
@@ -264,8 +264,8 @@ export function PurchaseLicenseModal({
                     <p className="font-bold text-sm text-slate-900">Professional</p>
                     <Badge className="bg-blue-100 text-blue-800 text-[10px] py-0">Popular</Badge>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">AMS + PMS</p>
-                  <p className="font-extrabold text-blue-600 mt-2 text-base">$4,999/yr</p>
+                  <p className="text-xs text-slate-500 mt-0.5">AMS + PBMS + PMS</p>
+                  <p className="font-extrabold text-blue-600 mt-2 text-base">₱4,999/yr</p>
                 </div>
               </div>
             </div>
@@ -305,7 +305,7 @@ export function PurchaseLicenseModal({
               </div>
               <div className="border-t border-slate-200 pt-2 flex justify-between items-center text-sm font-bold">
                 <span className="text-slate-900">Total Billed Today:</span>
-                <span className="text-blue-600">${totalAmount.toFixed(2)} USD</span>
+                <span className="text-blue-600">₱{totalAmount.toFixed(2)} PHP</span>
               </div>
             </div>
 
@@ -330,7 +330,7 @@ export function PurchaseLicenseModal({
                     Minting License Key...
                   </>
                 ) : (
-                  `Pay $${totalAmount.toFixed(2)} & Generate Key`
+                  `Pay ₱${totalAmount.toFixed(2)} & Generate Key`
                 )}
               </Button>
             </DialogFooter>

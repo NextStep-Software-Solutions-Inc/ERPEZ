@@ -67,6 +67,7 @@ public static class DependencyInjection
         services.AddHttpClient<IClerkInvitationService, ClerkInvitationService>();
         services.AddScoped<IWebhookInboxService, WebhookInboxService>();
         services.AddSingleton<ISecretEncryptionService, AesGcmSecretEncryptionService>();
+        services.AddScoped<ERPEZ.TenantManagement.Application.Features.Inquiries.Common.IInquiryStore, SqlInquiryStore>();
         services.AddScoped<ITenantDatabaseProvisioner, TenantDatabaseProvisioner>();
         services.AddScoped<AuditingInterceptor>();
 

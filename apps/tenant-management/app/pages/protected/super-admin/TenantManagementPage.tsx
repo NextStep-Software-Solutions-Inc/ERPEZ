@@ -114,8 +114,8 @@ export default function TenantManagementPage() {
                             plan={tenant.tenantSubscription?.plan}
                             tenantStatus={tenant.tenantSubscription?.status}
                             revenue={tenant.tenantSubscription?.amount ?? 0}
-                            users={10}
                             amount={tenant.tenantSubscription?.amount ?? 0}
+                            modules={tenant.modules?.map((m) => m.key.toUpperCase())}
                             tenant={tenant}
                             isDisabled={tenant.isDisabled}
                             onToggleStatus={handleToggleStatus}

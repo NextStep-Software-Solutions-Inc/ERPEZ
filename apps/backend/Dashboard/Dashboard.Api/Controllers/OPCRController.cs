@@ -27,12 +27,15 @@ using ERPEZ.Application.Features.Planning.OPCRItem.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRItemRating.Queries;
 using ERPEZ.Application.Features.Planning.OPCRItemRating.Dtos;
 
+using ERPEZ.Api.Attributes;
+
 namespace ERPEZ.Api.Controllers
 {
     [Route("opcrs")]
     [ApiController]
     [Authorize]
-public class OPCRController(ISender mediator) : ControllerBase
+    [RequireModule("pbms")]
+    public class OPCRController(ISender mediator) : ControllerBase
     {
 
         [HttpPost]

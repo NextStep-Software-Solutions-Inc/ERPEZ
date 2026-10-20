@@ -1,77 +1,95 @@
 import React from "react";
+import { createQueryHookFromTemplate } from "erpez-shared-lib";
+import { useNavigate } from "react-router";
 import { PageContainer } from "~/components/PageContainer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { StatCard } from "~/components/StatCard";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { getTenantsRequest } from "~/features/tenant/handlers/getTenantsRequest";
+import { getInquiriesRequest } from "~/features/inquiry/handlers/getInquiriesRequest";
+import { planLabel } from "~/lib/tenant";
 import {
     Building2,
-    Shield,
-    CreditCard,
-    Database,
     CheckCircle2,
-    Clock,
     AlertTriangle,
-    ShieldAlert,
     HardDrive,
     Server,
     Activity,
-    Lock
+    Database,
+    FileText,
+    Cloud,
+    ExternalLink,
 } from "lucide-react";
 
+const useTenants = createQueryHookFromTemplate(getTenantsRequest);
+const useInquiries = createQueryHookFromTemplate(getInquiriesRequest);
+
 export default function SuperAdminOverviewPage() {
+    const navigate = useNavigate();
+
+    const { data: tenantsResponse, isLoading: isLoadingTenants } = useTenants({
+        pathParams: {},
+        queryParams: { pageSize: 50, pageNumber: 1 },
+    });
+
+    const { data: inquiriesResponse } = useInquiries({});
+
+    const tenantsList = Array.isArray(tenantsResponse?.data) ? tenantsResponse.data : [];
+    const totalWorkspaces = tenantsList.length;
+    const activeWorkspaces = tenantsList.filter((t) => !t.isDisabled).length;
+    const disabledWorkspaces = tenantsList.filter((t) => t.isDisabled).length;
+    const onPremWorkspaces = tenantsList.filter((t) => Boolean(t.tenantSetting?.onPremise)).length;
+    const cloudWorkspaces = Math.max(0, totalWorkspaces - onPremWorkspaces);
+
+    const dedicatedTenants = tenantsList.filter((t) =>
+        Boolean(t.tenantSetting?.dbConnectionString && t.tenantSetting.dbConnectionString.trim())
+    );
+    const dedicatedCount = dedicatedTenants.length;
+    const sharedPoolCount = Math.max(0, totalWorkspaces - dedicatedCount);
+
+    const quotesCount = inquiriesResponse?.data?.quotes?.length ?? 0;
+    const demosCount = inquiriesResponse?.data?.demos?.length ?? 0;
+    const totalInquiries = quotesCount + demosCount;
+
     const stats = [
-        { label: "Total Workspaces", value: "4", icon: Building2 },
-        { label: "Platform Users", value: "3", icon: Shield },
-        { label: "Active Subscriptions", value: "4", icon: CreditCard },
-        { label: "Database Silos", value: "2 Dedicated", icon: Database },
+        { label: "Total Workspaces", value: isLoadingTenants ? "..." : String(totalWorkspaces), icon: Building2 },
+        { label: "Active Workspaces", value: isLoadingTenants ? "..." : String(activeWorkspaces), icon: CheckCircle2 },
+        { label: "Sales Inquiries", value: String(totalInquiries), icon: FileText },
+        { label: "Database Silos", value: isLoadingTenants ? "..." : `${dedicatedCount} Dedicated`, icon: Database },
     ];
 
     const provisioningStatuses = [
-        { label: "Ready / Operational", count: 4, status: "healthy", icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-        { label: "Provisioning Queue", count: 0, status: "idle", icon: Clock, color: "text-blue-600 bg-blue-50 border-blue-200" },
-        { label: "Maintenance Mode", count: 0, status: "none", icon: AlertTriangle, color: "text-amber-600 bg-amber-50 border-amber-200" },
-        { label: "Sovereign / On-Prem", count: 1, status: "air-gapped", icon: HardDrive, color: "text-purple-600 bg-purple-50 border-purple-200" },
-    ];
-
-    const recentPlatformActivity = [
         {
-            action: "Workspace Provisioned",
-            target: "North Region Subsidiary Inc.",
-            actor: "superadmin@erpez.dev",
-            detail: "Assigned dedicated database silo (erpez_north_db)",
-            timestamp: "Today, 11:42 AM",
-            type: "provisioning",
+            label: "Ready / Operational",
+            count: activeWorkspaces,
+            icon: CheckCircle2,
+            color: "text-emerald-600 bg-emerald-50 border-emerald-200",
         },
         {
-            action: "Sovereign Deployment Configured",
-            target: "South Distribution Corp.",
-            actor: "superadmin@erpez.dev",
-            detail: "Configured air-gapped on-premise connection (erpez_south_db)",
-            timestamp: "Today, 11:38 AM",
-            type: "security",
+            label: "Cloud SaaS",
+            count: cloudWorkspaces,
+            icon: Cloud,
+            color: "text-blue-600 bg-blue-50 border-blue-200",
         },
         {
-            action: "Platform Access Sync",
-            target: "Master Keycloak Realm",
-            actor: "auditor@erpez.dev",
-            detail: "Verified OIDC claims and decoupled platform permissions",
-            timestamp: "Today, 10:15 AM",
-            type: "audit",
+            label: "Disabled / Suspended",
+            count: disabledWorkspaces,
+            icon: AlertTriangle,
+            color: "text-amber-600 bg-amber-50 border-amber-200",
         },
         {
-            action: "Enterprise License Active",
-            target: "ERPEZ Enterprise Corp",
-            actor: "System",
-            detail: "10-subsidiary quota enabled with automated recurring billing",
-            timestamp: "Yesterday, 4:20 PM",
-            type: "subscription",
+            label: "Self-Hosted / On-Prem",
+            count: onPremWorkspaces,
+            icon: HardDrive,
+            color: "text-purple-600 bg-purple-50 border-purple-200",
         },
     ];
 
     return (
         <PageContainer
             title="Platform Overview"
-            description="Real-time control-plane metrics, workspace provisioning health, and platform security activity."
+            description="Control-plane summary of registered customer workspaces, database isolation, and incoming inquiries."
         >
             {/* Top Stat Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -87,15 +105,17 @@ export default function SuperAdminOverviewPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle className="text-base font-bold text-slate-900">
-                                    Workspace Provisioning Status
+                                    Workspace Status Breakdown
                                 </CardTitle>
                                 <CardDescription className="text-xs text-slate-500">
-                                    Operational lifecycle state across all customer organizations
+                                    Current operational state across registered customer workspaces
                                 </CardDescription>
                             </div>
                             <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1 text-xs">
                                 <Activity className="w-3 h-3 text-emerald-600" />
-                                100% Operational
+                                {totalWorkspaces > 0
+                                    ? `${activeWorkspaces}/${totalWorkspaces} Active`
+                                    : "Ready"}
                             </Badge>
                         </div>
                     </CardHeader>
@@ -132,7 +152,7 @@ export default function SuperAdminOverviewPage() {
                                     Database Routing Architecture
                                 </CardTitle>
                                 <CardDescription className="text-xs text-slate-500">
-                                    Multi-tenant physical database isolation distribution
+                                    Multi-tenant database isolation across registered workspaces
                                 </CardDescription>
                             </div>
                             <Server className="w-4 h-4 text-blue-600" />
@@ -143,12 +163,18 @@ export default function SuperAdminOverviewPage() {
                             <div className="flex items-center gap-2">
                                 <Database className="w-4 h-4 text-purple-600 shrink-0" />
                                 <div>
-                                    <span className="font-semibold text-purple-900 block">Dedicated Database Silos (2)</span>
-                                    <span className="text-purple-700 text-[11px]">Physical isolation: erpez_north_db & erpez_south_db</span>
+                                    <span className="font-semibold text-purple-900 block">
+                                        Dedicated Database Silos ({dedicatedCount})
+                                    </span>
+                                    <span className="text-purple-700 text-[11px]">
+                                        {dedicatedCount > 0
+                                            ? dedicatedTenants.map((t) => t.name).join(", ")
+                                            : "No dedicated database silos currently configured"}
+                                    </span>
                                 </div>
                             </div>
                             <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-purple-200 text-[10px]">
-                                Enterprise Plan
+                                Isolated DB
                             </Badge>
                         </div>
 
@@ -156,8 +182,12 @@ export default function SuperAdminOverviewPage() {
                             <div className="flex items-center gap-2">
                                 <Server className="w-4 h-4 text-blue-600 shrink-0" />
                                 <div>
-                                    <span className="font-semibold text-blue-900 block">Shared Database Pool (2)</span>
-                                    <span className="text-blue-700 text-[11px]">Logical isolation via TenantId on shared PostgreSQL pool</span>
+                                    <span className="font-semibold text-blue-900 block">
+                                        Shared Database Pool ({sharedPoolCount})
+                                    </span>
+                                    <span className="text-blue-700 text-[11px]">
+                                        Logical isolation via TenantId on shared PostgreSQL pool
+                                    </span>
                                 </div>
                             </div>
                             <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200 text-[10px]">
@@ -168,60 +198,91 @@ export default function SuperAdminOverviewPage() {
                 </Card>
             </div>
 
-            {/* Platform Control Plane Activity Log */}
+            {/* Registered Customer Workspaces Table */}
             <Card className="mt-6 border-slate-200 shadow-xs">
                 <CardHeader className="pb-3 border-b border-slate-100">
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle className="text-base font-bold text-slate-900">
-                                Recent Platform Control Plane Activity
+                                Registered Customer Workspaces
                             </CardTitle>
                             <CardDescription className="text-xs text-slate-500">
-                                Audit log of workspace provisioning, license changes, and platform role authorizations
+                                Active directory of customer workspaces, assigned plans, and isolation modes
                             </CardDescription>
                         </div>
-                        <Badge variant="outline" className="text-xs text-slate-600">
-                            Live Audit Stream
-                        </Badge>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate("/super-admin/tenant-management")}
+                            className="text-xs h-8 gap-1.5"
+                        >
+                            Manage Workspaces
+                            <ExternalLink className="w-3.5 h-3.5" />
+                        </Button>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0 overflow-x-auto">
                     <table className="w-full text-left text-xs">
                         <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
                             <tr>
-                                <th className="py-3 px-4">Action</th>
-                                <th className="py-3 px-4">Target Workspace / Resource</th>
-                                <th className="py-3 px-4">Actor</th>
-                                <th className="py-3 px-4">Operational Detail</th>
-                                <th className="py-3 px-4 text-right">Timestamp</th>
+                                <th className="py-3 px-4">Workspace</th>
+                                <th className="py-3 px-4">Plan Tier</th>
+                                <th className="py-3 px-4">Billing Contact</th>
+                                <th className="py-3 px-4">Database Mode</th>
+                                <th className="py-3 px-4">Access State</th>
+                                <th className="py-3 px-4 text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {recentPlatformActivity.map((log, index) => (
-                                <tr key={index} className="hover:bg-slate-50/70 transition-colors">
-                                    <td className="py-3 px-4 font-semibold text-slate-900">
-                                        <div className="flex items-center gap-1.5">
-                                            {log.type === "provisioning" && <Database className="w-3.5 h-3.5 text-blue-600" />}
-                                            {log.type === "security" && <Lock className="w-3.5 h-3.5 text-purple-600" />}
-                                            {log.type === "audit" && <Shield className="w-3.5 h-3.5 text-amber-600" />}
-                                            {log.type === "subscription" && <CreditCard className="w-3.5 h-3.5 text-emerald-600" />}
-                                            <span>{log.action}</span>
-                                        </div>
-                                    </td>
-                                    <td className="py-3 px-4 text-slate-800 font-medium">
-                                        {log.target}
-                                    </td>
-                                    <td className="py-3 px-4 font-mono text-slate-500 text-[11px]">
-                                        {log.actor}
-                                    </td>
-                                    <td className="py-3 px-4 text-slate-600">
-                                        {log.detail}
-                                    </td>
-                                    <td className="py-3 px-4 text-right text-slate-400 font-mono">
-                                        {log.timestamp}
+                            {tenantsList.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                                        {isLoadingTenants ? "Loading workspaces..." : "No workspaces registered yet."}
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                tenantsList.slice(0, 8).map((t) => (
+                                    <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
+                                        <td className="py-3 px-4 font-semibold text-slate-900">
+                                            {t.name}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <Badge variant="secondary" className="text-[11px]">
+                                                {planLabel(t.tenantSubscription?.plan)}
+                                            </Badge>
+                                        </td>
+                                        <td className="py-3 px-4 font-mono text-slate-500 text-[11px]">
+                                            {t.tenantSetting?.billingContactEmail || "—"}
+                                        </td>
+                                        <td className="py-3 px-4 text-slate-600">
+                                            {t.tenantSetting?.dbConnectionString
+                                                ? "Dedicated Instance"
+                                                : "Shared Pool"}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <Badge
+                                                className={
+                                                    t.isDisabled
+                                                        ? "bg-red-100 text-red-700 hover:bg-red-100 text-[10px]"
+                                                        : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[10px]"
+                                                }
+                                            >
+                                                {t.isDisabled ? "Disabled" : "Active"}
+                                            </Badge>
+                                        </td>
+                                        <td className="py-3 px-4 text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => navigate(`/super-admin/tenant/${t.id}`)}
+                                                className="h-7 text-xs text-blue-600 hover:text-blue-700"
+                                            >
+                                                Profile
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </CardContent>
