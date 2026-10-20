@@ -17,6 +17,7 @@ public record ProcurementDashboardAnalyticsDto
     public List<AbcVsAwardedItem> AbcVsAwarded { get; init; } = [];
     public List<QuarterlyKpiPoint> QuarterlyKpiComparison { get; init; } = [];
     public List<QuarterlyModeShiftPoint> ModeShiftByQuarter { get; init; } = [];
+    public List<PipelineFunnelTrendPoint> PipelineTrend { get; init; } = [];
     // YoY table
     public YearOverYearSummary YearOverYear { get; init; } = new();
 }
@@ -118,4 +119,13 @@ public record YearOverYearSummary
     public int PriorYearContractCount { get; init; }
     public double CurrentYearSavingsRate { get; init; }
     public double PriorYearSavingsRate { get; init; }
+}
+
+public record PipelineFunnelTrendPoint
+{
+    public string Month { get; init; } = string.Empty;
+    public int Requests { get; init; }
+    public int Bidding { get; init; }
+    public int Award { get; init; }
+    public int Ordering { get; init; }
 }

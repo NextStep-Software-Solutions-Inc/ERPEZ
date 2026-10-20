@@ -19,6 +19,8 @@ public class GetDashboardAnalyticsQueryHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<ProcurementDashboardAnalyticsDto>> Handle(
         GetDashboardAnalyticsQuery query, CancellationToken cancellationToken)
     {
+        var now = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(now);
         var targetYear = query.FiscalYear;
         var priorYear = targetYear - 1;
 
@@ -66,7 +68,7 @@ public class GetDashboardAnalyticsQueryHandler(IUnitOfWork unitOfWork)
         // 3. Procurement Mode Distribution
         var rfqs = await unitOfWork.RFQRepository.Query(r => !r.IsDeleted && r.CreatedAt.Year == targetYear)
             .Include(r => r.ModeOfProcurement)
-            .Select(r => new { r.Id, r.TotalAmount, r.CreatedAt, ModeName = r.ModeOfProcurement != null ? r.ModeOfProcurement.Name : "Public Bidding" })
+            .Select(r => new { r.Id, r.TotalAmount, r.CreatedAt, r.Deadline, r.Status, ModeName = r.ModeOfProcurement != null ? r.ModeOfProcurement.Name : "Public Bidding" })
             .ToListAsync(cancellationToken);
 
         var totalRfqAmount = rfqs.Sum(r => r.TotalAmount);
@@ -135,7 +137,7 @@ public class GetDashboardAnalyticsQueryHandler(IUnitOfWork unitOfWork)
         // 6. Top Suppliers by Award Amount
         var noas = await unitOfWork.NoticeOfAwardRepository.Query(n => !n.IsDeleted && n.CreatedAt.Year == targetYear)
             .Include(n => n.Supplier)
-            .Select(n => new { n.Id, n.AwardedAmount, SupplierName = n.Supplier != null ? n.Supplier.Name : "Supplier" })
+            .Select(n => new { n.Id, n.CreatedAt, n.AwardedAmount, n.ProcurementProjectId, SupplierName = n.Supplier != null ? n.Supplier.Name : "Supplier" })
             .ToListAsync(cancellationToken);
 
         var totalAwarded = noas.Sum(n => n.AwardedAmount);
@@ -152,30 +154,53 @@ public class GetDashboardAnalyticsQueryHandler(IUnitOfWork unitOfWork)
             .Take(10)
             .ToList();
 
-        // 7. Monthly Overdue Trend
+        // 7. Monthly Overdue Trend (Real DB Query across PR, RFQ, and NTP milestones)
+        var ntps = await unitOfWork.NoticeToProceedRepository.Query(n => !n.IsDeleted && n.CreatedAt.Year == targetYear)
+            .Select(n => new { n.Id, n.CreatedAt, n.DeliveryCompletionDeadline, n.Status })
+            .ToListAsync(cancellationToken);
+
         var overdueTrend = new List<MonthlyOverdueTrend>();
         for (int m = 1; m <= 12; m++)
         {
             var mPrs = prs.Where(p => p.CreatedAt.Month == m).ToList();
+            var mRfqs = rfqs.Where(r => r.CreatedAt.Month == m).ToList();
+            var mNtps = ntps.Where(n => n.CreatedAt.Month == m).ToList();
             overdueTrend.Add(new MonthlyOverdueTrend
             {
                 Month = monthNames[m - 1],
-                OverduePRs = mPrs.Count(p => p.Status == StatusEnum.Submitted),
-                OverdueRFQs = 0,
-                OverdueNTPs = 0
+                OverduePRs = mPrs.Count(p => p.Status == StatusEnum.Submitted && (now - p.CreatedAt).TotalDays > 7),
+                OverdueRFQs = mRfqs.Count(r => r.Deadline.HasValue && r.Deadline.Value < today && r.Status != StatusEnum.Approved),
+                OverdueNTPs = mNtps.Count(n => n.DeliveryCompletionDeadline.HasValue && n.DeliveryCompletionDeadline.Value < today && n.Status != NoticeToProceedStatus.Received && n.Status != NoticeToProceedStatus.Cancelled)
             });
         }
 
-        // 8. TAT Benchmark (Current Year vs Prior Year vs Target)
+        // Pipeline Funnel Monthly Trend (Real DB Counts)
+        var pipelineTrend = new List<PipelineFunnelTrendPoint>();
+        for (int m = 1; m <= 12; m++)
+        {
+            pipelineTrend.Add(new PipelineFunnelTrendPoint
+            {
+                Month = monthNames[m - 1],
+                Requests = prs.Count(p => p.CreatedAt.Month == m),
+                Bidding = rfqs.Count(r => r.CreatedAt.Month == m),
+                Award = noas.Count(n => n.CreatedAt.Month == m),
+                Ordering = pos.Count(p => p.CreatedAt.Month == m)
+            });
+        }
+
+        // 8. TAT Benchmark (Current Year vs Prior Year vs Target from Live DB)
+        var currentTat = await CalculateTatForYearAsync(targetYear, cancellationToken);
+        var priorTat = await CalculateTatForYearAsync(priorYear, cancellationToken);
+
         var tatBenchmark = new List<TatBenchmarkItem>
         {
-            new() { Stage = "PR → CPR", CurrentYearDays = 5.2, PriorYearDays = 6.8, TargetDays = 5.0 },
-            new() { Stage = "CPR → RFQ", CurrentYearDays = 3.8, PriorYearDays = 4.5, TargetDays = 3.0 },
-            new() { Stage = "RFQ → AOB", CurrentYearDays = 6.1, PriorYearDays = 7.9, TargetDays = 5.0 },
-            new() { Stage = "AOB → BAC Res", CurrentYearDays = 3.5, PriorYearDays = 4.2, TargetDays = 3.0 },
-            new() { Stage = "BAC Res → NOA", CurrentYearDays = 4.2, PriorYearDays = 5.1, TargetDays = 5.0 },
-            new() { Stage = "NOA → Contract", CurrentYearDays = 8.4, PriorYearDays = 11.2, TargetDays = 10.0 },
-            new() { Stage = "Contract → NTP", CurrentYearDays = 2.1, PriorYearDays = 2.8, TargetDays = 3.0 }
+            new() { Stage = "PR → CPR", CurrentYearDays = currentTat.PrCpr, PriorYearDays = priorTat.PrCpr, TargetDays = 5.0 },
+            new() { Stage = "CPR → RFQ", CurrentYearDays = currentTat.CprRfq, PriorYearDays = priorTat.CprRfq, TargetDays = 3.0 },
+            new() { Stage = "RFQ → AOB", CurrentYearDays = currentTat.RfqAob, PriorYearDays = priorTat.RfqAob, TargetDays = 5.0 },
+            new() { Stage = "AOB → BAC Res", CurrentYearDays = currentTat.AobBac, PriorYearDays = priorTat.AobBac, TargetDays = 3.0 },
+            new() { Stage = "BAC Res → NOA", CurrentYearDays = currentTat.BacNoa, PriorYearDays = priorTat.BacNoa, TargetDays = 5.0 },
+            new() { Stage = "NOA → Contract", CurrentYearDays = currentTat.NoaContract, PriorYearDays = priorTat.NoaContract, TargetDays = 10.0 },
+            new() { Stage = "Contract → NTP", CurrentYearDays = currentTat.ContractNtp, PriorYearDays = priorTat.ContractNtp, TargetDays = 7.0 }
         };
 
         // 9. ABC vs Awarded per Project
@@ -234,10 +259,28 @@ public class GetDashboardAnalyticsQueryHandler(IUnitOfWork unitOfWork)
             });
         }
 
-        // 12. YoY Summary
+        // 12. YoY Summary (Real DB calculation for Current & Prior Year Savings Rates)
         var priorPrCount = await unitOfWork.PurchaseRequestRepository.Query(p => !p.IsDeleted && p.CreatedAt.Year == priorYear).CountAsync(cancellationToken);
         var priorPOVal = await unitOfWork.PurchaseOrderRepository.Query(p => !p.IsDeleted && p.CreatedAt.Year == priorYear).SumAsync(p => p.TotalAmount, cancellationToken);
         var priorContractCount = await unitOfWork.ContractRepository.Query(c => !c.IsDeleted && c.CreatedAt.Year == priorYear).CountAsync(cancellationToken);
+
+        var currentProjIds = noas.Select(n => n.ProcurementProjectId).Distinct().ToList();
+        var currentABC = await unitOfWork.ProcurementProjectRepository.Query(p => currentProjIds.Contains(p.Id))
+            .SumAsync(p => p.ABC, cancellationToken);
+        var currentSavingsRate = currentABC > 0 && currentABC >= totalAwarded
+            ? Math.Round((double)((currentABC - totalAwarded) / currentABC) * 100.0, 1)
+            : 0.0;
+
+        var priorNoas = await unitOfWork.NoticeOfAwardRepository.Query(n => !n.IsDeleted && n.CreatedAt.Year == priorYear)
+            .Select(n => new { n.AwardedAmount, n.ProcurementProjectId })
+            .ToListAsync(cancellationToken);
+        var priorAwarded = priorNoas.Sum(n => n.AwardedAmount);
+        var priorProjIds = priorNoas.Select(n => n.ProcurementProjectId).Distinct().ToList();
+        var priorABC = await unitOfWork.ProcurementProjectRepository.Query(p => priorProjIds.Contains(p.Id))
+            .SumAsync(p => p.ABC, cancellationToken);
+        var priorSavingsRate = priorABC > 0 && priorABC >= priorAwarded
+            ? Math.Round((double)((priorABC - priorAwarded) / priorABC) * 100.0, 1)
+            : 0.0;
 
         var yoy = new YearOverYearSummary
         {
@@ -249,8 +292,8 @@ public class GetDashboardAnalyticsQueryHandler(IUnitOfWork unitOfWork)
             PriorYearPOValue = priorPOVal,
             CurrentYearContractCount = contracts.Count,
             PriorYearContractCount = priorContractCount,
-            CurrentYearSavingsRate = 7.4,
-            PriorYearSavingsRate = 5.8
+            CurrentYearSavingsRate = currentSavingsRate,
+            PriorYearSavingsRate = priorSavingsRate
         };
 
         var analytics = new ProcurementDashboardAnalyticsDto
@@ -266,9 +309,87 @@ public class GetDashboardAnalyticsQueryHandler(IUnitOfWork unitOfWork)
             AbcVsAwarded = abcVsAwarded,
             QuarterlyKpiComparison = quarterlyKpis,
             ModeShiftByQuarter = modeShift,
+            PipelineTrend = pipelineTrend,
             YearOverYear = yoy
         };
 
         return ApiResponse<ProcurementDashboardAnalyticsDto>.Success(analytics);
     }
+
+    private async Task<TatStageAverages> CalculateTatForYearAsync(int year, CancellationToken cancellationToken)
+    {
+        // 1. PR -> CPR
+        var prCprDates = await unitOfWork.ConsolidatedPRItemRepository.Query(c => !c.IsDeleted && c.CreatedAt.Year == year)
+            .Include(c => c.PurchaseRequest)
+            .Include(c => c.ConsolidatedPR)
+            .Where(c => c.PurchaseRequest != null && c.ConsolidatedPR != null)
+            .Select(c => new { PrCreated = c.PurchaseRequest.CreatedAt, CprCreated = c.ConsolidatedPR.CreatedAt })
+            .ToListAsync(cancellationToken);
+        var prCprDiffs = prCprDates.Select(x => (x.CprCreated - x.PrCreated).TotalDays).Where(d => d >= 0).ToList();
+        double prCpr = prCprDiffs.Count > 0 ? Math.Round(prCprDiffs.Average(), 1) : 0.0;
+
+        // 2. CPR -> RFQ
+        var cprRfqDates = await unitOfWork.RFQRepository.Query(r => !r.IsDeleted && r.CreatedAt.Year == year && r.ConsolidatedPRId.HasValue)
+            .Include(r => r.ConsolidatedPR)
+            .Where(r => r.ConsolidatedPR != null)
+            .Select(r => new { CprCreated = r.ConsolidatedPR!.CreatedAt, RfqCreated = r.CreatedAt })
+            .ToListAsync(cancellationToken);
+        var cprRfqDiffs = cprRfqDates.Select(x => (x.RfqCreated - x.CprCreated).TotalDays).Where(d => d >= 0).ToList();
+        double cprRfq = cprRfqDiffs.Count > 0 ? Math.Round(cprRfqDiffs.Average(), 1) : 0.0;
+
+        // 3. RFQ -> AOB
+        var rfqAobDates = await unitOfWork.AOBRFQMappingRepository.Query(m => !m.IsDeleted && m.CreatedAt.Year == year)
+            .Include(m => m.RFQ)
+            .Include(m => m.AOB)
+            .Where(m => m.RFQ != null && m.AOB != null)
+            .Select(m => new { RfqCreated = m.RFQ.CreatedAt, AobCreated = m.AOB.CreatedAt })
+            .ToListAsync(cancellationToken);
+        var rfqAobDiffs = rfqAobDates.Select(x => (x.AobCreated - x.RfqCreated).TotalDays).Where(d => d >= 0).ToList();
+        double rfqAob = rfqAobDiffs.Count > 0 ? Math.Round(rfqAobDiffs.Average(), 1) : 0.0;
+
+        // 4. AOB -> BAC Res
+        var aobBacDates = await unitOfWork.AOBProcurementProjectMappingRepository.Query(m => !m.IsDeleted && m.CreatedAt.Year == year)
+            .Include(m => m.AOB)
+            .Include(m => m.ProcurementProject)
+                .ThenInclude(p => p.BACResolutions)
+            .Where(m => m.AOB != null && m.ProcurementProject != null)
+            .Select(m => new {
+                AobCreated = m.AOB.CreatedAt,
+                BacCreated = m.ProcurementProject.BACResolutions.Where(b => !b.IsDeleted).OrderBy(b => b.CreatedAt).Select(b => (DateTime?)b.CreatedAt).FirstOrDefault()
+            })
+            .ToListAsync(cancellationToken);
+        var aobBacDiffs = aobBacDates.Where(x => x.BacCreated.HasValue).Select(x => (x.BacCreated!.Value - x.AobCreated).TotalDays).Where(d => d >= 0).ToList();
+        double aobBac = aobBacDiffs.Count > 0 ? Math.Round(aobBacDiffs.Average(), 1) : 0.0;
+
+        // 5. BAC Res -> NOA
+        var bacNoaDates = await unitOfWork.NoticeOfAwardRepository.Query(n => !n.IsDeleted && n.CreatedAt.Year == year && n.BACResolutionId != Guid.Empty)
+            .Include(n => n.BACResolution)
+            .Where(n => n.BACResolution != null)
+            .Select(n => new { BacCreated = n.BACResolution.CreatedAt, NoaCreated = n.CreatedAt })
+            .ToListAsync(cancellationToken);
+        var bacNoaDiffs = bacNoaDates.Select(x => (x.NoaCreated - x.BacCreated).TotalDays).Where(d => d >= 0).ToList();
+        double bacNoa = bacNoaDiffs.Count > 0 ? Math.Round(bacNoaDiffs.Average(), 1) : 0.0;
+
+        // 6. NOA -> Contract
+        var noaContractDates = await unitOfWork.ContractRepository.Query(c => !c.IsDeleted && c.CreatedAt.Year == year && c.NoticeOfAwardId != Guid.Empty)
+            .Include(c => c.NoticeOfAward)
+            .Where(c => c.NoticeOfAward != null)
+            .Select(c => new { NoaCreated = c.NoticeOfAward.CreatedAt, ContractCreated = c.CreatedAt })
+            .ToListAsync(cancellationToken);
+        var noaContractDiffs = noaContractDates.Select(x => (x.ContractCreated - x.NoaCreated).TotalDays).Where(d => d >= 0).ToList();
+        double noaContract = noaContractDiffs.Count > 0 ? Math.Round(noaContractDiffs.Average(), 1) : 0.0;
+
+        // 7. Contract -> NTP
+        var contractNtpDates = await unitOfWork.NoticeToProceedRepository.Query(n => !n.IsDeleted && n.CreatedAt.Year == year && n.ContractId != Guid.Empty)
+            .Include(n => n.Contract)
+            .Where(n => n.Contract != null)
+            .Select(n => new { ContractCreated = n.Contract.CreatedAt, NtpCreated = n.CreatedAt })
+            .ToListAsync(cancellationToken);
+        var contractNtpDiffs = contractNtpDates.Select(x => (x.NtpCreated - x.ContractCreated).TotalDays).Where(d => d >= 0).ToList();
+        double contractNtp = contractNtpDiffs.Count > 0 ? Math.Round(contractNtpDiffs.Average(), 1) : 0.0;
+
+        return new TatStageAverages(prCpr, cprRfq, rfqAob, aobBac, bacNoa, noaContract, contractNtp);
+    }
+
+    private record TatStageAverages(double PrCpr, double CprRfq, double RfqAob, double AobBac, double BacNoa, double NoaContract, double ContractNtp);
 }

@@ -162,6 +162,36 @@ public class GetDashboardSummaryQueryHandler(IUnitOfWork unitOfWork)
             ? Math.Round((double)((projectsAbc - totalNOAAmount) / projectsAbc) * 100.0, 1)
             : 0;
 
+        // Prior Year Savings Rate for YoY
+        var priorNoas = await unitOfWork.NoticeOfAwardRepository.Query(n => !n.IsDeleted && n.CreatedAt.Year == priorYear)
+            .Select(n => new { n.AwardedAmount, n.ProcurementProjectId })
+            .ToListAsync(cancellationToken);
+        var priorAwarded = priorNoas.Sum(n => n.AwardedAmount);
+        var priorProjIds = priorNoas.Select(n => n.ProcurementProjectId).Distinct().ToList();
+        var priorABC = await unitOfWork.ProcurementProjectRepository.Query(p => priorProjIds.Contains(p.Id))
+            .SumAsync(p => p.ABC, cancellationToken);
+        var priorSavingsRate = priorABC > 0 && priorABC >= priorAwarded
+            ? Math.Round((double)((priorABC - priorAwarded) / priorABC) * 100.0, 1)
+            : 0;
+        var savingsRateChangeYoY = CalcYoY(savingsRate, priorSavingsRate);
+
+        // Real Avg Procurement TAT Days (PR creation -> NOA issuance for awarded projects)
+        var prTatDates = await unitOfWork.PurchaseRequestRepository.Query(p => !p.IsDeleted && p.ProcurementProjectId.HasValue && projectIdsWithNOA.Contains(p.ProcurementProjectId.Value))
+            .Select(p => new { p.ProcurementProjectId, p.CreatedAt })
+            .ToListAsync(cancellationToken);
+        
+        var noaTatDiffs = new List<double>();
+        foreach (var noa in noaList)
+        {
+            var matchingPr = prTatDates.Where(p => p.ProcurementProjectId == noa.ProcurementProjectId).OrderBy(p => p.CreatedAt).FirstOrDefault();
+            if (matchingPr != null)
+            {
+                var diff = (noa.CreatedAt - matchingPr.CreatedAt).TotalDays;
+                if (diff >= 0) noaTatDiffs.Add(diff);
+            }
+        }
+        double avgProcurementTatDays = noaTatDiffs.Count > 0 ? Math.Round(noaTatDiffs.Average(), 1) : 0.0;
+
         // Budget Utilization Rate
         var totalBudget = await unitOfWork.PurchaseRequestRepository.GetTotalApprovedPPMPBudgetAsync(query.OfficeId, PRType.NonCSE, cancellationToken);
         var budgetUtilizationRate = totalBudget > 0 ? Math.Round((double)(totalPOValue / totalBudget) * 100.0, 1) : 0;
@@ -213,7 +243,7 @@ public class GetDashboardSummaryQueryHandler(IUnitOfWork unitOfWork)
             DirectAcquisitionCount = directAcquisitionCount,
             DirectAcquisitionAmount = directAcquisitionAmount,
             OverdueItemsCount = overdueItemsCount,
-            AvgProcurementTatDays = 14.2,
+            AvgProcurementTatDays = avgProcurementTatDays,
             SavingsRate = savingsRate,
             BudgetUtilizationRate = budgetUtilizationRate,
 
@@ -223,7 +253,7 @@ public class GetDashboardSummaryQueryHandler(IUnitOfWork unitOfWork)
             BACChangeYoY = bacChangeYoY,
             POValueChangeYoY = poValueChangeYoY,
             ContractChangeYoY = contractChangeYoY,
-            SavingsRateChangeYoY = null,
+            SavingsRateChangeYoY = savingsRateChangeYoY,
 
             Requests = new PipelineStageSummary
             {

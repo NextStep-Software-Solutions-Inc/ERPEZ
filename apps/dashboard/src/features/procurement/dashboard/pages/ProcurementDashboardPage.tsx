@@ -204,7 +204,9 @@ export default function ProcurementDashboardPage() {
     stalledWeight: 0,
   }))
 
-  const funnelTrendData = (analytics?.monthlyPRCount || []).map((m) => ({
+  const funnelTrendData = analytics?.pipelineTrend && analytics.pipelineTrend.length > 0
+    ? analytics.pipelineTrend
+    : (analytics?.monthlyPRCount || []).map((m) => ({
     month: m.month,
     requests: m.draft + m.submitted + m.approved,
     bidding: m.submitted,

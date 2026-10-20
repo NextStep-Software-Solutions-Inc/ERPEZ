@@ -82,10 +82,15 @@ public class GetSupplierPerformanceDetailQueryHandler(IUnitOfWork unitOfWork)
         int totalEvaluated = contracts.Count;
         double onTimeRate = totalEvaluated > 0
             ? Math.Round(((double)(totalEvaluated - delayedCount) / totalEvaluated) * 100.0, 1)
-            : 97.5; // High baseline default for compliant supplier
+            : 100.0;
 
-        double qualityAcceptanceRate = Math.Clamp(Math.Round(onTimeRate * 0.98), 85.0, 99.5);
-        decimal ldAmount = delayedCount * 12500m; // Approximate statutory liquidated damages calculation
+        double qualityAcceptanceRate = totalEvaluated > 0
+            ? Math.Round(((double)completedCount / totalEvaluated) * 100.0, 1)
+            : 100.0;
+
+        // RA 9184 statutory liquidated damages: 0.1% (0.001) per day of delay * awarded amount
+        decimal ldAmount = recentDeliveries.Where(d => d.WasDelayed && d.DelayDays > 0)
+            .Sum(d => 0.001m * d.Amount * d.DelayDays);
 
         var result = new SupplierPerformanceDetailDto
         {

@@ -279,6 +279,14 @@ export interface QuarterlyKpiPoint {
   poValue: number
 }
 
+export interface PipelineFunnelTrendPoint {
+  month: string
+  requests: number
+  bidding: number
+  award: number
+  ordering: number
+}
+
 export interface QuarterlyModeShiftPoint {
   quarter: string
   biddingCount: number
@@ -312,6 +320,7 @@ export interface ProcurementDashboardAnalytics {
   abcVsAwarded: Array<AbcVsAwardedItem>
   quarterlyKpiComparison: Array<QuarterlyKpiPoint>
   modeShiftByQuarter: Array<QuarterlyModeShiftPoint>
+  pipelineTrend?: Array<PipelineFunnelTrendPoint>
   yearOverYear: YearOverYearSummary
 }
 
