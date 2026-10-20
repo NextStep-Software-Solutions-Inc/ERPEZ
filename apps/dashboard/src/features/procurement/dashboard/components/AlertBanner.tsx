@@ -1,101 +1,114 @@
-import { AlertTriangle, Clock, FileSignature, ArrowRight } from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
-import type { AlertItem } from '../types'
-import { cn } from '@/lib/utils'
+import { AlertCircle, AlertTriangle, CheckCircle2, Clock, TrendingUp } from 'lucide-react'
+import { CardInfoTooltip } from './CardInfoTooltip'
+import type { ProcurementDashboardSummary } from '../types/dashboardV2'
 
-interface Props {
-  alerts: AlertItem[]
-  isLoading?: boolean
+interface AlertBannerProps {
+  summary?: ProcurementDashboardSummary
 }
 
-const alertConfig = {
-  critical: {
-    bg: 'bg-red-50 border-red-200 hover:bg-red-100',
-    iconBg: 'bg-red-100',
-    iconColor: 'text-red-600',
-    countColor: 'text-red-700',
-    labelColor: 'text-red-900',
-    sublabelColor: 'text-red-500',
-    linkColor: 'text-red-600',
-    icon: AlertTriangle,
-  },
-  warning: {
-    bg: 'bg-amber-50 border-amber-200 hover:bg-amber-100',
-    iconBg: 'bg-amber-100',
-    iconColor: 'text-amber-600',
-    countColor: 'text-amber-700',
-    labelColor: 'text-amber-900',
-    sublabelColor: 'text-amber-500',
-    linkColor: 'text-amber-600',
-    icon: Clock,
-  },
-  info: {
-    bg: 'bg-blue-50 border-blue-200 hover:bg-blue-100',
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-    countColor: 'text-blue-700',
-    labelColor: 'text-blue-900',
-    sublabelColor: 'text-blue-500',
-    linkColor: 'text-blue-600',
-    icon: FileSignature,
-  },
-} as const
+export function AlertBanner({ summary }: AlertBannerProps) {
+  if (!summary) return null
 
-function AlertCard({ alert }: { alert: AlertItem }) {
-  const navigate = useNavigate()
-  const config = alertConfig[alert.severity]
-  const Icon = config.icon
+  const alerts = [
+    {
+      id: 'overdue-prs',
+      title: 'Overdue PRs',
+      count: summary.overduePRCount,
+      description: 'Submitted PRs awaiting action > 7 days',
+      severity: 'critical',
+      show: summary.overduePRCount > 0,
+      icon: AlertCircle,
+    },
+    {
+      id: 'rfqs-closing',
+      title: 'RFQs Closing Soon',
+      count: summary.rfqsClosingIn3Days,
+      description: 'Quotation deadline in ≤ 3 days or overdue',
+      severity: 'warning',
+      show: summary.rfqsClosingIn3Days > 0,
+      icon: Clock,
+    },
+    {
+      id: 'pending-ntps',
+      title: 'Pending NTP Issuance',
+      count: summary.pendingNTPCount,
+      description: 'Executed contracts awaiting Notice to Proceed',
+      severity: 'info',
+      show: summary.pendingNTPCount > 0,
+      icon: AlertTriangle,
+    },
+    {
+      id: 'stalled-procurements',
+      title: 'Stalled Procurements',
+      count: summary.stalledProcurementCount,
+      description: 'Items with zero movement for 14+ days',
+      severity: 'warning',
+      show: summary.stalledProcurementCount > 0,
+      icon: AlertCircle,
+    },
+    {
+      id: 'budget-near-limit',
+      title: 'Budget Threshold Warning',
+      count: summary.budgetUtilizationRate,
+      description: `Budget absorption currently at ${summary.budgetUtilizationRate}% (>90% threshold)`,
+      severity: 'critical',
+      show: summary.budgetNearLimit,
+      icon: TrendingUp,
+    },
+  ].filter((a) => a.show)
 
-  return (
-    <button
-      onClick={() => navigate({ to: alert.route as Parameters<typeof navigate>[0]['to'] })}
-      className={cn(
-        'flex items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-150 cursor-pointer flex-1 min-w-0',
-        config.bg,
-      )}
-    >
-      <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', config.iconBg)}>
-        <Icon className={cn('h-5 w-5', config.iconColor)} />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <p className={cn('text-2xl font-black leading-none', config.countColor)}>{alert.count}</p>
-        <p className={cn('text-sm font-semibold mt-0.5 truncate', config.labelColor)}>{alert.label}</p>
-        <p className={cn('text-xs mt-0.5', config.sublabelColor)}>{alert.sublabel}</p>
-      </div>
-
-      <ArrowRight className={cn('h-4 w-4 shrink-0', config.linkColor)} />
-    </button>
-  )
-}
-
-function AlertSkeleton() {
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-gray-100 p-4 flex-1 animate-pulse">
-      <div className="h-10 w-10 rounded-xl bg-gray-200" />
-      <div className="flex-1 space-y-2">
-        <div className="h-6 w-8 bg-gray-200 rounded" />
-        <div className="h-3 w-40 bg-gray-200 rounded" />
-        <div className="h-3 w-28 bg-gray-200 rounded" />
-      </div>
-    </div>
-  )
-}
-
-export function AlertBanner({ alerts, isLoading }: Props) {
-  if (isLoading) {
+  if (alerts.length === 0) {
     return (
-      <div className="flex flex-col sm:flex-row gap-3">
-        {Array.from({ length: 3 }).map((_, i) => <AlertSkeleton key={i} />)}
+      <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-xl p-3.5 flex items-center gap-3 mb-6">
+        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+        <div>
+          <span className="font-semibold text-sm inline-flex items-center gap-1.5">
+            <span>All Procurement Operations On Track</span>
+            <CardInfoTooltip infoKey="panel-alert-banner" iconClassName="w-3 h-3" />
+          </span>
+          <span className="text-xs text-muted-foreground ml-2">No overdue PRs, closing RFQs, or pending NTP bottlenecks detected.</span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3">
-      {alerts.map((alert) => (
-        <AlertCard key={alert.id} alert={alert} />
-      ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 mb-6">
+      {alerts.map((alert) => {
+        const Icon = alert.icon
+        const isCritical = alert.severity === 'critical'
+        const isWarning = alert.severity === 'warning'
+
+        const colorClasses = isCritical
+          ? 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-400'
+          : isWarning
+          ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
+          : 'bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400'
+
+        const badgeClasses = isCritical
+          ? 'bg-rose-500 text-white'
+          : isWarning
+          ? 'bg-amber-500 text-white'
+          : 'bg-blue-500 text-white'
+
+        return (
+          <div
+            key={alert.id}
+            className={`border rounded-xl p-3.5 flex flex-col justify-between shadow-xs transition-all ${colorClasses}`}
+          >
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="font-semibold text-xs">{alert.title}</span>
+              </div>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeClasses}`}>
+                {typeof alert.count === 'number' && alert.id === 'budget-near-limit' ? `${alert.count}%` : alert.count}
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">{alert.description}</p>
+          </div>
+        )
+      })}
     </div>
   )
 }

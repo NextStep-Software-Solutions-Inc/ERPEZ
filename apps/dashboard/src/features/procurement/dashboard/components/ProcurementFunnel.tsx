@@ -1,19 +1,19 @@
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  AlertCircle,
+  Award,
+  ChevronRight,
   FileText,
   Gavel,
-  Award,
-  ShoppingCart,
-  ChevronRight,
-  AlertCircle,
   GitFork,
+  ShoppingCart,
 } from 'lucide-react'
 import type { FunnelStage, FunnelSubItem } from '../types'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
 interface Props {
-  stages: FunnelStage[]
+  stages: Array<FunnelStage>
   isLoading?: boolean
 }
 
