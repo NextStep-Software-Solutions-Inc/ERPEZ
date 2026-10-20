@@ -19,15 +19,46 @@ public class GetBudgetBurnAnalyticsQueryHandler(IUnitOfWork unitOfWork)
     {
         var targetYear = query.FiscalYear;
 
-        // 1. Approved Budget (PPMP / APP)
-        var totalBudget = await unitOfWork.PurchaseRequestRepository.GetTotalApprovedPPMPBudgetAsync(
-            query.OfficeId, PRType.NonCSE, cancellationToken);
+        // 1. Approved Budget (APP / PPMP)
+        var appItemQuery = unitOfWork.APPItemRepository.Query(a => !a.IsDeleted &&
+            ((a.APP != null && a.APP.FiscalYear != null) ? a.APP.FiscalYear.Year == targetYear : a.CreatedAt.Year == targetYear));
 
+        if (query.OfficeId.HasValue && query.OfficeId.Value != Guid.Empty)
+        {
+            appItemQuery = appItemQuery.Where(a => a.OfficeId == query.OfficeId.Value);
+        }
+
+        var appItems = await appItemQuery
+            .Include(a => a.PPMPItem)
+                .ThenInclude(p => p.PPMPItemAllocations)
+            .ToListAsync(cancellationToken);
+
+        decimal appItemSum = 0m;
+        foreach (var a in appItems)
+        {
+            if (a.EstimatedBudgetOverride.HasValue && a.EstimatedBudgetOverride.Value > 0)
+            {
+                appItemSum += a.EstimatedBudgetOverride.Value;
+            }
+            else if (a.PPMPItem != null)
+            {
+                var allocSum = a.PPMPItem.PPMPItemAllocations?
+                    .Where(al => !al.IsDeleted)
+                    .Sum(al => al.Amount > 0 ? al.Amount : al.Quantity * a.PPMPItem.UnitPrice) ?? 0m;
+                if (allocSum > 0)
+                    appItemSum += allocSum;
+                else if (a.PPMPItem.PlannedQuantity > 0 && a.PPMPItem.UnitPrice > 0)
+                    appItemSum += a.PPMPItem.PlannedQuantity * a.PPMPItem.UnitPrice;
+                else
+                    appItemSum += a.PPMPItem.UnitPrice;
+            }
+        }
+
+        var totalBudget = appItemSum;
         if (totalBudget <= 0)
         {
-            var appItemSum = await unitOfWork.APPItemRepository.Query(a => !a.IsDeleted && a.CreatedAt.Year == targetYear)
-                .SumAsync(a => a.EstimatedBudgetOverride ?? 0m, cancellationToken);
-            if (appItemSum > 0) totalBudget = appItemSum;
+            totalBudget = await unitOfWork.PurchaseRequestRepository.GetTotalApprovedPPMPBudgetAsync(
+                query.OfficeId, PRType.NonCSE, cancellationToken);
         }
 
         // 2. Committed Contracts (Executed POs + Awarded Contracts)
@@ -44,30 +75,34 @@ public class GetBudgetBurnAnalyticsQueryHandler(IUnitOfWork unitOfWork)
 
         // 3. Pending Commitments (PRs in Bidding / Evaluation / NOA)
         var prQuery = unitOfWork.PurchaseRequestRepository.Query(p => !p.IsDeleted && p.CreatedAt.Year == targetYear);
-        if (query.OfficeId.HasValue)
+        if (query.OfficeId.HasValue && query.OfficeId.Value != Guid.Empty)
         {
             prQuery = prQuery.Where(p => p.OfficeId == query.OfficeId.Value);
         }
 
         var prs = await prQuery
             .Include(p => p.ProcurementProject)
+                .ThenInclude(proj => proj!.APPItemLinks)
             .Select(p => new
             {
                 p.Id,
                 p.PPMPId,
                 p.ProcurementProjectId,
-                HasAPPItem = p.ProcurementProject != null && p.ProcurementProject.APPItemId.HasValue,
+                HasAPPItem = p.ProcurementProject != null && (p.ProcurementProject.APPItemId.HasValue || (p.ProcurementProject.APPItemLinks != null && p.ProcurementProject.APPItemLinks.Any())),
                 p.TotalAmount,
                 p.Status
             })
             .ToListAsync(cancellationToken);
 
         var pendingCommitments = prs
-            .Where(p => p.Status != StatusEnum.Approved && p.Status != StatusEnum.Completed && p.Status != StatusEnum.Returned)
+            .Where(p => p.Status != StatusEnum.Approved && p.Status != StatusEnum.Completed && p.Status != StatusEnum.Returned && p.Status != StatusEnum.Failed)
             .Sum(p => p.TotalAmount);
 
-        // 4. Unencumbered Balance
-        var unencumbered = totalBudget > totalCommitted ? totalBudget - totalCommitted : 0m;
+        // 4. Unencumbered Balance & Burn Rate
+        var unencumbered = totalBudget >= (totalCommitted + pendingCommitments)
+            ? totalBudget - totalCommitted - pendingCommitments
+            : (totalBudget >= totalCommitted ? totalBudget - totalCommitted : 0m);
+
         var burnPct = totalBudget > 0 ? Math.Round((double)(totalCommitted / totalBudget) * 100.0, 1) : 0.0;
 
         // 5. Unprogrammed Requisitions: PRs without PPMP and without APP project link

@@ -158,7 +158,19 @@ public class GetDashboardScorecardQueryHandler(IUnitOfWork unitOfWork)
         double bacEfficiencyScore = Math.Clamp(Math.Round(100.0 - (avgBacTat * 4.0)), 60.0, 100.0);
         double planningAdherenceScore = appCoverage > 0 ? appCoverage : 100.0;
 
-        double opportunityPostingRate = totalRfqs > 0 ? Math.Min(100.0, Math.Round((double)(totalRfqs - failedRfqs) / totalRfqs * 100.0, 1)) : 100.0;
+        // PhilGEPS Statutory Opportunity & Award Posting Adherence (RA 9184 Sec. 8 & RA 12009 Sec. 66)
+        var noaPostedCount = await unitOfWork.NoticeOfAwardRepository.Query(n => !n.IsDeleted && n.CreatedAt.Year == targetYear && (!string.IsNullOrEmpty(n.PhilGEPSReferenceNumber) || n.PhilGEPSPostedAt.HasValue))
+            .CountAsync(cancellationToken);
+        var ntpQuery = unitOfWork.NoticeToProceedRepository.Query(n => !n.IsDeleted && n.CreatedAt.Year == targetYear);
+        var ntpTotal = await ntpQuery.CountAsync(cancellationToken);
+        var ntpPostedCount = await ntpQuery.CountAsync(n => !string.IsNullOrEmpty(n.PhilGEPSReferenceNumber) || n.PhilGEPSPostedAt.HasValue, cancellationToken);
+
+        int totalStatutoryNotices = noas.Count + ntpTotal;
+        int totalPostedNotices = noaPostedCount + ntpPostedCount;
+
+        double opportunityPostingRate = totalStatutoryNotices > 0
+            ? Math.Min(100.0, Math.Round((double)totalPostedNotices / totalStatutoryNotices * 100.0, 1))
+            : (totalRfqs > 0 ? Math.Min(100.0, Math.Round((double)(totalRfqs - failedRfqs) / totalRfqs * 100.0, 1)) : 100.0);
         double turnaroundEfficiency = Math.Clamp(Math.Round(100.0 - (reopeningRate * 1.5) - (avgNoaTat * 3.0)), 60.0, 100.0);
 
         double disputeResolutionRate = Math.Clamp(100.0 - bidFailureRate, 70.0, 100.0);
