@@ -38,7 +38,7 @@ public sealed class NoticeOfAwardPdfRenderer : BasePdfRenderer, IDocumentRendere
                         request.ProcuringEntityName,
                         request.ProcuringEntityAddress,
                         logoBytes,
-                        officeName: "OFFICE OF THE HEAD OF THE PROCURING ENTITY",
+                        officeName: null,
                         alignment: request.LetterheadAlignment);
                 });
 
