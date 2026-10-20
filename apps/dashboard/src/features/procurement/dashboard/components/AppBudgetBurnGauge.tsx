@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, DollarSign, ShieldAlert, TrendingUp } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, PhilippinePeso, ShieldAlert, TrendingUp } from 'lucide-react'
 import type { BudgetBurnAnalytics } from '../types/dashboardV2'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CardInfoTooltip } from './CardInfoTooltip'
@@ -44,7 +44,7 @@ export function AppBudgetBurnGauge({ data, isLoading, onFilterUnprogrammed }: Ap
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <DollarSign className="w-5 h-5" />
+              <PhilippinePeso className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
