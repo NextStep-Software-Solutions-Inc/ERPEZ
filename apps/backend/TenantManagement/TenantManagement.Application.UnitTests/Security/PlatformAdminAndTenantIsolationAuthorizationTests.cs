@@ -335,7 +335,7 @@ public class PlatformAdminAndTenantIsolationAuthorizationTests : IDisposable
             })
             .Build();
 
-        var handler = new PermissionAuthorizationHandler(authServiceMock.Object, tenantContextMock.Object, config);
+        var handler = new PermissionAuthorizationHandler(authServiceMock.Object, tenantContextMock.Object, configuration: config);
         var requirement = new PermissionRequirement(PlatformPermissions.inquiriesView);
 
         // Principal has cryptographically verified email claim matching break-glass email
@@ -365,7 +365,7 @@ public class PlatformAdminAndTenantIsolationAuthorizationTests : IDisposable
             })
             .Build();
 
-        var handler = new PermissionAuthorizationHandler(authServiceMock.Object, tenantContextMock.Object, config);
+        var handler = new PermissionAuthorizationHandler(authServiceMock.Object, tenantContextMock.Object, configuration: config);
         var requirement = new PermissionRequirement(PlatformPermissions.inquiriesView);
 
         // Authenticated user with non-matching verified email
@@ -398,7 +398,7 @@ public class PlatformAdminAndTenantIsolationAuthorizationTests : IDisposable
             })
             .Build();
 
-        var handler = new PermissionAuthorizationHandler(authServiceMock.Object, tenantContextMock.Object, config);
+        var handler = new PermissionAuthorizationHandler(authServiceMock.Object, tenantContextMock.Object, configuration: config);
         var requirement = new PermissionRequirement(PlatformPermissions.inquiriesView);
 
         // Authenticated user without any email claim
