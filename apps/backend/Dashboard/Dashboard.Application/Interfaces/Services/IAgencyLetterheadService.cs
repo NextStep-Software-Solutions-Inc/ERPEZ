@@ -12,6 +12,7 @@ public sealed record AgencyLetterheadDto
     public string OfficeName { get; init; } = string.Empty;
     public bool HasLogo { get; init; }
     public byte[]? LogoBytes { get; init; }
+    public string LetterheadAlignment { get; init; } = "Default";
 }
 
 public sealed record UpdateAgencyLetterheadRequest
@@ -20,6 +21,7 @@ public sealed record UpdateAgencyLetterheadRequest
     public string Address { get; init; } = string.Empty;
     public byte[]? LogoBytes { get; init; }
     public bool UpdateLogo { get; init; }
+    public string? LetterheadAlignment { get; init; }
 }
 
 public interface IAgencyLetterheadService

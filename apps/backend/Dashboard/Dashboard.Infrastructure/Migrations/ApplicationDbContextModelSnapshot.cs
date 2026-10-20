@@ -746,6 +746,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("LetterheadAlignment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Default");
+
                     b.Property<byte[]>("LogoImage")
                         .HasColumnType("bytea");
 
@@ -1303,13 +1310,15 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DeliveryUnitId");
+
                     b.HasIndex("KPIId");
 
                     b.HasIndex("KPITargetId");
 
                     b.HasIndex("TenantId", "Id");
 
-                    b.HasIndex("DeliveryUnitId", "KPIId", "KPITargetId")
+                    b.HasIndex("TenantId", "DeliveryUnitId", "KPIId", "KPITargetId")
                         .IsUnique();
 
                     b.ToTable("DUKPITargetAssignments", "planning");
@@ -6355,10 +6364,12 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RatingScaleTemplateId", "RatingValue")
-                        .IsUnique();
+                    b.HasIndex("RatingScaleTemplateId");
 
                     b.HasIndex("TenantId", "Id");
+
+                    b.HasIndex("TenantId", "RatingScaleTemplateId", "RatingValue")
+                        .IsUnique();
 
                     b.ToTable("RatingScaleLevels", "planning");
                 });

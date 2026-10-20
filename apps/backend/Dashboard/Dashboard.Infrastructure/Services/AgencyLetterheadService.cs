@@ -31,7 +31,8 @@ public class AgencyLetterheadService(IUnitOfWork unitOfWork) : IAgencyLetterhead
                 Address = agency.Address ?? string.Empty,
                 OfficeName = officeName,
                 HasLogo = agency.LogoImage != null && agency.LogoImage.Length > 0,
-                LogoBytes = agency.LogoImage
+                LogoBytes = agency.LogoImage,
+                LetterheadAlignment = agency.LetterheadAlignment ?? "Default"
             };
         }
 
@@ -58,7 +59,8 @@ public class AgencyLetterheadService(IUnitOfWork unitOfWork) : IAgencyLetterhead
             Address = string.Empty,
             OfficeName = officeName,
             HasLogo = false,
-            LogoBytes = null
+            LogoBytes = null,
+            LetterheadAlignment = "Default"
         };
     }
 
@@ -71,7 +73,8 @@ public class AgencyLetterheadService(IUnitOfWork unitOfWork) : IAgencyLetterhead
             {
                 Name = request.Name.Trim(),
                 Address = request.Address?.Trim() ?? string.Empty,
-                LogoImage = request.UpdateLogo ? request.LogoBytes : null
+                LogoImage = request.UpdateLogo ? request.LogoBytes : null,
+                LetterheadAlignment = !string.IsNullOrWhiteSpace(request.LetterheadAlignment) ? request.LetterheadAlignment.Trim() : "Default"
             };
             await unitOfWork.AgencyRepository.AddAsync(agency, cancellationToken);
         }
@@ -82,6 +85,10 @@ public class AgencyLetterheadService(IUnitOfWork unitOfWork) : IAgencyLetterhead
             if (request.UpdateLogo)
             {
                 agency.LogoImage = request.LogoBytes;
+            }
+            if (!string.IsNullOrWhiteSpace(request.LetterheadAlignment))
+            {
+                agency.LetterheadAlignment = request.LetterheadAlignment.Trim();
             }
             unitOfWork.AgencyRepository.Update(agency);
         }
@@ -95,7 +102,8 @@ public class AgencyLetterheadService(IUnitOfWork unitOfWork) : IAgencyLetterhead
             Address = agency.Address,
             OfficeName = string.Empty,
             HasLogo = agency.LogoImage != null && agency.LogoImage.Length > 0,
-            LogoBytes = agency.LogoImage
+            LogoBytes = agency.LogoImage,
+            LetterheadAlignment = agency.LetterheadAlignment ?? "Default"
         };
     }
 

@@ -7,6 +7,7 @@ import {
   fetchAgencyLogoBlob,
   formatLogoUrl,
   type AgencyLetterheadDto,
+  type LetterheadAlignmentType,
 } from '@/services/api/agencyLetterhead'
 import {
   Card,
@@ -16,6 +17,13 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -104,6 +112,7 @@ export function AgencyLetterheadSettings() {
   const [agencyName, setAgencyName] = React.useState('')
   const [address, setAddress] = React.useState('')
   const [officeName, setOfficeName] = React.useState('')
+  const [letterheadAlignment, setLetterheadAlignment] = React.useState<LetterheadAlignmentType>('Default')
   const [logoPreviewUrl, setLogoPreviewUrl] = React.useState<string | null>(null)
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
 
@@ -122,6 +131,7 @@ export function AgencyLetterheadSettings() {
       setAgencyName(res.name || '')
       setAddress(res.address || '')
       setOfficeName(res.officeName || '')
+      setLetterheadAlignment((res.letterheadAlignment as LetterheadAlignmentType) || 'Default')
 
       let resolvedLogo = formatLogoUrl(res)
       if (!resolvedLogo && res.hasLogo) {
@@ -217,6 +227,7 @@ export function AgencyLetterheadSettings() {
       const res = await updateAgencyLetterhead({
         name: agencyName.trim(),
         address: address.trim(),
+        letterheadAlignment,
       })
       setData(res)
       if (res.hasLogo && !selectedFile) {
@@ -254,7 +265,11 @@ export function AgencyLetterheadSettings() {
               <CardTitle className="text-base font-semibold">Live Document Header Preview</CardTitle>
             </div>
             <Badge variant="outline" className="text-xs">
-              COA GAM Appendix 61 Layout
+              {letterheadAlignment === 'Center'
+                ? 'Centered Layout'
+                : letterheadAlignment === 'Left'
+                ? 'Left-Aligned Layout'
+                : 'System Default Layout (Tabular: Left, Notices: Centered)'}
             </Badge>
           </div>
           <CardDescription>
@@ -267,26 +282,23 @@ export function AgencyLetterheadSettings() {
               Appendix 61
             </div>
 
-            <div className="flex items-center justify-between gap-4">
-              {/* Logo Area */}
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-dashed bg-muted/40">
-                {logoPreviewUrl ? (
-                  <img
-                    src={logoPreviewUrl}
-                    alt="Agency Logo"
-                    className="max-h-12 max-w-12 object-contain"
-                    onError={() => setLogoPreviewUrl(null)}
-                  />
-                ) : (
-                  <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
-                )}
-              </div>
-
-              {/* Title & Entity Details */}
-              <div className="flex-1 text-center">
-                <div className="text-xs font-bold uppercase tracking-wider text-primary">
-                  PURCHASE ORDER
+            {letterheadAlignment === 'Center' ? (
+              <div className="space-y-1.5 text-center">
+                <div className="flex justify-center pb-1">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-dashed bg-muted/40">
+                    {logoPreviewUrl ? (
+                      <img
+                        src={logoPreviewUrl}
+                        alt="Agency Logo"
+                        className="max-h-12 max-w-12 object-contain"
+                        onError={() => setLogoPreviewUrl(null)}
+                      />
+                    ) : (
+                      <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+                    )}
+                  </div>
                 </div>
+                <div className="text-[10px] text-muted-foreground">Republic of the Philippines</div>
                 <div className="text-sm font-bold tracking-tight text-foreground">
                   {agencyName || 'Agency Name'}
                 </div>
@@ -298,13 +310,54 @@ export function AgencyLetterheadSettings() {
                     {officeName}
                   </div>
                 )}
+                <div className="mx-auto my-2.5 h-[0.5px] w-full max-w-md bg-border" />
+                <div className="text-xs font-bold uppercase tracking-wider text-primary">
+                  PURCHASE ORDER
+                </div>
+                <div className="mx-auto mt-1 h-[1.5px] max-w-[180px] bg-foreground/80" />
               </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-4">
+                  {/* Logo Area */}
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-dashed bg-muted/40">
+                    {logoPreviewUrl ? (
+                      <img
+                        src={logoPreviewUrl}
+                        alt="Agency Logo"
+                        className="max-h-12 max-w-12 object-contain"
+                        onError={() => setLogoPreviewUrl(null)}
+                      />
+                    ) : (
+                      <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+                    )}
+                  </div>
 
-              {/* Symmetrical placeholder for visual centering */}
-              <div className="h-12 w-12 shrink-0 opacity-0" />
-            </div>
+                  {/* Title & Entity Details */}
+                  <div className="flex-1 text-left">
+                    <div className="text-[10px] text-muted-foreground">Republic of the Philippines</div>
+                    <div className="text-sm font-bold tracking-tight text-foreground">
+                      {agencyName || 'Agency Name'}
+                    </div>
+                    {address && (
+                      <div className="text-[11px] text-muted-foreground">{address}</div>
+                    )}
+                    {officeName && (
+                      <div className="text-[11px] font-medium text-muted-foreground">
+                        {officeName}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            <div className="mx-auto mt-3 h-[1.5px] max-w-[220px] bg-foreground/80" />
+                <div className="mt-4 text-center">
+                  <div className="text-xs font-bold uppercase tracking-wider text-primary">
+                    PURCHASE ORDER
+                  </div>
+                  <div className="mx-auto mt-1 h-[1.5px] max-w-[180px] bg-foreground/80" />
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -351,6 +404,26 @@ export function AgencyLetterheadSettings() {
                 />
                 <p className="text-[11px] text-muted-foreground">
                   Printed beneath the agency title on procurement document headers.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="letterhead-alignment">Letterhead Alignment</Label>
+                <Select
+                  value={letterheadAlignment}
+                  onValueChange={(val) => setLetterheadAlignment(val as LetterheadAlignmentType)}
+                >
+                  <SelectTrigger id="letterhead-alignment" className="w-full">
+                    <SelectValue placeholder="Select alignment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Default">System Default (Recommended)</SelectItem>
+                    <SelectItem value="Left">Always Left</SelectItem>
+                    <SelectItem value="Center">Always Center</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Controls letterhead layout across official PDF documents. System Default uses left alignment for tabular COA/DBM forms and centered alignment for legal notices and awards.
                 </p>
               </div>
             </CardContent>

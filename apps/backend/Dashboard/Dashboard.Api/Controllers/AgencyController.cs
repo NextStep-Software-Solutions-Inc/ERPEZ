@@ -65,7 +65,8 @@ public class AgencyController(IAgencyLetterheadService letterheadService) : Cont
         {
             Name = body.Name,
             Address = body.Address ?? string.Empty,
-            UpdateLogo = false
+            UpdateLogo = false,
+            LetterheadAlignment = body.LetterheadAlignment
         };
 
         var result = await letterheadService.UpdateLetterheadAsync(updateRequest, cancellationToken);
@@ -125,4 +126,5 @@ public class UpdateAgencyLetterheadBody
 {
     public string Name { get; set; } = string.Empty;
     public string? Address { get; set; }
+    public string? LetterheadAlignment { get; set; }
 }

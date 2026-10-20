@@ -13,4 +13,8 @@ public class Agency : TenantScopedEntity
     /// <summary>PNG or JPEG logo, max 512 KB. Null = use default embedded logo.</summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public byte[]? LogoImage { get; set; }
+
+    /// <summary>Letterhead alignment: "Default", "Left", or "Center".</summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string LetterheadAlignment { get; set; } = "Default";
 }

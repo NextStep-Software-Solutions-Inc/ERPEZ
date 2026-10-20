@@ -1,6 +1,8 @@
 import api from '@/services/api'
 import { getDashboardBackendUrl } from '@/config/env'
 
+export type LetterheadAlignmentType = 'Default' | 'Left' | 'Center'
+
 export interface AgencyLetterheadDto {
   id: string | null
   name: string
@@ -8,11 +10,13 @@ export interface AgencyLetterheadDto {
   officeName: string
   hasLogo: boolean
   logoBytes?: string | null
+  letterheadAlignment?: LetterheadAlignmentType | string
 }
 
 export interface UpdateAgencyLetterheadBody {
   name: string
   address?: string
+  letterheadAlignment?: LetterheadAlignmentType | string
 }
 
 export async function fetchAgencyLetterhead(): Promise<AgencyLetterheadDto> {
