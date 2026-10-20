@@ -69,9 +69,7 @@ public class GenerateMarketScopingDocumentCommandHandler(
     private static MarketScopingDataDto MapToDto(MarketScoping form, ERPEZ.Domain.Entities.Planning.User? user, List<ERPEZ.Domain.Entities.Planning.MarketScopingActivitySettings> allSettings)
     {
         var implementingUnit = user?.Office?.Name ?? string.Empty;
-        var procuringEntity = string.IsNullOrWhiteSpace(user?.Office?.Organization?.Name) 
-            ? "Name of Procuring Entity" 
-            : user.Office.Organization.Name; 
+        var procuringEntity = string.Empty; 
         var repName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : string.Empty;
         var activePosition = user?.PersonnelPositions?.FirstOrDefault(p => p.IsActive)?.Position;
         var repDesignation = activePosition?.Title ?? string.Empty;

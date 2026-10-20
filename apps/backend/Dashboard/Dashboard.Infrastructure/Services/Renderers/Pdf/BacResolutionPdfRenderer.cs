@@ -40,7 +40,7 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                         request.ProcuringEntityName,
                         request.ProcuringEntityAddress,
                         logoBytes,
-                        officeName: request.OfficeName,
+                        officeName: null,
                         documentTitle: $"BAC Resolution No. {request.ResolutionNumber}",
                         titleFontSize: 11f);
                 });

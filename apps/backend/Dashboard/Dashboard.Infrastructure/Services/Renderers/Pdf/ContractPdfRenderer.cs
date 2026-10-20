@@ -28,13 +28,11 @@ public sealed class ContractPdfRenderer : BasePdfRenderer, IDocumentRenderer<Con
         var monthName = contractDate.ToString("MMMM");
         var year = contractDate.ToString("yyyy");
 
-        var entityName = !string.IsNullOrWhiteSpace(request.ProcuringEntityName)
-            ? request.ProcuringEntityName.Trim()
-            : string.Empty;
+        var entityName = CleanEntityName(request.ProcuringEntityName);
 
         var entityAddress = !string.IsNullOrWhiteSpace(request.ProcuringEntityAddress)
             ? request.ProcuringEntityAddress.Trim()
-            : string.Empty;
+            : "University Town, Musuan, Maramag, Bukidnon, Philippines";
 
         var supplierName = !string.IsNullOrWhiteSpace(request.SupplierName)
             ? request.SupplierName.Trim()

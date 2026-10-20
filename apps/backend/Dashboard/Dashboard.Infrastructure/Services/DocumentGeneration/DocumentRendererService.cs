@@ -43,28 +43,19 @@ public class DocumentRendererService(IServiceProvider serviceProvider) : IDocume
                 var agency = await uow.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
                 if (agency != null)
                 {
-                    if (dto.LogoBytes == null || dto.LogoBytes.Length == 0)
+                    if (agency.LogoImage != null && agency.LogoImage.Length > 0)
                     {
                         dto.LogoBytes = agency.LogoImage;
                     }
 
-                    if (string.IsNullOrWhiteSpace(dto.ProcuringEntityAddress))
+                    if (!string.IsNullOrWhiteSpace(agency.Address))
                     {
-                        dto.ProcuringEntityAddress = agency.Address;
+                        dto.ProcuringEntityAddress = agency.Address.Trim();
                     }
 
-                    if (string.IsNullOrWhiteSpace(dto.ProcuringEntityName) ||
-                        dto.ProcuringEntityName.Equals("Agency Name", StringComparison.OrdinalIgnoreCase) ||
-                        dto.ProcuringEntityName.Equals("[Agency Name]", StringComparison.OrdinalIgnoreCase) ||
-                        dto.ProcuringEntityName.Equals("PROCURING ENTITY", StringComparison.OrdinalIgnoreCase) ||
-                        dto.ProcuringEntityName.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
-                        dto.ProcuringEntityName.Contains("Workspace", StringComparison.OrdinalIgnoreCase) ||
-                        dto.ProcuringEntityName.Equals("USTP", StringComparison.OrdinalIgnoreCase))
+                    if (!string.IsNullOrWhiteSpace(agency.Name))
                     {
-                        if (!string.IsNullOrWhiteSpace(agency.Name))
-                        {
-                            dto.ProcuringEntityName = agency.Name.Trim();
-                        }
+                        dto.ProcuringEntityName = agency.Name.Trim();
                     }
                 }
             }

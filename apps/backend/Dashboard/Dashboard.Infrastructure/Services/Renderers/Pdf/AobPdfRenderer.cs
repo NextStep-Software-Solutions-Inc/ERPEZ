@@ -33,18 +33,18 @@ public sealed class AobPdfRenderer : BasePdfRenderer, IDocumentRenderer<AobDataD
                 // ── HEADER ──────────────────────────────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    RenderAgencyHeader(
-                        col,
-                        request.ProcuringEntityName,
-                        request.ProcuringEntityAddress,
-                        request.LogoBytes,
-                        appendixText: null,
-                        documentTitle: "ABSTRACT OF QUOTATION",
-                        documentSubtitle: $"({request.ModeOfProcurement})",
-                        showUnderline: true,
-                        titleFontSize: 12f);
+                    col.Item().AlignCenter().Text("ABSTRACT OF QUOTATION").Bold().FontSize(12f);
 
-                    col.Item().PaddingTop(10).Column(meta =>
+                    if (!string.IsNullOrWhiteSpace(request.ModeOfProcurement))
+                    {
+                        col.Item().PaddingTop(2).AlignCenter()
+                            .Text($"({request.ModeOfProcurement})").FontSize(8.5f).Italic();
+                    }
+
+                    col.Item().PaddingTop(3).AlignCenter().MaxWidth(220)
+                        .LineHorizontal(1.5f).LineColor(Colors.Black);
+
+                    col.Item().PaddingTop(8).Column(meta =>
                     {
                         meta.Item().Row(r =>
                         {

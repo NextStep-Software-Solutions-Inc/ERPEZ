@@ -27,6 +27,13 @@ public abstract class BasePdfRenderer
             trimmed.Equals("Agency Name", StringComparison.OrdinalIgnoreCase) ||
             trimmed.Equals("[Agency Name]", StringComparison.OrdinalIgnoreCase) ||
             trimmed.Equals("PROCURING ENTITY", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("State Universities and Colleges (SUCs)", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("State Universities and Colleges", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("Cooperative Development Authority", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("[Head Office / Procuring Entity]", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("Head Office / Procuring Entity", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("[Name of Procuring Entity]", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("Name of Procuring Entity", StringComparison.OrdinalIgnoreCase) ||
             trimmed.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
             trimmed.Contains("Workspace", StringComparison.OrdinalIgnoreCase))
         {
@@ -137,7 +144,10 @@ public abstract class BasePdfRenderer
         }
 
         if (!string.IsNullOrWhiteSpace(officeName) &&
-            !officeName.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            !officeName.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
+            !officeName.Contains("Cooperative Development Authority", StringComparison.OrdinalIgnoreCase) &&
+            !officeName.Contains("State Universities and Colleges", StringComparison.OrdinalIgnoreCase) &&
+            !officeName.Equals(entityName, StringComparison.OrdinalIgnoreCase))
         {
             col.Item().PaddingTop(1).AlignCenter()
                 .Text(officeName)
