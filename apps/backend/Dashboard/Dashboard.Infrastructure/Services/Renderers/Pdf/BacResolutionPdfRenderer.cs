@@ -22,7 +22,7 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
         BacResolutionDataDto request,
         CancellationToken cancellationToken = default)
     {
-        var logoBytes = LoadDefaultLogo();
+        var logoBytes = request.LogoBytes ?? LoadDefaultLogo();
 
         var pdf = Document.Create(doc =>
         {
@@ -35,18 +35,15 @@ internal sealed class BacResolutionPdfRenderer : BasePdfRenderer, IDocumentRende
                 // ── Header ──────────────────────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    if (logoBytes != null && logoBytes.Length > 0)
-                    {
-                        col.Item().AlignCenter().Height(50).Image(logoBytes);
-                    }
-
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text("[Agency Letterhead with Logo]")
-                        .Bold().FontSize(9.5f).Italic();
-
-                    col.Item().PaddingTop(6).AlignCenter()
-                        .Text($"BAC Resolution No. {request.ResolutionNumber}")
-                        .Bold().FontSize(10);
+                    RenderCenteredAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        logoBytes,
+                        officeName: null,
+                        documentTitle: $"BAC Resolution No. {request.ResolutionNumber}",
+                        titleFontSize: 11f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // ── Body Content ─────────────────────────────────────────────

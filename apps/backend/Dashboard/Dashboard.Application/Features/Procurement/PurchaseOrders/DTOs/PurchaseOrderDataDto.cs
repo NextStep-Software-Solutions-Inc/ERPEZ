@@ -6,7 +6,7 @@ namespace ERPEZ.Application.Features.Procurement.PurchaseOrders.DTOs;
 /// <summary>
 /// DTO containing all resolved fields required to render the official COA GAM Appendix 61 Purchase Order document.
 /// </summary>
-public class PurchaseOrderDataDto
+public class PurchaseOrderDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadAware
 {
     public Guid Id { get; set; }
     public string PONumber { get; set; } = string.Empty;
@@ -16,8 +16,11 @@ public class PurchaseOrderDataDto
     public string SourceDocumentType { get; set; } = string.Empty;
     public string SourceDocumentNumber { get; set; } = string.Empty;
 
-    public string ProcuringEntityName { get; set; } = "Agency Name";
+    public string? ProcuringEntityName { get; set; } = "Agency Name";
     public string ProcuringEntityOffice { get; set; } = string.Empty;
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
 
     public Guid SupplierId { get; set; }
     public string SupplierName { get; set; } = string.Empty;

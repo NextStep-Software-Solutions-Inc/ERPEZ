@@ -30,8 +30,17 @@ public class RfqSupplierDataDto
     public List<RfqItemDataDto> QuotedItems { get; set; } = [];
 }
 
-public class RfqDataDto
+public class RfqDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadAware
 {
+    public string? ProcuringEntityName
+    {
+        get => ProcuringEntity;
+        set => ProcuringEntity = value ?? string.Empty;
+    }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
+
     public Guid RFQId { get; set; }
     public string RFQNumber { get; set; } = string.Empty;
     public string QuotationNo { get; set; } = string.Empty;
@@ -42,8 +51,7 @@ public class RfqDataDto
     public decimal ApprovedBudgetForContract { get; set; }
     public string PRNumber { get; set; } = string.Empty;
     public string BacResolutionNumber { get; set; } = string.Empty;
-    public string ProcuringEntity { get; set; } = "[Head Office / Procuring Entity]";
-    public string ProcuringEntityAddress { get; set; } = string.Empty;
+    public string ProcuringEntity { get; set; } = "Central Mindanao University";
     public string SubmissionLocation { get; set; } = "[Submission Location]";
     public string DeliveryLocation { get; set; } = "[Delivery Location]";
     public string ContactEmail { get; set; } = "[BAC Email Address]";

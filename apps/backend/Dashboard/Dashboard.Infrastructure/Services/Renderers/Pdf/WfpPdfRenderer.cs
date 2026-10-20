@@ -32,9 +32,16 @@ internal sealed class WfpPdfRenderer
 
                 page.Header().Column(h =>
                 {
-                    h.Item().AlignCenter().Text("WORK PLAN").Bold().FontSize(12);
-                    // Funding body label — matches sample ("National Telecommunications Commission Funded Special Project")
-                    // Currently not a WFP entity field; render FundSource name if available, else omit.
+                    RenderAgencyHeader(
+                        h,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "WORK PLAN",
+                        showUnderline: true,
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
 
                     // ── Title row ────────────────────────────────────────────
                     h.Item().PaddingTop(4).Row(r =>

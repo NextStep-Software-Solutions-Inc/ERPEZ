@@ -37,24 +37,25 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
 
                 page.Header().Column(h =>
                 {
-                    h.Item().Row(titleRow =>
-                    {
-                        titleRow.RelativeItem().Column(left =>
-                        {
-                            left.Item().AlignCenter()
-                                .Text("LINE ITEM BUDGET FORM")
-                                .Bold().FontSize(10);
-                            left.Item().AlignCenter()
-                                .Text($"FOR FISCAL YEAR {request.FiscalYear}")
-                                .Bold().FontSize(9);
-                        });
-                    });
+                    RenderAgencyHeader(
+                        h,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "LINE ITEM BUDGET FORM",
+                        documentSubtitle: $"FOR FISCAL YEAR {request.FiscalYear}",
+                        showUnderline: false,
+                        titleFontSize: 10f,
+                        alignment: request.LetterheadAlignment);
 
-                    h.Item().PaddingTop(4).Column(agency =>
+                    if (!string.IsNullOrWhiteSpace(request.OfficeName))
                     {
-                        agency.Item().Text("AGENCY:").Bold().FontSize(8);
-                        agency.Item().Text(request.OfficeName).Bold().FontSize(8);
-                    });
+                        h.Item().PaddingTop(3).Column(agency =>
+                        {
+                            agency.Item().Text($"OFFICE / UNIT: {request.OfficeName}").Bold().FontSize(8);
+                        });
+                    }
                 });
 
                 page.Content().PaddingTop(6).Column(col =>

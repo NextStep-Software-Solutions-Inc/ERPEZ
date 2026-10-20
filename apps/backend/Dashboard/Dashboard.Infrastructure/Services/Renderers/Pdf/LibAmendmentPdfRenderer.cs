@@ -56,17 +56,32 @@ internal sealed class LibAmendmentPdfRenderer : BasePdfRenderer, IDocumentRender
 
     private static void RenderHeader(IContainer container, LibAmendmentDataDto request)
     {
+        var entityName = CleanEntityName(request.ProcuringEntityName);
+
         container.Column(c =>
         {
             c.Item().Row(row =>
             {
+                if (request.LogoBytes != null && request.LogoBytes.Length > 0)
+                {
+                    row.ConstantItem(48).AlignMiddle().Height(44).Image(request.LogoBytes).FitArea();
+                    row.ConstantItem(8);
+                }
+
                 row.RelativeItem(3).Column(left =>
                 {
-                    left.Item().Text("MODIFICATION OF BUDGET").Bold().FontSize(12).AlignCenter();
-                    left.Item().Text($"LIB Number: {request.LIBNumber}").FontSize(10).AlignCenter();
-                    left.Item().Text($"Fiscal Year: {request.FiscalYear}").FontSize(10).AlignCenter();
-                    left.Item().PaddingTop(5).Text($"Agency Details: {request.OfficeName}").Bold().FontSize(9);
-                    left.Item().Text($"Delivery Unit / Office: {request.OfficeName}").Bold().FontSize(9);
+                    left.Item().Text("Republic of the Philippines").FontSize(8f).FontColor(Colors.Grey.Darken2);
+                    left.Item().Text(entityName).Bold().FontSize(11f);
+                    if (!string.IsNullOrWhiteSpace(request.ProcuringEntityAddress))
+                    {
+                        left.Item().Text(request.ProcuringEntityAddress).FontSize(8f).FontColor(Colors.Grey.Darken2);
+                    }
+                    left.Item().PaddingTop(3).Text("MODIFICATION OF BUDGET").Bold().FontSize(12);
+                    left.Item().Text($"LIB Number: {request.LIBNumber} | Fiscal Year: {request.FiscalYear}").FontSize(9.5f);
+                    if (!string.IsNullOrWhiteSpace(request.OfficeName))
+                    {
+                        left.Item().PaddingTop(2).Text($"Delivery Unit / Office: {request.OfficeName}").Bold().FontSize(8.5f);
+                    }
                 });
 
                 row.RelativeItem(1)
@@ -74,7 +89,7 @@ internal sealed class LibAmendmentPdfRenderer : BasePdfRenderer, IDocumentRender
                     .Column(docBox =>
                     {
                         docBox.Item().Background(Colors.Blue.Darken2).Padding(2).AlignCenter().Text("Document Code No.").Bold().FontSize(7).FontColor(Colors.White);
-                        docBox.Item().Padding(2).AlignCenter().Text("FM-USTP-FDP-002").Bold().FontSize(8);
+                        docBox.Item().Padding(2).AlignCenter().Text("FM-SUC-FDP-002").Bold().FontSize(8);
                         docBox.Item().Row(metaRow =>
                         {
                             metaRow.RelativeItem().BorderRight(1).BorderColor(Colors.Blue.Darken2).Background(Colors.Blue.Darken2).Padding(2).AlignCenter().Text("Rev. No").Bold().FontSize(6).FontColor(Colors.White);

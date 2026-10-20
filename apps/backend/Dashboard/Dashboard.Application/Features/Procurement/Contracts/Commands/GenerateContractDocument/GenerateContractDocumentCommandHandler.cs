@@ -62,24 +62,28 @@ public class GenerateContractDocumentCommandHandler(
         }).ToList();
 
         // Dynamically resolve Procuring Entity / Organization from database
+        var agency = await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
+
         var topOrg = await unitOfWork.OrganizationRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)
             ?? await unitOfWork.OrganizationRepository.FindAsync(o => !o.IsDeleted, cancellationToken);
 
         var rootOffice = await unitOfWork.OfficeRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)
             ?? await unitOfWork.OfficeRepository.FindAsync(o => !o.IsDeleted, cancellationToken);
 
-        string procuringEntityName = topOrg?.Name?.Trim()
-            ?? (rootOffice?.Organization != null ? rootOffice.Organization.Name?.Trim() : null)
-            ?? rootOffice?.Name?.Trim()
-            ?? string.Empty;
+        string procuringEntityName = !string.IsNullOrWhiteSpace(agency?.Name)
+            ? agency.Name.Trim()
+            : (topOrg?.Name?.Trim()
+                ?? (rootOffice?.Organization != null ? rootOffice.Organization.Name?.Trim() : null)
+                ?? rootOffice?.Name?.Trim()
+                ?? string.Empty);
 
         string procuringEntityOffice = rootOffice != null && !string.IsNullOrWhiteSpace(rootOffice.Name) && !string.Equals(rootOffice.Name.Trim(), procuringEntityName, StringComparison.OrdinalIgnoreCase)
             ? rootOffice.Name.Trim()
             : string.Empty;
 
-        string procuringEntityAddress = !string.IsNullOrWhiteSpace(rootOffice?.Address)
-            ? rootOffice.Address.Trim()
-            : string.Empty;
+        string procuringEntityAddress = !string.IsNullOrWhiteSpace(agency?.Address)
+            ? agency.Address.Trim()
+            : (!string.IsNullOrWhiteSpace(rootOffice?.Address) ? rootOffice.Address.Trim() : string.Empty);
 
         string approvedByName = !string.IsNullOrWhiteSpace(contract.ApprovedByName)
             ? contract.ApprovedByName

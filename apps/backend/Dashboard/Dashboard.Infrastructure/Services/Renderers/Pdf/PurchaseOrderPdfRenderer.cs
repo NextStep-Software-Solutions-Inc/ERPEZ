@@ -24,9 +24,15 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
         PurchaseOrderDataDto request,
         CancellationToken cancellationToken = default)
     {
+        var pdf = CreateDocument(request);
+        return Task.FromResult(pdf.GeneratePdf());
+    }
+
+    public Document CreateDocument(PurchaseOrderDataDto request)
+    {
         var phCulture = new CultureInfo("en-PH");
 
-        var pdf = Document.Create(doc =>
+        return Document.Create(doc =>
         {
             doc.Page(page =>
             {
@@ -37,28 +43,16 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
                 // ── Page Header ────────────────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    col.Item().AlignRight().Text("Appendix 61").FontSize(8.5f).Italic();
-
-                    col.Item().AlignCenter().Text("PURCHASE ORDER").Bold().FontSize(12.5f);
-
-                    var entityName = !string.IsNullOrWhiteSpace(request.ProcuringEntityName) &&
-                                     !request.ProcuringEntityName.Equals("USTP", StringComparison.OrdinalIgnoreCase) &&
-                                     !request.ProcuringEntityName.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
-                                     !request.ProcuringEntityName.Contains("Workspace", StringComparison.OrdinalIgnoreCase)
-                        ? request.ProcuringEntityName
-                        : "Agency Name";
-
-                    col.Item().PaddingTop(1).AlignCenter()
-                        .Text(entityName)
-                        .Bold().FontSize(11.5f);
-
-                    if (!string.IsNullOrWhiteSpace(request.ProcuringEntityOffice) &&
-                        !request.ProcuringEntityOffice.Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase))
-                    {
-                        col.Item().AlignCenter().Text(request.ProcuringEntityOffice).FontSize(8.5f);
-                    }
-
-                    col.Item().PaddingTop(3).AlignCenter().MaxWidth(200).LineHorizontal(1.5f).LineColor(Colors.Black);
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: "Appendix 61",
+                        documentTitle: "PURCHASE ORDER",
+                        showUnderline: true,
+                        titleFontSize: 12.5f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // ── Body Content ───────────────────────────────────────────
@@ -291,8 +285,6 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
                 });
             });
         });
-
-        return Task.FromResult(pdf.GeneratePdf());
     }
 
     private static IContainer POHeaderCell(IContainer c) =>

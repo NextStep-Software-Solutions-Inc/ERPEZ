@@ -29,8 +29,14 @@ internal sealed class PpmpPdfRenderer : BasePdfRenderer, IDocumentRenderer<PpmpD
                 // ── Page Header ────────────────────────────────────────────
                 page.Header().Column(h =>
                 {
-                    h.Item().AlignCenter().Text("[Agency Letterhead with Logo]")
-                        .Bold().FontSize(9).Italic();
+                    RenderAgencyHeader(
+                        h,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: null,
+                        alignment: request.LetterheadAlignment);
 
                     var titlePrefix = request.IsSupplemental
                         ? "SUPPLEMENTAL PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP) NO. "

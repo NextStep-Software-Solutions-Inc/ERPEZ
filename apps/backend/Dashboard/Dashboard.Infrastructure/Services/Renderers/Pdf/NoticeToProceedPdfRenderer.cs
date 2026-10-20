@@ -24,7 +24,7 @@ public sealed class NoticeToProceedPdfRenderer : BasePdfRenderer, IDocumentRende
         NoticeToProceedDataDto request,
         CancellationToken cancellationToken = default)
     {
-        var logoBytes = LoadDefaultLogo();
+        var logoBytes = request.LogoBytes ?? LoadDefaultLogo();
 
         var pdf = Document.Create(doc =>
         {
@@ -37,27 +37,13 @@ public sealed class NoticeToProceedPdfRenderer : BasePdfRenderer, IDocumentRende
                 // -- 1. Universal Agency Header ---------------------------------
                 page.Header().Column(col =>
                 {
-                    if (logoBytes != null && logoBytes.Length > 0)
-                    {
-                        col.Item().AlignCenter().Height(42).Image(logoBytes);
-                    }
-
-                    col.Item().AlignCenter()
-                        .Text("Republic of the Philippines")
-                        .FontSize(9).FontColor(Colors.Grey.Darken2);
-
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text(!string.IsNullOrWhiteSpace(request.ProcuringEntityName) ? request.ProcuringEntityName : "PROCURING ENTITY")
-                        .Bold().FontSize(11).FontColor(Colors.Grey.Darken4);
-
-                    if (!string.IsNullOrWhiteSpace(request.ProcuringEntityOffice))
-                    {
-                        col.Item().PaddingTop(2).AlignCenter()
-                            .Text(request.ProcuringEntityOffice)
-                            .FontSize(9).FontColor(Colors.Grey.Darken2);
-                    }
-
-                    col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten1);
+                    RenderCenteredAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        logoBytes,
+                        officeName: null,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // -- 2. Body Content ------------------------------------------

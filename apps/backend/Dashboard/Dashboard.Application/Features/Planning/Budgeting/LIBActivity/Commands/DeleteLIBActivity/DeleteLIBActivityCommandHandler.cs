@@ -19,7 +19,14 @@ public class DeleteLIBActivityCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException($"LIB with ID {entity.LineItemBudgetId} not found.");
 
         if (!LIBRules.IsEditable(lib.Status))
-            throw new ValidationException("Activities can only be deleted from a Draft, Proposed, or Returned LIB.");
+        {
+            var isUnderActiveAmendment = await unitOfWork.LIBAmendmentRequestRepository
+                .FindAsync(ar => ar.ProposedLineItemBudgetId == entity.LineItemBudgetId &&
+                    (ar.Status == "Draft" || ar.Status == "Returned"), cancellationToken) != null;
+
+            if (!isUnderActiveAmendment)
+                throw new ValidationException("Activities can only be deleted from a Draft, Proposed, or Returned LIB.");
+        }
 
         // Existing delete logic continues:
         unitOfWork.LineItemBudgetActivityRepository.Remove(entity);

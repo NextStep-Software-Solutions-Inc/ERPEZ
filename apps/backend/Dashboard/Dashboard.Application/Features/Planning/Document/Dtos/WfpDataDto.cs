@@ -1,3 +1,4 @@
+using ERPEZ.Application.Common.Interfaces;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
 
 namespace ERPEZ.Application.Common.Dtos;
@@ -7,8 +8,13 @@ namespace ERPEZ.Application.Common.Dtos;
 /// Built by GenerateWfpDocumentCommandHandler.MapToWfpDataDto; mirrors LibDataDto's
 /// role as the renderer-facing payload, decoupled from the inbound command.
 /// </summary>
-public record WfpDataDto
+public record WfpDataDto : IAgencyLetterheadAware
 {
+    public string?   ProcuringEntityName { get; set; }
+    public string?   ProcuringEntityAddress { get; set; }
+    public byte[]?   LogoBytes           { get; set; }
+    public string?   LetterheadAlignment { get; set; }
+
     public string    ProjectTitle     { get; init; } = string.Empty;
     public string    ProjectOwner     { get; init; } = string.Empty;
     public string    OfficeName       { get; init; } = string.Empty;

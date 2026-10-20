@@ -27,7 +27,14 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
                 ?? throw new NotFoundException($"LIB with ID {effectiveLibId} not found.");
 
             if (!LIBRules.IsEditable(lib.Status))
-                throw new ValidationException("Line item details can only be modified on a Draft, Proposed, or Returned LIB.");
+            {
+                var isUnderActiveAmendment = await unitOfWork.LIBAmendmentRequestRepository
+                    .FindAsync(ar => ar.ProposedLineItemBudgetId == effectiveLibId &&
+                        (ar.Status == "Draft" || ar.Status == "Returned"), cancellationToken) != null;
+
+                if (!isUnderActiveAmendment)
+                    throw new ValidationException("Line item details can only be modified on a Draft, Proposed, or Returned LIB.");
+            }
 
             var isProjectScope  = lib.Scope.Equals(LIBScopeEnum.Project.ToString(),  StringComparison.OrdinalIgnoreCase);
             var isActivityScope = lib.Scope.Equals(LIBScopeEnum.Activity.ToString(), StringComparison.OrdinalIgnoreCase);

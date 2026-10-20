@@ -21,7 +21,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
     public Task<byte[]> RenderAsync(RfqDataDto request, CancellationToken cancellationToken = default)
     {
         var phCulture = new CultureInfo("en-PH");
-        var logoBytes = LoadDefaultLogo();
+        var logoBytes = request.LogoBytes ?? LoadDefaultLogo();
 
         var pdf = Document.Create(doc =>
         {
@@ -46,20 +46,22 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                 page.Header().Column(col =>
                 {
-                    RenderHeaderLogo(col, logoBytes, request.ProcuringEntity, request.ProcuringEntityAddress);
-
-                    col.Item().PaddingTop(16).AlignCenter()
-                        .Text("INVITATION / REQUEST FOR SUBMISSION OF PRICE QUOTATION")
-                        .Bold().FontSize(11.5f);
-
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text("Posted in PhilGEPS Website/Conspicuous Place at the Procuring Entity")
-                        .FontSize(9).Italic();
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName ?? request.ProcuringEntity,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes ?? logoBytes,
+                        appendixText: null,
+                        documentTitle: "INVITATION / REQUEST FOR SUBMISSION OF PRICE QUOTATION",
+                        documentSubtitle: "Posted in PhilGEPS Website/Conspicuous Place at the Procuring Entity",
+                        showUnderline: true,
+                        titleFontSize: 11.5f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 page.Content().PaddingTop(14).Column(col =>
                 {
-                    col.Item().Text($"The {request.ProcuringEntity}, through the Bids and Awards Committee (BAC) hereby invites interested parties to submit quotation for the procurement of the following item:")
+                    col.Item().Text($"The {CleanEntityName(request.ProcuringEntityName ?? request.ProcuringEntity)}, through the Bids and Awards Committee (BAC) hereby invites interested parties to submit quotation for the procurement of the following item:")
                         .FontSize(9).LineHeight(1.3f);
 
                     // Notice summary table
@@ -130,7 +132,16 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
                 page.Header().Column(col =>
                 {
-                    RenderHeaderLogo(col, logoBytes, request.ProcuringEntity, request.ProcuringEntityAddress);
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName ?? request.ProcuringEntity,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes ?? logoBytes,
+                        appendixText: null,
+                        documentTitle: "REQUEST FOR QUOTATION",
+                        showUnderline: true,
+                        titleFontSize: 11.5f,
+                        alignment: request.LetterheadAlignment);
 
                     // Metadata Row
                     col.Item().PaddingTop(6).Row(row =>
@@ -178,7 +189,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
                         nc.Item().Text("3. PAYMENT TERMS: One Time Payment").FontSize(7);
                         nc.Item().Text("4. PRICE VALIDITY SHALL BE FOR A PERIOD OF 30 CALENDAR DAYS").FontSize(7);
                         nc.Item().Text("5. BIDDERS MUST INDICATE THE BRAND AND/OR MODEL NUMBER FOR EQUIPMENT AND ITS ACCESSORIES OR PERIPHERALS AND FOR ALL OTHER ITEMS IF APPLICABLE. BIDDERS SHALL SUBMIT ORIGINAL BROCHURES SHOWING CERTIFICATIONS OF THE PRODUCT BEING OFFERED IF APPLICABLE.").FontSize(7);
-                        nc.Item().Text($"6. THE {request.ProcuringEntity.ToUpper()} RESERVES THE RIGHT TO REJECT ANY OR ALL BIDS FOR ANY JUSTIFIABLE GROUND WHERE THE AWARD OF THE CONTRACT WILL NOT REDOUND TO THE BENEFIT OF THE GOP.").FontSize(7);
+                        nc.Item().Text($"6. THE {CleanEntityName(request.ProcuringEntityName ?? request.ProcuringEntity).ToUpper()} RESERVES THE RIGHT TO REJECT ANY OR ALL BIDS FOR ANY JUSTIFIABLE GROUND WHERE THE AWARD OF THE CONTRACT WILL NOT REDOUND TO THE BENEFIT OF THE GOP.").FontSize(7);
                         nc.Item().Text("7. REQUIREMENTS: PHILGEPS REGISTRATION.").FontSize(7);
                     });
                 });
@@ -336,14 +347,16 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
 
     private static void RenderHeaderLogo(ColumnDescriptor col, byte[]? logoBytes, string procuringEntity, string? address = null)
     {
+        var cleanEntity = CleanEntityName(procuringEntity);
+
         col.Item().Row(r =>
         {
             if (logoBytes != null && logoBytes.Length > 0)
             {
-                r.AutoItem().Height(35).Image(logoBytes);
+                r.ConstantItem(44).Height(44).AlignMiddle().Image(logoBytes).FitArea();
                 r.RelativeItem().PaddingLeft(10).AlignMiddle().Column(c =>
                 {
-                    c.Item().Text(procuringEntity.ToUpper()).Bold().FontSize(10.5f);
+                    c.Item().Text(cleanEntity.ToUpper()).Bold().FontSize(10.5f);
                     if (!string.IsNullOrWhiteSpace(address) && !address.StartsWith("["))
                     {
                         c.Item().Text(address).FontSize(8);
@@ -354,7 +367,7 @@ public sealed class RfqPdfRenderer : BasePdfRenderer, IDocumentRenderer<RfqDataD
             {
                 r.RelativeItem().AlignCenter().Column(c =>
                 {
-                    c.Item().Text(procuringEntity.ToUpper()).Bold().FontSize(10.5f);
+                    c.Item().Text(cleanEntity.ToUpper()).Bold().FontSize(10.5f);
                     if (!string.IsNullOrWhiteSpace(address) && !address.Trim().StartsWith("["))
                     {
                         c.Item().Text(address.Trim()).FontSize(8);

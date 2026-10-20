@@ -29,13 +29,17 @@ internal sealed class OpcrPdfRenderer : BasePdfRenderer, IDocumentRenderer<OpcrD
                 // ── Header ────────────────────────────────────────────────
                 page.Header().Column(h =>
                 {
-                    h.Item().AlignCenter()
-                        .Text("OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)")
-                        .Bold().FontSize(10);
-
-                    h.Item().PaddingTop(4).AlignCenter()
-                        .Text($"Proposed {request.OfficeName} OPCR FY {request.FiscalYear}")
-                        .FontSize(8);
+                    RenderAgencyHeader(
+                        h,
+                        request.ProcuringEntityName ?? request.AgencyName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)",
+                        documentSubtitle: $"Proposed {request.OfficeName} OPCR FY {request.FiscalYear}",
+                        showUnderline: true,
+                        titleFontSize: 10f,
+                        alignment: request.LetterheadAlignment);
 
                     // Commitment statement
                     h.Item().PaddingTop(6).Text(t =>

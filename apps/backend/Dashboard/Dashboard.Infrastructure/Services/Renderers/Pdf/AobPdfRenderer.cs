@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -21,6 +21,7 @@ public sealed class AobPdfRenderer : BasePdfRenderer, IDocumentRenderer<AobDataD
     public Task<byte[]> RenderAsync(AobDataDto request, CancellationToken cancellationToken = default)
     {
         var phCulture = new CultureInfo("en-PH");
+        var logoBytes = request.LogoBytes ?? LoadDefaultLogo();
 
         var pdf = Document.Create(doc =>
         {
@@ -33,15 +34,21 @@ public sealed class AobPdfRenderer : BasePdfRenderer, IDocumentRenderer<AobDataD
                 // ── HEADER ──────────────────────────────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    col.Item().AlignCenter()
-                        .Text("ABSTRACT OF QUOTATION")
-                        .Bold().FontSize(12).LetterSpacing(0.04f);
+                    RenderAgencyHeader(
+                        col,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        logoBytes,
+                        appendixText: null,
+                        documentTitle: "ABSTRACT OF QUOTATION",
+                        documentSubtitle: !string.IsNullOrWhiteSpace(request.ModeOfProcurement)
+                            ? $"({request.ModeOfProcurement})"
+                            : null,
+                        showUnderline: true,
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
 
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text($"({request.ModeOfProcurement})")
-                        .Bold().FontSize(9);
-
-                    col.Item().PaddingTop(10).Column(meta =>
+                    col.Item().PaddingTop(8).Column(meta =>
                     {
                         meta.Item().Row(r =>
                         {

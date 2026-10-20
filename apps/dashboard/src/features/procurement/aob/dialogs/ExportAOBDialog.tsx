@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,12 @@ import { Button } from '@/components/ui/button'
 import { Printer, Download, FileSpreadsheet, Loader2 } from 'lucide-react'
 import { printAOB, exportAOBCSV } from '../utils/printAOB'
 import { generateAndDownloadAobDocument } from '../handlers/generateAOBDocumentRequest'
+import {
+  fetchAgencyLetterhead,
+  fetchAgencyLogoBlob,
+  formatLogoUrl,
+  type AgencyLetterheadDto,
+} from '@/services/api/agencyLetterhead'
 import { toast } from 'sonner'
 import type { AOB, BidMatrix } from '../types/aobTypes'
 
@@ -70,10 +76,43 @@ export function ExportAOBDialog({
     supplierTotals[s.id] = total
   })
 
+  const [agencyLetterhead, setAgencyLetterhead] = useState<AgencyLetterheadDto | null>(null)
+  const [logoBlobUrl, setLogoBlobUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    fetchAgencyLetterhead()
+      .then((data) => {
+        if (!active) return
+        setAgencyLetterhead(data)
+        if (data?.hasLogo) {
+          fetchAgencyLogoBlob().then((blob) => {
+            if (active && blob) {
+              setLogoBlobUrl(blob)
+            }
+          })
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const entityName = agencyLetterhead?.name?.trim() || 'CENTRAL MINDANAO UNIVERSITY'
+  const entityAddress =
+    agencyLetterhead?.address?.trim() ||
+    'University Town, Musuan, Maramag, Bukidnon, Philippines'
+  const logoUrl = logoBlobUrl || formatLogoUrl(agencyLetterhead)
+
   const [isGeneratingBackendDoc, setIsGeneratingBackendDoc] = useState(false)
 
   const handlePrint = () => {
-    printAOB(aob, bidMatrix)
+    printAOB(aob, bidMatrix, {
+      name: entityName,
+      address: entityAddress,
+      logoUrl,
+    })
   }
 
   const handleDownloadCSV = () => {
@@ -117,6 +156,35 @@ export function ExportAOBDialog({
         {/* Paper Document Preview Container */}
         <div className="flex-1 overflow-auto my-3 border rounded-lg bg-slate-50 dark:bg-slate-950 p-4">
           <div className="bg-white text-black p-6 rounded shadow-sm border border-slate-300 font-sans text-[11px] leading-snug max-w-[1000px] mx-auto">
+            {/* Agency Letterhead */}
+            <div className="flex items-center gap-3.5 mb-4 border-b border-gray-200 pb-3">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt="Official Agency Seal"
+                  className="w-12 h-12 object-contain shrink-0"
+                  onError={() => setLogoBlobUrl(null)}
+                />
+              ) : (
+                <div className="w-12 h-12 rounded border border-dashed flex items-center justify-center shrink-0 text-gray-400 bg-gray-50">
+                  <span className="text-[10px] font-bold">SEAL</span>
+                </div>
+              )}
+              <div className="flex-1">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
+                  Republic of the Philippines
+                </div>
+                <div className="text-xs font-bold uppercase tracking-tight text-gray-900">
+                  {entityName}
+                </div>
+                {entityAddress && (
+                  <div className="text-[9.5px] text-gray-600 leading-tight mt-0.5">
+                    {entityAddress}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Title Header */}
             <div className="text-center mb-4">
               <h1 className="text-sm font-bold tracking-wide uppercase">
@@ -125,6 +193,7 @@ export function ExportAOBDialog({
               <h2 className="text-xs font-semibold text-gray-800">
                 ({modeOfProcurement})
               </h2>
+              <div className="mx-auto mt-1.5 h-[1.5px] max-w-[220px] bg-black" />
             </div>
 
             {/* Metadata Block */}

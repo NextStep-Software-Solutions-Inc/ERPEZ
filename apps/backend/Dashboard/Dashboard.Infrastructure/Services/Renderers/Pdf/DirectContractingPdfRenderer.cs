@@ -22,7 +22,7 @@ public sealed class DirectContractingPdfRenderer : BasePdfRenderer, IDocumentRen
         DirectContractingPdfDataDto request,
         CancellationToken cancellationToken = default)
     {
-        var logoBytes = LoadDefaultLogo();
+        var logoBytes = request.LogoBytes ?? LoadDefaultLogo();
 
         var pdf = Document.Create(doc =>
         {
@@ -35,28 +35,16 @@ public sealed class DirectContractingPdfRenderer : BasePdfRenderer, IDocumentRen
                 // ── Institutional Header ──────────────────────────────────────────
                 page.Header().Column(col =>
                 {
-                    if (logoBytes != null && logoBytes.Length > 0)
-                    {
-                        col.Item().AlignCenter().Height(42).Image(logoBytes);
-                    }
-
-                    col.Item().AlignCenter()
-                        .Text(request.AgencyName)
-                        .FontSize(9.5f).FontColor(Colors.Grey.Darken2);
-
-                    col.Item().PaddingTop(1).AlignCenter()
-                        .Text(request.AgencySubHeader)
-                        .Bold().FontSize(10.5f).FontColor(Colors.Grey.Darken3);
-
-                    col.Item().PaddingTop(6).AlignCenter()
-                        .Text(request.DocumentTitle)
-                        .Bold().FontSize(12).FontColor(Colors.Black);
-
-                    col.Item().PaddingTop(2).AlignCenter()
-                        .Text($"Control / DC No.: {request.DocumentControlNumber}")
-                        .Bold().FontSize(9.5f).FontColor(Colors.Grey.Darken3);
-
-                    col.Item().PaddingTop(6).LineHorizontal(0.75f).LineColor(Colors.Grey.Medium);
+                    RenderCenteredAgencyHeader(
+                        col,
+                        request.ProcuringEntityName ?? request.AgencyName,
+                        request.ProcuringEntityAddress,
+                        logoBytes,
+                        officeName: request.AgencySubHeader,
+                        documentTitle: request.DocumentTitle,
+                        documentSubtitle: $"Control / DC No.: {request.DocumentControlNumber}",
+                        titleFontSize: 12f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // ── Body Content ─────────────────────────────────────────────────

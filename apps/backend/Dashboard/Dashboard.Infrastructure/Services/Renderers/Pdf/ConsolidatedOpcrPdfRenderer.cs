@@ -30,19 +30,21 @@ internal sealed class ConsolidatedOpcrPdfRenderer
                 // ── Header ────────────────────────────────────────────────
                 page.Header().Column(h =>
                 {
-                    h.Item().AlignCenter()
-                        .Text("CONSOLIDATED OFFICE PERFORMANCE COMMITMENT AND REVIEW")
-                        .Bold().FontSize(11);
+                    var periodSub = string.IsNullOrWhiteSpace(request.RatingPeriod)
+                        ? $"Fiscal Year {request.FiscalYear}"
+                        : $"Fiscal Year {request.FiscalYear} | {request.RatingPeriod}";
 
-                    h.Item().PaddingTop(2).AlignCenter()
-                        .Text($"{request.AgencyName}").FontSize(9);
-
-                    h.Item().PaddingTop(2).AlignCenter()
-                        .Text($"Fiscal Year {request.FiscalYear}" +
-                              (string.IsNullOrWhiteSpace(request.RatingPeriod)
-                                  ? string.Empty
-                                  : $" | {request.RatingPeriod}"))
-                        .FontSize(8);
+                    RenderAgencyHeader(
+                        h,
+                        request.ProcuringEntityName ?? request.AgencyName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: "CONSOLIDATED OFFICE PERFORMANCE COMMITMENT AND REVIEW",
+                        documentSubtitle: periodSub,
+                        showUnderline: true,
+                        titleFontSize: 11f,
+                        alignment: request.LetterheadAlignment);
                 });
 
                 // ── Content ───────────────────────────────────────────────

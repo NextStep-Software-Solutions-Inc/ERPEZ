@@ -77,16 +77,6 @@ export const printNoticeOfAwardRequest = {
     })
     cursorY += 5
 
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(80, 80, 80)
-    doc.text(
-      'OFFICE OF THE HEAD OF THE PROCURING ENTITY',
-      pageWidth / 2,
-      cursorY,
-      { align: 'center' },
-    )
-    cursorY += 4.5
 
     doc.setDrawColor(180, 180, 180)
     doc.setLineWidth(0.4)

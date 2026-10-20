@@ -29,12 +29,16 @@ internal sealed class AppPdfRenderer : BasePdfRenderer, IDocumentRenderer<AppDat
                 // ── Page Header ────────────────────────────────────────────
                 page.Header().Column(h =>
                 {
-                    h.Item().AlignCenter().Text("[Agency Letterhead with Logo]")
-                        .Bold().FontSize(9).Italic();
-
-                    h.Item().PaddingTop(4).AlignCenter()
-                        .Text($"ANNUAL PROCUREMENT PLAN FOR FY {request.FiscalYear}")
-                        .Bold().FontSize(11);
+                    RenderAgencyHeader(
+                        h,
+                        request.ProcuringEntityName,
+                        request.ProcuringEntityAddress,
+                        request.LogoBytes,
+                        appendixText: null,
+                        documentTitle: $"ANNUAL PROCUREMENT PLAN FOR FY {request.FiscalYear}",
+                        showUnderline: false,
+                        titleFontSize: 11f,
+                        alignment: request.LetterheadAlignment);
 
                     var indicativeBox = request.IsIndicative ? "☑" : "☐";
                     var finalBox      = request.IsFinal ? "☑" : "☐";

@@ -35,6 +35,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IDeliveryUnitRepository deliveryUnitRepository;
     private readonly IOfficeRepository officeRepository;
     private readonly IOrganizationRepository organizationRepository;
+    private readonly IAgencyRepository agencyRepository;
     private readonly IRepository<Domain.Entities.Planning.OrganizationFundSource> organizationFundSourceRepository;
     private readonly IFundSourceRepository fundSourceRepository;
     private readonly ILocationRepository locationRepository;
@@ -202,6 +203,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         deliveryUnitRepository = new DeliveryUnitRepository(context, sieveProcessor);
         officeRepository = new OfficeRepository(context, sieveProcessor);
         organizationRepository = new OrganizationRepository(context, sieveProcessor);
+        agencyRepository = new AgencyRepository(context, sieveProcessor);
         organizationFundSourceRepository = new Repository<Domain.Entities.Planning.OrganizationFundSource>(context, sieveProcessor);
         fundSourceRepository = new FundSourceRepository(context, sieveProcessor);
         locationRepository = new LocationRepository(context, sieveProcessor);
@@ -363,6 +365,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDeliveryUnitRepository DeliveryUnitRepository => deliveryUnitRepository;
     public IOfficeRepository OfficeRepository => officeRepository;
     public IOrganizationRepository OrganizationRepository => organizationRepository;
+    public IAgencyRepository AgencyRepository => agencyRepository;
     public IRepository<Domain.Entities.Planning.OrganizationFundSource> OrganizationFundSourceRepository => organizationFundSourceRepository;
     public IFundSourceRepository FundSourceRepository => fundSourceRepository;
     public ILocationRepository LocationRepository => locationRepository;

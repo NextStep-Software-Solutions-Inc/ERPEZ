@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Procurement.AOBs.Dtos;
+namespace ERPEZ.Application.Features.Procurement.AOBs.Dtos;
 
 public class AobItemDataDto
 {
@@ -53,8 +53,13 @@ public class AobSignatoryDataDto
     public string Role { get; set; } = string.Empty;
 }
 
-public class AobDataDto
+public class AobDataDto : ERPEZ.Application.Common.Interfaces.IAgencyLetterheadAware
 {
+    public string? ProcuringEntityName { get; set; }
+    public string? ProcuringEntityAddress { get; set; }
+    public byte[]? LogoBytes { get; set; }
+    public string? LetterheadAlignment { get; set; }
+
     public Guid AOBId { get; set; }
     public string AOBNumber { get; set; } = string.Empty;
     public string ProjectName { get; set; } = "[PROJECT NAME]";
