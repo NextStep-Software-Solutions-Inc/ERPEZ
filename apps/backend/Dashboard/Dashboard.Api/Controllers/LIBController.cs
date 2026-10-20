@@ -16,11 +16,15 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Api.Attributes;
 
 namespace ERPEZ.Api.Controllers;
 
 [Route("libs")]
 [ApiController]
+[Authorize]
+[RequireModule("pbms")]
 public class LIBController(ISender mediator) : ControllerBase
 {
     [HttpPost]

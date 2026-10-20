@@ -1,0 +1,99 @@
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
+using MediatR;
+using Microsoft.Extensions.Logging;
+
+namespace ERPEZ.TenantManagement.Application.Features.Inquiries.Commands.RequestQuote;
+
+public partial class RequestQuoteCommandHandler(
+    ILogger<RequestQuoteCommandHandler> logger,
+    ERPEZ.TenantManagement.Application.Features.Inquiries.Common.IInquiryStore? inquiryStore = null)
+    : IRequestHandler<RequestQuoteCommand, ApiResponse<QuoteResponseDto>>
+{
+    public async Task<ApiResponse<QuoteResponseDto>> Handle(RequestQuoteCommand command, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(command.ContactName))
+        {
+            return ApiResponse<QuoteResponseDto>.Fail("Contact name is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(command.OrganizationName))
+        {
+            return ApiResponse<QuoteResponseDto>.Fail("Organization name is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(command.Email) || !EmailRegex().IsMatch(command.Email.Trim()))
+        {
+            return ApiResponse<QuoteResponseDto>.Fail("A valid work email address is required.");
+        }
+
+        var planTier = string.IsNullOrWhiteSpace(command.Tier) ? "Starter" : command.Tier.Trim();
+        var standardModules = PlanModuleCatalog.GetModulesForPlan(planTier);
+        var requested = command.RequestedModules != null && command.RequestedModules.Count > 0
+            ? command.RequestedModules.Distinct().ToList()
+            : standardModules;
+
+        var referenceCode = $"QT-{DateTime.UtcNow:yyyyMMdd}-{RandomNumberGenerator.GetHexString(6).ToUpperInvariant()}";
+        var isAirGapped = command.DeploymentType.Equals("on-premise", StringComparison.OrdinalIgnoreCase);
+
+        var deliveryTime = isAirGapped
+            ? "1-3 business days for offline license certificate generation"
+            : "Immediate workspace provisioning available upon confirmation";
+
+        var scopeSummary = $"{command.PlanName} ({command.TeamSize} users) with {string.Join(", ", requested.Select(m => m.ToUpperInvariant()))} - {(isAirGapped ? "Air-Gapped Sovereign" : "Cloud SaaS")}";
+
+        logger.LogInformation(
+            "Quote requested: Reference={ReferenceCode}, Email={Email}, Organization={Org}, Plan={Plan}, Deployment={Deployment}",
+            referenceCode, command.Email.Trim(), command.OrganizationName.Trim(), command.PlanName, command.DeploymentType);
+
+        var now = DateTime.UtcNow;
+        var responseDto = new QuoteResponseDto
+        {
+            ReferenceCode = referenceCode,
+            PlanName = string.IsNullOrWhiteSpace(command.PlanName) ? planTier : command.PlanName,
+            Tier = planTier,
+            DeploymentType = isAirGapped ? "Air-Gapped On-Premise" : "Cloud SaaS (Datacenter)",
+            EstimatedDelivery = deliveryTime,
+            ScopeSummary = scopeSummary,
+            IncludedModules = requested,
+            SubmittedAtUtc = now,
+            Message = "Your customized scope quote has been generated. Our solutions team will reach out with commercial details."
+        };
+
+        if (inquiryStore != null)
+        {
+            try
+            {
+                await inquiryStore.AddQuoteAsync(new ERPEZ.TenantManagement.Application.Features.Inquiries.Common.QuoteInquiryDto
+                {
+                    ReferenceCode = referenceCode,
+                    ContactName = command.ContactName.Trim(),
+                    Email = command.Email.Trim(),
+                    Phone = command.Phone?.Trim() ?? command.PhoneNumber?.Trim() ?? string.Empty,
+                    OrganizationName = command.OrganizationName.Trim(),
+                    TeamSize = command.TeamSize ?? string.Empty,
+                    PlanName = responseDto.PlanName,
+                    Tier = responseDto.Tier,
+                    DeploymentType = responseDto.DeploymentType,
+                    RequestedModules = requested.ToList(),
+                    ScopeSummary = scopeSummary,
+                    EstimatedDelivery = deliveryTime,
+                    Status = "Pending Review",
+                    SubmittedAtUtc = now
+                }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to persist Quote inquiry: ReferenceCode={ReferenceCode}, Email={Email}", referenceCode, command.Email);
+                return ApiResponse<QuoteResponseDto>.Fail("We are temporarily unable to process your quote request. Please try again shortly or contact support.");
+            }
+        }
+
+        return ApiResponse<QuoteResponseDto>.Success(responseDto, "Quote request submitted successfully.");
+    }
+
+    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase)]
+    private static partial Regex EmailRegex();
+}

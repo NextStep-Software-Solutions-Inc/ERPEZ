@@ -26,6 +26,7 @@ interface EditCustomRoleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  tenantId?: string;
 }
 
 export function EditCustomRoleModal({
@@ -33,6 +34,7 @@ export function EditCustomRoleModal({
   open,
   onOpenChange,
   onSuccess,
+  tenantId,
 }: EditCustomRoleModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -99,6 +101,7 @@ export function EditCustomRoleModal({
           name: name.trim(),
           description: description.trim() || undefined,
           permissionKeys: Array.from(selectedKeys),
+          tenantId: role.tenantId || tenantId,
         },
       });
 

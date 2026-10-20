@@ -19,6 +19,7 @@ import { Link, useLocation, } from "react-router"
 import * as LucideIcons from "lucide-react"
 import { useWorkspace } from "~/providers/TenantProvider"
 import { usePermissions } from "~/hooks/usePermissions"
+import { useClerkAuth } from "~/providers/ClerkAuthProvider"
 
 import { getDashboardUrl } from "~/config/env"
 
@@ -36,7 +37,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
   const { workspace } = useWorkspace()
   const { hasPermission } = usePermissions()
+  const { isSuperAdmin } = useClerkAuth()
   const dashboardUrl = getDashboardUrl()
+
+  const activePlan = (workspace?.tenantSubscription?.plan || "Starter").toLowerCase();
+
+  const isPlanHidden = (link: (typeof navigationLinks)[number]["items"][number]) => {
+    if (!link.hiddenForPlans || link.hiddenForPlans.length === 0) return false;
+    return link.hiddenForPlans.some((plan) =>
+      activePlan.includes(plan.toLowerCase())
+    );
+  };
 
   return (
     <Sidebar {...props}>
@@ -62,11 +73,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </div>
           );
         })()}
+        {isSuperAdmin && (
+          <div className="px-2 pb-1">
+            <Link
+              to="/super-admin/overview"
+              className="flex items-center justify-center gap-2 w-full py-2 px-3 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg shadow-xs transition-all"
+            >
+              <LucideIcons.ShieldAlert className="size-3.5" />
+              <span>Super Admin Portal</span>
+            </Link>
+          </div>
+        )}
       </SidebarHeader>
       <SidebarContent>
         {navigationLinks.map((item) => {
           const visibleItems = item.items.filter(
-            (link) => !link.permission || hasPermission(link.permission)
+            (link) => (!link.permission || hasPermission(link.permission)) && !isPlanHidden(link)
           );
           if (visibleItems.length === 0) return null;
 

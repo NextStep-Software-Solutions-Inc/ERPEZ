@@ -8,11 +8,15 @@ import { planLabel } from "~/lib/tenant"
 function OverviewRecentActivity({ planName: planProp }: { planName?: string }) {
     const { tenant } = useTenant();
     const planName = planProp || planLabel(tenant?.tenantSubscription?.plan);
-    const activities = buildActivities(planName);
+    const activities = buildActivities(planName, {
+        startDate: tenant?.tenantSubscription?.startDate,
+        isDisabled: tenant?.isDisabled,
+        tenantName: tenant?.name,
+    });
 
     return (
         <div className="pt-8">
-            <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
+            <h2 className="text-lg font-semibold mb-4">Workspace Summary</h2>
             <Card>
                 <CardContent className="divide-y">
                     {activities.length === 0 ? (

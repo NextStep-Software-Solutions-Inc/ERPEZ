@@ -12,12 +12,14 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using ERPEZ.Api.Attributes;
 
 namespace ERPEZ.Api.Controllers;
 
 [Route("fiscal-years")]
 [ApiController]
 [Authorize]
+[RequireModule("pbms")]
 public class FiscalYearController(ISender mediator) : ControllerBase
 {
     [HttpPost]

@@ -9,12 +9,14 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using ERPEZ.Api.Attributes;
 
 namespace ERPEZ.Api.Controllers;
 
 [Route("function-configs")]
 [ApiController]
 [Authorize]
+[RequireModule("pbms")]
 public class FunctionConfigController(ISender mediator) : ControllerBase
 {
     [HttpPost]

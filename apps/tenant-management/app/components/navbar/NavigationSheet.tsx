@@ -7,7 +7,7 @@ import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { UserMenu } from "~/components/navbar/UserMenu";
 
 export const NavigationSheet = () => {
-    const { isAuthenticated, login } = useClerkAuth();
+    const { isAuthenticated, login, isSuperAdmin } = useClerkAuth();
 
     return (
         <Sheet>
@@ -46,7 +46,7 @@ export const NavigationSheet = () => {
                             </Button>
                         </>
                     ) : (
-                        <Link to="/overview">
+                        <Link to={isSuperAdmin ? "/super-admin/overview" : "/overview"}>
                             <Button variant="outline" className="w-full">Go to Dashboard</Button>
                         </Link>
                     )}

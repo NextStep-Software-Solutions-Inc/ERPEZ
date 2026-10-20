@@ -27,8 +27,8 @@ export default [
           route("license-management", "routes/protected/license-management.tsx"),
           route("package-download", "routes/protected/package-download.tsx"),
           route("tenant-member", "routes/protected/tenant-member.tsx"),
-          route("roles", "routes/protected/roles.tsx"),
         ]),
+        route("roles", "routes/protected/roles.tsx"),
         route("register-tenant", "routes/protected/register-tenant.tsx"),
         route("plan", "routes/protected/plan.tsx"),
 
@@ -39,7 +39,9 @@ export default [
             "super-admin/tenant-management",
             "routes/super-admin/tenant-management.tsx"
           ),
+          route("super-admin/inquiries", "routes/super-admin/inquiries.tsx"),
           route("super-admin/users", "routes/super-admin/users.tsx"),
+          route("super-admin/roles", "routes/super-admin/roles.tsx"),
           route("super-admin/tenant/:id", "routes/protected/tenant/[id].tsx"),
           route("super-admin/settings", "routes/super-admin/settings.tsx"),
         ]),

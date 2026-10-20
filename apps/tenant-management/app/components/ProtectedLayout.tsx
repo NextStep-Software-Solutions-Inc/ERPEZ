@@ -18,9 +18,5 @@ export default function ProtectedLayout() {
         return <Navigate to="/sign-in" replace />;
     }
 
-    if (isSuperAdmin && !location.pathname.startsWith("/super-admin")) {
-        return <Navigate to="/super-admin/overview" replace />;
-    }
-
     return <Outlet />;
 }

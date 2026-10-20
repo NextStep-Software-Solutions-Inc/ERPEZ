@@ -10,6 +10,7 @@ export interface CreateCustomRolePayload {
   name: string;
   description?: string;
   permissionKeys: string[];
+  tenantId?: string;
 }
 
 export const createCustomRoleRequest: MutationBlueprintFromTemplate<
@@ -20,7 +21,12 @@ export const createCustomRoleRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.post<APIResponse<string>>(finalUrl, payload);
+    const { tenantId, ...body } = payload || ({} as CreateCustomRolePayload);
+    const response = await api.post<APIResponse<string>>(
+      finalUrl,
+      body,
+      tenantId ? { headers: { 'X-Tenant-Id': tenantId } } : undefined
+    );
     return response.data;
   },
 };

@@ -20,6 +20,7 @@ interface DeleteCustomRoleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  tenantId?: string;
 }
 
 export function DeleteCustomRoleModal({
@@ -27,6 +28,7 @@ export function DeleteCustomRoleModal({
   open,
   onOpenChange,
   onSuccess,
+  tenantId,
 }: DeleteCustomRoleModalProps) {
   const deleteMutation = useDeleteRole();
 
@@ -36,6 +38,9 @@ export function DeleteCustomRoleModal({
     try {
       await deleteMutation.mutateAsync({
         pathParams: { id: role.id },
+        payload: {
+          tenantId: role.tenantId || tenantId,
+        },
       });
 
       toast.success(`Role "${role.name}" deleted successfully.`);

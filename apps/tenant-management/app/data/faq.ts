@@ -22,21 +22,21 @@ export const faqs = [
   {
     question: "What is the difference between ERPez Cloud SaaS and On-Premise deployments?",
     answer:
-      "ERPez Cloud SaaS is fully managed in our secure ERPez Datacenter with automated multi-tenancy, elasticity, and immediate updates. On-Premise is an air-gapped deployment bundle designed for customer-owned servers with an isolated standalone database, zero cloud tethering, and strict local governance.",
+      "ERPez Cloud SaaS is managed in a cloud multi-tenant environment with centralized provisioning and updates. On-Premise is a self-hosted deployment option designed for customer-managed servers with dedicated database isolation and domain-bound license keys.",
   },
   {
-    question: "How does offline licensing work in an air-gapped On-Premise environment?",
+    question: "How does cryptographic licensing work for On-Premise deployments?",
     answer:
-      "Each On-Premise subscription issues a unique cryptographic license key structured as [PREFIX]-[PLAN]-[EXPIRY]-[TOKEN]-[CHECKSUM]. It is cryptographically bound to the administrator's authorized email address and allowed domain, enabling authentic validation without requiring an external internet connection.",
+      "Each On-Premise subscription issues a unique cryptographic license key structured as [PREFIX]-[PLAN]-[EXPIRY]-[TOKEN]-[CHECKSUM]. It is cryptographically bound to the administrator's authorized email address and allowed domain using HMAC-SHA256 signature verification.",
   },
   {
     question: "Can we manage tenants locally on an On-Premise installation?",
     answer:
-      "Yes. On-Premise deployments allow administrators to register and manage local tenants/subsidiaries directly within the self-hosted environment, governed by the maximum tenant quota and domain constraints defined in their license key.",
+      "Yes. On-Premise deployments allow administrators to register and manage local tenants/subsidiaries within their self-hosted environment, governed by the maximum tenant quota and domain constraints defined in their license key.",
   },
   {
     question: "How do domain constraints and tenant status controls protect our system?",
     answer:
-      "Super administrators can instantly enable or disable tenants to suspend unauthorized access. Furthermore, if a request domain does not match the license's AllowedDomain constraint, the system immediately disables authentication to prevent spoofing or unauthorized deployment clones.",
+      "Super administrators can enable or disable tenant workspaces to control organizational access. Additionally, license validation checks the configured AllowedDomain constraint (including exact domains, wildcard subdomains, or localhost) when verifying deployment license keys.",
   },
 ];

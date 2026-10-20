@@ -37,7 +37,6 @@ import {
 } from '~/components/ui/dialog';
 import { UserPlus, Loader2, Copy, Check, Users, ArrowUpRight, AlertCircle, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { RolesManagementView } from '~/components/features/roles/RolesManagementView';
 
 const useTenantMembers = createQueryHookFromTemplate(getTenantMembersRequest);
 const useAssignableRoles = createQueryHookFromTemplate(getAssignableRolesRequest);
@@ -55,14 +54,12 @@ function TenantMemberPage() {
     const { hasPermission } = usePermissions();
     const canManageMembers = hasPermission('tenant.members.manage');
 
-    const [activeTab, setActiveTab] = useState<'members' | 'roles'>('members');
-
     // Invite Modal State
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
-    const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+    const [selectedRoleId, setSelectedRoleId] = useState<string>('');
 
     // Post-Invite Token Dialog State
     const [invitationResult, setInvitationResult] = useState<{ email: string; token: string; expiresAt?: string } | null>(null);
@@ -173,7 +170,7 @@ function TenantMemberPage() {
                     email: email.trim(),
                     firstName: firstName.trim(),
                     lastName: lastName.trim(),
-                    roleIds: selectedRoleIds.length > 0 ? selectedRoleIds : undefined,
+                    roleIds: selectedRoleId ? [selectedRoleId] : undefined,
                 },
             });
 
@@ -181,7 +178,7 @@ function TenantMemberPage() {
             setFirstName('');
             setLastName('');
             setEmail('');
-            setSelectedRoleIds([]);
+            setSelectedRoleId('');
             await refetch();
 
             if (res?.data?.invitationToken) {
@@ -329,7 +326,7 @@ function TenantMemberPage() {
     return (
         <PageContainer
             title="Members"
-            description={`Manage members of ${tenant?.name || 'this workspace'}, assign workspace roles, and govern access permissions.`}
+            description={`Manage members of ${tenant?.name || 'this workspace'} and assign workspace roles.`}
             actions={
                 canManageMembers ? (
                     <Button
@@ -343,38 +340,7 @@ function TenantMemberPage() {
             }
         >
             <div className="space-y-6">
-                <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('members')}
-                        className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
-                            activeTab === 'members'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 hover:bg-slate-100'
-                        }`}
-                    >
-                        <Users className="w-3.5 h-3.5" />
-                        Workspace Members ({data.length})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('roles')}
-                        className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
-                            activeTab === 'roles'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 hover:bg-slate-100'
-                        }`}
-                    >
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        Roles & Permissions ({assignableRoles.length})
-                    </button>
-                </div>
-
-                {activeTab === 'roles' ? (
-                    <RolesManagementView />
-                ) : (
-                    <>
-                        {/* Plan Seat Usage Indicator Banner */}
+                {/* Plan Seat Usage Indicator Banner */}
                         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -503,8 +469,6 @@ function TenantMemberPage() {
                     readonly
                     toolbar={(table) => <Toolbar table={table} />}
                 />
-                    </>
-                )}
             </div>
 
             {/* Invite Member Dialog */}
@@ -573,36 +537,32 @@ function TenantMemberPage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-700">Assignable Governance Roles</Label>
+                                <Label className="text-xs text-slate-700 font-medium">Assignable Governance Role</Label>
                                 <div className="max-h-48 overflow-y-auto space-y-1.5 border rounded-lg p-2.5 bg-slate-50/50">
-                                    {governanceAssignableRoles.map((role) => (
-                                        <label
-                                            key={role.id}
-                                            className="flex items-center space-x-2 text-xs cursor-pointer hover:bg-white p-1.5 rounded transition"
-                                        >
-                                            <Checkbox
-                                                checked={selectedRoleIds.includes(role.id)}
-                                                onCheckedChange={(checked) => {
-                                                    if (checked) {
-                                                        setSelectedRoleIds((prev) => [...prev, role.id]);
-                                                    } else {
-                                                        setSelectedRoleIds((prev) =>
-                                                            prev.filter((id) => id !== role.id)
-                                                        );
-                                                    }
-                                                }}
-                                            />
-                                            <span className="font-medium text-slate-800">{role.name}</span>
-                                            {role.isSystemRole && (
-                                                <Badge variant="outline" className="text-[10px] ml-auto py-0">
-                                                    System
-                                                </Badge>
-                                            )}
-                                        </label>
-                                    ))}
+                                    {governanceAssignableRoles.map((role) => {
+                                        const isSelected = selectedRoleId === role.id;
+                                        return (
+                                            <label
+                                                key={role.id}
+                                                className={`flex items-center space-x-2.5 text-xs cursor-pointer p-2 rounded-md transition ${
+                                                    isSelected
+                                                        ? "bg-blue-50/80 border border-blue-200 text-blue-900 font-medium"
+                                                        : "hover:bg-white border border-transparent text-slate-700"
+                                                }`}
+                                            >
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onCheckedChange={(checked) => {
+                                                        setSelectedRoleId(checked ? role.id : '');
+                                                    }}
+                                                />
+                                                <span className="font-medium text-slate-800">{role.name}</span>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                                 <p className="text-[11px] text-muted-foreground">
-                                    If no roles are selected, the default Tenant Member role will be assigned.
+                                    If no role is selected, the default Tenant Member role will be assigned.
                                 </p>
                             </div>
                         </div>
