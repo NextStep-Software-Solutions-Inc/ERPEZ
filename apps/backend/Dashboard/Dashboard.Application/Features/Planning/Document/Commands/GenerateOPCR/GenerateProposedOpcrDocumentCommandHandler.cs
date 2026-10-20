@@ -1,4 +1,5 @@
 // GenerateProposedOpcrDocumentCommandHandler.cs
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateOPCRRating;
 using ERPEZ.Application.Features.Planning.Document.Mappers;
@@ -28,7 +29,11 @@ public class GenerateProposedOpcrDocumentCommandHandler(
             ?? throw new NotFoundException("OPCR not found.");
 
         // ── 2. Map ───────────────────────────────────────────────────────────
-        var dataDto = OpcrMapper.MapToBaseDto(opcr, includeRatings: false);
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, opcr.OfficeId, opcr.FiscalYearId, "OPCR", cancellationToken);
+        var officeHead = await DocumentSignatoryResolver
+            .ResolveOfficeHeadSignatoryAsync(unitOfWork, opcr.OfficeId, cancellationToken);
+        var dataDto = OpcrMapper.MapToBaseDto(opcr, includeRatings: false, workflowApprovers: wf, officeHead: officeHead);
 
         // ── 3. Render ────────────────────────────────────────────────────────
         var bytes = await rendererService.RenderAsync(

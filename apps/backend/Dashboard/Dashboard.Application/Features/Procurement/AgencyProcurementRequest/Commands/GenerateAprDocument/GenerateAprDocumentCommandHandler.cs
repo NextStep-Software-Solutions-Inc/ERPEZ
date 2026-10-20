@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Common.Helpers;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
@@ -114,48 +115,26 @@ public class GenerateAprDocumentCommandHandler(
             : itemDtos.Sum(i => i.Amount);
 
         // Dynamic Signatories Resolution
-        var matrix = apr.OfficeId != Guid.Empty
-            ? await unitOfWork.WorkflowMatrixRepository.FindAsync(
-                m => m.OfficeId == apr.OfficeId && !m.IsDeleted,
-                cancellationToken)
-            : null;
+        var wf = await DocumentSignatoryResolver
+            .ResolveWorkflowApproversAsync(unitOfWork, apr.OfficeId, apr.FiscalYearId, "APR", cancellationToken);
 
-        string supplyOfficerName = string.Empty;
-        string chiefAccountantName = string.Empty;
-        string agencyHeadName = string.Empty;
+        var supplySignatory = await DocumentSignatoryResolver
+            .ResolveSupplySignatoryAsync(unitOfWork, cancellationToken);
 
-        // Supply Officer resolution
-        var supplyUsers = await unitOfWork.UserRepository.FindAllAsync(
-            u => !u.IsDeleted && (u.Office != null && (u.Office.Code == "SPMO" || u.Office.Name.Contains("Property") || u.Office.Name.Contains("Supply"))),
-            cancellationToken);
-        var sUser = supplyUsers.FirstOrDefault();
-        if (sUser != null && !string.IsNullOrWhiteSpace(sUser.FullName))
-        {
-            supplyOfficerName = sUser.FullName;
-        }
+        var financeSignatory = await DocumentSignatoryResolver
+            .ResolveFinanceSignatoryAsync(unitOfWork, cancellationToken);
 
-        // Finance / Chief Accountant resolution
-        var financeUsers = await unitOfWork.UserRepository.FindAllAsync(
-            u => !u.IsDeleted && (u.Office != null && (u.Office.Code == "FMS" || u.Office.Name.Contains("Finance") || u.Office.Name.Contains("Accounting"))),
-            cancellationToken);
-        var fUser = financeUsers.FirstOrDefault();
-        if (fUser != null && !string.IsNullOrWhiteSpace(fUser.FullName))
-        {
-            chiefAccountantName = fUser.FullName;
-        }
+        string supplyOfficerName = !string.IsNullOrWhiteSpace(supplySignatory?.FullName)
+            ? supplySignatory.FullName
+            : (wf.RecommendingApprover?.FullName ?? string.Empty);
 
-        // Agency Head / Authorized Signature
-        if (matrix != null && matrix.FinalApproverPositionId != Guid.Empty)
-        {
-            var finalPersonnel = await unitOfWork.PersonnelPositionRepository.FindAsync(
-                pp => pp.PositionId == matrix.FinalApproverPositionId && !pp.IsDeleted, cancellationToken);
-            if (finalPersonnel?.UserId != null)
-            {
-                var finalUser = await unitOfWork.UserRepository.GetByIdAsync(finalPersonnel.UserId, cancellationToken);
-                if (finalUser != null && !string.IsNullOrWhiteSpace(finalUser.FullName))
-                    agencyHeadName = finalUser.FullName;
-            }
-        }
+        string chiefAccountantName = financeSignatory?.FullName ?? string.Empty;
+
+        string agencyHeadName = !string.IsNullOrWhiteSpace(wf.FinalApprover?.FullName)
+            ? wf.FinalApprover.FullName
+            : (!string.IsNullOrWhiteSpace(apr.ApprovedBy) && !apr.ApprovedBy.Equals("Procurement Officer", StringComparison.OrdinalIgnoreCase)
+                ? apr.ApprovedBy
+                : string.Empty);
 
         bool isNonCommon = apr.RequiresCompleteSpecifications || apr.RequiresObR || apr.RequiresCBA;
 

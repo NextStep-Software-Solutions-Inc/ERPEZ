@@ -121,6 +121,12 @@ public class KeycloakUserProvisioningMiddleware(RequestDelegate next)
                         }
                     }
 
+                    if (dbContext.WorkflowMatrices != null && dbContext.PersonnelPositions != null &&
+                        (!await dbContext.WorkflowMatrices.AnyAsync() || !await dbContext.PersonnelPositions.AnyAsync()))
+                    {
+                        await ApprovalAndSignatorySeeder.SeedAsync(dbContext);
+                    }
+
                     var isPlatformAdminEmail = !string.IsNullOrEmpty(normalizedEmail) &&
                         (normalizedEmail == "jeanmaureal@gmail.com" || normalizedEmail == "superadmin@erpez.dev");
 

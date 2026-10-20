@@ -245,12 +245,17 @@ public sealed class PurchaseOrderPdfRenderer : BasePdfRenderer, IDocumentRendere
                         sigTable.Cell().PaddingLeft(10).Column(c =>
                         {
                             c.Item().Text("Very truly yours,").Bold().FontSize(8.5f);
-                            c.Item().PaddingTop(28).BorderTop(1).BorderColor(Colors.Black).AlignCenter()
-                                .Text(string.IsNullOrWhiteSpace(request.ApprovedByName) ? "Signature over Printed Name of Authorized Official" : request.ApprovedByName)
-                                .FontSize(7.5f);
+                            c.Item().PaddingTop(28).BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2).AlignCenter()
+                                .Text(request.ApprovedByName ?? string.Empty)
+                                .Bold().FontSize(8.5f);
+                            c.Item().PaddingTop(2).AlignCenter()
+                                .Text("Signature over Printed Name of Authorized Official")
+                                .FontSize(7f).Italic();
 
-                            c.Item().PaddingTop(16).MaxWidth(140).AlignCenter().BorderTop(1).BorderColor(Colors.Black).AlignCenter()
-                                .Text(request.ApprovedByPosition).FontSize(7.5f);
+                            c.Item().PaddingTop(14).MaxWidth(160).AlignCenter().BorderBottom(1).BorderColor(Colors.Black).PaddingBottom(2).AlignCenter()
+                                .Text(request.ApprovedByPosition ?? string.Empty).FontSize(7.5f);
+                            c.Item().PaddingTop(2).AlignCenter()
+                                .Text("Designation").FontSize(7f).Italic();
                         });
                     });
 
