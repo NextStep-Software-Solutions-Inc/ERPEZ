@@ -15,6 +15,8 @@ export interface APPItemFromAPI {
   id: string
   ppmpItemId?: string | null
   ppmpItemName?: string | null
+  itemNameOverride?: string | null
+  generalDescription?: string | null
   procurementModeId?: string | null
   procurementModeName?: string | null
   fundSourceId?: string | null
@@ -26,6 +28,20 @@ export interface APPItemFromAPI {
   epaRemarks?: string | null
   isEarlyProcurementActivity?: boolean
   isOutsourced?: boolean
+  startOfProcurementOverride?: string | null
+  endOfProcurementOverride?: string | null
+  estimatedBudgetOverride?: number | null
+  originalPPMPBudget?: number | null
+  effectiveABC?: number | null
+  effectiveStartOfProcurement?: string | null
+  effectiveEndOfProcurement?: string | null
+  isABCOverridden?: boolean
+  isStartProcurementOverridden?: boolean
+  isEndProcurementOverridden?: boolean
+  bidEvaluationCriteria?: string | null
+  procurementStrategies?: string[]
+  isNew?: boolean
+  isRevised?: boolean
   schedules?: any[]
   code?: string | null
   description?: string | null
@@ -83,15 +99,42 @@ export interface APPPPMPRelationFromAPI {
   PPMPItems?: APPPPMPItemFromAPI[]
 }
 
+export interface APPSignatoryFromAPI {
+  id: string
+  userId?: string | null
+  personnelPositionId?: string | null
+  name: string
+  position: string
+  department: string
+  signatureDate?: string | null
+}
+
+export interface APPSignatoriesFromAPI {
+  preparedBy?: APPSignatoryFromAPI[]
+  reviewedBy?: APPSignatoryFromAPI[]
+  approvedBy?: APPSignatoryFromAPI[]
+  certifiedBy?: APPSignatoryFromAPI[]
+}
+
 export interface AppDetailResponse {
   id: string
   appNumber: string
   name: string
   fiscalYearId: string
   fiscalYearName: string
-  officeId: string
-  officeName: string
-  isFinal: string
+  /** Indicative | Final | Updated */
+  appType?: string
+  /** e.g. Batch 1 */
+  batch?: string
+  /** e.g. Q1 */
+  quarter?: string
+  /** Version number for Updated APPs */
+  versionNumber?: number | null
+  /** Version date for Updated APPs (ISO string) */
+  versionDate?: string | null
+  /** Source APP ID for Updated APPs */
+  sourceAppId?: string | null
+  isFinal?: boolean | string
   remarks?: string
   description?: string
   status: string
@@ -101,6 +144,10 @@ export interface AppDetailResponse {
   createdBy?: string
   updatedAt?: string | null
   updatedBy?: string | null
+  derivedFinalAppId?: string | null
+  derivedFinalAppNumber?: string | null
+  derivedFinalAppName?: string | null
+  derivedFinalAppStatus?: string | null
   FiscalYear?: {
     id: string
     year: number
@@ -108,15 +155,9 @@ export interface AppDetailResponse {
     startDate?: string | null
     endDate?: string | null
   }
-  Office?: {
-    id: string
-    name: string
-    code: string
-    responsibilityCenterCode?: string
-    budgetCostCenter?: string
-  }
   APPItems?: APPItemFromAPI[]
   APPPPMPs?: APPPPMPRelationFromAPI[]
+  signatories?: APPSignatoriesFromAPI
 }
 
 /**

@@ -4,7 +4,7 @@
  * Includes PDF document upload for approval record
  */
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -25,14 +25,21 @@ import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, Upload, FileText, AlertCircle } from 'lucide-react'
 import type { AOB } from '../types/aobTypes'
+import { AOBStatus } from '../types/aobTypes'
+import { useKeycloak } from '@/providers/KeycloakProvider'
 
 /**
  * Zod schema for approve AOB form
  */
 const approveAOBSchema = z.object({
   approvalDocument: z
-    .instanceof(File, { message: 'PDF document is required' })
-    .refine((file) => file.type === 'application/pdf', 'File must be a PDF'),
+    .any()
+    .optional()
+    .nullable()
+    .refine(
+      (file) => !file || (file instanceof File && file.type === 'application/pdf'),
+      'File must be a PDF'
+    ),
   approvalRemarks: z.string().max(500, 'Remarks must be 500 characters or less').optional(),
   approvedBy: z.string().min(1, 'Name is required'),
 })
@@ -46,7 +53,7 @@ interface ApproveAOBDialogProps {
   winnerCount?: number
   totalItems?: number
   onApprove?: (data: {
-    approvalDocument: File
+    approvalDocument?: File | null
     approvalRemarks?: string
     approvedBy: string
   }) => Promise<void>
@@ -64,16 +71,46 @@ export function ApproveAOBDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
 
+  const keycloak = (() => {
+    try {
+      return useKeycloak()
+    } catch {
+      return null
+    }
+  })()
+
+  const defaultAuthorizer =
+    [keycloak?.firstName, keycloak?.lastName].filter(Boolean).join(' ') ||
+    keycloak?.userName ||
+    aob?.approvedBy ||
+    ''
+
   const form = useForm<ApproveAOBFormValues>({
     resolver: zodResolver(approveAOBSchema),
     mode: 'onBlur',
+    defaultValues: {
+      approvedBy: defaultAuthorizer,
+      approvalRemarks: '',
+      approvalDocument: null,
+    },
   })
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        approvedBy: defaultAuthorizer,
+        approvalRemarks: '',
+        approvalDocument: null,
+      })
+      setUploadedFile(null)
+    }
+  }, [open, defaultAuthorizer, form])
 
   const onSubmit = async (data: ApproveAOBFormValues) => {
     try {
       setIsSubmitting(true)
       await onApprove?.({
-        approvalDocument: data.approvalDocument,
+        approvalDocument: data.approvalDocument ?? null,
         approvalRemarks: data.approvalRemarks,
         approvedBy: data.approvedBy,
       })
@@ -109,11 +146,18 @@ export function ApproveAOBDialog({
     }
   }
 
-  const isAllItemsAwarded = winnerCount === totalItems && totalItems > 0
+  const hasItemCount = (totalItems ?? 0) > 0
+  const isAllItemsAwarded = hasItemCount
+    ? (winnerCount ?? 0) >= (totalItems ?? 0)
+    : Boolean(
+        aob?.status === AOBStatus.FOR_APPROVAL ||
+        aob?.status === AOBStatus.APPROVED ||
+        (aob?.awardedItems && aob.awardedItems.length > 0)
+      )
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md max-h-96 overflow-y-auto">
+      <AlertDialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Approve AOB</AlertDialogTitle>
           <AlertDialogDescription>
@@ -179,7 +223,10 @@ export function ApproveAOBDialog({
               name="approvalDocument"
               render={() => (
                 <FormItem>
-                  <FormLabel>Approval Document (PDF)</FormLabel>
+                  <FormLabel>
+                    Approval Document (PDF){' '}
+                    <span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+                  </FormLabel>
                   <FormControl>
                     <div
                       onClick={() => fileInputRef.current?.click()}
@@ -229,7 +276,7 @@ export function ApproveAOBDialog({
                     </div>
                   </FormControl>
                   <FormDescription className="text-xs">
-                    Upload the signed AOB approval document
+                    Optional: Upload the signed AOB approval document
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -282,15 +329,19 @@ export function ApproveAOBDialog({
         </Form>
 
         {/* Dialog Footer */}
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSubmitting}>
+        <AlertDialogFooter className="gap-2 sm:gap-2 pt-2">
+          <AlertDialogCancel
+            variant="outline"
+            disabled={isSubmitting}
+            className="h-10 px-5 text-sm font-medium border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
             form="approve-aob-form"
             type="submit"
             disabled={isSubmitting || !isAllItemsAwarded}
-            className="bg-green-600 hover:bg-green-700"
+            className="h-10 px-6 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white min-w-[140px] shadow-sm"
           >
             {isSubmitting ? 'Approving...' : 'Approve AOB'}
           </AlertDialogAction>

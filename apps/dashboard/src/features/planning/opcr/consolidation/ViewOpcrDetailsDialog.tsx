@@ -43,7 +43,11 @@ export function ViewOpcrDetailsDialog({
           <label className="text-sm font-semibold text-muted-foreground">
             Fiscal Year
           </label>
-          <p className="text-base font-medium mt-1">{opcr.fiscalYear?.year}</p>
+          <p className="text-base font-medium mt-1">
+            {typeof opcr.fiscalYear === 'number'
+              ? opcr.fiscalYear
+              : opcr.fiscalYear?.year}
+          </p>
         </div>
 
         <div>
@@ -92,7 +96,7 @@ export function ViewOpcrDetailsDialog({
             Created At
           </label>
           <p className="text-sm text-muted-foreground mt-1">
-            {new Date(opcr.createdAt).toLocaleString()}
+            {new Date(opcr.createdDate).toLocaleString()}
           </p>
         </div>
 

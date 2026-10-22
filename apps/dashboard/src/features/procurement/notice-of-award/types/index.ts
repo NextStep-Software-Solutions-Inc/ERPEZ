@@ -61,6 +61,7 @@ export type NoticeOfAwardBacResolutionLink = {
 }
 
 export type AwardBacResolutionSource = NoticeOfAwardBacResolutionLink & {
+  projectName?: string
   winningSupplierName: string
   awardedAmount: number
   linkedConsolidatedPr: ConsolidatedPr
@@ -97,6 +98,7 @@ export type NoticeOfAward = {
   approvedBy?: string | null
   approvedAt?: string | null
   issuedAt?: string | null
+  receivedAt?: string | null
   contractExecutionDeadline?: string | null
   conformeReceivedDate?: string | null
   performanceSecurityPostedDate?: string | null
@@ -115,12 +117,12 @@ export type NoticeOfAward = {
 }
 
 export type CreateNoticeOfAwardPayload = {
-  noaNumber: string
+  bacResolutionId: string
   date: string
   dateBid: string
   description: string
   type: NoticeOfAwardType
-  bacResolutionId: string
+  noaNumber?: string
 }
 
 export type SubmitNoticeOfAwardPayload = {

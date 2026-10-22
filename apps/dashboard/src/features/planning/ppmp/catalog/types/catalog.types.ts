@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Catalog Type Definitions
  * Non-CSE Item Catalog & Item Request Workflow types
  */
@@ -46,10 +46,6 @@ export const ITEM_REQUEST_STATUS_OPTIONS = [
 
 export type ItemRequestStatus = (typeof ITEM_REQUEST_STATUS_OPTIONS)[number]
 
-export const CATALOG_ITEM_STATUS_OPTIONS = ['Active', 'Inactive'] as const
-
-export type CatalogItemStatus = (typeof CATALOG_ITEM_STATUS_OPTIONS)[number]
-
 /**
  * Item Request - User submission for new Non-CSE items
  * Status flow: Draft → Submitted → Approved/Returned
@@ -58,24 +54,34 @@ export type CatalogItemStatus = (typeof CATALOG_ITEM_STATUS_OPTIONS)[number]
 export interface ItemRequest {
   id: string
   name: string
-  procurementCategory: ProcurementCategory
+  procurementCategory?: ProcurementCategory | string | null
+  procurementCategoryId?: string | null
+  procurementCategoryName?: string | null
   itemCategory: string // UACS label (e.g., "IT Equipment")
   uacsCode?: string | null // Original UACS code from request
-  unitOfMeasure: string
+  unitOfMeasure?: string | null
+  uomId?: string | null
+  uomName?: string | null
   estimatedUnitCost: number
-  specifications: string
+  specifications?: string | null
+  technicalSpecification?: string | null
   imageUrl?: string | null
-  status: ItemRequestStatus
-  requestDate: Date
-  submittedAt?: Date | null
-  reviewedAt?: Date | null
+  status: ItemRequestStatus | string
+  requestDate: string | Date
+  submittedAt?: string | Date | null
+  reviewedAt?: string | Date | null
   reviewedBy?: string | null
-  requestingOffice: string
-  requestingUser: string
+  requestingOffice?: string
+  officeId?: string
+  officeName?: string
+  requestingUser?: string
   remarks?: string | null // For Return reason (admin-provided)
-  createdBy: string
+  twgRemarks?: string | null
+  createdBy?: string
+  createdAt?: string | Date
   // TWG Review Fields (optional)
   unspscCode?: string | null // UNSPSC mapping set by TWG
+  unscpscCode?: string | null
   isCSE?: boolean | null // Common-Use Supply/Equipment toggle set by TWG
 }
 
@@ -100,18 +106,16 @@ export interface NonCSEItem {
   subcategory?: string | null
   unitOfMeasure: string
   currentPrice: number
-  specification: string // Formerly "description"
+  specification: string
   itemType: ProcurementCategory
   supplier?: string | null
   imageUrl?: string | null
-  status: CatalogItemStatus
-  isActive: boolean // Controls visibility in catalogs
   uacsCode?: string | null
-  unspscCode: string // UNSPSC code (required, TWG-assigned)
-  isCSE: boolean // CSE flag (required, TWG-assigned); default: false (future-proof for CSE integration)
+  unspscCode: string
+  isCSE: boolean
   sourceRequestId?: string | null
-  requestingOffice?: string | null // Office that requested this item
-  requestingUser?: string | null // User who requested this item
+  requestingOffice?: string | null
+  requestingUser?: string | null
   createdDate: Date
   lastModified: Date
 }
@@ -145,7 +149,6 @@ export interface CreateCatalogItemInput {
   itemType: ProcurementCategory
   supplier?: string | null
   imageUrl?: string | null
-  isActive?: boolean
   uacsCode?: string | null
   unspscCode: string // Required
   isCSE: boolean // Required

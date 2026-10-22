@@ -18,6 +18,7 @@ This repository contains two primary services organized into subdirectories:
 - **Repository & Unit of Work Patterns**: Abstracts data access logic, keeping business rules clean and independent of the persistence technology.
 - **Advanced API Querying**: All API endpoints that return lists are paginated and utilize the **Sieve** library to handle complex filtering and sorting operations directly through query string parameters.
 - **Background Processing**: Integrated with **Hangfire** for scheduling and executing background jobs, such as sending reports or processing data.
+- **Granular RBAC Architecture**: Multi-tenant claims-based authorization with atomic functional permissions, controller guards (`[HasPermission]`), and UI route guards (`<RoutePermissionGuard>`). See [ROLES_AND_PERMISSIONS.md](ROLES_AND_PERMISSIONS.md) for full reference.
 
 ---
 

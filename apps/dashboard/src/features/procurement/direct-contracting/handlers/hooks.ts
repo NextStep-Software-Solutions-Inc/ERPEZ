@@ -5,14 +5,22 @@ import {
 } from 'erpez-shared-lib'
 import { getDirectContractingsRequest } from './getDirectContractingsRequest'
 import { getDirectContractingRequest } from './getDirectContractingRequest'
+import { getDirectContractingSummaryRequest } from './getDirectContractingSummaryRequest'
 import { createDirectContractingRequest } from './createDirectContractingRequest'
-import { updateDirectContractingRequest } from './updateDirectContractingRequest'
 import { changeDirectContractingStatusRequest } from './changeDirectContractingStatusRequest'
 import { submitProposalRequest } from './submitProposalRequest'
 import { reviewProposalRequest } from './reviewProposalRequest'
 import { approveDirectContractingRequest } from './approveDirectContractingRequest'
+import { deleteDirectContractingRequest } from './deleteDirectContractingRequest'
+import { getEligibleBacProjectsRequest } from './getEligibleBacProjectsRequest'
+import { generateDirectContractingDocumentRequest } from './generateDirectContractingDocumentRequest'
+import { downloadDirectContractingDocumentRequest } from './downloadDirectContractingDocumentRequest'
 
-const queryKeys = [['direct-contractings'], ['direct-contracting']] as const
+const queryKeys = [
+  ['direct-contractings'],
+  ['direct-contracting'],
+  ['/direct-contracting'],
+] as const
 
 type MutationResult<TData, TVariables> = UseMutationResult<
   TData,
@@ -64,6 +72,14 @@ export const useDirectContracting = createQueryHookFromTemplate(
   getDirectContractingRequest,
 )
 
+export const useDirectContractingSummary = createQueryHookFromTemplate(
+  getDirectContractingSummaryRequest,
+)
+
+export const useEligibleBacProjects = createQueryHookFromTemplate(
+  getEligibleBacProjectsRequest,
+)
+
 const useCreateDirectContractingBase = createMutationHookFromTemplate(
   createDirectContractingRequest,
 )
@@ -71,18 +87,9 @@ export const useCreateDirectContracting = makeMutationWithRefresh(
   useCreateDirectContractingBase,
 )
 
-const useUpdateDirectContractingBase = createMutationHookFromTemplate(
-  updateDirectContractingRequest,
-)
-export const useUpdateDirectContracting = makeMutationWithRefresh(
-  useUpdateDirectContractingBase,
-)
 
-const useChangeDirectContractingStatusBase = createMutationHookFromTemplate(
+export const useChangeDirectContractingStatus = createMutationHookFromTemplate(
   changeDirectContractingStatusRequest,
-)
-export const useChangeDirectContractingStatus = makeMutationWithRefresh(
-  useChangeDirectContractingStatusBase,
 )
 
 const useSubmitProposalBase = createMutationHookFromTemplate(
@@ -105,3 +112,16 @@ const useApproveDirectContractingBase = createMutationHookFromTemplate(
 export const useApproveDirectContracting = makeMutationWithRefresh(
   useApproveDirectContractingBase,
 )
+
+export const useDeleteDirectContracting = createMutationHookFromTemplate(
+  deleteDirectContractingRequest,
+)
+
+export const useGenerateDirectContractingDocument = createMutationHookFromTemplate(
+  generateDirectContractingDocumentRequest,
+)
+
+export const useDownloadDirectContractingDocument = createMutationHookFromTemplate(
+  downloadDirectContractingDocumentRequest,
+)
+

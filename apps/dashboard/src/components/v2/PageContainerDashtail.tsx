@@ -86,6 +86,7 @@ export interface PageContainerDashtailProps {
   isLoadingTab?: boolean
   /** Content to render after tabs (right side, for secondary navigation) */
   afterTabs?: ReactNode
+  breadcrumbs?: ReactNode
   /** Action elements for header (right side) */
   actions?: ReactNode
   /** Header presentation variant */
@@ -134,6 +135,7 @@ export function PageContainerDashtail({
   animateTabs = true,
   isLoadingTab = false,
   afterTabs,
+  breadcrumbs,
   actions,
   headerVariant = 'default',
   actionButtonVariant = 'default',
@@ -285,8 +287,8 @@ export function PageContainerDashtail({
               </TabsList>
             </div>
             {afterTabs && (
-              <div className="flex items-center shrink-0 ml-auto">
-                <div className="w-px h-6 bg-border mx-3" />
+              <div className="flex items-center shrink-0 ml-auto min-w-0 max-w-full overflow-x-auto">
+                <div className="w-px h-6 bg-border mx-3 shrink-0" />
                 {afterTabs}
               </div>
             )}
@@ -312,9 +314,10 @@ export function PageContainerDashtail({
     multiSection: contentType === 'table' ? 'space-y-6' : 'space-y-8',
   }
 
-  const containerClasses = cn('w-full', modeClasses[mode], containerClassName)
+  const containerClasses = cn('w-full min-w-0', modeClasses[mode], containerClassName)
 
   const contentClasses = cn(
+    'w-full min-w-0',
     mode === 'tabbed' ? 'py-6' : contentType === 'default' ? 'p-0' : 'py-6',
     contentType === 'table' ||
       contentType === 'cards' ||
@@ -333,7 +336,9 @@ export function PageContainerDashtail({
   const headerSection = (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 flex-1">
-        {backTo && (
+        {breadcrumbs ? (
+          <div className="mb-3">{breadcrumbs}</div>
+        ) : backTo ? (
           <div className="mb-4 flex items-center">
             <Button
               variant="outline"
@@ -366,7 +371,7 @@ export function PageContainerDashtail({
               )}
             </Button>
           </div>
-        )}
+        ) : null}
         <div className="flex items-start gap-4">
           {titleIcon && (
             <div

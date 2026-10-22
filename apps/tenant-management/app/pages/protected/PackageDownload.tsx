@@ -3,10 +3,20 @@ import { Badge } from "~/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import { Cloud, Server, } from "lucide-react"
 import { PageContainer } from "~/components/PageContainer"
+import { Navigate } from "react-router"
+import { useWorkspace } from "~/providers/TenantProvider"
 import PackageApiTab from "~/components/tab/PackageApiTab"
 import PackageCloudTab from "~/components/tab/PackageCloudTab"
 
 export default function PackageDownloadPage() {
+    const { workspace } = useWorkspace()
+    const activePlan = (workspace?.tenantSubscription?.plan || "Starter").toLowerCase()
+    const isStarter = activePlan.includes("starter")
+
+    if (isStarter) {
+        return <Navigate to="/overview" replace />
+    }
+
     return (
         <PageContainer
             title="Package Downloads"
@@ -31,9 +41,9 @@ export default function PackageDownloadPage() {
                                         <Server className="h-5 w-5 text-blue-600" />
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <span className="font-semibold text-balance">TenantFlow API Server</span>
+                                        <span className="font-semibold text-balance">ERP-EZ On-Premise Server</span>
                                         <p className="text-sm text-muted-foreground text-balance">
-                                            Standard API server for custom integration
+                                            Self-hosted deployment specifications & requirements
                                         </p>
                                         <Badge variant="outline" className="mt-2">on-premise</Badge>
                                     </div>
@@ -49,9 +59,9 @@ export default function PackageDownloadPage() {
                                         <Cloud className="h-5 w-5 text-blue-600" />
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <span className="font-semibold text-balance">TenantFlow Cloud Connector</span>
+                                        <span className="font-semibold text-balance">ERP-EZ Cloud Connector</span>
                                         <p className="text-sm text-muted-foreground text-balance">
-                                            Cloud deployment package with auto-scaling capabilities
+                                            Cloud deployment specifications & requirements
                                         </p>
                                         <Badge variant="outline" className="mt-2">cloud</Badge>
                                     </div>

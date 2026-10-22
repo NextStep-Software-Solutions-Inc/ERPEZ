@@ -1,7 +1,8 @@
-﻿import type {
+import type {
   BiddingMasterCalendarEvent,
   BiddingMasterCalendarFilters,
 } from '../types'
+import { getProcurementModeAbbreviation } from './modeUtils'
 
 export function applyCalendarFilters(
   events: BiddingMasterCalendarEvent[],
@@ -17,6 +18,13 @@ export function applyCalendarFilters(
       !event.projectNames.some((projectName) =>
         projectName.toLowerCase().includes(searchTerm),
       )
+    ) {
+      return false
+    }
+
+    if (
+      filters.bacResolutionId &&
+      event.bacResolutionId !== filters.bacResolutionId
     ) {
       return false
     }
@@ -62,6 +70,16 @@ export function applyCalendarFilters(
 
     if (filters.dateRangeEnd && event.eventDate > filters.dateRangeEnd) {
       return false
+    }
+
+    if (
+      filters.procurementModes &&
+      filters.procurementModes.length > 0
+    ) {
+      const mode = getProcurementModeAbbreviation(event)
+      if (!filters.procurementModes.includes(mode)) {
+        return false
+      }
     }
 
     return true

@@ -4,7 +4,7 @@
  * Mirrors Performance Review and Procurement Library patterns
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Card,
   CardContent,
@@ -39,48 +39,63 @@ export default function PurchaseRequestPageV2() {
       ? new URL(window.location.href).searchParams
       : new URL('http://localhost').searchParams
   const initialTabFromUrl = urlParams.get('tab') ?? undefined
+  const initialAprIdFromUrl = urlParams.get('aprId') ?? undefined
+  const initialAprNumberFromUrl = urlParams.get('aprNumber') ?? undefined
+  const initialOfficeIdFromUrl = urlParams.get('officeId') ?? undefined
 
-  const TAB_CONFIG = isManagePrsRoute
-    ? [
-        {
-          id: 'manage-pr',
-          label: 'Manage PR',
-          description: 'Review and approve submitted PRs',
-          icon: '✅',
-          role: 'approving-authority',
-        },
-      ]
-    : [
-        {
-          id: 'non-cse',
-          label: 'Non-CSE Items',
-          description: 'PR for Non-CSE items from approved PPMP',
-          icon: '📝',
-          role: 'office-staff',
-        },
-        {
-          id: 'out-of-stock',
-          label: 'Out-of-Stock Items',
-          description: 'PR for CSE out-of-stock items from approved APR',
-          icon: '📦',
-          role: 'procurement-staff',
-        },
-      ]
+  const TAB_CONFIG = useMemo(
+    () =>
+      isManagePrsRoute
+        ? [
+            {
+              id: 'manage-pr',
+              label: 'Manage PR',
+              description: 'Review and approve submitted PRs',
+              icon: '✅',
+              role: 'approving-authority',
+            },
+          ]
+        : [
+            {
+              id: 'non-cse',
+              label: 'Non-CSE Items',
+              description: 'PR for Non-CSE items from approved PPMP',
+              icon: '📝',
+              role: 'office-staff',
+            },
+            {
+              id: 'out-of-stock',
+              label: 'Out-of-Stock Items',
+              description: 'PR for CSE out-of-stock items from approved APR',
+              icon: '📦',
+              role: 'procurement-staff',
+            },
+          ],
+    [isManagePrsRoute],
+  )
 
-  const { purchaseRequests, setMetrics, setActivePR, ppmpItems } =
-    usePurchaseRequestStore()
+  const purchaseRequests = usePurchaseRequestStore((s) => s.purchaseRequests)
+  const setMetrics = usePurchaseRequestStore((s) => s.setMetrics)
+  const setActivePR = usePurchaseRequestStore((s) => s.setActivePR)
+  const ppmpItems = usePurchaseRequestStore((s) => s.ppmpItems)
 
-  // Helper: displayStatus prefers 'returned' when remarks exist to keep metrics consistent
+  // Helper: displayStatus respects approved, submitted, for-bac-utilization ground truth
   const getDisplayStatus = (p: PurchaseRequest) => {
+    if (!p) return 'draft'
+    if (p.status === 'approved' || p.status === 'submitted' || p.status === 'for-bac-utilization') {
+      return p.status
+    }
+    if (p.status === 'returned') {
+      return 'returned'
+    }
     try {
       if (
-        p &&
         (p as any).remarks &&
         (p as any).remarks.toString().trim().length > 0
       ) {
         return 'returned' as any
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     return p.status
@@ -173,6 +188,14 @@ export default function PurchaseRequestPageV2() {
     }
   }, [isManagePrsRoute, TAB_CONFIG, activeTab])
 
+  // Automatically trigger Create PR Modal when navigated from an APR deficit alert
+  useEffect(() => {
+    if (initialTabFromUrl === 'out-of-stock' && initialAprIdFromUrl) {
+      setCurrentPRType('out-of-stock')
+      setShowCreateModal(true)
+    }
+  }, [initialTabFromUrl, initialAprIdFromUrl])
+
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab)
 
@@ -201,7 +224,14 @@ export default function PurchaseRequestPageV2() {
 
   // Show PR details if viewing
   if (viewingPR) {
-    return <PRDetailsPage pr={viewingPR} onBack={handleBackFromDetails} />
+    const isManageView = isManagePrsRoute || activeTab === 'manage-pr'
+    return (
+      <PRDetailsPage
+        pr={viewingPR}
+        onBack={handleBackFromDetails}
+        isManagePRView={isManageView}
+      />
+    )
   }
 
   return (
@@ -292,15 +322,25 @@ export default function PurchaseRequestPageV2() {
       </Card>
 
       {/* Create PR Modal */}
-      <CreatePRModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-        prType={currentPRType}
-        onSuccess={(pr: PurchaseRequest) => {
-          // Optionally navigate to details
-          handleViewDetails(pr)
-        }}
-      />
+      {showCreateModal && (
+        <CreatePRModal
+          open={showCreateModal}
+          onOpenChange={setShowCreateModal}
+          prType={currentPRType}
+          initialOfficeId={initialOfficeIdFromUrl}
+          initialAprId={initialAprIdFromUrl}
+          initialAprNumber={initialAprNumberFromUrl}
+          initialPurpose={
+            currentPRType === 'out-of-stock' && initialAprIdFromUrl
+              ? `Procurement of out-of-stock CSE items from ${initialAprNumberFromUrl || 'approved APR'}`
+              : undefined
+          }
+          onSuccess={(pr: PurchaseRequest) => {
+            // Optionally navigate to details
+            handleViewDetails(pr)
+          }}
+        />
+      )}
     </div>
   )
 }

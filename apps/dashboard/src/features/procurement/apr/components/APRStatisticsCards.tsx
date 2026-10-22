@@ -12,6 +12,11 @@ interface APRStatisticsCardProps {
 }
 
 export function APRStatisticsCards({ statistics }: APRStatisticsCardProps) {
+  const approvedCount =
+    statistics.statisticsByStatus['APPROVED'] ??
+    statistics.statisticsByStatus['Approved'] ??
+    statistics.totalApproved
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       <StatCard
@@ -32,7 +37,7 @@ export function APRStatisticsCards({ statistics }: APRStatisticsCardProps) {
         label="Approved"
         value={statistics.totalApproved}
         icon={CheckCircle}
-        details={`${statistics.statisticsByStatus['APPROVED']} total`}
+        details={`${approvedCount} total`}
       />
 
       <StatCard

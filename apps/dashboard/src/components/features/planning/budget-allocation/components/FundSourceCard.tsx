@@ -4,20 +4,15 @@ import { getFundReceivingsRequest } from '../../fund-receiving/handlers/getFundR
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { formatCurrencyPHP, toTitleCase } from '@/utils/formatters'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { FundSourceCombobox } from '@/components/features/planning/fund-source/components/FundSourceCombobox'
 
 const useFundReceivings = createQueryHookFromTemplate(getFundReceivingsRequest)
 interface FundSource {
   id: string
   name: string
+  code?: string
 }
 interface FundSourceCardProps {
   index: number
@@ -66,15 +61,10 @@ export function FundSourceCard({
       0,
     ) || 0
 
-  const fundSourcesList = fundSources
-    .filter(
-      (fs) => !selectedFundSources.includes(fs.id) || fs.id === fundSourceId,
-    )
-    .map((fs) => (
-      <SelectItem key={fs.id} value={fs.id.toString()}>
-        {toTitleCase(fs.name)}
-      </SelectItem>
-    ))
+  const availableFundSources = fundSources.filter(
+    (fs) => !selectedFundSources.includes(fs.id) || fs.id === fundSourceId,
+  )
+
   return (
     <Card className="p-3 gap-0 border border-gray-200 shadow-sm bg-white">
       <div className="flex justify-between items-center border-b border-gray-50 mb-2 pb-1">
@@ -91,23 +81,21 @@ export function FundSourceCard({
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 mb-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 mb-2 gap-2">
         <div className="space-y-1">
           <label className="text-sm uppercase font-medium text-gray-500">
             Select Fund Source
           </label>
-          <Select
+          <FundSourceCombobox
+            options={availableFundSources}
             value={fundSourceId}
-            disabled={isLoading}
             onValueChange={(v) => {
               onFundSourceChange?.(index, v)
             }}
-          >
-            <SelectTrigger className="h-8">
-              <SelectValue placeholder="Choose source..." />
-            </SelectTrigger>
-            <SelectContent>{fundSourcesList}</SelectContent>
-          </Select>
+            placeholder="Choose source..."
+            searchPlaceholder="Search by code, name, authorization..."
+            disabled={isLoading}
+          />
         </div>
         <div className="space-y-1">
           <label className="text-sm uppercase font-medium text-gray-500">

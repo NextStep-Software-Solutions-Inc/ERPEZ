@@ -1,10 +1,10 @@
-import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
-import type { BackendDirectContractingItem } from '../store/directContractingStore'
+import type { APIResponse, MutationBlueprintFromTemplate } from 'erpez-shared-lib'
 import api from '@/services/api'
+import { DirectContracting } from '../types'
 
 const endpoint = '/direct-contracting'
 
-export interface CreateDirectContractingPayload {
+export type CreateDirectContractingPayload = {
   dcNumber: string
   name: string
   bacProjectId: string
@@ -14,19 +14,13 @@ export interface CreateDirectContractingPayload {
 
 export const createDirectContractingRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
-  BackendDirectContractingItem,
+  APIResponse<DirectContracting>,
   undefined,
   CreateDirectContractingPayload
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    if (!payload) {
-      throw new Error('Payload is required.')
-    }
-    const response = await api.post<{ succeeded: boolean; data: BackendDirectContractingItem }>(finalUrl, payload)
-    if (!response.data?.succeeded || !response.data.data) {
-      throw new Error('Failed to create Direct Contracting request.')
-    }
-    return response.data.data
+    const response = await api.post<APIResponse<DirectContracting>>(finalUrl, payload)
+    return response.data
   },
 }

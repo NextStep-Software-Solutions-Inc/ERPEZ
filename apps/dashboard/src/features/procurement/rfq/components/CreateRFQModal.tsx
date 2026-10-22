@@ -35,6 +35,9 @@ const createRFQSchema = z.object({
   tracingNumber: z.string().min(1, 'Tracing number is required'),
   deadline: z.date().optional(),
   deliveryPeriod: z.string().optional(),
+  supplierIds: z
+    .array(z.string())
+    .min(3, 'Please select at least 3 prospective suppliers.'),
   // modeOfProcurement removed — derived server-side from the Consolidated PR
   // items' ProcurementModeId once items are added, not user-selected. See
   // AddRFQItemsCommandHandler.
@@ -50,7 +53,7 @@ interface CreateRFQModalProps {
 }
 
 export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = null }: CreateRFQModalProps) {
-  const { createRFQ, updateRFQ } = useRFQStore()
+  const { createRFQ, updateRFQ, fetchNextRFQNumber } = useRFQStore()
   const { toast } = useToast()
   const isEditMode = !!initialRFQ
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -77,6 +80,7 @@ export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = nul
       tracingNumber: '',
       deadline: undefined,
       deliveryPeriod: '',
+      supplierIds: [],
     },
   })
 
@@ -98,6 +102,7 @@ export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = nul
   // Initialize form when editing
   useEffect(() => {
     if (initialRFQ) {
+      const initialSupplierIds = initialRFQ.suppliers?.map(s => s.id) ?? []
       form.reset({
         date: initialRFQ.date ? new Date(initialRFQ.date) : new Date(),
         rfqNumber: initialRFQ.rfqNumber,
@@ -105,25 +110,38 @@ export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = nul
         tracingNumber: initialRFQ.tracingNumber || '',
         deadline: initialRFQ.deadline ? new Date(initialRFQ.deadline) : undefined,
         deliveryPeriod: initialRFQ.deliveryPeriod || '',
+        supplierIds: initialSupplierIds,
       })
-      setSelectedSupplierIds(initialRFQ.suppliers?.map(s => s.id) ?? [])
+      setSelectedSupplierIds(initialSupplierIds)
+    } else if (open) {
+      fetchNextRFQNumber().then((nextNum) => {
+        if (nextNum && !form.getValues('rfqNumber')) {
+          form.setValue('rfqNumber', nextNum, { shouldValidate: true })
+        }
+      })
     } else {
       // reset when modal closes
-      if (!open) {
-        form.reset()
-        setSelectedSupplierIds([])
-      }
+      form.reset({
+        date: new Date(),
+        rfqNumber: '',
+        description: '',
+        tracingNumber: '',
+        deadline: undefined,
+        deliveryPeriod: '',
+        supplierIds: [],
+      })
+      setSelectedSupplierIds([])
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialRFQ, open])
 
   const toggleSupplier = (supplierId: string) => {
     setSelectedSupplierIds((prev) => {
-      if (prev.includes(supplierId)) {
-        return prev.filter(id => id !== supplierId)
-      } else {
-        return [...prev, supplierId]
-      }
+      const next = prev.includes(supplierId)
+        ? prev.filter(id => id !== supplierId)
+        : [...prev, supplierId]
+      form.setValue('supplierIds', next, { shouldValidate: true })
+      return next
     })
   }
 
@@ -160,7 +178,7 @@ export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = nul
         deadline: data.deadline ? format(data.deadline, 'yyyy-MM-dd') : undefined,
         deliveryPeriod: data.deliveryPeriod,
         purpose: '',
-        supplierIds: selectedSupplierIds,
+        supplierIds: data.supplierIds,
       }
 
       let resultId: string
@@ -170,7 +188,7 @@ export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = nul
       // and every failed request respectively) — don't toast here too, or the
       // user sees two stacked, differently-styled toasts for the same event.
       if (isEditMode && initialRFQ) {
-        // PUT /rfqs/{id} — backend only allows this while Status == Draft.
+        // PUT /rfqs/{id} — backend allows this while Status is Draft or Returned.
         const success = await updateRFQ(initialRFQ.id, payload)
         if (!success) {
           // updateRFQ resolved without throwing but reported failure (e.g. a
@@ -254,6 +272,7 @@ export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = nul
                 <FormControl>
                   <Input placeholder="e.g., RFQ-2026-001" {...field} />
                 </FormControl>
+                <p className="text-xs text-muted-foreground mt-1">Auto-generated based on system sequence. You may edit or override.</p>
                 <FormMessage />
               </FormItem>
             )}
@@ -331,59 +350,73 @@ export function CreateRFQModal({ open, onOpenChange, onSuccess, initialRFQ = nul
           />
 
 
-          <div>
-            <FormLabel>Suppliers <span className="text-destructive">*</span></FormLabel>
-            <div className="mt-3 space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
-              {isLoadingSuppliers ? (
-                <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading suppliers...
+          <FormField
+            control={form.control}
+            name="supplierIds"
+            render={() => (
+              <FormItem>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Suppliers <span className="text-destructive">*</span></FormLabel>
+                  <span className="text-xs text-muted-foreground">
+                    (At least 3 suppliers required)
+                  </span>
                 </div>
-              ) : suppliers.length === 0 ? (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  No active suppliers found.
-                </div>
-              ) : (
-                suppliers.map((supplier) => (
-                  <div key={supplier.id} className="flex items-start gap-3 p-2 hover:bg-muted/50 rounded-md">
-                    <Checkbox
-                      id={`supplier-${supplier.id}`}
-                      checked={selectedSupplierIds.includes(supplier.id)}
-                      onCheckedChange={() => toggleSupplier(supplier.id)}
-                    />
-                    <label
-                      htmlFor={`supplier-${supplier.id}`}
-                      className="flex-1 cursor-pointer text-sm"
-                    >
-                      <div className="font-medium">{supplier.supplierName}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {supplier.supplierCategory} • {supplier.contactPerson}
+                <div className="mt-2 space-y-2 max-h-60 overflow-y-auto border rounded-md p-3">
+                  {isLoadingSuppliers ? (
+                    <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading suppliers...
+                    </div>
+                  ) : suppliers.length === 0 ? (
+                    <div className="py-6 text-center text-sm text-muted-foreground">
+                      No active suppliers found.
+                    </div>
+                  ) : (
+                    suppliers.map((supplier) => (
+                      <div key={supplier.id} className="flex items-start gap-3 p-2 hover:bg-muted/50 rounded-md">
+                        <Checkbox
+                          id={`supplier-${supplier.id}`}
+                          checked={selectedSupplierIds.includes(supplier.id)}
+                          onCheckedChange={() => toggleSupplier(supplier.id)}
+                        />
+                        <label
+                          htmlFor={`supplier-${supplier.id}`}
+                          className="flex-1 cursor-pointer text-sm"
+                        >
+                          <div className="font-medium">{supplier.supplierName}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {supplier.supplierCategory} • {supplier.contactPerson}
+                          </div>
+                        </label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-xs gap-1"
+                          disabled={isLoadingSupplierDetail}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            handleViewSupplier(supplier.id)
+                          }}
+                        >
+                          <Eye className="h-3 w-3" />
+                          View
+                        </Button>
                       </div>
-                    </label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-xs gap-1"
-                      disabled={isLoadingSupplierDetail}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        handleViewSupplier(supplier.id)
-                      }}
-                    >
-                      <Eye className="h-3 w-3" />
-                      View
-                    </Button>
+                    ))
+                  )}
+                </div>
+                {selectedSupplierIds.length > 0 && (
+                  <div className="text-xs mt-2">
+                    <span className={selectedSupplierIds.length >= 3 ? 'text-muted-foreground' : 'text-amber-600 font-medium'}>
+                      {selectedSupplierIds.length} supplier(s) selected {selectedSupplierIds.length < 3 && '(minimum 3 required)'}
+                    </span>
                   </div>
-                ))
-              )}
-            </div>
-            {selectedSupplierIds.length > 0 && (
-              <div className="text-xs text-muted-foreground mt-2">
-                {selectedSupplierIds.length} supplier(s) selected
-              </div>
+                )}
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
+          />
 
         </form>
           </div>

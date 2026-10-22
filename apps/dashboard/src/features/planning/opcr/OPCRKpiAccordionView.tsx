@@ -161,7 +161,7 @@ function OPCRKpiItem({
                     <div className="space-y-6 pt-4 pl-4 border-l-2 border-muted-foreground/20">
                         {/* Quarterly Targets Tabs */}
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-muted-foreground">Set Target | Add Activity</label>
+                            <label className="text-sm font-semibold text-muted-foreground">Set Target | Add Activity Indicator</label>
                             <Tabs value={selectedQuarter} onValueChange={setSelectedQuarter} className="w-full">
                                 <TabsList className="grid w-full grid-cols-5">
                                     {QUARTER_LABELS.map((label) => (
@@ -203,7 +203,7 @@ function OPCRKpiItem({
                                                     })
                                                 }}
                                             >
-                                                Add Activity
+                                                Add Activity Indicator
                                             </Button>
                                         </div>
                                     </TabsContent>
@@ -317,7 +317,7 @@ function OPCRSubKpiItem({
                     <div className="space-y-6 pt-4 pl-4 border-l-2 border-muted-foreground/20">
                         {/* Quarterly Targets Tabs */}
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-muted-foreground">Set Target | Add Activity</label>
+                            <label className="text-sm font-semibold text-muted-foreground">Set Target | Add Activity Indicator</label>
                             <Tabs value={selectedQuarter} onValueChange={setSelectedQuarter} className="w-full">
                                 <TabsList className="grid w-full grid-cols-5">
                                     {QUARTER_LABELS.map((label) => (
@@ -359,7 +359,7 @@ function OPCRSubKpiItem({
                                                     })
                                                 }}
                                             >
-                                                Add Activity
+                                                Add Activity Indicator
                                             </Button>
                                         </div>
                                     </TabsContent>

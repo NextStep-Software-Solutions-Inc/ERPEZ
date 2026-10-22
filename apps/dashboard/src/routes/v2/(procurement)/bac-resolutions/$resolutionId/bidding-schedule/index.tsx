@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { BiddingSchedulePage } from '@/features/procurement/bidding-schedule/pages'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 const searchSchema = z.object({
   highlightMilestoneKey: z.string().optional(),
@@ -18,9 +20,14 @@ function BiddingScheduleRoute() {
   const search = Route.useSearch()
 
   return (
-    <BiddingSchedulePage
-      bacResolutionId={resolutionId}
-      highlightMilestoneKey={search.highlightMilestoneKey}
-    />
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.Bac.Manage}
+      message="You do not have permission to view Bidding Schedules."
+    >
+      <BiddingSchedulePage
+        bacResolutionId={resolutionId}
+        highlightMilestoneKey={search.highlightMilestoneKey}
+      />
+    </RoutePermissionGuard>
   )
 }

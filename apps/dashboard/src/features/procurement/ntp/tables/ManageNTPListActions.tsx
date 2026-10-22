@@ -1,10 +1,9 @@
 /**
- * Manage NTP List Row Actions (Manager/Approver View)
- * Defines action buttons for each NTP row (View, Print, Approve, Return)
- * Managers can only approve or return NTPs, no edit or delete
+ * Manage NTP List Row Actions (Admin View)
+ * Defines action buttons for each NTP row in admin management
  */
 
-import { MoreHorizontal, Eye, Printer, CheckCircle2, XCircle } from 'lucide-react'
+import { MoreHorizontal, Eye, Printer, Send, CheckCircle2, Trash2 } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,29 +12,30 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import type { NTP } from '../types/ntpTypes'
+import type { NoticeToProceedListItem } from '../types/ntpTypes'
 
 export interface ManageNTPListActionsProps {
-  ntp: NTP
-  onView: (ntp: NTP) => void
-  onPrint: (ntp: NTP) => void
-  onApprove?: (ntp: NTP) => void
-  onReturn?: (ntp: NTP) => void
-  isApproving?: boolean
-  isReturning?: boolean
+  ntp: NoticeToProceedListItem
+  onView: (ntp: NoticeToProceedListItem) => void
+  onPrint: (ntp: NoticeToProceedListItem) => void
+  onIssue?: (ntp: NoticeToProceedListItem) => void
+  onRecordReceipt?: (ntp: NoticeToProceedListItem) => void
+  onDelete?: (ntp: NoticeToProceedListItem) => void
+  isDeleting?: boolean
 }
 
 export function ManageNTPListActions({
   ntp,
   onView,
   onPrint,
-  onApprove,
-  onReturn,
-  isApproving = false,
-  isReturning = false,
+  onIssue,
+  onRecordReceipt,
+  onDelete,
+  isDeleting = false,
 }: ManageNTPListActionsProps) {
-  // Can approve/return only if status is "For Approval"
-  const canApproveReturn = ntp.status === 'For Approval'
+  const canIssue = ntp.status === 'Draft' && !!onIssue
+  const canRecordReceipt = ntp.status === 'Issued' && !!onRecordReceipt
+  const canDelete = ntp.status === 'Draft' && !!onDelete
 
   return (
     <DropdownMenu>
@@ -52,31 +52,46 @@ export function ManageNTPListActions({
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onPrint(ntp)}>
           <Printer className="mr-2 h-4 w-4" />
-          <span>Print</span>
+          <span>Preview / Print</span>
         </DropdownMenuItem>
-        {canApproveReturn && (onApprove || onReturn) && (
+
+        {canIssue && (
           <>
             <DropdownMenuSeparator />
-            {onReturn && (
-              <DropdownMenuItem
-                onClick={() => onReturn(ntp)}
-                disabled={isReturning}
-                className="text-yellow-600 focus:text-yellow-600"
-              >
-                <XCircle className="mr-2 h-4 w-4" />
-                <span>Return</span>
-              </DropdownMenuItem>
-            )}
-            {onApprove && (
-              <DropdownMenuItem
-                onClick={() => onApprove(ntp)}
-                disabled={isApproving}
-                className="text-green-600 focus:text-green-600"
-              >
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                <span>Approve</span>
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuItem
+              onClick={() => onIssue(ntp)}
+              className="text-blue-600 focus:text-blue-600"
+            >
+              <Send className="mr-2 h-4 w-4" />
+              <span>Issue NTP</span>
+            </DropdownMenuItem>
+          </>
+        )}
+
+        {canRecordReceipt && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => onRecordReceipt(ntp)}
+              className="text-emerald-600 focus:text-emerald-600"
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              <span>Record Conforme</span>
+            </DropdownMenuItem>
+          </>
+        )}
+
+        {canDelete && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => onDelete(ntp)}
+              disabled={isDeleting}
+              className="text-red-600 focus:text-red-600"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              <span>Delete</span>
+            </DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>

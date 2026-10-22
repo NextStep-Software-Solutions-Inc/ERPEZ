@@ -18,7 +18,7 @@ export function AdministrativeLevelsTab() {
 
   const { data: administrativeLevel } = useAdministrativeLevels({
     pathParams: {},
-    queryParams: {},
+    queryParams: { pageSize: 1000, sorts: 'name' },
   })
   const administrativeLevels = administrativeLevel?.data ?? []
 

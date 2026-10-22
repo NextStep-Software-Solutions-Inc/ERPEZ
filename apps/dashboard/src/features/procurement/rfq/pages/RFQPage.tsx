@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearch, useNavigate } from '@tanstack/react-router'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
@@ -21,7 +22,28 @@ export function RFQPage() {
   const [editingRFQ, setEditingRFQ] = useState<RFQ | null>(null)
   const { rfqs, totalCount, summary, fetchRFQs, fetchRFQSummary, fetchRFQById, removeRFQ } = useRFQStore()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [viewing, setViewing] = useState<string | null>(null)
+  const searchParams = useSearch({ strict: false }) as { rfqId?: string }
+  const navigate = useNavigate()
+  const viewing = searchParams?.rfqId ?? null
+
+  const handleViewDetails = (id: string) => {
+    navigate({
+      to: '/v2/request-for-quotation-rfq',
+      search: (prev: any) => ({ ...prev, rfqId: id }),
+    })
+  }
+
+  const handleBackToList = () => {
+    navigate({
+      to: '/v2/request-for-quotation-rfq',
+      search: (prev: any) => {
+        const next = { ...prev }
+        delete next.rfqId
+        return next
+      },
+    })
+  }
+
   // ID of the row whose Edit action is currently fetching GET /rfqs/{id};
   // keeps the action button visually responsive during the request.
   const [loadingEditId, setLoadingEditId] = useState<string | null>(null)
@@ -41,17 +63,19 @@ export function RFQPage() {
     status: true,
   }
 
-  // Re-fetch whenever page, search, or any filter changes.
+  // Re-fetch whenever page, search, viewing, or any filter changes.
   useEffect(() => {
-    fetchRFQs({
-      pageNumber: page,
-      pageSize,
-      search: search || undefined,
-      status: statusFilter === 'all' ? undefined : statusFilter,
-      mode: modeFilter === 'all' ? undefined : modeFilter,
-    })
-    fetchRFQSummary()
-  }, [page, search, statusFilter, modeFilter, fetchRFQs, fetchRFQSummary])
+    if (!viewing) {
+      fetchRFQs({
+        pageNumber: page,
+        pageSize,
+        search: search || undefined,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        mode: modeFilter === 'all' ? undefined : modeFilter,
+      })
+      fetchRFQSummary()
+    }
+  }, [page, search, statusFilter, modeFilter, viewing, fetchRFQs, fetchRFQSummary])
 
   // Badge color/variant map keyed by normalized status string.
   const STATUS_BADGE_CONFIG: Record<string, { color?: any; variant?: any }> = {
@@ -99,7 +123,7 @@ export function RFQPage() {
   // The supplier-facing equivalent is RFQItemPage (/supplier-portal/rfq-item),
   // which passes isSupplierPortal={true}.
   if (viewing) {
-    return <RFQDetailsPage rfqId={viewing} onBack={() => setViewing(null)} isSupplierPortal={false} />
+    return <RFQDetailsPage rfqId={viewing} onBack={handleBackToList} isSupplierPortal={false} />
   }
 
   const toggleSelectAll = (checked?: boolean) => {
@@ -131,6 +155,17 @@ export function RFQPage() {
     } finally {
       setLoadingEditId(null)
     }
+  }
+
+  const handleSearchChange = (v: string) => {
+    const nextVal = String(v ?? '')
+    setSearch((prev) => {
+      if (prev !== nextVal) {
+        setPage(1)
+        return nextVal
+      }
+      return prev
+    })
   }
 
   return (
@@ -240,12 +275,18 @@ export function RFQPage() {
               <DebouncedInput
                 placeholder="Search RFQ number, description or tracing number"
                 value={search}
-                onChange={(v: any) => setSearch(String(v))}
+                onChange={handleSearchChange}
                 className="w-full pl-10"
               />
             </div>
 
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => {
+                setStatusFilter(v as any)
+                setPage(1)
+              }}
+            >
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filter by Status" />
               </SelectTrigger>
@@ -258,7 +299,13 @@ export function RFQPage() {
               </SelectContent>
             </Select>
 
-            <Select value={modeFilter} onValueChange={(v) => setModeFilter(v)}>
+            <Select
+              value={modeFilter}
+              onValueChange={(v) => {
+                setModeFilter(v)
+                setPage(1)
+              }}
+            >
               <SelectTrigger className="w-56">
                 <SelectValue placeholder="Filter by Mode" />
               </SelectTrigger>
@@ -284,9 +331,6 @@ export function RFQPage() {
                 <SearchIcon className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold">No RFQs found</h3>
                 <p className="text-muted-foreground">Try adjusting your filters or add a new RFQ.</p>
-                <div className="mt-4">
-                  <Button onClick={() => setOpen(true)} size="sm">Create RFQ</Button>
-                </div>
               </div>
             </div>
           ) : (
@@ -353,12 +397,32 @@ export function RFQPage() {
                         )}
                         {columnVisibility.status && (
                           <TableCell>
-                            <Badge
-                              color={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.color}
-                              variant={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.variant}
-                            >
-                              {normalizeStatus(r).toUpperCase()}
-                            </Badge>
+                            {r.remarks && normalizeStatus(r) === 'returned' ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge
+                                      className="cursor-help"
+                                      color={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.color}
+                                      variant={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.variant}
+                                    >
+                                      {normalizeStatus(r).toUpperCase()}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs text-xs">
+                                    <p className="font-semibold mb-1">Return Reason / Remarks:</p>
+                                    <p className="text-slate-600">{r.remarks}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <Badge
+                                color={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.color}
+                                variant={STATUS_BADGE_CONFIG[normalizeStatus(r)]?.variant}
+                              >
+                                {normalizeStatus(r).toUpperCase()}
+                              </Badge>
+                            )}
                           </TableCell>
                         )}
                         <TableCell>
@@ -373,39 +437,39 @@ export function RFQPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setViewing(r.id)}>
+                              <DropdownMenuItem onClick={() => handleViewDetails(r.id)}>
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
+                              {(normalizeStatus(r) === 'draft' || normalizeStatus(r) === 'returned') && (
+                                <DropdownMenuItem onClick={() => handleEditClick(r.id)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              )}
                               {normalizeStatus(r) === 'draft' && (
-                                <>
-                                  <DropdownMenuItem onClick={() => handleEditClick(r.id)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <DropdownMenuItem>
-                                        <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem>
+                                      <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete RFQ</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this RFQ? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => removeRFQ(r.id)}>
                                         Delete
-                                      </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete RFQ</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Are you sure you want to delete this RFQ? This action cannot be undone.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => removeRFQ(r.id)}>
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </>
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -424,7 +488,7 @@ export function RFQPage() {
             <div className="flex items-center gap-2">
               <div className="text-sm text-muted-foreground">Page {page} of {totalPages}</div>
               <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage(Math.max(1, page - 1))}>Previous</Button>
-              <Button size="sm" onClick={() => setPage(Math.min(totalPages, page + 1))}>Next</Button>
+              <Button size="sm" disabled={page >= totalPages} onClick={() => setPage(Math.min(totalPages, page + 1))}>Next</Button>
             </div>
           </div>
         </CardContent>
@@ -439,7 +503,7 @@ export function RFQPage() {
         onSuccess={(rfqId) => {
           setOpen(false)
           setEditingRFQ(null)
-          if (rfqId) setViewing(rfqId)
+          if (rfqId) handleViewDetails(rfqId)
         }}
         initialRFQ={editingRFQ}
       />

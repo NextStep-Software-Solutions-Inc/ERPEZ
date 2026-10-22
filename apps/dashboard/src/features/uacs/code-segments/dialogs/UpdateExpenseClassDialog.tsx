@@ -1,14 +1,18 @@
-import { useState } from 'react'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { ExpenseClassForm, type ExpenseClassFormValues } from '../forms/ExpenseClassForm'
 import { toast } from 'sonner'
 import type { ExpenseClass } from '../types/expenseClassTypes'
+import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
+import { updateExpenseClassRequest } from '../handlers/updateExpenseClassRequest'
+import { getExpenseClassesRequest } from '../handlers/getExpenseClassesRequest'
+
+const useUpdateExpenseClass = createMutationHookFromTemplate(updateExpenseClassRequest)
 
 interface UpdateExpenseClassDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   expenseClass?: ExpenseClass
-  onSuccess?: (data: ExpenseClassFormValues) => void
+  onSuccess?: () => void
 }
 
 export function UpdateExpenseClassDialog({
@@ -17,19 +21,37 @@ export function UpdateExpenseClassDialog({
   expenseClass,
   onSuccess,
 }: UpdateExpenseClassDialogProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const queryClient = useQueryClient()
+  const { mutateAsync, isPending } = useUpdateExpenseClass()
 
   const handleSubmit = async (data: ExpenseClassFormValues) => {
-    setIsLoading(true)
+    if (!expenseClass?.id) return
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      await mutateAsync({
+        pathParams: { id: expenseClass.id },
+        payload: {
+          code: data.code,
+          name: data.name,
+          description: data.description,
+          type: data.type,
+          isActive: data.isActive,
+        },
+      })
       toast.success(`Expense Class "${data.name}" updated successfully!`)
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === getExpenseClassesRequest.endpoint ||
+          (typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith(getExpenseClassesRequest.endpoint)),
+      })
+
       onOpenChange(false)
-      onSuccess?.(data)
+      onSuccess?.()
     } catch (err) {
-      toast.error('Failed to update expense class.')
-    } finally {
-      setIsLoading(false)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update expense class.'
+      toast.error(errorMessage)
+      console.error(err)
     }
   }
 
@@ -45,9 +67,10 @@ export function UpdateExpenseClassDialog({
       <ExpenseClassForm
         onSubmit={handleSubmit}
         onCancel={() => onOpenChange(false)}
-        isLoading={isLoading}
+        isLoading={isPending}
         initialData={expenseClass}
       />
     </ResponsiveDialog>
   )
 }
+

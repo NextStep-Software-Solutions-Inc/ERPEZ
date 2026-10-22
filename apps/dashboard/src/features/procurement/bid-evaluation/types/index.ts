@@ -37,10 +37,12 @@ export interface PublicBiddingProject {
   abc: number;
   resolutionNumber: string;
   governingLaw: GoverningLaw;
-  awardCriterion: AwardCriterion;
+  awardCriterion?: AwardCriterion | string;
   technicalWeight?: number; // e.g. 70
   financialWeight?: number; // e.g. 30
   suppliers: SupplierBid[];
   projectStatus: 'Active' | 'Pending_HoPE_Approval' | 'Approved';
   bacResolutionDraft?: BacResolutionDraft;
 }
+
+export * from './bidEvaluationApi.types';

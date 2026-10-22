@@ -64,7 +64,14 @@ export function ApplicantList({ bids, selectedBidId, onSelectBid }: ApplicantLis
                     <p className="text-xs text-muted-foreground mt-1">
                       Submitted: {formatDate(bid.submittedAt)}
                     </p>
-                    <p className="text-xs font-medium mt-1">₱{bid.totalBidAmount.toLocaleString()}</p>
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 font-normal", bid.source === 'rfq' ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-sky-50 text-sky-700 border-sky-200")}>
+                        {bid.source === 'rfq' ? 'Internal RFQ' : 'Public Portal'}
+                      </Badge>
+                      {bid.totalBidAmount > 0 && (
+                        <span className="text-xs font-semibold text-slate-900">₱{bid.totalBidAmount.toLocaleString()}</span>
+                      )}
+                    </div>
                   </div>
                   <Badge variant="outline" className={cn('text-[10px] uppercase gap-1 px-1.5 py-0 shrink-0', getStatusColor(bid.status))}>
                     {getStatusIcon(bid.status)}

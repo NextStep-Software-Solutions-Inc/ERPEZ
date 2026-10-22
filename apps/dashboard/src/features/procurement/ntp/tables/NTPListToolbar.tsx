@@ -1,7 +1,6 @@
 /**
- * NTP List Toolbar (User/Creator View)
+ * NTP List Toolbar
  * Provides search, filtering, and CREATE action button for NTP list
- * Used by NTPListPage for users who can create NTPs
  */
 
 import { useState } from 'react'
@@ -15,13 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { NTPStatus } from '../types/ntpTypes'
 
 export interface NTPListToolbarProps {
   onSearch: (query: string) => void
-  onStatusFilter: (status: NTPStatus | 'All') => void
+  onStatusFilter: (status: string) => void
   onCreateClick: () => void
-  selectedStatus?: NTPStatus | 'All'
+  selectedStatus?: string
   searchQuery?: string
 }
 
@@ -40,35 +38,35 @@ export function NTPListToolbar({
   }
 
   return (
-    <div className="flex gap-2 flex-col sm:flex-row sm:items-center justify-between mb-6">
+    <div className="flex gap-2 flex-col sm:flex-row sm:items-center justify-between mb-4">
       <div className="flex gap-2 flex-col sm:flex-row sm:items-center flex-1">
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search NTP number or supplier..."
+            placeholder="Search NTP, Contract, Supplier, Project..."
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-8"
+            className="pl-8 text-xs h-9"
           />
         </div>
 
-        <Select value={selectedStatus} onValueChange={(value) => onStatusFilter(value as NTPStatus | 'All')}>
-          <SelectTrigger className="w-[150px]">
+        <Select value={selectedStatus} onValueChange={(value) => onStatusFilter(value)}>
+          <SelectTrigger className="w-[160px] text-xs h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="All">All Status</SelectItem>
-            <SelectItem value="Draft">Draft</SelectItem>
-            <SelectItem value="For Approval">For Approval</SelectItem>
-            <SelectItem value="Approved">Approved</SelectItem>
-            <SelectItem value="Returned">Returned</SelectItem>
+            <SelectItem value="All" className="text-xs">All Status</SelectItem>
+            <SelectItem value="Draft" className="text-xs">Draft</SelectItem>
+            <SelectItem value="Issued" className="text-xs">Issued</SelectItem>
+            <SelectItem value="Received" className="text-xs">Received (Conforme)</SelectItem>
+            <SelectItem value="Cancelled" className="text-xs">Cancelled</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <Button onClick={onCreateClick} className="gap-2">
+      <Button onClick={onCreateClick} size="sm" className="gap-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white">
         <Plus className="h-4 w-4" />
-        Create NTP
+        Create Notice to Proceed
       </Button>
     </div>
   )

@@ -20,6 +20,13 @@ export function buildQuickActions(): QuickActionData[] {
       button: { label: "View Plans", variant: undefined },
     },
     {
+      id: "erp",
+      title: "ERP Operations",
+      description: "Launch operational planning & procurement dashboard",
+      iconKey: "layout-dashboard",
+      button: { label: "Open Dashboard", variant: undefined },
+    },
+    {
       id: "license",
       title: "License Management",
       description: "Manage your licenses and activation keys",

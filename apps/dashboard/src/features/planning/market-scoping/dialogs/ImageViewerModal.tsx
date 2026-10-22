@@ -5,7 +5,12 @@
  */
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Download, X } from 'lucide-react'
 
@@ -50,7 +55,9 @@ export function ImageViewerModal({
             <div>
               <DialogTitle className="text-white">{fileName}</DialogTitle>
               {fileSize && (
-                <p className="text-sm text-gray-400 mt-1">{formatFileSize(fileSize)}</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  {formatFileSize(fileSize)}
+                </p>
               )}
             </div>
             <button

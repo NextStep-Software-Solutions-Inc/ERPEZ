@@ -1,59 +1,22 @@
-import { mockSession } from '@/config/mockSession'
-import { useBidEvaluationStore } from '../../bid-evaluation/store/bidEvaluationStore'
-import {
-  findNoticeOfAward,
-  replaceNoticeOfAward,
-} from '../data/mockNoticeOfAwardData'
+﻿import api from '@/services/api'
+import type { APIResponse } from 'erpez-shared-lib'
 import type { TriggerNoticeOfAwardCascadePayload } from '../types'
 
 export const triggerNoticeOfAwardCascadeRequest = {
-  endpoint: '/notice-of-awards/:id/trigger-cascade',
+  endpoint: '/notice-of-awards/:id/cascade-decision',
   key: null,
-  fetcher: async ({ data }: { data: TriggerNoticeOfAwardCascadePayload }) => {
-    await new Promise((resolve) => window.setTimeout(resolve, 120))
-
-    const noticeOfAward = findNoticeOfAward(data.noaId)
-
-    if (!noticeOfAward) {
-      throw new Error('Notice of Award not found.')
+  fetcher: async ({
+    data,
+  }: {
+    data: TriggerNoticeOfAwardCascadePayload
+  }): Promise<void> => {
+    const payload = {
+      note: data.note || 'Forfeiture decision recorded for BAC next-ranked bidder evaluation.',
     }
 
-    if (noticeOfAward.contractExecutionDate) {
-      throw new Error('Cascade is unavailable after contract execution.')
+    const response = await api.post<APIResponse<void>>(`/notice-of-awards/${data.noaId}/cascade-decision`, payload)
+    if (!response.data?.succeeded) {
+      throw new Error(response.data?.message || 'Failed to record cascade decision.')
     }
-
-    const triggeredAt = new Date().toISOString()
-    const triggeredBy = mockSession.user.name?.trim() || 'Procurement Staff'
-    const note =
-      data.note?.trim() ||
-      'Forfeiture of bid security and promotion of the next-ranked bidder initiated.'
-    const updated = {
-      ...noticeOfAward,
-      cascadeTriggeredAt: triggeredAt,
-      cascadeTriggeredBy: triggeredBy,
-      cascadeNote: note,
-      updatedAt: triggeredAt,
-      activityLog: [
-        ...noticeOfAward.activityLog,
-        {
-          id: `${noticeOfAward.id}-log-${noticeOfAward.activityLog.length + 1}`,
-          action: 'Triggered post-qualification cascade',
-          actor: triggeredBy,
-          timestamp: triggeredAt,
-          note,
-        },
-      ],
-    }
-
-    useBidEvaluationStore.getState().disqualifyAwardedSupplierForNoa({
-      projectId: noticeOfAward.linkedBacResolution.sourceBidEvaluationProjectId,
-      supplierId:
-        noticeOfAward.linkedBacResolution.sourceBidEvaluationSupplierId,
-      supplierName: noticeOfAward.supplierName,
-      resolutionNumber: noticeOfAward.linkedBacResolution.bacResolutionNumber,
-      note,
-    })
-
-    return replaceNoticeOfAward(updated)
   },
 }

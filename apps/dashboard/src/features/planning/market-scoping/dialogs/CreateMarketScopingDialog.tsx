@@ -2,7 +2,7 @@
  * Create Market Scoping Dialog
  * Opens a multi-step wizard in a responsive dialog for creating new market scoping forms
  * Location: src/features/planning/market-scoping/dialogs/
- * 
+ *
  * References:
  * - documentations/market-scoping-integration.md
  */
@@ -22,6 +22,7 @@ import {
   draftMarketScopingAtom,
   resetFormStateAtom,
 } from '../atoms/marketScopingStateAtom'
+import api from '@/services/api'
 import keycloak from '@/auth/keycloak'
 import type { MarketScopingForm } from '../types/marketScopingTypes'
 import type {
@@ -32,18 +33,24 @@ import type {
 interface CreateMarketScopingDialogProps {
   title?: string
   description?: string
+  onSuccess?: () => void // ← add this
   userProfile?: {
     readonly name: string
     readonly designation: string
     readonly departmentUnit: string
     readonly agencyName: string
   }
-  libActivities?: readonly { readonly id: string; readonly name: string; readonly budget: number }[]
+  libActivities?: readonly {
+    readonly id: string
+    readonly name: string
+    readonly budget: number
+  }[]
 }
 
 export function CreateMarketScopingDialog({
   title = 'Create Market Scoping Form',
   description = 'Complete the 4-step wizard to create a new market scoping form.',
+  onSuccess,
   userProfile,
   libActivities,
 }: CreateMarketScopingDialogProps = {}) {
@@ -64,11 +71,16 @@ export function CreateMarketScopingDialog({
       // Get current logged-in user ID from Keycloak for fallback
       const authUserId = keycloak.subject
       if (!submittedData.userId && !authUserId) {
-        throw new Error('User ID not found. Please ensure you are logged in or select a representative.')
+        throw new Error(
+          'User ID not found. Please ensure you are logged in or select a representative.',
+        )
       }
 
       // Transform form data to API payload using the selected representative userId and upload attachments
-      const payload = await transformFormToApiPayload(submittedData, authUserId || '')
+      const payload = await transformFormToApiPayload(
+        submittedData,
+        authUserId || '',
+      )
 
       const isEdit = submittedData.id && !submittedData.id.startsWith('temp-')
 
@@ -81,7 +93,11 @@ export function CreateMarketScopingDialog({
 
           // Invalidate query to refresh dashboard table
           queryClient.invalidateQueries({ queryKey: ['/market-scopings'] })
-          queryClient.invalidateQueries({ queryKey: ['market-scoping', formId] })
+          queryClient.invalidateQueries({
+            queryKey: ['market-scoping', formId],
+          })
+
+          onSuccess?.()
 
           setTimeout(() => {
             navigate({
@@ -106,16 +122,28 @@ export function CreateMarketScopingDialog({
               payload: payload as UpdateMarketScopingRequest,
             },
             {
-              onSuccess: (response) => {
-                const formId = response.data?.id
-                if (!formId) {
-                  reject(new Error('Unable to determine market scoping ID from response.'))
-                  return
+              onSuccess: async () => {
+                if (submittedData.status === 'PendingApproval') {
+                  try {
+                    await api.post(
+                      `/market-scopings/${submittedData.id}/submit`,
+                    )
+                    handleSuccess(
+                      submittedData.id!,
+                      'Market Scoping form submitted for approval successfully!',
+                    )
+                  } catch (err: unknown) {
+                    handleError(err)
+                  }
+                } else {
+                  handleSuccess(
+                    submittedData.id!,
+                    'Market Scoping draft updated successfully!',
+                  )
                 }
-                handleSuccess(formId, 'Market Scoping form updated successfully!')
               },
               onError: handleError,
-            }
+            },
           )
         } else {
           createMarketScoping(
@@ -124,16 +152,35 @@ export function CreateMarketScopingDialog({
               payload: payload as CreateMarketScopingRequest,
             },
             {
-              onSuccess: (response) => {
+              onSuccess: async (response) => {
                 const formId = response.data
                 if (!formId) {
-                  reject(new Error('Unable to determine market scoping ID from response.'))
+                  reject(
+                    new Error(
+                      'Unable to determine market scoping ID from response.',
+                    ),
+                  )
                   return
                 }
-                handleSuccess(formId, 'Market Scoping form created successfully!')
+                if (submittedData.status === 'PendingApproval') {
+                  try {
+                    await api.post(`/market-scopings/${formId}/submit`)
+                    handleSuccess(
+                      formId,
+                      'Market Scoping form submitted for approval successfully!',
+                    )
+                  } catch (err: unknown) {
+                    handleError(err)
+                  }
+                } else {
+                  handleSuccess(
+                    formId,
+                    'Market Scoping draft created successfully!',
+                  )
+                }
               },
               onError: handleError,
-            }
+            },
           )
         }
       })

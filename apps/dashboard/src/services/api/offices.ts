@@ -91,9 +91,17 @@ function mapOfficeToOrgUnit(office: OfficeApiResponse): OrgUnit {
     // map administrative level to the `level` enum when possible
     level: adminLevelName ? (adminLevelName.toLowerCase() as OrgUnit['level']) : undefined,
     // expose additional metadata for richer UI displays
+    officeTypeId: office.officeType?.id || office.officeTypeId || undefined,
+    categoryId: office.category?.id || office.categoryId || undefined,
+    administrativeLevelId: office.administrativeLevel?.id || office.administrativeLevelId || undefined,
+    clusterId: typeof office.cluster === 'object' && office.cluster?.id ? office.cluster.id : (office.clusterId || undefined),
+    procurementWorkflowId: office.procurementWorkflow?.id || office.procurementWorkflowId || undefined,
+    organizationId: office.organization?.id || office.organizationId || undefined,
+    officeTypeName: officeTypeName || undefined,
     organizationName: orgName || undefined,
     parentOfficeName: parentName || undefined,
     administrativeLevelName: adminLevelName || undefined,
+    categoryName: categoryName || undefined,
     createdAt: office.createdAt || undefined,
     createdBy: office.createdBy || undefined,
     region: region || undefined,
@@ -162,18 +170,30 @@ export async function createOfficeInApi(officeData: Partial<OfficeApiResponse>):
     const response = await api.post<{
       succeeded: boolean
       message: string | null
-      data: OfficeApiResponse
+      data: OfficeApiResponse | string | null
     }>(
       '/offices',
       officeData
     )
 
-    const payload = response.data && 'data' in response.data ? response.data.data : null
-    if (payload) {
-      return mapOfficeToOrgUnit(payload)
+    if (response.data && response.data.succeeded) {
+      const payload = response.data.data
+      if (payload && typeof payload === 'object' && 'id' in payload && payload.id) {
+        return mapOfficeToOrgUnit(payload as OfficeApiResponse)
+      }
+      if (typeof payload === 'string') {
+        try {
+          const fetched = await fetchOfficeByIdFromApi(payload)
+          if (fetched) return fetched
+        } catch {
+          // Fall back to synthesized OrgUnit if fetching fails
+        }
+        return { id: payload, ...officeData } as unknown as OrgUnit
+      }
+      return { id: (officeData as any).id || '', ...officeData } as unknown as OrgUnit
     }
 
-    throw new Error('Failed to create office')
+    throw new Error(response.data?.message || 'Failed to create office')
   } catch (error) {
     console.error('Failed to create office via API:', error)
     throw error
@@ -191,18 +211,21 @@ export async function updateOfficeInApi(
     const response = await api.put<{
       succeeded: boolean
       message: string | null
-      data: OfficeApiResponse
+      data: OfficeApiResponse | null
     }>(
       `/offices/${id}`,
       officeData
     )
 
-    const payload = response.data && 'data' in response.data ? response.data.data : null
-    if (payload) {
-      return mapOfficeToOrgUnit(payload)
+    if (response.data && response.data.succeeded) {
+      const payload = response.data.data
+      if (payload && typeof payload === 'object' && 'id' in payload && payload.id) {
+        return mapOfficeToOrgUnit(payload)
+      }
+      return { id, ...officeData } as unknown as OrgUnit
     }
 
-    throw new Error('Failed to update office')
+    throw new Error(response.data?.message || 'Failed to update office')
   } catch (error) {
     console.error(`Failed to update office ${id} via API:`, error)
     throw error

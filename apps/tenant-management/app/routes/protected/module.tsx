@@ -1,5 +1,6 @@
 import type { Route } from "./+types/module";
 import ModulePage from "~/pages/protected/ModulePage";
+import RoutePermissionGuard from "~/components/layout/RoutePermissionGuard";
 
 export function meta({ }: Route.MetaArgs) {
     return [
@@ -9,5 +10,9 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 export default function Module() {
-    return <ModulePage />;
+    return (
+        <RoutePermissionGuard permission="tenant.modules.view">
+            <ModulePage />
+        </RoutePermissionGuard>
+    );
 }

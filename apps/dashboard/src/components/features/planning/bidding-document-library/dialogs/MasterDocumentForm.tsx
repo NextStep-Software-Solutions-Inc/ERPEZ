@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
 import { FileText, Loader2, Upload } from 'lucide-react'
+import { TEMPLATE_FILE_ACCEPT, formatTemplateFileSize } from '../utils'
+import type { ChangeEvent, FormEvent } from 'react'
+import type { APIResponse } from 'erpez-shared-lib'
+import type { MasterDoc, MasterDocumentFormData } from '../types'
+import api from '@/services/api'
 import { Button } from '@/components/ui/button'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -13,10 +17,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import type { MasterDoc, MasterDocumentFormData } from '../types'
-import { formatTemplateFileSize, TEMPLATE_FILE_ACCEPT } from '../utils'
-import api from '@/services/api'
-import type { APIResponse } from 'erpez-shared-lib'
 
 interface MasterDocumentFormProps {
   doc?: MasterDoc | null
@@ -85,51 +85,67 @@ export function MasterDocumentForm({
     setSelectedFile(null)
     setTemplateFile('')
     setFileId(undefined)
-    setTemplateError('Standard template file is required.')
+    setTemplateError('')
     setInputKey((k) => k + 1)
   }
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    if (!templateFile.trim()) {
-      setTemplateError('Standard template file is required.')
-      return
-    }
     if (selectedFile && !fileId) {
       setTemplateError('File is still uploading. Please wait.')
       return
     }
 
+    const trimmedTemplate = templateFile.trim()
+
     onSubmit({
-      name,
-      description,
+      name: name.trim(),
+      description: description.trim() || undefined,
       envelope,
-      templateFile: templateFile.trim(),
+      templateFile: trimmedTemplate || undefined,
       templateFileId: fileId,
       templatePreviewUrl: selectedFile
         ? URL.createObjectURL(selectedFile)
-        : templateFile.trim()
+        : trimmedTemplate
           ? doc?.templatePreviewUrl
           : undefined,
       templateFileType: selectedFile?.type
         ? selectedFile.type
-        : templateFile.trim()
+        : trimmedTemplate
           ? doc?.templateFileType
           : undefined,
     })
   }
 
+  // Derive a human-readable display name from the stored URL/filename.
+  // /files/download/{uuid} → "Uploaded Template" (original name not stored separately)
+  // blob:... / selected file → actual filename
+  const UUID_ONLY = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
   const savedTemplateName = templateFile.trim()
-  const displayedTemplateName =
-    savedTemplateName || selectedFile?.name || 'No template file uploaded'
+  const hasSavedTemplate = savedTemplateName !== ''
+
+  const getStoredDisplayName = (url: string): string => {
+    if (!url) return ''
+    const last = url.split('/').pop() ?? url
+    if (UUID_ONLY.test(last)) return 'Uploaded Template'
+    const uscore = last.indexOf('_')
+    return uscore !== -1 ? last.slice(uscore + 1) : last
+  }
+
+  const displayedTemplateName = selectedFile
+    ? selectedFile.name
+    : hasSavedTemplate
+      ? getStoredDisplayName(savedTemplateName)
+      : 'No template file attached'
+
   const templateStatus = isUploading
     ? 'Uploading file...'
     : selectedFile
       ? `Selected upload: ${selectedFile.name} (${formatTemplateFileSize(selectedFile.size)})`
-      : savedTemplateName
-        ? 'Current attached template'
-        : 'PDF, DOC, DOCX, XLS, or XLSX'
+      : hasSavedTemplate
+        ? 'Template file attached — click preview icon to view'
+        : 'PDF, DOC, DOCX, XLS, or XLSX (Optional)'
 
   return (
     <form onSubmit={handleSubmit}>
@@ -182,7 +198,8 @@ export function MasterDocumentForm({
 
         <div className="grid gap-2">
           <Label>
-            Standard Template File <span className="text-destructive">*</span>
+            Standard Template File{' '}
+            <span className="text-muted-foreground">(Optional)</span>
           </Label>
           <div className="overflow-hidden rounded-md border bg-muted/20 p-3">
             <div className="flex min-w-0 flex-col gap-3">
@@ -237,27 +254,11 @@ export function MasterDocumentForm({
               </div>
             </div>
 
-            <div className="mt-3 grid gap-2">
-              <Label htmlFor={doc ? 'edit-doc-temp' : 'doc-temp'}>
-                Saved File Name
-              </Label>
-              <Input
-                id={doc ? 'edit-doc-temp' : 'doc-temp'}
-                placeholder="e.g. PCAB_Form_v2.docx"
-                value={templateFile}
-                onChange={(e) => {
-                  setTemplateFile(e.target.value)
-                  if (e.target.value.trim()) setTemplateError('')
-                }}
-                required
-                aria-invalid={Boolean(templateError)}
-              />
-              {templateError && (
-                <p className="text-xs font-medium text-destructive">
-                  {templateError}
-                </p>
-              )}
-            </div>
+            {templateError && (
+              <p className="mt-2 text-xs font-medium text-destructive">
+                {templateError}
+              </p>
+            )}
           </div>
         </div>
       </div>

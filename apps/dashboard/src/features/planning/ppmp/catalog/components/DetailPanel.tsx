@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DetailPanel
  * Slide-over (Sheet) panel displaying full item detail, tabs, and quick actions.
  * Open/close is driven by selectedItemIdAtom.
@@ -23,7 +23,8 @@ import { DetailPanelFooter } from './DetailPanelFooter'
 export function DetailPanel() {
   const [selectedItemId, setSelectedItemId] = useAtom(selectedItemIdAtom)
   const setActiveTab = useSetAtom(detailPanelActiveTabAtom)
-  const { data: item, isLoading } = useItemDetail()
+  const { data: response, isLoading } = useItemDetail()
+  const item = response?.data ?? null
 
   const isOpen = selectedItemId !== null
 
@@ -51,7 +52,7 @@ export function DetailPanel() {
         <div className="flex flex-col flex-1 min-h-0 px-5 pt-8 pb-4 gap-4">
           {/* Header: name, code, status, lock, tags */}
           <ItemDetailHeader
-            item={(item as any) ?? null}
+            item={item ?? null}
             isLoading={isLoading}
           />
 

@@ -26,7 +26,7 @@ const groupItemsByObjectAndDescription = (
   data: GroupedExpenditureData[],
 ): GroupedByObjectAndDescription[] => {
   const allItems = data.flatMap((group) =>
-    group.items.map((groupedItem) => groupedItem.item),
+    group.items.flatMap((item) => item.allocations),
   )
 
   // Group by object name first
@@ -93,7 +93,7 @@ export default function WFPLineItemsView({
   readOnly = false,
 }: WFPLineItemsViewProps) {
   const allItems = data.flatMap((group) =>
-    group.items.map((groupedItem) => groupedItem.item),
+    group.items.flatMap((item) => item.allocations),
   )
 
   if (allItems.length === 0) {

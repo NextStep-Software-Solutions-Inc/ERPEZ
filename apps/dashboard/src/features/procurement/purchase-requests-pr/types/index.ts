@@ -3,6 +3,8 @@
  * Supporting both Non-CSE and Out-of-Stock CSE workflows
  */
 
+import type { PRBacResolutionApi } from './apiTypes'
+
 export type PRType = 'non-cse' | 'out-of-stock' | 'consolidated'
 export type PRStatus =
   | 'draft'
@@ -32,6 +34,16 @@ export interface PRHeaderDetails {
   // For out-of-stock PRs originating from APR/CNAS
   cnasReferenceNumber?: string
   sourceAPR?: string
+  aprId?: string
+  aprNumber?: string
+  // Multi-source BAC Resolution references
+  appItemId?: string
+  bacResolutionId?: string
+  bacResolutionNumber?: string
+  modeOfProcurement?: string
+  sourceType?: 'APP_ITEM' | 'CONSOLIDATED_PR' | 'INDEPENDENT'
+  isIndependent?: boolean
+  dateSubmitted?: string
 }
 
 export interface PRAttachment {
@@ -50,22 +62,34 @@ export interface PRItem {
   itemName: string
   category: string
   quantity: number
-  unitOfMeasure: string
+  unitOfMeasure?: string
   unitPrice: number
   totalAmount: number
+  description?: string
   stockNo?: string
-  source?: 'ppmp' | 'apr' // Source of item
+  source?: 'ppmp' | 'apr' | 'bac' | 'independent' | 'catalog' | 'custom' // Source of item
+  isNonCSE?: boolean // Item classification (Non-CSE vs CSE)
+  setQuantity?: number // Available/set quantity from source PPMP or allocation
+  remainingQuantity?: number // Remaining balance deducted from setQuantity
   ppmpDocId?: string // For non-CSE PRs, track which PPMP document this item came from
   ppmpDocName?: string // For non-CSE PRs, store the PPMP document name
   month?: string
   fund?: string
+  aprId?: string
+  aprNumber?: string
+  aprOffice?: string
+  aprTotalAmount?: number
+  ppmpItemId?: string
+  aprItemId?: string
   // Optional APR group info when the PR contains an APR as a single grouped entry
   aprGroup?: {
-    id: string
-    aprNumber: string
+    id?: string
+    aprId?: string
+    aprNumber?: string
     officeCode?: string
     officeName?: string
-    items: PRItem[]
+    totalAmount?: number
+    items?: PRItem[]
   }
   // APR-specific metadata (when this PRItem was created from an APR item)
   originalNeeded?: number
@@ -74,10 +98,13 @@ export interface PRItem {
   editedNeeded?: number
   // Per-month quantity breakdown (January..December) when available
   monthlyQuantities?: Record<string, number>
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface PurchaseRequest {
   id: string
+  prNumber?: string
   type: PRType
   status: PRStatus
   headerDetails: PRHeaderDetails
@@ -85,12 +112,24 @@ export interface PurchaseRequest {
   totalAmount: number
   officeCode?: string
   officeName?: string
+  aprId?: string
+  aprNumber?: string
+  isIndependent?: boolean
+  dateSubmitted?: string
   createdBy: string
   createdAt: string
   updatedAt: string
   remarks?: string
+  returnRemarks?: string
+  returnedDate?: string
+  returnedBy?: string
   torAttachment?: PRAttachment | null
   signedPdfUrl?: string
+  // BAC Multi-source metadata
+  approvalOrigin?: 'STANDARD' | 'APPROVED_VIA_BAC'
+  bacResolutionNumber?: string
+  modeOfProcurement?: string
+  bacResolutions?: PRBacResolutionApi[]
 }
 
 export interface PPMPItemMonthAllocation {
@@ -156,21 +195,30 @@ export interface ProcessedPPMPItem {
   id: string
   itemId: string
   itemName: string
+  description?: string
   category: string
+  itemCategory?: string
+  uacsCode?: string
   isCse: boolean
   unitOfMeasure: string
   estimatedUnitPrice: number
   totalAmount: number
   fund: string
+  hasMonthlyAllocations?: boolean
+  plannedQuantity?: number
+  availableQuantity?: number
   monthlyAllocations: import('./apiTypes').EligiblePpmpItemMonthAllocation[]
   monthlyQuantities?: Partial<Record<string, number>>
   month?: string
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface ProcessedPPMPDoc {
   id: string
   documentName: string
   officeCode: string
+  officeName?: string
   items: ProcessedPPMPItem[]
 }
 
@@ -179,6 +227,11 @@ export interface SourceAPRItem {
   itemName: string
   category: string
   quantity: number
+  outOfStockQuantity?: number
+  currentFulfilled?: number
+  originalNeeded?: number
+  totalGot?: number
+  editedNeeded?: number
   unitOfMeasure: string
   unitPrice: number
   totalAmount: number

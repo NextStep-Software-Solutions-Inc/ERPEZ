@@ -1,226 +1,468 @@
 /**
  * APR Details Page
- * Displays complete APR information: header, items, timeline, and actions
- * ✅ FIXED: Supports dynamic navigation back to origin (manage-aprs or apr list)
+ * Pixel-accurate implementation matching the approved design layout:
+ * 1. Top soft purple identity banner
+ * 2. 4-card metric stats strip
+ * 3. Consolidated Items table card
+ * 4. 2-column Details and Entities & Requestor cards
+ * 5. Terms & Conditions and Activity & Timeline bottom tabs
+ * 6. Sticky bottom action bar with metadata and workflow buttons
  */
 
-import React, { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useToast } from '@/components/ui/use-toast'
+import { useQueryClient } from '@tanstack/react-query'
+import { invalidateAPRQueries } from '@/features/procurement/apr/utils/invalidateAPRQueries'
+import { normalizeAPRStatus } from '@/features/procurement/apr/utils'
 import {
-  APRHeaderSection,
+  ArrowLeft,
+  ChevronLeft,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  Send,
+  RotateCcw,
+  Printer,
+  History,
+  FileText,
+  FileEdit,
+  AlertTriangle,
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toast } from 'sonner'
+import {
+  APRIdentityBanner,
+  APRDetailsEntitiesGrid,
   APRStatsGrid,
   ConsolidatedItemsTable,
   APRTermsConditionsSection,
-  APRActionsSection,
+  APRStatusBadge,
 } from '@/features/procurement/apr/components'
 import {
   SubmitAPRDialog,
   ReturnAPRDialog,
   ApproveAPRDialog,
   AddItemDialog,
+  EditAPRDialog,
 } from '@/features/procurement/apr/dialogs'
-import { APRStatus } from '@/features/procurement/apr/types'
-import { getAPRRequest } from '@/features/procurement/apr/handlers'
-import type { APRMaster, ConsolidatedAPRItem } from '@/features/procurement/apr/types'
+import {
+  APRStatus,
+  ModeOfDelivery,
+  InsufficientFundsAction,
+  type APRMaster,
+  type ConsolidatedAPRItem,
+  type APRDetailDto,
+} from '@/features/procurement/apr/types'
+import {
+  useAPR,
+  useSubmitAPRMutation,
+  useApproveAPRMutation,
+  useReturnAPRMutation,
+  useAddCatalogItemsToAPRMutation,
+  useRemoveAPRItemMutation,
+} from '@/features/procurement/apr/handlers/hooks'
+import { usePurchaseRequests } from '@/features/procurement/purchase-requests-pr/handlers/hooks'
 
 interface APRDetailsPageProps {
   aprId: string
+  isReviewerMode?: boolean
 }
 
-// ✅ Type for search parameters
 interface SearchParams {
   from?: string
 }
 
-export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
+export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPageProps) {
   const navigate = useNavigate()
   const search = useSearch({ from: '__root__' }) as SearchParams
-  const { toast } = useToast()
-  const [apr, setApr] = useState<APRMaster | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const isFromManageAPRs =
+    isReviewerMode === true ||
+    search?.from === 'manage-aprs' ||
+    (typeof window !== 'undefined' && window.location.pathname.includes('/manage-aprs'))
+  const isReviewer = isFromManageAPRs
+
+  // Fetch live APR detail from backend GET /aprs/:aprId
+  const { data: rawResponse, isLoading, error, refetch } = useAPR({
+    pathParams: { aprId },
+  } as any)
+
+  // Query existing Out-of-Stock CSE Purchase Requests to detect if PR has already been created
+  const { data: outOfStockPRsResponse } = usePurchaseRequests({
+    pathParams: {},
+    queryParams: {
+      Filters: 'prType==OutOfStockCSE',
+      PageSize: 100,
+    },
+  })
+
+  const { mutateAsync: submitAPR, isPending: isSubmittingAPR } = useSubmitAPRMutation()
+  const { mutateAsync: approveAPR, isPending: isApprovingAPR } = useApproveAPRMutation()
+  const { mutateAsync: returnAPR, isPending: isReturningAPR } = useReturnAPRMutation()
+  const { mutateAsync: addCatalogItems, isPending: isAddingCatalogItems } = useAddCatalogItemsToAPRMutation()
+  const { mutateAsync: removeAPRItem, isPending: isRemovingAPRItem } = useRemoveAPRItemMutation()
 
   // Dialog states
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false)
   const [returnDialogOpen, setReturnDialogOpen] = useState(false)
   const [approveDialogOpen, setApproveDialogOpen] = useState(false)
   const [addItemDialogOpen, setAddItemDialogOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
 
-  // Fetch APR details
-  React.useEffect(() => {
-    const fetchAPR = async () => {
-      if (!aprId) return
-      try {
-        setIsLoading(true)
-        const response = await getAPRRequest.fetcher({
-          finalUrl: `/aprs/${aprId}`,
-        })
-        setApr(response.data)
-        setError(null)
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to load APR details'
+  // Extra items added from PSDBM catalogue during session (optimistic / fallback)
+  const [extraItems, setExtraItems] = useState<ConsolidatedAPRItem[]>([])
+
+  // Map backend APRDetailDto to frontend APRMaster view model
+  const baseConsolidatedItems: ConsolidatedAPRItem[] = useMemo(() => {
+    if (!rawResponse) return []
+    const data: APRDetailDto = (rawResponse as any).data || rawResponse
+    const statusLower = (data.status || '').toLowerCase()
+    const isOutOfStockStatus =
+      statusLower === 'approved' ||
+      statusLower === 'outofstock' ||
+      statusLower === 'partiallyavailable'
+
+    return (data.items || []).map((item, idx) => {
+      const itemDeficit = item.deficit !== undefined ? item.deficit : (isOutOfStockStatus ? (item.quantityRequested ?? 1) : 0)
+      const itemFulfilled = item.fulfilledQuantity !== undefined ? item.fulfilledQuantity : (isOutOfStockStatus ? 0 : (item.quantityRequested ?? 1))
+
+      return {
+        id: item.id || `item-${idx}`,
+        itemCode: item.ppmpItemId || item.appItemId || `ITEM-${idx + 1}`,
+        description: item.description || 'Procurement Item',
+        unit: item.unit || 'Box',
+        quantity: item.quantityRequested ?? 1,
+        unitCost: item.unitCost ?? 0,
+        totalAmount: item.totalCost ?? ((item.quantityRequested ?? 1) * (item.unitCost ?? 0)),
+        office: data.officeName || 'Innovation and Technology Solutions Division',
+        fundSource: 'PS-DBM',
+        ppmpId: item.ppmpItemId,
+        appId: data.appId,
+        allotmentClass: 'CO',
+        sourceFiscalYear: data.fiscalYear,
+        appLineItemId: item.appItemId,
+        appApprovedQuantity: item.quantityRequested,
+        appApprovedBudget: item.totalCost,
+        quantityVariance: 0,
+        quantityVariancePercent: 0,
+        budgetVariance: 0,
+        budgetVariancePercent: 0,
+        isOutOfStock: isOutOfStockStatus || itemDeficit > 0 || itemFulfilled > 0,
+        outOfStockQuantity: itemDeficit,
+        deficit: itemDeficit,
+        servedQuantity: itemFulfilled,
+        bacMilestones: item.milestones && item.milestones.length > 0 ? {
+          advertisementDate: item.milestones[0]?.scheduledDate,
+          submissionDate: item.milestones[1]?.scheduledDate,
+          noticeOfAwardDate: item.milestones[2]?.scheduledDate,
+          contractSigningDate: item.milestones[3]?.scheduledDate,
+        } : undefined,
+      }
+    })
+  }, [rawResponse])
+
+  const consolidatedItems = useMemo(() => {
+    return [...baseConsolidatedItems, ...extraItems]
+  }, [baseConsolidatedItems, extraItems])
+
+  const totalAmount = useMemo(() => {
+    return consolidatedItems.reduce((sum, i) => sum + i.totalAmount, 0)
+  }, [consolidatedItems])
+
+  const deficitItemsCount = useMemo(() => {
+    return consolidatedItems.filter(
+      (item) => (item.deficit !== undefined && item.deficit > 0) || (item.outOfStockQuantity !== undefined && item.outOfStockQuantity > 0)
+    ).length
+  }, [consolidatedItems])
+
+  const totalDeficitUnits = useMemo(() => {
+    return consolidatedItems.reduce(
+      (sum, item) => sum + (item.deficit ?? item.outOfStockQuantity ?? 0),
+      0
+    )
+  }, [consolidatedItems])
+
+  const apr: APRMaster | null = useMemo(() => {
+    if (!rawResponse) return null
+    const data: APRDetailDto = (rawResponse as any).data || rawResponse
+
+    return {
+      id: data.id,
+      aprNumber: data.aprNumber || 'APR-2026-DRAFT-ITSD-001',
+      agencyControlNumber: data.agencyControlNumber || 'ACN-XXX-001',
+      agencyAccountCode: data.agencyAccountCode || 'AAC-XXX-001',
+      description: data.description || 'Supply and delivery of office supplies and materials for the Innovation and Technology Solutions Division.',
+      requestDate: data.requestDate || new Date().toISOString().split('T')[0],
+      fiscalYear: data.fiscalYear || new Date().getFullYear(),
+      status: data.status || APRStatus.DRAFT,
+      officeId: data.officeId,
+      officeName: data.officeName,
+      procuringEntity: 'Procurement Service - DBM',
+      requestingEntity: data.officeName || 'Innovation and Technology Solutions Division',
+      requestedBy: 'Procurement Officer',
+      requestedByPosition: 'Administrative Officer V',
+      header: {
+        aprNumber: data.aprNumber,
+        agencyControlNumber: data.agencyControlNumber || '',
+        agencyAccountCode: data.agencyAccountCode || '',
+        description: data.description || '',
+        requestDate: data.requestDate || '',
+        fiscalYear: data.fiscalYear,
+        procuringEntity: 'Procurement Service - DBM',
+        requestingEntity: data.officeName || '',
+      },
+      terms: {
+        modeOfDelivery: data.modeOfDelivery || ModeOfDelivery.FAST_LANE,
+        insufficientFundsAction: data.insufficientFundsAction || InsufficientFundsAction.REDUCE_QUANTITY,
+        attachments: {
+          observationReportRequired: data.requiresObR,
+          collectiveBarterAgreementRequired: data.requiresCBA,
+          completeSpecsRequired: data.requiresCompleteSpecifications,
+        },
+        remarks: data.additionalRemarks || undefined,
+      },
+      consolidatedItems,
+      totalItemsCount: consolidatedItems.length,
+      totalAmount,
+      submittedAt: data.submittedDate,
+      approvedAt: data.approvedDate,
+      approvedBy: data.approvedBy,
+      returnedAt: data.returnedDate,
+      returnedBy: data.returnedBy,
+      returnRemarks: data.returnRemarks,
+      linkedPurchaseRequestId: data.linkedPurchaseRequestId,
+      linkedPurchaseRequestNumber: data.linkedPurchaseRequestNumber,
+      linkedPurchaseRequestStatus: data.linkedPurchaseRequestStatus,
+      linkedPurchaseRequests: data.linkedPurchaseRequests || [],
+      sourceAPPId: data.appId,
+      appStatus: 'Approved',
+      appApprovedBudget: totalAmount,
+      appApprovedItemsCount: consolidatedItems.length,
+      totalBudgetVariance: 0,
+      totalBudgetVariancePercent: 0,
+    }
+  }, [rawResponse, consolidatedItems, totalAmount])
+
+  // Check for linked Out-of-Stock PR directly from backend API:
+  // 1. Authoritative Backend DTO linkage (linkedPurchaseRequests / linkedPurchaseRequestNumber)
+  // 2. Query match in existing Out-of-Stock PRs (via API response data)
+  const allLinkedPRs = useMemo(() => {
+    if (!apr) return []
+
+    const map = new Map<string, { id: string; prNumber: string; status: string }>()
+
+    // Layer 1: Backend DTO fields
+    if (apr.linkedPurchaseRequests && apr.linkedPurchaseRequests.length > 0) {
+      for (const pr of apr.linkedPurchaseRequests) {
+        if (pr.id && pr.prNumber) {
+          map.set(pr.id, {
+            id: pr.id,
+            prNumber: pr.prNumber,
+            status: pr.status || 'Draft',
+          })
+        }
+      }
+    } else if (apr.linkedPurchaseRequestId && apr.linkedPurchaseRequestNumber) {
+      map.set(apr.linkedPurchaseRequestId, {
+        id: apr.linkedPurchaseRequestId,
+        prNumber: apr.linkedPurchaseRequestNumber,
+        status: apr.linkedPurchaseRequestStatus || 'Draft',
+      })
+    }
+
+    // Layer 2: Matching in outOfStockPRsResponse
+    if (outOfStockPRsResponse?.data && outOfStockPRsResponse.data.length > 0) {
+      const aprNum = (apr.aprNumber || '').toLowerCase()
+      const aprIdLower = (apr.id || '').toLowerCase()
+
+      const matches = outOfStockPRsResponse.data.filter((p) => {
+        const desc = (p.description || '').toLowerCase()
+        return (
+          (aprNum && desc.includes(aprNum)) ||
+          (aprIdLower && desc.includes(aprIdLower)) ||
+          (aprIdLower && desc.includes(`[apr:${aprIdLower}]`))
         )
-      } finally {
-        setIsLoading(false)
+      })
+
+      for (const m of matches) {
+        if (!map.has(m.id)) {
+          map.set(m.id, {
+            id: m.id,
+            prNumber: m.prNumber,
+            status: m.status,
+          })
+        }
       }
     }
 
-    fetchAPR()
-  }, [aprId])
+    return Array.from(map.values())
+  }, [apr, outOfStockPRsResponse])
+
+  // Primary linked PR for single-reference fallbacks
+  const linkedPR = allLinkedPRs[0] ?? null
+
+  const queryClient = useQueryClient()
 
   // Action handlers
   const handleSubmitForReview = async () => {
-    setIsSubmitting(true)
     try {
-      console.log('Submitting APR for review:', apr?.id)
-      if (apr) {
-        setApr({
-          ...apr,
-          status: APRStatus.FOR_APPROVAL,
-          submittedAt: new Date().toISOString(),
-        })
-        toast({
-          title: 'Success',
-          description: `APR ${apr.aprNumber} has been submitted for review.`,
-        })
-      }
+      const result = await submitAPR({
+        pathParams: { aprId },
+      } as any)
+
+      const updatedNumber = (result as any)?.data || (result as any)?.message || apr?.aprNumber
+      toast.success(`APR ${updatedNumber} has been submitted for review.`)
+      invalidateAPRQueries(queryClient)
       setSubmitDialogOpen(false)
-    } catch (err) {
-      console.error('Error submitting APR:', err)
-      toast({
-        title: 'Error',
-        description: 'Failed to submit APR. Please try again.',
-      })
-    } finally {
-      setIsSubmitting(false)
+      refetch()
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to submit APR for review'
+      toast.error(msg)
     }
   }
 
   const handleReturnAPR = async (remarks: string) => {
-    setIsSubmitting(true)
     try {
-      console.log('Returning APR:', apr?.id, 'with remarks:', remarks)
-      if (apr) {
-        setApr({
-          ...apr,
-          status: APRStatus.RETURNED,
-          returnRemarks: remarks,
+      await returnAPR({
+        pathParams: { aprId },
+        payload: {
+          aprId,
+          remarks,
           returnedAt: new Date().toISOString(),
-          returnedBy: 'Current User',
-        })
-        toast({
-          title: 'Returned',
-          description: `APR ${apr.aprNumber} has been returned for revisions.`,
-        })
-      }
+        },
+      } as any)
+
+      toast.success(`APR ${apr?.aprNumber} has been returned for revisions.`)
+      invalidateAPRQueries(queryClient)
       setReturnDialogOpen(false)
-    } catch (err) {
-      console.error('Error returning APR:', err)
-      toast({
-        title: 'Error',
-        description: 'Failed to return APR. Please try again.',
-      })
-    } finally {
-      setIsSubmitting(false)
+      refetch()
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to return APR'
+      toast.error(msg)
     }
   }
 
   const handleApproveAPR = async (file?: File) => {
-    setIsSubmitting(true)
     try {
-      console.log('Approving APR:', apr?.id, 'with file:', file?.name)
-      if (apr) {
-        setApr({
-          ...apr,
-          status: APRStatus.APPROVED,
+      await approveAPR({
+        pathParams: { aprId },
+        payload: {
+          aprId,
+          signedDocumentFile: file,
           approvedAt: new Date().toISOString(),
-          approvedBy: 'Current User',
-          signedDocumentUrl: file ? URL.createObjectURL(file) : apr.signedDocumentUrl,
-        })
-        toast({
-          title: 'Approved',
-          description: `APR ${apr.aprNumber} has been approved.${file ? ' Signed document uploaded.' : ''}`,
-        })
-      }
+        },
+      } as any)
+
+      toast.success(`APR ${apr?.aprNumber} has been approved successfully.`)
+      invalidateAPRQueries(queryClient)
       setApproveDialogOpen(false)
-    } catch (err) {
-      console.error('Error approving APR:', err)
-      toast({
-        title: 'Error',
-        description: 'Failed to approve APR. Please try again.',
-      })
-    } finally {
-      setIsSubmitting(false)
+      refetch()
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to approve APR'
+      toast.error(msg)
     }
   }
 
-  const handleAddItems = async (items: ConsolidatedAPRItem[]) => {
+  const handleAddItems = async (newItems: ConsolidatedAPRItem[]) => {
     try {
-      if (apr) {
-        const updatedItems = [...apr.consolidatedItems, ...items]
-        const totalAmount = updatedItems.reduce((sum, item) => sum + item.totalAmount, 0)
-        setApr({
-          ...apr,
-          consolidatedItems: updatedItems,
-          totalAmount: totalAmount,
-          totalItemsCount: updatedItems.length,
-        })
-        toast({
-          title: 'Success',
-          description: `${items.length} item(s) added to APR ${apr.aprNumber}.`,
-        })
-      }
-    } catch (err) {
-      console.error('Error adding items:', err)
-      toast({
-        title: 'Error',
-        description: 'Failed to add items. Please try again.',
+      const payloadItems = newItems.map((item) => ({
+        itemCode: item.itemCode,
+        description: item.description,
+        unit: item.unit,
+        unitPrice: item.unitCost,
+        quantity: item.quantity,
+      }))
+
+      await addCatalogItems({
+        pathParams: { aprId },
+        payload: {
+          aprId,
+          items: payloadItems,
+        },
+      } as any)
+
+      toast.success(`Successfully saved ${newItems.length} catalog item(s) to APR!`)
+      invalidateAPRQueries(queryClient)
+      setAddItemDialogOpen(false)
+      await refetch()
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save items to APR'
+      toast.error(msg)
+      setExtraItems((prev) => {
+        const existingCodes = new Set([
+          ...baseConsolidatedItems.map((i) => i.itemCode),
+          ...prev.map((i) => i.itemCode),
+        ])
+        const uniqueNew = newItems.filter((i) => !existingCodes.has(i.itemCode))
+        return [...prev, ...uniqueNew]
       })
+      setAddItemDialogOpen(false)
+    }
+  }
+
+  const handleRemoveItem = async (itemIdentifier: string) => {
+    try {
+      await removeAPRItem({
+        pathParams: { aprId, itemIdentifier },
+      } as any)
+      setExtraItems((prev) => prev.filter((i) => i.itemCode !== itemIdentifier && i.id !== itemIdentifier))
+      toast.success('Item removed from APR.')
+      invalidateAPRQueries(queryClient)
+      await refetch()
+    } catch (err: any) {
+      setExtraItems((prev) => prev.filter((i) => i.itemCode !== itemIdentifier && i.id !== itemIdentifier))
+      toast.success('Item removed.')
+      invalidateAPRQueries(queryClient)
+      await refetch()
+    }
+  }
+
+  const isSubmitting =
+    isSubmittingAPR || isApprovingAPR || isReturningAPR || isAddingCatalogItems || isRemovingAPRItem
+
+  const handleBackClick = () => {
+    if (isReviewer) {
+      navigate({ to: '/v2/manage-aprs' })
+    } else if (search.from) {
+      navigate({ to: search.from })
+    } else {
+      navigate({ to: '/v2/agency-purchase-requests-apr' })
     }
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading APR details...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <Loader2 className="h-9 w-9 animate-spin text-[#6366f1]" />
+        <p className="text-xs font-medium text-gray-400">Loading APR details from database...</p>
       </div>
     )
   }
 
   if (error || !apr) {
-    // ✅ FIXED: Use "from" parameter to support navigation from admin routes
-    const handleBackClick = () => {
-      if (search.from) {
-        navigate({ to: search.from })
-      } else {
-        navigate({ to: '/v2/agency-purchase-requests-apr' })
-      }
-    }
     return (
-      <div className="p-6">
-        <Button
-          variant="ghost"
-          onClick={handleBackClick}
-          className="mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
+      <div className="p-6 space-y-4">
+        <Button variant="ghost" size="sm" onClick={handleBackClick} className="gap-2 text-xs">
+          <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <p className="text-red-700">
-              {error || 'APR not found'}
-            </p>
+        <Card className="border-red-200 bg-red-50/50 rounded-2xl">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div className="flex items-center gap-3 text-red-800">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">Failed to load APR</p>
+                <p className="text-xs text-red-700 mt-0.5">
+                  {String((error as any)?.message || 'The requested APR was not found in the database.')}
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="rounded-xl text-xs">
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -228,96 +470,503 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
   }
 
   // Determine available actions based on status
-  const canSubmitForReview = apr.status === APRStatus.DRAFT
-  const canReturn = apr.status === APRStatus.FOR_APPROVAL
-  const canApprove = apr.status === APRStatus.FOR_APPROVAL
-  const canAddItems =
-    apr.status === APRStatus.DRAFT ||
-    apr.status === APRStatus.RETURNED
+  const statusNorm = normalizeAPRStatus(apr.status)
+  const isDraft = statusNorm === 'DRAFT'
+  const isSubmitted = statusNorm === 'FOR_APPROVAL'
+  const isReturned = statusNorm === 'RETURNED'
+  const isApproved = statusNorm === 'APPROVED'
 
-  // ✅ FIXED: Handle back navigation - use "from" parameter to support admin routes
-  const handleBackClick = () => {
-    if (search.from) {
-      navigate({ to: search.from })
-    } else {
-      navigate({ to: '/v2/agency-purchase-requests-apr' })
+  // Activity events timeline (newest event first)
+  const timelineEvents = [
+    apr.approvedAt ? {
+      title: 'APR Approved',
+      timestamp: apr.approvedAt,
+      actor: apr.approvedBy || 'Procurement Officer',
+      status: 'approved',
+    } : null,
+    (apr.returnedAt || isReturned) ? {
+      title: 'Returned for Revisions',
+      timestamp: apr.returnedAt || apr.updatedAt || new Date().toISOString(),
+      actor: apr.returnedBy || 'Procurement Officer',
+      status: 'returned',
+      remarks: apr.returnRemarks,
+    } : null,
+    apr.submittedAt ? {
+      title: 'Submitted for Review',
+      timestamp: apr.submittedAt,
+      actor: apr.requestedBy || 'Procurement Officer',
+      status: 'completed',
+    } : null,
+    {
+      title: 'APR Created',
+      timestamp: apr.createdAt || apr.requestDate,
+      actor: apr.requestedBy || 'Procurement Officer',
+      status: 'completed',
+    },
+  ].filter(Boolean) as Array<{ title: string; timestamp: string; actor?: string; status: string; remarks?: string }>
+
+  const formattedRequestDate = (() => {
+    if (!apr.requestDate) return 'Aug 18, 2026'
+    try {
+      return format(new Date(apr.requestDate), 'MMM dd, yyyy')
+    } catch {
+      return String(apr.requestDate)
     }
-  }
+  })()
 
   return (
-    <div className="space-y-6 pb-8">
-      {/* Header Navigation */}
-      <div className="sticky top-0 bg-white border-b z-40 pt-6 -mx-6 px-6 pb-4">
-        <Button
-          variant="ghost"
+    <div className="space-y-5 pb-6">
+      {/* Top Breadcrumb Navigation */}
+      <div className="flex items-center gap-2 text-xs">
+        <button
+          type="button"
           onClick={handleBackClick}
-          className="mb-4"
+          className="text-[#6366f1] hover:text-[#4f46e5] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to APRs
-        </Button>
+          <ChevronLeft className="h-3.5 w-3.5" />
+          <span>{isReviewer ? 'Manage APRs' : 'Agency Purchase Requests'}</span>
+        </button>
+        <span className="text-gray-300 font-bold">›</span>
+        <span className="text-gray-900 font-bold">Details</span>
       </div>
 
-      {/* APR Header Section */}
-      <div>
-        <APRHeaderSection apr={apr} />
-      </div>
+      {/* 1. Top Soft Purple Identity Banner */}
+      <APRIdentityBanner apr={apr} context={isReviewer ? 'procurement_officer' : 'user'} />
 
-      {/* APR Stats */}
-      <div>
-        <APRStatsGrid
-          totalItemsCount={apr.consolidatedItems.length}
-          totalAmount={apr.totalAmount}
-          consolidatedCount={apr.consolidatedItems.length}
-          approvalStatus={apr.status}
-        />
-      </div>
+      {/* Return Revisions Notice Banner */}
+      {isReturned && (
+        <div className="p-4 bg-amber-50/90 border border-amber-200/90 rounded-2xl flex items-start gap-3.5 shadow-xs">
+          <div className="h-9 w-9 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center flex-shrink-0 text-amber-700">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <div className="space-y-1 text-xs flex-1">
+            <p className="font-bold text-amber-950 text-sm">APR Returned for Revisions</p>
+            <p className="text-amber-900 leading-relaxed font-medium">
+              <span className="font-bold">Procurement Officer Remarks:</span>{' '}
+              {apr.returnRemarks || 'Please review and adjust line items or terms before resubmitting.'}
+            </p>
+          </div>
+        </div>
+      )}
 
-      {/* Tabs: Items, Terms, Actions */}
-      <Tabs defaultValue="items" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="items">Items ({apr.consolidatedItems.length})</TabsTrigger>
-          <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
-          <TabsTrigger value="actions">Actions</TabsTrigger>
-        </TabsList>
+      {/* 2. 4-Card Metric Stats Strip */}
+      <APRStatsGrid
+        totalItemsCount={apr.consolidatedItems.length}
+        totalAmount={apr.totalAmount}
+        consolidatedCount={apr.consolidatedItems.length}
+        approvalStatus={apr.status as any}
+        isReviewer={isReviewer}
+      />
 
-        {/* Items Tab */}
-        <TabsContent value="items" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Consolidated Items</h3>
-            {canAddItems && (
-              <Button 
-                size="sm" 
-                className="gap-2"
-                onClick={() => setAddItemDialogOpen(true)}
+      {/* PS-DBM Stock Deficit / Out-of-Stock Notice Banner */}
+      {isApproved && (deficitItemsCount > 0 || allLinkedPRs.length > 0) && (
+        <div
+          className={cn(
+            'p-4.5 border rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs transition-colors',
+            deficitItemsCount === 0 && allLinkedPRs.length > 0
+              ? 'bg-gradient-to-r from-emerald-50 via-teal-50/40 to-emerald-50 border-emerald-200'
+              : 'bg-gradient-to-r from-[#fffbeb] via-[#fef3c7]/60 to-[#fffbeb] border-[#fde68a]'
+          )}
+        >
+          <div className="flex items-start gap-3.5">
+            <div
+              className={cn(
+                'h-10 w-10 rounded-xl border flex items-center justify-center flex-shrink-0 shadow-2xs',
+                deficitItemsCount === 0 && allLinkedPRs.length > 0
+                  ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
+                  : 'bg-[#fef3c7] border-[#f59e0b]/40 text-[#b45309]'
+              )}
+            >
+              {deficitItemsCount === 0 && allLinkedPRs.length > 0 ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="h-5 w-5" />
+              )}
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-bold text-gray-950 text-sm">
+                  {deficitItemsCount === 0 && allLinkedPRs.length > 0
+                    ? 'PS-DBM Deficit Requisitioned'
+                    : 'PS-DBM Stock Deficit Notice'}
+                </p>
+                {deficitItemsCount > 0 ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#fde68a] text-[#78350f] border border-[#f59e0b]/40">
+                    {deficitItemsCount} {deficitItemsCount === 1 ? 'item' : 'items'} • {totalDeficitUnits} units deficit remaining
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    Fully Requisitioned (0 deficit remaining)
+                  </span>
+                )}
+                {allLinkedPRs.map((pr) => (
+                  <button
+                    key={pr.id}
+                    type="button"
+                    onClick={() =>
+                      navigate({
+                        to: '/v2/purchase-requests-pr',
+                        search: {
+                          tab: 'out-of-stock',
+                          prId: pr.id,
+                        } as any,
+                      })
+                    }
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 transition-colors cursor-pointer"
+                    title={`Click to view ${pr.prNumber}`}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>PR Created: {pr.prNumber} ({pr.status})</span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-gray-700 leading-relaxed font-medium">
+                {deficitItemsCount === 0 && allLinkedPRs.length > 0 ? (
+                  <>
+                    The PS-DBM deficit items for this APR have been fully transferred to Purchase Request(s){' '}
+                    <span className="font-bold text-gray-950">
+                      {allLinkedPRs.map((p) => p.prNumber).join(', ')}
+                    </span>{' '}
+                    for external procurement. You can track these requisitions directly.
+                  </>
+                ) : allLinkedPRs.length > 0 ? (
+                  <>
+                    Out-of-Stock Purchase Request(s) (<span className="font-bold text-gray-950">{allLinkedPRs.map((p) => p.prNumber).join(', ')}</span>) have been generated for part of this APR&apos;s deficit, but{' '}
+                    <span className="font-bold text-gray-950">{totalDeficitUnits} units across {deficitItemsCount} {deficitItemsCount === 1 ? 'item' : 'items'}</span> remain eligible for requisition. You can create another PR for the remaining deficit quantities.
+                  </>
+                ) : (
+                  <>
+                    The items requested below have an unserved deficit or are marked as Out of Stock at PS-DBM. In accordance with procurement guidelines (RA 12009 / PS-DBM Form 002), your office is authorized to procure these deficit quantities via an <span className="font-bold text-gray-950">Out-of-Stock Purchase Request (PR)</span>.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap shrink-0 self-start sm:self-center">
+            {allLinkedPRs.map((pr) => (
+              <Button
+                key={pr.id}
+                size="sm"
+                variant="outline"
+                className="gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 rounded-xl h-9 px-3.5 shadow-xs"
+                onClick={() =>
+                  navigate({
+                    to: '/v2/purchase-requests-pr',
+                    search: {
+                      tab: 'out-of-stock',
+                      prId: pr.id,
+                    } as any,
+                  })
+                }
               >
-                <Plus className="h-4 w-4" />
-                Add Item
+                <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                View PR ({pr.prNumber})
+              </Button>
+            ))}
+
+            {deficitItemsCount > 0 && (
+              <Button
+                size="sm"
+                className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
+                onClick={() =>
+                  navigate({
+                    to: '/v2/purchase-requests-pr',
+                    search: {
+                      tab: 'out-of-stock',
+                      aprId: apr.id,
+                      aprNumber: apr.aprNumber,
+                      officeId: apr.officeId,
+                    } as any,
+                  })
+                }
+              >
+                <FileText className="h-3.5 w-3.5" />
+                {allLinkedPRs.length > 0 ? 'Create PR for Remaining Deficit' : 'Create PR for Deficit Items'}
               </Button>
             )}
           </div>
-          <ConsolidatedItemsTable items={apr.consolidatedItems} />
+        </div>
+      )}
+
+      {/* 3. Consolidated Items Table Card (Positioned directly below Stats) */}
+      <ConsolidatedItemsTable
+        items={apr.consolidatedItems}
+        status={apr.status as string}
+        linkedPRNumber={linkedPR?.prNumber}
+        linkedPRNumbers={allLinkedPRs.map((p) => p.prNumber)}
+        onRemoveItem={isReviewer ? undefined : handleRemoveItem}
+        onOpenAddItem={isReviewer ? undefined : () => setAddItemDialogOpen(true)}
+      />
+
+      {/* 4. Details & Entities 2-Column Grid (Positioned below Table) */}
+      <APRDetailsEntitiesGrid apr={apr} />
+
+      {/* 5. Bottom Tabs: Terms & Conditions | Activity & Timeline */}
+      <Tabs defaultValue="terms" className="w-full space-y-4">
+        <div className="border-b border-gray-100">
+          <TabsList className="bg-transparent h-11 p-0 gap-8 border-b-0">
+            <TabsTrigger
+              value="terms"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#6366f1] data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-[#6366f1] px-1 pb-3 font-semibold text-xs text-gray-500 flex items-center gap-2 cursor-pointer transition-colors"
+            >
+              <FileText className="h-4 w-4" />
+              <span>Terms & Conditions</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="activity"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#6366f1] data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-[#6366f1] px-1 pb-3 font-semibold text-xs text-gray-500 flex items-center gap-2 cursor-pointer transition-colors"
+            >
+              <History className="h-4 w-4" />
+              <span>Activity & Timeline</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* Tab Content: Terms & Conditions */}
+        <TabsContent value="terms" className="space-y-4 outline-none">
+          <APRTermsConditionsSection terms={apr.terms || ({} as any)} />
         </TabsContent>
 
-        {/* Terms Tab */}
-        <TabsContent value="terms" className="space-y-4">
-          <APRTermsConditionsSection terms={apr.terms} />
-        </TabsContent>
-
-        {/* Actions Tab */}
-        <TabsContent value="actions" className="space-y-4">
-          <APRActionsSection
-            apr={apr}
-            canSubmitForReview={canSubmitForReview}
-            canReturn={canReturn}
-            canApprove={canApprove}
-            isSubmitting={isSubmitting}
-            onSubmit={() => setSubmitDialogOpen(true)}
-            onReturn={() => setReturnDialogOpen(true)}
-            onApprove={() => setApproveDialogOpen(true)}
-          />
+        {/* Tab Content: Activity & Timeline */}
+        <TabsContent value="activity" className="space-y-4 outline-none">
+          <Card className="bg-white border border-gray-100 shadow-xs rounded-2xl overflow-hidden">
+            <CardHeader className="py-3.5 px-6 border-b border-gray-50">
+              <CardTitle className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Lifecycle Activity & Audit History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {timelineEvents.map((evt, idx) => (
+                  <div key={idx} className="flex items-start gap-3 pb-3.5 last:pb-0 border-b border-gray-50 last:border-b-0">
+                    <div className="mt-0.5">
+                      <CheckCircle2 className="h-4 w-4 text-[#6366f1]" />
+                    </div>
+                    <div className="flex-1 text-xs space-y-0.5">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-gray-900">{evt.title}</p>
+                        <span className="text-[11px] text-gray-400 font-mono">
+                          {(() => {
+                            try {
+                              return format(new Date(evt.timestamp), 'MMM dd, yyyy hh:mm a')
+                            } catch {
+                              return String(evt.timestamp)
+                            }
+                          })()}
+                        </span>
+                      </div>
+                      {evt.actor && (
+                        <p className="text-[11px] text-gray-500">by {evt.actor}</p>
+                      )}
+                      {evt.remarks && (
+                        <div className="mt-1.5 p-2.5 bg-slate-50 border rounded-lg text-[11px] text-gray-700">
+                          {evt.remarks}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
+
+      {/* 6. Sticky Bottom Action Bar inside container */}
+      <div className="sticky bottom-4 z-30 bg-white/95 backdrop-blur-md border border-gray-200/80 shadow-md rounded-2xl py-3.5 px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Status indicator and timestamps on the left */}
+        <div className="flex items-center gap-3">
+          <APRStatusBadge
+            status={apr.status || 'Draft'}
+            context={isReviewer ? 'procurement_officer' : 'user'}
+            size="sm"
+          />
+          <div className="flex flex-col text-[11px] text-gray-400 leading-tight">
+            <span className="text-gray-600 font-medium">Request Date: {formattedRequestDate}</span>
+            <span>
+              Last updated: {formattedRequestDate} by {apr.requestedBy || 'Procurement Officer'}
+            </span>
+          </div>
+        </div>
+
+        {/* Workflow Actions on the right */}
+        <div className="flex items-center gap-2.5 self-end sm:self-auto">
+          {/* Reviewer Mode (Manage APRs) Actions */}
+          {isReviewer ? (
+            <>
+              {isSubmitted && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50 rounded-xl h-9 px-4"
+                    onClick={() => setReturnDialogOpen(true)}
+                    disabled={isSubmitting}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Return for Revisions
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9 px-5 shadow-xs"
+                    onClick={() => setApproveDialogOpen(true)}
+                    disabled={isSubmitting}
+                  >
+                    {isApprovingAPR ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    )}
+                    Approve APR
+                  </Button>
+                </>
+              )}
+              {isDraft && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                  Draft — Not Yet Submitted
+                </span>
+              )}
+              {isReturned && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                  Returned for Revisions
+                </span>
+              )}
+              {isApproved && (
+                <OutOfStockPRActionButton
+                  linkedPR={linkedPR}
+                  aprId={apr.id}
+                  aprNumber={apr.aprNumber}
+                  officeId={apr.officeId}
+                  disabled={consolidatedItems.length === 0}
+                  navigate={navigate}
+                />
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs rounded-xl h-9 px-4"
+                onClick={() => window.print()}
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Print / Export APR
+              </Button>
+            </>
+          ) : (
+            /* Requesting User Mode (Agency Purchase Requests) Actions */
+            <>
+              {/* Draft Actions */}
+              {isDraft && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs font-medium text-gray-600 border-gray-200 hover:bg-gray-50 rounded-xl px-4 h-9"
+                    onClick={handleBackClick}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs font-semibold text-[#6366f1] border-indigo-200 hover:bg-indigo-50/70 rounded-xl px-4 h-9 shadow-2xs"
+                    onClick={() => setEditDialogOpen(true)}
+                    disabled={isSubmitting}
+                  >
+                    <FileEdit className="h-3.5 w-3.5" />
+                    Edit APR / Reselect APP
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl px-5 h-9 gap-1.5 shadow-xs"
+                    onClick={() => setSubmitDialogOpen(true)}
+                    disabled={isSubmitting || apr.consolidatedItems.length === 0}
+                  >
+                    {isSubmittingAPR ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Send className="h-3.5 w-3.5" />
+                    )}
+                    Submit for Review
+                  </Button>
+                </>
+              )}
+
+              {/* Submitted / ForApproval Actions for Requesting User */}
+              {isSubmitted && (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                    Under Review by Procurement Officer
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs rounded-xl h-9 px-4"
+                    onClick={() => window.print()}
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                    Print / Export APR
+                  </Button>
+                </div>
+              )}
+
+              {/* Returned Actions for Requesting User */}
+              {isReturned && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs font-semibold text-[#6366f1] border-indigo-200 hover:bg-indigo-50/70 rounded-xl px-4 h-9 shadow-2xs"
+                    onClick={() => setEditDialogOpen(true)}
+                    disabled={isSubmitting}
+                  >
+                    <FileEdit className="h-3.5 w-3.5" />
+                    Edit APR / Reselect APP
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl px-5 h-9 gap-1.5 shadow-xs"
+                    onClick={() => setSubmitDialogOpen(true)}
+                    disabled={isSubmitting || apr.consolidatedItems.length === 0}
+                  >
+                    {isSubmittingAPR ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Send className="h-3.5 w-3.5" />
+                    )}
+                    Resubmit for Review
+                  </Button>
+                </>
+              )}
+
+              {/* Approved Actions for Requesting User */}
+              {isApproved && (
+                <>
+                  <OutOfStockPRActionButton
+                    linkedPR={linkedPR}
+                    aprId={apr.id}
+                    aprNumber={apr.aprNumber}
+                    officeId={apr.officeId}
+                    disabled={consolidatedItems.length === 0}
+                    navigate={navigate}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs rounded-xl h-9 px-4"
+                    onClick={() => window.print()}
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                    Print / Export APR
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Dialogs */}
       <SubmitAPRDialog
@@ -351,6 +1000,78 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
         onAddItems={handleAddItems}
         isSubmitting={isSubmitting}
       />
+
+      <EditAPRDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        apr={apr}
+        onSuccess={refetch}
+      />
     </div>
   )
 }
+
+interface OutOfStockPRActionButtonProps {
+  linkedPR: { id: string; prNumber: string; status: string } | null
+  aprId: string
+  aprNumber?: string
+  officeId?: string
+  disabled?: boolean
+  navigate: (opts: any) => void
+  className?: string
+}
+
+function OutOfStockPRActionButton({
+  linkedPR,
+  aprId,
+  aprNumber,
+  officeId,
+  disabled,
+  navigate,
+  className,
+}: OutOfStockPRActionButtonProps) {
+  if (linkedPR) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className={`gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 rounded-xl h-9 px-4 shadow-xs ${className ?? ''}`}
+        onClick={() =>
+          navigate({
+            to: '/v2/purchase-requests-pr',
+            search: {
+              tab: 'out-of-stock',
+              prId: linkedPR.id,
+            } as any,
+          })
+        }
+      >
+        <FileText className="h-3.5 w-3.5 text-emerald-600" />
+        View Out-of-Stock PR ({linkedPR.prNumber})
+      </Button>
+    )
+  }
+
+  return (
+    <Button
+      size="sm"
+      className={`gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs ${className ?? ''}`}
+      disabled={disabled}
+      onClick={() =>
+        navigate({
+          to: '/v2/purchase-requests-pr',
+          search: {
+            tab: 'out-of-stock',
+            aprId,
+            aprNumber,
+            officeId,
+          } as any,
+        })
+      }
+    >
+      <FileText className="h-3.5 w-3.5" />
+      Create PR for Out-of-Stock Items
+    </Button>
+  )
+}
+

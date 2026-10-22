@@ -1,16 +1,25 @@
+
+
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useState, useMemo } from 'react'
-import { Briefcase, FileText, Settings } from 'lucide-react'
+import { createQueryHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
+import { AlertCircle, Building2, Files, Layers, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import type {
+  MasterDoc,
+  MasterDocumentFormData,
+  Profile,
+  Project,
+  ProjectChecklistItem,
+} from '@/components/features/planning/bidding-document-library/types'
+import type { ProfileFormData } from '@/components/features/planning/bidding-document-library/dialogs/ProfileDialog'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useToast } from '@/components/ui/use-toast'
 import { CreateMasterDocumentDialog } from '@/components/features/planning/bidding-document-library/dialogs/CreateMasterDocumentDialog'
 import { CustomRequirementDialog } from '@/components/features/planning/bidding-document-library/dialogs/CustomRequirementDialog'
 import { DeleteMasterDocumentDialog } from '@/components/features/planning/bidding-document-library/dialogs/DeleteMasterDocumentDialog'
@@ -18,170 +27,222 @@ import { EditMasterDocumentDialog } from '@/components/features/planning/bidding
 import { ProfileDialog } from '@/components/features/planning/bidding-document-library/dialogs/ProfileDialog'
 import { ProfileDocumentsDialog } from '@/components/features/planning/bidding-document-library/dialogs/ProfileDocumentsDialog'
 import { TemplateViewerDialog } from '@/components/features/planning/bidding-document-library/dialogs/TemplateViewerDialog'
-import { MasterSetupTab } from '@/components/features/planning/bidding-document-library/tabs/MasterSetupTab'
-import { ProjectChecklistTab } from '@/components/features/planning/bidding-document-library/tabs/ProjectChecklistTab'
-import type {
-  BiddingDocumentTab,
-  MasterDoc,
-  MasterDocumentFormData,
-  Profile,
-  Project,
-  ProjectChecklistItem,
-} from '@/components/features/planning/bidding-document-library/types'
+import { UploadedFileViewerDialog } from '@/components/features/planning/bidding-document-library/dialogs/UploadedFileViewerDialog'
 import {
-  useMasterDocuments,
-  useProfiles,
-  useProfileById,
-  useCreateMasterDocument,
-  useUpdateMasterDocument,
-  useDeleteMasterDocument,
-  useCreateProfile,
-  useUpdateProfile,
-  useProjectChecklist,
   useAddCustomRequirement,
   useConfirmChecklist,
+  useCreateMasterDocument,
+  useCreateProfile,
+  useDeleteMasterDocument,
+  useLoadProfile,
+  useMasterDocuments,
+  useProfiles,
+  useProjectChecklist,
   useResetChecklist,
-  useBACProjects,
+  usePostProjectToPortal,
+  useUpdateChecklistItem,
+  useUpdateMasterDocument,
+  useUpdateProfile,
 } from '@/components/features/planning/bidding-document-library/hooks/useBiddingDocumentLibrary'
+import { getProjectChecklistQueryKey } from '@/components/features/planning/bidding-document-library/handlers/projectChecklistHandlers'
+import { MasterSetupTab } from '@/components/features/planning/bidding-document-library/tabs/MasterSetupTab'
+import { ProjectChecklistTab } from '@/components/features/planning/bidding-document-library/tabs/ProjectChecklistTab'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getProjectsRequest } from '@/features/procurement/manage-supplier-portal/handlers/getProjectsRequest'
+
+type BiddingDocumentTabKey = 'SystemAdmin' | 'BACSecretariat'
+
+const useBACProjects = createQueryHookFromTemplate(getProjectsRequest)
 
 export default function BiddingDocumentLibraryPage() {
-  const navigate = useNavigate()
   const search = useSearch({ from: '/v2/bidding-document-library' })
-  const { toast } = useToast()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
-  const activeTab = (search.tab || 'SystemAdmin') as BiddingDocumentTab
+  const activeTab: BiddingDocumentTabKey =
+    search.tab === 'BACSecretariat'
+      ? search.tab
+      : 'SystemAdmin'
 
-  // ── BAC Projects (real API) ───────────────────────────────────────────────
-  const { data: bacProjectsResponse } = useBACProjects({
+  // ── Live Backend Queries ─────────────────────────────────────────────────
+  const {
+    data: masterDocsApi,
+    isLoading: isMasterDocsLoading,
+    isError: isMasterDocsError,
+    error: masterDocsError,
+  } = useMasterDocuments({
     pathParams: {},
     queryParams: { pageNumber: 1, pageSize: 100 },
   })
 
-  const projects = useMemo<Project[]>(() => {
-    return (bacProjectsResponse?.data || []).map((p) => ({
-      id: p.id,
-      title: p.title,
-      category: 'Goods' as const,
-      refNumber: p.consolidatedPR?.cprNumber || '',
-      profileId: '',
-      status: p.status as Project['status'],
-      checklist: [],
-    }))
-  }, [bacProjectsResponse])
+  const {
+    data: profilesApi,
+    isLoading: isProfilesLoading,
+    isError: isProfilesError,
+    error: profilesError,
+  } = useProfiles({
+    pathParams: {},
+    queryParams: { pageNumber: 1, pageSize: 100 },
+  })
 
+  const {
+    data: projectsApi,
+    isLoading: isProjectsLoading,
+    isError: isProjectsError,
+    error: projectsError,
+  } = useBACProjects({
+    pathParams: {},
+    queryParams: { pageSize: 100 },
+  })
+
+  // Selected project state
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
 
-  const firstProjectId = projects[0]?.id
-  useMemo(() => {
-    if (firstProjectId && !selectedProjectId) {
-      setSelectedProjectId(firstProjectId)
+  // Automatically select first project once loaded
+  useEffect(() => {
+    if (projectsApi?.data && projectsApi.data.length > 0 && !selectedProjectId) {
+      setSelectedProjectId(projectsApi.data[0].id)
     }
-  }, [firstProjectId])
+  }, [projectsApi, selectedProjectId])
 
-  const currentProject = projects.find((p) => p.id === selectedProjectId) || projects[0]
-
-  // ── Data fetching ─────────────────────────────────────────────────────────
-  const { data: masterDocsResponse, refetch: refetchMasterDocs } = useMasterDocuments({
-    pathParams: {},
-    queryParams: { pageNumber: 1, pageSize: 100 },
-  })
-
-  const { data: profilesResponse, refetch: refetchProfiles } = useProfiles({
-    pathParams: {},
-    queryParams: { pageNumber: 1, pageSize: 100 },
-  })
-
-  const isValidGuid = (id: string) =>
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
-
-  const { data: checklistResponse, refetch: refetchChecklist } = useProjectChecklist({
+  const {
+    data: projectChecklistApi,
+    isLoading: isChecklistLoading,
+    isError: isChecklistError,
+    error: checklistError,
+  } = useProjectChecklist({
     pathParams: { projectId: selectedProjectId },
-    queryParams: { projectId: selectedProjectId },
-    enabled: activeTab === 'BACSecretariat' && isValidGuid(selectedProjectId),
+    enabled: Boolean(selectedProjectId),
   })
 
-  // ── Profile by ID (for view dialog) ──────────────────────────────────────
-  const [viewingProfileId, setViewingProfileId] = useState<string | null>(null)
+  // ── Live Backend Mutations ───────────────────────────────────────────────
+  const createMasterDocMutation = useCreateMasterDocument()
+  const updateMasterDocMutation = useUpdateMasterDocument()
+  const deleteMasterDocMutation = useDeleteMasterDocument()
 
-  const { data: profileByIdResponse } = useProfileById({
-    pathParams: { profileId: viewingProfileId ?? '' },
-    queryParams: { profileId: viewingProfileId ?? '' },
-    enabled: !!viewingProfileId,
-  })
+  const createProfileMutation = useCreateProfile()
+  const updateProfileMutation = useUpdateProfile()
 
-  const viewingProfileFull = useMemo<Profile | null>(() => {
-  if (!profileByIdResponse?.data) return null
-  const p = profileByIdResponse.data
-  const items = p.items ?? []
-  return {
-    id: p.id,
-    name: p.name,
-    description: p.description || '',
-    documentIds: items.map((item) => item.masterDocumentTypeId),
-    itemCount: items.length,
-    techCount: items.filter((i) => i.envelopeType === 1).length,
-    finCount: items.filter((i) => i.envelopeType === 2).length,
-  }
-}, [profileByIdResponse])
+  const addCustomReqMutation = useAddCustomRequirement()
+  const updateChecklistItemMutation = useUpdateChecklistItem()
+  const confirmChecklistMutation = useConfirmChecklist()
+  const resetChecklistMutation = useResetChecklist()
+  const postProjectToPortalMutation = usePostProjectToPortal()
+  const loadProfileMutation = useLoadProfile()
 
-  // ── Mutations ─────────────────────────────────────────────────────────────
-  const { mutateAsync: createMasterDoc } = useCreateMasterDocument()
-  const { mutateAsync: updateMasterDoc } = useUpdateMasterDocument()
-  const { mutateAsync: deleteMasterDoc } = useDeleteMasterDocument()
-  const { mutateAsync: createProfile } = useCreateProfile()
-  const { mutateAsync: updateProfile } = useUpdateProfile()
-  const { mutateAsync: addCustomReq } = useAddCustomRequirement()
-  const { mutateAsync: confirmChecklist } = useConfirmChecklist()
-  const { mutateAsync: resetChecklist } = useResetChecklist()
+  const existingChecklistCount = useMemo(() => {
+    if (!projectChecklistApi?.data) return 0
+    return (
+      projectChecklistApi.data.envelope1Items.length +
+      projectChecklistApi.data.envelope2Items.length
+    )
+  }, [projectChecklistApi])
 
-  // ── State mapping ─────────────────────────────────────────────────────────
-  const masterDocs = useMemo<MasterDoc[]>(() => {
-    return (masterDocsResponse?.data || []).map((doc, idx) => ({
-      id: doc.id,
-      name: doc.name,
-      description: doc.description || '',
-      envelope: doc.envelopeType as 1 | 2,
-      templateFile: doc.templateFileUrl || '',
-      order: idx + 1,
+  // ── Derived Authoritative State (Pure live API data, no mock fallbacks) ──
+  const masterDocs: Array<MasterDoc> = useMemo(() => {
+    if (!masterDocsApi?.data) return []
+    return masterDocsApi.data.map((item, index) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description ?? '',
+      envelope: item.envelopeType === 2 ? 2 : 1,
+      templateFile: item.templateFileUrl ?? '',
+      templatePreviewUrl: item.templateFileUrl,
+      order: index + 1,
     }))
-  }, [masterDocsResponse])
+  }, [masterDocsApi])
 
-  const profiles = useMemo<Profile[]>(() => {
-  return (profilesResponse?.data || []).map((prof) => {
-    const items = prof.items ?? []
-    return {
-      id: prof.id,
-      name: prof.name,
-      description: prof.description || '',
-      documentIds: items.map((item) => item.masterDocumentTypeId),
-      itemCount: prof.itemCount ?? 0,
-      techCount: prof.techCount ?? 0,   // ← from DTO now
-      finCount: prof.finCount ?? 0,     // ← from DTO now
-    }
-  })
-}, [profilesResponse])
+  const profiles: Array<Profile> = useMemo(() => {
+    if (!profilesApi?.data) return []
+    return profilesApi.data.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description ?? '',
+      procurementCategory: p.procurementCategory,
+      documentIds: p.items.map((i) => i.masterDocumentTypeId),
+      itemCount: p.itemCount,
+      techCount: p.techCount,
+      finCount: p.finCount,
+    }))
+  }, [profilesApi])
 
-  // ── Dialog states ─────────────────────────────────────────────────────────
-  const [isCreateDocOpen, setIsCreateDocOpen] = useState(false)
-  const [editingDoc, setEditingDoc] = useState<MasterDoc | null>(null)
-  const [deletingDoc, setDeletingDoc] = useState<MasterDoc | null>(null)
-  const [viewingTemplateDoc, setViewingTemplateDoc] = useState<MasterDoc | null>(null)
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const projects: Array<Project> = useMemo(() => {
+    if (!projectsApi?.data) return []
+    return projectsApi.data.map((p) => {
+      const isCurrent = p.id === selectedProjectId
+      const checklist: Array<ProjectChecklistItem> =
+        isCurrent && projectChecklistApi?.data
+          ? [
+              ...projectChecklistApi.data.envelope1Items.map((item) => ({
+                id: item.id,
+                name: item.documentName,
+                envelope: 1 as const,
+                templateFile: item.templateFileUrl ?? '',
+                templatePreviewUrl: item.templateFileUrl,
+                isCustom: item.isCustom,
+                enabled: item.isRequired,
+              })),
+              ...projectChecklistApi.data.envelope2Items.map((item) => ({
+                id: item.id,
+                name: item.documentName,
+                envelope: 2 as const,
+                templateFile: item.templateFileUrl ?? '',
+                templatePreviewUrl: item.templateFileUrl,
+                isCustom: item.isCustom,
+                enabled: item.isRequired,
+              })),
+            ]
+          : []
+
+      return {
+        id: p.id,
+        title: p.title,
+        category: 'Goods',
+        refNumber: p.id.slice(0, 8).toUpperCase(),
+        profileId: '',
+        checklist,
+        projectStatus: p.status,
+        status:
+          isCurrent && projectChecklistApi?.data.isLocked
+            ? 'Finalized'
+            : 'Draft Checklist',
+      }
+    })
+  }, [projectsApi, projectChecklistApi, selectedProjectId])
+
+  const currentProject = useMemo(() => {
+    if (projects.length === 0) return null
+    return (
+      projects.find((p) => p.id === selectedProjectId) ??
+      projects[0]
+    )
+  }, [projects, selectedProjectId])
+
+  // ── Dialog States ────────────────────────────────────────────────────────
+  const [createDocOpen, setCreateDocOpen] = useState(false)
+  const [editDoc, setEditDoc] = useState<MasterDoc | null>(null)
+  const [deleteDoc, setDeleteDoc] = useState<MasterDoc | null>(null)
+  const [templateViewerDoc, setTemplateViewerDoc] = useState<MasterDoc | null>(null)
+
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false)
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
-  const [isCustomReqOpen, setIsCustomReqOpen] = useState(false)
+  const [viewingProfile, setViewingProfile] = useState<Profile | null>(null)
 
-  const setActiveTab = (newTab: string) => {
+  const [customReqOpen, setCustomReqOpen] = useState(false)
+  const [uploadedFileItem, setUploadedFileItem] = useState<ProjectChecklistItem | null>(null)
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+  const handleTabChange = (value: string) => {
     navigate({
-      to: `/v2/bidding-document-library`,
-      search: { tab: newTab as BiddingDocumentTab },
-      replace: true,
+      to: '/v2/bidding-document-library',
+      search: { tab: value as BiddingDocumentTabKey },
     })
   }
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleCreateDoc = async (data: MasterDocumentFormData) => {
+  // Master Document CRUD
+  const handleCreateDocument = async (data: MasterDocumentFormData) => {
     try {
-      await createMasterDoc({
+      await createMasterDocMutation.mutateAsync({
         pathParams: {},
         payload: {
           name: data.name,
@@ -190,125 +251,128 @@ export default function BiddingDocumentLibraryPage() {
           fileId: data.templateFileId,
         },
       })
-      toast({ title: 'Document Created', description: `"${data.name}" has been registered.` })
-      refetchMasterDocs()
-      setIsCreateDocOpen(false)
-    } catch {
-      toast({ title: 'Error', description: 'Failed to create document', variant: 'destructive' })
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/admin/bidding-documents') &&
+          !query.queryKey[0].startsWith('/admin/bidding-documents/profiles'),
+      })
+      setCreateDocOpen(false)
+      toast.success(`Master document "${data.name}" registered successfully.`)
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to create master document on server.'
+      toast.error(errorMsg)
     }
   }
 
-  const handleUpdateDoc = async (docId: string, data: MasterDocumentFormData) => {
+  const handleUpdateDocument = async (docId: string, data: MasterDocumentFormData) => {
     try {
-      await updateMasterDoc({
+      const isRemovingFile = !data.templateFile && !data.templateFileId
+      await updateMasterDocMutation.mutateAsync({
         pathParams: { id: docId },
-        queryParams: { id: docId },
         payload: {
           name: data.name,
           description: data.description,
           envelopeType: data.envelope,
           fileId: data.templateFileId,
+          removeFile: isRemovingFile,
         },
       })
-      toast({ title: 'Document Updated', description: `"${data.name}" details modified.` })
-      refetchMasterDocs()
-      setEditingDoc(null)
-    } catch {
-      toast({ title: 'Error', description: 'Failed to update document', variant: 'destructive' })
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/admin/bidding-documents') &&
+          !query.queryKey[0].startsWith('/admin/bidding-documents/profiles'),
+      })
+      setEditDoc(null)
+      toast.success('Master document updated successfully.')
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to update master document on server.'
+      toast.error(errorMsg)
     }
   }
 
-  const handleDeleteDoc = async () => {
-    if (!deletingDoc) return
+  const handleDeleteDocument = async () => {
+    if (!deleteDoc) return
+    const docToDelete = deleteDoc
+
     try {
-      await deleteMasterDoc({ pathParams: { id: deletingDoc.id }, queryParams: { id: deletingDoc.id } })
-      toast({ title: 'Document Removed', description: 'Document deleted from the Master Library.' })
-      refetchMasterDocs()
-      setDeletingDoc(null)
-    } catch {
-      toast({ title: 'Error', description: 'Failed to delete document', variant: 'destructive' })
+      await deleteMasterDocMutation.mutateAsync({
+        pathParams: { id: docToDelete.id },
+      })
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/admin/bidding-documents') &&
+          !query.queryKey[0].startsWith('/admin/bidding-documents/profiles'),
+      })
+      setDeleteDoc(null)
+      toast.success(`Master document "${docToDelete.name}" deleted.`)
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to delete master document from server.'
+      toast.error(errorMsg)
     }
   }
 
-  const handleSaveProfile = async (data: Omit<Profile, 'id'>) => {
+  // Profile CRUD
+  const handleSaveProfile = async (data: ProfileFormData) => {
     try {
       if (editingProfile) {
-        await updateProfile({
+        await updateProfileMutation.mutateAsync({
           pathParams: { profileId: editingProfile.id },
-          queryParams: { profileId: editingProfile.id },
           payload: {
             name: data.name,
             description: data.description,
-            procurementCategory: 'Goods',
-            items: data.documentIds.map((id, idx) => ({
+            procurementCategory: data.procurementCategory,
+            items: data.documentIds.map((id, index) => ({
               masterDocumentTypeId: id,
-              orderIndex: idx,
+              orderIndex: index + 1,
             })),
           },
         })
+        toast.success('Checklist profile updated.')
       } else {
-        await createProfile({
+        await createProfileMutation.mutateAsync({
           pathParams: {},
           payload: {
             name: data.name,
             description: data.description,
-            procurementCategory: 'Goods',
-            items: data.documentIds.map((id, idx) => ({
+            procurementCategory: data.procurementCategory,
+            items: data.documentIds.map((id, index) => ({
               masterDocumentTypeId: id,
-              orderIndex: idx,
+              orderIndex: index + 1,
             })),
           },
         })
+        toast.success(`Checklist profile "${data.name}" created.`)
       }
-      toast({ title: 'Profile Saved', description: `"${data.name}" profile guidelines updated.` })
-      refetchProfiles()
-      setIsProfileOpen(false)
-    } catch {
-      toast({ title: 'Error', description: 'Failed to save profile', variant: 'destructive' })
+
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/admin/bidding-documents/profiles'),
+      })
+      setProfileDialogOpen(false)
+      setEditingProfile(null)
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to save checklist profile on server.'
+      toast.error(errorMsg)
     }
   }
 
-  const mappedCurrentProject = useMemo<Project>(() => {
-    if (!currentProject) return null as any
-    if (!checklistResponse?.data) return currentProject
-
-    const items: ProjectChecklistItem[] = [
-      ...checklistResponse.data.envelope1Items.map((item) => ({
-        id: item.id,
-        name: item.documentName,
-        envelope: item.envelopeType as 1 | 2,
-        templateFile: item.templateFileUrl || '',
-        isCustom: item.isCustom,
-        enabled: item.isRequired,
-      })),
-      ...checklistResponse.data.envelope2Items.map((item) => ({
-        id: item.id,
-        name: item.documentName,
-        envelope: item.envelopeType as 1 | 2,
-        templateFile: item.templateFileUrl || '',
-        isCustom: item.isCustom,
-        enabled: item.isRequired,
-      })),
-    ]
-
-    return {
-      ...currentProject,
-      checklist: items,
-      status: checklistResponse.data.isLocked ? 'Finalized' : 'Draft Checklist',
-    }
-  }, [currentProject, checklistResponse])
-
-  const activeProjects = projects.map((p) =>
-    p.id === mappedCurrentProject?.id ? mappedCurrentProject : p
-  )
-
-  const handleToggleChecklistDoc = async (_projectId: string, docId: string) => {
-    const item = mappedCurrentProject?.checklist.find((c) => c.id === docId)
-    if (item) {
-      toast({ title: 'Info', description: 'Toggle connected (stub)' })
-    }
-  }
-
+  // Project Checklist Handlers
   const handleAddCustomRequirement = async (data: {
     name: string
     envelope: 1 | 2
@@ -316,129 +380,314 @@ export default function BiddingDocumentLibraryPage() {
     templatePreviewUrl?: string
     templateFileType?: string
   }) => {
+    if (!selectedProjectId) {
+      toast.error('No project selected.')
+      return
+    }
+
     try {
-      await addCustomReq({
+      await addCustomReqMutation.mutateAsync({
         pathParams: { projectId: selectedProjectId },
-        queryParams: { projectId: selectedProjectId },
         payload: {
           customDocumentName: data.name,
           envelopeType: data.envelope,
-          orderIndex: 0,
+          orderIndex: (currentProject?.checklist.length ?? 0) + 1,
         },
       })
-      toast({ title: 'Custom Requirement Added', description: `"${data.name}" appended to Envelope ${data.envelope} requirements.` })
-      refetchChecklist()
-      setIsCustomReqOpen(false)
-    } catch {
-      toast({ title: 'Error', description: 'Failed to add custom requirement', variant: 'destructive' })
+      await queryClient.invalidateQueries({
+        queryKey: getProjectChecklistQueryKey(selectedProjectId),
+      })
+      setCustomReqOpen(false)
+      toast.success(`Custom requirement "${data.name}" added to project checklist.`)
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to add custom requirement on server.'
+      toast.error(errorMsg)
+    }
+  }
+
+  const handleApplyProfile = async (projectId: string, profileId: string) => {
+    try {
+      await loadProfileMutation.mutateAsync({
+        pathParams: { projectId },
+        payload: { documentProfileId: profileId },
+      })
+      await queryClient.invalidateQueries({
+        queryKey: getProjectChecklistQueryKey(projectId),
+      })
+      const appliedProfile = profiles.find((p) => p.id === profileId)
+      toast.success(
+        `Checklist profile "${appliedProfile?.name ?? 'Blueprint'}" applied to project.`,
+      )
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to apply profile on server.'
+      toast.error(errorMsg)
     }
   }
 
   const handleFinalizeChecklist = async (projectId: string) => {
     try {
-      await confirmChecklist({ pathParams: { projectId }, queryParams: { projectId } })
-      toast({ title: 'Checklist Finalized', description: 'BAC requirements locked for the project checklist.' })
-      refetchChecklist()
-    } catch {
-      toast({ title: 'Error', description: 'Failed to finalize checklist', variant: 'destructive' })
+      await confirmChecklistMutation.mutateAsync({
+        pathParams: { projectId },
+      })
+      await queryClient.invalidateQueries({
+        queryKey: getProjectChecklistQueryKey(projectId),
+      })
+      toast.success('Checklist finalized and locked for bidding.')
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to finalize checklist on server.'
+      toast.error(errorMsg)
     }
   }
 
   const handleResetChecklist = async (projectId: string) => {
     try {
-      await resetChecklist({ pathParams: { projectId }, queryParams: { projectId } })
-      toast({ title: 'Checklist Reset', description: 'Checklist reverted to Draft state for editing.' })
-      refetchChecklist()
-    } catch {
-      toast({ title: 'Error', description: 'Failed to reset checklist', variant: 'destructive' })
+      await resetChecklistMutation.mutateAsync({
+        pathParams: { projectId },
+      })
+      await queryClient.invalidateQueries({
+        queryKey: getProjectChecklistQueryKey(projectId),
+      })
+      toast.info('Checklist reverted to draft mode.')
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to reset checklist on server.'
+      toast.error(errorMsg)
     }
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const handlePostToPublicPortal = async (projectId: string) => {
+    try {
+      await postProjectToPortalMutation.mutateAsync({
+        pathParams: { projectId },
+      })
+      await Promise.all([
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const keyStr = JSON.stringify(query.queryKey)
+            return (
+              keyStr.includes('/bac/projects') ||
+              keyStr.includes('/api/public/projects')
+            )
+          },
+        }),
+      ])
+      toast.success('Project successfully posted to the BAC Public Portal!')
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to post project to public portal.'
+      toast.error(errorMsg)
+    }
+  }
+
+  const handleToggleChecklistDoc = async (
+    projectId: string,
+    checklistItemId: string
+  ) => {
+    const item = currentProject?.checklist.find((i) => i.id === checklistItemId)
+    if (!item) return
+
+    try {
+      await updateChecklistItemMutation.mutateAsync({
+        pathParams: { projectId, checklistItemId },
+        payload: {
+          isRequired: !item.enabled,
+          orderIndex: 0,
+        },
+      })
+      await queryClient.invalidateQueries({
+        queryKey: getProjectChecklistQueryKey(projectId),
+      })
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : 'Failed to toggle checklist requirement on server.'
+      toast.error(errorMsg)
+    }
+  }
+
+
+  // ── Global Error / Loading Banners ───────────────────────────────────────
+  const hasError = isMasterDocsError || isProfilesError || isProjectsError || isChecklistError
+  const activeError =
+    masterDocsError || profilesError || projectsError || checklistError
+
   return (
-    <div className="w-full space-y-6">
-      <Card className="bg-gradient-to-r from-primary/15 to-primary/5 border-primary/20">
+    <div className="space-y-6">
+      {/* Header Banner */}
+      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
         <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="space-y-2">
-              <CardTitle className="text-3xl flex items-center gap-2">
-                <FileText className="h-8 w-8 text-primary" /> Bidding Document Library
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="space-y-1.5">
+              <CardTitle className="text-3xl font-bold tracking-tight text-foreground">
+                Bidding Document Library
               </CardTitle>
-              <CardDescription className="text-base max-w-3xl">
-                Define the global legal checklist database, set standardized templates, and
-                automatically construct customized requirements lists for bidding applications.
+              <CardDescription className="text-base text-muted-foreground">
+                Master checklist configuration, category profiles, and project-specific bidding document requirements.
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Badge variant="outline" className="h-fit px-3 py-1 font-semibold border-primary/30 text-primary">
-                Pre-Procurement Engine
+
+            <div className="flex items-center gap-3">
+              {(isMasterDocsLoading || isProfilesLoading || isProjectsLoading || isChecklistLoading) && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background/80 px-3 py-1.5 rounded-md border shadow-2xs">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  <span>Syncing with server...</span>
+                </div>
+              )}
+              <Badge variant="outline" className="h-fit px-3 py-1.5 font-semibold bg-background/80 shadow-2xs">
+                <Files className="h-3.5 w-3.5 mr-1.5 text-primary" /> Bidding Documents
               </Badge>
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      <Card>
-        <CardHeader className="p-0 border-b">
-          <div className="px-6 pt-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-muted/30 p-1 mb-0 border-b rounded-none">
-                <TabsTrigger value="SystemAdmin" className="gap-2 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
-                  <Settings className="h-4.5 w-4.5" /> Master Setup (Admin)
-                </TabsTrigger>
-                <TabsTrigger value="BACSecretariat" className="gap-2 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
-                  <Briefcase className="h-4.5 w-4.5" /> Project Checklist (BAC)
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+      {/* Error Alert Banner if an API request fails */}
+      {hasError && (
+        <div className="flex items-start gap-3 p-4 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-sm">
+          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <div className="font-semibold">Backend API Communication Error</div>
+            <div className="text-xs opacity-90">
+              {activeError instanceof Error
+                ? activeError.message
+                : 'Unable to communicate with the procurement service. Please verify your backend server connection.'}
+            </div>
           </div>
-        </CardHeader>
+        </div>
+      )}
 
-        <CardContent className="pt-6">
-          {activeTab === 'SystemAdmin' && (
-            <MasterSetupTab
-              masterDocs={masterDocs}
-              profiles={profiles}
-              onAddDocument={() => setIsCreateDocOpen(true)}
-              onEditDocument={setEditingDoc}
-              onDeleteDocument={setDeletingDoc}
-              onViewTemplate={setViewingTemplateDoc}
-              onAddProfile={() => { setEditingProfile(null); setIsProfileOpen(true) }}
-              onEditProfile={(p) => { setEditingProfile(p); setIsProfileOpen(true) }}
-              onViewProfile={(p) => setViewingProfileId(p.id)}
-            />
-          )}
-          {activeTab === 'BACSecretariat' && mappedCurrentProject != null && (
-            <ProjectChecklistTab
-              projects={activeProjects}
-              currentProject={mappedCurrentProject}
-              selectedProjectId={selectedProjectId}
-              profiles={profiles}
-              masterDocs={masterDocs}
-              onSelectedProjectChange={setSelectedProjectId}
-              onAddCustomRequirement={() => setIsCustomReqOpen(true)}
-              onFinalizeChecklist={handleFinalizeChecklist}
-              onResetChecklist={handleResetChecklist}
-              onToggleChecklistDoc={handleToggleChecklistDoc}
-              onViewTemplate={setViewingTemplateDoc}
-            />
-          )}
-        </CardContent>
-      </Card>
+      {/* Navigation Tabs */}
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="w-full space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="SystemAdmin" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            <span>System Admin</span>
+          </TabsTrigger>
+          <TabsTrigger value="BACSecretariat" className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            <span>BAC Secretariat</span>
+          </TabsTrigger>
+        </TabsList>
 
-      <CreateMasterDocumentDialog open={isCreateDocOpen} onOpenChange={setIsCreateDocOpen} onCreate={handleCreateDoc} />
-      <EditMasterDocumentDialog doc={editingDoc} open={Boolean(editingDoc)} onOpenChange={(open) => { if (!open) setEditingDoc(null) }} onUpdate={handleUpdateDoc} />
-      <DeleteMasterDocumentDialog doc={deletingDoc} open={Boolean(deletingDoc)} onOpenChange={(open) => { if (!open) setDeletingDoc(null) }} onConfirm={handleDeleteDoc} />
-      <TemplateViewerDialog doc={viewingTemplateDoc} open={Boolean(viewingTemplateDoc)} onOpenChange={(open) => { if (!open) setViewingTemplateDoc(null) }} />
-      <ProfileDialog profile={editingProfile} masterDocs={masterDocs} open={isProfileOpen} onOpenChange={(open) => { setIsProfileOpen(open); if (!open) setEditingProfile(null) }} onSave={handleSaveProfile} />
-      <ProfileDocumentsDialog
-        profile={viewingProfileFull}
-        masterDocs={masterDocs}
-        open={!!viewingProfileId}
-        onOpenChange={(open) => { if (!open) setViewingProfileId(null) }}
-        onViewTemplate={setViewingTemplateDoc}
+        {/* Tab 1: System Admin */}
+        <TabsContent value="SystemAdmin" className="space-y-6">
+          <MasterSetupTab
+            masterDocs={masterDocs}
+            profiles={profiles}
+            onAddDocument={() => setCreateDocOpen(true)}
+            onEditDocument={(doc) => setEditDoc(doc)}
+            onDeleteDocument={(doc) => setDeleteDoc(doc)}
+            onViewTemplate={(doc) => setTemplateViewerDoc(doc)}
+            onAddProfile={() => {
+              setEditingProfile(null)
+              setProfileDialogOpen(true)
+            }}
+            onEditProfile={(prof) => {
+              setEditingProfile(prof)
+              setProfileDialogOpen(true)
+            }}
+            onViewProfile={(prof) => setViewingProfile(prof)}
+          />
+        </TabsContent>
+
+        {/* Tab 2: BAC Secretariat */}
+        <TabsContent value="BACSecretariat" className="space-y-6">
+          <ProjectChecklistTab
+            projects={projects}
+            currentProject={currentProject}
+            selectedProjectId={selectedProjectId}
+            profiles={profiles}
+            masterDocs={masterDocs}
+            isLoading={isProjectsLoading || isChecklistLoading}
+            isApplyingProfile={loadProfileMutation.isPending}
+            existingChecklistCount={existingChecklistCount}
+            onSelectedProjectChange={setSelectedProjectId}
+            onApplyProfile={handleApplyProfile}
+            onAddCustomRequirement={() => setCustomReqOpen(true)}
+            onFinalizeChecklist={handleFinalizeChecklist}
+            onResetChecklist={handleResetChecklist}
+            onPostToPublicPortal={handlePostToPublicPortal}
+            isPostingToPortal={postProjectToPortalMutation.isPending}
+            onToggleChecklistDoc={handleToggleChecklistDoc}
+            onViewTemplate={(doc) => setTemplateViewerDoc(doc)}
+          />
+        </TabsContent>
+
+      </Tabs>
+
+      {/* ── Modals & Dialogs ─────────────────────────────────────────────── */}
+      <CreateMasterDocumentDialog
+        open={createDocOpen}
+        onOpenChange={setCreateDocOpen}
+        onCreate={handleCreateDocument}
       />
-      <CustomRequirementDialog open={isCustomReqOpen} onOpenChange={setIsCustomReqOpen} onAdd={handleAddCustomRequirement} />
+
+      <EditMasterDocumentDialog
+        doc={editDoc}
+        open={Boolean(editDoc)}
+        onOpenChange={(open) => !open && setEditDoc(null)}
+        onUpdate={handleUpdateDocument}
+      />
+
+      <DeleteMasterDocumentDialog
+        doc={deleteDoc}
+        open={Boolean(deleteDoc)}
+        onOpenChange={(open) => !open && setDeleteDoc(null)}
+        onConfirm={handleDeleteDocument}
+      />
+
+      <TemplateViewerDialog
+        doc={templateViewerDoc}
+        open={Boolean(templateViewerDoc)}
+        onOpenChange={(open) => !open && setTemplateViewerDoc(null)}
+      />
+
+      <ProfileDialog
+        profile={editingProfile}
+        masterDocs={masterDocs}
+        open={profileDialogOpen}
+        onOpenChange={setProfileDialogOpen}
+        onSave={handleSaveProfile}
+      />
+
+      <ProfileDocumentsDialog
+        profile={viewingProfile}
+        masterDocs={masterDocs}
+        open={Boolean(viewingProfile)}
+        onOpenChange={(open) => !open && setViewingProfile(null)}
+        onViewTemplate={(doc) => setTemplateViewerDoc(doc)}
+      />
+
+      <CustomRequirementDialog
+        open={customReqOpen}
+        onOpenChange={setCustomReqOpen}
+        onAdd={handleAddCustomRequirement}
+      />
+
+
+      <UploadedFileViewerDialog
+        item={uploadedFileItem}
+        open={Boolean(uploadedFileItem)}
+        onOpenChange={(open) => !open && setUploadedFileItem(null)}
+      />
     </div>
   )
 }

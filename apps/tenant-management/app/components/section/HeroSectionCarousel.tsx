@@ -4,6 +4,7 @@ import { Play } from "lucide-react"
 import { Button } from "~/components/ui/button"
 import HeroMainSlide from "../HeroMainSlide"
 import HeroSecondSlide from "../HeroSecondSlide"
+import HeroThirdSlide from "../HeroThirdSlide"
 const AUTOPLAY_DELAY_MS = 10000
 export function HeroSectionCarousel() {
     const slides = [
@@ -24,15 +25,10 @@ export function HeroSectionCarousel() {
         </main>,
 
         <main
-            key="slide-3"
+            key="hero-onpremise"
             className="relative isolate h-screen overflow-hidden flex items-center justify-center bg-transparent"
         >
-            <div className="container relative mx-auto flex min-h-[72vh] flex-col items-center justify-center py-24 text-center sm:py-32">
-                <h2 className="text-4xl font-bold">Slide Three</h2>
-                <p className="mt-4 text-slate-600 max-w-xl">
-                    Third carousel item.
-                </p>
-            </div>
+            <HeroThirdSlide />
         </main>,
     ]
 

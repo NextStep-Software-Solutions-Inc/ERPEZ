@@ -178,6 +178,7 @@ export interface SupplierRegistryFormData {
 export interface ProcurementActivity {
   id: string
   activityName: string
+  activityCode?: string | null
   description?: string
   minDays: number
   maxDays: number
@@ -188,6 +189,7 @@ export interface ProcurementActivity {
 
 export interface ProcurementActivityFormData {
   activityName: string
+  activityCode: string
   description?: string
   minDays: number
   maxDays: number
@@ -252,6 +254,20 @@ export interface Category {
 export interface CategoryFormData {
   name: string
   description?: string
+}
+
+// Supplier Category Types
+export interface SupplierCategory {
+  id: string
+  name: string
+  description?: string | null
+  createdAt?: string
+  updatedAt?: string | null
+}
+
+export interface SupplierCategoryFormData {
+  name: string
+  description?: string | null
 }
 
 // UNSPSC Code Management Types

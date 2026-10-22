@@ -1,14 +1,14 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Calendar, AlertCircle, ExternalLink } from 'lucide-react'
-import { format, isPast, parseISO, differenceInDays } from 'date-fns'
+import { AlertCircle, Calendar, ExternalLink } from 'lucide-react'
+import { differenceInDays, format, isPast, parseISO } from 'date-fns'
 import { useNavigate } from '@tanstack/react-router'
-import type { ProcurementTask, ProcTaskType } from '../types'
 import { ConsolidationWidget } from './task-widgets/ConsolidationWidget'
 import { AobWidget } from './task-widgets/AobWidget'
 import { NoaWidget } from './task-widgets/NoaWidget'
 import { NtpWidget } from './task-widgets/NtpWidget'
+import type { ProcTaskType, ProcurementTask } from '../types'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 // ─── Task component map: no if/else, no switch ───────────────────────────────
 const taskComponentMap: Record<ProcTaskType, React.ComponentType<{ metadata: ProcurementTask['metadata'] }>> = {
@@ -115,7 +115,7 @@ export function SmartTaskCard({ task }: Props) {
           <Button
             size="sm"
             className="flex-1 gap-1.5"
-            onClick={() => navigate({ to: actionRoute as Parameters<typeof navigate>[0]['to'] })}
+            onClick={() => navigate({ to: actionRoute })}
           >
             {actionLabel}
             <ExternalLink className="h-3 w-3" />
@@ -124,7 +124,7 @@ export function SmartTaskCard({ task }: Props) {
             size="sm"
             variant="outline"
             className="flex-1"
-            onClick={() => navigate({ to: actionRoute as Parameters<typeof navigate>[0]['to'] })}
+            onClick={() => navigate({ to: actionRoute })}
           >
             {secondaryActionLabel}
           </Button>

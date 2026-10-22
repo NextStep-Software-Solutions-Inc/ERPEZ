@@ -1,0 +1,23 @@
+using ERPEZ.Domain.Enums;
+using ERPEZ.Application.Features.Procurement.PurchaseOrders.DTOs;
+using ERPEZ.Shared.Common;
+using MediatR;
+
+namespace ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.CreatePurchaseOrder;
+
+public record CreatePurchaseOrderCommand : IRequest<ApiResponse<Guid>>
+{
+    public string PONumber { get; init; } = string.Empty;
+    public POProcurementModeEnum ProcurementMode { get; init; }
+    public SourceDocumentTypeEnum SourceDocumentType { get; init; }
+    public Guid SourceDocumentId { get; init; }
+    public Guid? SupplierId { get; init; }
+    public RetailStoreInfoDto? RetailStoreInfo { get; init; }
+    public string? Description { get; init; }
+    public DateOnly Date { get; init; }
+    public string? PlaceOfDelivery { get; init; }
+    public DateOnly? DateOfDelivery { get; init; }
+    public string? DeliveryTerm { get; init; }
+    public string? PaymentTerm { get; init; }
+    public string? SupportingDocumentUrl { get; init; }
+}

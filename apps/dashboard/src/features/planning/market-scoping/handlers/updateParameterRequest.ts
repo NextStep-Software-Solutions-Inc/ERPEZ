@@ -1,4 +1,7 @@
-import type { MutationBlueprintFromTemplate, APIResponse } from 'erpez-shared-lib'
+import type {
+  MutationBlueprintFromTemplate,
+  APIResponse,
+} from 'erpez-shared-lib'
 import type { ParameterDefinition } from '../types/managementTypes'
 import api from '@/services/api'
 
@@ -21,7 +24,10 @@ export const updateParameterRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.put<APIResponse<ParameterDefinition>>(finalUrl, payload)
+    const response = await api.put<APIResponse<ParameterDefinition>>(
+      finalUrl,
+      payload,
+    )
     return response.data
   },
 }

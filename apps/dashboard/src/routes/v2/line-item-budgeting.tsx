@@ -1,6 +1,8 @@
 import { Outlet, createFileRoute, useLocation } from '@tanstack/react-router'
 import { z } from 'zod'
 import LineItemBudgetingPage from '@/pages/planning/line-item-budgeting/LineItemBudgetingPage'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 /**
  * Line-Item Budgeting route tabs enumeration
@@ -60,9 +62,12 @@ function RouteComponent() {
     location.pathname,
   )
 
-  if (isDetailPage) {
-    return <Outlet />
-  }
-
-  return <LineItemBudgetingPage />
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Planning.Lib.View}
+      message="You do not have permission to view Line-Item Budgeting."
+    >
+      {isDetailPage ? <Outlet /> : <LineItemBudgetingPage />}
+    </RoutePermissionGuard>
+  )
 }

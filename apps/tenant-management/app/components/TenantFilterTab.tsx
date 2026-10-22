@@ -7,7 +7,7 @@ interface Props {
 }
 
 export function TenantFilterTab({ value, onChange, plans }: Props) {
-    const defaultPlans = ["All", "Starter", "Professional", "Enterprise"];
+    const defaultPlans = ["All", "Starter", "Professional", "Enterprise", "On-Premise Sovereign"];
     const tabs = plans && plans.length > 0 ? plans : defaultPlans;
     return (
         <Tabs value={value} onValueChange={onChange}>

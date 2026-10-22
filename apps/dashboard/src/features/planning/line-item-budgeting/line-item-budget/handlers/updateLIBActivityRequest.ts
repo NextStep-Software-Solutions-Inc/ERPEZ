@@ -12,6 +12,7 @@ export type UpdateLIBActivityPayload = {
   wfpObjectiveActivityId?: string
   opcrActivityId?: string
   name?: string
+  papCode?: string
 }
 
 export const updateLIBActivityRequest: MutationBlueprintFromTemplate<

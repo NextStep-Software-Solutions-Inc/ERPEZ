@@ -146,15 +146,20 @@
 
 @layer components {
   /* Hide scrollbar while keeping scrollability */
-  .scrollbar-hide {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+  .scrollbar-hide,
+  .no-scrollbar {
+    -ms-overflow-style: none !important; /* IE and Edge */
+    scrollbar-width: none !important; /* Firefox */
   }
 
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none; /* Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar,
+  .no-scrollbar::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari and Opera */
+    width: 0px !important;
+    height: 0px !important;
   }
 }
+
 
 .has-sticky-header {
   &::after {
@@ -316,13 +321,7 @@
     padding-bottom: 37px;
   }
 }
-.no-scrollbar::-webkit-scrollbar {
-  width: 0px;
-}
 
-.no-scrollbar::-webkit-scrollbar-thumb {
-  background-color: transparent;
-}
 .dash-tail-calendar {
   .fc-toolbar-chunk button {
     @apply h-9;

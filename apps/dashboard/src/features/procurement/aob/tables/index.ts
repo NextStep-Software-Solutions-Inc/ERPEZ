@@ -10,3 +10,8 @@ export { AOBListToolbar } from './AOBListToolbar'
 export { ManageAOBListToolbar } from './ManageAOBListToolbar'
 export { getAdminAOBsTableColumns } from './AdminAOBsTableColumns'
 export { AdminAOBsTableToolbar } from './AdminAOBsTableToolbar'
+export { BidEvaluationMatrix } from './BidEvaluationMatrix'
+export { BidMatrixKpiCards } from './BidMatrixKpiCards'
+export { BidMatrixItemHeader, BidMatrixItemSubheaders } from './BidMatrixItemHeader'
+export { BidMatrixSupplierRow } from './BidMatrixSupplierRow'
+

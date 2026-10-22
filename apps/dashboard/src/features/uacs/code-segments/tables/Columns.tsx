@@ -1,4 +1,4 @@
-import { createColumnHelper } from '@tanstack/react-table'
+import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
 import type { FundingSource } from '../types/fundingSourceTypes'
 import type { OrganizationCode } from '../types/organizationCodeTypes'
 import type { LocationCode } from '../types/locationCodeTypes'
@@ -261,7 +261,7 @@ export function createMfoPapColumns(options: {
 export function createObjectCodeColumns(options: {
   onEdit?: (item: ObjectCode) => void
   onDelete?: (item: ObjectCode) => void
-}) {
+}): ColumnDef<ObjectCode, any>[] {
   const columnHelper = createColumnHelper<ObjectCode>()
 
   // Color mapping for expense classes

@@ -3,6 +3,7 @@ import { useForm, useField } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Sparkles } from 'lucide-react'
 import {
   Select,
   SelectTrigger,
@@ -25,6 +26,7 @@ const useCreateLIBActivity = createMutationHookFromTemplate(
 const createLIBActivitySchema = z.object({
   opcrActivityId: z.string().min(1, 'OPCR Activity is required'),
   name: z.string().optional(),
+  papCode: z.string().optional(),
 })
 
 export type CreateLIBActivityFormValues = z.infer<
@@ -34,6 +36,7 @@ interface CreateLIBActivityFormProps {
   libId: string
   opcrData?: OPCRDetails
   isOPCRLoading?: boolean
+  existingOPCRActivityIds?: string[]
   onCreated?: () => void
   onClose?: () => void
   setForm?: (form: ReturnType<typeof useForm>) => void
@@ -45,6 +48,7 @@ export default function CreateLIBActivityForm({
   libId,
   opcrData,
   isOPCRLoading = false,
+  existingOPCRActivityIds = [],
   onCreated,
   onClose,
   setForm,
@@ -54,7 +58,7 @@ export default function CreateLIBActivityForm({
   const queryClient = useQueryClient()
   const { mutateAsync, isPending } = useCreateLIBActivity()
 
-  // Extract activities from opcrData
+  // Extract activities from opcrData and filter out already-linked ones
   const opcrActivities = useMemo(() => {
     const activities: OPCRActivity[] = []
     if (opcrData?.opcrItems) {
@@ -64,13 +68,17 @@ export default function CreateLIBActivityForm({
         }
       })
     }
+    if (existingOPCRActivityIds.length > 0) {
+      return activities.filter((a) => !existingOPCRActivityIds.includes(a.id))
+    }
     return activities
-  }, [opcrData])
+  }, [opcrData, existingOPCRActivityIds])
 
   const form = useForm({
     defaultValues: {
       opcrActivityId: '',
       name: '',
+      papCode: '',
     } as z.input<typeof createLIBActivitySchema>,
     validators: {
       onChange: createLIBActivitySchema,
@@ -81,12 +89,14 @@ export default function CreateLIBActivityForm({
           (a) => a.id === value.opcrActivityId,
         )
         const name = value.name || selectedActivity?.name || ''
+        const papCode = value.papCode?.trim() || undefined
 
         if (onSubmitOverride) {
           onSubmitOverride({
             lineItemBudgetId: libId,
             opcrActivityId: value.opcrActivityId,
             name,
+            papCode,
           })
           onCreated?.()
           onClose?.()
@@ -100,6 +110,7 @@ export default function CreateLIBActivityForm({
               lineItemBudgetId: libId,
               opcrActivityId: value.opcrActivityId,
               name,
+              papCode,
             },
           },
           {
@@ -211,6 +222,36 @@ export default function CreateLIBActivityForm({
               placeholder="Auto-populated from selected activity"
               disabled={isPending}
             />
+            <FieldInfo field={field} />
+          </div>
+        )}
+      />
+      {/* PAP Code Field (Optional - Auto-generated if empty) */}
+      <form.Field
+        name="papCode"
+        children={(field) => (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor={field.name} className="text-xs font-semibold text-gray-700">
+                PAP Code / API Number
+              </Label>
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary-700 bg-primary-50 border border-primary-100/80 px-2 py-0.5 rounded-full">
+                <Sparkles className="w-3 h-3 text-primary-500 shrink-0" />
+                Auto-generated
+              </span>
+            </div>
+            <Input
+              id={field.name}
+              value={field.state.value === undefined ? '' : field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              placeholder="e.g. 2026-17-00001 (Leave blank to auto-generate)"
+              className="font-mono text-xs placeholder:font-sans placeholder:text-gray-400"
+              disabled={isPending}
+            />
+            <p className="text-[11px] text-muted-foreground leading-normal">
+              A standard PAP Code will be assigned automatically if left blank.
+            </p>
             <FieldInfo field={field} />
           </div>
         )}
