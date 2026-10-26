@@ -47,15 +47,26 @@ export type LIB = {
   scopeLevel?: 'Activity' | 'Project'
   scope?: 'Activity' | 'Project'
   level?: 'Office' | 'Department'
-  fiscalYear: FiscalYear
+  fiscalYearId?: string
+  fiscalYear?: FiscalYear
   totalAmount: number
   status: LIBStatus
   createdAt: string
   activities: LIBActivity[]
+  activityCount?: number
   version: number
   previousVersionId?: string
-  fundSource: FundSource
-  office: Office
+  fundSourceId?: string
+  fundSource?: FundSource
+  officeId?: string
+  office?: Office
+  departmentCeiling?: number | string | null
+  ceiling?: number | string | null
+  officeCeiling?: { totalAmount?: number | string | null } | null
+  agencyMasterBudget?: { id?: string; totalAmount?: number | string | null } | null
+  agencyMasterBudgetId?: string | null
+  isMultiYear?: boolean
+  wfp?: { isMultiYear?: boolean } | null
 }
 
 export type LIBDetails = {
@@ -66,7 +77,8 @@ export type LIBDetails = {
   parentLIBId?: string
   name?: string
   libNumber?: string
-  scope?: 'Activity' | 'Project'
+  scope?: 'Activity' | 'Project' | 'ProjectLevel'
+  scopeLevel?: 'Activity' | 'Project'
   sourceType?: 'OPCR' | 'WFP'
   sourceId?: string
   status: LIBStatus
@@ -81,9 +93,17 @@ export type LIBDetails = {
   consolidatedIntoLIB?: LIB
   previousVersion?: LIB
   activities?: LIBActivity[]
+  activityCount?: number
   orphanDetails?: OrphanLineItemDetail[]
   updatedAt?: string
   createdAt?: string
+  departmentCeiling?: number | string | null
+  ceiling?: number | string | null
+  officeCeiling?: { totalAmount?: number | string | null } | null
+  agencyMasterBudget?: { id?: string; totalAmount?: number | string | null } | null
+  agencyMasterBudgetId?: string | null
+  isMultiYear?: boolean
+  wfp?: { isMultiYear?: boolean } | null
 }
 
 export type WFPObjectiveActivity = {

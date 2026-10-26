@@ -1,5 +1,5 @@
-import type { AppDetailResponse, APPItemFromAPI, APPPPMPRelationFromAPI } from '../handlers/getAPPDetailRequest'
-import type { AppMaster, APPAggregationResult, BACLineItem } from '../types'
+import type { AppDetailResponse, APPItemFromAPI, APPPPMPRelationFromAPI, APPSignatoryFromAPI } from '../handlers/getAPPDetailRequest'
+import type { AppMaster, APPAggregationResult, BACLineItem, Signatory, SignatoryBlock } from '../types'
 
 /**
  * Transform API AppDetailResponse to AppMaster format
@@ -12,24 +12,36 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
   // Parse fiscal year from fiscalYearName (e.g., "2026" → 2026)
   const fiscalYear = parseInt(apiApp.fiscalYearName, 10)
 
-  // Map API status to AppStatus (must stay capitalized: Draft, Submitted, Approved, Locked)
+  // Map API status to AppStatus (must stay capitalized: Draft, Submitted, Approved, Locked, Returned)
   const statusMap: Record<string, any> = {
-    'Draft': 'Draft',
-    'Submitted': 'Submitted',
-    'Approved': 'Approved',
-    'Locked': 'Locked',
+    'Draft':     'Draft',
+    'Submitted':  'Submitted',
+    'Approved':   'Approved',
+    'Locked':     'Locked',
+    'Returned':   'Returned',
   }
   const status = (statusMap[apiApp.status] || 'Draft') as 'Draft' | 'Submitted' | 'Approved' | 'Locked'
 
-  // Extract appType from description or default to 'Indicative'
-  // Description format: "Indicative APP for FY 2026" or "Supplemental APP for FY 2026"
-  const appType = apiApp.description?.includes('Supplemental') ? 'Supplemental' : 'Indicative'
+  // Derive appType from the API field (Indicative | Final | Updated).
+  // Do NOT infer from description text — that was unreliable.
+  const appTypeMap: Record<string, 'Indicative' | 'Final' | 'Updated'> = {
+    'Indicative': 'Indicative',
+    'Final':      'Final',
+    'Updated':    'Updated',
+    // Legacy / alternate spellings
+    'Supplemental': 'Final',
+  }
+  const appType = appTypeMap[apiApp.appType as string] ?? 'Indicative'
 
   // Parse API APPItems to internal BAC lineItems
   const lineItems: BACLineItem[] = apiApp.APPItems?.map((item: APPItemFromAPI) => {
-    const quantity = item.quantity ?? 0
     const unitCost = item.unitCost ?? 0
-    const totalAmount = item.totalAmount ?? (quantity * unitCost)
+    const totalAmount = item.effectiveABC ?? item.totalAmount ?? (item.quantity && unitCost ? item.quantity * unitCost : 0)
+    const quantity = (item.quantity && item.quantity > 0)
+      ? item.quantity
+      : (unitCost > 0 && totalAmount > 0)
+        ? Math.round(totalAmount / unitCost)
+        : (item.quantity ?? 1)
 
     const milestones = {
       advertisementDate: '',
@@ -60,8 +72,12 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
     return {
       id: item.id,
       ppmpItemId: item.ppmpItemId || undefined,
+      papCode: item.papCode || '',
       code: item.code || item.ppmpItemId || item.id?.substring(0, 10) || '',
-      description: item.ppmpItemName || item.description || '',
+      description: item.itemNameOverride || item.ppmpItemName || item.description || '',
+      itemDescription: item.generalDescription || item.description || '',
+      itemNameOverride: item.itemNameOverride || '',
+      generalDescription: item.generalDescription || '',
       unit: item.unit || 'unit',
       quantity,
       unitCost,
@@ -75,6 +91,19 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
       eligibleForEPA: item.isEarlyProcurementActivity || false,
       remarks: item.remarks || '',
       epaRemarks: item.epaRemarks || '',
+      startOfProcurementOverride: item.startOfProcurementOverride || '',
+      endOfProcurementOverride: item.endOfProcurementOverride || '',
+      effectiveStartOfProcurement: item.effectiveStartOfProcurement || '',
+      effectiveEndOfProcurement: item.effectiveEndOfProcurement || '',
+      isStartProcurementOverridden: item.isStartProcurementOverridden ?? !!item.startOfProcurementOverride,
+      isEndProcurementOverridden: item.isEndProcurementOverridden ?? !!item.endOfProcurementOverride,
+      isABCOverridden: item.isABCOverridden ?? (item.estimatedBudgetOverride !== null && item.estimatedBudgetOverride !== undefined),
+      originalPPMPBudget: item.originalPPMPBudget ?? totalAmount,
+      effectiveABC: item.effectiveABC ?? totalAmount,
+      estimatedBudgetOverride: item.estimatedBudgetOverride !== undefined && item.estimatedBudgetOverride !== null ? item.estimatedBudgetOverride : null,
+      isOutsourced: item.isOutsourced || false,
+      procurementStrategies: (item.procurementStrategies as any[]) || [],
+      bidEvaluationCriteria: (item.bidEvaluationCriteria as any) || undefined,
       milestones,
     }
   }) || []
@@ -87,6 +116,26 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
   const aggregationResults: APPAggregationResult = {
     items: [],
     totalAmount: totalBudget,
+  }
+
+  const mapSignatoriesList = (items?: APPSignatoryFromAPI[]): Signatory[] | undefined => {
+    if (!items || items.length === 0) return undefined
+    return items.map((s) => ({
+      id: s.id,
+      name: s.name,
+      position: s.position,
+      department: s.department,
+      signatureDate: s.signatureDate ? s.signatureDate.split('T')[0] : undefined,
+      userId: s.userId || undefined,
+      personnelPositionId: s.personnelPositionId || undefined,
+    }))
+  }
+
+  const signatories: SignatoryBlock = {
+    preparedBy: mapSignatoriesList(apiApp.signatories?.preparedBy),
+    reviewedBy: mapSignatoriesList(apiApp.signatories?.reviewedBy),
+    approvedBy: mapSignatoriesList(apiApp.signatories?.approvedBy),
+    certifiedBy: mapSignatoriesList(apiApp.signatories?.certifiedBy),
   }
 
   return {
@@ -108,12 +157,7 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
       totalBudget,
       modeOfProcurements,
     },
-    signatories: {
-      preparedBy: undefined,
-      reviewedBy: undefined,
-      approvedBy: undefined,
-      certifiedBy: undefined,
-    },
+    signatories,
     status,
     createdAt: apiApp.createdAt,
     updatedAt: apiApp.updatedAt || apiApp.createdAt,
@@ -123,6 +167,10 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
     isFinal: apiApp.isFinal,
     submittedDate: apiApp.submittedDate,
     approvedDate: apiApp.approvedDate,
+    derivedFinalAppId: apiApp.derivedFinalAppId,
+    derivedFinalAppNumber: apiApp.derivedFinalAppNumber,
+    derivedFinalAppName: apiApp.derivedFinalAppName,
+    derivedFinalAppStatus: apiApp.derivedFinalAppStatus,
     APPItems: apiApp.APPItems,
   } as AppMaster
 }

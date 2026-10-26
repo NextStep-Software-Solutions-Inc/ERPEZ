@@ -2,9 +2,18 @@ import { useEffect, useState } from 'react'
 import { useAtom } from 'jotai'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import SubmitButton from '@/components/SubmitButton'
-import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import {
   CreatePpmpMetadataForm,
@@ -110,14 +119,47 @@ export function CreatePpmpDialog({
 
   return (
     <>
-      <ResponsiveDialogDashtail
+      <Dialog
         open={open && !showDiscardWarning}
         onOpenChange={handleOpenChange}
-        title={title}
-        description={description}
-        size="lg"
-        footer={
-          <div className="flex items-center justify-between w-full">
+      >
+        <DialogContent size="lg" className="p-0 gap-0 overflow-hidden bg-white">
+          {/* Header */}
+          <DialogHeader className="p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-default-200">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <DialogTitle className="text-xl font-extrabold text-default-900 flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  {title}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  {description}
+                </DialogDescription>
+              </div>
+              <Badge
+                variant="outline"
+                className="font-bold bg-white shadow-sm border-primary/30 text-primary shrink-0"
+              >
+                {defaultIsMaster ? 'Master Office PPMP' : 'Department PPMP'}
+              </Badge>
+            </div>
+          </DialogHeader>
+
+          {/* Form Content */}
+          <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+            <CreatePpmpMetadataForm
+              formId={FORM_ID}
+              onSubmit={handleSubmit}
+              isLoading={isSubmitting}
+              defaultOfficeId={preSelectedOfficeId}
+              defaultIsMaster={defaultIsMaster}
+              initialValues={formData}
+              onValuesChange={setFormData}
+            />
+          </div>
+
+          {/* Footer */}
+          <DialogFooter className="p-4 bg-default-50 border-t border-default-200 flex items-center justify-between w-full">
             <Button
               type="button"
               variant="outline"
@@ -131,22 +173,13 @@ export function CreatePpmpDialog({
               type="submit"
               loading={isSubmitting}
               disabled={isSubmitting}
+              className="gap-1.5 font-bold shadow-sm"
             >
               {isSubmitting ? 'Creating...' : 'Create PPMP'}
             </SubmitButton>
-          </div>
-        }
-      >
-        <CreatePpmpMetadataForm
-          formId={FORM_ID}
-          onSubmit={handleSubmit}
-          isLoading={isSubmitting}
-          defaultOfficeId={preSelectedOfficeId}
-          defaultIsMaster={defaultIsMaster}
-          initialValues={formData}
-          onValuesChange={setFormData}
-        />
-      </ResponsiveDialogDashtail>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmAlertDialog
         open={showDiscardWarning}

@@ -410,7 +410,7 @@ export function BACLineItemsTable({
                 >
                   {/* Locked Columns */}
                   {(visibleColumns['code'] ?? true) && (
-                    <TableCell className="font-mono text-xs bg-gray-50">
+                    <TableCell className="text-xs font-medium bg-gray-50">
                       {item.id}
                     </TableCell>
                   )}

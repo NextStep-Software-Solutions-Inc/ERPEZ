@@ -30,6 +30,7 @@ import { getLIBsRequest } from '@/features/planning/line-item-budgeting/line-ite
 import { deleteLIBRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/deleteLIBRequest'
 import { updateLIBStatusRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/updateLIBStatusRequest'
 import { LinkCeilingDialog } from '../dialogs/LinkCeilingDialog'
+import { EditLIBDialog } from './dialogs/EditLIBDialog'
 import type { LIB } from '@/features/planning/line-item-budgeting/line-item-budget/types'
 
 const useLIBs = createQueryHookFromTemplate(getLIBsRequest)
@@ -88,9 +89,9 @@ export function LineItemBudgetTab({
 
   // Approval Dialog State
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
-  const [approvalAction, setApprovalAction] = useState<'approve' | 'reject'>(
-    'approve',
-  )
+  const [approvalAction, setApprovalAction] = useState<
+    'approve' | 'return' | 'reject'
+  >('approve')
   const [selectedLibForApproval, setSelectedLibForApproval] = useState<{
     id: string
     name: string
@@ -103,6 +104,9 @@ export function LineItemBudgetTab({
 
   // Link Ceiling Dialog State
   const [selectedLibForCeiling, setSelectedLibForCeiling] = useState<LIB | null>(null)
+
+  // Edit LIB Dialog State
+  const [editingLibId, setEditingLibId] = useState<string | null>(null)
 
   const { mutateAsync: deleteAsync } = useDeleteLIB()
   const { mutateAsync: updateStatusAsync } = useUpdateLIBStatus()
@@ -135,7 +139,9 @@ export function LineItemBudgetTab({
     clearSelection,
   } = useBulkActions()
 
-  const handleUpdateLIB = () => {}
+  const handleUpdateLIB = (id: string) => {
+    setEditingLibId(id)
+  }
 
   const handleDeleteLIB = (libraryId: string) => {
     const lib = libs?.data.find((l) => l.id === libraryId)
@@ -183,7 +189,7 @@ export function LineItemBudgetTab({
     const lib = libs?.data.find((l) => l.id === libraryId)
     if (lib) {
       setSelectedLibForApproval({ id: libraryId, name: lib.name })
-      setApprovalAction('reject')
+      setApprovalAction('return')
       setApprovalDialogOpen(true)
     }
   }
@@ -194,7 +200,7 @@ export function LineItemBudgetTab({
     setIsApprovalLoading(true)
 
     try {
-      const newStatus = approvalAction === 'approve' ? 'Approved' : 'Rejected'
+      const newStatus = approvalAction === 'approve' ? 'Approved' : 'Returned'
 
       await updateStatusAsync(
         {
@@ -205,7 +211,7 @@ export function LineItemBudgetTab({
         {
           onSuccess: async () => {
             const actionLabel =
-              approvalAction === 'approve' ? 'approved' : 'rejected'
+              approvalAction === 'approve' ? 'approved' : 'returned'
             toast.success(
               `LIB "${selectedLibForApproval.name}" has been ${actionLabel}!`,
             )
@@ -386,10 +392,18 @@ export function LineItemBudgetTab({
     <div className="space-y-8">
       {/* Show detail page if libId in search params, otherwise show list */}
       {libId ? (
-        <LIBDetailPage
-          onBack={handleBackFromDetails}
-          // onStatusUpdate={handleStatusChange}
-        />
+        <>
+          <LIBDetailPage
+            onBack={handleBackFromDetails}
+            onEdit={() => setEditingLibId(libId)}
+          />
+          <EditLIBDialog
+            libId={editingLibId}
+            open={!!editingLibId}
+            onOpenChange={(open) => !open && setEditingLibId(null)}
+            onSuccess={refetch}
+          />
+        </>
       ) : (
         <>
           <HeroSection title={title} scope={scope} isSubOfficeToggleEnabled />
@@ -502,6 +516,14 @@ export function LineItemBudgetTab({
             open={!!selectedLibForCeiling}
             onOpenChange={(open) => !open && setSelectedLibForCeiling(null)}
             lib={selectedLibForCeiling}
+            onSuccess={refetch}
+          />
+
+          {/* Edit LIB Metadata Dialog */}
+          <EditLIBDialog
+            libId={editingLibId}
+            open={!!editingLibId}
+            onOpenChange={(open) => !open && setEditingLibId(null)}
             onSuccess={refetch}
           />
         </>

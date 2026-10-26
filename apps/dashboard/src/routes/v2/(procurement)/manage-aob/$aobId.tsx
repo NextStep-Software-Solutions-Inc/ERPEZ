@@ -1,123 +1,130 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AOBDetailsPage } from '@/features/procurement/aob/components'
 import { ApproveAOBDialog } from '@/features/procurement/aob/dialogs/ApproveAOBDialog'
-import { mockAOBStore } from '@/features/procurement/aob/utils/mockAOBStore'
-import { useNavigate } from '@tanstack/react-router'
-import { useMemo, useState, useEffect } from 'react'
+import { ReturnAOBDialog, type ReturnReason } from '@/features/procurement/aob/dialogs/ReturnAOBDialog'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
-import type { BidMatrix } from '@/features/procurement/aob/types'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
+import {
+  createQueryHookFromTemplate,
+  createMutationHookFromTemplate,
+  useQueryClient,
+} from 'erpez-shared-lib'
+import { getAOBDetailRequest } from '@/features/procurement/aob/handlers/getAOBDetailRequest'
+import { getBidMatrixRequest } from '@/features/procurement/aob/handlers/getBidMatrixRequest'
+import { approveAOBRequest } from '@/features/procurement/aob/handlers/approveAOBRequest'
+import { returnAOBRequest } from '@/features/procurement/aob/handlers/returnAOBRequest'
+import { getAOBListRequest } from '@/features/procurement/aob/handlers/getAOBListRequest'
+import { Button } from '@/components/ui/button'
+import { ChevronLeft, Loader2 } from 'lucide-react'
 
-// API-Ready Imports (uncomment when API is ready):
-// import { createQueryHookFromTemplate } from 'erpez-shared-lib'
-// import { getAOBDetailRequest } from '@/features/procurement/aob/handlers/getAOBDetailRequest'
-// import { getBidMatrixRequest } from '@/features/procurement/aob/handlers/getBidMatrixRequest'
-// const useAOBDetail = createQueryHookFromTemplate(getAOBDetailRequest)
-// const useBidMatrix = createQueryHookFromTemplate(getBidMatrixRequest)
+const useAOBDetail = createQueryHookFromTemplate(getAOBDetailRequest)
+const useBidMatrix = createQueryHookFromTemplate(getBidMatrixRequest)
+const useApproveAOB = createMutationHookFromTemplate(approveAOBRequest)
+const useReturnAOB = createMutationHookFromTemplate(returnAOBRequest)
 
 export const Route = createFileRoute('/v2/(procurement)/manage-aob/$aobId')({
   component: RouteComponent,
-  loader: async ({ params }) => {
-    // In a real app, fetch from API:
-    // const aobResponse = await fetch(`/api/abstract-of-bids-aob/${params.aobId}`)
-    // const aob = await aobResponse.json()
-    
-    // Using mock store (includes newly created AOBs)
-    const aob = mockAOBStore.findById(params.aobId)
-    if (!aob) throw new Error('AOB not found')
-    return { aob, aobId: params.aobId }
-  },
-  errorComponent: () => (
-    <div className="p-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-red-600 mb-2">AOB Not Found</h2>
-        <p className="text-gray-600">The requested AOB could not be found.</p>
-      </div>
-    </div>
-  ),
 })
 
 function RouteComponent() {
-  const { aob, aobId } = Route.useLoaderData()
+  const { aobId } = Route.useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false)
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // Reset isProcessing when aobId changes to handle back + re-click scenario
-  useEffect(() => {
-    setIsProcessing(false)
-  }, [aobId])
+  // Fetch live AOB details
+  const {
+    data: aob,
+    isLoading: isAobLoading,
+    error: aobError,
+  } = useAOBDetail({
+    pathParams: { id: aobId },
+  })
 
-  // ============================================
-  // Mock Data Setup
-  // (Replace with API hooks when backend is ready)
-  // ============================================
-  // const { data: aobDetail, isLoading } = useAOBDetail({
-  //   pathParams: { id: aobId },
-  //   queryParams: {},
-  // })
-  // const aobData = aobDetail?.aob
-  // const bidMatrix = aobDetail?.bidMatrix
+  // Fetch live Bid Matrix
+  const {
+    data: bidMatrix,
+    isLoading: isMatrixLoading,
+  } = useBidMatrix({
+    pathParams: { aobId },
+  })
 
-  // ============================================
-  // Current Mock Data Implementation
-  // ============================================
-  const bidMatrix = useMemo(() => {
-    return mockAOBStore.getBidMatrix(aobId) as BidMatrix | null
-  }, [aobId])
+  // Item and Winner counts for approval validation
+  const totalItems = useMemo(() => {
+    return bidMatrix?.lineItems?.length || aob?.awardedItems?.length || 0
+  }, [bidMatrix?.lineItems, aob?.awardedItems])
 
-  // ============================================
-  // Event Handlers
-  // ============================================
-  
+  const winnerCount = useMemo(() => {
+    if (bidMatrix?.lineItems && bidMatrix.lineItems.length > 0) {
+      return bidMatrix.lineItems.filter(
+        (item) => item.selectedWinnerId || item.lineItems?.some((b) => b.isWinner)
+      ).length
+    }
+    return aob?.awardedItems?.length || 0
+  }, [bidMatrix?.lineItems, aob?.awardedItems])
+
+  // Mutations
+  const { mutateAsync: approveAOB } = useApproveAOB()
+  const { mutateAsync: returnAOB } = useReturnAOB()
+
   const handleBack = () => {
     navigate({ to: '/v2/manage-aob' })
   }
 
-  // NOTE: onDelete and onSubmitForApproval handlers are not needed here.
-  // When isAdmin={true}, AOBDetailsPage conditionally hides the Delete and
-  // Submit buttons (only visible for DRAFT status && !isAdmin), so these
-  // handlers would never be called. Passing undefined avoids misleading code.
-
-  const handleApprove = async () => {
-    // Open the approval dialog with PDF upload and signature
+  const handleApprove = () => {
     setIsApproveDialogOpen(true)
   }
 
+  const handleReturn = () => {
+    setIsReturnDialogOpen(true)
+  }
+
   const handleApproveSubmit = async (data: {
-    approvalDocument: File
+    approvalDocument?: File | null
     approvalRemarks?: string
     approvedBy: string
   }) => {
     try {
       setIsProcessing(true)
-      
-      // TODO: Call API to approve AOB with the provided document
-      // const response = await approveAOB(aobId, data)
-      
-      // Mock approval - validate form data and update AOB status
-      console.log('Approving AOB with validated form data:', {
-        aobId,
-        approvedBy: data.approvedBy,
-        remarks: data.approvalRemarks,
-        documentName: data.approvalDocument.name,
-        documentSize: `${(data.approvalDocument.size / 1024).toFixed(1)} KB`,
+      await approveAOB({
+        pathParams: { id: aobId },
+        payload: {
+          approvedBy: data.approvedBy,
+          remarks: data.approvalRemarks,
+        },
       })
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1200))
-      
-      // Update mock AOB status to APPROVED
-      const updatedAOB = mockAOBStore.approve(aobId, data.approvedBy)
-      
-      console.log('AOB approved successfully:', updatedAOB.status)
-      
+
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (k) => typeof k === 'string' && k.includes(aobId)
+          ),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aobId}`],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [`/aobs/${aobId}/matrix`],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [getAOBDetailRequest.endpoint, aobId],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [getBidMatrixRequest.endpoint, aobId],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [getAOBListRequest.endpoint],
+      })
+
       toast.success('AOB approved successfully')
       setIsApproveDialogOpen(false)
-      
-      // Refresh data or navigate back
-      // navigate({ to: '/v2/manage-aob' })
     } catch (error) {
-      toast.error('Failed to approve AOB')
+      const msg = error instanceof Error ? error.message : 'Failed to approve AOB'
+      toast.error(msg)
       console.error('Approval error:', error)
       throw error
     } finally {
@@ -125,23 +132,100 @@ function RouteComponent() {
     }
   }
 
-  return (
-    <div className="space-y-4 p-6">
-      <AOBDetailsPage
-        aob={aob}
-        bidMatrix={bidMatrix}
-        onBack={handleBack}
-        onApprove={handleApprove}
-        isProcessing={isProcessing}
-        isAdmin={true}
-      />
+  const handleReturnSubmit = async (data: {
+    reason: ReturnReason
+    remarks: string
+  }) => {
+    try {
+      setIsProcessing(true)
+      await returnAOB({
+        pathParams: { id: aobId },
+        payload: {
+          remarks: `[${data.reason}] ${data.remarks}`,
+        },
+      })
 
-      <ApproveAOBDialog
-        open={isApproveDialogOpen}
-        onOpenChange={setIsApproveDialogOpen}
-        aob={aob}
-        onApprove={handleApproveSubmit}
-      />
-    </div>
+      void queryClient.invalidateQueries({
+        queryKey: [getAOBDetailRequest.endpoint, aobId],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [getBidMatrixRequest.endpoint, aobId],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [getAOBListRequest.endpoint],
+      })
+
+      toast.success('AOB returned to BAC Secretariat')
+      setIsReturnDialogOpen(false)
+      navigate({ to: '/v2/manage-aob' })
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to return AOB'
+      toast.error(msg)
+      console.error('Return error:', error)
+      throw error
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  if (isAobLoading || isMatrixLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading Abstract of Bids details...</p>
+      </div>
+    )
+  }
+
+  if (aobError || !aob) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-destructive mb-2">AOB Not Found</h2>
+          <p className="text-muted-foreground mb-4">
+            The requested AOB could not be found or you do not have permission to view it.
+          </p>
+          <Button variant="outline" onClick={handleBack} className="gap-2">
+            <ChevronLeft className="w-4 h-4" />
+            Back to Manage AOB
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.Aob.Manage}
+      message="You do not have permission to manage this Abstract of Bids (AOB)."
+    >
+      <div className="space-y-4 p-6">
+        <AOBDetailsPage
+          aob={aob}
+          bidMatrix={bidMatrix}
+          onBack={handleBack}
+          onApprove={handleApprove}
+          onReturn={handleReturn}
+          isProcessing={isProcessing}
+          isAdmin={true}
+        />
+
+        <ApproveAOBDialog
+          open={isApproveDialogOpen}
+          onOpenChange={setIsApproveDialogOpen}
+          aob={aob}
+          winnerCount={winnerCount}
+          totalItems={totalItems}
+          onApprove={handleApproveSubmit}
+        />
+
+        <ReturnAOBDialog
+          open={isReturnDialogOpen}
+          onOpenChange={setIsReturnDialogOpen}
+          aob={aob}
+          onReturn={handleReturnSubmit}
+        />
+      </div>
+    </RoutePermissionGuard>
   )
 }

@@ -355,61 +355,86 @@ export function getComplianceTagColor(tag: ComplianceTag): string {
  * Color mapping for Distribution Behavior
  */
 export function getDistributionBehaviorColor(
-  behavior: TargetDistributionBehavior | undefined | null,
+  behavior: TargetDistributionBehavior | string | undefined | null,
 ): string {
-  const colorMap: Record<TargetDistributionBehavior, string> = {
+  const colorMap: Record<string, string> = {
     [TargetDistributionBehavior.DIVISIBLE_SUMMATIVE]:
-      'bg-cyan-100 text-cyan-800',
+      'bg-cyan-100 text-cyan-800 border-cyan-300',
     [TargetDistributionBehavior.UNIFORM_AVERAGE]:
-      'bg-emerald-100 text-emerald-800',
+      'bg-emerald-100 text-emerald-800 border-emerald-300',
     [TargetDistributionBehavior.MILESTONE_NON_DIVISIBLE]:
-      'bg-amber-100 text-amber-800',
-    [TargetDistributionBehavior.SUMMATION]: 'bg-yellow-100 text-yellow-800',
-    [TargetDistributionBehavior.MAXIMUM]: 'bg-purple-100 text-purple-800',
-    [TargetDistributionBehavior.MINIMUM]: 'bg-pink-100 text-pink-800',
+      'bg-amber-100 text-amber-800 border-amber-300',
+    [TargetDistributionBehavior.SUMMATION]:
+      'bg-yellow-100 text-yellow-800 border-yellow-300',
+    [TargetDistributionBehavior.MAXIMUM]:
+      'bg-purple-100 text-purple-800 border-purple-300',
+    [TargetDistributionBehavior.MINIMUM]:
+      'bg-pink-100 text-pink-800 border-pink-300',
   }
-  return behavior ? colorMap[behavior] : 'bg-gray-100 text-gray-800'
+  return (behavior && colorMap[behavior]) || 'bg-gray-100 text-gray-800'
 }
 
 /**
  * Get human-readable label for Distribution Behavior
  */
 export function getDistributionBehaviorLabel(
-  behavior: TargetDistributionBehavior | undefined | null,
+  behavior: TargetDistributionBehavior | string | undefined | null,
 ): string {
-  const labelMap: Record<TargetDistributionBehavior, string> = {
-    [TargetDistributionBehavior.DIVISIBLE_SUMMATIVE]: 'Divisible / Summative',
-    [TargetDistributionBehavior.UNIFORM_AVERAGE]: 'Uniform / Average',
-    [TargetDistributionBehavior.MILESTONE_NON_DIVISIBLE]:
-      'Milestone / Non-Divisible',
+  const labelMap: Record<string, string> = {
+    [TargetDistributionBehavior.DIVISIBLE_SUMMATIVE]: 'Summation',
+    [TargetDistributionBehavior.UNIFORM_AVERAGE]: 'Uniform',
+    [TargetDistributionBehavior.MILESTONE_NON_DIVISIBLE]: 'Milestone',
     [TargetDistributionBehavior.MAXIMUM]: 'Maximum',
     [TargetDistributionBehavior.MINIMUM]: 'Minimum',
     [TargetDistributionBehavior.SUMMATION]: 'Summation',
   }
-  return behavior ? labelMap[behavior] : 'Not Set'
+  return (behavior && labelMap[behavior]) || 'Not Set'
 }
 
 /**
  * Get description for Distribution Behavior
  */
 export function getDistributionBehaviorDescription(
-  behavior: TargetDistributionBehavior | null,
+  behavior: TargetDistributionBehavior | string | null | undefined,
 ): string {
-  const descriptionMap: Record<TargetDistributionBehavior, string> = {
+  const descriptionMap: Record<string, string> = {
     [TargetDistributionBehavior.DIVISIBLE_SUMMATIVE]:
-      'Used for absolute numbers and quantities where the total is the sum of parts (e.g., "Number of Startups Founded").',
-    [TargetDistributionBehavior.UNIFORM_AVERAGE]:
-      'Used for percentages, rates, and ratios where targets are assigned uniformly (e.g., "Budget Utilization Rate").',
-    [TargetDistributionBehavior.MILESTONE_NON_DIVISIBLE]:
-      'Used for compliance events, pass/fail deliverables where the target is typically "1" (e.g., "Submit PPMP by deadline").',
+      'Used for cumulative amounts and quantities where quarterly targets add up to the annual target (e.g., Q1: 25 + Q2: 25 + Q3: 25 + Q4: 25 = Annual: 100).',
     [TargetDistributionBehavior.SUMMATION]:
-      'Used for summation targets where the total is the sum of individual contributions (e.g., "Total Sales").',
+      'Used for cumulative amounts and quantities where quarterly targets add up to the annual target (e.g., Q1: 25 + Q2: 25 + Q3: 25 + Q4: 25 = Annual: 100).',
+    [TargetDistributionBehavior.UNIFORM_AVERAGE]:
+      'Used for percentages, rates, and ratios that must be maintained consistently. Each quarter target must equal the annual target (e.g., 90% in Q1, Q2, Q3, and Q4 for a 90% annual target).',
+    [TargetDistributionBehavior.MILESTONE_NON_DIVISIBLE]:
+      'Used for discrete deliverables, compliance requirements, or binary completions where the target is non-divisible (e.g., target reached in Q3 = 1).',
     [TargetDistributionBehavior.MAXIMUM]:
-      'Used for maximum value targets (e.g., "Maximum Budget Allocation").',
+      'Used for ceiling targets or upper thresholds where quarterly values cannot exceed the specified annual target.',
     [TargetDistributionBehavior.MINIMUM]:
-      'Used for minimum value targets (e.g., "Minimum Attendance Requirement").',
+      'Used for floor thresholds or baseline performance where quarterly values must meet or exceed the specified annual target.',
   }
-  return behavior ? descriptionMap[behavior] : ''
+  return (behavior && descriptionMap[behavior]) || ''
+}
+
+/**
+ * Get validation rule summary for Distribution Behavior
+ */
+export function getDistributionBehaviorRule(
+  behavior: TargetDistributionBehavior | string | null | undefined,
+): string {
+  const ruleMap: Record<string, string> = {
+    [TargetDistributionBehavior.DIVISIBLE_SUMMATIVE]:
+      'Q1 + Q2 + Q3 + Q4 must equal the annual target.',
+    [TargetDistributionBehavior.SUMMATION]:
+      'Q1 + Q2 + Q3 + Q4 must equal the annual target.',
+    [TargetDistributionBehavior.UNIFORM_AVERAGE]:
+      'Each quarterly target must equal the assigned annual target (e.g., if Annual is 90, each Quarter must be 90).',
+    [TargetDistributionBehavior.MILESTONE_NON_DIVISIBLE]:
+      'Discrete milestone targets (e.g., 0 or 1). Not summed or averaged across quarters.',
+    [TargetDistributionBehavior.MAXIMUM]:
+      'Quarterly targets cannot exceed the assigned annual target ceiling.',
+    [TargetDistributionBehavior.MINIMUM]:
+      'Quarterly targets must meet or exceed the assigned annual target baseline.',
+  }
+  return (behavior && ruleMap[behavior]) || ''
 }
 
 /**

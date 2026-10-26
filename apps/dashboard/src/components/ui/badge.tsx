@@ -1,6 +1,6 @@
 import * as React from "react";
-import {  cva } from "class-variance-authority";
-import type {VariantProps} from "class-variance-authority";
+import { cva } from "class-variance-authority";
+import type { VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,10 @@ const badgeVariants = cva(
         dark: "bg-accent-foreground border-transparent text-accent ",
       },
       variant: {
+        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         outline: "border border-current bg-background  ",
         soft: "text-current bg-opacity-10  hover:text-primary-foreground",
       },
@@ -60,11 +64,21 @@ const badgeVariants = cva(
         color: "default",
         className: "text-primary",
       },
+      {
+        variant: "outline",
+        color: "default",
+        className: "text-primary border-primary",
+      },
       // soft button variant
       {
         variant: "soft",
         color: "default",
         className: "text-primary hover:text-primary",
+      },
+      {
+        variant: "soft",
+        color: "default",
+        className: "text-primary bg-primary/10 hover:text-primary",
       },
       {
         variant: "soft",
@@ -106,7 +120,7 @@ const badgeVariants = cva(
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
   VariantProps<typeof badgeVariants> {
-  variant?: "outline" | "soft";
+  variant?: "default" | "destructive" | "secondary" | "outline" | "soft";
   color?: "default" | "destructive" | "success" | "info" | "warning" | "dark" | "secondary";
 }
 

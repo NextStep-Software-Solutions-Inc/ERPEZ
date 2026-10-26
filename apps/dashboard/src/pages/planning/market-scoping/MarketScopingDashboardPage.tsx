@@ -2,7 +2,7 @@
  * Market Scoping Dashboard Page
  * Location: src/pages/planning/market-scoping/
  * Design: APP Consolidation pattern with TemplateTable
- * 
+ *
  * Displays all market scoping forms for the current user
  * - Data table with list of forms
  * - Filter by status with atom-based state
@@ -10,12 +10,18 @@
  * - Create new form button via dialog
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAtom, useSetAtom, useAtomValue } from 'jotai'
 import { useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ClipboardList, Layers, Wallet, Clock, List } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TemplateTable } from '@/components/TemplateTable'
 import {
@@ -58,62 +64,99 @@ export default function MarketScopingDashboardPage() {
     pageSize: 10,
   })
 
-  // Fetch market scoping forms from API
-  const { data: apiResponse, isLoading, error } = useMarketScopings({
+  // Construct Sieve filter string for backend database search
+  const sieveFilters = useMemo(() => {
+    const parts: string[] = []
+    if (filter.searchTerm.trim()) {
+      parts.push(`ProjectName@=${filter.searchTerm.trim()}`)
+    }
+    if (filter.statusFilter && filter.statusFilter !== 'all') {
+      parts.push(`Status==${filter.statusFilter}`)
+    }
+    return parts.length > 0 ? parts.join(',') : undefined
+  }, [filter.searchTerm, filter.statusFilter])
+
+  // Reset pagination to page 1 whenever global search or status filter changes
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+  }, [sieveFilters])
+
+  // Fetch paginated market scoping forms from API with server-side pagination & filters
+  const {
+    data: apiResponse,
+    isLoading,
+    error,
+  } = useMarketScopings({
     pathParams: {},
     queryParams: {
       pageNumber: pagination.pageIndex + 1,
       pageSize: pagination.pageSize,
+      filters: sieveFilters,
     },
   })
 
   // Transform API response to component data
-  // The API response is APIResponse<ListMarketScopingResponse>.
-  // Its data property contains ListMarketScopingResponse, which has data (the forms array) and pagination.
-  const forms = useMemo(() => {
-    if (!apiResponse?.data) return []
+  const forms = useMemo((): MarketScopingForm[] => {
+    if (!apiResponse) return []
     if (Array.isArray(apiResponse.data)) {
-      return apiResponse.data as unknown as MarketScopingForm[]
+      return apiResponse.data
     }
-    if (apiResponse.data && 'data' in apiResponse.data && Array.isArray(apiResponse.data.data)) {
-      return apiResponse.data.data as MarketScopingForm[]
+    if (Array.isArray(apiResponse)) {
+      return apiResponse
+    }
+    if (apiResponse.data && typeof apiResponse.data === 'object') {
+      if ('data' in apiResponse.data && Array.isArray(apiResponse.data.data)) {
+        return apiResponse.data.data
+      }
+      if ('items' in apiResponse.data && Array.isArray(apiResponse.data.items)) {
+        return apiResponse.data.items
+      }
     }
     return []
   }, [apiResponse])
 
-  const pageCount = useMemo(() => {
-    if (!apiResponse) return 0
-    const rawData = (apiResponse as unknown) as Record<string, unknown>
-    if ('pagination' in rawData && rawData.pagination && typeof rawData.pagination === 'object') {
-      const pag = rawData.pagination as Record<string, unknown>
-      if (typeof pag.totalPages === 'number') {
-        return pag.totalPages
-      }
-    }
-    if ('totalPages' in rawData && typeof rawData.totalPages === 'number') {
-      return rawData.totalPages
-    }
-    return 1
-  }, [apiResponse])
-
   const totalCount = useMemo(() => {
     if (!apiResponse) return 0
-    const rawData = (apiResponse as unknown) as Record<string, unknown>
-    if ('pagination' in rawData && rawData.pagination && typeof rawData.pagination === 'object') {
-      const pag = rawData.pagination as Record<string, unknown>
-      if (typeof pag.total === 'number') {
-        return pag.total
-      }
-    }
-    if ('totalCount' in rawData && typeof rawData.totalCount === 'number') {
-      return rawData.totalCount
+    if (typeof apiResponse.totalCount === 'number') return apiResponse.totalCount
+    if (
+      apiResponse.data &&
+      typeof apiResponse.data === 'object' &&
+      !Array.isArray(apiResponse.data)
+    ) {
+      if (typeof apiResponse.data.totalCount === 'number')
+        return apiResponse.data.totalCount
+      if (typeof apiResponse.data.total === 'number')
+        return apiResponse.data.total
+      if (typeof apiResponse.data.pagination?.total === 'number')
+        return apiResponse.data.pagination.total
+      if (typeof apiResponse.data.pagination?.totalCount === 'number')
+        return apiResponse.data.pagination.totalCount
     }
     return forms.length
-  }, [apiResponse, forms])
+  }, [apiResponse, forms.length])
+
+  const pageCount = useMemo(() => {
+    if (!apiResponse) return 1
+    if (typeof apiResponse.totalPages === 'number') return apiResponse.totalPages
+    if (
+      apiResponse.data &&
+      typeof apiResponse.data === 'object' &&
+      !Array.isArray(apiResponse.data)
+    ) {
+      if (typeof apiResponse.data.totalPages === 'number')
+        return apiResponse.data.totalPages
+      if (typeof apiResponse.data.pagination?.totalPages === 'number')
+        return apiResponse.data.pagination.totalPages
+      if (typeof apiResponse.data.pagination?.pageCount === 'number')
+        return apiResponse.data.pagination.pageCount
+    }
+    return Math.ceil(totalCount / pagination.pageSize) || 1
+  }, [apiResponse, totalCount, pagination.pageSize])
 
   const actions: MetaActions = ['write', 'delete']
 
-  const isEditing = draft !== null && draft.id && !draft.id.toString().startsWith('temp-')
+  const isEditing =
+    draft !== null && draft.id && !draft.id.toString().startsWith('temp-')
   const selectedProjectForDelete = useMemo(() => {
     return forms.find((f) => f.id === selectedForDeleteId)
   }, [forms, selectedForDeleteId])
@@ -138,7 +181,10 @@ export default function MarketScopingDashboardPage() {
 
   // Calculate metrics for status cards
   const metrics = useMemo(() => {
-    const totalBudget = forms.reduce((sum, f) => sum + (f.estimatedBudget || 0), 0)
+    const totalBudget = forms.reduce(
+      (sum, f) => sum + (f.estimatedBudget || 0),
+      0,
+    )
     const approvedBudget = forms
       .filter((f) => f.status === 'Approved')
       .reduce((sum, f) => sum + (f.estimatedBudget || 0), 0)
@@ -161,23 +207,6 @@ export default function MarketScopingDashboardPage() {
     }
   }, [forms])
 
-  // Apply filters from atom-managed state
-  const filteredForms = useMemo(() => {
-    let rows = forms
-    if (filter.statusFilter !== 'all') {
-      rows = rows.filter((f) => f.status === filter.statusFilter)
-    }
-    if (filter.searchTerm.trim()) {
-      const q = filter.searchTerm.toLowerCase()
-      rows = rows.filter(
-        (f) =>
-          f.projectName.toLowerCase().includes(q) ||
-          f.departmentUnit.toLowerCase().includes(q),
-      )
-    }
-    return rows
-  }, [forms, filter])
-
   // Create columns using the factory function
   const columns = useMemo(
     () =>
@@ -189,8 +218,8 @@ export default function MarketScopingDashboardPage() {
     [navigate],
   )
 
-  // Show loading state
-  if (isLoading) {
+  // Show initial loading state only when no data has loaded yet
+  if (isLoading && !apiResponse) {
     return (
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden p-8">
@@ -208,7 +237,9 @@ export default function MarketScopingDashboardPage() {
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-lg border border-red-200 overflow-hidden p-8">
           <div className="flex items-center justify-center h-64">
-            <p className="text-red-600">Failed to load Market Scoping forms. Please try again.</p>
+            <p className="text-red-600">
+              Failed to load Market Scoping forms. Please try again.
+            </p>
           </div>
         </div>
       </div>
@@ -224,11 +255,15 @@ export default function MarketScopingDashboardPage() {
             <div className="space-y-1">
               <CardTitle className="text-3xl">Market Scoping</CardTitle>
               <CardDescription className="text-base">
-                Manage and track all market scoping forms for procurement planning
+                Manage and track all market scoping forms for procurement
+                planning
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
+              <Badge
+                variant="outline"
+                className="h-fit px-3 py-1 font-semibold"
+              >
                 <ClipboardList className="h-3.5 w-3.5 mr-1.5" /> Market Scoping
               </Badge>
             </div>
@@ -253,9 +288,15 @@ export default function MarketScopingDashboardPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-indigo-700">
-                  ₱{metrics.totalBudget.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₱
+                  {metrics.totalBudget.toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Total budget across all projects</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Total budget across all projects
+                </p>
               </div>
             </div>
           </CardContent>
@@ -276,9 +317,15 @@ export default function MarketScopingDashboardPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-emerald-600">
-                  ₱{metrics.approvedBudget.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₱
+                  {metrics.approvedBudget.toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Budget from approved forms</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Budget from approved forms
+                </p>
               </div>
             </div>
           </CardContent>
@@ -299,9 +346,15 @@ export default function MarketScopingDashboardPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-sky-700">
-                  ₱{metrics.pendingBudget.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₱
+                  {metrics.pendingBudget.toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Budget awaiting review</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Budget awaiting review
+                </p>
               </div>
             </div>
           </CardContent>
@@ -353,7 +406,7 @@ export default function MarketScopingDashboardPage() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <TemplateTable
             columns={columns}
-            data={filteredForms}
+            data={forms}
             actions={actions}
             readonly={false}
             toolbar={(table) => <MarketScopingTableToolbar table={table} />}
@@ -370,14 +423,16 @@ export default function MarketScopingDashboardPage() {
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-4 shadow-sm">
             <MarketScopingTableToolbar />
           </div>
-          
-          {filteredForms.length === 0 ? (
+
+          {forms.length === 0 ? (
             <div className="bg-white dark:bg-slate-950/20 rounded-xl border border-gray-200 dark:border-slate-800 p-12 text-center shadow-xs">
-              <p className="text-slate-500 text-sm font-semibold">No market scoping forms found matching the filters.</p>
+              <p className="text-slate-500 text-sm font-semibold">
+                No market scoping forms found matching the filters.
+              </p>
             </div>
           ) : (
             <MarketScopingCardView
-              data={filteredForms}
+              data={forms}
               onViewDetails={handleViewDetails}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}
@@ -396,7 +451,12 @@ export default function MarketScopingDashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPagination((prev) => ({ ...prev, pageIndex: prev.pageIndex - 1 }))}
+                onClick={() =>
+                  setPagination((prev) => ({
+                    ...prev,
+                    pageIndex: prev.pageIndex - 1,
+                  }))
+                }
                 disabled={pagination.pageIndex === 0}
                 className="h-8 text-xs font-bold px-3 border-slate-200"
               >
@@ -405,8 +465,13 @@ export default function MarketScopingDashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPagination((prev) => ({ ...prev, pageIndex: prev.pageIndex + 1 }))}
-                disabled={pagination.pageIndex >= (pageCount - 1)}
+                onClick={() =>
+                  setPagination((prev) => ({
+                    ...prev,
+                    pageIndex: prev.pageIndex + 1,
+                  }))
+                }
+                disabled={pagination.pageIndex >= pageCount - 1}
                 className="h-8 text-xs font-bold px-3 border-slate-200"
               >
                 Next
@@ -418,8 +483,14 @@ export default function MarketScopingDashboardPage() {
 
       {/* Dialogs */}
       <CreateMarketScopingDialog
-        title={isEditing ? 'Edit Market Scoping Form' : 'Create Market Scoping Form'}
-        description={isEditing ? 'Update the details in the 4-step wizard to edit the draft form.' : 'Complete the 4-step wizard to create a new market scoping form.'}
+        title={
+          isEditing ? 'Edit Market Scoping Form' : 'Create Market Scoping Form'
+        }
+        description={
+          isEditing
+            ? 'Update the details in the 4-step wizard to edit the draft form.'
+            : 'Complete the 4-step wizard to create a new market scoping form.'
+        }
       />
       <DeleteMarketScopingDialog
         projectName={selectedProjectForDelete?.projectName}

@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Building2, Users, TrendingUp, ChevronRight } from 'lucide-react'
+import { Building2, Users, TrendingUp, ChevronRight, KeyRound, FileText } from 'lucide-react'
 import type { SettingsTabProps } from '@/components/features/planning/organizational-structure/types'
 import { StructureManagementSettings } from '@/components/features/planning/organizational-structure/settings/StructureManagementSettings'
 import { StaffingPlantillaSettings } from '@/components/features/planning/organizational-structure/settings/StaffingPlantillaSettings'
 import { PersonnelReportingSettings } from '@/components/features/planning/organizational-structure/settings/PersonnelReportingSettings'
+import { LicenseStatusCard } from '@/components/ams/LicenseStatusCard'
+import { AgencyLetterheadSettings } from '@/components/features/planning/organizational-structure/settings/AgencyLetterheadSettings'
 import { cn } from '@/lib/utils'
 
 interface SettingItem {
@@ -14,6 +16,12 @@ interface SettingItem {
 }
 
 const SETTINGS_ITEMS: SettingItem[] = [
+  {
+    id: 'agency-letterhead',
+    label: 'Agency Letterhead & Branding',
+    icon: <FileText className="h-5 w-5" />,
+    description: 'Configure official agency legal name, address, and logo for documents & POs',
+  },
   {
     id: 'structural-management',
     label: 'Structure Management',
@@ -32,19 +40,29 @@ const SETTINGS_ITEMS: SettingItem[] = [
     icon: <TrendingUp className="h-5 w-5" />,
     description: 'Set up PMT configurations and reporting structures',
   },
+  {
+    id: 'license-entitlements',
+    label: 'Subscription & License',
+    icon: <KeyRound className="h-5 w-5" />,
+    description: 'Manage workspace activation key, tier, and enabled modules',
+  },
 ]
 
 function SettingsTab(_props: SettingsTabProps) {
-  const [activeTab, setActiveTab] = useState('structural-management')
+  const [activeTab, setActiveTab] = useState('agency-letterhead')
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'agency-letterhead':
+        return <AgencyLetterheadSettings />
       case 'structural-management':
         return <StructureManagementSettings />
       case 'staffing-and-plantilla':
         return <StaffingPlantillaSettings />
       case 'personnel-reporting':
         return <PersonnelReportingSettings />
+      case 'license-entitlements':
+        return <LicenseStatusCard />
       default:
         return null
     }

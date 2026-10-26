@@ -4,14 +4,22 @@
  */
 
 import { Card, CardContent } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import type { LineItemBudget, PPMP } from '../types'
-import { computePpmpManagementOverview, formatCurrency } from '../lib/ppmpUtils'
+import {
+  computePpmpManagementOverview,
+  formatCurrency,
+  type PpmpManagementOverviewSummary,
+} from '../lib/ppmpUtils'
 
 interface PpmpManagementOverviewProps {
-  ppmps: PPMP[]
-  lineItemBudgets: LineItemBudget[]
+  summary?: PpmpManagementOverviewSummary
+  ppmps?: PPMP[]
+  lineItemBudgets?: LineItemBudget[]
+  ceilings?: (Record<string, unknown> | any)[]
+  fiscalYearId?: string
+  officeId?: string
+  isMaster?: boolean
   fiscalYear?: number
   className?: string
   statusSummary?: {
@@ -68,15 +76,15 @@ function MiniMetricCard({
   return (
     <div
       className={cn(
-        'rounded-md border bg-white px-3 py-2 shadow-sm',
+        'flex w-[88px] flex-col items-center justify-center rounded-md border bg-white px-3 py-2 text-center shadow-sm',
         tone === 'warning' && 'border-amber-200 bg-amber-50/70',
         tone === 'success' && 'border-emerald-200 bg-emerald-50/70',
       )}
     >
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
-      <div className="mt-0.5 text-sm font-semibold text-foreground">
+      <div className="mt-0.5 text-base font-bold text-foreground">
         {value}
       </div>
     </div>
@@ -84,29 +92,43 @@ function MiniMetricCard({
 }
 
 export function PpmpManagementOverview({
-  ppmps,
-  lineItemBudgets,
-  fiscalYear,
+  summary: providedSummary,
+  ppmps = [],
+  ceilings = [],
+  fiscalYearId,
+  officeId,
+  isMaster,
   className,
   statusSummary,
 }: PpmpManagementOverviewProps) {
-  const summary = computePpmpManagementOverview(
-    ppmps,
-    lineItemBudgets,
-    fiscalYear,
-  )
-  const usedPercent = summary.totalCeiling
-    ? Math.min(
-        100,
-        Math.max(0, (summary.usedAmount / summary.totalCeiling) * 100),
-      )
+  const summary =
+    providedSummary ??
+    computePpmpManagementOverview({
+      ppmps,
+      ceilings,
+      fiscalYearId,
+      officeId,
+      isMaster,
+    })
+
+  const hasCeiling = summary.hasConfiguredCeiling && summary.totalCeiling > 0
+
+  const rawUsedPercent = hasCeiling
+    ? (summary.usedAmount / summary.totalCeiling) * 100
     : 0
-  const procurablePercent = summary.totalCeiling
-    ? Math.min(
-        100,
-        Math.max(0, (summary.procurableAmount / summary.totalCeiling) * 100),
-      )
+  const rawProcurablePercent = hasCeiling
+    ? (summary.procurableAmount / summary.totalCeiling) * 100
     : 0
+
+  const formatPercent = (percent: number) => {
+    return Number.isInteger(percent)
+      ? `${percent.toLocaleString()}%`
+      : `${percent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
+  }
+
+  const draftCount = statusSummary?.draft ?? summary.draftCount
+  const pendingCount = statusSummary?.pending ?? summary.pendingCount
+  const approvedCount = statusSummary?.approved ?? summary.approvedCount
 
   return (
     <Card
@@ -127,15 +149,15 @@ export function PpmpManagementOverview({
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <MiniMetricCard label="Draft" value={statusSummary?.draft ?? 0} />
+            <MiniMetricCard label="Draft" value={draftCount} />
             <MiniMetricCard
               label="Pending"
-              value={statusSummary?.pending ?? 0}
+              value={pendingCount}
               tone="warning"
             />
             <MiniMetricCard
               label="Approved"
-              value={statusSummary?.approved ?? 0}
+              value={approvedCount}
               tone="success"
             />
           </div>
@@ -145,67 +167,56 @@ export function PpmpManagementOverview({
           <StatCard
             label="Total Fund Ceiling"
             value={formatCurrency(summary.totalCeiling)}
-            sublabel="All active LIBs"
+            sublabel={hasCeiling ? 'All active ceilings in scope' : 'No ceiling configured'}
             className="border-indigo-100/80 bg-indigo-50/20 border-l-4 border-l-indigo-500"
             valueClassName="text-indigo-900 dark:text-indigo-100"
           />
           <StatCard
             label="PS Ceiling"
             value={formatCurrency(summary.psCeiling)}
-            sublabel="Personnel Services"
+            sublabel={hasCeiling ? 'Personnel Services' : 'Personnel Services'}
             className="border-violet-100/80 bg-violet-50/20 border-l-4 border-l-violet-500"
             valueClassName="text-violet-900 dark:text-violet-100"
           />
           <StatCard
             label="MOOE Ceiling"
             value={formatCurrency(summary.mooeCeiling)}
-            sublabel="Maintenance & Other Operating Expenses"
+            sublabel={hasCeiling ? 'Maintenance & Other Operating Expenses' : 'Maintenance & Other Operating Expenses'}
             className="border-amber-100/80 bg-amber-50/20 border-l-4 border-l-amber-500"
             valueClassName="text-amber-900 dark:text-amber-100"
           />
           <StatCard
             label="CO Ceiling"
             value={formatCurrency(summary.coCeiling)}
-            sublabel="Capital Outlay"
+            sublabel={hasCeiling ? 'Capital Outlay' : 'Capital Outlay'}
             className="border-cyan-100/80 bg-cyan-50/20 border-l-4 border-l-cyan-500"
             valueClassName="text-cyan-900 dark:text-cyan-100"
           />
           <StatCard
             label="Procurable Amount"
             value={formatCurrency(summary.procurableAmount)}
-            sublabel={`${procurablePercent.toFixed(0)}% of ceiling`}
+            sublabel={hasCeiling ? `${formatPercent(rawProcurablePercent)} of ceiling` : 'Total procurable plan'}
             className="border-emerald-100/80 bg-emerald-50/20 border-l-4 border-l-emerald-500"
             valueClassName="text-emerald-700 dark:text-emerald-300"
           />
           <StatCard
             label="Used Amount"
             value={formatCurrency(summary.usedAmount)}
-            sublabel={`${usedPercent.toFixed(0)}% committed`}
+            sublabel={
+              hasCeiling
+                ? `${formatPercent(rawUsedPercent)} committed • ${formatCurrency(summary.remainingAmount)} remaining`
+                : 'Total planned budget'
+            }
             className={cn(
-              summary.remainingAmount < 0
+              hasCeiling && summary.remainingAmount < 0
                 ? 'border-red-100/80 bg-red-50/20 border-l-4 border-l-red-500'
                 : 'border-teal-100/80 bg-teal-50/20 border-l-4 border-l-teal-500',
             )}
             valueClassName={cn(
-              summary.remainingAmount < 0
+              hasCeiling && summary.remainingAmount < 0
                 ? 'text-red-700 dark:text-red-300'
                 : 'text-teal-700 dark:text-teal-300',
             )}
-          />
-        </div>
-
-        <div className="rounded-2xl border border-border bg-white/80 p-4 shadow-sm">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>
-              Remaining balance: {formatCurrency(summary.remainingAmount)}
-            </span>
-            <span>{usedPercent.toFixed(0)}% committed</span>
-          </div>
-          <Progress
-            value={usedPercent}
-            color={summary.remainingAmount < 0 ? 'destructive' : 'primary'}
-            size="sm"
-            className="h-3"
           />
         </div>
       </CardContent>

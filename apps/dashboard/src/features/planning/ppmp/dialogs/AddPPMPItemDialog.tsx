@@ -20,6 +20,7 @@ interface AddPPMPItemDialogProps {
   onOpenChange: (open: boolean) => void
   ppmpExpenditureItemId: string
   itemToEdit?: PPMPItem | null
+  defaultPapCode?: string
   onSuccess?: () => void
 }
 
@@ -28,6 +29,7 @@ export default function AddPPMPItemDialog({
   onOpenChange,
   ppmpExpenditureItemId,
   itemToEdit,
+  defaultPapCode,
   onSuccess,
 }: AddPPMPItemDialogProps) {
   const queryClient = useQueryClient()
@@ -41,11 +43,11 @@ export default function AddPPMPItemDialog({
     const payload = {
       ...values,
       ppmpExpenditureItemId,
-      // Format dates back to ISO strings or undefined if empty
-      procurementStartDate: values.procurementStartDate ? new Date(values.procurementStartDate).toISOString() : undefined,
-      procurementEndDate: values.procurementEndDate ? new Date(values.procurementEndDate).toISOString() : undefined,
-      expectedDeliveryStart: values.expectedDeliveryStart ? new Date(values.expectedDeliveryStart).toISOString() : undefined,
-      expectedDeliveryEnd: values.expectedDeliveryEnd ? new Date(values.expectedDeliveryEnd).toISOString() : undefined,
+      // Format dates back to ISO strings or null if empty
+      procurementStartDate: values.procurementStartDate || null,
+      procurementEndDate: values.procurementEndDate || null,
+      expectedDeliveryStart: values.expectedDeliveryStart || null,
+      expectedDeliveryEnd: values.expectedDeliveryEnd || null,
     }
 
     try {
@@ -89,14 +91,16 @@ export default function AddPPMPItemDialog({
               },
             },
             {
-              onSuccess: () => {
-                void queryClient.invalidateQueries({
+              onSuccess: async () => {
+                await queryClient.invalidateQueries({
                   predicate: (query) =>
                     typeof query.queryKey[0] === 'string' &&
                     (query.queryKey[0].startsWith('/ppmp-items') ||
                       query.queryKey[0].startsWith('/ppmp-expenditure-items') ||
                       query.queryKey[0].startsWith('/ppmp')),
                 })
+                // Safety delay to confirm item in list before closing dialog
+                await new Promise((resolve) => setTimeout(resolve, 600))
                 onSuccess?.()
                 onOpenChange(false)
               },
@@ -120,9 +124,10 @@ export default function AddPPMPItemDialog({
     description: itemToEdit?.description ?? '',
     unit: itemToEdit?.unit ?? 'pcs',
     unitPrice: itemToEdit?.unitPrice ?? 0,
+    plannedQuantity: itemToEdit?.plannedQuantity ?? 1,
     procurementModeId: itemToEdit?.procurementModeId ?? '',
-    papCode: itemToEdit?.papCode ?? '',
-    projectType: (itemToEdit?.projectType as any) ?? 'Goods',
+    papCode: itemToEdit?.papCode ?? defaultPapCode ?? '',
+    projectType: itemToEdit?.projectType ?? 'Goods',
     preProcurementConference: itemToEdit?.preProcurementConference ?? false,
     procurementStartDate: itemToEdit?.procurementStartDate ? itemToEdit.procurementStartDate.split('T')[0] : '',
     procurementEndDate: itemToEdit?.procurementEndDate ? itemToEdit.procurementEndDate.split('T')[0] : '',
@@ -155,7 +160,7 @@ export default function AddPPMPItemDialog({
             loading={isLoading}
             className="bg-primary hover:bg-primary/95 text-white"
           >
-            {isLoading ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Item'}
+            {isLoading ? (isEdit ? 'Saving...' : 'Adding...') : isEdit ? 'Save Changes' : 'Add PPMP Item'}
           </SubmitButton>
         </div>
       }
@@ -164,6 +169,7 @@ export default function AddPPMPItemDialog({
         <AddPPMPItemForm
           formId="add-ppmp-item-form"
           initialValues={initialValues}
+          defaultPapCode={defaultPapCode}
           onSubmit={handleSubmit}
           isLoading={isLoading}
         />

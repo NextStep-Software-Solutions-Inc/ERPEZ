@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PolicySidebarLayout
  * Content wrapper for sub-features under a specific domain.
  * Navigation is now handled by PageContainerDashtail (afterTabs).
@@ -23,9 +23,9 @@ export function PolicySidebarLayout({
   children,
 }: PolicySidebarLayoutProps) {
   return (
-    <div className="flex flex-col gap-6 min-h-[calc(100vh-250px)]">
+    <div className="flex flex-col gap-6 min-h-[calc(100vh-250px)] min-w-0 w-full">
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 transition-all duration-300">
+      <main className="flex-1 min-w-0 w-full transition-all duration-300">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -33,7 +33,7 @@ export function PolicySidebarLayout({
             animate="show"
             exit="exit"
             variants={tabAnimations.contentFade}
-            className="h-full"
+            className="h-full min-w-0 w-full"
           >
             {children}
           </motion.div>

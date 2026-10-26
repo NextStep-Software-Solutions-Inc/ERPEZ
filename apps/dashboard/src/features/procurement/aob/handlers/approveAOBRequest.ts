@@ -1,55 +1,47 @@
 /**
  * Approve AOB Request Handler
- * BAC Chairperson approves AOB with signed document upload
- * Changes AOB status from FOR_APPROVAL to APPROVED
+ * BAC Chairperson approves AOB with optional signed resolution PDF
+ * Changes AOB status from ForApproval to Approved
  */
 
 import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
 import type { AOB, AOBApprovalPayload } from '../types/aobTypes'
 import api from '@/services/api'
-import { mockAOBStore } from '../utils/mockAOBStore'
 
-const endpoint = '/procurement/abstract-of-bids-aob/:id/approve'
-
-export interface ApproveAOBParams {
-  id: string
-}
+const endpoint = '/aobs/:id/approve' as const
 
 export const approveAOBRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
   AOB,
-  ApproveAOBParams,
+  undefined,
   Omit<AOBApprovalPayload, 'aobId'>
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    try {
-      const response = await api.post<{ data: AOB }>(finalUrl, payload)
-      return response.data.data
-    } catch (error) {
-      // Always throw auth errors (401/403) - never fall back to mock for auth issues
-      if (error instanceof Error) {
-        const errorMessage = error.message
-        if (errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('Unauthorized')) {
-          throw new Error(`Authentication error: ${errorMessage}`)
-        }
-      }
+    const aobIdMatch = finalUrl.match(/\/aobs\/([^\/]+)\/approve/)
+    const aobId = aobIdMatch?.[1] || ''
 
-      // Only fall back to mock data in development for other errors
-      if (!import.meta.env.DEV) {
-        throw error
-      }
+    const isGuid = (val?: string | null) =>
+      Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val))
 
-      // Log the actual error for debugging in development
-      console.warn('API error in development mode, falling back to mock approve AOB:', error)
-      // Extract aobId from finalUrl (format: /.../:id/approve)
-      const aobIdMatch = finalUrl.match(/\/(\w+)\/approve/)
-      const aobId = aobIdMatch?.[1] || ''
-      return mockAOBStore.approve(
-        aobId,
-        payload?.approvedBy || 'mock-approver',
-        payload?.signedDocumentUrl
-      )
-    }
+    const remarks = payload?.remarks || payload?.remarksBy
+    // If approvedBy is a human-readable name rather than a GUID, append it to remarks for audit trail
+    const auditRemarks =
+      payload?.approvedBy && !isGuid(payload.approvedBy)
+        ? `[Approved by ${payload.approvedBy}]${remarks ? ` ${remarks}` : ''}`
+        : remarks
+
+    await api.post<{ succeeded: boolean; message: string }>(finalUrl, {
+      aobId,
+      approvedBy: isGuid(payload?.approvedBy) ? payload?.approvedBy : null,
+      signedDocumentUrl: payload?.signedDocumentUrl || null,
+      remarks: auditRemarks || null,
+    })
+    return {
+      id: aobId,
+      status: 'Approved',
+      approvedAt: new Date().toISOString(),
+      signedDocumentUrl: payload?.signedDocumentUrl,
+    } as unknown as AOB
   },
 }

@@ -1,4 +1,4 @@
-﻿import { BacResolutionWorkspace } from '../components/BacResolutionWorkspace'
+import { BacResolutionWorkspace } from '../components/BacResolutionWorkspace'
 import type {
   BacResolutionListRoutePath,
   BacResolutionRole,
@@ -6,7 +6,7 @@ import type {
 } from '../types'
 
 interface BacResolutionsPageProps {
-  selectedResolutionId?: string
+  selectedId?: string
   title?: string
   description?: string
   role?: BacResolutionRole
@@ -15,10 +15,10 @@ interface BacResolutionsPageProps {
 }
 
 export function BacResolutionsPage({
-  selectedResolutionId,
+  selectedId,
   title = 'BAC Resolutions',
   description = 'Combined inbox for BAC Resolution drafting, printing, submission, and status tracking.',
-  role = 'procurement-staff',
+  role = 'all',
   workspaceScope = 'all',
   bacListRoutePath = '/v2/bac-resolutions',
 }: BacResolutionsPageProps) {
@@ -27,7 +27,7 @@ export function BacResolutionsPage({
       role={role}
       title={title}
       description={description}
-      initialSelectedResolutionId={selectedResolutionId}
+      selectedId={selectedId}
       workspaceScope={workspaceScope}
       bacListRoutePath={bacListRoutePath}
     />

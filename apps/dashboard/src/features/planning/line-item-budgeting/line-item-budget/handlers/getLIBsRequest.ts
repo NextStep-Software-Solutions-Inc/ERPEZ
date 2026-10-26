@@ -1,4 +1,4 @@
-﻿import {
+import {
   PaginationResponse,
   QueryBlueprintFromTemplate,
   QueryKey,
@@ -15,7 +15,7 @@ export const getLIBsRequest: QueryBlueprintFromTemplate<
   QueryKey
 > = {
   endpoint,
-  key: ({ url }) => [url],
+  key: ({ url, queryParams }) => [url, queryParams],
   fetcher: async ({ finalUrl, signal }) => {
     const response = await api.get<PaginationResponse<LIB>>(finalUrl, {
       signal,

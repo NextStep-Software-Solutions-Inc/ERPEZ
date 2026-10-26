@@ -8,7 +8,15 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, XCircle, HelpCircle, MessageSquareText, Paperclip, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+  MessageSquareText,
+  Paperclip,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
 import { AttachmentViewer } from './AttachmentViewer'
 import type { MarketScopingForm } from '../types/marketScopingTypes'
 
@@ -20,7 +28,8 @@ function getConsideredStyle(considered?: string) {
   if (considered === 'Yes') {
     return {
       border: 'border-l-4 border-l-emerald-500 hover:border-emerald-300',
-      badgeClass: 'bg-emerald-100/90 text-emerald-800 border-emerald-300 hover:bg-emerald-100',
+      badgeClass:
+        'bg-emerald-100/90 text-emerald-800 border-emerald-300 hover:bg-emerald-100',
       icon: <CheckCircle2 className="w-4 h-4 text-emerald-600 mr-1.5" />,
       label: 'Yes',
     }
@@ -28,14 +37,16 @@ function getConsideredStyle(considered?: string) {
   if (considered === 'No') {
     return {
       border: 'border-l-4 border-l-rose-500 hover:border-rose-300',
-      badgeClass: 'bg-rose-100/90 text-rose-800 border-rose-300 hover:bg-rose-100',
+      badgeClass:
+        'bg-rose-100/90 text-rose-800 border-rose-300 hover:bg-rose-100',
       icon: <XCircle className="w-4 h-4 text-rose-600 mr-1.5" />,
       label: 'No',
     }
   }
   return {
     border: 'border-l-4 border-l-slate-400 hover:border-slate-300',
-    badgeClass: 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-100',
+    badgeClass:
+      'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-100',
     icon: <HelpCircle className="w-4 h-4 text-slate-500 mr-1.5" />,
     label: 'N/A',
   }
@@ -43,7 +54,9 @@ function getConsideredStyle(considered?: string) {
 
 export function ParametersSection({ form }: ParametersSectionProps) {
   const parameters = form.parameters || []
-  const [expandedParams, setExpandedParams] = useState<Record<string, boolean>>({})
+  const [expandedParams, setExpandedParams] = useState<Record<string, boolean>>(
+    {},
+  )
 
   const toggleExpand = (paramId: string) => {
     setExpandedParams((prev) => ({
@@ -59,7 +72,8 @@ export function ParametersSection({ form }: ParametersSectionProps) {
           <div className="space-y-4">
             {parameters.map((param, index) => {
               const statusStyle = getConsideredStyle(param.considered)
-              const hasAttachments = param.attachments && param.attachments.length > 0
+              const hasAttachments =
+                param.attachments && param.attachments.length > 0
 
               return (
                 <div
@@ -116,7 +130,8 @@ export function ParametersSection({ form }: ParametersSectionProps) {
                         <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
                         <span>Supporting Documents</span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/50">
-                          {param.attachments.length} {param.attachments.length === 1 ? 'file' : 'files'}
+                          {param.attachments.length}{' '}
+                          {param.attachments.length === 1 ? 'file' : 'files'}
                         </span>
                         {expandedParams[param.parameterId] ? (
                           <ChevronUp className="w-3.5 h-3.5 ml-0.5 text-indigo-400" />
@@ -130,7 +145,10 @@ export function ParametersSection({ form }: ParametersSectionProps) {
                   {/* Attachments */}
                   {hasAttachments && expandedParams[param.parameterId] && (
                     <div className="pt-3 border-t border-slate-100">
-                      <AttachmentViewer attachments={param.attachments} showLabel={false} />
+                      <AttachmentViewer
+                        attachments={param.attachments}
+                        showLabel={false}
+                      />
                     </div>
                   )}
                 </div>
@@ -139,7 +157,9 @@ export function ParametersSection({ form }: ParametersSectionProps) {
           </div>
         ) : (
           <div className="text-center py-10">
-            <p className="text-slate-500 font-medium text-sm">No parameters evaluated yet.</p>
+            <p className="text-slate-500 font-medium text-sm">
+              No parameters evaluated yet.
+            </p>
           </div>
         )}
       </CardContent>

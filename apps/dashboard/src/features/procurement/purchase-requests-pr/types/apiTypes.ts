@@ -92,20 +92,28 @@ export interface PurchaseRequestListItem {
   prType: string
   officeId: string
   officeName: string
+  aprId?: string
+  aprNumber?: string
   status: string
   totalAmount: number
   requestedDate: string
   createdDate: string
+  returnRemarks?: string
+  returnedDate?: string
+  returnedBy?: string
 }
 
 // ─── GET /purchase-requests/{id} ──────────────────────────────────────────────
 
 export interface PurchaseRequestDetailItemApi {
   id: string
-  /** Source PPMP item ID — always set */
-  ppmpItemId: string
+  /** Source PPMP item ID — optional/null for custom/ad-hoc items */
+  ppmpItemId?: string | null
   /** Source APR item ID — only set for Out-of-Stock CSE items */
   aprItemId?: string
+  aprId?: string
+  aprNumber?: string
+  aprOfficeName?: string
   name: string
   description: string
   stockNo: string
@@ -116,6 +124,25 @@ export interface PurchaseRequestDetailItemApi {
   requestedMonth: string
   category: string
   fund: string
+  ppmpId?: string
+  ppmpNumber?: string
+  unit?: string
+  officeName?: string
+  procurementModeId?: string
+  procurementModeName?: string
+}
+
+export interface PRBacResolutionApi {
+  id: string
+  procurementProjectId: string
+  projectTitle: string
+  resolutionNumber: string
+  resolutionType: string
+  dateResolved: string
+  status: string
+  resolvedLocation?: string
+  abc: number
+  sourceType: string
 }
 
 export interface PurchaseRequestDetailApi {
@@ -129,11 +156,17 @@ export interface PurchaseRequestDetailApi {
   totalAmount: number
   officeId: string
   officeName: string
+  aprId?: string
+  aprNumber?: string
   uacsCode: string
   /** BE field name is fundSource (maps from FundSource.Name) */
   fundSource: string
   procurementCategory: string
+  returnRemarks?: string
+  returnedDate?: string
+  returnedBy?: string
   items: PurchaseRequestDetailItemApi[]
+  bacResolutions?: PRBacResolutionApi[]
 }
 
 // ─── POST /purchase-requests ───────────────────────────────────────────────────
@@ -147,6 +180,8 @@ export interface CreatePurchaseRequestPayload {
   officeId: string
   /** Optional – required for Non-CSE PRs that originate from a specific PPMP */
   ppmpId?: string
+  /** Optional – references the APR that originated this Out-of-Stock PR */
+  aprId?: string
   /** TODO: add fund cluster selector to CreatePRModal UI */
   fundClusterId?: string
   /** TODO: add UACS code combination selector to CreatePRModal UI */
@@ -224,12 +259,20 @@ export interface EligiblePpmpItemMonthAllocation {
 export interface EligiblePpmpItem {
   ppmpItemId: string
   itemName: string
+  description?: string
   category: string
+  itemCategory?: string
+  uacsCode?: string
   fund: string
   unit: string
   unitPrice: number
+  hasMonthlyAllocations?: boolean
+  plannedQuantity?: number
+  availableQuantity?: number
   monthlyAllocations: EligiblePpmpItemMonthAllocation[]
   totalAvailableAmount: number
+  procurementModeId?: string
+  procurementModeName?: string
 }
 
 export interface EligiblePpmpDocument {

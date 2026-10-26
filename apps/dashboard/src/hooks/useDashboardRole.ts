@@ -8,7 +8,9 @@
  */
 
 import { useMemo } from 'react'
-import { useKeycloak } from '@/providers/KeycloakProvider'
+import { useUnifiedAuth } from '@/auth/UnifiedAuthContext'
+import { usePermissions } from '@/hooks/usePermissions'
+import { PERMISSIONS } from '@/constants/permissions'
 import type { UserRole } from '@/types/dashboard'
 import { ROLE } from '@/lib/role'
 
@@ -141,25 +143,20 @@ function getUserDepartmentId(
  * ```
  */
 export function useDashboardRole(): DashboardRoleHook {
-  const { isInitialized, keycloak } = useKeycloak()
+  const { isInitialized } = useUnifiedAuth()
+  const { hasPermission } = usePermissions()
 
-  // In production, access role from Keycloak:
-  // const appRole = keycloak?.tokenParsed?.realm_access?.roles?.[0]
+  // Functional permission takes precedence over legacy hardcoded roles
+  const canAccessGlobalData = hasPermission(PERMISSIONS.Planning.Dashboard.ViewGlobal)
+  const isPlanningUser = canAccessGlobalData
+  const isOfficeUser = !canAccessGlobalData
+  const role: UserRole = isPlanningUser ? 'PLANNING_USER' : 'OFFICE_USER'
 
-  // Development: Use VITE_TEMP_ROLE if provided, otherwise default to ROLE constant
-  const appRole = import.meta.env.VITE_TEMP_ROLE || ROLE
-
-  const role = useMemo(() => mapAppRoleToDashboardRole(appRole), [appRole])
-
-  const isPlanningUser = role === 'PLANNING_USER'
-  const isOfficeUser = role === 'OFFICE_USER'
-  const canAccessGlobalData = isPlanningUser
-
-  // Derive departmentId from Keycloak token, environment variable, or fallback
   const departmentId = useMemo(
-    () => getUserDepartmentId(role, keycloak?.tokenParsed),
-    [role, keycloak?.tokenParsed],
+    () => getUserDepartmentId(role),
+    [role],
   )
+
   return {
     role,
     isPlanningUser,

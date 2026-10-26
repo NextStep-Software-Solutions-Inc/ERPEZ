@@ -5,7 +5,7 @@
  * Location: src/features/planning/market-scoping/tables/
  */
 
-import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
 import type { ParameterDefinition } from '../types/managementTypes'
 import { ParametersTableActions } from './ParametersTableActions'
@@ -18,65 +18,68 @@ interface ParametersTableColumnsProps {
 export function createParametersTableColumns({
   onEdit,
   onDelete,
-}: ParametersTableColumnsProps): ColumnDef<ParameterDefinition, any>[] {
-  const col = createColumnHelper<ParameterDefinition>()
-
+}: ParametersTableColumnsProps): ColumnDef<ParameterDefinition>[] {
   return [
-    col.accessor('displayName', {
+    {
+      accessorKey: 'displayName',
       header: 'Parameter Name',
-      cell: (info) => (
+      cell: ({ row }) => (
         <div className="min-w-0">
           <div className="font-medium text-sm text-foreground truncate">
-            {info.getValue()}
+            {row.original.displayName}
           </div>
         </div>
       ),
       enableSorting: true,
-    }),
-    col.accessor('guidedQuestion', {
+    },
+    {
+      accessorKey: 'guidedQuestion',
       header: 'Guided Question',
-      cell: (info) => (
+      cell: ({ row }) => (
         <div className="text-sm text-muted-foreground max-w-xs truncate">
-          {info.getValue()}
+          {row.original.guidedQuestion}
         </div>
       ),
       enableSorting: true,
-    }),
-    col.accessor('description', {
+    },
+    {
+      accessorKey: 'description',
       header: 'Description',
-      cell: (info) => (
+      cell: ({ row }) => (
         <div className="text-sm text-muted-foreground max-w-xs truncate">
-          {info.getValue()}
+          {row.original.description || '-'}
         </div>
       ),
       enableSorting: false,
-    }),
-    col.accessor('sortOrder', {
+    },
+    {
+      accessorKey: 'sortOrder',
       header: () => <span className="text-right block">Sort Order</span>,
-      cell: (info) => (
+      cell: ({ row }) => (
         <span className="text-sm text-right block">
-          {info.getValue()}
+          {row.original.sortOrder}
         </span>
       ),
       enableSorting: true,
-    }),
-    col.accessor('isActive', {
+    },
+    {
+      accessorKey: 'isActive',
       header: 'Status',
-      cell: (info) => (
+      cell: ({ row }) => (
         <Badge
-          variant={info.getValue() ? 'outline' : 'soft'}
+          variant={row.original.isActive ? 'outline' : 'soft'}
           className="whitespace-nowrap"
         >
-          {info.getValue() ? 'Active' : 'Inactive'}
+          {row.original.isActive ? 'Active' : 'Inactive'}
         </Badge>
       ),
       enableSorting: true,
-    }),
-    col.display({
+    },
+    {
       id: 'actions',
       header: 'Actions',
-      cell: (props) => {
-        const parameter = props.row.original
+      cell: ({ row }) => {
+        const parameter = row.original
         return (
           <ParametersTableActions
             onEdit={() => onEdit(parameter)}
@@ -84,6 +87,6 @@ export function createParametersTableColumns({
           />
         )
       },
-    }),
+    },
   ]
 }

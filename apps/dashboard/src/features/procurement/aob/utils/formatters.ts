@@ -6,13 +6,21 @@ import type { AOBStatus, AwardCriterion } from '../types/aobTypes'
 
 /**
  * Format AOB status for display
+ * - User/creator view (AOB page): 'ForApproval' -> 'Submitted', plus 'Draft', 'Approved'
+ * - Admin/manager view (Manage AOB): 'ForApproval' -> 'For Approval' (with space)
  */
-export function formatAOBStatus(status: AOBStatus | string): string {
+export function formatAOBStatus(status: AOBStatus | string, view: 'user' | 'admin' = 'user'): string {
+  if (status === 'ForApproval' || status === 'For Approval' || status === 'FOR_APPROVAL') {
+    return view === 'admin' ? 'For Approval' : 'Submitted'
+  }
   const statusMap: Record<string, string> = {
     Draft: 'Draft',
-    'For Approval': 'For Approval',
+    Submitted: 'Submitted',
+    ForApproval: view === 'admin' ? 'For Approval' : 'Submitted',
+    'For Approval': view === 'admin' ? 'For Approval' : 'Submitted',
     Approved: 'Approved',
-    Rejected: 'Rejected',
+    Rejected: 'Returned',
+    Returned: 'Returned',
     Cancelled: 'Cancelled',
   }
   return statusMap[status] || status
@@ -21,15 +29,21 @@ export function formatAOBStatus(status: AOBStatus | string): string {
 /**
  * Get AOB status color for UI badge
  */
-export function getAOBStatusColor(status: AOBStatus | string): string {
-  const colorMap: Record<string, string> = {
-    Draft: 'bg-gray-100 text-gray-800',
-    'For Approval': 'bg-blue-100 text-blue-800',
-    Approved: 'bg-green-100 text-green-800',
-    Rejected: 'bg-red-100 text-red-800',
-    Cancelled: 'bg-gray-200 text-gray-600',
+export function getAOBStatusColor(status: AOBStatus | string, view: 'user' | 'admin' = 'user'): string {
+  if (status === 'ForApproval' || status === 'For Approval' || status === 'FOR_APPROVAL') {
+    return view === 'admin'
+      ? 'bg-amber-50 text-amber-800 border-amber-300'
+      : 'bg-blue-50 text-blue-800 border-blue-300'
   }
-  return colorMap[status] || 'bg-gray-100 text-gray-800'
+  const colorMap: Record<string, string> = {
+    Draft: 'bg-slate-100 text-slate-700 border-slate-300',
+    Submitted: 'bg-blue-50 text-blue-800 border-blue-300',
+    Approved: 'bg-emerald-50 text-emerald-800 border-emerald-300',
+    Rejected: 'bg-rose-50 text-rose-800 border-rose-300',
+    Returned: 'bg-rose-50 text-rose-800 border-rose-300',
+    Cancelled: 'bg-gray-100 text-gray-700 border-gray-300',
+  }
+  return colorMap[status] || 'bg-gray-100 text-gray-800 border-gray-300'
 }
 
 /**

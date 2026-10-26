@@ -18,10 +18,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { CalendarIcon, Eye, FileText, Tag, Package } from 'lucide-react'
+import { CalendarIcon, Eye, FileText, Tag, Package, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
-import { usePurchaseOrderStore } from '../data/purchaseOrderStore'
-import type { ApprovedNoa } from '../types'
+import { toast } from 'sonner'
+import { useGetNoasAvailableForPO, useCreatePurchaseOrder, uploadPoDocument } from '../handlers'
+import type { AvailableNoa } from '../types'
 import {
   purchaseOrderFormSchema,
   type PurchaseOrderFormValues,
@@ -40,30 +41,30 @@ export function CreatePublicBiddingPurchaseOrderDialog({
   open,
   onOpenChange,
 }: CreatePublicBiddingPurchaseOrderDialogProps) {
-  const createDraft = usePurchaseOrderStore((state) => state.createDraft)
-  const linkNoa = usePurchaseOrderStore((state) => state.linkNoa)
-  const approvedNoas = usePurchaseOrderStore((state) => state.approvedNoas)
+  const { data: availableNoas = [], isLoading: isLoadingNoas } = useGetNoasAvailableForPO()
+  const createMutation = useCreatePurchaseOrder()
 
   const [selectedNoaId, setSelectedNoaId] = useState<string | null>(null)
-  const [viewingNoa, setViewingNoa] = useState<ApprovedNoa | null>(null)
+  const [viewingNoa, setViewingNoa] = useState<AvailableNoa | null>(null)
   const [noaSearch, setNoaSearch] = useState('')
   const [isNoaDropdownOpen, setIsNoaDropdownOpen] = useState(false)
   const [isDateOpen, setIsDateOpen] = useState(false)
   const [isDeliveryDateOpen, setIsDeliveryDateOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const selectedNoa = useMemo(
-    () => approvedNoas.find((noa) => noa.id === selectedNoaId),
-    [approvedNoas, selectedNoaId],
+    () => availableNoas.find((noa) => noa.id === selectedNoaId),
+    [availableNoas, selectedNoaId],
   )
 
   const filteredNoas = useMemo(() => {
-    return approvedNoas.filter((noa) =>
+    return availableNoas.filter((noa) =>
       [noa.noaNumber, noa.description ?? '', noa.supplierName]
         .join(' ')
         .toLowerCase()
         .includes(noaSearch.toLowerCase()),
     )
-  }, [approvedNoas, noaSearch])
+  }, [availableNoas, noaSearch])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(purchaseOrderFormSchema),
@@ -84,30 +85,53 @@ export function CreatePublicBiddingPurchaseOrderDialog({
   const watchDeliveryTerm = form.watch('deliveryTerm')
   const watchPaymentTerm = form.watch('paymentTerm')
 
-  const handleSubmit = (data: FormValues) => {
-    const deliveryTerm = data.deliveryTerm === 'Others' ? (data.deliveryTermCustom?.trim() ?? '') : data.deliveryTerm
-    const paymentTerm = data.paymentTerm === 'Others' ? (data.paymentTermCustom?.trim() ?? '') : data.paymentTerm
-
-    const purchaseOrder = createDraft({
-      source: 'public-bidding',
-      poNumber: data.poNumber,
-      description: data.description ?? '',
-      date: data.date ? format(data.date, 'yyyy-MM-dd') : '',
-      placeOfDelivery: data.placeOfDelivery,
-      dateOfDelivery: data.dateOfDelivery ? format(data.dateOfDelivery, 'yyyy-MM-dd') : '',
-      deliveryTerm: deliveryTerm || data.deliveryTerm,
-      paymentTerm: paymentTerm || data.paymentTerm,
-      bidSupportingDocument: data.bidSupportingDocument,
-    })
-
-    if (selectedNoa) {
-      linkNoa({ purchaseOrderId: purchaseOrder.id, noaId: selectedNoa.id })
+  const handleSubmit = async (data: FormValues) => {
+    if (!selectedNoaId || !selectedNoa) {
+      toast.error('Please select an approved Notice of Award (NOA).')
+      return
     }
 
-    form.reset()
-    setSelectedNoaId(null)
-    setNoaSearch('')
-    onOpenChange(false)
+    try {
+      setIsSubmitting(true)
+      let supportingDocumentUrl: string | undefined = undefined
+      if (data.bidSupportingDocument instanceof File) {
+        supportingDocumentUrl = await uploadPoDocument(data.bidSupportingDocument)
+      }
+
+      const deliveryTerm =
+        data.deliveryTerm === 'Others'
+          ? (data.deliveryTermCustom?.trim() ?? '')
+          : data.deliveryTerm
+      const paymentTerm =
+        data.paymentTerm === 'Others'
+          ? (data.paymentTermCustom?.trim() ?? '')
+          : data.paymentTerm
+
+      await createMutation.mutateAsync({
+        poNumber: data.poNumber,
+        procurementMode: 'PUBLIC_BIDDING',
+        sourceDocumentType: 'NOA',
+        sourceDocumentId: selectedNoaId,
+        supplierId: selectedNoa.supplierId,
+        description: data.description ?? '',
+        date: data.date ? format(data.date, 'yyyy-MM-dd') : '',
+        placeOfDelivery: data.placeOfDelivery,
+        dateOfDelivery: data.dateOfDelivery ? format(data.dateOfDelivery, 'yyyy-MM-dd') : '',
+        deliveryTerm: deliveryTerm || data.deliveryTerm,
+        paymentTerm: paymentTerm || data.paymentTerm,
+        supportingDocumentUrl,
+      })
+
+      toast.success('Public Bidding Purchase Order created successfully!')
+      form.reset()
+      setSelectedNoaId(null)
+      setNoaSearch('')
+      onOpenChange(false)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create Public Bidding Purchase Order.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -162,7 +186,7 @@ export function CreatePublicBiddingPurchaseOrderDialog({
                     <FormItem>
                       <FormLabel>PO Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="PO-2026-001" {...field} />
+                        <Input placeholder="PO-2026-PB-001" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -324,75 +348,40 @@ export function CreatePublicBiddingPurchaseOrderDialog({
                   )}
                 />
 
-                {/* NOA inline dropdown */}
+                {/* NOA — inline dropdown with search + View per row */}
                 <div>
                   <FormLabel>Notice of Award (NOA)</FormLabel>
-                  <p className="text-xs text-muted-foreground mt-1 mb-2">Select the approved NOA to auto-fill the supplier and contract amount.</p>
+                  <p className="text-xs text-muted-foreground mt-1 mb-2">
+                    Select the approved NOA to auto-fill the supplier and awarded line items.
+                  </p>
 
                   <div className="relative">
                     <button
                       type="button"
-                      id="noa-combobox"
-                      role="combobox"
                       aria-haspopup="listbox"
                       aria-expanded={isNoaDropdownOpen}
-                      aria-controls="noa-listbox"
+                      aria-controls="noa-dropdown-list"
+                      aria-label="Select approved NOA"
                       onClick={() => setIsNoaDropdownOpen((o) => !o)}
-                      onKeyDown={(e) => {
-                        // close on Escape
-                        if (e.key === 'Escape') {
-                          e.stopPropagation()
-                          setIsNoaDropdownOpen(false)
-                          return
-                        }
-
-                        // toggle on Enter / Space
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          setIsNoaDropdownOpen((o) => !o)
-                          return
-                        }
-
-                        // open and focus the search input or first option on ArrowDown
-                        if (e.key === 'ArrowDown') {
-                          e.preventDefault()
-                          if (!isNoaDropdownOpen) {
-                            setIsNoaDropdownOpen(true)
-                            // focus the search input when the popover opens
-                            setTimeout(() => {
-                              const list = document.getElementById('noa-listbox')
-                              const input = list?.querySelector('input')
-                              ;(input as HTMLElement | null)?.focus()
-                            }, 0)
-                          } else {
-                            setTimeout(() => {
-                              const list = document.getElementById('noa-listbox')
-                              const firstOption = list?.querySelector('[role="option"]') as HTMLElement | null
-                              firstOption?.focus()
-                            }, 0)
-                          }
-                          return
-                        }
-
-                        // focus last option on ArrowUp when open
-                        if (e.key === 'ArrowUp') {
-                          e.preventDefault()
-                          if (isNoaDropdownOpen) {
-                            setTimeout(() => {
-                              const list = document.getElementById('noa-listbox')
-                              const options = list?.querySelectorAll('[role="option"]') as NodeListOf<HTMLElement> | undefined
-                              if (options && options.length) options[options.length - 1].focus()
-                            }, 0)
-                          }
-                          return
-                        }
-                      }}
                       className="flex h-10 w-full items-center justify-between rounded-md border border-gray-200 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     >
-                      <span className={selectedNoa ? 'text-foreground' : 'text-muted-foreground'}>
-                        {selectedNoa ? `${selectedNoa.noaNumber} · ${selectedNoa.supplierName}` : 'Select NOA'}
+                      <span className={selectedNoa ? 'text-foreground font-medium' : 'text-muted-foreground'}>
+                        {selectedNoa
+                          ? `${selectedNoa.noaNumber} · ${selectedNoa.supplierName}`
+                          : isLoadingNoas
+                            ? 'Loading available NOAs...'
+                            : 'Select NOA'}
                       </span>
-                      <svg className={`h-4 w-4 text-muted-foreground transition-transform ${isNoaDropdownOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                      <svg
+                        className={`h-4 w-4 text-muted-foreground transition-transform ${isNoaDropdownOpen ? 'rotate-180' : ''}`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
                     </button>
 
                     {isNoaDropdownOpen && (
@@ -411,13 +400,16 @@ export function CreatePublicBiddingPurchaseOrderDialog({
                             filteredNoas.map((noa) => (
                               <div
                                 key={noa.id}
-                                onClick={() => { setSelectedNoaId(noa.id); setIsNoaDropdownOpen(false) }}
+                                onClick={() => {
+                                  setSelectedNoaId(noa.id)
+                                  setIsNoaDropdownOpen(false)
+                                }}
                                 className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/50 ${selectedNoaId === noa.id ? 'bg-primary/10' : ''}`}
                               >
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium">{noa.noaNumber}</div>
                                   <div className="text-xs text-muted-foreground truncate">
-                                    {noa.supplierName}{noa.category ? ` · ${noa.category}` : ''}
+                                    {noa.supplierName}
                                   </div>
                                 </div>
                                 <div className="text-sm font-medium shrink-0">
@@ -439,17 +431,32 @@ export function CreatePublicBiddingPurchaseOrderDialog({
                               </div>
                             ))
                           ) : (
-                            <p className="px-3 py-4 text-sm text-muted-foreground text-center">No approved NOAs found.</p>
+                            <p className="px-3 py-4 text-sm text-muted-foreground text-center">
+                              {isLoadingNoas ? 'Loading available NOAs...' : 'No approved NOAs available for PO.'}
+                            </p>
                           )}
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {selectedNoaId && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Selected: <span className="font-medium text-foreground">{selectedNoa?.noaNumber} · {selectedNoa?.supplierName}</span>
-                    </p>
+                  {selectedNoa && (
+                    <div className="mt-3 p-3 rounded-lg border bg-muted/30 space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Supplier:</span>
+                        <span className="font-semibold text-foreground">{selectedNoa.supplierName}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Awarded Total:</span>
+                        <span className="font-semibold text-primary">
+                          ₱{selectedNoa.totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Items to auto-fill:</span>
+                        <span className="font-medium text-foreground">{selectedNoa.lineItems?.length ?? 0} item(s)</span>
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -458,18 +465,25 @@ export function CreatePublicBiddingPurchaseOrderDialog({
 
             {/* Sticky footer */}
             <div className="flex justify-end gap-3 pt-4 border-t mt-4 bg-background shrink-0">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" form="create-pb-po-form">
-                Create Draft
+              <Button type="submit" form="create-pb-po-form" disabled={isSubmitting || !selectedNoaId}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Draft'
+                )}
               </Button>
             </div>
           </div>
         </Form>
       </ResponsiveDialog>
 
-      {/* NOA Details Modal */}
+      {/* NOA Details Overlay Modal */}
       <Dialog open={!!viewingNoa} onOpenChange={(o) => !o && setViewingNoa(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -486,20 +500,6 @@ export function CreatePublicBiddingPurchaseOrderDialog({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Tag className="h-4 w-4" />
-                    Category
-                  </div>
-                  <div className="font-medium">{viewingNoa.category || '—'}</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Month
-                  </div>
-                  <div className="font-medium">{viewingNoa.month || '—'}</div>
-                </div>
                 <div className="space-y-1 md:col-span-2">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <FileText className="h-4 w-4" />
@@ -507,6 +507,7 @@ export function CreatePublicBiddingPurchaseOrderDialog({
                   </div>
                   <div className="font-medium">{viewingNoa.description || '—'}</div>
                 </div>
+
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Tag className="h-4 w-4" />
@@ -514,6 +515,7 @@ export function CreatePublicBiddingPurchaseOrderDialog({
                   </div>
                   <div className="font-medium">{viewingNoa.supplierName || '—'}</div>
                 </div>
+
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <FileText className="h-4 w-4" />
@@ -525,17 +527,20 @@ export function CreatePublicBiddingPurchaseOrderDialog({
                 </div>
               </div>
 
-              {viewingNoa.awardedItems && viewingNoa.awardedItems.length > 0 && (
+              {viewingNoa.lineItems && viewingNoa.lineItems.length > 0 && (
                 <div className="border-t pt-4">
                   <h3 className="font-semibold mb-3 flex items-center gap-2">
                     <Package className="h-5 w-5 text-primary" />
-                    Awarded Items
+                    Line Items
                   </h3>
                   <div className="space-y-2">
-                    {viewingNoa.awardedItems.map((item) => (
+                    {viewingNoa.lineItems.map((item) => (
                       <div key={item.id} className="flex items-start justify-between gap-4 rounded-md border p-3">
                         <div className="flex-1">
-                          <div className="text-sm font-medium">{item.description}</div>
+                          <div className="text-sm font-medium">{item.itemName}</div>
+                          {item.description && (
+                            <div className="text-xs text-muted-foreground">{item.description}</div>
+                          )}
                           <div className="text-xs text-muted-foreground mt-0.5">
                             {item.quantity} {item.unit} × ₱{item.unitPrice.toLocaleString('en-PH')}
                           </div>
@@ -555,4 +560,3 @@ export function CreatePublicBiddingPurchaseOrderDialog({
     </>
   )
 }
-

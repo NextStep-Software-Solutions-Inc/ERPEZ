@@ -30,15 +30,22 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, ChevronRight, Plus, Gavel } from 'lucide-react'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import {
+  createQueryHookFromTemplate,
+  createMutationHookFromTemplate,
+  useQueryClient,
+} from 'erpez-shared-lib'
 import { getAOBListRequest } from '../handlers/getAOBListRequest'
+import { deleteAOBRequest } from '../handlers/deleteAOBRequest'
 import { createAOBDialogAtom } from '../atoms/createAOBDialogAtom'
 import { CreateAOBDialog } from '../dialogs/CreateAOBDialog'
 import { AOBListToolbar } from '../tables/AOBListToolbar'
 import { createAOBListColumns } from '../tables/AOBListColumns'
+import { toast } from 'sonner'
 import type { AOB } from '../types'
 
 const useAOBList = createQueryHookFromTemplate(getAOBListRequest)
+const useDeleteAOB = createMutationHookFromTemplate(deleteAOBRequest)
 
 interface AOBListPageProps {
   onViewDetails?: (aob: AOB) => void
@@ -51,8 +58,10 @@ export function AOBListPage({ onViewDetails, onEdit, onDelete }: AOBListPageProp
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
+  const queryClient = useQueryClient()
+  const { mutateAsync: deleteAOB } = useDeleteAOB()
 
-  // Fetch AOB list with mock data fallback
+  // Fetch AOB list
   const { data: apiResponse } = useAOBList({
     pathParams: {},
     queryParams: {
@@ -65,13 +74,33 @@ export function AOBListPage({ onViewDetails, onEdit, onDelete }: AOBListPageProp
     return apiResponse?.data || []
   }, [apiResponse])
 
+  const handleDeleteAOB = async (aob: AOB) => {
+    try {
+      if (onDelete) {
+        onDelete(aob)
+        return
+      }
+
+      await deleteAOB({
+        pathParams: { id: aob.id },
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [getAOBListRequest.endpoint],
+      })
+      toast.success(`AOB "${aob.aobNumber}" deleted successfully`)
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to delete AOB'
+      toast.error(msg)
+    }
+  }
+
   // Create columns with user actions
   const columns = useMemo(
     () =>
       createAOBListColumns({
         onView: onViewDetails,
         onEdit: onEdit,
-        onDelete: onDelete,
+        onDelete: handleDeleteAOB,
       }),
     [onViewDetails, onEdit, onDelete]
   )

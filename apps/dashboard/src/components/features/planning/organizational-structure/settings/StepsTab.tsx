@@ -13,7 +13,7 @@ export function StepsTab() {
   const [editingItem, setEditingItem] = useState<StepSetting | null>(null)
   const [deleteItem, setDeleteItem] = useState<StepSetting | null>(null)
 
-  const { data: response } = useSteps({ pathParams: {}, queryParams: {} })
+  const { data: response } = useSteps({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'stepNumber' } })
   const items = response?.data ?? []
 
   const actions: MetaActions = ['write', 'delete']

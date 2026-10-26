@@ -1,4 +1,4 @@
-﻿/**
+/**
  * EditItemDialog
  * Modal for editing an existing Non-CSE catalog item.
  * Controlled by editItemDialogOpenAtom + itemToEditAtom.
@@ -31,19 +31,18 @@ export function EditItemDialog() {
   if (!item) return null
 
   const defaultValues: Partial<CatalogItemFormValues> = {
-    name: item.name,
-    itemType: item.itemType,
-    category: item.category,
-    subcategory: item.subcategory ?? '',
-    unitOfMeasure: item.unitOfMeasure as CatalogUoM,
-    currentPrice: item.currentPrice,
-    specification: item.specification ?? '',
-    supplier: item.supplier ?? '',
-    uacsCode: item.uacsCode ?? '',
-    unspscCode: item.unspscCode ?? '',
-    isCSE: item.isCSE,
-    imageUrl: item.imageUrl ?? null,
-    status: item.status,
+    name: item.name ?? '',
+    itemType: 'Goods',
+    category: item.procurementCategoryName ?? '',
+    subcategory: '',
+    unitOfMeasure: (item.uomName as CatalogUoM) ?? 'piece',
+    currentPrice: item.currentPrice ?? 0,
+    specification: item.description ?? '',
+    supplier: '',
+    uacsCode: item.productCode ?? '',
+    unspscCode: item.productCode ?? '',
+    isCSE: false,
+    imageUrl: null,
   }
 
   const handleSubmit = (data: CatalogItemFormValues) => {
@@ -62,8 +61,6 @@ export function EditItemDialog() {
         uacsCode: data.uacsCode ?? null,
         unspscCode: data.unspscCode,
         isCSE: data.isCSE,
-        status: data.status,
-        isActive: data.status === 'Active',
       },
     }
     updateItem(input)

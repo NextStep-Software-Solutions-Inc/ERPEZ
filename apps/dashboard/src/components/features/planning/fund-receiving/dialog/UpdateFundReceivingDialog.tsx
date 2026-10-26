@@ -73,7 +73,7 @@ export default function UpdateFundReceivingDialog({
 
   const { data: fundSourcesResponse } = useFundSources({
     pathParams: {},
-    queryParams: { pageSize: 100, pageNumber: 1 },
+    queryParams: { pageSize: 2000, pageNumber: 1 },
   })
 
   const fundReceivingData = Array.isArray(fundReceivingResponse?.data)

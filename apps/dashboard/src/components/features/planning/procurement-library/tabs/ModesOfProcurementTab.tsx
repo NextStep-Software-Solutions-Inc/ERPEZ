@@ -79,7 +79,9 @@ export function ModesOfProcurementTab() {
   // Map API response to display format
   const modes: ModeOfProcurement[] = useMemo(() => {
     if (!modesResponse?.data) return []
-    return modesResponse.data.map(mapProcurementModeToDisplay)
+    return modesResponse.data
+      .filter((mode) => mode != null)
+      .map(mapProcurementModeToDisplay)
   }, [modesResponse])
 
   // Archive/Unarchive mutations

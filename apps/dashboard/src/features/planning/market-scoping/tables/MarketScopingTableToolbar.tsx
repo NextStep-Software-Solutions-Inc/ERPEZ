@@ -5,6 +5,7 @@
  * Location: src/features/planning/market-scoping/tables/
  */
 
+import { useState, useEffect } from 'react'
 import { useAtom } from 'jotai'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,23 @@ export function MarketScopingTableToolbar({}: MarketScopingTableToolbarProps) {
   const [viewType, setViewType] = useAtom(marketScopingViewTypeAtom)
   const [, setGuideOpen] = useAtom(marketScopingGuideOpenAtom)
 
+  // Local search state for immediate fluid typing without losing focus
+  const [localSearch, setLocalSearch] = useState(filter.searchTerm)
+
+  useEffect(() => {
+    setLocalSearch(filter.searchTerm)
+  }, [filter.searchTerm])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilter((prev) => {
+        if (prev.searchTerm === localSearch) return prev
+        return { ...prev, searchTerm: localSearch }
+      })
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [localSearch, setFilter])
+
   const handleCreateNew = () => {
     setCreateDialogOpen(true)
   }
@@ -47,10 +65,8 @@ export function MarketScopingTableToolbar({}: MarketScopingTableToolbarProps) {
         {/* Search Input */}
         <Input
           placeholder="Search market scoping forms..."
-          value={filter.searchTerm}
-          onChange={(e) =>
-            setFilter({ ...filter, searchTerm: e.target.value })
-          }
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
           className="w-full sm:w-64 max-w-sm font-medium"
         />
 

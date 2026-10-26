@@ -1,0 +1,162 @@
+using ERPEZ.Shared.Common;
+using ERPEZ.Domain.Enums;
+using ERPEZ.Domain.Interfaces;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+ 
+namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.SubmitRFQ;
+ 
+public class SubmitRFQCommandHandler(IUnitOfWork unitOfWork)
+    : IRequestHandler<SubmitRFQCommand, ApiResponse<bool>>
+{
+    public async Task<ApiResponse<bool>> Handle(SubmitRFQCommand request, CancellationToken cancellationToken)
+    {
+        var rfq = await unitOfWork.RFQRepository.GetRFQWithDetailsAsync(request.RFQId, cancellationToken);
+        if (rfq is null)
+        {
+            return ApiResponse<bool>.Fail("RFQ not found.");
+        }
+ 
+        if (rfq.Status is not (StatusEnum.Draft or StatusEnum.Returned))
+        {
+            return ApiResponse<bool>.Fail($"RFQ cannot be submitted from its current status ({rfq.Status}).");
+        }
+ 
+        if (rfq.RFQItems.Count == 0)
+        {
+            return ApiResponse<bool>.Fail("RFQ must have at least one item before it can be submitted.");
+        }
+ 
+        if (rfq.ModeOfProcurementId is null)
+        {
+            return ApiResponse<bool>.Fail("RFQ has no procurement mode assigned.");
+        }
+ 
+        var mode = await unitOfWork.ProcurementModeRepository.GetByIdAsync(rfq.ModeOfProcurementId.Value, cancellationToken);
+        if (mode is null)
+        {
+            return ApiResponse<bool>.Fail("Procurement mode not found.");
+        }
+
+        // BAC Resolution Rule: An Approved BAC Resolution linked to the RFQ's Consolidated PR is required.
+        var cprId = rfq.ConsolidatedPRId 
+            ?? rfq.RFQItems.FirstOrDefault(i => i.CPRItem != null)?.CPRItem?.ConsolidatedPRId;
+
+        if (cprId.HasValue)
+        {
+            var project = await unitOfWork.ProcurementProjectRepository.Query()
+                .Include(p => p.BACResolutions)
+                .FirstOrDefaultAsync(p => p.ConsolidatedPRId == cprId.Value && !p.IsDeleted, cancellationToken);
+
+            // Fallback: If not linked directly via ConsolidatedPRId, trace through the CPR's underlying APP items
+            // (e.g. Route 1 projects created directly from APP items such as BAC-RES-2026-724).
+            if (project == null)
+            {
+                var cprWithDetails = await unitOfWork.ConsolidatedPRRepository.GetCPRWithDetailsAsync(cprId.Value, cancellationToken);
+                if (cprWithDetails != null)
+                {
+                    var appItemIds = cprWithDetails.ConsolidatedPRItems
+                        .Where(ci => !ci.IsDeleted && ci.PRItem != null && ci.PRItem.PPMPItem != null && ci.PRItem.PPMPItem.APPItems != null)
+                        .SelectMany(ci => ci.PRItem!.PPMPItem!.APPItems)
+                        .Where(ai => ai != null && !ai.IsDeleted && (ai.APP == null || !ai.APP.IsDeleted))
+                        .Select(ai => ai.Id)
+                        .Distinct()
+                        .ToList();
+
+                    if (appItemIds.Count > 0)
+                    {
+                        var lineageProjects = await unitOfWork.ProcurementProjectRepository
+                            .GetByAPPItemIdsWithResolutionsAsync(appItemIds, cancellationToken);
+
+                        project = lineageProjects
+                            .Where(p => !p.IsDeleted && p.BACResolutions.Any(r => !r.IsDeleted))
+                            .OrderByDescending(p => p.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (project != null && !project.ConsolidatedPRId.HasValue)
+                        {
+                            project.ConsolidatedPRId = cprId.Value;
+                            unitOfWork.ProcurementProjectRepository.Update(project);
+                        }
+                    }
+                }
+            }
+
+            var resolution = project?.BACResolutions.FirstOrDefault(r => !r.IsDeleted);
+
+            var cprNumber = rfq.ConsolidatedPR?.CPRNumber;
+            if (string.IsNullOrEmpty(cprNumber))
+            {
+                var cpr = await unitOfWork.ConsolidatedPRRepository.GetByIdAsync(cprId.Value, cancellationToken);
+                cprNumber = cpr?.CPRNumber ?? cprId.Value.ToString();
+            }
+
+            if (project == null && resolution == null)
+            {
+                return ApiResponse<bool>.Fail(
+                    $"Cannot submit RFQ: No BAC Resolution found for Consolidated PR '{cprNumber}'. " +
+                    "An approved BAC Resolution recommending the mode of procurement is required before submission.");
+            }
+
+            var status = !string.IsNullOrEmpty(resolution?.Status) ? resolution.Status : project?.Status;
+            var isApproved = string.Equals(status, nameof(StatusEnum.Approved), StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(status, "Approved", StringComparison.OrdinalIgnoreCase);
+
+            if (!isApproved)
+            {
+                var resNumber = !string.IsNullOrEmpty(resolution?.ResolutionNumber)
+                    ? resolution.ResolutionNumber
+                    : (!string.IsNullOrEmpty(project?.Title) ? project.Title : "In-Progress Resolution");
+
+                var displayStatus = !string.IsNullOrEmpty(status) ? status : "Draft";
+
+                return ApiResponse<bool>.Fail(
+                    $"Cannot submit RFQ: The linked BAC Resolution ({resNumber}) is currently in '{displayStatus}' status and pending approval. " +
+                    "An approved BAC Resolution is required before submitting this RFQ.");
+            }
+        }
+ 
+        // GPPB Rule 1: threshold check.
+        var totalAmount = rfq.RFQItems.Sum(i => i.Quantity * i.UnitPriceSnapshot);
+        if (totalAmount < mode.MinThreshold || (mode.MaxThreshold.HasValue && totalAmount > mode.MaxThreshold.Value))
+        {
+            return ApiResponse<bool>.Fail(
+                $"RFQ total amount ({totalAmount:C}) is outside the threshold range for '{mode.Name}' " +
+                $"({mode.MinThreshold:C} - {(mode.MaxThreshold.HasValue ? mode.MaxThreshold.Value.ToString("C") : "no upper limit")}).");
+        }
+ 
+        // GPPB Rule 2: minimum supplier count.
+        var invitedSupplierCount = rfq.RFQSuppliers.Count;
+        if (invitedSupplierCount < mode.MinSupplierCount)
+        {
+            return ApiResponse<bool>.Fail(
+                $"'{mode.Name}' requires at least {mode.MinSupplierCount} invited supplier(s); only {invitedSupplierCount} invited.");
+        }
+ 
+        // GPPB Rule 3 (re-check at submit time): no item now exceeds its remaining sourceable quantity,
+        // since other RFQs may have consumed quantity since items were added to this draft.
+        foreach (var item in rfq.RFQItems)
+        {
+            var prItem = item.CPRItem?.PRItem;
+            if (prItem is null) continue;
+ 
+            var sourcedElsewhere = await unitOfWork.RFQRepository.GetSourcedQuantityForCprItemAsync(
+                item.CPRItemId, excludingRfqId: rfq.Id, cancellationToken);
+ 
+            if (sourcedElsewhere + item.Quantity > prItem.RequestedQuantity)
+            {
+                return ApiResponse<bool>.Fail(
+                    $"'{item.ItemNameSnapshot}' now exceeds its remaining unsourced quantity " +
+                    $"due to sourcing on another RFQ. Please adjust the quantity.");
+            }
+        }
+ 
+        rfq.Status = StatusEnum.Submitted;
+        rfq.TotalAmount = totalAmount;
+ 
+        unitOfWork.RFQRepository.Update(rfq);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+ 
+        return ApiResponse<bool>.Success(true);
+    }
+}

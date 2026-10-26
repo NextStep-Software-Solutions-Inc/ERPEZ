@@ -1,4 +1,3 @@
-import { FiscalYearSelectorHandle } from './components'
 /**
  * Shared Types & Utilities - Barrel Export
  */
@@ -18,12 +17,6 @@ export type {
   CreateProcurementThresholdPayload,
   UpdateProcurementThresholdPayload,
   CreateRatingScalePayload,
-  UpdateRatingScalePayload,
-  PaginationMeta,
-  PaginatedResponse,
-  ApiResponse,
-  PaginationParams,
-  SortParams,
   FiscalYearFilters,
   BudgetCallFilters,
   ProcurementThresholdFilters,
@@ -58,11 +51,3 @@ export type {
   CreateRatingScaleFormValues,
 } from './types/validation'
 
-export {
-  mockFiscalYears,
-  mockEconomicIndicators,
-  mockBudgetCalls,
-  mockProcurementThresholds,
-  mockRatingScales,
-  createMockPaginatedResponse,
-} from './types/mock-data'

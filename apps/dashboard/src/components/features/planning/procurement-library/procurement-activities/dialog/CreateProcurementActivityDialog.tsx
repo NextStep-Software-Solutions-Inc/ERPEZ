@@ -20,14 +20,24 @@ export function CreateProcurementActivityDialog({
 }: CreateProcurementActivityDialogProps) {
   const { toast } = useToast()
   const [open, setOpen] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const { mutate: createActivityType, isPending } = useCreateProcurementActivityType()
 
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen)
+    if (!isOpen) {
+      setFieldErrors({})
+    }
+  }
+
   const handleSubmit = async (data: ProcurementActivityFormData) => {
+    setFieldErrors({})
     createActivityType(
       {
         pathParams: {},
         payload: {
           name: data.activityName,
+          activityCode: data.activityCode,
           description: data.description || '',
           minDays: data.minDays,
           maxDays: data.maxDays,
@@ -35,16 +45,24 @@ export function CreateProcurementActivityDialog({
       },
       {
         onSuccess: () => {
+          setFieldErrors({})
           onCreateSuccess?.(data)
           setOpen(false)
         },
-        onError: (error) => {
+        onError: (error: any) => {
           console.error('Error creating procurement activity:', error)
-          toast({
-            title: 'Error',
-            description: 'Error creating procurement activity. Please try again.',
-            color: 'destructive',
-          })
+          const errorMsg = error?.response?.data?.message || error?.message || ''
+          if (error?.response?.status === 409 || errorMsg.toLowerCase().includes('code')) {
+            setFieldErrors({
+              activityCode: errorMsg || 'Activity code already exists.',
+            })
+          } else {
+            toast({
+              title: 'Error',
+              description: errorMsg || 'Error creating procurement activity. Please try again.',
+              color: 'destructive',
+            })
+          }
         },
       }
     )
@@ -54,7 +72,7 @@ export function CreateProcurementActivityDialog({
     <PermissionCheck action="write" actions={actions}>
       <ResponsiveDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         title="Add Procurement Activity"
         description="Create a new procurement activity"
         trigger={
@@ -66,7 +84,12 @@ export function CreateProcurementActivityDialog({
         footer={null}
         showCloseButton
       >
-        <ProcurementActivityForm onSubmit={handleSubmit} onCancel={() => setOpen(false)} isLoading={isPending} />
+        <ProcurementActivityForm
+          onSubmit={handleSubmit}
+          onCancel={() => handleOpenChange(false)}
+          isLoading={isPending}
+          externalErrors={fieldErrors}
+        />
       </ResponsiveDialog>
     </PermissionCheck>
   )

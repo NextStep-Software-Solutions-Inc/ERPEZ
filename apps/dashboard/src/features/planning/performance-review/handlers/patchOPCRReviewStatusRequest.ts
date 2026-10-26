@@ -14,15 +14,17 @@ export interface PatchOPCRReviewStatusPayload {
   reviewStatus: ReviewStatusEnumString
 }
 
+import type { OPCRDetails } from '../../opcr'
+
 export const patchOPCRReviewStatusRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
-  APIResponse<any>,
+  APIResponse<OPCRDetails>,
   QueryParams,
   PatchOPCRReviewStatusPayload
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.patch<APIResponse<any>>(
+    const response = await api.patch<APIResponse<OPCRDetails>>(
       finalUrl,
       payload,
     )

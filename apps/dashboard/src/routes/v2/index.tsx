@@ -1,18 +1,15 @@
 /**
  * V2 Dashboard Index Page
- * Home/Overview page for V2 dashboard with Dashtail styling
+ * Redirects to /v2/dashboard
  */
 
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/v2/')({
-  component: DashboardIndex,
+  beforeLoad: () => {
+    throw redirect({
+      to: '/v2/dashboard',
+    });
+  },
+  component: () => null,
 });
-
-function DashboardIndex() {
-  return (
-    <div>
-      <h1>V2 Dashboard</h1>
-    </div>
-  );
-}

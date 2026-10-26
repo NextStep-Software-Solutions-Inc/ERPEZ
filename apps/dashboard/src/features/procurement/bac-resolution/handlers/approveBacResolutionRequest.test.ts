@@ -1,60 +1,38 @@
-﻿import { describe, expect, it } from 'vitest'
-import {
-  getMockBacResolutionDatabase,
-  getMockConsolidatedPrDatabase,
-  resetMockBacResolutionDatabase,
-} from '../data/mockBacResolutionData'
+import { describe, expect, it, vi } from 'vitest'
 import { approveBacResolutionRequest } from './approveBacResolutionRequest'
+import api from '@/services/api'
+
+vi.mock('@/services/api', () => ({
+  default: {
+    post: vi.fn(),
+  },
+}))
 
 describe('approveBacResolutionRequest', () => {
-  it('rejects approval when the BAC has no linked Consolidated PR', async () => {
-    resetMockBacResolutionDatabase()
+  it('calls the approve endpoint with payload', async () => {
+    const mockResponse = {
+      data: {
+        id: 'bac-resolution-002',
+        status: 'approved',
+      },
+    }
 
-    const resolution = getMockBacResolutionDatabase().find(
-      (item) => item.id === 'bac-resolution-002',
-    )
-
-    expect(resolution).toBeTruthy()
-    if (!resolution) return
-
-    resolution.linkedConsolidatedPrs = []
-
-    await expect(
-      approveBacResolutionRequest.fetcher({
-        finalUrl: 'http://localhost/bac-resolutions/bac-resolution-002/approve',
-        payload: {
-          bacResolutionId: 'bac-resolution-002',
-          signedDocument: { name: 'signed-bac.pdf' } as File,
-        },
-      }),
-    ).rejects.toThrow(
-      'Link exactly one approved Consolidated PR before approving.',
-    )
-  })
-
-  it('approves a for-approval BAC with exactly one linked Consolidated PR', async () => {
-    resetMockBacResolutionDatabase()
-
-    const resolution = getMockBacResolutionDatabase().find(
-      (item) => item.id === 'bac-resolution-002',
-    )
-    const linkedPr = getMockConsolidatedPrDatabase()[0]
-
-    expect(resolution).toBeTruthy()
-    expect(linkedPr).toBeTruthy()
-
-    resolution!.linkedConsolidatedPrs = [{ ...linkedPr }]
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse as any)
 
     const result = await approveBacResolutionRequest.fetcher({
-      finalUrl: 'http://localhost/bac-resolutions/bac-resolution-002/approve',
+      finalUrl: '/bac-resolutions/bac-resolution-002/approve',
       payload: {
         bacResolutionId: 'bac-resolution-002',
         signedDocument: { name: 'signed-bac.pdf' } as File,
       },
     })
 
+    expect(api.post).toHaveBeenCalledWith(
+      '/bac-resolutions/bac-resolution-002/approve',
+      expect.objectContaining({
+        bacResolutionId: 'bac-resolution-002',
+      }),
+    )
     expect(result.status).toBe('approved')
-    expect(result.approvedBy).toBe('BAC Chairperson Demo')
-    expect(result.linkedConsolidatedPrs).toHaveLength(1)
   })
 })

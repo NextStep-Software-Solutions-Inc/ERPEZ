@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import {
   Card,
   CardContent,
@@ -13,14 +14,7 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Separator } from '@/components/ui/separator'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,29 +50,88 @@ import {
   ChevronLeft,
   MoreVertical,
   Plus,
-  Trash2,
   Send,
   CheckCircle,
   AlertCircle,
-  ChevronDown,
   Calendar,
-  Hash,
-  Layers,
   DollarSign,
   Download,
-  LucideIcon,
+  Edit2,
+  FileText,
+  Tag,
+  Building2,
+  Eye,
+  ExternalLink,
+  Loader2,
+  Boxes,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
 import { useUpdatePurchaseRequestStatus, useUpdatePurchaseRequest, usePurchaseRequest } from '../handlers/hooks'
+import {
+  useGenerateBACResolutionDocument,
+  useDownloadBacResolutionDocument,
+} from '@/features/procurement/bac-resolution/handlers/hooks'
+import { BacResolutionStatusBadge } from '@/features/procurement/bac-resolution/components'
 import { PurchaseRequest, PRItem, PRStatus } from '../types'
-import type { UpdatePurchaseRequestItemPayload } from '../types/apiTypes'
+import type { UpdatePurchaseRequestItemPayload, PRBacResolutionApi } from '../types/apiTypes'
 import { fromApiStatus, fromApiPrType } from '../types/apiTypes'
 import { AddItemsModal } from './AddItemsModal'
+import { AddNonCSEItemModal, FALLBACK_NON_CSE_ITEMS, FALLBACK_PROCUREMENT_MODES } from './IndependentItemShoppingModal'
+import { EditPRModal } from './EditPRModal'
 import { ReturnPRModal } from './ReturnPRModal'
 import { ApprovePRModal } from './ApprovePRModal'
 import { PRAttachmentsPanel } from './PRAttachmentsPanel'
+import { PRReturnRemarksBanner } from './PRReturnRemarksBanner'
+import { PRPPMPItemsSection } from './PRPPMPItemsSection'
+import { PRAPRItemsSection } from './PRAPRItemsSection'
+import { RequestItemDialog } from '@/features/planning/ppmp/catalog/dialogs/RequestItemDialog'
+import type { RequestItemFormValues } from '@/features/planning/ppmp/catalog/forms/requestItemFormSchema'
+import { useNonCSEItems } from '@/features/planning/ppmp/catalog/hooks/useNonCSEItemQueries'
+import { useProcurementModes } from '@/lib/fiscal-year-and-policies/requests/hooks/useProcurementModes'
 import { purchaseRequestRequiresTor } from '../utils/torAttachment'
+import { openSignedDocument } from '../utils/openSignedDocument'
+import { resolveRelationalAPR } from '../utils/aprReference'
+
+import api from '@/services/api'
+
+/**
+ * Deduplicate PR Items to guarantee no duplicates in View Details
+ * and preserve remaining quantity against set quantity.
+ */
+function deduplicatePRItems(items: PRItem[]): PRItem[] {
+  const result: PRItem[] = []
+  const seen = new Map<string, number>()
+
+  for (const item of items) {
+    const key = `${item.itemId || item.id || item.itemName}_${item.month || ''}`
+    if (seen.has(key)) {
+      const idx = seen.get(key)!
+      const existing = result[idx]
+      const totalQty = (existing.quantity || 0) + (item.quantity || 0)
+      const setQty = (existing.setQuantity ?? existing.quantity) + (item.setQuantity ?? item.quantity)
+      const unitPrice = existing.unitPrice ?? existing.estimatedUnitPrice ?? item.unitPrice ?? 0
+      result[idx] = {
+        ...existing,
+        quantity: totalQty,
+        setQuantity: setQty,
+        remainingQuantity: Math.max(0, setQty - totalQty),
+        totalAmount: totalQty * unitPrice,
+      }
+    } else {
+      seen.set(key, result.length)
+      const setQty = item.setQuantity ?? item.quantity
+      result.push({
+        ...item,
+        setQuantity: setQty,
+        remainingQuantity: item.remainingQuantity ?? Math.max(0, setQty - item.quantity),
+      })
+    }
+  }
+
+  return result
+}
 
 // Fixed ordered months used across the procurement views
 const ORDERED_MONTHS: string[] = [
@@ -141,20 +194,72 @@ const STATUS_BADGE_CONFIG: Record<
 interface PRDetailsPageProps {
   pr: PurchaseRequest
   onBack: () => void
+  isManagePRView?: boolean
 }
 
-export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
+export function PRDetailsPage({
+  pr: initialPR,
+  onBack,
+  isManagePRView: isManagePRViewProp,
+}: PRDetailsPageProps) {
+  const storeIsManagePRView = usePurchaseRequestStore((s) => s.isManagePRView)
+  const isManagePRView =
+    isManagePRViewProp ??
+    (typeof window !== 'undefined' && window.location.pathname.includes('/v2/manage-prs')
+      ? storeIsManagePRView
+      : false)
   const { activePR, updatePurchaseRequest, setActivePR } =
     usePurchaseRequestStore()
   const statusMutation = useUpdatePurchaseRequestStatus()
   const { mutateAsync: updateApi, isPending: isUpdating } = useUpdatePurchaseRequest()
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   // Always fetch fresh data from the server so edits (purpose, items) are reflected
   // after mutations without requiring a full page reload.
-  const { data: freshPRResponse } = usePurchaseRequest({
+  const { data: freshPRResponse, isError: isFreshPRError, refetch: refetchFreshPR } = usePurchaseRequest({
     pathParams: { id: initialPR.id }
   })
+
+  // Fetch master catalog items so we can accurately distinguish Master Catalog vs Custom / Ad-hoc items
+  const { data: nonCseCatalogResponse } = useNonCSEItems({
+    pageSize: 200,
+    page: 1,
+  })
+
+  // Set of known Master Catalog item names and IDs (lowercased for robust matching)
+  const masterCatalogIdentifiers = useMemo(() => {
+    const set = new Set<string>()
+    for (const item of nonCseCatalogResponse?.data ?? []) {
+      if (item.id) set.add(item.id.toLowerCase())
+      if (item.name) set.add(item.name.trim().toLowerCase())
+    }
+    for (const item of FALLBACK_NON_CSE_ITEMS) {
+      if (item.id) set.add(item.id.toLowerCase())
+      if (item.name) set.add(item.name.trim().toLowerCase())
+    }
+    return set
+  }, [nonCseCatalogResponse])
+
+  // Fetch live Procurement Modes from API (/procurement-modes)
+  const { data: modesResponse } = useProcurementModes({
+    pathParams: {},
+    queryParams: { pageSize: 100 },
+  })
+
+  // Live options with graceful Philippine procurement defaults (deduplicated)
+  const procurementModeOptions = useMemo<string[]>(() => {
+    const rawModes = modesResponse?.data ?? []
+    const uniqueNames = Array.from(
+      new Set(
+        rawModes
+          .filter((m) => m.isActive && !m.isArchived && m.name && m.name.trim() !== '')
+          .map((m) => (m.name as string).trim())
+      )
+    )
+    if (uniqueNames.length > 0) return uniqueNames
+    return FALLBACK_PROCUREMENT_MODES
+  }, [modesResponse])
 
   // Sync server data into activePR whenever a fresh response arrives.
   useEffect(() => {
@@ -163,53 +268,158 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     if (hasUnsavedChanges) return // Don't overwrite local edits
 
     const base = activePR ?? initialPR
+
+    // Deduplicate server items by (ppmpItemId || aprItemId || id || name) + requestedMonth
+    const deduplicatedItems: PRItem[] = []
+    const seenKeys = new Map<string, number>()
+
+    for (const i of apiData.items ?? []) {
+      const key = `${i.ppmpItemId || i.aprItemId || i.id || i.name}_${i.requestedMonth || ''}`
+      if (seenKeys.has(key)) {
+        const existingIdx = seenKeys.get(key)!
+        const existing = deduplicatedItems[existingIdx]
+        const mergedQty = (existing.quantity || 0) + (i.requestedQuantity || 0)
+        const unitCost = existing.unitPrice || i.unitCost || 0
+        const mergedSetQty = (existing.setQuantity ?? existing.quantity) + (i.requestedQuantity || 0)
+        deduplicatedItems[existingIdx] = {
+          ...existing,
+          quantity: mergedQty,
+          setQuantity: mergedSetQty,
+          remainingQuantity: Math.max(0, mergedSetQty - mergedQty),
+          totalAmount: mergedQty * unitCost,
+        }
+      } else {
+        seenKeys.set(key, deduplicatedItems.length)
+        const isLinkedToOfficePpmp = Boolean(i.ppmpItemId)
+        const isLinkedToApr = Boolean(i.aprItemId)
+        const isCatalog =
+          !isLinkedToOfficePpmp &&
+          !isLinkedToApr &&
+          (masterCatalogIdentifiers.has((i.name || '').trim().toLowerCase()) ||
+            (i.id && masterCatalogIdentifiers.has(i.id.toLowerCase())) ||
+            base.items?.some((bi) => bi.itemName === i.name && bi.source === 'catalog'))
+
+        const itemSource = isLinkedToApr
+          ? ('apr' as const)
+          : isLinkedToOfficePpmp
+            ? ('ppmp' as const)
+            : isCatalog
+              ? ('catalog' as const)
+              : ('custom' as const)
+
+        const itemQty = i.requestedQuantity || 0
+        const existingLocalItem = base.items?.find(
+          (bi) => bi.id === i.id || bi.itemId === i.id || (bi.itemName === i.name && bi.month === i.requestedMonth)
+        )
+        const catalogMatch =
+          (nonCseCatalogResponse?.data ?? []).find(
+            (c: any) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
+          ) ??
+          FALLBACK_NON_CSE_ITEMS.find(
+            (c: any) => (c.id && c.id.toLowerCase() === (i.id || '').toLowerCase()) || (c.name && c.name.trim().toLowerCase() === (i.name || '').trim().toLowerCase())
+          )
+
+        const itemCategory =
+          i.category ||
+          existingLocalItem?.category ||
+          catalogMatch?.procurementCategoryName ||
+          (catalogMatch as { category?: string })?.category ||
+          base.headerDetails?.procurementCategoryName ||
+          ''
+
+        const itemFund =
+          i.fund ||
+          existingLocalItem?.fund ||
+          apiData.fundSource ||
+          base.headerDetails?.fundCluster ||
+          'General Fund'
+        
+        deduplicatedItems.push({
+          id: i.id,
+          itemId: i.aprItemId ?? i.ppmpItemId ?? i.id,
+          itemName: i.name,
+          description: i.description || '',
+          category: itemCategory,
+          quantity: itemQty,
+          setQuantity: itemQty,
+          remainingQuantity: 0,
+          unitOfMeasure: i.unit || '',
+          unitPrice: i.unitCost,
+          totalAmount: i.amount || (itemQty * i.unitCost),
+          estimatedUnitPrice: i.unitCost,
+          month: i.requestedMonth,
+          fund: itemFund,
+          procurementModeId: i.procurementModeId || existingLocalItem?.procurementModeId,
+          procurementModeName: i.procurementModeName || existingLocalItem?.procurementModeName,
+          source: itemSource,
+          isNonCSE: i.isNonCSE,
+          ppmpDocId: i.ppmpId,
+          ppmpDocName: i.ppmpNumber
+            ? `${i.ppmpNumber} — ${i.officeName || apiData.officeName || ''}`
+            : undefined,
+          aprId: i.aprId || existingLocalItem?.aprId || (i as any)?.aprItemId || (i as any)?.aprItem?.aprId,
+          aprItemId: i.aprItemId || (i as any)?.aprItem?.id,
+          aprNumber: i.aprNumber || existingLocalItem?.aprNumber || (i as any)?.aprItem?.apr?.aprNumber || (i as any)?.apr?.aprNumber,
+          aprOffice:
+            i.aprOfficeName ||
+            i.officeName ||
+            (i as any)?.aprItem?.apr?.office?.name ||
+            (i as any)?.apr?.office?.name ||
+            existingLocalItem?.aprOffice ||
+            apiData.officeName ||
+            base.headerDetails?.officeName ||
+            'General Administration',
+        })
+      }
+    }
+
     const merged: PurchaseRequest = {
       ...base,
+      signedPdfUrl: base.signedPdfUrl,
       status: fromApiStatus(apiData.status),
       type: fromApiPrType(apiData.prType),
       totalAmount: apiData.totalAmount,
+      aprId: apiData.aprId ?? base.aprId,
+      aprNumber: apiData.aprNumber ?? base.aprNumber,
+      remarks: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : (apiData.returnRemarks || base.remarks),
+      returnRemarks: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : apiData.returnRemarks,
+      returnedDate: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : apiData.returnedDate,
+      returnedBy: (apiData.status === 'Approved' || apiData.status === 'Submitted' || apiData.status === 'ForBACUtilization') ? undefined : apiData.returnedBy,
+      bacResolutions: apiData.bacResolutions ?? base.bacResolutions ?? [],
       headerDetails: {
         ...base.headerDetails,
         prNumber: apiData.prNumber,
         description: apiData.description ?? '',
         purpose: apiData.purpose ?? '',
         date: apiData.requestedDate,
-        uacs: apiData.uacsCode ?? base.headerDetails.uacs ?? '',
-        fundCluster: apiData.fundSource ?? base.headerDetails.fundCluster ?? '',
-        procurementCategoryName: apiData.procurementCategory ?? base.headerDetails.procurementCategoryName ?? '',
-        officeId: apiData.officeId ?? base.headerDetails.officeId,
-        officeName: apiData.officeName ?? base.headerDetails.officeName,
+        uacs: apiData.uacsCode ?? base.headerDetails?.uacs ?? '',
+        fundCluster: apiData.fundSource ?? base.headerDetails?.fundCluster ?? '',
+        procurementCategoryName: apiData.procurementCategory ?? base.headerDetails?.procurementCategoryName ?? '',
+        officeId: apiData.officeId ?? base.headerDetails?.officeId,
+        officeName: apiData.officeName ?? base.headerDetails?.officeName,
+        aprId: apiData.aprId ?? base.headerDetails?.aprId,
+        aprNumber: apiData.aprNumber ?? base.headerDetails?.aprNumber,
       },
-      // Map server items preserving source IDs for subsequent Save Changes calls
-      items: (apiData.items ?? []).map((i) => ({
-        id: i.id,
-        itemId: i.aprItemId ?? i.ppmpItemId,
-        itemName: i.name,
-        category: '',
-        quantity: i.requestedQuantity,
-        unitOfMeasure: '',
-        unitPrice: i.unitCost,
-        totalAmount: i.amount,
-        estimatedUnitPrice: i.unitCost,
-        month: i.requestedMonth,
-        source: i.isNonCSE ? ('ppmp' as const) : ('apr' as const),
-      })),
+      items: deduplicatedItems,
     }
 
     setActivePR(merged)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [freshPRResponse, hasUnsavedChanges])
 
-  const handleSaveChanges = () => {
-    const payloadItems: UpdatePurchaseRequestItemPayload[] = pr.items.flatMap((group): UpdatePurchaseRequestItemPayload[] => {
+  const buildPayloadItems = (items: PRItem[]): UpdatePurchaseRequestItemPayload[] => {
+    return items.flatMap((group): UpdatePurchaseRequestItemPayload[] => {
       // Handle legacy grouped APR structure (optimistic items added before server sync)
       if (group.aprGroup && group.aprGroup.items) {
         return group.aprGroup.items.flatMap((aprItem): UpdatePurchaseRequestItemPayload[] => {
-          const monthsMap = aprItem.monthlyQuantities || (aprItem.month ? { [aprItem.month]: aprItem.quantity } : {})
+          const effectiveMonth = aprItem.month || (aprItem.monthlyQuantities && Object.keys(aprItem.monthlyQuantities)[0]) || 'January'
+          const monthsMap = (aprItem.monthlyQuantities && Object.keys(aprItem.monthlyQuantities).length > 0)
+            ? aprItem.monthlyQuantities
+            : { [effectiveMonth]: aprItem.quantity }
           return Object.entries(monthsMap).filter(([, qty]) => qty > 0).map(([m, qty]) => ({
             aprItemId: aprItem.itemId || aprItem.id,
             name: aprItem.itemName,
-            description: '',
+            description: aprItem.description || '',
             unitCost: aprItem.unitPrice,
             requestedQuantity: qty,
             stockNo: '',
@@ -220,35 +430,40 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
       }
 
       const isApr = group.source === 'apr'
+      const isIndependent = group.source === 'independent' || group.source === 'catalog' || group.source === 'custom'
       
       // If there's a monthlyQuantities object (from optimistic UI state), split it up
       if (group.monthlyQuantities && Object.keys(group.monthlyQuantities).length > 0) {
         return Object.entries(group.monthlyQuantities).filter(([, qty]) => qty > 0).map(([m, qty]) => ({
-          ppmpItemId: isApr ? undefined : (group.itemId || group.id),
+          ppmpItemId: (isApr || isIndependent) ? undefined : (group.itemId || group.id),
           aprItemId: isApr ? (group.itemId || group.id) : undefined,
           name: group.itemName,
-          description: '',
+          description: group.description || '',
           unitCost: group.unitPrice || group.estimatedUnitPrice || 0,
           requestedQuantity: qty,
           stockNo: group.stockNo || '',
-          isNonCSE: !isApr,
+          isNonCSE: group.isNonCSE !== undefined ? group.isNonCSE : !isApr,
           requestedMonth: m
         }))
       }
 
       // Single month item (synced from server or single-month optimistic)
       return [{
-        ppmpItemId: isApr ? undefined : (group.itemId || group.id),
+        ppmpItemId: (isApr || isIndependent) ? undefined : (group.itemId || group.id),
         aprItemId: isApr ? (group.itemId || group.id) : undefined,
         name: group.itemName,
-        description: '',
+        description: group.description || '',
         unitCost: group.unitPrice || group.estimatedUnitPrice || 0,
         requestedQuantity: group.quantity,
         stockNo: group.stockNo || '',
-        isNonCSE: !isApr,
+        isNonCSE: group.isNonCSE !== undefined ? group.isNonCSE : !isApr,
         requestedMonth: group.month || 'January',
       }]
     })
+  }
+
+  const handleSaveChanges = () => {
+    const payloadItems = buildPayloadItems(pr.items)
 
     toast.promise(
       updateApi({
@@ -272,34 +487,59 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     )
   }
 
-  const pr = activePR || initialPR
-  const displayUACS = pr.headerDetails.uacs || '—'
-  const displayFundCluster = pr.headerDetails.fundCluster || '—'
-
-  // Derive a display status: if remarks exist but status wasn't set to 'returned', prefer showing Returned
-  const getDisplayStatus = (p: typeof pr) => {
-    try {
-      if (p && p.remarks && p.remarks.toString().trim().length > 0) {
-        return 'returned' as PRStatus
-      }
-    } catch {
-      // ignore
+  const rawPr = activePR || initialPR
+  const pr = useMemo(() => {
+    if (!rawPr) return rawPr
+    return {
+      ...rawPr,
+      items: deduplicatePRItems(rawPr.items || []),
     }
-    return p?.status
+  }, [rawPr])
+
+  // Ground truth: PR status from DB. Only display 'returned' if pr.status is strictly 'returned' (or draft with returnRemarks).
+  // Once a PR is 'approved' or 'submitted', it is definitely NOT returned.
+  const getDisplayStatus = (p: typeof pr) => {
+    if (!p) return 'draft'
+    if (p.status === 'approved' || p.status === 'submitted' || p.status === 'for-bac-utilization') {
+      return p.status
+    }
+    if (p.status === 'returned') {
+      return 'returned'
+    }
+    if (
+      p.status === 'draft' &&
+      ((p.remarks && p.remarks.toString().trim().length > 0) ||
+        ((p as any).returnRemarks && (p as any).returnRemarks.toString().trim().length > 0))
+    ) {
+      return 'returned'
+    }
+    return p.status || 'draft'
   }
   const displayStatus = getDisplayStatus(pr)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [showAddItems, setShowAddItems] = useState(false)
+  const [showShoppingModal, setShowShoppingModal] = useState(false)
   const [showReturnModal, setShowReturnModal] = useState(false)
   const [showApproveModal, setShowApproveModal] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [showSubmitConfirmDialog, setShowSubmitConfirmDialog] = useState(false)
-  const [expandedPPMPs, setExpandedPPMPs] = useState<Set<string>>(new Set())
+  const [expandedPPMPs, setExpandedPPMPs] = useState<Set<string>>(new Set(['independent-items']))
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [monthFilter, setMonthFilter] = useState<string>('all')
   const [fundFilter, setFundFilter] = useState<string>('all')
   const [torSubmitError, setTorSubmitError] = useState<string | null>(null)
   const torSectionRef = useRef<HTMLDivElement | null>(null)
+
+  const isIndependentPR = Boolean(
+    pr.isIndependent ||
+    pr.headerDetails?.isIndependent ||
+    pr.headerDetails?.sourceType === 'INDEPENDENT' ||
+    pr.headerDetails?.prNumber?.startsWith('PR-IND') ||
+    pr.prNumber?.startsWith('PR-IND') ||
+    pr.items.some((item) => item.source === 'independent' || item.source === 'catalog' || item.source === 'custom')
+  )
+
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
     isOpen: boolean
     ppmpId: string | null
@@ -313,6 +553,184 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     itemIds: [],
     type: 'ppmp',
   })
+
+  const [requestItemModalOpen, setRequestItemModalOpen] = useState(false)
+  const [prefilledRequestItem, setPrefilledRequestItem] = useState<Partial<RequestItemFormValues> | null>(null)
+
+  const handleOpenSubmitItemRequest = (item: PRItem) => {
+    setPrefilledRequestItem({
+      name: item.itemName,
+      specifications: item.description || `Procurement specification for ${item.itemName}`,
+      estimatedUnitCost: item.unitPrice ?? item.estimatedUnitPrice ?? 0,
+      procurementCategory: 'Goods',
+      itemCategory: item.category || 'Other Non-CSE Goods & Equipment',
+      unitOfMeasure: item.unitOfMeasure || 'unit',
+    })
+    setRequestItemModalOpen(true)
+  }
+
+  const { aprId: relationalAprId, aprNumber: relationalAprNumber } = useMemo(
+    () => resolveRelationalAPR(pr),
+    [pr]
+  )
+
+  const [isImportingSourceApr, setIsImportingSourceApr] = useState(false)
+
+  const handleImportItemsFromSourceAPR = async () => {
+    try {
+      setIsImportingSourceApr(true)
+      const res = await api.get<{ succeeded: boolean; data: any[] }>(
+        `/purchase-requests/${pr.id}/eligible-aprs`
+      )
+      const aprs = res.data?.data || []
+      const matched = aprs.find(
+        (a: any) =>
+          (relationalAprId && a.aprId.toLowerCase() === relationalAprId.toLowerCase()) ||
+          (relationalAprNumber && a.aprNumber.toLowerCase() === relationalAprNumber.toLowerCase())
+      ) || aprs[0]
+
+      if (!matched || !matched.items || matched.items.length === 0) {
+        toast.error('No eligible deficit items found for this APR.')
+        return
+      }
+
+      const deficitItems = matched.items.filter((it: any) => it.deficit > 0)
+      if (deficitItems.length === 0) {
+        toast.error('All items in this APR have already been covered.')
+        return
+      }
+
+      const nested: PRItem[] = deficitItems.map((it: any) => ({
+        id: it.aprItemId,
+        itemId: it.aprItemId,
+        itemName: it.itemName,
+        category: it.category || 'Consolidated APR',
+        quantity: it.deficit,
+        unitOfMeasure: it.unit || 'unit',
+        unitPrice: it.unitPrice,
+        totalAmount: it.deficit * (it.unitPrice || 0),
+        month: 'January',
+        monthlyQuantities: { January: it.deficit },
+        fund: it.fund || '',
+        source: 'apr' as const,
+        aprId: matched.aprId,
+        aprNumber: matched.aprNumber,
+        aprOffice: matched.officeName,
+      }))
+
+      const aprGroupItem: PRItem = {
+        id: `apr-group-${matched.aprId}`,
+        itemId: `apr-group-${matched.aprId}`,
+        itemName: `APR #${matched.aprNumber} (${matched.officeName})`,
+        category: 'Consolidated APR',
+        quantity: nested.length,
+        unitOfMeasure: 'group',
+        unitPrice: nested.reduce((s: number, it: PRItem) => s + it.totalAmount, 0),
+        totalAmount: nested.reduce((s: number, it: PRItem) => s + it.totalAmount, 0),
+        source: 'apr',
+        aprId: matched.aprId,
+        aprNumber: matched.aprNumber,
+        aprOffice: matched.officeName,
+        aprGroup: {
+          id: matched.aprId,
+          aprId: matched.aprId,
+          aprNumber: matched.aprNumber,
+          officeName: matched.officeName,
+          totalAmount: nested.reduce((s: number, it: PRItem) => s + it.totalAmount, 0),
+          items: nested,
+        },
+      }
+
+      handleAddItems([aprGroupItem])
+
+      // Persist to backend immediately
+      const payloadItems = buildPayloadItems([aprGroupItem])
+      await updateApi({
+        pathParams: { id: pr.id },
+        queryParams: { id: pr.id },
+        payload: {
+          description: pr.headerDetails.description || '',
+          purpose: pr.headerDetails.purpose || '',
+          ...(pr.headerDetails.procurementCategoryId ? { procurementCategoryId: pr.headerDetails.procurementCategoryId } : {}),
+          requestedDate: pr.headerDetails.date || new Date().toISOString(),
+          items: payloadItems,
+        },
+      })
+
+      setHasUnsavedChanges(false)
+      toast.success(`Successfully imported ${deficitItems.length} item(s) from ${matched.aprNumber}!`)
+    } catch {
+      toast.error('Failed to import items from APR.')
+    } finally {
+      setIsImportingSourceApr(false)
+    }
+  }
+
+  const navigate = useNavigate()
+  const [generatingDocId, setGeneratingDocId] = useState<string | null>(null)
+  const { mutateAsync: generateBACResolutionDocument } = useGenerateBACResolutionDocument()
+  const { mutateAsync: downloadBacResolutionDocument } = useDownloadBacResolutionDocument()
+
+  const linkedBacResolutions: PRBacResolutionApi[] = useMemo(() => {
+    return pr?.bacResolutions ?? freshPRResponse?.data?.bacResolutions ?? []
+  }, [pr?.bacResolutions, freshPRResponse?.data?.bacResolutions])
+
+  const owningBacResolution = linkedBacResolutions[0] ?? null
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+    }).format(amount)
+  }
+
+  const handleViewOrDownloadDocument = async (
+    resolution: PRBacResolutionApi,
+    action: 'view' | 'download',
+  ) => {
+    if (!resolution.id) {
+      toast.error('No BAC Resolution identifier available.')
+      return
+    }
+
+    try {
+      setGeneratingDocId(resolution.id)
+      const genResponse = await generateBACResolutionDocument({
+        pathParams: { id: resolution.id },
+        queryParams: { format: 'Pdf' },
+      })
+
+      const documentId = genResponse.data
+      if (!documentId) {
+        throw new Error('Document generation service did not return a document ID.')
+      }
+
+      const downloadResponse = await downloadBacResolutionDocument({
+        pathParams: { documentId },
+      })
+
+      const blob = downloadResponse.blob
+      const filename = `BAC_Resolution_${resolution.resolutionNumber || resolution.id}.pdf`
+
+      if (action === 'view') {
+        const fileUrl = URL.createObjectURL(blob)
+        window.open(fileUrl, '_blank')
+      } else {
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(link.href)
+        toast.success('BAC Resolution document downloaded successfully.')
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate BAC Resolution document.')
+    } finally {
+      setGeneratingDocId(null)
+    }
+  }
 
   if (!pr) {
     return (
@@ -339,7 +757,7 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     pr.type === 'non-cse'
       ? Array.from(
           pr.items.reduce((map, item) => {
-            const ppmpId = item.ppmpDocId || 'unknown'
+            const ppmpId = item.ppmpDocId || (item.source === 'independent' || item.source === 'catalog' || item.source === 'custom' ? 'independent-items' : 'unknown')
             if (!map.has(ppmpId)) {
               map.set(ppmpId, [])
             }
@@ -349,8 +767,90 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         ).map(([ppmpId, items]) => ({ ppmpId, items }))
       : []
 
+  // Auto-expand all item groups by default so items and actions (like Submit as Item Request) are visible
+  useEffect(() => {
+    if (groupedPPMPs.length > 0) {
+      setExpandedPPMPs((prev) => {
+        const next = new Set(prev)
+        for (const g of groupedPPMPs) {
+          next.add(g.ppmpId)
+        }
+        return next
+      })
+    }
+  }, [groupedPPMPs.length])
+
+  // Group items by APR (for out-of-stock PRs)
+  const groupedAPRs = useMemo(() => {
+    if (pr.type !== 'out-of-stock') return []
+
+    // 1. If items already have aprGroup wrapper (e.g. freshly added via modal before server sync)
+    const wrappedGroups = (pr.items || []).filter((i) => i.aprGroup)
+    if (wrappedGroups.length > 0) {
+      return wrappedGroups
+    }
+
+    // 2. Otherwise, group flat items by APR (from server or after save)
+    const flatItems = (pr.items || []).filter((i) => !i.aprGroup)
+    if (flatItems.length === 0) return []
+
+    const map = new Map<string, PRItem[]>()
+    for (const item of flatItems) {
+      const key = item.aprNumber || item.aprId || 'APR-2026-0001'
+      if (!map.has(key)) {
+        map.set(key, [])
+      }
+      map.get(key)!.push(item)
+    }
+
+    return Array.from(map.entries()).map(([aprKey, items], idx) => {
+      const first = items[0]
+      const aprId = first.aprId || `apr-${idx}`
+      const aprNumber = first.aprNumber || (aprKey.startsWith('APR') ? aprKey : `APR-${aprKey}`)
+      const officeName = first.aprOffice || pr.headerDetails?.officeName || 'Innovation and Technology Solutions Division'
+      const totalAmount = items.reduce((s, it) => s + (it.totalAmount || 0), 0)
+
+      return {
+        id: `apr-group-${aprKey}`,
+        itemId: `apr-group-${aprKey}`,
+        itemName: `${aprNumber} (${officeName})`,
+        category: 'Consolidated APR',
+        quantity: items.length,
+        unitOfMeasure: 'group',
+        unitPrice: totalAmount,
+        totalAmount,
+        source: 'apr' as const,
+        aprId,
+        aprNumber,
+        aprOffice: officeName,
+        aprGroup: {
+          id: aprId,
+          aprId,
+          aprNumber,
+          officeName,
+          totalAmount,
+          items,
+        },
+      } as PRItem
+    })
+  }, [pr.items, pr.type, pr.headerDetails?.officeName])
+
   // Count APR-grouped PR items (for out-of-stock/consolidated PRs)
-  const aprGroupCount = (pr.items || []).filter((i) => i.aprGroup).length
+  const aprGroupCount = groupedAPRs.length
+
+  // Auto-expand all APR groups by default so items are immediately visible
+  useEffect(() => {
+    if (groupedAPRs.length > 0) {
+      setExpandedPPMPs((prev) => {
+        const next = new Set(prev)
+        for (const g of groupedAPRs) {
+          const aprId = g.aprGroup?.id || g.aprGroup?.aprId || ''
+          if (aprId) next.add(aprId)
+        }
+        return next
+      })
+    }
+  }, [groupedAPRs])
 
   const toggleExpandPPMP = (ppmpId: string) => {
     const newExpanded = new Set(expandedPPMPs)
@@ -374,7 +874,16 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         ).sort()
       : []
 
-  const months = pr.type === 'non-cse' ? ORDERED_MONTHS : []
+  const months =
+    pr.type === 'non-cse'
+      ? Array.from(
+          new Set(
+            pr.items
+              .map((item) => item.month)
+              .filter((m): m is string => Boolean(m) && m !== '')
+          )
+        ).sort()
+      : []
 
   const funds =
     pr.type === 'non-cse'
@@ -387,31 +896,40 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         ).sort()
       : []
 
-  // Filter PPMPs based on selected filters
+  // Filter grouped PPMPs based on search and filters
   const filteredGroupedPPMPs =
     pr.type === 'non-cse'
       ? groupedPPMPs
-          .map(({ ppmpId, items: ppmItems }) => {
-            const filteredItems = ppmItems.filter((item) => {
-              const ppmpName = ppmItems[0]?.ppmpDocName || ''
-              const searchMatch =
+          .map(({ ppmpId, items }) => {
+            const filteredItems = items.filter((item) => {
+              const matchesSearch =
+                searchTerm === '' ||
                 item.itemName
                   .toLowerCase()
                   .includes(searchTerm.toLowerCase()) ||
-                item.category
-                  .toLowerCase()
+                item.description
+                  ?.toLowerCase()
                   .includes(searchTerm.toLowerCase()) ||
-                ppmpName.toLowerCase().includes(searchTerm.toLowerCase())
-              const categoryMatch =
+                item.category.toLowerCase().includes(searchTerm.toLowerCase())
+
+              const matchesCategory =
                 categoryFilter === 'all' || item.category === categoryFilter
-              const monthMatch =
+              const matchesMonth =
                 monthFilter === 'all' || item.month === monthFilter
-              const fundMatch = fundFilter === 'all' || item.fund === fundFilter
-              return searchMatch && categoryMatch && monthMatch && fundMatch
+              const matchesFund =
+                fundFilter === 'all' || item.fund === fundFilter
+
+              return (
+                matchesSearch &&
+                matchesCategory &&
+                matchesMonth &&
+                matchesFund
+              )
             })
+
             return { ppmpId, items: filteredItems }
           })
-          .filter(({ items: ppmItems }) => ppmItems.length > 0)
+          .filter(({ items }) => items.length > 0)
       : []
 
   const openDeletePPMPDialog = (
@@ -419,38 +937,47 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     ppmpName: string,
     items: PRItem[],
   ) => {
+    const itemIds = items.map((i) => i.id)
     setDeleteConfirmDialog({
       isOpen: true,
       ppmpId,
       ppmpName,
-      itemIds: items.map((i) => i.id),
+      itemIds,
       type: 'ppmp',
     })
   }
 
-  const openDeleteAPRDialog = (
-    aprId: string,
-    aprName: string,
+  const openDeleteAPRGroupDialog = (
+    aprGroupNumber: string,
+    displayName: string,
     items: PRItem[],
   ) => {
+    const itemIds = items.map((i) => i.id)
     setDeleteConfirmDialog({
       isOpen: true,
-      ppmpId: aprId,
-      ppmpName: aprName,
-      itemIds: items.map((i) => i.id),
+      ppmpId: aprGroupNumber,
+      ppmpName: displayName || `APR #${aprGroupNumber}`,
+      itemIds,
       type: 'apr',
     })
   }
 
-  const handleConfirmDeletePPMP = () => {
-    if (deleteConfirmDialog.type === 'apr' && deleteConfirmDialog.ppmpId) {
-      const aprId = deleteConfirmDialog.ppmpId
-      const newItems = pr.items.filter(
-        (i) => !(i.aprGroup && i.aprGroup.id === aprId),
+  const handleConfirmDelete = () => {
+    const { ppmpId, type } = deleteConfirmDialog
+
+    if (type === 'apr') {
+      const updatedItems = pr.items.filter((item) => {
+        if (!item.aprGroup) return true
+        return item.aprGroup.aprNumber !== ppmpId
+      })
+
+      const newTotal = updatedItems.reduce(
+        (sum, item) => sum + item.totalAmount,
+        0,
       )
-      const newTotal = newItems.reduce((sum, i) => sum + i.totalAmount, 0)
+
       updatePurchaseRequest(pr.id, {
-        items: newItems,
+        items: updatedItems,
         totalAmount: newTotal,
       })
       setHasUnsavedChanges(true)
@@ -458,24 +985,19 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
       toast.success('APR Removed', {
         description: 'The APR and its items have been removed.',
       })
-
-      setDeleteConfirmDialog({
-        isOpen: false,
-        ppmpId: null,
-        ppmpName: null,
-        itemIds: [],
-        type: 'ppmp',
+    } else {
+      const updatedItems = pr.items.filter((item) => {
+        const itemPpmpId = item.ppmpDocId || (item.source === 'independent' || item.source === 'catalog' || item.source === 'custom' ? 'independent-items' : 'unknown')
+        return itemPpmpId !== ppmpId
       })
-      return
-    }
 
-    if (deleteConfirmDialog.ppmpId && deleteConfirmDialog.itemIds.length > 0) {
-      const newItems = pr.items.filter(
-        (i) => !deleteConfirmDialog.itemIds.includes(i.id),
+      const newTotal = updatedItems.reduce(
+        (sum, item) => sum + item.totalAmount,
+        0,
       )
-      const newTotal = newItems.reduce((sum, i) => sum + i.totalAmount, 0)
+
       updatePurchaseRequest(pr.id, {
-        items: newItems,
+        items: updatedItems,
         totalAmount: newTotal,
       })
       setHasUnsavedChanges(true)
@@ -494,10 +1016,237 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     })
   }
 
+  const handleUpdateItemProcurementMode = (
+    item: PRItem,
+    selectedModeName?: string,
+    modeId?: string,
+  ) => {
+    const updatedItems = pr.items.map((pi) => {
+      if (pi.id === item.id) {
+        return {
+          ...pi,
+          procurementModeName: selectedModeName,
+          procurementModeId: modeId || (selectedModeName ? pi.procurementModeId : undefined),
+        }
+      }
+      return pi
+    })
+    updatePurchaseRequest(pr.id, {
+      items: updatedItems,
+    })
+    setActivePR({
+      ...pr,
+      items: updatedItems,
+    })
+    setHasUnsavedChanges(true)
+  }
+
+  const handleUpdatePPMPItemQuantity = (item: PRItem, val: number) => {
+    const unitPrice = item.unitPrice ?? item.estimatedUnitPrice ?? 0
+    const updatedItems = pr.items.map((pi) => {
+      if (pi.id === item.id) {
+        const setQty = pi.setQuantity ?? (pi.quantity > 0 ? pi.quantity : val)
+        const remainingQty = Math.max(0, setQty - val)
+        return {
+          ...pi,
+          quantity: val,
+          setQuantity: setQty,
+          remainingQuantity: remainingQty,
+          totalAmount: val * unitPrice,
+        }
+      }
+      return pi
+    })
+
+    const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+    updatePurchaseRequest(pr.id, {
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setActivePR({
+      ...pr,
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setHasUnsavedChanges(true)
+  }
+
+  const handleDeletePPMPItem = (item: PRItem) => {
+    const updatedItems = pr.items.filter((pi) => pi.id !== item.id)
+    const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+    updatePurchaseRequest(pr.id, {
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setActivePR({
+      ...pr,
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setHasUnsavedChanges(true)
+    toast.success('Item Removed', {
+      description: `${item.itemName} (${item.month}) removed from PR.`,
+    })
+  }
+
+  const handleUpdateAPRMonthlyQuantity = (
+    groupItemId: string,
+    innerItem: PRItem,
+    month: string,
+    val: number,
+  ) => {
+    const hasWrapper = pr.items.some((pi) => pi.id === groupItemId && Boolean(pi.aprGroup))
+    const updatedItems: PRItem[] = hasWrapper
+      ? pr.items.map((pi) => {
+          if (pi.id !== groupItemId) return pi
+          const updatedAprGroup: PRItem['aprGroup'] = {
+            ...(pi.aprGroup || {}),
+            items: (pi.aprGroup?.items || []).map((inner: PRItem) => {
+              if (inner.id !== innerItem.id) return inner
+              const prevMonthly =
+                inner.monthlyQuantities && Object.keys(inner.monthlyQuantities).length > 0
+                  ? { ...inner.monthlyQuantities }
+                  : inner.month
+                    ? { [inner.month]: inner.quantity }
+                    : {}
+              const nextMonthly = { ...prevMonthly, [month]: val }
+              const computedQty = ORDERED_MONTHS.reduce(
+                (s: number, mm: string) => s + (nextMonthly[mm] || 0),
+                0,
+              )
+              return {
+                ...inner,
+                monthlyQuantities: nextMonthly,
+                editedNeeded: computedQty,
+                quantity: computedQty,
+                outOfStockQuantity: computedQty,
+                totalAmount: computedQty * (inner.unitPrice || 0),
+              }
+            }),
+          }
+          const newGroupTotal = (updatedAprGroup.items || []).reduce(
+            (s: number, it: PRItem) => s + (it.totalAmount || 0),
+            0,
+          )
+          const newGroupQty = (updatedAprGroup.items || []).reduce(
+            (s: number, it: PRItem) => s + (it.quantity || 0),
+            0,
+          )
+          return {
+            ...pi,
+            aprGroup: updatedAprGroup,
+            quantity: newGroupQty,
+            totalAmount: newGroupTotal,
+          }
+        })
+      : pr.items.map((pi) => {
+          if (pi.id !== innerItem.id && pi.itemId !== innerItem.itemId) return pi
+          const prevMonthly =
+            pi.monthlyQuantities && Object.keys(pi.monthlyQuantities).length > 0
+              ? { ...pi.monthlyQuantities }
+              : pi.month
+                ? { [pi.month]: pi.quantity }
+                : {}
+          const nextMonthly = { ...prevMonthly, [month]: val }
+          const computedQty = ORDERED_MONTHS.reduce(
+            (s: number, mm: string) => s + (nextMonthly[mm] || 0),
+            0,
+          )
+          return {
+            ...pi,
+            monthlyQuantities: nextMonthly,
+            editedNeeded: computedQty,
+            quantity: computedQty,
+            outOfStockQuantity: computedQty,
+            totalAmount: computedQty * (pi.unitPrice || 0),
+          }
+        })
+
+    const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+    updatePurchaseRequest(pr.id, {
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setActivePR({
+      ...pr,
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setHasUnsavedChanges(true)
+  }
+
+  const handleDeleteAPRItem = (groupItemId: string, innerItem: PRItem) => {
+    const hasWrapper = pr.items.some((pi) => pi.id === groupItemId && Boolean(pi.aprGroup))
+    const updatedItems: PRItem[] = hasWrapper
+      ? pr.items
+          .map((pi) => {
+            if (pi.id !== groupItemId) return pi
+            const remaining = (pi.aprGroup?.items || []).filter((inner) => inner.id !== innerItem.id)
+            const newTotal = remaining.reduce((s, it) => s + (it.totalAmount || 0), 0)
+            const newQty = remaining.reduce((s, it) => s + (it.quantity || 0), 0)
+            return {
+              ...pi,
+              aprGroup: { ...(pi.aprGroup || {}), items: remaining },
+              quantity: newQty,
+              totalAmount: newTotal,
+            }
+          })
+          .filter((pi) => !pi.aprGroup || (pi.aprGroup.items && pi.aprGroup.items.length > 0))
+      : pr.items.filter((pi) => pi.id !== innerItem.id && pi.itemId !== innerItem.itemId)
+
+    const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
+    updatePurchaseRequest(pr.id, {
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setActivePR({
+      ...pr,
+      items: updatedItems,
+      totalAmount: newTotal,
+    })
+    setHasUnsavedChanges(true)
+    toast.success('Item Removed', {
+      description: `${innerItem.itemName} removed from PR.`,
+    })
+  }
+
   const handleAddItems = (items: PRItem[]) => {
-    const updatedItems = [...pr.items, ...items]
+    const updatedItems = [...pr.items]
+
+    for (const incoming of items) {
+      const incomingKey = (incoming.itemId || incoming.id || incoming.itemName) + `_${incoming.month || ''}`
+      const existingIndex = updatedItems.findIndex((existing) => {
+        const existingKey = (existing.itemId || existing.id || existing.itemName) + `_${existing.month || ''}`
+        return existingKey === incomingKey || existing.id === incoming.id
+      })
+
+      if (existingIndex >= 0) {
+        const existing = updatedItems[existingIndex]
+        const incomingSetQty = incoming.setQuantity ?? incoming.quantity
+        const currentSetQty = existing.setQuantity ?? existing.quantity
+        const newSetQty = currentSetQty + incomingSetQty
+        const newQty = existing.quantity + incoming.quantity
+        const unitCost = existing.unitPrice ?? existing.estimatedUnitPrice ?? incoming.unitPrice ?? 0
+
+        updatedItems[existingIndex] = {
+          ...existing,
+          quantity: newQty,
+          setQuantity: newSetQty,
+          remainingQuantity: Math.max(0, newSetQty - newQty),
+          totalAmount: newQty * unitCost,
+        }
+      } else {
+        const setQty = incoming.setQuantity ?? incoming.quantity
+        updatedItems.push({
+          ...incoming,
+          setQuantity: setQty,
+          remainingQuantity: incoming.remainingQuantity ?? Math.max(0, setQty - incoming.quantity),
+        })
+      }
+    }
+
     const newTotal = updatedItems.reduce(
-      (sum, item) => sum + item.totalAmount,
+      (sum, item) => sum + (item.totalAmount || 0),
       0,
     )
 
@@ -508,10 +1257,11 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     setHasUnsavedChanges(true)
 
     toast.success('Items Added', {
-      description: `${items.length} item(s) have been added to this PR.`,
+      description: `${items.length} item(s) processed.`,
     })
 
     setShowAddItems(false)
+    setShowShoppingModal(false)
   }
 
   const handleSubmitPR = () => {
@@ -540,15 +1290,33 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     setShowSubmitConfirmDialog(true)
   }
 
-  const handleConfirmSubmitPR = () => {
+  const handleConfirmSubmitPR = async () => {
+    const payloadItems = buildPayloadItems(pr.items)
+
     toast.promise(
-      statusMutation.mutateAsync({
-        pathParams: { id: pr.id },
-        queryParams: { id: pr.id },
-        payload: { prId: pr.id, newStatus: 'Submitted' },
-      }).then(() => {
-        updatePurchaseRequest(pr.id, { status: 'submitted', updatedAt: new Date().toISOString() })
-      }),
+      (async () => {
+        // Persist items & header to backend first
+        await updateApi({
+          pathParams: { id: pr.id },
+          queryParams: { id: pr.id },
+          payload: {
+            description: pr.headerDetails.description || '',
+            purpose: pr.headerDetails.purpose || '',
+            ...(pr.headerDetails.procurementCategoryId ? { procurementCategoryId: pr.headerDetails.procurementCategoryId } : {}),
+            requestedDate: pr.headerDetails.date || new Date().toISOString(),
+            items: payloadItems,
+          },
+        })
+        setHasUnsavedChanges(false)
+
+        // Then execute status transition to Submitted
+        await statusMutation.mutateAsync({
+          pathParams: { id: pr.id },
+          queryParams: { id: pr.id },
+          payload: { prId: pr.id, newStatus: 'Submitted' },
+        })
+        updatePurchaseRequest(pr.id, { status: 'submitted', remarks: undefined, updatedAt: new Date().toISOString() })
+      })(),
       {
         loading: 'Submitting Purchase Request...',
         success: `${pr.headerDetails.prNumber} is now waiting for approval.`,
@@ -558,8 +1326,8 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     setShowSubmitConfirmDialog(false)
   }
 
-  const handleReturnPR = (remarks: string) => {
-    toast.promise(
+  const handleReturnPR = async (remarks: string) => {
+    await toast.promise(
       statusMutation.mutateAsync({
         pathParams: { id: pr.id },
         queryParams: { id: pr.id },
@@ -576,14 +1344,14 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     setShowReturnModal(false)
   }
 
-  const handleApprovePR = (signedPdfUrl: string) => {
-    toast.promise(
+  const handleApprovePR = async (signedPdfUrl: string) => {
+    await toast.promise(
       statusMutation.mutateAsync({
         pathParams: { id: pr.id },
         queryParams: { id: pr.id },
         payload: { prId: pr.id, newStatus: 'Approved' },
       }).then(() => {
-        updatePurchaseRequest(pr.id, { status: 'approved', signedPdfUrl, updatedAt: new Date().toISOString() })
+        updatePurchaseRequest(pr.id, { status: 'approved', signedPdfUrl, remarks: undefined, updatedAt: new Date().toISOString() })
       }),
       {
         loading: 'Approving Purchase Request...',
@@ -594,22 +1362,66 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
     setShowApproveModal(false)
   }
 
-  const handleExportPR = () => {
-    setShowExportDialog(true)
+  const handleExportPR = async () => {
+    setIsExporting(true)
+    const toastId = toast.loading('Preparing Purchase Request PDF...')
+    try {
+      if (hasUnsavedChanges) {
+        toast.loading('Saving changes before exporting...', { id: toastId })
+        const payloadItems = buildPayloadItems(pr.items)
+        await updateApi({
+          pathParams: { id: pr.id },
+          queryParams: { id: pr.id },
+          payload: {
+            description: pr.headerDetails.description || '',
+            purpose: pr.headerDetails.purpose || '',
+            ...(pr.headerDetails.procurementCategoryId ? { procurementCategoryId: pr.headerDetails.procurementCategoryId } : {}),
+            requestedDate: pr.headerDetails.date || new Date().toISOString(),
+            items: payloadItems,
+          },
+        })
+        setHasUnsavedChanges(false)
+      }
+
+      toast.loading('Generating Purchase Request PDF...', { id: toastId })
+      const response = await api.post<{ succeeded: boolean; data: string; message: string }>(
+        `/api/planning/documents/purchase-request/${pr.id}/generate?format=Pdf`
+      )
+      const documentId = response.data?.data
+      if (documentId) {
+        toast.loading('Downloading Purchase Request PDF...', { id: toastId })
+        const downloadRes = await api.get(`/api/planning/documents/${documentId}/download`, {
+          responseType: 'blob',
+        })
+        const blob = new Blob([downloadRes.data], {
+          type: 'application/pdf',
+        })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `PR_${pr.headerDetails.prNumber || pr.id}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+        toast.success('Purchase Request PDF downloaded successfully.', { id: toastId })
+      } else {
+        toast.error('Failed to generate PR document.', { id: toastId })
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate Purchase Request PDF.', { id: toastId })
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const StatusIcon = STATUS_BADGE_CONFIG[displayStatus].icon
-  const canAddItems = pr.status === 'draft'
-  const canSubmit = pr.status === 'draft' && pr.items.length > 0
-  const nonApprovableTypes = ['non-cse', 'out-of-stock']
-  const isNonApprovableType = nonApprovableTypes.includes(pr.type)
-  const { isManagePRView } = usePurchaseRequestStore()
-
-  const canReturn =
-    pr.status === 'submitted' && (isManagePRView || !isNonApprovableType)
-  const canApprove =
-    pr.status === 'submitted' && (isManagePRView || !isNonApprovableType)
-  const canEditNeeded = pr.status === 'draft' && !isManagePRView
+  const isDraftOrReturned = pr.status === 'draft' || pr.status === 'returned' || displayStatus === 'returned'
+  const isEditable = isDraftOrReturned && !isManagePRView
+  const canAddItems = isEditable
+  const canSubmit = isEditable && pr.items.length > 0
+  const canReturn = pr.status === 'submitted' && Boolean(isManagePRView)
+  const canApprove = pr.status === 'submitted' && Boolean(isManagePRView)
 
   return (
     <div className="space-y-6 pb-10">
@@ -625,6 +1437,23 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
           Back
         </Button>
       </div>
+
+      {isFreshPRError && (
+        <div className="flex items-center justify-between p-3.5 px-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+            <span>Could not refresh purchase request from server. Displaying cached details.</span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => refetchFreshPR()}
+            className="h-7 px-3 text-xs border-amber-300 hover:bg-amber-100"
+          >
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* PR Header Card - Modern Design */}
       <Card className="border-0 shadow-md bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -643,6 +1472,30 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                   <StatusIcon className="h-3 w-3 mr-1" />
                   {STATUS_BADGE_CONFIG[displayStatus].label}
                 </Badge>
+                {pr.approvalOrigin === 'APPROVED_VIA_BAC' && (
+                  <Badge className="bg-emerald-600 text-white font-semibold text-xs px-3 py-1">
+                    Approved via BAC Resolution ({pr.bacResolutionNumber || 'Path A'})
+                  </Badge>
+                )}
+                {pr.type === 'out-of-stock' && (
+                  <Badge
+                    variant="outline"
+                    className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 font-semibold text-xs px-3 py-1 gap-1.5 flex items-center dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
+                  >
+                    <Boxes className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>
+                      {(() => {
+                        const aprNum =
+                          relationalAprNumber ||
+                          groupedAPRs[0]?.aprNumber ||
+                          groupedAPRs[0]?.aprGroup?.aprNumber ||
+                          pr.headerDetails?.aprNumber ||
+                          pr.aprNumber
+                        return aprNum ? `Sourced from APR: ${aprNum}` : 'Sourced from Approved APR (Out-of-Stock CSE)'
+                      })()}
+                    </span>
+                  </Badge>
+                )}
               </div>
               {pr.headerDetails.description && (
                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
@@ -651,15 +1504,52 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
               )}
             </div>
             <div className="flex items-center gap-2">
+              {pr.approvalOrigin === 'APPROVED_VIA_BAC' && (
+                <Button
+                  size="sm"
+                  className="gap-2 h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                  onClick={() => {
+                    const mode = (pr.modeOfProcurement || pr.headerDetails?.modeOfProcurement || '').toLowerCase()
+                    let targetPath = '/v2/bidding-master-calendar'
+                    if (mode.includes('direct')) targetPath = '/v2/direct-contracting-request'
+                    else if (mode.includes('shopping') || mode.includes('small value') || mode.includes('svp')) targetPath = '/v2/rfq'
+                    if (typeof window !== 'undefined') {
+                      window.location.href = targetPath
+                    }
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Proceed to Execution
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-2 h-8 border-slate-200 dark:border-slate-700"
                 onClick={handleExportPR}
+                disabled={isExporting}
               >
                 <Download className="h-4 w-4" />
-                Export
+                {isExporting ? 'Exporting...' : 'Export'}
               </Button>
+              {(pr.signedPdfUrl || pr.status === 'approved') && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 h-8 border-purple-300 text-purple-900 bg-purple-50/50 hover:bg-purple-100/50 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-300"
+                  onClick={() => {
+                    if (pr.signedPdfUrl) {
+                      openSignedDocument(pr.signedPdfUrl, 'Signed PR Document')
+                    } else {
+                      handleExportPR()
+                    }
+                  }}
+                >
+                  <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  View Signed Document
+                </Button>
+              )}
               {hasUnsavedChanges && (
                 <Button
                   onClick={handleSaveChanges}
@@ -672,21 +1562,32 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
               {canReturn && (
                 <Button
                   variant="outline"
-                  className="gap-2 border-destructive text-destructive hover:bg-destructive/10"
+                  size="sm"
+                  className="gap-2 h-8 border-destructive text-destructive hover:bg-destructive/10"
                   onClick={() => setShowReturnModal(true)}
                 >
                   <AlertCircle className="h-4 w-4" />
                   Return
                 </Button>
               )}
+              {canApprove && (
+                <Button
+                  size="sm"
+                  className="gap-2 h-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                  onClick={() => setShowApproveModal(true)}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Approve
+                </Button>
+              )}
               {canSubmit && (
                 <Button
                   size="sm"
-                  className="gap-2 h-8 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="gap-2 h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
                   onClick={handleSubmitPR}
                 >
                   <Send className="h-4 w-4" />
-                  Submit
+                  {pr.status === 'returned' || displayStatus === 'returned' ? 'Resubmit PR' : 'Submit'}
                 </Button>
               )}
               <DropdownMenu>
@@ -700,6 +1601,12 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {isEditable && (
+                    <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Edit Details
+                    </DropdownMenuItem>
+                  )}
                   {canReturn && (
                     <DropdownMenuItem onClick={() => setShowReturnModal(true)}>
                       <AlertCircle className="h-4 w-4 mr-2" />
@@ -719,6 +1626,16 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         </CardHeader>
       </Card>
 
+      {/* Return Reason Card — shown when PR has been returned (matching RFQ style) */}
+      <PRReturnRemarksBanner
+        displayStatus={displayStatus}
+        prStatus={pr.status}
+        returnedDate={pr.returnedDate}
+        returnedBy={pr.returnedBy}
+        returnRemarks={pr.returnRemarks}
+        remarks={pr.remarks}
+      />
+
       {/* PR Details Grid */}
       <Card className="border-0 shadow-lg overflow-hidden">
         <CardHeader className="pb-4 bg-gradient-to-r from-slate-50/50 to-slate-100/50 dark:from-slate-900/20 dark:to-slate-800/20 border-b border-slate-200 dark:border-slate-700">
@@ -726,19 +1643,19 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
             Details
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* PR Date */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800/50 hover:shadow-sm transition-shadow lg:col-span-3">
+            <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800/50 hover:shadow-sm transition-shadow min-w-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-white/70 border border-blue-100 dark:bg-transparent dark:border-blue-800">
+                <div className="p-2 rounded-md bg-white/70 border border-blue-100 dark:bg-transparent dark:border-blue-800 shrink-0">
                   <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
                     PR Date
                   </p>
-                  <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">
                     {pr.headerDetails.date
                       ? new Date(pr.headerDetails.date).toLocaleDateString()
                       : '—'}
@@ -747,51 +1664,34 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
               </div>
             </div>
 
-            {/* UACS Code */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200 dark:border-purple-800/50 hover:shadow-sm transition-shadow lg:col-span-3">
+            {/* Procurement Category */}
+            <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-950/30 dark:to-cyan-900/20 border border-cyan-200 dark:border-cyan-800/50 hover:shadow-sm transition-shadow min-w-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-white/70 border border-purple-100 dark:bg-transparent dark:border-purple-800">
-                  <Hash className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+                <div className="p-2 rounded-md bg-white/70 border border-cyan-100 dark:bg-transparent dark:border-cyan-800 shrink-0">
+                  <Tag className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
-                    UACS Code
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wider">
+                    Category
                   </p>
-                  <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                    {displayUACS}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Fund Cluster */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800/50 hover:shadow-sm transition-shadow lg:col-span-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-white/70 border border-amber-100 dark:bg-transparent dark:border-amber-800">
-                  <Layers className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
-                    Fund Cluster
-                  </p>
-                  <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                    {displayFundCluster}
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate" title={pr.headerDetails.procurementCategoryName || 'Goods and General Services'}>
+                    {pr.headerDetails.procurementCategoryName || 'Goods and General Services'}
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Total PR Amount */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 hover:shadow-sm transition-shadow lg:col-span-3">
+            <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 hover:shadow-sm transition-shadow min-w-0">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-white/70 border border-emerald-100 dark:bg-transparent dark:border-emerald-800">
+                <div className="p-2 rounded-md bg-white/70 border border-emerald-100 dark:bg-transparent dark:border-emerald-800 shrink-0">
                   <DollarSign className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
                     Total PR Amount
                   </p>
-                  <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-50 truncate">
                     ₱{pr.totalAmount.toLocaleString()}
                   </p>
                 </div>
@@ -799,11 +1699,11 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
             </div>
 
             {/* Purpose */}
-            <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200/50 dark:from-slate-800/30 dark:to-slate-700/20 border border-slate-300 dark:border-slate-600/50 hover:shadow-sm transition-shadow lg:col-span-12">
-              <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200/50 dark:from-slate-800/30 dark:to-slate-700/20 border border-slate-300 dark:border-slate-600/50 hover:shadow-sm transition-shadow col-span-full">
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Purpose
               </p>
-              <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
+              <p className="text-sm font-normal text-slate-800 dark:text-slate-100 break-words">
                 {pr.headerDetails.purpose || '—'}
               </p>
             </div>
@@ -811,9 +1711,228 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         </CardContent>
       </Card>
 
-      <div ref={torSectionRef}>
-        <PRAttachmentsPanel pr={pr} torValidationMessage={torSubmitError} />
-      </div>
+      {/* Attachments Section (Terms of Reference) */}
+      <PRAttachmentsPanel
+        pr={pr}
+        torValidationMessage={torSubmitError}
+      />
+
+      {/* ── Unified BAC Resolution Section ───────────────────────────── */}
+      {linkedBacResolutions.length > 0 ? (
+        <Card className="border border-purple-200/90 dark:border-purple-800/70 bg-gradient-to-br from-purple-50/90 via-purple-50/50 to-white dark:from-purple-950/50 dark:via-purple-950/30 dark:to-card shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="bg-purple-100/50 dark:bg-purple-900/30 pb-3 pt-3.5 px-6 border-b border-purple-200/80 dark:border-purple-800/60">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-purple-200/80 dark:bg-purple-800/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
+                  <Building2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-bold text-foreground">
+                    BAC Resolution
+                  </CardTitle>
+                  <p className="text-[11px] text-purple-950/70 dark:text-purple-300/80 font-medium">
+                    Procurement milestone & resolution context
+                  </p>
+                </div>
+              </div>
+              {owningBacResolution && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/90 dark:bg-background/90 hover:bg-purple-50 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700 font-semibold gap-1.5 shadow-xs"
+                  onClick={() =>
+                    navigate({
+                      to: '/v2/bac-resolutions',
+                      search: { id: owningBacResolution.procurementProjectId },
+                    })
+                  }
+                >
+                  View BAC Details
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-5 pb-6 px-6">
+            {linkedBacResolutions.map((resolution, index) => (
+              <div key={resolution.id || index} className="space-y-4">
+                {index > 0 && <Separator className="my-4 border-purple-200/60 dark:border-purple-800/40" />}
+
+                {/* Attributes Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {/* BAC Status */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      BAC Status
+                    </p>
+                    <div>
+                      <BacResolutionStatusBadge status={resolution.status} />
+                    </div>
+                  </div>
+
+                  {/* Resolution No. */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      Resolution No.
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {resolution.resolutionNumber}
+                    </p>
+                  </div>
+
+                  {/* Resolution Type */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      Resolution Type
+                    </p>
+                    <p className="text-sm font-medium text-foreground/90 truncate capitalize">
+                      {resolution.resolutionType?.replace(/[-_]/g, ' ') || '—'}
+                    </p>
+                  </div>
+
+                  {/* Source */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      Source
+                    </p>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] py-0.5 px-2.5 rounded-full border-purple-300 text-purple-800 dark:text-purple-200 bg-purple-100/80 dark:bg-purple-900/50 font-medium"
+                    >
+                      {resolution.sourceType === 'APPItem'
+                        ? 'Inherited from APP Item'
+                        : 'Created from Consolidated PR'}
+                    </Badge>
+                  </div>
+
+                  {/* Resolution Date */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      Resolution Date
+                    </p>
+                    <p className="text-sm text-foreground/80 font-medium">
+                      {resolution.dateResolved
+                        ? new Date(resolution.dateResolved).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : '—'}
+                    </p>
+                  </div>
+
+                  {/* ABC */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      ABC
+                    </p>
+                    <div>
+                      <Badge variant="outline" className="text-xs font-semibold px-2.5 py-0.5 border-purple-200 text-purple-900 dark:text-purple-200 bg-white/80 dark:bg-card">
+                        {formatCurrency(resolution.abc)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Procurement / BAC Project Title */}
+                  <div className="sm:col-span-2 md:col-span-3 lg:col-span-6 space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-purple-950/70 dark:text-purple-300/80">
+                      Procurement / BAC Project
+                    </p>
+                    <p className="text-sm text-foreground font-medium">
+                      {resolution.projectTitle || resolution.resolutionType || '—'}
+                    </p>
+                    {resolution.resolvedLocation && (
+                      <p className="text-xs text-muted-foreground pt-0.5">
+                        Location: <span className="font-medium text-foreground/80">{resolution.resolvedLocation}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* BAC Resolution Document Sub-Panel */}
+                <div className="rounded-xl border border-purple-200/90 dark:border-purple-800/70 bg-purple-50/70 dark:bg-purple-950/50 p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-purple-100 dark:bg-purple-900/70 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0 border border-purple-200/80 dark:border-purple-800/60">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground">
+                        BAC Resolution Document
+                      </p>
+                      <p className="text-[11px] text-purple-900/80 dark:text-purple-300/90 font-mono font-medium truncate">
+                        BAC_Resolution_{resolution.resolutionNumber || resolution.id}.pdf
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={generatingDocId === resolution.id}
+                      className="h-8 gap-1.5 text-xs bg-white dark:bg-card hover:bg-purple-50 dark:hover:bg-purple-900/40 text-foreground border-purple-200 dark:border-purple-800 font-medium shadow-xs"
+                      onClick={() => handleViewOrDownloadDocument(resolution, 'view')}
+                    >
+                      {generatingDocId === resolution.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Eye className="h-3.5 w-3.5" />
+                      )}
+                      View
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={generatingDocId === resolution.id}
+                      className="h-8 gap-1.5 text-xs bg-white dark:bg-card hover:bg-purple-50 dark:hover:bg-purple-900/40 text-foreground border-purple-200 dark:border-purple-800 font-medium shadow-xs"
+                      onClick={() => handleViewOrDownloadDocument(resolution, 'download')}
+                    >
+                      {generatingDocId === resolution.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                      Download
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border border-dashed border-purple-200/80 dark:border-purple-800/60 bg-purple-50/40 dark:bg-purple-950/20 shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="bg-purple-100/30 dark:bg-purple-900/20 pb-3 pt-3.5 px-6 border-b border-purple-100/80 dark:border-purple-900/40">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                <Building2 className="h-4 w-4" />
+              </div>
+              <CardTitle className="text-base font-semibold text-muted-foreground">
+                BAC Resolution
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="py-6 px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">
+                No BAC Resolution yet
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                This Purchase Request has not been assigned or linked to an active BAC Resolution. You can create or manage BAC Resolutions in the BAC workspace.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/50 bg-white dark:bg-card shadow-xs"
+              onClick={() => navigate({ to: '/v2/bac-resolutions' })}
+            >
+              Go to BAC Workspace
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Items/PPMPs Table */}
       <Card className="border-0 shadow-lg overflow-hidden">
@@ -821,25 +1940,28 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
           <div className="space-y-4">
             <div>
               <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-50">
-                {pr.type === 'non-cse' ? 'Office PPMPs' : 'APRs'}
+                {isIndependentPR
+                  ? 'Requisition Items'
+                  : pr.type === 'non-cse'
+                    ? 'Office PPMPs'
+                    : 'APRs'}
               </CardTitle>
               <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
-                {pr.type === 'non-cse'
-                  ? (() => {
-                      const uniquePPMPs = new Set(
-                        pr.items
-                          .filter((item) => item.ppmpDocId)
-                          .map((item) => item.ppmpDocId),
-                      )
-                      const ppmpCount = uniquePPMPs.size
-                      return `${ppmpCount} Office PPMP${ppmpCount !== 1 ? 's' : ''} selected`
-                    })()
-                  : (() => {
-                      const aprCount = (pr.items || []).filter(
-                        (i) => i.aprGroup,
-                      ).length
-                      return `${aprCount} APR${aprCount !== 1 ? 's' : ''} selected`
-                    })()}
+                {isIndependentPR
+                  ? `${pr.items.length} item${pr.items.length !== 1 ? 's' : ''} in Purchase Request`
+                  : pr.type === 'non-cse'
+                    ? (() => {
+                        const uniquePPMPs = new Set(
+                          pr.items
+                            .filter((item) => item.ppmpDocId)
+                            .map((item) => item.ppmpDocId),
+                        )
+                        const ppmpCount = uniquePPMPs.size
+                        return `${ppmpCount} Office PPMP${ppmpCount !== 1 ? 's' : ''} selected`
+                      })()
+                    : (() => {
+                        return `${aprGroupCount} APR${aprGroupCount !== 1 ? 's' : ''} selected`
+                      })()}
               </CardDescription>
             </div>
 
@@ -850,9 +1972,11 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder={
-                        pr.type === 'non-cse'
-                          ? 'Search by item name, category, or PPMP...'
-                          : 'Search by APR number, office, or item...'
+                        isIndependentPR
+                          ? 'Search by item name, category, or code...'
+                          : pr.type === 'non-cse'
+                            ? 'Search by item name, category, or PPMP...'
+                            : 'Search by APR number, office, or item...'
                       }
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -880,21 +2004,23 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                   </Select>
                 </div>
 
-                <div style={{ minWidth: 'fit-content' }}>
-                  <Select value={monthFilter} onValueChange={setMonthFilter}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Months</SelectItem>
-                      {months.map((month) => (
-                        <SelectItem key={month} value={month}>
-                          {month}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {months.length > 0 && (
+                  <div style={{ minWidth: 'fit-content' }}>
+                    <Select value={monthFilter} onValueChange={setMonthFilter}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Months</SelectItem>
+                        {months.map((month) => (
+                          <SelectItem key={month} value={month}>
+                            {month}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div style={{ minWidth: 'fit-content' }}>
                   <Select value={fundFilter} onValueChange={setFundFilter}>
@@ -914,14 +2040,36 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
               </div>
 
               {canAddItems && (
-                <Button
-                  onClick={() => setShowAddItems(true)}
-                  size="sm"
-                  className="gap-2 flex-shrink-0"
-                >
-                  <Plus className="h-4 w-4" />
-                  {pr.type === 'non-cse' ? 'Add Office PPMP' : 'Add APR'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  {isIndependentPR ? (
+                    <Button
+                      onClick={() => setShowShoppingModal(true)}
+                      size="sm"
+                      className="gap-2 flex-shrink-0"
+                    >
+                      <Boxes className="h-4 w-4" />
+                      Add Non-CSE Items
+                    </Button>
+                  ) : pr.type === 'non-cse' ? (
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      size="sm"
+                      className="gap-2 flex-shrink-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Office PPMP
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      size="sm"
+                      className="gap-2 flex-shrink-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add APR
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -931,445 +2079,115 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
             <div className="text-center py-10">
               <p className="text-muted-foreground mb-4">No APRs added yet</p>
               {canAddItems && (
-                <Button
-                  onClick={() => setShowAddItems(true)}
-                  variant="outline"
-                  size="sm"
-                >
-                  Add APR
-                </Button>
+                relationalAprNumber || relationalAprId ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Button
+                      onClick={handleImportItemsFromSourceAPR}
+                      disabled={isImportingSourceApr}
+                      size="sm"
+                      className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                    >
+                      {isImportingSourceApr ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Boxes className="h-4 w-4" />
+                      )}
+                      Import Deficit Items from {relationalAprNumber || 'Source APR'}
+                    </Button>
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Other APR
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => setShowAddItems(true)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Add APR
+                  </Button>
+                )
               )}
             </div>
           ) : pr.items.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-muted-foreground mb-4">
-                {pr.type === 'non-cse'
-                  ? 'No Office PPMP added yet'
-                  : 'No items added yet'}
+                {isIndependentPR
+                  ? 'No Non-CSE items added yet'
+                  : pr.type === 'non-cse'
+                    ? 'No Office PPMP or items added yet'
+                    : 'No items added yet'}
               </p>
               {canAddItems && (
-                <Button
-                  onClick={() => setShowAddItems(true)}
-                  variant="outline"
-                  size="sm"
-                >
-                  {pr.type === 'non-cse' ? 'Add Office PPMP' : 'Add APR'}
-                </Button>
+                <div className="flex items-center justify-center gap-3">
+                  {isIndependentPR ? (
+                    <Button
+                      onClick={() => setShowShoppingModal(true)}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Boxes className="h-4 w-4" />
+                      Add Non-CSE Items
+                    </Button>
+                  ) : pr.type === 'non-cse' ? (
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Office PPMP
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setShowAddItems(true)}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add APR
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           ) : pr.type === 'non-cse' ? (
-            <div className="space-y-4">
-              <div className="space-y-4">
-                {filteredGroupedPPMPs.map(({ ppmpId, items }) => {
-                  const isExpanded = expandedPPMPs.has(ppmpId)
-                  const ppmpTotal = items.reduce(
-                    (sum, item) => sum + item.totalAmount,
-                    0,
-                  )
-
-                  return (
-                    <div
-                      key={ppmpId}
-                      className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow my-3"
-                    >
-                      <div
-                        className="px-6 py-4 min-h-[68px] flex items-center gap-3 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 dark:hover:from-slate-900 dark:hover:to-slate-800 cursor-pointer transition bg-gradient-to-r from-slate-50/30 to-slate-100/30 dark:from-slate-900/10 dark:to-slate-800/10"
-                        onClick={() => toggleExpandPPMP(ppmpId)}
-                      >
-                        <ChevronDown
-                          className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold truncate text-slate-900 dark:text-slate-50">
-                            {items[0]?.ppmpDocName || 'Office PPMP'}
-                          </div>
-                          <div className="text-xs truncate text-slate-600 dark:text-slate-400">
-                            {items.length} item(s)
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 ml-3">
-                          <Badge
-                            color="default"
-                            className="text-sm font-semibold"
-                          >
-                            ₱{ppmpTotal.toLocaleString()}
-                          </Badge>
-
-                          {!canAddItems ? null : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 p-0 text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                openDeletePPMPDialog(
-                                  ppmpId,
-                                  items[0]?.ppmpDocName || 'Office PPMP',
-                                  items,
-                                )
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {isExpanded && (
-                        <div className="border-t bg-muted/10 overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="bg-muted/40">
-                                <TableHead>Item Name</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Fund</TableHead>
-                                <TableHead className="text-center">Month</TableHead>
-                                <TableHead className="text-center w-32">Req Qty</TableHead>
-                                <TableHead>Unit Price</TableHead>
-                                <TableHead className="text-right">
-                                  Total Amount
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {items.map((item) => {
-                                const unitPrice =
-                                  item.unitPrice ?? item.estimatedUnitPrice ?? 0
-
-                                return (
-                                  <TableRow key={item.id}>
-                                    <TableCell className="font-medium">
-                                      {item.itemName}
-                                    </TableCell>
-                                    <TableCell>{item.category}</TableCell>
-                                    <TableCell>{item.fund || '—'}</TableCell>
-                                    <TableCell className="text-center">
-                                      {item.month}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      <div className="flex items-center justify-center gap-2">
-                                        <input
-                                          type="number"
-                                          min={0}
-                                          value={item.quantity || 0}
-                                          onChange={(e) => {
-                                            const v = parseInt(e.target.value || '0', 10)
-                                            const val = Number.isNaN(v) ? 0 : Math.max(0, v)
-                                            
-                                            const updatedItems = pr.items.map((pi) => {
-                                              if (pi.id === item.id) {
-                                                return {
-                                                  ...pi,
-                                                  quantity: val,
-                                                  totalAmount: val * unitPrice,
-                                                }
-                                              }
-                                              return pi
-                                            })
-                                            
-                                            const newTotal = updatedItems.reduce((s, it) => s + (it.totalAmount || 0), 0)
-                                            updatePurchaseRequest(pr.id, {
-                                              items: updatedItems,
-                                              totalAmount: newTotal,
-                                            })
-                                            setHasUnsavedChanges(true)
-                                          }}
-                                          readOnly={!canEditNeeded}
-                                          disabled={!canEditNeeded}
-                                          className={`w-16 text-center tabular-nums text-sm bg-transparent border-none outline-none p-0 caret-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${canEditNeeded ? 'cursor-text focus:outline-none focus:border-b-2 focus:border-primary' : 'cursor-default opacity-70'}`}
-                                        />
-                                        <span className="text-sm text-slate-600 dark:text-slate-400 pointer-events-none">
-                                          {item.unitOfMeasure || 'pcs'}
-                                        </span>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      ₱{unitPrice.toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      ₱
-                                      {(
-                                        (item.quantity || 0) * unitPrice
-                                      ).toLocaleString()}
-                                    </TableCell>
-                                  </TableRow>
-                                )
-                              })}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            <PRPPMPItemsSection
+              filteredGroupedPPMPs={filteredGroupedPPMPs}
+              expandedPPMPs={expandedPPMPs}
+              toggleExpandPPMP={toggleExpandPPMP}
+              isEditable={isEditable}
+              masterCatalogIdentifiers={masterCatalogIdentifiers}
+              modesResponseData={modesResponse?.data}
+              procurementModeOptions={procurementModeOptions}
+              onUpdateProcurementMode={handleUpdateItemProcurementMode}
+              onUpdateItemQuantity={handleUpdatePPMPItemQuantity}
+              onDeleteItem={handleDeletePPMPItem}
+              onDeletePPMPGroup={openDeletePPMPDialog}
+              onOpenSubmitItemRequest={handleOpenSubmitItemRequest}
+            />
           ) : (
-            <div className="space-y-3">
-              <div className="space-y-4">
-                {(pr.items || [])
-                  .filter((i) => i.aprGroup)
-                  .map((groupItem) => {
-                    const aprId = groupItem.aprGroup!.id
-                    const isExpanded = expandedPPMPs.has(aprId)
-                    const nested: PRItem[] = (groupItem.aprGroup!.items ||
-                      []) as PRItem[]
-                    const aprTotal =
-                      groupItem.totalAmount ||
-                      nested.reduce(
-                        (s: number, ni: PRItem) => s + (ni.totalAmount || 0),
-                        0,
-                      )
-
-                    return (
-                      <div
-                        key={groupItem.id}
-                        className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow my-3"
-                      >
-                        <div
-                          className="px-6 py-4 min-h-[68px] flex items-center gap-3 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 cursor-pointer transition bg-gradient-to-r from-slate-50/30 to-slate-100/30"
-                          onClick={() => toggleExpandPPMP(aprId)}
-                        >
-                          <ChevronDown
-                            className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold truncate">
-                              {groupItem.aprGroup!.aprNumber} •{' '}
-                              {groupItem.aprGroup!.officeName}
-                            </div>
-                            <div className="text-xs truncate text-slate-600">
-                              {nested.length} item(s)
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3 ml-3">
-                            <Badge
-                              color="default"
-                              className="text-sm font-semibold"
-                            >
-                              ₱{aprTotal.toLocaleString()}
-                            </Badge>
-                            {canAddItems && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 p-0 text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  openDeleteAPRDialog(
-                                    aprId,
-                                    `${groupItem.aprGroup!.aprNumber} • ${groupItem.aprGroup!.officeName}`,
-                                    nested,
-                                  )
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-
-                        {isExpanded && (
-                          <div className="border-t bg-muted/10 overflow-x-auto">
-                            <Table style={{ minWidth: '1600px' }}>
-                              <TableHeader>
-                                <TableRow className="bg-muted/40">
-                                  <TableHead className="min-w-[150px] sticky left-0 bg-muted/40 z-10">Item Name</TableHead>
-                                  <TableHead className="min-w-[140px]">Category</TableHead>
-                                  <TableHead className="min-w-[110px]">Fund</TableHead>
-                                  {ORDERED_MONTHS.map((m: string) => (
-                                    <TableHead key={m} className="text-center min-w-[80px]">
-                                      <span className="flex flex-col items-center gap-0.5">
-                                        <span>{m.slice(0, 3)}</span>
-                                        {canEditNeeded && (
-                                          <span className="text-[9px] font-normal text-primary/60 leading-none">editable</span>
-                                        )}
-                                      </span>
-                                    </TableHead>
-                                  ))}
-                                  <TableHead className="text-center min-w-[110px]">
-                                    Total Qty
-                                  </TableHead>
-                                  <TableHead className="min-w-[110px]">Unit Price</TableHead>
-                                  <TableHead className="text-right min-w-[120px]">
-                                    Total Amount
-                                  </TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {nested.map((ni) => {
-                                  const unitPrice = ni.unitPrice || 0
-
-                                  const monthlyQty =
-                                    ni.monthlyQuantities &&
-                                    Object.keys(ni.monthlyQuantities).length > 0
-                                      ? ni.monthlyQuantities
-                                      : ni.month
-                                        ? { [ni.month]: ni.quantity }
-                                        : {}
-
-                                  const monthlySum = ORDERED_MONTHS.reduce(
-                                    (s: number, mm: string) =>
-                                      s + ((monthlyQty && (monthlyQty[mm] || 0)) || 0),
-                                    0,
-                                  )
-
-                                  const requiredTotal =
-                                    monthlySum > 0 ? monthlySum : (ni.originalNeeded || ni.quantity || 0)
-
-                                  const alreadyGot = ni.totalGot || 0
-                                  const deficitQty = Math.max(requiredTotal - alreadyGot, 0)
-                                  const lineTotal = deficitQty * unitPrice
-
-                                  return (
-                                    <TableRow key={ni.id}>
-                                      <TableCell className="font-medium">
-                                        {ni.itemName}
-                                      </TableCell>
-                                      <TableCell>{ni.category}</TableCell>
-                                      <TableCell>{ni.fund || '—'}</TableCell>
-
-                                      {ORDERED_MONTHS.map((m: string) => {
-                                        const currentVal =
-                                          ni.monthlyQuantities &&
-                                          typeof ni.monthlyQuantities[m] === 'number'
-                                            ? ni.monthlyQuantities[m]
-                                            : monthlyQty[m] || 0
-
-                                        return (
-                                          <TableCell
-                                            key={`${ni.id}-${m}`}
-                                            className="text-center px-2 py-2 group/cell hover:bg-primary/5 transition-colors rounded"
-                                          >
-                                            <div className="inline-flex items-baseline gap-0.5">
-                                              <input
-                                                type="number"
-                                                min={0}
-                                                value={currentVal}
-                                                title="Click to edit"
-                                                onChange={(e) => {
-                                                  const v = parseInt(e.target.value || '0', 10)
-                                                  const val = Number.isNaN(v) ? 0 : v
-
-                                                  const updatedItems = pr.items.map((pi) => {
-                                                    if (pi.id !== groupItem.id) return pi
-                                                    const updatedAprGroup = {
-                                                      ...pi.aprGroup!,
-                                                      items: (pi.aprGroup!.items || []).map(
-                                                        (inner: PRItem) => {
-                                                          if (inner.id !== ni.id) return inner
-                                                          const prevMonthly =
-                                                            inner.monthlyQuantities &&
-                                                            Object.keys(inner.monthlyQuantities).length > 0
-                                                              ? { ...inner.monthlyQuantities }
-                                                              : inner.month
-                                                                ? { [inner.month]: inner.quantity }
-                                                                : {}
-                                                          const nextMonthly = { ...prevMonthly, [m]: val }
-                                                          const computedQty = ORDERED_MONTHS.reduce(
-                                                            (s: number, mm: string) =>
-                                                              s + (nextMonthly[mm] || 0),
-                                                            0,
-                                                          )
-                                                            return {
-                                                            ...inner,
-                                                            monthlyQuantities: nextMonthly,
-                                                            editedNeeded: computedQty,
-                                                            quantity: computedQty,
-                                                            outOfStockQuantity: computedQty,
-                                                            totalAmount: computedQty * (inner.unitPrice || 0),
-                                                            }
-                                                        },
-                                                      ),
-                                                    }
-                                                    const newGroupTotal = (updatedAprGroup.items || []).reduce(
-                                                      (s: number, it: PRItem) => s + (it.totalAmount || 0),
-                                                      0,
-                                                    )
-                                                    const newGroupQty = (updatedAprGroup.items || []).reduce(
-                                                      (s: number, it: PRItem) => s + (it.quantity || 0),
-                                                      0,
-                                                    )
-                                                    return {
-                                                      ...pi,
-                                                      aprGroup: updatedAprGroup,
-                                                      quantity: newGroupQty,
-                                                      totalAmount: newGroupTotal,
-                                                      }
-                                                  })
-
-                                                  const newTotal = updatedItems.reduce(
-                                                    (s, it) => s + (it.totalAmount || 0),
-                                                    0,
-                                                  )
-                                                  updatePurchaseRequest(pr.id, {
-                                                    items: updatedItems,
-                                                    totalAmount: newTotal,
-                                                  })
-                                                  setHasUnsavedChanges(true)
-                                                }}
-                                                readOnly={!canEditNeeded}
-                                                disabled={!canEditNeeded}
-                                                className={`w-8 text-center tabular-nums text-sm bg-transparent border-none outline-none p-0 caret-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${canEditNeeded ? 'cursor-text focus:outline-none focus:border-b-2 focus:border-primary' : 'cursor-default opacity-70'}`}
-                                              />
-                                              <span className="text-sm text-slate-600 dark:text-slate-400 pointer-events-none">
-                                                {ni.unitOfMeasure || 'pcs'}
-                                              </span>
-                                            </div>
-                                          </TableCell>
-                                        )
-                                      })}
-
-                                      <TableCell className="text-center">
-                                        <Badge color="default" className="tabular-nums">
-                                          {ORDERED_MONTHS.reduce((s: number, m: string) => {
-                                            const cellVal =
-                                              ni.monthlyQuantities &&
-                                              typeof ni.monthlyQuantities[m] === 'number'
-                                                ? ni.monthlyQuantities[m]
-                                                : monthlyQty[m] || 0
-                                            return s + cellVal
-                                          }, 0)} {ni.unitOfMeasure || 'pcs'}
-                                        </Badge>
-                                      </TableCell>
-
-                                      <TableCell>
-                                        ₱{unitPrice.toLocaleString()}
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        ₱{(lineTotal || 0).toLocaleString()}
-                                      </TableCell>
-                                    </TableRow>
-                                  )
-                                })}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-              </div>
-            </div>
+            <PRAPRItemsSection
+              groupedAPRs={groupedAPRs}
+              expandedPPMPs={expandedPPMPs}
+              toggleExpandPPMP={toggleExpandPPMP}
+              isEditable={isEditable}
+              canAddItems={canAddItems}
+              defaultOfficeName={pr.headerDetails?.officeName}
+              onUpdateMonthlyQuantity={handleUpdateAPRMonthlyQuantity}
+              onDeleteItem={handleDeleteAPRItem}
+              onDeleteAPRGroup={openDeleteAPRGroupDialog}
+            />
           )}
         </CardContent>
       </Card>
 
-      {/* Return Remarks */}
-      {displayStatus === 'returned' && pr.remarks && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="text-lg text-destructive">
-              Return Remarks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{pr.remarks}</p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Modals */}
       <AddItemsModal
@@ -1378,7 +2196,15 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
         prType={pr.type}
         onAddItems={handleAddItems}
         prId={pr.id}
+        officeId={pr.officeCode ?? pr.headerDetails?.officeId}
         currentItems={pr.items}
+      />
+
+      <AddNonCSEItemModal
+        open={showShoppingModal}
+        onOpenChange={setShowShoppingModal}
+        onAddItems={handleAddItems}
+        onSubmitItemRequest={handleOpenSubmitItemRequest}
       />
 
       <ReturnPRModal
@@ -1479,7 +2305,7 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
           <div className="flex gap-3 justify-end">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleConfirmDeletePPMP}
+              onClick={handleConfirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Remove
@@ -1527,6 +2353,32 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit PR Header Modal */}
+      <EditPRModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        pr={pr}
+        onSuccess={() => {
+          setShowEditModal(false)
+        }}
+      />
+
+      {/* Intentional Item Request Dialog for Custom/Ad-hoc PR Items */}
+      <RequestItemDialog
+        open={requestItemModalOpen}
+        onOpenChange={setRequestItemModalOpen}
+        initialOfficeId={pr.headerDetails?.officeId}
+        initialValues={prefilledRequestItem ?? undefined}
+        onSuccess={() => {
+          setRequestItemModalOpen(false)
+          setPrefilledRequestItem(null)
+          toast.success('Item Request submitted', {
+            description: 'Item Request submitted to BAC for catalog evaluation. Your PR line item remains unaffected.',
+          })
+        }}
+      />
     </div>
   )
 }
+

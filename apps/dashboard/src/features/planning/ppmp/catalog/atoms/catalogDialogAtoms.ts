@@ -1,10 +1,10 @@
-﻿/**
+/**
  * Catalog Dialog State Atoms
  * Controls open/close state for Create, Edit, and Delete dialogs.
  */
 
 import { atom } from 'jotai'
-import type { NonCSEItem } from '../types/catalog.types'
+import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
 
 /** Create Item dialog visibility */
 export const createItemDialogOpenAtom = atom<boolean>(false)
@@ -19,10 +19,10 @@ export const deleteItemDialogOpenAtom = atom<boolean>(false)
 export const bulkPricingDialogOpenAtom = atom<boolean>(false)
 
 /** The item currently being edited (pre-fills the Edit dialog) */
-export const itemToEditAtom = atom<NonCSEItem | null>(null)
+export const itemToEditAtom = atom<NONCSEItem | null>(null)
 
 /** The item currently targeted for deactivation */
-export const itemToDeleteAtom = atom<NonCSEItem | null>(null)
+export const itemToDeleteAtom = atom<NONCSEItem | null>(null)
 
 /** Selected item IDs for bulk operations */
 export const selectedItemIdsAtom = atom<string[]>([])

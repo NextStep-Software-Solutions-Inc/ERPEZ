@@ -1,10 +1,12 @@
-﻿import { Suspense, lazy, useMemo, type ReactNode } from 'react'
+import { Suspense, lazy, useMemo, type ReactNode } from 'react'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FunctionCategory } from '@/features/planning/master-kpi/types'
 import { getCategoryVisuals } from '@/pages/planning/commitments/utils/functions'
 import type { KPIAssignment } from '@/features/planning/kpi-assignment/types'
+
+import { useNavigate, useSearch } from '@tanstack/react-router'
 
 // Lazy load all tab content components for better performance
 const KpiAssignedContent = lazy(() =>
@@ -19,13 +21,7 @@ const KpiIndicatorContent = lazy(() =>
   })),
 )
 
-const KpiAssignmentContent = lazy(() =>
-  import('./KpiAssignmentContent').then((mod) => ({
-    default: mod.KpiAssignmentContent,
-  })),
-)
-
-type TabType = 'assigned' | 'indicator' | 'assignment'
+type TabType = 'assigned' | 'indicator'
 
 interface TabConfig {
   readonly id: TabType
@@ -54,6 +50,26 @@ export function StrategicTargetTabsContainer({
   functionCategory,
   onKPIAssignmentClick,
 }: StrategicTargetTabsContainerProps): ReactNode {
+  const navigate = useNavigate({ from: '/v2/commitments' })
+  const search = useSearch({ from: '/v2/commitments/' })
+
+  const currentTab: TabType =
+    search.strategicTargetTabView === 'shoppable-kpis' ||
+    search.strategicTargetTabView === 'KeyPerformanceIndicator'
+      ? 'indicator'
+      : 'assigned'
+
+  const handleTabChange = (value: string) => {
+    const tabType = value as TabType
+    navigate({
+      search: {
+        ...search,
+        strategicTargetTabView:
+          tabType === 'indicator' ? 'shoppable-kpis' : 'kpiAssigned',
+      },
+    })
+  }
+
   const categoryVisuals = useMemo(() => {
     return functionCategory &&
       Object.values(FunctionCategory).includes(functionCategory)
@@ -70,13 +86,8 @@ export function StrategicTargetTabsContainer({
       },
       {
         id: 'indicator',
-        label: 'Key Performance Indicator',
-        ariaLabel: 'View key performance indicators',
-      },
-      {
-        id: 'assignment',
-        label: 'KPI Assignment',
-        ariaLabel: 'View KPI assignment details',
+        label: 'Shoppable KPIs',
+        ariaLabel: 'View shoppable KPIs',
       },
     ],
     [],
@@ -90,9 +101,7 @@ export function StrategicTargetTabsContainer({
           Loading{' '}
           {tabId === 'assigned'
             ? 'assigned KPIs'
-            : tabId === 'indicator'
-              ? 'KPI indicators'
-              : 'KPI assignments'}
+            : 'shoppable KPIs'}
           ...
         </span>
       </div>
@@ -114,17 +123,6 @@ export function StrategicTargetTabsContainer({
         return (
           <Suspense fallback={loadingFallback}>
             <KpiIndicatorContent />
-          </Suspense>
-        )
-      case 'assignment':
-        return (
-          <Suspense fallback={loadingFallback}>
-            <KpiAssignmentContent
-              kpiAssignments={kpiAssignments}
-              isLoading={isLoading}
-              queryError={queryError}
-              onKPIAssignmentClick={onKPIAssignmentClick}
-            />
           </Suspense>
         )
       default:
@@ -170,8 +168,8 @@ export function StrategicTargetTabsContainer({
         </div>
 
         {/* Tabs using shadcn/ui */}
-        <Tabs defaultValue="assigned" className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3 mb-6">
+        <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
             {tabConfig.map((tab) => (
               <TabsTrigger
                 key={tab.id}

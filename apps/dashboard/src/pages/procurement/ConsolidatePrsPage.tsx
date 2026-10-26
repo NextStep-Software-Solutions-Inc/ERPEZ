@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent } from 'react'
+import React, { useMemo, useState, type ChangeEvent } from 'react'
 import { formatCurrencyPHP } from '@/utils/formatters'
 import {
   useConsolidatedPrs,
@@ -40,7 +40,11 @@ import {
   Wallet,
   GitMerge,
   MoreHorizontal,
+  Calendar,
+  ChevronDown,
+  PackageOpen,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import {
   DropdownMenu,
@@ -77,6 +81,8 @@ export type ConsolidatedPR = {
   status: 'DRAFT' | 'APPROVED/FOR BAC UTILIZATION' | 'SUBMITTED' | string
   selectedPRItems: SelectedPRItem[]
   itemMOPs: Record<string, { mop?: string; allowPartial?: boolean }>
+  endUser?: string
+  totalAmount?: number
 }
 
 export type SelectedPRItem = {
@@ -96,6 +102,7 @@ export type SelectedPRItem = {
 
 export type SourcePR = {
   id: string
+  prNumber?: string
   office: string
   month: string
   fund: string
@@ -298,6 +305,19 @@ export default function ConsolidatePrsPage() {
     new Set(),
   )
   const [expandedPRs, setExpandedPRs] = useState<Set<string>>(new Set())
+  const [expandedScheduleItemIds, setExpandedScheduleItemIds] = useState<Set<string>>(new Set())
+
+  const toggleScheduleItemExpansion = (id: string) => {
+    setExpandedScheduleItemIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
   const [addSearchTerm, setAddSearchTerm] = useState<string>('')
   const [addCategoryFilter, setAddCategoryFilter] = useState<string>('all')
   const [addMonthFilter, setAddMonthFilter] = useState<string>('all')
@@ -312,7 +332,8 @@ export default function ConsolidatePrsPage() {
   const sourcePRs = useMemo<SourcePR[]>(() => {
     if (!eligiblePrsResponse?.data) return []
     return eligiblePrsResponse.data.map((pr: EligiblePr) => ({
-      id: pr.prNumber || pr.purchaseRequestId,
+      id: pr.purchaseRequestId,
+      prNumber: pr.prNumber || pr.purchaseRequestId,
       office: pr.officeName || pr.officeId,
       month: 'Jan',
       fund: pr.items[0]?.fund || '',
@@ -1169,7 +1190,7 @@ export default function ConsolidatePrsPage() {
                                   color="default"
                                   className="text-sm font-semibold"
                                 >
-                                  ₱{formatCurrency(prTotal)}
+                                  {formatCurrency(prTotal)}
                                 </Badge>
                                 <Badge color="secondary" className="text-xs">
                                   {sourcePR?.type === 'non-cse'
@@ -1185,144 +1206,257 @@ export default function ConsolidatePrsPage() {
                             {isExpanded && (
                               <div className="border-t bg-muted/20 overflow-x-auto">
                                 <Table>
-                                  <TableHeader>
-                                    <TableRow className="bg-muted/40">
-                                      <TableHead>Item Name</TableHead>
-                                      <TableHead>Category</TableHead>
-                                      <TableHead>Fund</TableHead>
-                                      <TableHead className="text-center">Jan</TableHead>
-                                      <TableHead className="text-center">Feb</TableHead>
-                                      <TableHead className="text-center">Mar</TableHead>
-                                      <TableHead className="text-center">Apr</TableHead>
-                                      <TableHead className="text-center">May</TableHead>
-                                      <TableHead className="text-center">Jun</TableHead>
-                                      <TableHead className="text-center">Jul</TableHead>
-                                      <TableHead className="text-center">Aug</TableHead>
-                                      <TableHead className="text-center">Sep</TableHead>
-                                      <TableHead className="text-center">Oct</TableHead>
-                                      <TableHead className="text-center">Nov</TableHead>
-                                      <TableHead className="text-center">Dec</TableHead>
-                                      <TableHead className="text-center">Total Qty</TableHead>
-                                      <TableHead>Unit Price</TableHead>
-                                      <TableHead className="text-right">Total Amount</TableHead>
-                                      <TableHead className="text-center">Mode of Procurement</TableHead>
-                                      <TableHead className="text-center">Allow Partial</TableHead>
+                                  <TableHeader className="bg-muted/40">
+                                    <TableRow>
+                                      <TableHead className="w-12 text-center text-xs font-semibold">#</TableHead>
+                                      <TableHead className="min-w-[240px] text-xs font-semibold">Item Details</TableHead>
+                                      <TableHead className="min-w-[90px] text-xs font-semibold">Category</TableHead>
+                                      <TableHead className="min-w-[80px] text-xs font-semibold">Fund</TableHead>
+                                      <TableHead className="text-center text-xs font-semibold">Total Qty</TableHead>
+                                      <TableHead className="text-xs font-semibold">Unit</TableHead>
+                                      <TableHead className="text-right text-xs font-semibold">Unit Price</TableHead>
+                                      <TableHead className="text-right text-xs font-semibold">Total Amount</TableHead>
+                                      <TableHead className="min-w-[170px] text-xs font-semibold">Allocation / Schedule (From PRs)</TableHead>
+                                      <TableHead className="w-24 text-center text-xs font-semibold">Allow Partial</TableHead>
+                                      <TableHead className="min-w-[190px] text-xs font-semibold">Mode of Procurement (Consolidated PR)</TableHead>
                                     </TableRow>
                                   </TableHeader>
 
                                   <TableBody>
-                                    {filteredItems.map((item) => {
+                                    {filteredItems.map((item, itemIdx) => {
                                       const itemKey = item.id
-                                      const monthNames = [
-                                        'Jan',
-                                        'Feb',
-                                        'Mar',
-                                        'Apr',
-                                        'May',
-                                        'Jun',
-                                        'Jul',
-                                        'Aug',
-                                        'Sep',
-                                        'Oct',
-                                        'Nov',
-                                        'Dec',
-                                      ]
-                                      const itemMonth = formatMonthLabel(
-                                        item.month,
-                                      )
+                                      const isScheduleExpanded = expandedScheduleItemIds.has(itemKey)
+                                      const itemMonthLabel = item.month ? formatMonthLabel(item.month) : null
+                                      const hasMonth = Boolean(itemMonthLabel && itemMonthLabel !== '—')
 
                                       return (
-                                        <TableRow key={itemKey}>
-                                          <TableCell className="font-medium">
-                                            {item.itemName}
-                                          </TableCell>
-                                          <TableCell>{item.category}</TableCell>
-                                          <TableCell>
-                                            {item.fund || '—'}
-                                          </TableCell>
-                                          {monthNames.map((month) => (
-                                            <TableCell
-                                              key={month}
-                                              className="text-center"
-                                            >
-                                              {itemMonth === month
-                                                ? `${item.qty} ${item.unit}`
-                                                : `0 ${item.unit}`}
-                                            </TableCell>
-                                          ))}
-                                          <TableCell className="text-center font-semibold">
-                                            <Badge variant="outline">
-                                              {item.qty} {item.unit}
-                                            </Badge>
-                                          </TableCell>
-                                          <TableCell>
-                                            ₱{formatCurrency(item.unitPrice)}
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            ₱{formatCurrency(item.totalAmount)}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            <div className="flex justify-center">
-                                              <Select
-                                                value={
-                                                  activePR?.itemMOPs?.[itemKey]
-                                                    ?.mop || ''
-                                                }
-                                                onValueChange={(val) => {
-                                                  if (!activePR) return
-                                                  toast.promise(
-                                                    updateItemMutation.mutateAsync({
-                                                      pathParams: { id: activePR.id, itemId: itemKey },
-                                                      queryParams: {},
-                                                      payload: { procurementModeId: val, allowPartial: activePR.itemMOPs?.[itemKey]?.allowPartial || false }
-                                                    }),
-                                                    {
-                                                      loading: 'Updating Mode of Procurement...',
-                                                      success: 'Mode of Procurement updated.',
-                                                      error: (e: unknown) => (e instanceof Error ? e.message : 'Failed to update Mode of Procurement'),
-                                                    }
-                                                  )
-                                                }}
+                                        <React.Fragment key={itemKey}>
+                                          <TableRow className={cn("transition-colors", isScheduleExpanded && "bg-default-50/40")}>
+                                            {/* # with toggle chevron */}
+                                            <TableCell className="text-center align-top py-3.5">
+                                              <button
+                                                type="button"
+                                                onClick={() => toggleScheduleItemExpansion(itemKey)}
+                                                className="inline-flex items-center justify-center gap-1 font-medium text-foreground hover:text-primary transition-colors text-xs p-1 rounded hover:bg-muted/50"
+                                                title={isScheduleExpanded ? 'Collapse schedule details' : 'Expand schedule details'}
                                               >
-                                                <SelectTrigger className="w-32">
-                                                  <SelectValue placeholder="Select" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  {mopOptions.map((mop) => (
-                                                    <SelectItem key={mop.value} value={mop.value}>
-                                                      {mop.label}
-                                                    </SelectItem>
-                                                  ))}
-                                                </SelectContent>
-                                              </Select>
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            <div className="flex justify-center">
-                                              <Checkbox
-                                                checked={
-                                                  activePR?.itemMOPs?.[itemKey]
-                                                    ?.allowPartial || false
-                                                }
-                                                onCheckedChange={(checked) => {
-                                                  if (!activePR) return
-                                                  toast.promise(
-                                                    updateItemMutation.mutateAsync({
-                                                      pathParams: { id: activePR.id, itemId: itemKey },
-                                                      queryParams: {},
-                                                      payload: { procurementModeId: activePR.itemMOPs?.[itemKey]?.mop || '', allowPartial: checked === true }
-                                                    }),
-                                                    {
-                                                      loading: 'Updating Partial Allowance...',
-                                                      success: 'Partial allowance updated.',
-                                                      error: (e: unknown) => (e instanceof Error ? e.message : 'Failed to update partial allowance'),
-                                                    }
-                                                  )
-                                                }}
-                                              />
-                                            </div>
-                                          </TableCell>
-                                        </TableRow>
+                                                <span>{itemIdx + 1}</span>
+                                                <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform duration-200", isScheduleExpanded && "rotate-180")} />
+                                              </button>
+                                            </TableCell>
+
+                                            {/* Item Details */}
+                                            <TableCell className="align-top py-3.5">
+                                              <div className="flex items-start gap-3">
+                                                <div className="h-9 w-9 rounded-lg border border-default-200 bg-muted/20 flex items-center justify-center shrink-0 mt-0.5">
+                                                  <PackageOpen className="h-4 w-4 text-primary" />
+                                                </div>
+                                                <div className="space-y-0.5 min-w-0">
+                                                  <p className="font-semibold text-foreground text-sm leading-snug">
+                                                    {item.itemName}
+                                                  </p>
+                                                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                                    <span>PR: {item.prId}</span>
+                                                    <span>·</span>
+                                                    <span>Item No: {itemIdx + 1}</span>
+                                                  </div>
+                                                  <p className="text-xs text-muted-foreground">
+                                                    Unit Price: {formatCurrency(item.unitPrice)} per {item.unit || 'unit'}
+                                                  </p>
+                                                </div>
+                                              </div>
+                                            </TableCell>
+
+                                            {/* Category */}
+                                            <TableCell className="align-top py-3.5 text-xs text-muted-foreground">
+                                              {item.category ?? '—'}
+                                            </TableCell>
+
+                                            {/* Fund */}
+                                            <TableCell className="align-top py-3.5 text-xs text-muted-foreground">
+                                              {item.fund || '—'}
+                                            </TableCell>
+
+                                            {/* Total Qty */}
+                                            <TableCell className="align-top py-3.5 text-center font-bold text-sm text-foreground">
+                                              {item.qty}
+                                            </TableCell>
+
+                                            {/* Unit */}
+                                            <TableCell className="align-top py-3.5 text-xs text-muted-foreground">
+                                              {item.unit || 'unit'}
+                                            </TableCell>
+
+                                            {/* Unit Price */}
+                                            <TableCell className="align-top py-3.5 text-right font-medium text-xs text-foreground whitespace-nowrap">
+                                              {formatCurrency(item.unitPrice)}
+                                            </TableCell>
+
+                                            {/* Total Amount */}
+                                            <TableCell className="align-top py-3.5 text-right font-bold text-xs text-foreground whitespace-nowrap">
+                                              {formatCurrency(item.totalAmount)}
+                                            </TableCell>
+
+                                            {/* Allocation / Schedule */}
+                                            <TableCell className="align-top py-3.5">
+                                              <div className="space-y-0.5 text-xs">
+                                                <div className="flex items-center gap-1.5 font-medium text-foreground">
+                                                  <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                  <span>{hasMonth ? 'Monthly Allocation' : 'No Monthly Allocation'}</span>
+                                                </div>
+                                                <p className="text-muted-foreground pl-5 leading-tight">
+                                                  {hasMonth ? `${itemMonthLabel}: ${item.qty} ${item.unit}` : 'Annual / Overall'}
+                                                </p>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => toggleScheduleItemExpansion(itemKey)}
+                                                  className="text-primary hover:underline font-medium text-left pl-5 text-xs mt-0.5 block"
+                                                >
+                                                  {isScheduleExpanded ? 'Hide details' : 'View details'}
+                                                </button>
+                                              </div>
+                                            </TableCell>
+
+                                            {/* Allow Partial */}
+                                            <TableCell className="align-top py-3.5 text-center">
+                                              <div className="flex justify-center pt-1.5">
+                                                <Checkbox
+                                                  checked={
+                                                    activePR?.itemMOPs?.[itemKey]
+                                                      ?.allowPartial || false
+                                                  }
+                                                  onCheckedChange={(checked) => {
+                                                    if (!activePR) return
+                                                    toast.promise(
+                                                      updateItemMutation.mutateAsync({
+                                                        pathParams: { id: activePR.id, itemId: itemKey },
+                                                        queryParams: {},
+                                                        payload: { procurementModeId: activePR.itemMOPs?.[itemKey]?.mop || '', allowPartial: checked === true }
+                                                      }),
+                                                      {
+                                                        loading: 'Updating Partial Allowance...',
+                                                        success: 'Partial allowance updated.',
+                                                        error: (e: unknown) => (e instanceof Error ? e.message : 'Failed to update partial allowance'),
+                                                      }
+                                                    )
+                                                  }}
+                                                />
+                                              </div>
+                                            </TableCell>
+
+                                            {/* Mode of Procurement */}
+                                            <TableCell className="align-top py-3.5">
+                                              <div className="flex justify-center">
+                                                <Select
+                                                  value={
+                                                    activePR?.itemMOPs?.[itemKey]
+                                                      ?.mop || ''
+                                                  }
+                                                  onValueChange={(val) => {
+                                                    if (!activePR) return
+                                                    toast.promise(
+                                                      updateItemMutation.mutateAsync({
+                                                        pathParams: { id: activePR.id, itemId: itemKey },
+                                                        queryParams: {},
+                                                        payload: { procurementModeId: val, allowPartial: activePR.itemMOPs?.[itemKey]?.allowPartial || false }
+                                                      }),
+                                                      {
+                                                        loading: 'Updating Mode of Procurement...',
+                                                        success: 'Mode of Procurement updated.',
+                                                        error: (e: unknown) => (e instanceof Error ? e.message : 'Failed to update Mode of Procurement'),
+                                                      }
+                                                    )
+                                                  }}
+                                                >
+                                                  <SelectTrigger className="w-48 h-9 text-xs">
+                                                    <SelectValue placeholder="Select MOP" />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    {mopOptions.map((mop) => (
+                                                      <SelectItem key={mop.value} value={mop.value} className="text-xs">
+                                                        {mop.label}
+                                                      </SelectItem>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                            </TableCell>
+                                          </TableRow>
+
+                                          {/* Inline Expandable Schedule Details Panel */}
+                                          {isScheduleExpanded && (
+                                            <TableRow className="bg-default-50/50 hover:bg-default-50/50 border-b border-default-200">
+                                              <TableCell colSpan={11} className="p-4 pl-12 pr-6">
+                                                <div className="rounded-xl border border-default-200 bg-white dark:bg-card p-4 shadow-sm space-y-3">
+                                                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-default-100 pb-2.5">
+                                                    <div className="flex items-center gap-2">
+                                                      <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                                                        Allocation / Schedule Details (From PRs)
+                                                      </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                      <span>Source PR:</span>
+                                                      <Badge variant="outline" className="text-xs font-medium text-primary border-primary/30 bg-primary/5">
+                                                        {item.prId}
+                                                      </Badge>
+                                                    </div>
+                                                  </div>
+
+                                                  <div className="overflow-x-auto rounded-lg border border-default-200">
+                                                    <Table className="text-xs">
+                                                      <TableHeader className="bg-default-50">
+                                                        <TableRow>
+                                                          <TableHead className="py-2 text-left font-medium min-w-[140px] text-xs">
+                                                            Allocated Quantity
+                                                          </TableHead>
+                                                          {[
+                                                            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+                                                          ].map((m) => (
+                                                            <TableHead key={m} className="py-2 text-center font-medium min-w-[44px] text-xs">
+                                                              {m}
+                                                            </TableHead>
+                                                          ))}
+                                                          <TableHead className="py-2 text-center font-bold min-w-[60px] text-xs">
+                                                            Total
+                                                          </TableHead>
+                                                        </TableRow>
+                                                      </TableHeader>
+                                                      <TableBody>
+                                                        <TableRow>
+                                                          <TableCell className="py-2 font-medium text-muted-foreground text-xs">
+                                                            Quantity
+                                                          </TableCell>
+                                                          {[
+                                                            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+                                                          ].map((m) => {
+                                                            const isMatch = itemMonthLabel === m
+                                                            const qty = isMatch ? item.qty : 0
+                                                            return (
+                                                              <TableCell
+                                                                key={m}
+                                                                className={cn(
+                                                                  "py-2 text-center text-xs",
+                                                                  qty > 0 ? "font-bold text-foreground" : "text-muted-foreground"
+                                                                )}
+                                                              >
+                                                                {qty}
+                                                             </TableCell>
+                                                            )
+                                                          })}
+                                                          <TableCell className="py-2 text-center font-bold text-foreground bg-default-50/60 text-xs">
+                                                            {item.qty}
+                                                          </TableCell>
+                                                        </TableRow>
+                                                      </TableBody>
+                                                    </Table>
+                                                  </div>
+                                                </div>
+                                              </TableCell>
+                                            </TableRow>
+                                          )}
+                                        </React.Fragment>
                                       )
                                     })}
                                   </TableBody>
@@ -1526,7 +1660,7 @@ export default function ConsolidatePrsPage() {
                       />
                       <div className="flex-1">
                         <div className="font-medium">
-                          {p.id} — {p.office}{' '}
+                          {p.prNumber || p.id} — {p.office}{' '}
                           <span className="text-xs text-muted-foreground">
                             (2026)
                           </span>
@@ -1540,7 +1674,7 @@ export default function ConsolidatePrsPage() {
                           color="default"
                           className="text-sm font-semibold"
                         >
-                          ₱{formatCurrency(prTotal)}
+                          {formatCurrency(prTotal)}
                         </Badge>
                         <Badge color="secondary" className="text-xs">
                           {p.type === 'non-cse' ? 'Non-CSE' : 'Out of Stock'}
@@ -1628,10 +1762,10 @@ export default function ConsolidatePrsPage() {
                                     </Badge>
                                   </TableCell>
                                   <TableCell>
-                                    ₱{formatCurrency(it.unitPrice)}
+                                    {formatCurrency(it.unitPrice)}
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    ₱{formatCurrency(itemTotal)}
+                                    {formatCurrency(itemTotal)}
                                   </TableCell>
                                 </TableRow>
                               )

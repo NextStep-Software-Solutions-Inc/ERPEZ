@@ -10,6 +10,7 @@ import type { BACLineItem, AggregatedItem } from '../types'
 import { createColumnHelper } from '@tanstack/react-table'
 import { useSetAtom } from 'jotai'
 import { addAPPItemDialogOpenAtom } from '../atoms'
+import { NGPAColumnHeader, NGPAGuideButton } from './NGPAColumnTooltip'
 
 interface ConsolidatedAPPItemsCardProps {
   APPItems?: APPItemFromAPI[]
@@ -48,7 +49,7 @@ export function ConsolidatedAPPItemsCard({
         fundSourceName: item.fundSource || '',
         officeId: undefined,
         officeName: item.office || '',
-        papCode: item.code || '',
+        papCode: item.papCode || item.code || '',
         remarks: item.remarks || '',
         isEarlyProcurementActivity: item.eligibleForEPA,
         isOutsourced: undefined,
@@ -78,7 +79,7 @@ export function ConsolidatedAPPItemsCard({
           fundSourceName: item.fundSource || '',
           officeId: undefined,
           officeName: item.office || '',
-          papCode: item.code || '',
+          papCode: (item as any).papCode || item.code || '',
           remarks: undefined,
           isEarlyProcurementActivity: false,
           isOutsourced: undefined,
@@ -118,35 +119,115 @@ export function ConsolidatedAPPItemsCard({
   // APP Items Columns
   const appItemColumnHelper = createColumnHelper<APPItemFromAPI>()
   const appItemColumns = useMemo(() => [
+    appItemColumnHelper.accessor('papCode', {
+      header: () => <NGPAColumnHeader columnNumber={1} label="PAP Code" />,
+      cell: ({ getValue }) => {
+        const val = getValue()
+        return (
+          <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 whitespace-nowrap inline-block">
+            {val || '—'}
+          </span>
+        )
+      },
+      size: 140,
+    }),
     appItemColumnHelper.accessor('ppmpItemName', {
-      header: 'Item Code/Name',
+      header: () => <NGPAColumnHeader columnNumber={2} label="Item Code/Name" />,
       cell: ({ row }) => (
         <div className="flex flex-col gap-0.5">
-          <span className="font-semibold text-gray-900">{row.original.ppmpItemName || '—'}</span>
-          {row.original.papCode && (
-            <span className="text-[10px] text-gray-400 font-mono">PAP Code: {row.original.papCode}</span>
-          )}
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-gray-900">{row.original.ppmpItemName || '—'}</span>
+            {row.original.isNew && (
+              <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                NEW
+              </span>
+            )}
+            {row.original.isRevised && (
+              <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                REVISED
+              </span>
+            )}
+          </div>
         </div>
       ),
       size: 200,
     }),
     appItemColumnHelper.accessor('officeName', {
-      header: 'PMO / End-User',
+      header: () => <NGPAColumnHeader columnNumber={2} label="PMO / End-User" />,
       cell: ({ getValue }) => <span className="text-sm text-gray-700">{getValue() || '—'}</span>,
       size: 150,
     }),
     appItemColumnHelper.accessor('procurementModeName', {
-      header: 'Procurement Mode',
+      header: () => <NGPAColumnHeader columnNumber={4} label="Procurement Mode" />,
       cell: ({ getValue }) => <span className="text-sm font-medium text-gray-600">{getValue() || '—'}</span>,
       size: 180,
     }),
     appItemColumnHelper.accessor('fundSourceName', {
-      header: 'Fund Source',
+      header: () => <NGPAColumnHeader columnNumber={9} label="Fund Source" />,
       cell: ({ getValue }) => <span className="text-sm text-gray-600">{getValue() || '—'}</span>,
       size: 150,
     }),
+    appItemColumnHelper.accessor('totalAmount', {
+      header: () => <NGPAColumnHeader columnNumber={10} label="ABC / Estimated Budget" />,
+      cell: ({ row }) => {
+        const val = row.original.effectiveABC ?? row.original.estimatedBudgetOverride ?? row.original.totalAmount ?? ((row.original.quantity || 1) * (row.original.unitCost || 0))
+        const isOverridden = row.original.isABCOverridden || row.original.estimatedBudgetOverride != null
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-semibold text-emerald-700">
+              {val ? `₱${Number(val).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
+            </span>
+            {isOverridden ? (
+              <span className="text-[10px] text-amber-700 font-medium">APP Override</span>
+            ) : (
+              <span className="text-[10px] text-slate-400">Inherited from PPMP</span>
+            )}
+          </div>
+        )
+      },
+      size: 160,
+    }),
+    appItemColumnHelper.display({
+      id: 'procurementSchedule',
+      header: () => <NGPAColumnHeader columnNumber={6} label="Procurement Schedule" />,
+      cell: ({ row }) => {
+        const formatDate = (dateStr?: string | null) => {
+          if (!dateStr) return null
+          try {
+            if (/^\d{2}\/\d{4}$/.test(dateStr)) {
+              const [m, y] = dateStr.split('/')
+              const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+              const idx = parseInt(m, 10) - 1
+              return `${monthNames[idx] || m} ${y}`
+            }
+            const d = new Date(dateStr)
+            if (isNaN(d.getTime())) return dateStr
+            return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          } catch {
+            return dateStr
+          }
+        }
+        const start = formatDate(row.original.effectiveStartOfProcurement || row.original.startOfProcurementOverride)
+        const end = formatDate(row.original.effectiveEndOfProcurement || row.original.endOfProcurementOverride)
+        const isStartOverridden = row.original.isStartProcurementOverridden || !!row.original.startOfProcurementOverride
+        const isEndOverridden = row.original.isEndProcurementOverridden || !!row.original.endOfProcurementOverride
+
+        return (
+          <div className="text-[11px] space-y-0.5">
+            <div><span className="text-slate-500 font-medium">Start:</span> <span className="text-slate-900 font-medium">{start || 'Not set'}</span></div>
+            <div><span className="text-slate-500 font-medium">End:</span> <span className="text-slate-900 font-medium">{end || 'Not set'}</span></div>
+            {(isStartOverridden || isEndOverridden) ? (
+              <span className="text-[9px] text-amber-700 font-semibold mt-0.5 block">★ APP Override</span>
+            ) : (
+              <span className="text-[9px] text-slate-400 mt-0.5 block">Inherited</span>
+            )}
+          </div>
+        )
+      },
+      size: 140,
+    }),
     appItemColumnHelper.accessor('isEarlyProcurementActivity', {
-      header: 'EPA',
+      header: () => <NGPAColumnHeader columnNumber={5} label="EPA" />,
       cell: ({ getValue }) => (
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
           getValue() ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-gray-50 text-gray-400'
@@ -157,7 +238,7 @@ export function ConsolidatedAPPItemsCard({
       size: 80,
     }),
     appItemColumnHelper.accessor('isOutsourced', {
-      header: 'Outsourced',
+      header: () => <NGPAColumnHeader columnNumber={3} label="Outsourced" />,
       cell: ({ getValue }) => (
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
           getValue() ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-gray-50 text-gray-400'
@@ -168,7 +249,7 @@ export function ConsolidatedAPPItemsCard({
       size: 95,
     }),
     appItemColumnHelper.accessor('remarks', {
-      header: 'Remarks',
+      header: () => <NGPAColumnHeader columnNumber={12} label="Remarks" />,
       cell: ({ getValue }) => <span className="text-xs text-gray-500 italic max-w-[200px] truncate block">{getValue() || '—'}</span>,
     }),
     appItemColumnHelper.display({
@@ -198,18 +279,21 @@ export function ConsolidatedAPPItemsCard({
           <CardTitle className="text-lg font-bold text-gray-900">Consolidated APP Items</CardTitle>
           <p className="text-xs text-gray-500 mt-0.5">Consolidated procurement schedule and item categorization</p>
         </div>
-        {isCurrentlyDraft && (
-          <Button
-            type="button"
-            onClick={() => setAddAPPItemDialog(true)}
-            variant="outline"
-            size="sm"
-            className="border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800 font-semibold cursor-pointer transition-all"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add APP Items
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <NGPAGuideButton />
+          {isCurrentlyDraft && (
+            <Button
+              type="button"
+              onClick={() => setAddAPPItemDialog(true)}
+              variant="outline"
+              size="sm"
+              className="border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800 font-semibold cursor-pointer transition-all"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add APP Items
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <TemplateTable

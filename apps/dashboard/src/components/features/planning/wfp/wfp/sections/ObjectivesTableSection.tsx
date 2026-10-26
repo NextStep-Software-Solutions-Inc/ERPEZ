@@ -1,4 +1,5 @@
 import { Target } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 import { TemplateTable } from '@/components/TemplateTable'
 import { Column, Toolbar } from '@/components/features/planning/wfp/wfp-objective/table'
 import type { WFPObjective } from '@/components/features/planning/wfp/wfp-objective/table/types'
@@ -43,22 +44,24 @@ export const ObjectivesTableSection = ({
         )}
       </div>
 
-      <div className="rounded-lg border bg-white shadow-sm">
-        <TemplateTable  
-          data={transformedObjectives}
-          columns={Column}
-          actions={actions}
-          readonly={false}
-          toolbar={(table) => (
-            <Toolbar 
-              table={table} 
-              remainingWeight={remainingWeight}
-            />
-          )}
-          meta={{ wfps: wfpData?.data || [] }}
-          fixedPageSize={10}
-        />
-      </div>
+      <Card className="border-slate-200/80 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
+        <CardContent className="p-4 sm:p-5">
+          <TemplateTable  
+            data={transformedObjectives}
+            columns={Column}
+            actions={actions}
+            readonly={false}
+            toolbar={(table) => (
+              <Toolbar 
+                table={table} 
+                remainingWeight={remainingWeight}
+              />
+            )}
+            meta={{ wfps: wfpData?.data || [] }}
+            fixedPageSize={10}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }

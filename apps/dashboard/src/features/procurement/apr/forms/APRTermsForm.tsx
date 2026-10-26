@@ -12,10 +12,14 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
+import { ModeOfDelivery, InsufficientFundsAction } from '../types'
+
 interface APRTermsFormProps {
-  /** TanStack Form instance from useForm<APRTermsFormSchema> */
   form: {
-    Field: (props: { name: string; children: (field: AnyFieldApi) => React.ReactNode }) => React.ReactNode
+    Field: React.ElementType<{
+      name: string
+      children: (field: AnyFieldApi) => React.ReactNode
+    }>
   }
 }
 
@@ -24,13 +28,13 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
     <div className="space-y-6">
       {/* Mode of Delivery */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="text-base">Mode of Delivery</CardTitle>
           <CardDescription>
             Select how items will be delivered from PS-DBM
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-2 pb-6">
           <form.Field
             name="modeOfDelivery"
             children={(field: AnyFieldApi) => (
@@ -38,25 +42,26 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                 <RadioGroup
                   value={field.state.value}
                   onValueChange={field.handleChange}
+                  className="flex flex-wrap items-center gap-x-8 gap-y-3 py-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="FAST_LANE" id="fast-lane" />
-                    <Label htmlFor="fast-lane" className="cursor-pointer">
+                  <div className="flex items-center space-x-2.5">
+                    <RadioGroupItem value={ModeOfDelivery.FAST_LANE} id="fast-lane" />
+                    <Label htmlFor="fast-lane" className="cursor-pointer text-sm font-medium text-slate-700">
                       Fast Lane
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2.5">
                     <RadioGroupItem
-                      value="SCHEDULED_PICKUP"
+                      value={ModeOfDelivery.SCHEDULED_PICKUP}
                       id="scheduled-pickup"
                     />
-                    <Label htmlFor="scheduled-pickup" className="cursor-pointer">
+                    <Label htmlFor="scheduled-pickup" className="cursor-pointer text-sm font-medium text-slate-700">
                       Scheduled Pick-up
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="DOOR_TO_DOOR" id="door-to-door" />
-                    <Label htmlFor="door-to-door" className="cursor-pointer">
+                  <div className="flex items-center space-x-2.5">
+                    <RadioGroupItem value={ModeOfDelivery.DOOR_TO_DOOR} id="door-to-door" />
+                    <Label htmlFor="door-to-door" className="cursor-pointer text-sm font-medium text-slate-700">
                       Door-to-Door
                     </Label>
                   </div>
@@ -74,13 +79,13 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
 
       {/* Insufficient Funds Handling */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="text-base">If Funds Are Not Sufficient</CardTitle>
           <CardDescription>
             Select how to handle insufficient budget allocation
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-2 pb-6">
           <form.Field
             name="insufficientFundsAction"
             children={(field: AnyFieldApi) => (
@@ -88,22 +93,23 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                 <RadioGroup
                   value={field.state.value}
                   onValueChange={field.handleChange}
+                  className="flex flex-wrap items-center gap-x-8 gap-y-3 py-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="REDUCE_QUANTITY" id="reduce" />
-                    <Label htmlFor="reduce" className="cursor-pointer">
+                  <div className="flex items-center space-x-2.5">
+                    <RadioGroupItem value={InsufficientFundsAction.REDUCE_QUANTITY} id="reduce" />
+                    <Label htmlFor="reduce" className="cursor-pointer text-sm font-medium text-slate-700">
                       Reduce Quantity
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="BILL_US" id="bill" />
-                    <Label htmlFor="bill" className="cursor-pointer">
+                  <div className="flex items-center space-x-2.5">
+                    <RadioGroupItem value={InsufficientFundsAction.BILL_US} id="bill" />
+                    <Label htmlFor="bill" className="cursor-pointer text-sm font-medium text-slate-700">
                       Bill Us
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CHARGE_TO_DEPOSIT" id="charge" />
-                    <Label htmlFor="charge" className="cursor-pointer">
+                  <div className="flex items-center space-x-2.5">
+                    <RadioGroupItem value={InsufficientFundsAction.CHARGE_TO_DEPOSIT} id="charge" />
+                    <Label htmlFor="charge" className="cursor-pointer text-sm font-medium text-slate-700">
                       Charge to Unutilized Deposit
                     </Label>
                   </div>
@@ -121,21 +127,21 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
 
       {/* Attachments for Non-Common Items */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="text-base">Attachments for Non-Common Items</CardTitle>
           <CardDescription>Check if required for this APR</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="pt-2 pb-6 space-y-3">
           <form.Field
             name="attachments.observationReportRequired"
             children={(field: AnyFieldApi) => (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2.5 py-1">
                 <Checkbox
                   id="obr"
                   checked={field.state.value}
                   onCheckedChange={field.handleChange}
                 />
-                <Label htmlFor="obr" className="cursor-pointer">
+                <Label htmlFor="obr" className="cursor-pointer text-sm font-medium text-slate-700">
                   Observation Report (ObR)
                 </Label>
               </div>
@@ -144,13 +150,13 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
           <form.Field
             name="attachments.collectiveBarterAgreementRequired"
             children={(field: AnyFieldApi) => (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2.5 py-1">
                 <Checkbox
                   id="cba"
                   checked={field.state.value}
                   onCheckedChange={field.handleChange}
                 />
-                <Label htmlFor="cba" className="cursor-pointer">
+                <Label htmlFor="cba" className="cursor-pointer text-sm font-medium text-slate-700">
                   Collective Barter Agreement (CBA)
                 </Label>
               </div>
@@ -159,13 +165,13 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
           <form.Field
             name="attachments.completeSpecsRequired"
             children={(field: AnyFieldApi) => (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2.5 py-1">
                 <Checkbox
                   id="specs"
                   checked={field.state.value}
                   onCheckedChange={field.handleChange}
                 />
-                <Label htmlFor="specs" className="cursor-pointer">
+                <Label htmlFor="specs" className="cursor-pointer text-sm font-medium text-slate-700">
                   Complete Specifications
                 </Label>
               </div>

@@ -1,3 +1,5 @@
+import { Building2, Calendar } from 'lucide-react'
+import type { Department } from '../types'
 import {
   Select,
   SelectContent,
@@ -7,21 +9,19 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Building2 } from 'lucide-react'
-import type { Department } from '../types'
 
 interface ProcurementDashboardHeaderProps {
   fiscalYear: number
   departmentId: string | null
-  departments: Department[]
+  departments: Array<Department>
   showDepartmentFilter: boolean
   onFiscalYearChange: (year: number) => void
   onDepartmentChange: (departmentId: string | null) => void
 }
 
-function generateFiscalYearOptions(): number[] {
+function generateFiscalYearOptions(): Array<number> {
   const currentYear = new Date().getFullYear()
-  const years: number[] = []
+  const years: Array<number> = []
   for (let i = -5; i <= 5; i++) {
     years.push(currentYear + i)
   }

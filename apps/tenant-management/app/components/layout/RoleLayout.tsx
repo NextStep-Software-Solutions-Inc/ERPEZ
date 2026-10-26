@@ -1,12 +1,12 @@
-import { useUser } from "@clerk/react-router";
+import { useClerkAuth } from "~/providers/ClerkAuthProvider";
 import { useLocation, Navigate, Outlet } from "react-router";
 import LoadingSpinner from "~/components/LoadingSpinner"; 
 
 export default function RoleLayout() {
-    const { isLoaded, user } = useUser();
-    const role = user?.publicMetadata?.role;
+    const { isInitialized, isSuperAdmin } = useClerkAuth();
     const location = useLocation();
-    if (!isLoaded) {
+
+    if (!isInitialized) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <LoadingSpinner
@@ -17,7 +17,7 @@ export default function RoleLayout() {
         );
     }
 
-    if (isLoaded && role === "super-admin" && !location.pathname.startsWith("/super-admin")) {
+    if (isInitialized && isSuperAdmin && (location.pathname === "/super-admin" || location.pathname === "/super-admin/")) {
         return <Navigate to="/super-admin/overview" replace />;
     }
 

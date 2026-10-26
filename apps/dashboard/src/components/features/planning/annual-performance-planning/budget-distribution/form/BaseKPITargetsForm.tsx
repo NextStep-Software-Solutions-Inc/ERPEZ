@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ChevronRight, AlertCircle, Info, Lock, Unlock, MoreHorizontal } from 'lucide-react'
+import { ChevronRight, AlertCircle, Info, Lock, Unlock, MoreHorizontal, ArrowLeft } from 'lucide-react'
 import type { ActivatedKPI } from '@/features/planning/annual-performance-planning/appTypes'
 
 interface BaseKPITarget {
@@ -60,6 +60,7 @@ export function isIntegerMeasurementUnit(unit?: string): boolean {
 interface BaseKPITargetsFormProps {
   activeKPIs: ActivatedKPI[]
   onComplete: (baseTargets: BaseKPITarget[]) => void
+  onBack?: () => void
   onCancel?: () => void
   isSubmitting?: boolean
   isFiscalYearLocked?: boolean
@@ -68,6 +69,7 @@ interface BaseKPITargetsFormProps {
 export function BaseKPITargetsForm({
   activeKPIs,
   onComplete,
+  onBack,
   onCancel,
   isSubmitting = false,
   isFiscalYearLocked = false,
@@ -499,29 +501,45 @@ export function BaseKPITargetsForm({
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        {onCancel && (
-          <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </Button>
-        )}
-        <Button
-          onClick={handleProceed}
-          className="bg-blue-600 hover:bg-blue-700"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <span className="inline-block animate-spin mr-2">⚙️</span>
-              Saving targets...
-            </>
-          ) : (
-            <>
-              <span>Continue to Office Assignment</span>
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </>
+      <div className="flex items-center justify-between gap-2 pt-4 border-t">
+        <div>
+          {onBack && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              disabled={isSubmitting}
+              className="gap-1.5"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Active KPIs</span>
+            </Button>
           )}
-        </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          {onCancel && (
+            <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
+              Cancel
+            </Button>
+          )}
+          <Button
+            onClick={handleProceed}
+            className="bg-primary hover:bg-primary/90 gap-1.5"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="inline-block animate-spin mr-2">⚙️</span>
+                Saving targets...
+              </>
+            ) : (
+              <>
+                <span>Proceed to Office Assignment</span>
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   )

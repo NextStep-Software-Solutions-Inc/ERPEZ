@@ -310,7 +310,7 @@ export function recomputeActivityBlock(
 }
 
 export interface PpmpManagementOverviewSummary {
-  fiscalYear: number
+  fiscalYear?: number | string
   totalCeiling: number
   psCeiling: number
   mooeCeiling: number
@@ -318,63 +318,184 @@ export interface PpmpManagementOverviewSummary {
   usedAmount: number
   procurableAmount: number
   remainingAmount: number
-  activeLibCount: number
+  hasConfiguredCeiling: boolean
+  activeLibCount?: number
   activePpmpCount: number
+  draftCount: number
+  pendingCount: number
+  approvedCount: number
+}
+
+export interface ComputePpmpManagementOverviewOptions {
+  ppmps?: PPMP[]
+  ceilings?: (Record<string, unknown> | any)[]
+  fiscalYearId?: string
+  officeId?: string
+  isMaster?: boolean
 }
 
 /**
- * Computes the management summary shown on the PPMP list page.
+ * Computes the real management summary shown on the PPMP list pages.
+ * Handles both the modern options object and legacy positional parameters.
  */
 export function computePpmpManagementOverview(
-  ppmps: PPMP[],
-  lineItemBudgets: LineItemBudget[],
-  fiscalYear?: number,
+  optionsOrPpmps: ComputePpmpManagementOverviewOptions | PPMP[],
+  legacyBudgets?: LineItemBudget[],
+  legacyFiscalYear?: number,
 ): PpmpManagementOverviewSummary {
-  const availableYears = [
-    ...new Set([
-      ...ppmps.map((ppmp) => ppmp.fiscalYear),
-      ...lineItemBudgets.map((budget) => budget.fiscalYear),
-    ]),
-  ].sort((a, b) => b - a)
-  const targetFiscalYear =
-    fiscalYear ?? availableYears[0] ?? new Date().getFullYear()
+  // Handle legacy positional arguments
+  if (Array.isArray(optionsOrPpmps)) {
+    const rawPpmps = optionsOrPpmps
+    const lineItemBudgets = legacyBudgets || []
+    const availableYears = [
+      ...new Set([
+        ...rawPpmps.map((p) => p.fiscalYear),
+        ...lineItemBudgets.map((b) => b.fiscalYear),
+      ]),
+    ].filter(Boolean).sort((a, b) => Number(b) - Number(a))
 
-  const activeBudgets = lineItemBudgets.filter(
-    (budget) => budget.fiscalYear === targetFiscalYear,
-  )
-  const activePpmps = ppmps.filter(
-    (ppmp) => ppmp.fiscalYear === targetFiscalYear && isCountedBudgetPpmp(ppmp),
-  )
+    const targetFiscalYear =
+      legacyFiscalYear ?? (typeof availableYears[0] === 'number' ? availableYears[0] : new Date().getFullYear())
 
-  const totalCeiling = activeBudgets.reduce(
-    (sum, budget) => sum + budget.totalAllocation,
-    0,
-  )
-  const psCeiling = activeBudgets.reduce(
-    (sum, budget) => sum + budget.psAllocation,
-    0,
-  )
-  const mooeCeiling = activeBudgets.reduce(
-    (sum, budget) => sum + budget.mooeAllocation,
-    0,
-  )
-  const coCeiling = activeBudgets.reduce(
-    (sum, budget) => sum + budget.coAllocation,
-    0,
-  )
+    const activeBudgets = lineItemBudgets.filter(
+      (b) => b.fiscalYear === targetFiscalYear,
+    )
+    const activePpmps = rawPpmps.filter(
+      (p) => isCountedBudgetPpmp(p),
+    )
 
-  const usedAmount = activePpmps.reduce(
-    (sum, ppmp) => sum + ppmp.totalBudget,
-    0,
-  )
-  const procurableAmount = activePpmps.reduce(
-    (sum, ppmp) => sum + computeProcurableBudget(ppmp.activityBlocks),
-    0,
-  )
-  const remainingAmount = totalCeiling - usedAmount
+    const psCeiling = activeBudgets.reduce((sum, b) => sum + (b.psAllocation || 0), 0)
+    const mooeCeiling = activeBudgets.reduce((sum, b) => sum + (b.mooeAllocation || 0), 0)
+    const coCeiling = activeBudgets.reduce((sum, b) => sum + (b.coAllocation || 0), 0)
+    const totalCeiling = activeBudgets.length > 0 ? (psCeiling + mooeCeiling + coCeiling) : 0
+
+    const usedAmount = activePpmps.reduce(
+      (sum, p) => sum + (Number(p.totalEstimatedBudget) || Number(p.totalBudget) || 0),
+      0,
+    )
+    const procurableAmount = activePpmps.reduce(
+      (sum, p) => sum + (p.activityBlocks ? computeProcurableBudget(p.activityBlocks) : (Number(p.totalEstimatedBudget) || 0)),
+      0,
+    )
+    const remainingAmount = activeBudgets.length > 0 ? totalCeiling - usedAmount : 0
+
+    let draftCount = 0
+    let pendingCount = 0
+    let approvedCount = 0
+
+    for (const p of rawPpmps) {
+      const st = String(p.status || p.state || '').toLowerCase()
+      if (st === 'draft' || st === 'returned') draftCount++
+      else if (st === 'pending_review' || st === 'submitted' || st === 'pending') pendingCount++
+      else if (st === 'approved') approvedCount++
+    }
+
+    return {
+      fiscalYear: targetFiscalYear,
+      totalCeiling,
+      psCeiling,
+      mooeCeiling,
+      coCeiling,
+      usedAmount,
+      procurableAmount,
+      remainingAmount,
+      hasConfiguredCeiling: activeBudgets.length > 0,
+      activeLibCount: activeBudgets.length,
+      activePpmpCount: activePpmps.length,
+      draftCount,
+      pendingCount,
+      approvedCount,
+    }
+  }
+
+  // Modern options-based real domain computation
+  const { ppmps = [], ceilings = [], fiscalYearId, officeId, isMaster } = optionsOrPpmps
+
+  // 1. Filter ceilings according to active scope (mutually exclusive)
+  let matchingCeilings = [...ceilings]
+  if (fiscalYearId && fiscalYearId !== 'all') {
+    matchingCeilings = matchingCeilings.filter((c) => c.fiscalYearId === fiscalYearId)
+  }
+  if (officeId && officeId !== 'all') {
+    matchingCeilings = matchingCeilings.filter((c) => {
+      if (isMaster) {
+        return c.officeId === officeId
+      }
+      return c.subOfficeId === officeId || c.officeId === officeId
+    })
+  }
+
+  const hasConfiguredCeiling = matchingCeilings.length > 0
+  const psCeiling = matchingCeilings.reduce((sum, c) => sum + (Number(c.psAmount) || 0), 0)
+  const mooeCeiling = matchingCeilings.reduce((sum, c) => sum + (Number(c.mooeAmount) || 0), 0)
+  const coCeiling = matchingCeilings.reduce((sum, c) => sum + (Number(c.coAmount) || 0), 0)
+  const totalCeiling = hasConfiguredCeiling ? (psCeiling + mooeCeiling + coCeiling) : 0
+
+  // 2. Filter PPMPs according to active scope
+  let scopedPpmps = [...ppmps]
+  if (typeof isMaster === 'boolean') {
+    scopedPpmps = scopedPpmps.filter((p) => Boolean(p.isMaster) === isMaster)
+  }
+  if (fiscalYearId && fiscalYearId !== 'all') {
+    scopedPpmps = scopedPpmps.filter((p) => p.fiscalYearId === fiscalYearId)
+  }
+  if (officeId && officeId !== 'all') {
+    scopedPpmps = scopedPpmps.filter((p) => p.officeId === officeId)
+  }
+
+  // Status counts across complete scoped dataset
+  let draftCount = 0
+  let pendingCount = 0
+  let approvedCount = 0
+
+  for (const p of scopedPpmps) {
+    const st = String(p.status || p.state || '').toLowerCase()
+    if (st === 'draft' || st === 'returned') {
+      draftCount++
+    } else if (st === 'pending_review' || st === 'submitted' || st === 'pending') {
+      pendingCount++
+    } else if (st === 'approved') {
+      approvedCount++
+    }
+  }
+
+  // Active PPMPs for budget commitment (excludes rejected / superseded)
+  const activePpmps = scopedPpmps.filter((p) => isCountedBudgetPpmp(p))
+
+  // 3. Used Amount: Sum of TotalEstimatedBudget of active PPMPs in scope
+  const usedAmount = activePpmps.reduce((sum, p) => {
+    return sum + (Number(p.totalEstimatedBudget) || Number((p as any).totalBudget) || 0)
+  }, 0)
+
+  // 4. Procurable Amount: Sum of procurable costs in scope
+  const procurableAmount = activePpmps.reduce((sum, p) => {
+    if (p.PPMPActivities && p.PPMPActivities.length > 0) {
+      let ppmpProcurableSum = 0
+      let hasExpenditures = false
+      for (const act of p.PPMPActivities) {
+        if (act.PPMPExpenditureItems && act.PPMPExpenditureItems.length > 0) {
+          hasExpenditures = true
+          for (const exp of act.PPMPExpenditureItems) {
+            if (exp.isProcurable) {
+              ppmpProcurableSum += (Number(exp.totalCost) || 0)
+            }
+          }
+        }
+      }
+      if (hasExpenditures) {
+        return sum + ppmpProcurableSum
+      }
+    }
+    if (p.activityBlocks && p.activityBlocks.length > 0) {
+      return sum + computeProcurableBudget(p.activityBlocks)
+    }
+    return sum + (Number(p.totalEstimatedBudget) || Number((p as any).totalBudget) || 0)
+  }, 0)
+
+  // 5. Remaining balance
+  const remainingAmount = hasConfiguredCeiling ? (totalCeiling - usedAmount) : 0
 
   return {
-    fiscalYear: targetFiscalYear,
     totalCeiling,
     psCeiling,
     mooeCeiling,
@@ -382,8 +503,11 @@ export function computePpmpManagementOverview(
     usedAmount,
     procurableAmount,
     remainingAmount,
-    activeLibCount: activeBudgets.length,
+    hasConfiguredCeiling,
     activePpmpCount: activePpmps.length,
+    draftCount,
+    pendingCount,
+    approvedCount,
   }
 }
 

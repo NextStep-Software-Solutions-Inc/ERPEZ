@@ -7,11 +7,16 @@ import {
 import { NONCSEItem } from '../types/non-cse.type'
 import api from '@/services/api'
 
+export interface NonCSEQueryParams extends QueryParams {
+  search?: string
+  category?: string
+}
+
 const endpoint = '/non-cse-items'
 export const getNONCSEItemsRequest: QueryBlueprintFromTemplate<
   typeof endpoint,
   PaginationResponse<NONCSEItem>,
-  QueryParams,
+  NonCSEQueryParams,
   QueryKey
 > = {
   endpoint,
@@ -23,3 +28,4 @@ export const getNONCSEItemsRequest: QueryBlueprintFromTemplate<
     return response.data
   },
 }
+

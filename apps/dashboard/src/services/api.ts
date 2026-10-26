@@ -7,19 +7,103 @@ import type {
   PaginationResponse,
   AxiosResponse,
 } from 'erpez-shared-lib'
-import keycloak from '@/auth/keycloak'
+import { getAuthToken, getCandidateTenantId, refreshAuthToken } from '@/auth/authBridge'
+import { getDashboardBackendUrl } from '@/config/env'
 
 const BLACKLISTED_CODES = ['ERR_CANCELED']
 const WHITELISTED_METHODS = ['post', 'put', 'patch', 'delete']
 
-export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL)
+export const api = createAxiosInstance(getDashboardBackendUrl())
+api.defaults.timeout = 30000 // 30s timeout to allow database operations and debugging without premature frontend timeouts
 
-// Request interceptor to add Keycloak token
+// Request interceptor to add IdP token and Tenant ID via unified auth bridge
 api.interceptors.request.use(
-  (config) => {
-    if (keycloak.token) {
-      config.headers.Authorization = `Bearer ${keycloak.token}`
+  async (config) => {
+    let token: string | null = null
+
+    try {
+      token = await getAuthToken()
+    } catch {
+      // Ignore bridge errors
     }
+
+    if (!token && typeof window !== 'undefined') {
+      try {
+        const storedToken = localStorage.getItem('erpez_auth_token')
+        if (storedToken && storedToken.startsWith('ey')) {
+          token = storedToken
+        } else if (storedToken) {
+          localStorage.removeItem('erpez_auth_token')
+        }
+      } catch {
+        // Ignore localStorage access errors
+      }
+    }
+
+    if (token && token.startsWith('ey')) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+
+    // Tenant Header Propagation:
+    // Attached as X-Tenant-Id and X-Tenant-Name
+    const candidateTenant = getCandidateTenantId()
+    const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    let effectiveTenantId: string | null = null
+
+    if (candidateTenant && guidRegex.test(candidateTenant)) {
+      effectiveTenantId = candidateTenant
+    } else if (typeof window !== 'undefined') {
+      const stored =
+        sessionStorage.getItem('erpez_candidate_tenant_id') ||
+        localStorage.getItem('erpez_tenant_id')
+      if (stored && guidRegex.test(stored)) {
+        effectiveTenantId = stored
+      } else {
+        const storedName =
+          sessionStorage.getItem('erpez_tenant_name') ||
+          localStorage.getItem('erpez_tenant_name')
+        if (storedName && storedName.toLowerCase().includes('nextjump')) {
+          effectiveTenantId = '01a0d69d-924b-762c-a774-523a30544619'
+        }
+      }
+    }
+
+    if (effectiveTenantId) {
+      config.headers['X-Tenant-Id'] = effectiveTenantId
+    } else {
+      delete config.headers['X-Tenant-Id']
+    }
+
+    if (typeof window !== 'undefined') {
+      const tenantName =
+        sessionStorage.getItem('erpez_tenant_name') ||
+        localStorage.getItem('erpez_tenant_name')
+      if (tenantName) {
+        config.headers['X-Tenant-Name'] = tenantName
+      }
+
+      const userEmail =
+        sessionStorage.getItem('erpez_user_email') ||
+        localStorage.getItem('erpez_user_email')
+      if (userEmail) {
+        config.headers['X-User-Email'] = userEmail
+      }
+
+      const userName =
+        sessionStorage.getItem('erpez_user_name') ||
+        localStorage.getItem('erpez_user_name')
+      if (userName) {
+        config.headers['X-User-Name'] = userName
+      }
+
+      const activeRole =
+        sessionStorage.getItem('erpez_active_role') ||
+        localStorage.getItem('erpez_active_role')
+      if (activeRole) {
+        config.headers['X-Operating-Role'] = activeRole
+      }
+    }
+
     return config
   },
   (error) => {
@@ -42,7 +126,7 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any
 
-    // Handle 401 errors with token refresh
+    // Handle 401 errors with token refresh via unified bridge
     if (
       error.response?.status === 401 &&
       originalRequest &&
@@ -51,28 +135,23 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        // Try to refresh the token
-        const TOKEN_MIN_VALIDITY_SECONDS = 5
-        const refreshed = await keycloak.updateToken(TOKEN_MIN_VALIDITY_SECONDS)
-
-        if (refreshed && keycloak.token) {
-          // Update the authorization header
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${keycloak.token}`
+        const refreshed = await refreshAuthToken(5)
+        if (refreshed) {
+          const freshToken = await getAuthToken()
+          if (freshToken && originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${freshToken}`
           }
-          // Retry the original request
           return api(originalRequest)
         }
       } catch (refreshError) {
-        // If refresh fails, logout the user
         console.error('Token refresh failed:', refreshError)
-        keycloak.logout()
         return Promise.reject(refreshError)
       }
     }
 
     // Show error toast for non-blacklisted error codes with deduplication ID
-    if (!BLACKLISTED_CODES.includes(error.code || '')) {
+    const skipToast = (error.config as any)?.skipToast || (error.config as any)?.headers?.['x-skip-toast']
+    if (!skipToast && !BLACKLISTED_CODES.includes(error.code || '')) {
       const msg = extractErrorMessage(error)
       if (msg) {
         toast.error(msg, { id: msg })

@@ -24,11 +24,13 @@ export interface GetActivitySettingsParams extends QueryParams {
 /**
  * Fetch market scoping activity settings from API
  */
-export async function fetchActivitySettings(): Promise<ActivitySettingApiResponse[]> {
+export async function fetchActivitySettings(): Promise<
+  ActivitySettingApiResponse[]
+> {
   try {
-    const response = await api.get<PaginationResponse<ActivitySettingApiResponse>>(
-      '/market-scoping-activity-settings?PageNumber=1&PageSize=100'
-    )
+    const response = await api.get<
+      PaginationResponse<ActivitySettingApiResponse>
+    >('/market-scoping-activity-settings?PageNumber=1&PageSize=100')
     if (response.data && Array.isArray(response.data.data)) {
       return response.data.data.filter((item) => item.isActive)
     }
@@ -51,7 +53,9 @@ export const getActivitySettingsRequest: QueryBlueprintFromTemplate<
   endpoint,
   key: ({ url }) => [url] as const,
   fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<PaginationResponse<ActivitySettingApiResponse>>(finalUrl, { signal })
+    const response = await api.get<
+      PaginationResponse<ActivitySettingApiResponse>
+    >(finalUrl, { signal })
     return response.data
   },
 }

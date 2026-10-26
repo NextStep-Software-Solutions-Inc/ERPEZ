@@ -20,9 +20,11 @@ import {
 import { format } from 'date-fns'
 
 interface APRHeaderFormProps {
-  /** TanStack Form instance from useForm<APRHeaderFormSchema> */
   form: {
-    Field: (props: { name: string; children: (field: AnyFieldApi) => React.ReactNode }) => React.ReactNode
+    Field: React.ElementType<{
+      name: string
+      children: (field: AnyFieldApi) => React.ReactNode
+    }>
   }
 }
 

@@ -3,7 +3,6 @@ import type {
   MutationBlueprintFromTemplate,
 } from 'erpez-shared-lib'
 import api from '@/services/api'
-import type { UnitOfMeasurement } from '@/components/features/planning/procurement-library'
 import { PPMPItem, ProcurementProjectType } from '../types'
 
 const endpoint = '/ppmp-items'
@@ -18,14 +17,15 @@ export type CreatePPMPItemPayload = {
   description?: string
   unit: string
   unitPrice: number
+  plannedQuantity: number
   mopOverride: boolean
   mopJustification?: string
   projectType?: ProcurementProjectType
   preProcurementConference?: boolean
-  procurementStartDate?: string
-  procurementEndDate?: string
-  expectedDeliveryStart?: string
-  expectedDeliveryEnd?: string
+  procurementStartDate?: string | null
+  procurementEndDate?: string | null
+  expectedDeliveryStart?: string | null
+  expectedDeliveryEnd?: string | null
   remarks?: string
 }
 

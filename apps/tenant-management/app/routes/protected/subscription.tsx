@@ -1,5 +1,6 @@
 import type { Route } from "./+types/subscription";
 import SubscriptionPage from "~/pages/protected/SubscriptionPage";
+import RoutePermissionGuard from "~/components/layout/RoutePermissionGuard";
 
 export function meta({ }: Route.MetaArgs) {
     return [
@@ -9,5 +10,9 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 export default function Subscription() {
-    return <SubscriptionPage />;
+    return (
+        <RoutePermissionGuard permission="tenant.subscriptions.view">
+            <SubscriptionPage />
+        </RoutePermissionGuard>
+    );
 }

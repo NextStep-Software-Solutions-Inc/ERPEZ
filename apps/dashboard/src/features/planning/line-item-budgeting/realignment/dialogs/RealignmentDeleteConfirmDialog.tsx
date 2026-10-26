@@ -17,6 +17,7 @@ export interface DeleteContext {
   type: 'activity' | 'budget'
   activityId?: string
   budgetId?: string
+  detailIds?: string[]
   name: string
 }
 
@@ -39,12 +40,15 @@ export function RealignmentDeleteConfirmDialog({
   const handleDeleteConfirm = async () => {
     if (!deleteContext) return
 
-    const { type, activityId, budgetId } = deleteContext
+    const { type, activityId, budgetId, detailIds } = deleteContext
     setIsDeleting(true)
 
     try {
-      if (type === 'budget' && budgetId) {
-        await api.delete(`/line-item-budget-details/${budgetId}`)
+      if (type === 'budget' && (detailIds?.length || budgetId)) {
+        const idsToDelete = detailIds && detailIds.length > 0 ? detailIds : [budgetId!]
+        await Promise.all(
+          idsToDelete.map((id) => api.delete(`/line-item-budget-details/${id}`)),
+        )
         toast({
           title: 'Deleted Successfully',
           description: 'The budget line item has been deleted.',

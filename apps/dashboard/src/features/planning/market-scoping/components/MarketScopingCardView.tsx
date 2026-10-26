@@ -46,23 +46,27 @@ function getStatusTheme(status: string) {
   switch (status) {
     case 'Approved':
       return {
-        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60',
+        badgeClass:
+          'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60',
         dotClass: 'bg-emerald-500',
       }
     case 'PendingApproval':
       return {
-        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60',
+        badgeClass:
+          'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60',
         dotClass: 'bg-amber-500 animate-pulse',
       }
     case 'Rejected':
       return {
-        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60',
+        badgeClass:
+          'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60',
         dotClass: 'bg-rose-500',
       }
     case 'Draft':
     default:
       return {
-        badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700',
+        badgeClass:
+          'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700',
         dotClass: 'bg-slate-400',
       }
   }
@@ -87,7 +91,11 @@ function formatPeriodRange(from?: string, to?: string): string {
     // ISO date format (e.g. 2024-09-01T00:00:00Z or 2024-09-01)
     const d = new Date(dateStr)
     if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      return d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
     }
 
     return dateStr
@@ -109,16 +117,25 @@ function formatPeriodRange(from?: string, to?: string): string {
  */
 function getFormMetadata(form: MarketScopingForm) {
   const activitiesCount = (form.activities || []).filter(
-    (a) => a.checked || (a.attachments && a.attachments.length > 0)
+    (a) => a.checked || (a.attachments && a.attachments.length > 0),
   ).length
 
   const parametersCount = (form.parameters || []).filter(
-    (p) => Boolean(p.considered) || Boolean(p.recommendations) || (p.attachments && p.attachments.length > 0)
+    (p) =>
+      Boolean(p.considered) ||
+      Boolean(p.recommendations) ||
+      (p.attachments && p.attachments.length > 0),
   ).length
 
   const totalAttachments =
-    (form.activities || []).reduce((sum, a) => sum + (a.attachments?.length || 0), 0) +
-    (form.parameters || []).reduce((sum, p) => sum + (p.attachments?.length || 0), 0)
+    (form.activities || []).reduce(
+      (sum, a) => sum + (a.attachments?.length || 0),
+      0,
+    ) +
+    (form.parameters || []).reduce(
+      (sum, p) => sum + (p.attachments?.length || 0),
+      0,
+    )
 
   return { activitiesCount, parametersCount, totalAttachments }
 }
@@ -135,7 +152,8 @@ export function MarketScopingCardView({
         const statusObj = getStatusByValue(form.status)
         const theme = getStatusTheme(form.status)
         const periodDisplay = formatPeriodRange(form.periodFrom, form.periodTo)
-        const { activitiesCount, parametersCount, totalAttachments } = getFormMetadata(form)
+        const { activitiesCount, parametersCount, totalAttachments } =
+          getFormMetadata(form)
 
         return (
           <Card
@@ -150,7 +168,9 @@ export function MarketScopingCardView({
                   variant="outline"
                   className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${theme.badgeClass}`}
                 >
-                  <span className={`h-1.5 w-1.5 rounded-full ${theme.dotClass}`} />
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${theme.dotClass}`}
+                  />
                   {statusObj?.label || form.status}
                 </Badge>
 
@@ -166,18 +186,30 @@ export function MarketScopingCardView({
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
-                      <DropdownMenuItem onClick={() => onViewDetails(form.id)} className="text-xs font-semibold py-2">
-                        <Eye className="h-3.5 w-3.5 mr-2 text-slate-450" /> View Details
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-40 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm"
+                    >
+                      <DropdownMenuItem
+                        onClick={() => onViewDetails(form.id)}
+                        className="text-xs font-semibold py-2"
+                      >
+                        <Eye className="h-3.5 w-3.5 mr-2 text-slate-450" /> View
+                        Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onEdit(form.id)} className="text-xs font-semibold py-2">
-                        <Edit className="h-3.5 w-3.5 mr-2 text-slate-450" /> Edit Form
+                      <DropdownMenuItem
+                        onClick={() => onEdit(form.id)}
+                        className="text-xs font-semibold py-2"
+                      >
+                        <Edit className="h-3.5 w-3.5 mr-2 text-slate-450" />{' '}
+                        Edit Form
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => onDelete(form.id)}
                         className="text-xs font-semibold text-rose-600 focus:text-rose-700 py-2"
                       >
-                        <Trash2 className="h-3.5 w-3.5 mr-2 text-rose-500" /> Delete Form
+                        <Trash2 className="h-3.5 w-3.5 mr-2 text-rose-500" />{' '}
+                        Delete Form
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

@@ -1,9 +1,7 @@
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { useMemo, useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Loader2, Plus, X, Check, Target, Layers } from 'lucide-react'
-import { useAtom } from 'jotai'
-import { createFormDataAtom } from '../atoms'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -58,7 +56,6 @@ export default function CreateWFPObjectiveForm({
   initialValues = {},
   opcr,
 }: CreateWFPObjectiveFormProps) {
-  const [formData, setFormData] = useAtom(createFormDataAtom)
   const availableOpcrActivities: OPCRActivity[] = opcr?.activities || []
 
   const form = useForm({
@@ -72,7 +69,6 @@ export default function CreateWFPObjectiveForm({
         },
       ],
       ...initialValues,
-      ...formData,
       wfpId: wfpId,
     } as CreateWFPObjectiveValues,
     onSubmit: ({ value }) => onSubmit(createWFPObjectiveSchema.parse(value)),
@@ -80,14 +76,6 @@ export default function CreateWFPObjectiveForm({
 
   // Track selection mode per objective index ('opcr' | 'manual')
   const [activityModes, setActivityModes] = useState<Record<number, 'opcr' | 'manual'>>({ 0: 'opcr' })
-
-  // Sync form state with Jotai atom for unsaved changes detection
-  useEffect(() => {
-    const unsubscribe = form.store.subscribe(() => {
-      setFormData(form.state.values)
-    })
-    return unsubscribe
-  }, [form.store, setFormData])
 
   // Memoize weight calculations to avoid recalculation on every render
   const weightCalculations = useMemo(() => {

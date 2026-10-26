@@ -1,75 +1,41 @@
 /**
- * Add Items to APR Request Handler
- * Mutation blueprint for consolidating selected PPMP/APP items into APR
- * 
- * TODO: Replace mock data with real API calls when backend is ready
+ * Add Catalog Items to APR Request Handler
+ * Mutation blueprint for saving selected PSDBM catalog items to an APR via POST /aprs/:aprId/catalog-items
  */
 
 import type {
   MutationBlueprintFromTemplate,
   APIResponse,
 } from 'erpez-shared-lib'
-import type { APRMaster, ConsolidatedAPRItem } from '../types'
+import api from '@/services/api'
 
-// Dev-only: Load mock data only in development mode
-const getMockAPRDetail = async (aprId: string) => {
-  if (!import.meta.env.DEV) {
-    throw new Error('Mock data accessed in production')
-  }
-  const { mockAPRDetail } = await import('../mocks')
-  return mockAPRDetail(aprId)
+const endpoint = '/aprs/:aprId/catalog-items' as const
+
+export interface CatalogItemPayload {
+  itemCode: string
+  description: string
+  unit?: string
+  unitPrice: number
+  quantity: number
 }
 
-const endpoint = '/aprs/:aprId/add-items' as const
-
-interface AddItemsToAPRPayload {
+export interface AddCatalogItemsToAPRPayload {
   aprId: string
-  items: ConsolidatedAPRItem[]
+  items: CatalogItemPayload[]
 }
 
 export const addItemsToAPRRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
-  APIResponse<APRMaster>,
+  APIResponse<string>,
   undefined,
-  AddItemsToAPRPayload
+  AddCatalogItemsToAPRPayload
 > = {
   endpoint,
-  fetcher: async ({ payload = { aprId: '', items: [] } as AddItemsToAPRPayload }) => {
-    // TODO: Replace with real API call when backend is ready
-    // const response = await api.post<APIResponse<APRMaster>>(finalUrl, payload)
-    // return response.data
-    
-    const aprId = payload.aprId
-    
-    // ✅ Production-safe: Only use mock data in development
-    if (!import.meta.env.DEV) {
-      console.error('[APR] Backend API for adding items to APR not yet implemented')
-      throw new Error('APR API not available')
+  fetcher: async ({ finalUrl, payload }) => {
+    if (!payload) {
+      throw new Error('addItemsToAPRRequest: Payload is required')
     }
-    
-    const apr = await getMockAPRDetail(aprId)
-    
-    if (!apr) {
-      throw new Error(`APR with ID ${aprId} not found`)
-    }
-    
-    const totalAmount = payload.items.reduce(
-      (sum, item) => sum + item.totalAmount,
-      0
-    )
-    
-    const updatedAPR: APRMaster = {
-      ...apr,
-      consolidatedItems: payload.items,
-      totalItemsCount: payload.items.length,
-      totalAmount,
-      updatedAt: new Date().toISOString(),
-    }
-    
-    return {
-      data: updatedAPR,
-      succeeded: true,
-      errors: [],
-    } as unknown as APIResponse<APRMaster>
+    const response = await api.post<APIResponse<string>>(finalUrl, payload)
+    return response.data
   },
 }

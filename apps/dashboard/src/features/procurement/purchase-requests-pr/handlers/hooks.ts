@@ -15,6 +15,7 @@ import {
 import { createPurchaseRequestRequest } from './createPurchaseRequestRequest'
 import { deletePurchaseRequestRequest } from './deletePurchaseRequestRequest'
 import { getPurchaseRequestEligiblePpmpsRequest } from './getPurchaseRequestEligiblePpmpsRequest'
+import { getPurchaseRequestEligiblePpmpsByOfficeRequest } from './getPurchaseRequestEligiblePpmpsByOfficeRequest'
 import { getPurchaseRequestEligibleAprsRequest } from './getPurchaseRequestEligibleAprsRequest'
 import { getPurchaseRequestRequest } from './getPurchaseRequestRequest'
 import { getPurchaseRequestsRequest } from './getPurchaseRequestsRequest'
@@ -44,12 +45,15 @@ function makePRMutationWithRefresh<TData, TVariables>(
     const mutation = baseHook()
 
     const invalidatePRCaches = () => {
-    void queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         predicate: (query) => {
-        const key = query.queryKey[0]
-        return typeof key === 'string' && key.startsWith('/purchase-requests')
+          const key = query.queryKey[0]
+          return (
+            typeof key === 'string' &&
+            (key.startsWith('/purchase-requests') || key.startsWith('/aprs'))
+          )
         },
-    })
+      })
     }
 
     return {
@@ -96,6 +100,15 @@ export const usePurchaseRequestStats = createQueryHookFromTemplate(
  */
 export const usePurchaseRequestEligiblePpmps = createQueryHookFromTemplate(
   getPurchaseRequestEligiblePpmpsRequest,
+)
+
+/**
+ * PPMP documents eligible to supply items for a given Office (new PR creation).
+ * Only relevant for Non-CSE PRs.
+ * Pass `{ queryParams: { officeId } }`.
+ */
+export const usePurchaseRequestEligiblePpmpsByOffice = createQueryHookFromTemplate(
+  getPurchaseRequestEligiblePpmpsByOfficeRequest,
 )
 
 /**

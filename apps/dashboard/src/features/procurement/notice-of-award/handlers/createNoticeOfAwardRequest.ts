@@ -1,43 +1,29 @@
-import {
-  createNoticeOfAwardFromBacResolution,
-  findApprovedAwardBacResolutionSourceById,
-} from '../data/mockNoticeOfAwardData'
-import type { CreateNoticeOfAwardPayload } from '../types'
+﻿import api from '@/services/api'
+import type { APIResponse } from 'erpez-shared-lib'
+import type { CreateNoticeOfAwardPayload, AwardBacResolutionSource } from '../types'
+import { mapTypeToBackend } from '../utils/mapNoticeOfAward'
 
 export const createNoticeOfAwardRequest = {
   endpoint: '/notice-of-awards',
   key: null,
-  fetcher: async ({ data }: { data: CreateNoticeOfAwardPayload }) => {
-    await new Promise((resolve) => window.setTimeout(resolve, 120))
-
-    const awardSource = findApprovedAwardBacResolutionSourceById(
-      data.bacResolutionId,
-    )
-
-    if (!awardSource) {
-      throw new Error('Approved Award Recommendation BAC Resolution not found.')
-    }
-
-    if (awardSource.resolutionType !== 'award-recommendation') {
-      throw new Error('Select a BAC Resolution tagged as Award Recommendation.')
-    }
-
-    if (
-      awardSource.awardedAmount >
-      awardSource.linkedConsolidatedPr.approvedBudget
-    ) {
-      throw new Error(
-        'Awarded amount cannot exceed the linked Consolidated PR approved budget.',
-      )
-    }
-
-    return createNoticeOfAwardFromBacResolution({
-      noaNumber: data.noaNumber,
+  fetcher: async ({
+    data,
+  }: {
+    data: CreateNoticeOfAwardPayload & { awardSource?: AwardBacResolutionSource }
+  }): Promise<{ id: string }> => {
+    const payload = {
+      bacResolutionId: data.bacResolutionId,
       date: data.date,
       dateBid: data.dateBid,
       description: data.description,
-      type: data.type,
-      awardSource,
-    })
+      type: mapTypeToBackend(data.type),
+    }
+
+    const response = await api.post<APIResponse<string>>('/notice-of-awards', payload)
+    if (!response.data?.succeeded) {
+      throw new Error(response.data?.message || 'Failed to create Notice of Award.')
+    }
+
+    return { id: response.data.data }
   },
 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BulkAdjustmentDialog
  * Adjust prices for multiple catalog items using percentage increase/decrease
  */
@@ -125,7 +125,7 @@ export function BulkAdjustmentDialog({
                 <Label>Adjustment Type</Label>
                 <Select
                   value={adjustmentType}
-                  onValueChange={(v: any) => setAdjustmentType(v)}
+                  onValueChange={(v: 'increase' | 'decrease') => setAdjustmentType(v)}
                 >
                   <SelectTrigger>
                     <SelectValue />

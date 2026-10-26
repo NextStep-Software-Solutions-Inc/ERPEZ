@@ -5,9 +5,9 @@ import { Search, X } from 'lucide-react'
 
 interface ManageSupplierPortalTableToolbarProps {
   searchTerm: string
-  typeFilter: 'all' | 'SVP' | 'Public Bidding'
+  typeFilter: string
   onSearchChange: (term: string) => void
-  onTypeFilterChange: (type: 'all' | 'SVP' | 'Public Bidding') => void
+  onTypeFilterChange: (type: string) => void
 }
 
 export function ManageSupplierPortalTableToolbar({
@@ -22,7 +22,7 @@ export function ManageSupplierPortalTableToolbar({
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by project title or ID..."
+            placeholder="Search by title, number, or ID..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9"
@@ -42,14 +42,16 @@ export function ManageSupplierPortalTableToolbar({
       </div>
 
       <div className="flex items-center gap-2">
-        <Select value={typeFilter} onValueChange={(value) => onTypeFilterChange(value as 'all' | 'SVP' | 'Public Bidding')}>
-          <SelectTrigger className="w-52">
-            <SelectValue placeholder="Filter by bidding type" />
+        <Select value={typeFilter} onValueChange={(value) => onTypeFilterChange(value)}>
+          <SelectTrigger className="w-56">
+            <SelectValue placeholder="Filter by type or source" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Bidding Types</SelectItem>
-            <SelectItem value="SVP">SVP</SelectItem>
-            <SelectItem value="Public Bidding">Public Bidding</SelectItem>
+            <SelectItem value="all">All Opportunities</SelectItem>
+            <SelectItem value="rfq">Internal RFQs (Alternative)</SelectItem>
+            <SelectItem value="bac">Public Portal (Public Bidding)</SelectItem>
+            <SelectItem value="SVP">SVP Only</SelectItem>
+            <SelectItem value="Public Bidding">Public Bidding Only</SelectItem>
           </SelectContent>
         </Select>
       </div>

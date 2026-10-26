@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useNavigate, useLocation } from '@tanstack/react-router'
+import { RoutePermissionGuard } from '@/components/RoutePermissionGuard'
+import { PERMISSIONS } from '@/constants/permissions'
 
 export const Route = createFileRoute(
   '/v2/(planning)/app-consolidation/supplemental/$supplementalId'
@@ -59,18 +61,22 @@ function SupplementalAPPDetailsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between pointer-events-auto relative z-10">
-        <Button
-          variant="ghost"
-          onClick={() => navigate({ to: '/v2/app-consolidation' })}
-          className="pl-0 hover:bg-transparent pointer-events-auto cursor-pointer relative z-10"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to APPs
-        </Button>
-      </div>
+    <RoutePermissionGuard
+      permission={PERMISSIONS.Procurement.App.Manage}
+      message="You do not have permission to view Supplemental APP details."
+    >
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between pointer-events-auto relative z-10">
+          <Button
+            variant="ghost"
+            onClick={() => navigate({ to: '/v2/app-consolidation' })}
+            className="pl-0 hover:bg-transparent pointer-events-auto cursor-pointer relative z-10"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to APPs
+          </Button>
+        </div>
 
       {/* Supplemental Header Card */}
       <div className="border-0 rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow bg-gradient-to-br from-purple-50/80 to-purple-100/40 border-t-4 border-t-purple-500">
@@ -433,5 +439,6 @@ function SupplementalAPPDetailsPage() {
         </Tabs>
       </Card>
     </div>
+    </RoutePermissionGuard>
   )
 }

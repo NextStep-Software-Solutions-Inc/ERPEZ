@@ -9,8 +9,11 @@ import { createWhereasClauseTemplateRequest } from './createWhereasClauseTemplat
 import { deleteWhereasClauseTemplateRequest } from './deleteWhereasClauseTemplateRequest'
 import { getBacResolutionRequest } from './getBacResolutionRequest'
 import { getBacResolutionsRequest } from './getBacResolutionsRequest'
-import { getBackendProjectDetailsRequest } from './getBackendProjectDetailsRequest'
 import { getWhereasClauseTemplatesRequest } from './getWhereasClauseTemplatesRequest'
+import { getResolutionClausesRequest } from './getResolutionClausesRequest'
+import { createResolutionClauseRequest } from './createResolutionClauseRequest'
+import { updateResolutionClauseRequest } from './updateResolutionClauseRequest'
+import { deleteResolutionClauseRequest } from './deleteResolutionClauseRequest'
 import { linkConsolidatedPrsRequest } from './linkConsolidatedPrsRequest'
 import { printBacResolutionRequest } from './printBacResolutionRequest'
 import { returnBacResolutionRequest } from './returnBacResolutionRequest'
@@ -18,9 +21,14 @@ import { submitBacResolutionRequest } from './submitBacResolutionRequest'
 import { updateWhereasClauseTemplateRequest } from './updateWhereasClauseTemplateRequest'
 import { updateBacResolutionRequest } from './updateBacResolutionRequest'
 import { deleteBacResolutionRequest } from './deleteBacResolutionRequest'
+import { generateBACResolutionDocumentRequest } from './generateBacResolutionDocumentRequest'
+import { downloadBacResolutionDocumentRequest } from './downloadBacResolutionDocumentRequest'
+import { getEligibleAppsForProcurementRequest } from './getEligibleAppsForProcurementRequest'
+import { getEligibleConsolidatedPRsRequest } from './getEligibleConsolidatedPRsRequest'
+import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
 
 const bacResolutionQueryKeys = [['bac-resolutions'], ['bac-resolution']] as const
-const whereasClauseQueryKeys = [['/bac-resolution-whereas-clauses']] as const
+const whereasClauseQueryKeys = [['/bac-resolution-whereas-clauses'], ['/resolution-clauses']] as const
 
 type MutationResult<TData, TVariables> = UseMutationResult<
   TData,
@@ -42,6 +50,11 @@ function makeMutationWithRefresh<TData, TVariables>(
           queryClient.invalidateQueries({ queryKey }),
         ),
       )
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/bac/projects'),
+      })
     }
 
     return {
@@ -77,6 +90,12 @@ function makeWhereasClauseMutationWithRefresh<TData, TVariables>(
           queryClient.invalidateQueries({ queryKey }),
         ),
       )
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          (query.queryKey[0].startsWith('/resolution-clauses') ||
+            query.queryKey[0].startsWith('/bac-resolution-whereas-clauses')),
+      })
     }
 
     return {
@@ -107,9 +126,17 @@ export const useBacResolution = createQueryHookFromTemplate(
   getBacResolutionRequest,
 )
 
-export const useBackendProjectDetails = createQueryHookFromTemplate(
-  getBackendProjectDetailsRequest,
+
+
+export const useEligibleAppsForProcurement = createQueryHookFromTemplate(
+  getEligibleAppsForProcurementRequest,
 )
+
+export const useEligibleConsolidatedPRs = createQueryHookFromTemplate(
+  getEligibleConsolidatedPRsRequest,
+)
+
+export const useUsers = createQueryHookFromTemplate(getUsersRequest)
 
 const useCreateBacResolutionBase = createMutationHookFromTemplate(
   createBacResolutionRequest,
@@ -134,6 +161,14 @@ export const useSubmitBacResolution = makeMutationWithRefresh(
 
 export const usePrintBacResolution = createMutationHookFromTemplate(
   printBacResolutionRequest,
+)
+
+export const useGenerateBACResolutionDocument = createMutationHookFromTemplate(
+  generateBACResolutionDocumentRequest,
+)
+
+export const useDownloadBacResolutionDocument = createMutationHookFromTemplate(
+  downloadBacResolutionDocumentRequest,
 )
 
 export const useWhereasClauseTemplates = createQueryHookFromTemplate(
@@ -187,4 +222,30 @@ const useDeleteBacResolutionBase = createMutationHookFromTemplate(
 )
 export const useDeleteBacResolution = makeMutationWithRefresh(
   useDeleteBacResolutionBase,
-)
+)
+
+export const useResolutionClauses = createQueryHookFromTemplate(
+  getResolutionClausesRequest,
+)
+
+const useCreateResolutionClauseBase = createMutationHookFromTemplate(
+  createResolutionClauseRequest,
+)
+export const useCreateResolutionClause = makeWhereasClauseMutationWithRefresh(
+  useCreateResolutionClauseBase,
+)
+
+const useUpdateResolutionClauseBase = createMutationHookFromTemplate(
+  updateResolutionClauseRequest,
+)
+export const useUpdateResolutionClause = makeWhereasClauseMutationWithRefresh(
+  useUpdateResolutionClauseBase,
+)
+
+const useDeleteResolutionClauseBase = createMutationHookFromTemplate(
+  deleteResolutionClauseRequest,
+)
+export const useDeleteResolutionClause = makeWhereasClauseMutationWithRefresh(
+  useDeleteResolutionClauseBase,
+)
+

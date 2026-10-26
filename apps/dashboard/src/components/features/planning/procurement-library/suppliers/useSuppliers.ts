@@ -1,4 +1,4 @@
-﻿import {
+import {
   createMutationHookFromTemplate,
   createQueryHookFromTemplate,
 } from 'erpez-shared-lib'
@@ -9,6 +9,8 @@ import { getSupplierRequest } from './handlers/getSupplierRequest'
 import { getSuppliersRequest } from './handlers/getSuppliersRequest'
 import { updateSupplierStatusRequest } from './handlers/updateSupplierStatusRequest'
 import { updateSupplierRequest } from './handlers/updateSupplierRequest'
+import { validateSupplierRequest } from './handlers/validateSupplierRequest'
+import { verifySupplierRequirementsRequest } from './handlers/verifySupplierRequirementsRequest'
 
 export const useSuppliers = createQueryHookFromTemplate(getSuppliersRequest)
 export const useSupplierById = createQueryHookFromTemplate(getSupplierRequest)
@@ -21,8 +23,14 @@ export const useCreateSupplier = createMutationHookFromTemplate(
 export const useUpdateSupplier = createMutationHookFromTemplate(
   updateSupplierRequest,
 )
+export const useValidateSupplier = createMutationHookFromTemplate(
+  validateSupplierRequest,
+)
 export const useUpdateSupplierStatus = createMutationHookFromTemplate(
   updateSupplierStatusRequest,
+)
+export const useVerifySupplierRequirements = createMutationHookFromTemplate(
+  verifySupplierRequirementsRequest,
 )
 export const useDeleteSupplier = createMutationHookFromTemplate(
   deleteSupplierRequest,

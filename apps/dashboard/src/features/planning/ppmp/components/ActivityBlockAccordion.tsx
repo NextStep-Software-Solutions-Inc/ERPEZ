@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ActivityBlockAccordion
  * Collapsible accordion wrapper for a single PPMP Activity block.
  * Collapse state is managed via expandedActivityBlocksAtom for global toggle support.
@@ -174,6 +174,7 @@ export function ActivityBlockAccordion({
                     key={block.id}
                     block={block}
                     ppmpId={ppmp.id}
+                    activityName={activity.activityName}
                     onScheduleChange={onScheduleChange}
                     onDeleteItem={onDeleteItem}
                     onDeleteBlock={onDeleteIoEBlock}
@@ -198,6 +199,7 @@ export function ActivityBlockAccordion({
                     key={block.id}
                     block={block}
                     ppmpId={ppmp.id}
+                    activityName={activity.activityName}
                     onScheduleChange={onScheduleChange}
                     onDeleteItem={onDeleteItem}
                     onDeleteBlock={onDeleteIoEBlock}

@@ -457,6 +457,7 @@ export function DraftAmendmentActivityView({
                   type: 'budget',
                   activityId: activity.id,
                   budgetId: bItem.id,
+                  detailIds: bItem.detailIds,
                   name: bItem.description,
                 })
                 setShowDeleteConfirmDialog(true)

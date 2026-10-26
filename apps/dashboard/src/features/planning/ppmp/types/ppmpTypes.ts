@@ -1,4 +1,5 @@
 import { FiscalYear } from '../../fiscal-year-and-policies/fiscal-year-management/types/types'
+import type { MSFSummary } from '../../market-scoping/types/marketScopingApiTypes'
 
 export enum PPMPState {
   DRAFT = 'draft',
@@ -133,6 +134,8 @@ export interface CostItemMaster {
   uacsCode?: string | null
   isActive: boolean
   isCSE?: boolean
+  source?: 'predefined' | 'non-cse'
+  itemRequestId?: string | null
   createdDate: Date
   lastModified: Date
 }
@@ -165,6 +168,7 @@ export interface CatalogItem {
   catalogType: CatalogType
   defaultMoP: ModeOfProcurement
   itemCode: string
+  imageUrl?: string
   /** Non-CSE only: whether this is a mixed supply+service item */
   isMixed?: boolean
   /** Non-CSE only: subtype label (e.g. 'Service', 'Goods', 'Works') */
@@ -315,6 +319,9 @@ export interface PPMPLineItem {
   remarks?: string | null
   /** Optional supporting documents attached to the line item. */
   attachments?: PPMPAttachment[] | null
+  /** Activity or indicator name for display */
+  activityIndicatorName?: string | null
+  activityName?: string | null
 }
 
 // ─── IoE Block ────────────────────────────────────────────────────────────────
@@ -370,6 +377,7 @@ export interface ApprovalEvent {
 export type PPMP = {
   id: string
   documentName?: string
+  description?: string
   ppmpNumber?: string
   officeId: string
   officeName?: string
@@ -408,8 +416,16 @@ export type PPMP = {
   isFinal?: boolean
   finalizedAt?: string
   finalizedBy?: string
+  ppmpType?: 'Original' | 'Supplemental' | string
+  sourcePPMPId?: string | null
+  sourcePPMPNumber?: string | null
+  supplementalNumber?: number | null
+  /** MSF linked through PPMP.libId (project-scope). Populated by the backend; null if no MSF is associated. */
+  LinkedMarketScoping?: MSFSummary | null
 }
-export type PPMPDetails = PPMP & {}
+export type PPMPDetails = PPMP & {
+  ChildPPMPs?: PPMPDetails[]
+}
 
 // Payload used by consolidatePPMPsRequest (wraps CreatePPMPConsolidatePaylod shape for compatibility)
 export type ConsolidatePPMPsPayload = {
@@ -451,6 +467,7 @@ export type PPMPItem = {
   description?: string
   unit?: string
   unitPrice: number
+  plannedQuantity?: number
   mopOverride: boolean
   mopJustification?: string
   createdAt: string
@@ -470,6 +487,8 @@ export type PPMPItem = {
   procurementModeName?: string
   originDepartmentId?: string | null
   originDepartmentName?: string | null
+  activityIndicatorName?: string | null
+  nonCseItemId?: string
 }
 
 export type PPMPItemDetails = PPMPItem & {}
@@ -522,6 +541,7 @@ export type PPMPActivity = {
   ppmpId: string
   libActivityId: string
   activityName?: string
+  papCode?: string
   totalItems: number
   totalItemAllocations: number
   totalAllocationQuantity: number
@@ -529,6 +549,9 @@ export type PPMPActivity = {
   createdAt: string
   createdBy?: string
   PPMPExpenditureItems?: PPMPExpenditureItem[]
+  /** MSF linked through PPMPActivity.libActivityId (activity-scope). Populated by the backend; null if not associated. */
+  LinkedMarketScoping?: MSFSummary | null
+  linkedMarketScoping?: MSFSummary | null
 }
 
 /// ─── PPMP Expenditure Items ─────────────────────────────────────────────────────────
@@ -536,6 +559,7 @@ export type PPMPActivity = {
 export type PPMPExpenditureItem = {
   id: string
   ppmpActivityId: string
+  objectId?: string
   isProcurable: boolean
   totalCost: number
   createdAt: string
