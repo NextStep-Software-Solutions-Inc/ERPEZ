@@ -3,6 +3,7 @@ import { Building } from 'lucide-react'
 import type { OfficeSpendingItem } from '../../types/dashboardV2'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ChartTooltipRow, ChartTooltipShell, useChartTheme } from '@/components/ui/chart-tooltip'
 
 interface TopOfficesChartProps {
   data: Array<OfficeSpendingItem>
@@ -18,12 +19,14 @@ function formatCurrency(val: any) {
 }
 
 export function TopOfficesChart({ data, selectedOffice, onSelectOffice }: TopOfficesChartProps) {
+  const { tickColor, gridStroke, axisStroke, barCursor } = useChartTheme()
+
   return (
     <Card className="border border-border shadow-xs">
-      <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between">
+      <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between gap-2">
         <div>
           <CardTitle className="text-xs font-bold tracking-wide uppercase text-muted-foreground flex items-center gap-1.5">
-            <Building className="w-3.5 h-3.5 text-sky-600" />
+            <Building className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
             4. Top Requesting Offices / Units
           </CardTitle>
           <CardDescription className="text-xs">
@@ -32,7 +35,7 @@ export function TopOfficesChart({ data, selectedOffice, onSelectOffice }: TopOff
         </div>
         <Badge
           variant="outline"
-          className="text-[10px] text-sky-700 bg-sky-50 dark:bg-sky-950/40 border-sky-300"
+          className="text-[10px] text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/15 border-sky-300 dark:border-sky-500/35 shrink-0"
         >
           {selectedOffice ? `Filtered: ${selectedOffice}` : 'Click bar to filter'}
         </Badge>
@@ -42,15 +45,23 @@ export function TopOfficesChart({ data, selectedOffice, onSelectOffice }: TopOff
           <BarChart
             data={data}
             layout="vertical"
-            margin={{ top: 10, right: 20, left: 40, bottom: 0 }}
+            margin={{ top: 10, right: 20, left: 8, bottom: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis type="number" tickFormatter={formatCurrency} tick={{ fontSize: 10 }} />
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={gridStroke} />
+            <XAxis
+              type="number"
+              tickFormatter={formatCurrency}
+              tick={{ fontSize: 10, fill: tickColor }}
+              tickLine={false}
+              axisLine={{ stroke: axisStroke }}
+            />
             <YAxis
               type="category"
               dataKey="officeName"
-              tick={{ fontSize: 10, cursor: 'pointer' }}
-              width={80}
+              tick={{ fontSize: 10, fill: tickColor, cursor: 'pointer' }}
+              tickLine={false}
+              axisLine={{ stroke: axisStroke }}
+              width={112}
               onClick={(e: any) => {
                 if (e && e.value) {
                   const match = data.find((d) => d.officeName === e.value)
@@ -59,19 +70,30 @@ export function TopOfficesChart({ data, selectedOffice, onSelectOffice }: TopOff
               }}
             />
             <Tooltip
-              formatter={(val: any) => formatCurrency(val)}
+              cursor={barCursor}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0].payload as OfficeSpendingItem
                   return (
-                    <div className="bg-popover border border-border p-2.5 rounded-lg shadow-md text-xs space-y-1">
-                      <div className="font-bold text-foreground">{item.officeName}</div>
-                      <div className="text-muted-foreground">Amount: <strong className="text-foreground">{formatCurrency(item.amount)}</strong></div>
-                      <div className="text-muted-foreground">Requests: {item.prCount} PRs</div>
-                      <div className="text-[10px] text-sky-600 pt-1 border-t border-border/50">
-                        {selectedOffice === item.officeName ? 'Click to clear filter' : 'Click to filter entire dashboard'}
+                    <ChartTooltipShell className="space-y-1">
+                      <div className="font-semibold text-popover-foreground pb-1 mb-1 border-b border-border/60">
+                        {item.officeName}
                       </div>
-                    </div>
+                      <ChartTooltipRow
+                        color="#0284c7"
+                        label="Amount"
+                        value={formatCurrency(item.amount)}
+                      />
+                      <ChartTooltipRow
+                        label="Requests"
+                        value={`${item.prCount} PRs`}
+                      />
+                      <div className="text-[10px] font-medium text-sky-600 dark:text-sky-400 pt-1.5 mt-1 border-t border-border/60">
+                        {selectedOffice === item.officeName
+                          ? 'Click to clear filter'
+                          : 'Click to filter entire dashboard'}
+                      </div>
+                    </ChartTooltipShell>
                   )
                 }
                 return null

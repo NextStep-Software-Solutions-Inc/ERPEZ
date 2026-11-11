@@ -172,6 +172,42 @@ code {
   background-color: var(--submit-button-green-hover);
 }
 
+/* Theme-aware fallback & focus polish for Recharts tooltips and hover cursors */
+.recharts-wrapper svg:focus,
+.recharts-wrapper *:focus {
+  outline: none;
+}
+.recharts-default-tooltip {
+  background-color: color-mix(in oklab, var(--popover) 96%, transparent) !important;
+  border-color: var(--border) !important;
+  color: var(--popover-foreground) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.625rem 0.875rem !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.14), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+  backdrop-filter: blur(12px);
+}
+.recharts-default-tooltip .recharts-tooltip-label {
+  color: var(--popover-foreground) !important;
+  font-weight: 600;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem !important;
+}
+.recharts-default-tooltip .recharts-tooltip-item {
+  font-size: 0.75rem !important;
+  padding-top: 0.125rem !important;
+  padding-bottom: 0.125rem !important;
+}
+.recharts-tooltip-cursor[fill="#ccc"],
+.recharts-tooltip-cursor[fill="#cccccc"],
+.recharts-tooltip-cursor[fill="#d9d9d9"] {
+  fill: rgba(15, 23, 42, 0.045);
+}
+.dark .recharts-tooltip-cursor[fill="#ccc"],
+.dark .recharts-tooltip-cursor[fill="#cccccc"],
+.dark .recharts-tooltip-cursor[fill="#d9d9d9"] {
+  fill: rgba(148, 163, 184, 0.09);
+}
+
 @layer utilities {
   @media screen {
     :where(.dark, .dark *) .bg-white:not(:where(.rounded-full, .text-black, [role="switch"] *, [data-light-surface], [data-light-surface] *, [class*="dark:bg-"])) {

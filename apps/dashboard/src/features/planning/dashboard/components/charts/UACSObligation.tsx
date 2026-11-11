@@ -19,6 +19,7 @@ import {
 } from 'recharts'
 import { useTheme } from 'next-themes'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartTooltipShell } from '@/components/ui/chart-tooltip'
 import { CheckCircle2, AlertTriangle } from 'lucide-react'
 import type { UACSObligationData } from '../../types'
 import { formatCurrencyPHP, formatCurrencyAbbr } from '@/utils/formatters'
@@ -88,13 +89,15 @@ function rowStatus(pct: number, hasAllotment: boolean): {
 function CustomBarTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-popover text-popover-foreground border border-border rounded-lg shadow-xl p-3 text-xs min-w-[190px]">
-        <p className="font-semibold text-popover-foreground mb-1.5">{label}</p>
+      <ChartTooltipShell className="min-w-[200px]">
+        <p className="font-semibold text-popover-foreground pb-1.5 mb-1.5 border-b border-border/60">
+          {label}
+        </p>
         {payload.map((p: any) => (
           <div key={p.dataKey} className="flex items-center justify-between gap-4 py-0.5">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <div
-                className="h-2.5 w-2.5 rounded-xs border border-black/10 dark:border-white/15"
+                className="h-2.5 w-2.5 rounded-[3px] ring-1 ring-black/10 dark:ring-white/15"
                 style={{ backgroundColor: p.fill }}
               />
               <span className="text-muted-foreground font-normal">{p.name}:</span>
@@ -111,14 +114,14 @@ function CustomBarTooltip({ active, payload, label }: any) {
           </div>
         ))}
         {payload.length === 2 && (
-          <div className="mt-1.5 pt-1.5 border-t border-border/70 flex items-center justify-between text-[11px]">
+          <div className="mt-1.5 pt-1.5 border-t border-border/60 flex items-center justify-between text-[11px]">
             <span className="text-muted-foreground font-normal">Programming Rate:</span>
             <span className="font-semibold text-popover-foreground tabular-nums">
               {payload[0].value > 0 ? ((payload[1].value / payload[0].value) * 100).toFixed(1) : 0}%
             </span>
           </div>
         )}
-      </div>
+      </ChartTooltipShell>
     )
   }
   return null

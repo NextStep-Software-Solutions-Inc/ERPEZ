@@ -12,6 +12,7 @@
 import { useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartTooltipRow, ChartTooltipShell } from '@/components/ui/chart-tooltip'
 import { Target, ChevronDown, ChevronUp, Layers } from 'lucide-react'
 import type { KPIClassificationData } from '../../types'
 
@@ -46,12 +47,16 @@ function CustomPieTooltip({ active, payload }: any) {
   if (active && payload && payload.length) {
     const data = payload[0]
     return (
-      <div className="bg-popover text-popover-foreground border border-border rounded-lg shadow-lg p-2.5 text-xs">
-        <p className="font-semibold text-popover-foreground">{data.name} KPIs</p>
-        <p className="text-muted-foreground mt-0.5 font-normal">
-          <span className="font-semibold text-popover-foreground">{data.value} KPIs</span> ({data.payload.percent}%)
+      <ChartTooltipShell className="min-w-[160px]">
+        <p className="font-semibold text-popover-foreground pb-1 mb-1 border-b border-border/60">
+          {data.name} KPIs
         </p>
-      </div>
+        <ChartTooltipRow
+          color={data.payload?.fill}
+          label="Indicators"
+          value={`${data.value} KPIs (${data.payload.percent}%)`}
+        />
+      </ChartTooltipShell>
     )
   }
   return null

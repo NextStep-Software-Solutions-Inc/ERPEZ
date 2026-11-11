@@ -1,6 +1,7 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { MonthlyPOValuePoint } from '../../types/dashboardV2'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartTooltipContent, useChartTheme } from '@/components/ui/chart-tooltip'
 
 interface MonthlyPOValueChartProps {
   data: Array<MonthlyPOValuePoint>
@@ -18,6 +19,8 @@ function formatYAxisCurrency(val: any) {
 }
 
 export function MonthlyPOValueChart({ data }: MonthlyPOValueChartProps) {
+  const { tickColor, gridStroke, axisStroke, lineCursor, activeDot } = useChartTheme()
+
   return (
     <Card className="border border-border shadow-xs">
       <CardHeader className="p-4 pb-2">
@@ -33,15 +36,37 @@ export function MonthlyPOValueChart({ data }: MonthlyPOValueChartProps) {
           <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="poColor" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0}/>
+                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxisCurrency} />
-            <Tooltip formatter={formatTooltipCurrency} />
-            <Area type="monotone" dataKey="value" name="PO Value" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#poColor)" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 11, fill: tickColor }}
+              tickLine={false}
+              axisLine={{ stroke: axisStroke }}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: tickColor }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={formatYAxisCurrency}
+            />
+            <Tooltip
+              cursor={lineCursor}
+              content={<ChartTooltipContent valueFormatter={(v) => formatTooltipCurrency(v)} />}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              name="PO Value"
+              stroke="#8b5cf6"
+              strokeWidth={2}
+              fillOpacity={1}
+              fill="url(#poColor)"
+              activeDot={{ ...activeDot, fill: '#8b5cf6' }}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </CardContent>

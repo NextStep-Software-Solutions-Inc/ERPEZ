@@ -24,6 +24,7 @@ import type { ProcurementDashboardSummary } from '../types/dashboardV2'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { ChartTooltipContent, useChartTheme } from '@/components/ui/chart-tooltip'
 import { CardInfoTooltip } from './CardInfoTooltip'
 
 interface ProcurementFunnelV2Props {
@@ -39,6 +40,7 @@ interface ProcurementFunnelV2Props {
 
 export function ProcurementFunnelV2({ summary, trendData = [] }: ProcurementFunnelV2Props) {
   const [viewMode, setViewMode] = useState<'funnel' | 'trend'>('funnel')
+  const { tickColor, gridStroke, axisStroke, legendStyle, barCursor } = useChartTheme()
 
   if (!summary) return null
 
@@ -209,11 +211,24 @@ export function ProcurementFunnelV2({ summary, trendData = [] }: ProcurementFunn
           <div className="h-[260px] w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 11, fill: tickColor }}
+                  tickLine={false}
+                  axisLine={{ stroke: axisStroke }}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: tickColor }}
+                  tickLine={false}
+                  axisLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  cursor={barCursor}
+                  content={<ChartTooltipContent showTotal totalLabel="Total Pipeline" />}
+                />
+                <Legend wrapperStyle={legendStyle} />
                 <Bar dataKey="requests" name="Requests" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="bidding" name="Bidding" fill="#06b6d4" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="award" name="Award" fill="#f59e0b" radius={[4, 4, 0, 0]} />
