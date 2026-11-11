@@ -60,15 +60,15 @@ export default function OPCRToolbar({
   const { fiscalYears } = useFiscalYearQueries()
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-white p-4 rounded-xl shadow-xs border border-gray-100 mb-6">
+    <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-card dark:bg-slate-900/60 p-4 rounded-xl shadow-xs border border-border mb-6">
       {showSearch && (
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <DebouncedInput
             value={searchQuery}
             onChange={onSearchChange}
             placeholder={searchPlaceholder}
-            className="pl-9 w-full bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+            className="pl-9 w-full bg-background border-border text-foreground transition-colors"
             debounceMs={400}
           />
         </div>
@@ -81,7 +81,7 @@ export default function OPCRToolbar({
               value={fiscalYearId || 'ALL'}
               onValueChange={(value) => onFiscalYearChange(value === 'ALL' ? '' : value)}
             >
-              <SelectTrigger className="w-[180px] bg-gray-50 border-gray-200 focus:bg-white">
+              <SelectTrigger className="w-[180px] bg-background border-border text-foreground">
                 <SelectValue placeholder="Select Fiscal Year" />
               </SelectTrigger>
               <SelectContent>
@@ -100,7 +100,7 @@ export default function OPCRToolbar({
               value={commitmentStatus || 'ALL'}
               onValueChange={(value) => onCommitmentStatusChange(value === 'ALL' ? '' : value)}
             >
-              <SelectTrigger className="w-[180px] bg-gray-50 border-gray-200 focus:bg-white">
+              <SelectTrigger className="w-[180px] bg-background border-border text-foreground">
                 <SelectValue placeholder="Select Commitment Status" />
               </SelectTrigger>
               <SelectContent>
@@ -118,7 +118,7 @@ export default function OPCRToolbar({
               value={reviewStatus || 'ALL'}
               onValueChange={(value) => onReviewStatusChange(value === 'ALL' ? '' : value)}
             >
-              <SelectTrigger className="w-[180px] bg-gray-50 border-gray-200 focus:bg-white">
+              <SelectTrigger className="w-[180px] bg-background border-border text-foreground">
                 <SelectValue placeholder="Select Review Status" />
               </SelectTrigger>
               <SelectContent>

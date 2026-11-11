@@ -213,7 +213,7 @@ export default function OPCRDetailPage({
       {!hideButton && (
         <Button
           variant="ghost"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           onClick={onBack}
         >
           <ArrowLeft className="w-4 h-4" />
@@ -223,17 +223,20 @@ export default function OPCRDetailPage({
 
       {/* Page Title and Description */}
       <div className="flex items-start justify-between flex-wrap gap-4">
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">
+            <h2 className="text-3xl font-bold text-foreground tracking-tight">
               {opcrData.name}
             </h2>
-            <p className="text-lg text-gray-600 mt-2">
+            <p className="text-lg text-muted-foreground mt-1.5">
               {opcrData.office?.name} • FY {opcrData.fiscalYear?.year}
             </p>
           </div>
-          <p className="text-base text-gray-500">
-            Status: {getStatusLabel(opcrData.commitmentStatus ?? 'Unknown')}
+          <p className="text-sm font-medium text-muted-foreground">
+            Status:{' '}
+            <span className="text-foreground font-semibold">
+              {getStatusLabel(opcrData.commitmentStatus ?? 'Unknown')}
+            </span>
           </p>
         </div>
 
@@ -241,7 +244,7 @@ export default function OPCRDetailPage({
           <Button
             onClick={handleGeneratePdf}
             disabled={isGeneratingPdf}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-medium shadow-xs"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white gap-2 font-medium shadow-xs"
           >
             {isGeneratingPdf ? (
               <>
@@ -278,7 +281,7 @@ export default function OPCRDetailPage({
 
       {/* Function Type Cards List */}
       {!functionCategory && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {functionTypes.map((functionType) => {
             const kpiCount = getFunctionCategoryKPICount(functionType.id)
             const IconComponent = functionType.icon
@@ -286,7 +289,8 @@ export default function OPCRDetailPage({
             return (
               <Button
                 key={functionType.id}
-                className={`group relative h-30 overflow-hidden bg-white border border-gray-200 rounded-lg p-8 text-left transition-all duration-300 hover:shadow-md hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 w-full border-l-4 ${functionType.leftBorderColor}`}
+                variant="ghost"
+                className={`group relative h-auto overflow-hidden bg-card dark:bg-slate-900/65 border border-border rounded-xl p-6 text-left transition-all duration-200 hover:shadow-md hover:border-primary/40 hover:bg-muted/40 dark:hover:bg-slate-800/75 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 w-full border-l-4 ${functionType.leftBorderColor}`}
                 onClick={() => {
                   navigation({
                     search: (prev) => ({
@@ -299,33 +303,33 @@ export default function OPCRDetailPage({
                 {/* Content */}
                 <div className="relative z-10 flex items-center justify-between w-full">
                   {/* Left Content */}
-                  <div className="flex items-center gap-6 flex-1 ">
+                  <div className="flex items-center gap-5 flex-1">
                     <div
-                      className={`p-4 rounded-lg shrink-0 ${functionType.iconBgColor}`}
+                      className={`p-4 rounded-xl shrink-0 ${functionType.iconBgColor}`}
                     >
                       <IconComponent
-                        className={`h-8 w-8 ${functionType.iconColor}`}
+                        className={`h-7 w-7 ${functionType.iconColor}`}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-primary-700 transition-colors">
+                      <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
                         {functionType.title}
                       </h3>
-                      <p className="text-base text-gray-500 mt-2">
+                      <p className="text-sm text-muted-foreground mt-1.5">
                         {functionType.description}
                       </p>
                     </div>
                   </div>
 
                   {/* Right Content */}
-                  <div className="flex items-center gap-6 shrink-0 ml-6">
+                  <div className="flex items-center gap-5 shrink-0 ml-6">
                     <Badge
                       variant="outline"
-                      className={`text-base font-semibold whitespace-nowrap px-4 py-2 ${functionType.badgeBgColor} ${functionType.badgeTextColor} ${functionType.badgeBorderColor}`}
+                      className={`text-sm font-semibold whitespace-nowrap px-3.5 py-1.5 ${functionType.badgeBgColor} ${functionType.badgeTextColor} ${functionType.badgeBorderColor}`}
                     >
                       {kpiCount} KPI{kpiCount !== 1 ? 's' : ''}
                     </Badge>
-                    <ArrowRight className="h-6 w-6 text-gray-300 group-hover:text-gray-600 transition-colors shrink-0" />
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
                   </div>
                 </div>
               </Button>

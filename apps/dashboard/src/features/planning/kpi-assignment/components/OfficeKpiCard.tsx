@@ -37,13 +37,13 @@ export const OfficeKpiCard = ({
         <div className="flex items-start justify-between gap-3 mb-3 min-w-0 min-h-[2.75rem]">
           <div className="min-w-0 flex-1">
             <h3
-              className="text-base font-bold text-gray-900 leading-snug line-clamp-2 break-words"
+              className="text-base font-bold text-foreground leading-snug line-clamp-2 break-words"
               title={office.name}
             >
               {office.name}
             </h3>
           </div>
-          <Badge className="bg-primary-100 text-primary-700 font-semibold text-xs whitespace-nowrap shrink-0">
+          <Badge className="bg-primary/10 text-primary dark:bg-indigo-500/20 dark:text-indigo-300 border border-primary/20 font-semibold text-xs whitespace-nowrap shrink-0">
             {office.assignmentCount}
           </Badge>
         </div>
@@ -51,13 +51,15 @@ export const OfficeKpiCard = ({
         {/* Lock Status Indicator */}
         <div className="mb-3.5 flex items-center gap-2">
           {hasLocked ? (
-            <Lock className="h-4 w-4 text-orange-600 shrink-0" />
+            <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
           ) : (
-            <Unlock className="h-4 w-4 text-green-600 shrink-0" />
+            <Unlock className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           )}
           <span
             className={`text-sm font-medium ${
-              hasLocked ? 'text-orange-700' : 'text-green-700'
+              hasLocked
+                ? 'text-amber-700 dark:text-amber-300'
+                : 'text-emerald-700 dark:text-emerald-300'
             }`}
           >
             {lockStatusText}
@@ -65,39 +67,39 @@ export const OfficeKpiCard = ({
         </div>
 
         {/* Aggregated Targets Section */}
-        <div className="mb-4 bg-gray-50 rounded-lg p-3.5 border border-gray-100 min-w-0">
-          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+        <div className="mb-4 bg-muted/40 dark:bg-slate-800/60 rounded-lg p-3.5 border border-border min-w-0">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
             Aggregated Targets
           </p>
           <div className="grid grid-cols-2 gap-3 min-w-0">
             <div>
-              <span className="text-xs text-gray-600">Annual</span>
-              <p className="text-lg font-bold text-primary-600">
+              <span className="text-xs text-muted-foreground">Annual</span>
+              <p className="text-lg font-bold text-primary dark:text-indigo-400 tabular-nums">
                 {office.aggregatedTargets.annual}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <span className="text-xs text-gray-600">Q1</span>
-                <p className="text-sm font-semibold text-gray-700">
+                <span className="text-xs text-muted-foreground">Q1</span>
+                <p className="text-sm font-semibold text-foreground tabular-nums">
                   {office.aggregatedTargets.q1}
                 </p>
               </div>
               <div>
-                <span className="text-xs text-gray-600">Q2</span>
-                <p className="text-sm font-semibold text-gray-700">
+                <span className="text-xs text-muted-foreground">Q2</span>
+                <p className="text-sm font-semibold text-foreground tabular-nums">
                   {office.aggregatedTargets.q2}
                 </p>
               </div>
               <div>
-                <span className="text-xs text-gray-600">Q3</span>
-                <p className="text-sm font-semibold text-gray-700">
+                <span className="text-xs text-muted-foreground">Q3</span>
+                <p className="text-sm font-semibold text-foreground tabular-nums">
                   {office.aggregatedTargets.q3}
                 </p>
               </div>
               <div>
-                <span className="text-xs text-gray-600">Q4</span>
-                <p className="text-sm font-semibold text-gray-700">
+                <span className="text-xs text-muted-foreground">Q4</span>
+                <p className="text-sm font-semibold text-foreground tabular-nums">
                   {office.aggregatedTargets.q4}
                 </p>
               </div>
@@ -108,7 +110,7 @@ export const OfficeKpiCard = ({
 
       {/* KPI Names Preview */}
       <div className="min-w-0 mt-auto">
-        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
           Assigned KPIs
         </p>
         <div className="min-w-0 min-h-[4.5rem] flex flex-col justify-start">
@@ -117,30 +119,32 @@ export const OfficeKpiCard = ({
               {visibleKpis.map((kpiName, idx) => (
                 <Badge
                   key={idx}
+                  variant="outline"
                   title={kpiName}
-                  className="bg-blue-50 text-blue-700 text-xs font-medium truncate max-w-full leading-tight py-1 px-2.5 h-auto inline-block text-left"
+                  className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30 text-xs font-medium truncate max-w-full leading-tight py-1 px-2.5 h-auto inline-block text-left"
                 >
                   {kpiName}
                 </Badge>
               ))}
               {remainingCount > 0 && (
                 <Badge
+                  variant="outline"
                   title={`${remainingCount} more assigned KPIs`}
-                  className="bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs font-medium whitespace-nowrap shrink-0 py-1 px-2.5 inline-block"
+                  className="bg-muted text-muted-foreground border-border text-xs font-medium whitespace-nowrap shrink-0 py-1 px-2.5 inline-block"
                 >
                   +{remainingCount} more
                 </Badge>
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 italic py-1">No KPIs assigned</p>
+            <p className="text-sm text-muted-foreground italic py-1">No KPIs assigned</p>
           )}
         </div>
       </div>
     </div>
   )
 
-  const baseClasses = `bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md hover:border-primary-300 transition-all duration-200 w-full h-full text-left overflow-hidden ${className}`
+  const baseClasses = `bg-card dark:bg-slate-900/65 border border-border rounded-xl p-5 shadow-xs hover:shadow-md hover:border-primary/40 transition-all duration-200 w-full h-full text-left overflow-hidden ${className}`
 
   if (onClick) {
     return (

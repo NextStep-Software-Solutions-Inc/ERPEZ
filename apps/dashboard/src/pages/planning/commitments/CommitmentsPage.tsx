@@ -123,9 +123,9 @@ function CommitmentsPage() {
         {/* Header Card */}
         <Card className="bg-linear-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="space-y-2">
-                <CardTitle className="text-3xl">
+                <CardTitle className="text-3xl text-foreground">
                   Office Performance Commitment and Review (OPCR)
                 </CardTitle>
                 <CardDescription className="text-base">
@@ -135,7 +135,7 @@ function CommitmentsPage() {
               </div>
               <Badge
                 variant="outline"
-                className="h-fit px-3 py-1 font-semibold"
+                className="h-fit px-3.5 py-1.5 font-semibold border-primary/35 bg-primary/10 text-primary dark:text-indigo-300 dark:border-indigo-400/35 dark:bg-indigo-500/15"
               >
                 <TrendingUp className="h-3.5 w-3.5 mr-1.5" /> Performance
                 Management
@@ -147,21 +147,26 @@ function CommitmentsPage() {
         {/* Main Content Card */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <CardTitle>Data Management</CardTitle>
                 <CardDescription>
                   Manage and configure commitments data
                 </CardDescription>
               </div>
-              <h2 className="text-3xl font-bold text-gray-900">
+              <div>
                 <Button
                   onClick={handleToggleOffice}
                   variant={hasOfficeId ? 'default' : 'outline'}
+                  className={
+                    !hasOfficeId
+                      ? 'border-border text-foreground hover:bg-muted'
+                      : undefined
+                  }
                 >
                   {hasOfficeId ? 'Remove Office Filter' : 'Toggle Office'}
                 </Button>
-              </h2>
+              </div>
             </div>
           </CardHeader>
           <CardContent>

@@ -132,7 +132,7 @@ export function DataTable<TData extends OPCR, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className={row.getIsSelected() ? 'bg-blue-50' : ''}
+                  className={row.getIsSelected() ? 'bg-primary/10 dark:bg-primary/15' : ''}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

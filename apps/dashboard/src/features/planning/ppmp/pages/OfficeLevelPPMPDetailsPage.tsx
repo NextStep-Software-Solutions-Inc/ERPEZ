@@ -1364,7 +1364,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                     {fd.originalValue}
                   </span>
                   <span className="text-default-400 font-normal">→</span>
-                  <span className="font-semibold text-default-900 dark:text-default-100">
+                  <span className="font-semibold text-foreground">
                     {fd.currentValue}
                   </span>
                 </div>
