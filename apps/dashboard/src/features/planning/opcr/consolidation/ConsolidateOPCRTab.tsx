@@ -43,16 +43,19 @@ export default function ConsolidateOPCRTab() {
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-2 gap-2 bg-muted/50 p-2">
-          <TabsTrigger value="selection" className="whitespace-nowrap text-sm">
-            <span className="hidden sm:inline mr-1">🔍</span>
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 h-auto gap-1.5 rounded-xl bg-muted/70 dark:bg-slate-950/60 border border-border/60 p-1.5">
+          <TabsTrigger
+            value="selection"
+            className="whitespace-nowrap py-2 px-3 text-sm rounded-lg data-[state=active]:bg-card dark:data-[state=active]:bg-slate-800 data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+          >
+            <span className="hidden sm:inline mr-1.5">🔍</span>
             Selection Stage
           </TabsTrigger>
           <TabsTrigger
             value="consolidated"
-            className="whitespace-nowrap text-sm"
+            className="whitespace-nowrap py-2 px-3 text-sm rounded-lg data-[state=active]:bg-card dark:data-[state=active]:bg-slate-800 data-[state=active]:text-foreground data-[state=active]:shadow-xs"
           >
-            <span className="hidden sm:inline mr-1">✅</span>
+            <span className="hidden sm:inline mr-1.5">✅</span>
             Consolidated OPCRs
           </TabsTrigger>
         </TabsList>

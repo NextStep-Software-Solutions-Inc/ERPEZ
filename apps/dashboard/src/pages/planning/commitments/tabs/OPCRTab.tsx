@@ -1,4 +1,6 @@
 import { useNavigate, useSearch } from '@tanstack/react-router'
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import CreateOPCRDialog from './CreateOPCRDialog'
 import OPCRDetailPage from './OPCRDetailPage'
 import OPCRListView from '@/features/planning/opcr/components/OPCRListView'
@@ -29,13 +31,23 @@ export default function OPCRTab() {
     return arr.length > 0 ? arr.join(',') : undefined
   }, [fiscalYearId, commitmentStatus, reviewStatus, searchQuery])
 
-  const { data: opcrsResponse, isLoading } = useOPCRs({
+  // Derive viewing state from URL search parameters
+  const viewingOPCRId = search.opcrId
+
+  const {
+    data: opcrsResponse,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useOPCRs({
     pathParams: {},
     queryParams: {
       pageNumber,
       pageSize,
       filters: backendFilters,
     },
+    enabled: !viewingOPCRId,
   })
 
   const rawOpcrs = opcrsResponse?.data ?? []
@@ -43,9 +55,6 @@ export default function OPCRTab() {
 
   // Server-side filtering via backend filters; no additional frontend filtering needed
   const opcrs = rawOpcrs
-
-  // Derive viewing state from URL search parameters
-  const viewingOPCRId = search.opcrId
 
   const handleViewOPCR = (opcr: OPCR) => {
     const fyId =
@@ -62,7 +71,26 @@ export default function OPCRTab() {
   }
 
   const handleBack = () => {
-    window.history.back()
+    if (search.functionCategory) {
+      navigate({
+        search: (prev) => ({
+          ...prev,
+          functionCategory: undefined,
+          kpiAssignmentId: undefined,
+          opcrActivityId: undefined,
+        }),
+      })
+      return
+    }
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        opcrId: undefined,
+        functionCategory: undefined,
+        kpiAssignmentId: undefined,
+        opcrActivityId: undefined,
+      }),
+    })
   }
 
   const handlePageChange = (newPageNumber: number) => {
@@ -124,55 +152,85 @@ export default function OPCRTab() {
     })
   }
 
+  if (viewingOPCRId) {
+    return <OPCRDetailPage opcrId={viewingOPCRId} onBack={handleBack} />
+  }
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center gap-3 py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-indigo-400" />
+        <p className="text-sm text-muted-foreground">Loading OPCR records...</p>
+      </div>
+    )
+  }
+
+  if (isError) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : 'Unable to load OPCR records from the server.'
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-14 px-6 rounded-xl border border-rose-200 dark:border-rose-500/30 bg-rose-50/60 dark:bg-rose-950/25 text-center">
+        <div className="p-2.5 rounded-full bg-rose-100 dark:bg-rose-500/15 border border-rose-200/80 dark:border-rose-500/30 text-rose-600 dark:text-rose-400">
+          <AlertCircle className="h-6 w-6" />
+        </div>
+        <div className="space-y-1 max-w-md">
+          <h3 className="text-base font-semibold text-foreground">
+            Failed to load OPCR records
+          </h3>
+          <p className="text-sm text-muted-foreground">{errorMessage}</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          className="mt-1 gap-2 border-border text-foreground hover:bg-muted"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </Button>
       </div>
     )
   }
 
   return (
-    <>
-      {viewingOPCRId ? (
-        <OPCRDetailPage opcrId={viewingOPCRId} onBack={handleBack} />
-      ) : (
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">OPCR Management</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Manage Office Performance Commitment and Review records
-              </p>
-            </div>
-            <CreateOPCRDialog />
-          </div>
-
-          <OPCRToolbar
-            searchQuery={searchQuery}
-            fiscalYearId={fiscalYearId}
-            commitmentStatus={commitmentStatus}
-            reviewStatus={reviewStatus}
-            onSearchChange={handleSearchChange}
-            onFiscalYearChange={handleFiscalYearChange}
-            onCommitmentStatusChange={handleCommitmentStatusChange}
-            onReviewStatusChange={handleReviewStatusChange}
-          />
-
-          {/* OPCR List View with Pagination */}
-          <OPCRListView
-            opcrs={opcrs}
-            onView={handleViewOPCR}
-            pageNumber={pageNumber}
-            pageSize={pageSize}
-            totalPageNumber={totalPageNumber}
-            totalRows={opcrsResponse?.totalRows ?? 0}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center gap-4 flex-wrap">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">
+            OPCR Management
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage Office Performance Commitment and Review records
+          </p>
         </div>
-      )}
-    </>
+        <CreateOPCRDialog />
+      </div>
+
+      <OPCRToolbar
+        searchQuery={searchQuery}
+        fiscalYearId={fiscalYearId}
+        commitmentStatus={commitmentStatus}
+        reviewStatus={reviewStatus}
+        onSearchChange={handleSearchChange}
+        onFiscalYearChange={handleFiscalYearChange}
+        onCommitmentStatusChange={handleCommitmentStatusChange}
+        onReviewStatusChange={handleReviewStatusChange}
+      />
+
+      {/* OPCR List View with Pagination */}
+      <OPCRListView
+        opcrs={opcrs}
+        onView={handleViewOPCR}
+        pageNumber={pageNumber}
+        pageSize={pageSize}
+        totalPageNumber={totalPageNumber}
+        totalRows={opcrsResponse?.totalRows ?? 0}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+      />
+    </div>
   )
 }

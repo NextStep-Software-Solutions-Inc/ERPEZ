@@ -1,6 +1,13 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Download, Loader2 } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Download,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -63,6 +70,8 @@ export default function OPCRDetailPage({
   const {
     data: opcrResponse,
     isLoading,
+    isError,
+    error,
     refetch: refetchOPCR,
   } = useOPCRById({
     pathParams: { id: opcrId },
@@ -184,8 +193,82 @@ export default function OPCRDetailPage({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex flex-col items-center justify-center gap-3 py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-indigo-400" />
+        <p className="text-sm text-muted-foreground">Loading OPCR details...</p>
+      </div>
+    )
+  }
+
+  if (isError) {
+    const status = (error as { response?: { status?: number } })?.response
+      ?.status
+    const isNotFound = status === 404
+    const errorMessage = isNotFound
+      ? 'This OPCR record could not be found in the current workspace or may have been removed.'
+      : error instanceof Error
+        ? error.message
+        : 'Unable to load OPCR details from the server.'
+
+    const handleReturnToList = () => {
+      navigation({
+        search: (prev) => ({
+          ...prev,
+          opcrId: undefined,
+          functionCategory: undefined,
+          kpiAssignmentId: undefined,
+          opcrActivityId: undefined,
+        }),
+      })
+    }
+
+    return (
+      <div className="space-y-4">
+        {!hideButton && (
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            onClick={handleReturnToList}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to List
+          </Button>
+        )}
+        <div className="flex flex-col items-center justify-center gap-3 py-14 px-6 rounded-xl border border-rose-200 dark:border-rose-500/30 bg-rose-50/60 dark:bg-rose-950/25 text-center">
+          <div className="p-2.5 rounded-full bg-rose-100 dark:bg-rose-500/15 border border-rose-200/80 dark:border-rose-500/30 text-rose-600 dark:text-rose-400">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <div className="space-y-1 max-w-md">
+            <h3 className="text-base font-semibold text-foreground">
+              {isNotFound
+                ? 'OPCR record not found'
+                : 'Failed to load OPCR details'}
+            </h3>
+            <p className="text-sm text-muted-foreground">{errorMessage}</p>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleReturnToList}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to OPCR List
+            </Button>
+            {!isNotFound && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchOPCR()}
+                className="gap-2 border-border text-foreground hover:bg-muted"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     )
   }
