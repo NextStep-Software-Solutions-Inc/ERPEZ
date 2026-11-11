@@ -12,7 +12,7 @@ const SidebarImage = () => {
     "/images/all-img/img-2.jpeg",
     "/images/all-img/img-1.jpeg",
   ]);
-  const { theme: mode } = useTheme();
+  const { resolvedTheme: mode } = useTheme();
   const { theme: config, setTheme: setConfig } = useThemeStore();
   const newTheme = themes.find((theme) => theme.name === config);
 

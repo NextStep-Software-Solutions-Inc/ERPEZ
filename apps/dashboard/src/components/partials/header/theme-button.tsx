@@ -13,12 +13,21 @@ import { cn } from "@/lib/utils";
 
 const ThemeButton = () => {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeTheme = mounted ? theme : undefined;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Toggle theme"
           className="relative md:h-9 md:w-9 h-8 w-8 hover:bg-default-100 dark:hover:bg-default-200 
           data-[state=open]:bg-default-100  dark:data-[state=open]:bg-default-200 
            hover:text-primary text-default-500 dark:text-default-800  rounded-full 
@@ -35,7 +44,7 @@ const ThemeButton = () => {
             "p-2 font-medium text-sm text-default-600 cursor-pointer mb-[2px]",
             {
               "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground":
-                theme === "light",
+                activeTheme === "light",
             }
           )}
         >
@@ -43,7 +52,7 @@ const ThemeButton = () => {
           <span className="mr-2">Light</span>
           <Check
             className={cn("w-4 h-4 flex-none ml-auto", {
-              hidden: theme !== "light",
+              hidden: activeTheme !== "light",
             })}
           />
         </DropdownMenuItem>
@@ -53,7 +62,7 @@ const ThemeButton = () => {
             "p-2 font-medium text-sm text-default-600 cursor-pointer mb-[2px]",
             {
               "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground":
-                theme === "dark",
+                activeTheme === "dark",
             }
           )}
         >
@@ -61,7 +70,7 @@ const ThemeButton = () => {
           <span className="mr-2">Dark</span>
           <Check
             className={cn("w-4 h-4 flex-none ml-auto", {
-              hidden: theme !== "dark",
+              hidden: activeTheme !== "dark",
             })}
           />
         </DropdownMenuItem>
@@ -71,7 +80,7 @@ const ThemeButton = () => {
             "p-2 font-medium text-sm text-default-600 cursor-pointer",
             {
               "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground":
-                theme === "system",
+                activeTheme === "system",
             }
           )}
         >
@@ -79,7 +88,7 @@ const ThemeButton = () => {
           <span className="mr-2">System</span>
           <Check
             className={cn("w-4 h-4 flex-none ml-auto", {
-              hidden: theme !== "system",
+              hidden: activeTheme !== "system",
             })}
           />
         </DropdownMenuItem>

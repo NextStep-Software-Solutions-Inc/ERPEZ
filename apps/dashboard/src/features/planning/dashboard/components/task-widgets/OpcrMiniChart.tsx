@@ -7,7 +7,8 @@
  * @module features/planning/dashboard/components/task-widgets/OpcrMiniChart
  */
 
-import { LineChart, Line, ResponsiveContainer } from 'recharts'
+import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
+import { ChartTooltipContent, useChartTheme } from '@/components/ui/chart-tooltip'
 import type { OPCRTaskMetadata } from '../../types'
 
 interface OpcrMiniChartProps {
@@ -16,6 +17,7 @@ interface OpcrMiniChartProps {
 
 export function OpcrMiniChart({ metadata }: OpcrMiniChartProps) {
   const { plannedCompletion, actualCompletion, chartData } = metadata
+  const { lineCursor, activeDot } = useChartTheme()
 
   const gap = plannedCompletion - actualCompletion
   const gapColor =
@@ -26,7 +28,7 @@ export function OpcrMiniChart({ metadata }: OpcrMiniChartProps) {
         : 'text-emerald-600 dark:text-emerald-400'
 
   return (
-    <div className="mt-3 p-3 bg-muted/40 dark:bg-slate-800/55 rounded-lg border border-border/70">
+    <div className="mt-3 p-3 bg-secondary/60 rounded-lg border border-border/70">
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs font-medium text-muted-foreground">Completion Rate</div>
         <div className="flex items-center gap-3 tabular-nums">
@@ -45,20 +47,33 @@ export function OpcrMiniChart({ metadata }: OpcrMiniChartProps) {
       <div className="h-16 -mx-2">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
+            <Tooltip
+              cursor={lineCursor}
+              content={
+                <ChartTooltipContent
+                  indicator="line"
+                  valueFormatter={(v) => `${v}%`}
+                />
+              }
+            />
             <Line
               type="monotone"
               dataKey="planned"
+              name="Planned"
               stroke="#3b82f6"
               strokeWidth={2}
               dot={false}
+              activeDot={{ ...activeDot, fill: '#3b82f6' }}
             />
             <Line
               type="monotone"
               dataKey="actual"
+              name="Actual"
               stroke="#10b981"
               strokeWidth={2}
               strokeDasharray="3 3"
               dot={false}
+              activeDot={{ ...activeDot, fill: '#10b981' }}
             />
           </LineChart>
         </ResponsiveContainer>

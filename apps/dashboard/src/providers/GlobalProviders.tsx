@@ -92,7 +92,7 @@ export default function GlobalProviders({ children }: GlobalProvidersProps) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="light"
+      defaultTheme="system"
       enableSystem
       disableTransitionOnChange
     >

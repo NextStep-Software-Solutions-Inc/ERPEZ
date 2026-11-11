@@ -21,6 +21,7 @@
 
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartTooltipRow, ChartTooltipShell } from '@/components/ui/chart-tooltip'
 import { Layers } from 'lucide-react'
 import type { OPCRChartData } from '../../types'
 
@@ -161,7 +162,7 @@ export function OPCRLineChart({ data, isLoading }: OPCRLineChartProps) {
           </div>
 
           <div className="flex items-center gap-1.5 text-muted-foreground ml-auto sm:ml-0">
-            <span className="inline-block w-0.5 h-3 bg-slate-700 dark:bg-slate-200 rounded-full" />
+            <span className="inline-block w-0.5 h-3 bg-foreground/80 rounded-full" />
             <span>100% target line</span>
           </div>
         </div>
@@ -204,7 +205,7 @@ export function OPCRLineChart({ data, isLoading }: OPCRLineChartProps) {
                   </span>
 
                   {/* Bullet Track Container */}
-                  <div className="relative flex-1 h-3.5 bg-slate-100 dark:bg-slate-800/90 ring-1 ring-inset ring-black/[0.03] dark:ring-white/[0.05] rounded-full flex items-center overflow-visible">
+                  <div className="relative flex-1 h-3.5 bg-secondary ring-1 ring-inset ring-black/[0.03] dark:ring-white/[0.05] rounded-full flex items-center overflow-visible">
                     {/* Actual Accomplishment Bar */}
                     {hasAccomplishment && (
                       <div
@@ -218,7 +219,7 @@ export function OPCRLineChart({ data, isLoading }: OPCRLineChartProps) {
 
                     {/* 100% Target Reference Line (vertical tick crossing track) */}
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 w-[2px] h-5 bg-slate-700 dark:bg-slate-200 z-10 rounded-full shadow-2xs"
+                      className="absolute top-1/2 -translate-y-1/2 w-[2px] h-5 bg-foreground/80 z-10 rounded-full shadow-2xs"
                       style={{ left: `${targetMarkerPercent}%` }}
                       title="100% Target Line"
                     />
@@ -252,38 +253,41 @@ export function OPCRLineChart({ data, isLoading }: OPCRLineChartProps) {
 
                   {/* Interactive Hover Tooltip */}
                   {isHovered && (
-                    <div className="absolute left-10 -top-12 z-20 bg-popover text-popover-foreground border border-border text-xs rounded-lg shadow-xl px-3 py-2 pointer-events-none min-w-[195px]">
-                      <p className="font-semibold text-popover-foreground mb-1">
-                        {quarterLabels[item.month] || item.month}
-                      </p>
-                      {!hasTarget || !hasAccomplishment ? (
-                        <p className="text-[11px] text-muted-foreground">
-                          Target baseline is 100%, but no accomplishment data has been reported for this quarter.
+                    <div className="absolute left-10 -top-14 z-20 pointer-events-none">
+                      <ChartTooltipShell className="min-w-[205px]">
+                        <p className="font-semibold text-popover-foreground pb-1 mb-1 border-b border-border/60">
+                          {quarterLabels[item.month] || item.month}
                         </p>
-                      ) : (
-                        <div className="space-y-0.5 text-[11px]">
-                          <div className="flex justify-between gap-3">
-                            <span className="text-muted-foreground font-normal">Accomplished:</span>
-                            <span className="font-bold text-popover-foreground tabular-nums">{actualVal.toFixed(1)}%</span>
+                        {!hasTarget || !hasAccomplishment ? (
+                          <p className="text-[11px] text-muted-foreground">
+                            Target baseline is 100%, but no accomplishment data has been reported for this quarter.
+                          </p>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <ChartTooltipRow
+                              color={barColor}
+                              label="Accomplished"
+                              value={`${actualVal.toFixed(1)}%`}
+                            />
+                            <ChartTooltipRow
+                              label="Target Baseline"
+                              value="100.0%"
+                            />
+                            <div className="flex justify-between gap-3 pt-1 mt-1 border-t border-border/60 text-[11px]">
+                              <span className="text-muted-foreground font-normal">Variance</span>
+                              <span
+                                className={`font-bold tabular-nums ${
+                                  isPositive
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : 'text-amber-600 dark:text-amber-400'
+                                }`}
+                              >
+                                {isPositive ? '+' : ''}{variance.toFixed(1)}% ({isPositive ? 'Target Met' : 'Below Target'})
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex justify-between gap-3">
-                            <span className="text-muted-foreground font-normal">Target Baseline:</span>
-                            <span className="font-semibold text-popover-foreground/90 tabular-nums">100.0%</span>
-                          </div>
-                          <div className="flex justify-between gap-3 pt-0.5 border-t border-border/70">
-                            <span className="text-muted-foreground font-normal">Variance:</span>
-                            <span
-                              className={`font-bold tabular-nums ${
-                                isPositive
-                                  ? 'text-emerald-600 dark:text-emerald-400'
-                                  : 'text-amber-600 dark:text-amber-400'
-                              }`}
-                            >
-                              {isPositive ? '+' : ''}{variance.toFixed(1)}% ({isPositive ? 'Target Met' : 'Below Target'})
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </ChartTooltipShell>
                     </div>
                   )}
                 </div>

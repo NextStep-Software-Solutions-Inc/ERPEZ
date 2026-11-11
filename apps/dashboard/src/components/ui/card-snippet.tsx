@@ -33,7 +33,7 @@ const CardSnippet = ({ title, code, children }: CardSnippetProps) => {
   const toggle = () => {
     setShow(!show);
   };
-  const { theme: mode } = useTheme();
+  const { resolvedTheme: mode } = useTheme();
   const { theme: config, setTheme: setConfig } = useThemeStore();
   const newTheme = themes.find((theme) => theme.name === config);
 

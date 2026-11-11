@@ -27,12 +27,48 @@ interface KPICardTheme {
 }
 
 const themes: Array<KPICardTheme> = [
-  { bg: 'bg-gradient-to-br from-blue-50 to-white',    iconBg: 'bg-blue-100',    iconColor: 'text-blue-600',   accent: 'bg-blue-500',    valueColor: 'text-blue-700' },
-  { bg: 'bg-gradient-to-br from-emerald-50 to-white', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600',accent: 'bg-emerald-500', valueColor: 'text-emerald-700' },
-  { bg: 'bg-gradient-to-br from-violet-50 to-white',  iconBg: 'bg-violet-100',  iconColor: 'text-violet-600', accent: 'bg-violet-500',  valueColor: 'text-violet-700' },
-  { bg: 'bg-gradient-to-br from-amber-50 to-white',   iconBg: 'bg-amber-100',   iconColor: 'text-amber-600',  accent: 'bg-amber-500',   valueColor: 'text-amber-700' },
-  { bg: 'bg-gradient-to-br from-green-50 to-white',   iconBg: 'bg-green-100',   iconColor: 'text-green-600',  accent: 'bg-green-500',   valueColor: 'text-green-700' },
-  { bg: 'bg-gradient-to-br from-sky-50 to-white',     iconBg: 'bg-sky-100',     iconColor: 'text-sky-600',    accent: 'bg-sky-500',     valueColor: 'text-sky-700' },
+  {
+    bg: 'bg-gradient-to-br from-blue-500/[0.06] via-card to-card dark:from-blue-500/[0.11] dark:via-card dark:to-card',
+    iconBg: 'bg-blue-500/10 border border-blue-500/20 dark:bg-blue-500/15 dark:border-blue-400/25',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    accent: 'bg-blue-500',
+    valueColor: 'text-blue-700 dark:text-blue-300',
+  },
+  {
+    bg: 'bg-gradient-to-br from-emerald-500/[0.06] via-card to-card dark:from-emerald-500/[0.11] dark:via-card dark:to-card',
+    iconBg: 'bg-emerald-500/10 border border-emerald-500/20 dark:bg-emerald-500/15 dark:border-emerald-400/25',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    accent: 'bg-emerald-500',
+    valueColor: 'text-emerald-700 dark:text-emerald-300',
+  },
+  {
+    bg: 'bg-gradient-to-br from-violet-500/[0.06] via-card to-card dark:from-violet-500/[0.11] dark:via-card dark:to-card',
+    iconBg: 'bg-violet-500/10 border border-violet-500/20 dark:bg-violet-500/15 dark:border-violet-400/25',
+    iconColor: 'text-violet-600 dark:text-violet-400',
+    accent: 'bg-violet-500',
+    valueColor: 'text-violet-700 dark:text-violet-300',
+  },
+  {
+    bg: 'bg-gradient-to-br from-amber-500/[0.06] via-card to-card dark:from-amber-500/[0.11] dark:via-card dark:to-card',
+    iconBg: 'bg-amber-500/10 border border-amber-500/20 dark:bg-amber-500/15 dark:border-amber-400/25',
+    iconColor: 'text-amber-600 dark:text-amber-400',
+    accent: 'bg-amber-500',
+    valueColor: 'text-amber-700 dark:text-amber-300',
+  },
+  {
+    bg: 'bg-gradient-to-br from-green-500/[0.06] via-card to-card dark:from-green-500/[0.11] dark:via-card dark:to-card',
+    iconBg: 'bg-green-500/10 border border-green-500/20 dark:bg-green-500/15 dark:border-green-400/25',
+    iconColor: 'text-green-600 dark:text-green-400',
+    accent: 'bg-green-500',
+    valueColor: 'text-green-700 dark:text-green-300',
+  },
+  {
+    bg: 'bg-gradient-to-br from-sky-500/[0.06] via-card to-card dark:from-sky-500/[0.11] dark:via-card dark:to-card',
+    iconBg: 'bg-sky-500/10 border border-sky-500/20 dark:bg-sky-500/15 dark:border-sky-400/25',
+    iconColor: 'text-sky-600 dark:text-sky-400',
+    accent: 'bg-sky-500',
+    valueColor: 'text-sky-700 dark:text-sky-300',
+  },
 ]
 
 
@@ -61,25 +97,29 @@ interface KPICardProps {
 function KPICard({ title, value, subtitle, trend, trendValue, icon, theme }: KPICardProps) {
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus
   const trendColor =
-    trend === 'up' ? 'text-emerald-600' : trend === 'down' ? 'text-red-500' : 'text-gray-400'
+    trend === 'up'
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : trend === 'down'
+        ? 'text-rose-600 dark:text-rose-400'
+        : 'text-muted-foreground'
 
   return (
-    <Card className={`relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-200 ${theme.bg}`}>
+    <Card className={`relative overflow-hidden border border-border/80 shadow-xs hover:shadow-md transition-all duration-200 ${theme.bg}`}>
       <div className={`absolute top-0 left-0 right-0 h-1 ${theme.accent}`} />
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-5 pb-2">
-        <CardTitle className="text-sm font-semibold text-gray-600">{title}</CardTitle>
+        <CardTitle className="text-sm font-semibold text-muted-foreground">{title}</CardTitle>
         <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${theme.iconBg}`}>
           <span className={theme.iconColor}>{icon}</span>
         </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-1">
-          <div className={`text-3xl font-bold ${theme.valueColor}`}>{value}</div>
-          <div className="text-xs text-gray-500">{subtitle}</div>
+          <div className={`text-3xl font-bold tabular-nums ${theme.valueColor}`}>{value}</div>
+          <div className="text-xs text-muted-foreground">{subtitle}</div>
           <div className="flex items-center gap-1 mt-2">
             <TrendIcon className={`h-3 w-3 ${trendColor}`} />
             <span className={`text-xs font-semibold ${trendColor}`}>{trendValue}</span>
-            <span className="text-xs text-gray-400">vs last month</span>
+            <span className="text-xs text-muted-foreground">vs last month</span>
           </div>
         </div>
       </CardContent>
@@ -89,16 +129,16 @@ function KPICard({ title, value, subtitle, trend, trendValue, icon, theme }: KPI
 
 function Skeleton() {
   return (
-    <Card className="animate-pulse">
+    <Card className="animate-pulse bg-card border border-border/80">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="h-4 w-28 bg-gray-200 rounded" />
-        <div className="h-5 w-5 bg-gray-200 rounded-full" />
+        <div className="h-4 w-28 bg-muted rounded" />
+        <div className="h-5 w-5 bg-muted rounded-full" />
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <div className="h-8 w-24 bg-gray-200 rounded" />
-          <div className="h-3 w-36 bg-gray-200 rounded" />
-          <div className="h-3 w-24 bg-gray-200 rounded mt-2" />
+          <div className="h-8 w-24 bg-muted rounded" />
+          <div className="h-3 w-36 bg-muted rounded" />
+          <div className="h-3 w-24 bg-muted rounded mt-2" />
         </div>
       </CardContent>
     </Card>

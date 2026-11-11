@@ -138,7 +138,7 @@ export function AppProcurementReadiness({
                 return (
                   <div
                     key={stage.label}
-                    className="relative overflow-hidden rounded-lg border border-border/70 bg-muted/30 dark:bg-slate-800/50 p-3 shadow-2xs hover:border-border transition-all flex flex-col justify-between"
+                    className="relative overflow-hidden rounded-lg border border-border/70 bg-secondary/45 p-3 shadow-2xs hover:border-border transition-all flex flex-col justify-between"
                   >
                     {/* Top colored accent strip */}
                     <div
@@ -178,7 +178,7 @@ export function AppProcurementReadiness({
                       <div className="my-2.5">
                         <Progress
                           value={pct}
-                          className={`h-1.5 bg-slate-200/70 dark:bg-slate-700/70 ${isComplete ? '[&>div]:bg-emerald-500' : isActionNeeded ? '[&>div]:bg-amber-500' : '[&>div]:bg-blue-500'}`}
+                          className={`h-1.5 bg-secondary ${isComplete ? '[&>div]:bg-emerald-500' : isActionNeeded ? '[&>div]:bg-amber-500' : '[&>div]:bg-blue-500'}`}
                         />
                       </div>
                     </div>
@@ -205,7 +205,7 @@ export function AppProcurementReadiness({
                   {data.byMode.slice(0, 4).map((mode) => (
                     <div
                       key={mode.mode}
-                      className="rounded-lg p-2.5 border border-border/70 bg-muted/30 dark:bg-slate-800/50 hover:bg-muted/60 dark:hover:bg-slate-800/80 transition-colors"
+                      className="rounded-lg p-2.5 border border-border/70 bg-secondary/45 hover:bg-secondary/80 transition-colors"
                     >
                       <p className="text-[11px] font-semibold text-foreground truncate mb-1" title={mode.mode}>
                         {mode.mode}

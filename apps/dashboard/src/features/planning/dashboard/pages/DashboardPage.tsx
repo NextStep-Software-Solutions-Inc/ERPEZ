@@ -78,7 +78,7 @@ export default function DashboardPage() {
       titleIcon={<LayoutDashboard className="h-6 w-6 text-blue-600 dark:text-blue-400" />}
       description="Strategic performance, budget programming, and procurement readiness"
       headerSize="default"
-      containerClassName="p-4 sm:p-6 bg-slate-50/50 dark:bg-background min-h-screen"
+      containerClassName="p-4 sm:p-6 bg-background min-h-screen"
       contentClassName="pt-5"
     >
       <div className="space-y-8">
@@ -115,7 +115,7 @@ export default function DashboardPage() {
         <section className="space-y-3.5">
           <div className="flex items-center gap-2.5">
             <span className="h-3.5 w-1 rounded-full bg-blue-600 dark:bg-blue-400" />
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Performance &amp; Commitments
             </h3>
             <div className="flex-1 h-px bg-border/60" />
@@ -131,7 +131,7 @@ export default function DashboardPage() {
         <section className="space-y-3.5">
           <div className="flex items-center gap-2.5">
             <span className="h-3.5 w-1 rounded-full bg-amber-500 dark:bg-amber-400" />
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Budget Allocation &amp; Programming
             </h3>
             <div className="flex-1 h-px bg-border/60" />
@@ -144,7 +144,7 @@ export default function DashboardPage() {
         <section className="space-y-3.5">
           <div className="flex items-center gap-2.5">
             <span className="h-3.5 w-1 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Procurement Readiness
             </h3>
             <div className="flex-1 h-px bg-border/60" />
@@ -160,7 +160,7 @@ export default function DashboardPage() {
         <section className="space-y-3.5">
           <div className="flex items-center gap-2.5">
             <span className="h-3.5 w-1 rounded-full bg-rose-500 dark:bg-rose-400" />
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Operational Summary
             </h3>
             <div className="flex-1 h-px bg-border/60" />

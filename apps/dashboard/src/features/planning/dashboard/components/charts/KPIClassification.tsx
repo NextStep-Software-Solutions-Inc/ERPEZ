@@ -12,8 +12,8 @@
 import { useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChartTooltipRow, ChartTooltipShell } from '@/components/ui/chart-tooltip'
-import { Target, ChevronDown, ChevronUp, Layers } from 'lucide-react'
+import { ChartTooltipRow, ChartTooltipShell, useChartTheme } from '@/components/ui/chart-tooltip'
+import { ChevronDown, ChevronUp, Layers } from 'lucide-react'
 import type { KPIClassificationData } from '../../types'
 
 interface KPIClassificationProps {
@@ -63,6 +63,7 @@ function CustomPieTooltip({ active, payload }: any) {
 }
 
 export function KPIClassification({ data, isLoading }: KPIClassificationProps) {
+  const { isDark } = useChartTheme()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const toggleExpand = (type: string) =>
@@ -173,7 +174,8 @@ export function KPIClassification({ data, isLoading }: KPIClassificationProps) {
                       paddingAngle={2}
                       startAngle={90}
                       endAngle={-270}
-                      strokeWidth={0}
+                      stroke={isDark ? 'hsl(var(--card))' : '#ffffff'}
+                      strokeWidth={1.5}
                     >
                       {pieData.map((entry, i) => (
                         <Cell key={i} fill={entry.fill} />
@@ -192,7 +194,7 @@ export function KPIClassification({ data, isLoading }: KPIClassificationProps) {
                 {data.items.map((item) => (
                   <div
                     key={item.type}
-                    className="p-2.5 rounded-lg border border-border/70 bg-muted/40 dark:bg-slate-800/55 flex items-center justify-between gap-2"
+                    className="p-2.5 rounded-lg border border-border/70 bg-secondary/50 flex items-center justify-between gap-2"
                   >
                     <div className="flex items-center gap-2">
                       <span
@@ -266,7 +268,7 @@ export function KPIClassification({ data, isLoading }: KPIClassificationProps) {
                                 <span className="text-[11px] text-foreground/85 w-28 flex-shrink-0 truncate font-normal" title={div.name}>
                                   {div.name}
                                 </span>
-                                <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800/90 rounded-full overflow-hidden">
+                                <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
                                   <div
                                     className="h-full rounded-full transition-all duration-300"
                                     style={{

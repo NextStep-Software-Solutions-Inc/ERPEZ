@@ -9,7 +9,8 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Flag, Package, Layers } from 'lucide-react'
+import { ChartTooltipRow, ChartTooltipShell } from '@/components/ui/chart-tooltip'
+import { Flag, Layers } from 'lucide-react'
 import type { PPMPConsolidationData } from '../../types'
 
 interface PPMPConsolidationChartProps {
@@ -121,7 +122,7 @@ export function PPMPConsolidationChart({ data, isLoading }: PPMPConsolidationCha
 
               {/* The stacked bar */}
               <div
-                className="flex h-7 w-full rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800/90 ring-1 ring-inset ring-border/60"
+                className="flex h-7 w-full rounded-lg overflow-hidden bg-secondary ring-1 ring-inset ring-border/60"
                 role="progressbar"
                 aria-valuenow={consolidatedPct}
                 aria-valuemin={0}
@@ -156,8 +157,14 @@ export function PPMPConsolidationChart({ data, isLoading }: PPMPConsolidationCha
                         </span>
                       )}
                       {isHovered && (
-                        <div className="absolute -top-10 left-1/2 z-10 -translate-x-1/2 bg-popover text-popover-foreground border border-border rounded px-2.5 py-1 text-[10px] font-medium whitespace-nowrap shadow-lg pointer-events-none">
-                          {seg.name}: {seg.value} ({Math.round(seg.pct)}%)
+                        <div className="absolute -top-12 left-1/2 z-10 -translate-x-1/2 pointer-events-none">
+                          <ChartTooltipShell className="min-w-[140px] px-2.5 py-1.5">
+                            <ChartTooltipRow
+                              color={seg.color}
+                              label={seg.name}
+                              value={`${seg.value} (${Math.round(seg.pct)}%)`}
+                            />
+                          </ChartTooltipShell>
                         </div>
                       )}
                     </div>
@@ -192,7 +199,7 @@ export function PPMPConsolidationChart({ data, isLoading }: PPMPConsolidationCha
                 {segments.map((seg, i) => (
                   <div
                     key={seg.name}
-                    className="rounded-lg p-2.5 text-center border border-border/70 bg-muted/40 dark:bg-slate-800/55 cursor-pointer transition-colors hover:bg-muted/80 dark:hover:bg-slate-800/85"
+                    className="rounded-lg p-2.5 text-center border border-border/70 bg-secondary/50 cursor-pointer transition-colors hover:bg-secondary"
                     onMouseEnter={() => setHoveredIndex(i)}
                     onMouseLeave={() => setHoveredIndex(null)}
                   >

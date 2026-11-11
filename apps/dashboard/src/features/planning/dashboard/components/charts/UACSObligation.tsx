@@ -17,9 +17,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { useTheme } from 'next-themes'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChartTooltipShell } from '@/components/ui/chart-tooltip'
+import { ChartTooltipRow, ChartTooltipShell, useChartTheme } from '@/components/ui/chart-tooltip'
 import { CheckCircle2, AlertTriangle } from 'lucide-react'
 import type { UACSObligationData } from '../../types'
 import { formatCurrencyPHP, formatCurrencyAbbr } from '@/utils/formatters'
@@ -94,24 +93,13 @@ function CustomBarTooltip({ active, payload, label }: any) {
           {label}
         </p>
         {payload.map((p: any) => (
-          <div key={p.dataKey} className="flex items-center justify-between gap-4 py-0.5">
-            <div className="flex items-center gap-2">
-              <div
-                className="h-2.5 w-2.5 rounded-[3px] ring-1 ring-black/10 dark:ring-white/15"
-                style={{ backgroundColor: p.fill }}
-              />
-              <span className="text-muted-foreground font-normal">{p.name}:</span>
-            </div>
-            <span
-              className={`font-semibold tabular-nums ${
-                p.dataKey === 'obligated'
-                  ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-popover-foreground'
-              }`}
-            >
-              {formatCurrencyPHP(p.value)}
-            </span>
-          </div>
+          <ChartTooltipRow
+            key={p.dataKey}
+            color={p.fill}
+            label={p.name}
+            value={formatCurrencyPHP(p.value)}
+            valueClassName={p.dataKey === 'obligated' ? 'text-blue-600 dark:text-blue-400' : undefined}
+          />
         ))}
         {payload.length === 2 && (
           <div className="mt-1.5 pt-1.5 border-t border-border/60 flex items-center justify-between text-[11px]">
@@ -128,8 +116,7 @@ function CustomBarTooltip({ active, payload, label }: any) {
 }
 
 export function UACSObligation({ data, isLoading }: UACSObligationProps) {
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
+  const { isDark, tickColor, gridStroke, axisStroke, barCursor } = useChartTheme()
 
   if (isLoading || !data) {
     return (
@@ -156,10 +143,6 @@ export function UACSObligation({ data, isLoading }: UACSObligationProps) {
   const ceilingFill = isDark ? '#334155' : '#dbeafe'
   const ceilingStroke = isDark ? '#475569' : '#bfdbfe'
   const programmedFill = isDark ? '#3b82f6' : '#2563eb'
-  const tickColor = isDark ? '#94a3b8' : '#64748b'
-  const gridStroke = isDark ? 'rgba(148, 163, 184, 0.12)' : '#f1f5f9'
-  const axisStroke = isDark ? 'rgba(148, 163, 184, 0.2)' : '#e2e8f0'
-  const cursorFill = isDark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(148, 163, 184, 0.12)'
 
   return (
     <Card className="h-full border border-border/80 shadow-xs bg-card">
@@ -218,7 +201,7 @@ export function UACSObligation({ data, isLoading }: UACSObligationProps) {
                   </div>
                 </div>
 
-                <div className="relative h-2 w-full bg-slate-100 dark:bg-slate-800/90 rounded-full overflow-hidden">
+                <div className="relative h-2 w-full bg-secondary rounded-full overflow-hidden">
                   <div
                     className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
                     style={{
@@ -283,7 +266,7 @@ export function UACSObligation({ data, isLoading }: UACSObligationProps) {
                   tickFormatter={(v) => `₱${(v / 1_000_000).toFixed(0)}M`}
                   width={42}
                 />
-                <Tooltip content={<CustomBarTooltip />} cursor={{ fill: cursorFill }} />
+                <Tooltip content={<CustomBarTooltip />} cursor={barCursor} />
                 <Bar
                   dataKey="allotment"
                   name="Allotment Ceiling"

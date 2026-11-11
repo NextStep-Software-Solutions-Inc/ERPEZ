@@ -8,11 +8,11 @@ const colorSchemeStyles: Record<
   { bg: string; border: string; iconBox: string; icon: string; text: string }
 > = {
   default: {
-    bg: 'bg-slate-50/90 dark:bg-card',
-    border: 'border-slate-200/90 dark:border-border',
-    iconBox: 'bg-slate-200/70 dark:bg-slate-800 border border-slate-300/60 dark:border-slate-700',
-    icon: 'text-slate-600 dark:text-slate-300',
-    text: 'text-slate-900 dark:text-slate-50',
+    bg: 'bg-card',
+    border: 'border-border',
+    iconBox: 'bg-secondary border border-border',
+    icon: 'text-muted-foreground',
+    text: 'text-foreground',
   },
   success: {
     bg: 'bg-emerald-50/80 dark:bg-emerald-950/25',
