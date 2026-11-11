@@ -60,33 +60,33 @@ export function ReturnAPRDialog({
 
         <div className="space-y-4">
           {/* Warning */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-sm text-amber-900">
+              <p className="font-medium text-sm text-amber-900 dark:text-amber-200">
                 Return for Revisions
               </p>
-              <p className="text-sm text-amber-700 mt-1">
+              <p className="text-sm text-amber-700 dark:text-amber-300/90 mt-1">
                 This APR will be returned to the requester. Please provide specific feedback on what needs to be revised.
               </p>
             </div>
           </div>
 
           {/* APR Info */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2 text-sm">
+          <div className="bg-slate-50 dark:bg-slate-900/60 border border-border rounded-lg p-3 space-y-2 text-sm">
             <div>
-              <p className="text-gray-600">APR Number</p>
-              <p className="font-medium text-gray-900">{apr.aprNumber}</p>
+              <p className="text-muted-foreground text-xs">APR Number</p>
+              <p className="font-medium text-foreground">{apr.aprNumber}</p>
             </div>
             <div>
-              <p className="text-gray-600">Total Items</p>
-              <p className="font-medium text-gray-900">{itemsCount}</p>
+              <p className="text-muted-foreground text-xs">Total Items</p>
+              <p className="font-medium text-foreground">{itemsCount}</p>
             </div>
           </div>
 
           {/* Remarks Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Revision Remarks <span className="text-red-500">*</span>
             </label>
             <Textarea
@@ -95,7 +95,7 @@ export function ReturnAPRDialog({
               onChange={(e) => setRemarks(e.target.value)}
               disabled={isSubmitting}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Be clear and specific to help the requester understand what changes are needed.
             </p>
           </div>

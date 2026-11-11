@@ -69,9 +69,9 @@ export function AdminAPRsTableToolbar({
       </div>
 
       {/* Filters - Second Row */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-3">
         <Select value={status} onValueChange={onStatusChange}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-44 bg-background">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
@@ -86,7 +86,7 @@ export function AdminAPRsTableToolbar({
         </Select>
 
         <Select value={fiscalYear} onValueChange={onFiscalYearChange}>
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-44 bg-background">
             <SelectValue placeholder="Select fiscal year" />
           </SelectTrigger>
           <SelectContent>
@@ -100,8 +100,8 @@ export function AdminAPRsTableToolbar({
                       variant="outline"
                       className={`text-[10px] py-0 h-4 capitalize ${
                         fy.status === 'active'
-                          ? 'bg-green-50 text-green-700 border-green-300'
-                          : 'bg-gray-50 text-gray-600 border-gray-300'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/35'
+                          : 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600'
                       }`}
                     >
                       {fy.status}

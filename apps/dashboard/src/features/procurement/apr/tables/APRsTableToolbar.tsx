@@ -47,17 +47,17 @@ export function APRsTableToolbar({
   }, [fiscalYearsResponse])
 
   return (
-    <div className="flex items-center justify-between gap-4 mb-4">
-      <div className="flex flex-1 gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+      <div className="flex flex-1 flex-wrap gap-2.5">
         <Input
           placeholder="Search APRs..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-64"
+          className="w-64 bg-background"
         />
 
         <Select value={status} onValueChange={onStatusChange}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-40 bg-background">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
@@ -73,7 +73,7 @@ export function APRsTableToolbar({
           value={fiscalYear ? fiscalYear.toString() : ''}
           onValueChange={(v) => onFiscalYearChange(parseInt(v, 10))}
         >
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-44 bg-background">
             <SelectValue placeholder="Select fiscal year" />
           </SelectTrigger>
           <SelectContent>
@@ -87,8 +87,8 @@ export function APRsTableToolbar({
                         variant="outline"
                         className={`text-[10px] py-0 h-4 capitalize ${
                           fy.status === 'active'
-                            ? 'bg-green-50 text-green-700 border-green-300'
-                            : 'bg-gray-50 text-gray-600 border-gray-300'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/35'
+                            : 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600'
                         }`}
                       >
                         {fy.status}

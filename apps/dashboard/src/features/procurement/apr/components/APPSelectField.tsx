@@ -30,9 +30,9 @@ export const APPSelectField = React.memo(function APPSelectField({
   const allAppsSelected = apps.length > 0 && selectedAppIds.length === apps.length
 
   return (
-    <div className="space-y-3 rounded-lg border border-purple-200 bg-purple-50 p-4">
+    <div className="space-y-3 rounded-lg border border-purple-200 dark:border-purple-500/30 bg-purple-50/70 dark:bg-purple-950/25 p-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <label className="text-sm font-semibold text-purple-900">
+        <label className="text-sm font-semibold text-purple-900 dark:text-purple-200">
           📋 Step 1: Select Approved APPs ({selectedAppIds.length} of {apps.length} selected)
         </label>
         {onSelectAllApps && apps.length > 0 && (
@@ -44,7 +44,7 @@ export const APPSelectField = React.memo(function APPSelectField({
             />
             <label
               htmlFor="select-all-apps"
-              className="text-xs font-medium text-purple-900 cursor-pointer"
+              className="text-xs font-medium text-purple-900 dark:text-purple-200 cursor-pointer"
             >
               Select All APPs
             </label>
@@ -52,7 +52,7 @@ export const APPSelectField = React.memo(function APPSelectField({
         )}
       </div>
 
-      <ScrollArea className="h-52 rounded-md border bg-white">
+      <ScrollArea className="h-52 rounded-md border border-border bg-card">
         <div className="space-y-2 p-3">
           {apps.map((app) => {
             const appCode = app.appNumber || app.appCode || `APP-${app.id.substring(0, 8)}`
@@ -70,8 +70,8 @@ export const APPSelectField = React.memo(function APPSelectField({
                 key={app.id}
                 className={`rounded-lg border-2 p-3 transition-colors ${
                   isSelected
-                    ? 'border-purple-500 bg-purple-100/70 shadow-sm'
-                    : 'border-purple-200 hover:bg-purple-50/60'
+                    ? 'border-purple-500 bg-purple-100/70 dark:border-purple-400 dark:bg-purple-500/15 shadow-sm'
+                    : 'border-purple-200/80 hover:bg-purple-50/60 dark:border-slate-700 dark:hover:bg-slate-800/60'
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -86,14 +86,14 @@ export const APPSelectField = React.memo(function APPSelectField({
                     className="flex-1 min-w-0 cursor-pointer select-none"
                   >
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <p className="font-semibold text-sm truncate text-gray-900">{appCode}</p>
+                      <p className="font-semibold text-sm truncate text-foreground">{appCode}</p>
                       <div className="flex gap-1.5 flex-shrink-0 items-center">
                         {appType && (
-                          <Badge variant="outline" className="text-[10px] py-0 h-5 bg-purple-50 text-purple-700 border-purple-300">
+                          <Badge variant="outline" className="text-[10px] py-0 h-5 bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/35">
                             {appType}
                           </Badge>
                         )}
-                        <Badge variant="outline" className="text-[10px] py-0 h-5 bg-green-50 text-green-700 border-green-300">
+                        <Badge variant="outline" className="text-[10px] py-0 h-5 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/35">
                           {app.status}
                         </Badge>
                         <Badge className="text-[10px] py-0 h-5 bg-purple-600 text-white">
@@ -102,7 +102,7 @@ export const APPSelectField = React.memo(function APPSelectField({
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{appName}</p>
-                    <p className="text-[11px] text-purple-700 mt-1 font-medium">
+                    <p className="text-[11px] text-purple-700 dark:text-purple-300 mt-1 font-medium">
                       {itemCount} line item{itemCount !== 1 ? 's' : ''} available
                     </p>
                   </label>

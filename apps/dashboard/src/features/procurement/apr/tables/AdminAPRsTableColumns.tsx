@@ -39,7 +39,7 @@ export function getAdminAPRsTableColumns({
       enableSorting: true,
       cell: (info) => (
         <span
-          className="font-medium text-blue-600 cursor-pointer hover:underline"
+          className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer hover:underline transition-colors"
           onClick={() => onView(info.row.original)}
         >
           {info.getValue() || '—'}
@@ -51,7 +51,7 @@ export function getAdminAPRsTableColumns({
       id: 'office',
       header: 'Office / Entity',
       enableSorting: true,
-      cell: (info) => <span className="text-sm">{info.getValue() || '—'}</span>,
+      cell: (info) => <span className="text-sm text-foreground">{info.getValue() || '—'}</span>,
     }),
 
     columnHelper.accessor('totalAmount', {
@@ -59,7 +59,7 @@ export function getAdminAPRsTableColumns({
       header: 'Total Amount',
       enableSorting: true,
       cell: (info) => (
-        <span className="font-medium">
+        <span className="font-semibold text-foreground tabular-nums">
           ₱{new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(info.getValue() || 0)}
         </span>
       ),
@@ -71,11 +71,11 @@ export function getAdminAPRsTableColumns({
       enableSorting: true,
       cell: (info) => {
         const val = info.getValue()
-        if (!val) return '—'
+        if (!val) return <span className="text-muted-foreground">—</span>
         try {
-          return format(new Date(val), 'MMM dd, yyyy')
+          return <span className="text-muted-foreground">{format(new Date(val), 'MMM dd, yyyy')}</span>
         } catch {
-          return val
+          return <span className="text-muted-foreground">{val}</span>
         }
       },
     }),
@@ -85,7 +85,7 @@ export function getAdminAPRsTableColumns({
       header: 'Status',
       enableSorting: true,
       cell: (info) => {
-        return <APRStatusBadge status={info.getValue() || 'Draft'} context="procurement_officer" />
+        return <APRStatusBadge status={info.getValue() || 'Draft'} context="procurement_officer" size="sm" />
       },
     }),
 
@@ -94,7 +94,7 @@ export function getAdminAPRsTableColumns({
       header: 'Items',
       enableSorting: true,
       cell: (info) => (
-        <span className="text-center">{info.getValue()} items</span>
+        <span className="text-center text-muted-foreground tabular-nums">{info.getValue()} items</span>
       ),
     }),
 
@@ -142,7 +142,7 @@ export function getAdminAPRsTableColumns({
                   }
                 }}
               >
-                <Download className="mr-2 h-4 w-4 text-blue-600" />
+                <Download className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                 Export Form 002 (PDF)
               </DropdownMenuItem>
 
@@ -150,7 +150,7 @@ export function getAdminAPRsTableColumns({
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => onApprove(apr)}>
-                    <Check className="mr-2 h-4 w-4 text-green-600" />
+                    <Check className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     Approve
                   </DropdownMenuItem>
                 </>
@@ -158,7 +158,7 @@ export function getAdminAPRsTableColumns({
 
               {canReturn && (
                 <DropdownMenuItem onClick={() => onReturn(apr)}>
-                  <RotateCcw className="mr-2 h-4 w-4 text-amber-600" />
+                  <RotateCcw className="mr-2 h-4 w-4 text-amber-600 dark:text-amber-400" />
                   Return for Revision
                 </DropdownMenuItem>
               )}

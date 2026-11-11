@@ -52,35 +52,35 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
     .join(', ')
 
   return (
-    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-4">
-      <h3 className="text-sm font-semibold text-blue-900">
+    <div className="rounded-lg border border-blue-200 dark:border-blue-500/30 bg-blue-50/70 dark:bg-blue-950/25 p-4 space-y-4">
+      <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200">
         📦 Step 2: Select Line Items from Selected APPs ({apps.length} APP{apps.length !== 1 ? 's' : ''})
       </h3>
-      <Card className="border-blue-200 bg-white">
+      <Card className="border-blue-200 dark:border-border bg-card text-card-foreground">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-blue-900 flex items-center justify-between gap-2 flex-wrap">
+          <CardTitle className="text-base text-blue-900 dark:text-blue-200 flex items-center justify-between gap-2 flex-wrap">
             <span className="truncate">
               Selected APPs: <span className="font-normal text-sm text-muted-foreground">{appCodesSummary}</span>
             </span>
-            <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-300">
+            <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-300 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/35">
               {lineItems.length} item{lineItems.length !== 1 ? 's' : ''} total
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Metadata Grid */}
-          <div className="grid grid-cols-3 gap-4 text-sm bg-slate-50 p-3 rounded-lg border">
+          <div className="grid grid-cols-3 gap-4 text-sm bg-slate-50 dark:bg-slate-900/60 p-3 rounded-lg border border-border">
             <div>
               <p className="text-muted-foreground text-xs">Total Available Budget</p>
-              <p className="font-semibold text-sm">₱{totalBudget.toLocaleString()}</p>
+              <p className="font-semibold text-sm text-foreground tabular-nums">₱{totalBudget.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Total Line Items</p>
-              <p className="font-semibold text-sm">{lineItems.length}</p>
+              <p className="font-semibold text-sm text-foreground tabular-nums">{lineItems.length}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Selected Items</p>
-              <p className="font-semibold text-sm text-primary">
+              <p className="font-semibold text-sm text-primary tabular-nums">
                 {selectedLineItemIds.length} of {lineItems.length}
               </p>
             </div>
@@ -88,7 +88,7 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
 
           {/* Select All */}
           {lineItems.length > 0 && (
-            <div className="flex items-center gap-2 border-t pt-3 select-none">
+            <div className="flex items-center gap-2 border-t border-border pt-3 select-none">
               <Checkbox
                 id="select-all-line-items"
                 checked={allItemsSelected}
@@ -96,7 +96,7 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
               />
               <label
                 htmlFor="select-all-line-items"
-                className="text-sm font-medium flex-1 cursor-pointer"
+                className="text-sm font-medium flex-1 cursor-pointer text-foreground"
               >
                 Select All Line Items across all selected APPs
               </label>
@@ -104,7 +104,7 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
           )}
 
           {/* Line Items List */}
-          <ScrollArea className="h-72 border rounded-md">
+          <ScrollArea className="h-72 border border-border rounded-md">
             <div className="space-y-2 p-3">
               {lineItems.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
@@ -141,8 +141,8 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
                       key={`${lineItem.sourceAppId || 'app'}-${lineItem.id}`}
                       className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
                         isSelected
-                          ? 'border-blue-500 bg-blue-50/70 shadow-xs'
-                          : 'border-gray-200 hover:bg-gray-50'
+                          ? 'border-blue-500 bg-blue-50/70 dark:border-blue-400 dark:bg-blue-500/15 shadow-xs'
+                          : 'border-border hover:bg-slate-50 dark:hover:bg-slate-800/60'
                       }`}
                     >
                       <Checkbox
@@ -156,8 +156,8 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
                         className="flex-1 min-w-0 space-y-1 cursor-pointer select-none"
                       >
                         <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <p className="font-semibold text-sm text-gray-900">{desc}</p>
-                          <span className="text-sm font-semibold text-primary">
+                          <p className="font-semibold text-sm text-foreground">{desc}</p>
+                          <span className="text-sm font-semibold text-primary tabular-nums">
                             ₱{total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
@@ -168,7 +168,7 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
                         )}
                         <div className="flex items-center gap-1.5 flex-wrap pt-1 text-xs">
                           {lineItem.sourceAppCode && (
-                            <Badge variant="outline" className="text-[10px] py-0 h-5 bg-purple-50 text-purple-700 border-purple-300 font-mono">
+                            <Badge variant="outline" className="text-[10px] py-0 h-5 bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/35 font-mono">
                               {lineItem.sourceAppCode}
                             </Badge>
                           )}
@@ -181,12 +181,12 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
                             </Badge>
                           )}
                           {fundSource && (
-                            <Badge variant="outline" className="text-[10px] py-0 h-5 bg-blue-50 text-blue-700 border-blue-200">
+                            <Badge variant="outline" className="text-[10px] py-0 h-5 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/35">
                               {fundSource}
                             </Badge>
                           )}
                           {procurementMode && (
-                            <Badge variant="outline" className="text-[10px] py-0 h-5 bg-amber-50 text-amber-700 border-amber-200">
+                            <Badge variant="outline" className="text-[10px] py-0 h-5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/35">
                               {procurementMode}
                             </Badge>
                           )}

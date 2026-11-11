@@ -32,7 +32,10 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
       id: 'aprNumber',
       header: 'APR Number',
       cell: (info) => (
-        <span className="font-medium text-blue-600 cursor-pointer hover:underline" onClick={() => onView(info.row.original)}>
+        <span
+          className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer hover:underline transition-colors"
+          onClick={() => onView(info.row.original)}
+        >
           {info.getValue() || '—'}
         </span>
       ),
@@ -41,14 +44,14 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
     columnHelper.accessor((row) => row.officeName || row.requestingEntity || '', {
       id: 'office',
       header: 'Office',
-      cell: (info) => <span className="text-sm">{info.getValue() || '—'}</span>,
+      cell: (info) => <span className="text-sm text-foreground">{info.getValue() || '—'}</span>,
     }),
 
     columnHelper.accessor((row) => row.itemCount ?? row.totalItemsCount ?? row.items?.length ?? 0, {
       id: 'items',
       header: 'Items',
       cell: (info) => (
-        <span className="text-center">{info.getValue()} items</span>
+        <span className="text-center text-muted-foreground tabular-nums">{info.getValue()} items</span>
       ),
     }),
 
@@ -56,7 +59,7 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
       id: 'totalAmount',
       header: 'Total Amount',
       cell: (info) => (
-        <span className="font-medium">
+        <span className="font-semibold text-foreground tabular-nums">
           ₱{new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(info.getValue() || 0)}
         </span>
       ),
@@ -67,11 +70,11 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
       header: 'Request Date',
       cell: (info) => {
         const val = info.getValue()
-        if (!val) return '—'
+        if (!val) return <span className="text-muted-foreground">—</span>
         try {
-          return format(new Date(val), 'MMM dd, yyyy')
+          return <span className="text-muted-foreground">{format(new Date(val), 'MMM dd, yyyy')}</span>
         } catch {
-          return val
+          return <span className="text-muted-foreground">{val}</span>
         }
       },
     }),
@@ -80,7 +83,7 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
       id: 'status',
       header: 'Status',
       cell: (info) => {
-        return <APRStatusBadge status={info.getValue() || 'Draft'} context="user" />
+        return <APRStatusBadge status={info.getValue() || 'Draft'} context="user" size="sm" />
       },
     }),
 
@@ -125,7 +128,7 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
                   }
                 }}
               >
-                <Download className="mr-2 h-4 w-4 text-blue-600" />
+                <Download className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
                 Export Form 002 (PDF)
               </DropdownMenuItem>
               {isDraft && (
@@ -133,7 +136,7 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onDelete(apr)}
-                    className="text-red-600 focus:text-red-600"
+                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-300"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete

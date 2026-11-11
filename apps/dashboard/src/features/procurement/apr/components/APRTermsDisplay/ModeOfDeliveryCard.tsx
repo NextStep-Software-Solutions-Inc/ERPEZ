@@ -25,15 +25,15 @@ export function ModeOfDeliveryCard({ mode }: ModeOfDeliveryCardProps) {
   const current = (mode && MODE_LABELS[mode]) ? MODE_LABELS[mode] : { label: mode || 'Fast Lane', description: 'How items will be delivered from PS-DBM' }
 
   return (
-    <Card className="border border-gray-200 shadow-xs bg-white">
-      <CardHeader className="py-3 px-5 border-b bg-slate-50/50 flex flex-row items-center justify-between">
+    <Card className="border border-border shadow-xs bg-card text-card-foreground rounded-2xl overflow-hidden">
+      <CardHeader className="py-3 px-5 border-b border-border/70 bg-slate-50/60 dark:bg-slate-900/50 flex flex-row items-center justify-between">
         <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <Truck className="h-3.5 w-3.5 text-primary" />
           Mode of Delivery
         </CardTitle>
       </CardHeader>
       <CardContent className="p-5 space-y-1">
-        <p className="font-semibold text-sm text-gray-900">{current.label}</p>
+        <p className="font-semibold text-sm text-foreground">{current.label}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
           {current.description}
         </p>

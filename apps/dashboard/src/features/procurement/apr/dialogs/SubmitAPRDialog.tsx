@@ -46,12 +46,12 @@ export function SubmitAPRDialog({
 
         <div className="space-y-4">
           {/* Summary */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+          <div className="bg-blue-50 dark:bg-blue-500/15 border border-blue-200 dark:border-blue-500/35 rounded-lg p-4 space-y-3">
             <div className="flex items-start gap-3">
-              <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-sm text-blue-900">APR Ready to Submit</p>
-                <p className="text-sm text-blue-700 mt-1">
+                <p className="font-medium text-sm text-blue-900 dark:text-blue-200">APR Ready to Submit</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300/90 mt-1">
                   {apr.aprNumber} will be sent for review and assigned an official tracking number.
                 </p>
               </div>
@@ -61,26 +61,26 @@ export function SubmitAPRDialog({
           {/* Details */}
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Items:</span>
-              <span className="font-medium">{itemsCount}</span>
+              <span className="text-muted-foreground">Total Items:</span>
+              <span className="font-medium text-foreground">{itemsCount}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Amount:</span>
-              <span className="font-medium">
+              <span className="text-muted-foreground">Total Amount:</span>
+              <span className="font-medium text-foreground tabular-nums">
                 ₱{new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalAmount)}
               </span>
             </div>
             {apr.fiscalYear && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Fiscal Year:</span>
-                <span className="font-medium">{apr.fiscalYear}</span>
+                <span className="text-muted-foreground">Fiscal Year:</span>
+                <span className="font-medium text-foreground">{apr.fiscalYear}</span>
               </div>
             )}
           </div>
 
           {/* Confirmation */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-            <p className="text-sm text-gray-700">
+          <div className="bg-slate-50 dark:bg-slate-900/60 border border-border rounded-lg p-3">
+            <p className="text-sm text-muted-foreground">
               Once submitted, this APR will transition to FOR APPROVAL status and be submitted to the approval authority.
             </p>
           </div>
@@ -98,7 +98,7 @@ export function SubmitAPRDialog({
           <Button
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isSubmitting ? 'Submitting...' : 'Submit APR'}
           </Button>

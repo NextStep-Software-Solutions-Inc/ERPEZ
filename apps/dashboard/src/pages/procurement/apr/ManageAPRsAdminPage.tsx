@@ -181,17 +181,22 @@ export function ManageAPRsAdminPage() {
   return (
     <div className="w-full space-y-6 pb-10">
       {/* Header */}
-      {<Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-        <CardHeader>
+      {<Card className="rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20 dark:from-primary/20 dark:via-primary/10 dark:to-card dark:border-primary/30 shadow-xs">
+        <CardHeader className="border-b-0 p-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="space-y-1">
-              <CardTitle className="text-3xl">Manage APRs</CardTitle>
-              <CardDescription className="text-base">
+              <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                Manage APRs
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base text-muted-foreground">
                 Review and approve Agency Purchase Requests from all offices
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
+              <Badge
+                variant="outline"
+                className="h-fit px-3 py-1 font-semibold bg-background/80 text-primary border-primary/30 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-400/35"
+              >
                 <ClipboardList className="h-3.5 w-3.5 mr-1.5" /> Agency Purchase Requests
               </Badge>
             </div>
@@ -201,13 +206,15 @@ export function ManageAPRsAdminPage() {
 
       {/* Error State */}
       {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-red-800">
-              <AlertCircle className="h-5 w-5" />
+        <Card className="rounded-xl border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-950/30">
+          <CardContent className="p-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-red-800 dark:text-red-200">
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
               <div>
                 <p className="font-semibold">Failed to load APR records</p>
-                <p className="text-sm">{String((error as any)?.message || 'An error occurred while fetching APRs')}</p>
+                <p className="text-sm text-red-700 dark:text-red-300/90">
+                  {String((error as any)?.message || 'An error occurred while fetching APRs')}
+                </p>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -224,15 +231,17 @@ export function ManageAPRsAdminPage() {
 
       {/* Loading indicator */}
       {isLoading && (
-        <div className="flex items-center justify-center py-12 bg-white rounded-lg border">
+        <div className="flex items-center justify-center py-12 bg-card text-card-foreground rounded-xl border border-border shadow-xs">
           <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-          <span className="text-sm font-medium text-gray-500">Loading APRs from database...</span>
+          <span className="text-sm font-medium text-muted-foreground">
+            Loading APRs from database...
+          </span>
         </div>
       )}
 
       {/* APRs Management Table with Toolbar and Filters */}
       {!isLoading && (
-        <div className="bg-white rounded-lg border p-4">
+        <div className="bg-card text-card-foreground rounded-xl border border-border p-5 shadow-xs">
           <AdminAPRsManagementTable
             data={aprList as any}
             isLoading={false}

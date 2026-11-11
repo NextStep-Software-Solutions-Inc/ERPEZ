@@ -42,40 +42,40 @@ export function APRStatsGrid({
       label: 'TOTAL ITEMS',
       value: totalItemsCount.toString(),
       icon: Package,
-      labelColor: 'text-slate-500',
-      valueColor: 'text-gray-900',
-      cardBorder: 'border-slate-100 hover:border-blue-100',
-      iconBox: 'bg-[#f0f7ff] text-[#2563eb] border border-[#dbeafe]',
+      labelColor: 'text-slate-500 dark:text-slate-400',
+      valueColor: 'text-slate-900 dark:text-slate-50',
+      cardBorder: 'border-border hover:border-blue-300 dark:hover:border-blue-500/40',
+      iconBox: 'bg-blue-50 text-blue-600 border border-blue-200/80 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30',
       topAccent: '',
     },
     {
       label: 'CONSOLIDATED ITEMS',
       value: consolidatedCount.toString(),
       icon: Layers,
-      labelColor: 'text-emerald-700',
-      valueColor: 'text-gray-900',
-      cardBorder: 'border-slate-100 hover:border-emerald-100',
-      iconBox: 'bg-[#ecfdf5] text-[#059669] border border-[#d1fae5]',
+      labelColor: 'text-emerald-700 dark:text-emerald-400',
+      valueColor: 'text-slate-900 dark:text-slate-50',
+      cardBorder: 'border-border hover:border-emerald-300 dark:hover:border-emerald-500/40',
+      iconBox: 'bg-emerald-50 text-emerald-600 border border-emerald-200/80 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30',
       topAccent: 'border-l-2 border-l-emerald-500',
     },
     {
       label: 'TOTAL AMOUNT',
       value: formatCurrencyPHP(totalAmount),
       icon: DollarSign,
-      labelColor: 'text-indigo-700',
-      valueColor: 'text-[#6366f1]',
-      cardBorder: 'border-slate-100 hover:border-purple-100',
-      iconBox: 'bg-[#f5f3ff] text-[#6366f1] border border-[#ede9fe]',
+      labelColor: 'text-indigo-700 dark:text-indigo-400',
+      valueColor: 'text-indigo-600 dark:text-indigo-400',
+      cardBorder: 'border-border hover:border-indigo-300 dark:hover:border-indigo-500/40',
+      iconBox: 'bg-indigo-50 text-indigo-600 border border-indigo-200/80 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/30',
       topAccent: '',
     },
     {
       label: 'STATUS',
       value: displayStatus,
       icon: Activity,
-      labelColor: 'text-amber-700',
-      valueColor: 'text-gray-900',
-      cardBorder: 'border-slate-100 hover:border-amber-100',
-      iconBox: 'bg-[#fffbeb] text-[#d97706] border border-[#fef3c7]',
+      labelColor: 'text-amber-700 dark:text-amber-400',
+      valueColor: 'text-slate-900 dark:text-slate-50',
+      cardBorder: 'border-border hover:border-amber-300 dark:hover:border-amber-500/40',
+      iconBox: 'bg-amber-50 text-amber-600 border border-amber-200/80 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30',
       topAccent: '',
     },
   ]
@@ -87,14 +87,14 @@ export function APRStatsGrid({
         return (
           <Card
             key={idx}
-            className={`bg-white border ${stat.cardBorder} ${stat.topAccent} rounded-2xl shadow-2xs p-0 transition-all hover:shadow-xs`}
+            className={`bg-card text-card-foreground border ${stat.cardBorder} ${stat.topAccent} rounded-2xl shadow-2xs p-0 transition-all hover:shadow-xs`}
           >
             <CardContent className="p-4 sm:p-5 flex items-center justify-between gap-3">
               <div className="min-w-0 space-y-1">
                 <p className={`text-[10px] font-bold uppercase tracking-wider ${stat.labelColor}`}>
                   {stat.label}
                 </p>
-                <p className={`text-lg sm:text-xl font-bold tracking-tight truncate ${stat.valueColor}`}>
+                <p className={`text-lg sm:text-xl font-bold tracking-tight truncate tabular-nums ${stat.valueColor}`}>
                   {stat.value}
                 </p>
               </div>
