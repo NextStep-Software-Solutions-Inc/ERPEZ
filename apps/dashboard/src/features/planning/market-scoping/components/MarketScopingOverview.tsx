@@ -30,11 +30,11 @@ function StatCard({
   valueClassName?: string
 }) {
   return (
-    <div className="rounded-lg border border-border bg-white p-3 shadow-sm">
+    <div className="rounded-lg border border-border bg-secondary/40 p-3 shadow-2xs">
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
-      <div className={cn('mt-1 text-sm font-semibold', valueClassName)}>
+      <div className={cn('mt-1 text-sm font-semibold tabular-nums', valueClassName)}>
         {value}
       </div>
       {sublabel && (
@@ -58,15 +58,15 @@ function MiniMetricCard({
   return (
     <div
       className={cn(
-        'rounded-md border bg-white px-3 py-2 shadow-sm',
-        tone === 'warning' && 'border-amber-200 bg-amber-50/70',
-        tone === 'success' && 'border-emerald-200 bg-emerald-50/70',
+        'rounded-md border border-border bg-secondary/40 px-3 py-2 shadow-2xs',
+        tone === 'warning' && 'border-amber-500/25 bg-amber-500/10 dark:border-amber-500/30 dark:bg-amber-500/15',
+        tone === 'success' && 'border-emerald-500/25 bg-emerald-500/10 dark:border-emerald-500/30 dark:bg-emerald-500/15',
       )}
     >
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
-      <div className="mt-0.5 text-sm font-semibold text-foreground">
+      <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">
         {value}
       </div>
     </div>
@@ -98,7 +98,7 @@ export function MarketScopingOverview({
   return (
     <Card
       className={cn(
-        'overflow-hidden border-border/70 bg-gradient-to-br from-white to-slate-50 shadow-sm',
+        'overflow-hidden border border-border/80 bg-card shadow-xs',
         className,
       )}
     >
@@ -144,7 +144,7 @@ export function MarketScopingOverview({
             label="Approved Budget"
             value={formatCurrency(approvedBudget)}
             sublabel="Ready for procurement"
-            valueClassName="text-green-600"
+            valueClassName="text-emerald-600 dark:text-emerald-400"
           />
         </div>
       </CardContent>

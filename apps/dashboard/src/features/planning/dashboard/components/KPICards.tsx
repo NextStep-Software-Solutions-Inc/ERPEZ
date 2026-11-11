@@ -31,22 +31,35 @@ interface KPICardsProps {
 
 type StatusTone = 'green' | 'amber' | 'red'
 
-function getStatusStyle(status: StatusTone) {
-  const map = {
-    green: {
-      borderLeftColor: '#1baf7a',
-      backgroundColor: 'color-mix(in srgb, #1baf7a 8%, transparent)',
-    },
-    amber: {
-      borderLeftColor: '#eda100',
-      backgroundColor: 'color-mix(in srgb, #eda100 8%, transparent)',
-    },
-    red: {
-      borderLeftColor: '#d03b3b',
-      backgroundColor: 'color-mix(in srgb, #d03b3b 8%, transparent)',
-    },
+const statusToneStyles: Record<
+  StatusTone,
+  {
+    cardClass: string
+    borderLeftColor: string
+    ratioPillClass: string
   }
-  return map[status]
+> = {
+  green: {
+    cardClass:
+      'bg-gradient-to-br from-emerald-500/[0.06] via-card to-card dark:from-emerald-500/[0.11] dark:via-card dark:to-card',
+    borderLeftColor: '#1baf7a',
+    ratioPillClass:
+      'bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30',
+  },
+  amber: {
+    cardClass:
+      'bg-gradient-to-br from-amber-500/[0.06] via-card to-card dark:from-amber-500/[0.11] dark:via-card dark:to-card',
+    borderLeftColor: '#eda100',
+    ratioPillClass:
+      'bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30',
+  },
+  red: {
+    cardClass:
+      'bg-gradient-to-br from-rose-500/[0.06] via-card to-card dark:from-rose-500/[0.11] dark:via-card dark:to-card',
+    borderLeftColor: '#d03b3b',
+    ratioPillClass:
+      'bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30',
+  },
 }
 
 interface KPICardTheme {
@@ -83,22 +96,24 @@ function KPICard({
 
   const trendColorClass =
     trend === 'up'
-      ? 'text-emerald-600'
+      ? 'text-emerald-600 dark:text-emerald-400'
       : trend === 'down'
-        ? 'text-red-500'
-        : 'text-gray-400'
+        ? 'text-rose-600 dark:text-rose-400'
+        : 'text-muted-foreground'
+
+  const tone = statusToneStyles[statusTone]
 
   return (
     <Card
-      className="relative overflow-hidden border border-gray-100 border-l-4 shadow-sm hover:shadow transition-all duration-150"
-      style={getStatusStyle(statusTone)}
+      className={`relative overflow-hidden bg-card border border-border/80 border-l-4 shadow-xs hover:shadow-md transition-all duration-150 ${tone.cardClass}`}
+      style={{ borderLeftColor: tone.borderLeftColor }}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-4 pb-2">
-        <CardTitle className="text-xs font-medium uppercase tracking-wider text-gray-500">
+        <CardTitle className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           {title}
         </CardTitle>
         <div
-          className={`flex h-8 w-8 items-center justify-center rounded-lg ${theme.iconBg}`}
+          className={`flex h-8 w-8 items-center justify-center rounded-lg border ${theme.iconBg}`}
         >
           <span className={theme.iconColor}>{icon}</span>
         </div>
@@ -106,27 +121,27 @@ function KPICard({
       <CardContent className="pt-0 pb-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-baseline gap-2">
-            <span className={`text-2xl font-bold tracking-tight ${theme.valueColor}`}>
+            <span className={`text-2xl font-bold tracking-tight tabular-nums ${theme.valueColor}`}>
               {value}
             </span>
             {ratioLabel && (
-              <span className="text-xs font-normal text-gray-600 bg-white/90 px-1.5 py-0.5 rounded border border-gray-200/60">
+              <span className={`text-[11px] font-semibold tabular-nums px-1.5 py-0.5 rounded border ${tone.ratioPillClass}`}>
                 {ratioLabel}
               </span>
             )}
           </div>
 
-          <div className="text-xs text-gray-500 font-normal truncate" title={subtitle}>
+          <div className="text-xs text-muted-foreground font-normal truncate" title={subtitle}>
             {subtitle}
           </div>
 
           {trendValue && (
-            <div className="flex items-center gap-1 mt-1 pt-1.5 border-t border-gray-100/70">
+            <div className="flex items-center gap-1 mt-1 pt-1.5 border-t border-border/60">
               <TrendIcon className={`h-3 w-3 ${trendColorClass}`} />
               <span className={`text-[11px] font-medium ${trendColorClass}`}>
                 {trendValue}
               </span>
-              <span className="text-[11px] text-gray-400 font-normal">vs last month</span>
+              <span className="text-[11px] text-muted-foreground font-normal">vs last month</span>
             </div>
           )}
         </div>
@@ -137,15 +152,15 @@ function KPICard({
 
 function KPICardSkeleton() {
   return (
-    <Card className="animate-pulse border border-gray-100 border-l-4 border-l-gray-300 shadow-sm">
+    <Card className="animate-pulse bg-card border border-border/80 border-l-4 border-l-muted-foreground/30 shadow-xs">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="h-3 w-24 bg-gray-200 rounded" />
-        <div className="h-7 w-7 bg-gray-200 rounded-lg" />
+        <div className="h-3 w-24 bg-muted rounded" />
+        <div className="h-8 w-8 bg-muted rounded-lg" />
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-2">
-          <div className="h-7 w-28 bg-gray-200 rounded" />
-          <div className="h-3 w-36 bg-gray-200 rounded" />
+          <div className="h-7 w-28 bg-muted rounded" />
+          <div className="h-3 w-36 bg-muted rounded" />
         </div>
       </CardContent>
     </Card>
@@ -168,27 +183,27 @@ function formatTrendValue(change: number, unit = ''): string {
 const kpiThemes: KPICardTheme[] = [
   {
     // Total KPIs - Blue
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-600',
-    valueColor: 'text-gray-900',
+    iconBg: 'bg-blue-500/10 border-blue-500/15 dark:bg-blue-500/15 dark:border-blue-400/20',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    valueColor: 'text-foreground',
   },
   {
     // OPCR - Emerald green
-    iconBg: 'bg-emerald-50',
-    iconColor: 'text-emerald-600',
-    valueColor: 'text-gray-900',
+    iconBg: 'bg-emerald-500/10 border-emerald-500/15 dark:bg-emerald-500/15 dark:border-emerald-400/20',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    valueColor: 'text-foreground',
   },
   {
     // Budget - Amber/Orange
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-600',
-    valueColor: 'text-gray-900',
+    iconBg: 'bg-amber-500/10 border-amber-500/15 dark:bg-amber-500/15 dark:border-amber-400/20',
+    iconColor: 'text-amber-600 dark:text-amber-400',
+    valueColor: 'text-foreground',
   },
   {
     // PPMP - Violet
-    iconBg: 'bg-violet-50',
-    iconColor: 'text-violet-600',
-    valueColor: 'text-gray-900',
+    iconBg: 'bg-violet-500/10 border-violet-500/15 dark:bg-violet-500/15 dark:border-violet-400/20',
+    iconColor: 'text-violet-600 dark:text-violet-400',
+    valueColor: 'text-foreground',
   },
 ]
 

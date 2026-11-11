@@ -285,12 +285,12 @@ export function EditAPRDialog({ open, onOpenChange, apr, onSuccess }: EditAPRDia
                       isActive
                         ? 'bg-primary text-white shadow-sm ring-2 ring-primary/20'
                         : isCompleted
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'
-                        : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/30 cursor-pointer'
+                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 cursor-not-allowed'
                     }`}
                   >
                     <span className="flex items-center justify-center h-4 w-4 rounded-full text-[10px] bg-white/20">
-                      {isCompleted ? <Check className="h-3 w-3 text-green-800" /> : s}
+                      {isCompleted ? <Check className="h-3 w-3 text-emerald-800 dark:text-emerald-300" /> : s}
                     </span>
                     <span className="truncate">
                       {s === 1 && 'Source APP'}
@@ -299,7 +299,7 @@ export function EditAPRDialog({ open, onOpenChange, apr, onSuccess }: EditAPRDia
                       {s === 4 && 'Review'}
                     </span>
                   </button>
-                  {s < 4 && <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0" />}
+                  {s < 4 && <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600 flex-shrink-0" />}
                 </div>
               )
             })}
@@ -308,19 +308,19 @@ export function EditAPRDialog({ open, onOpenChange, apr, onSuccess }: EditAPRDia
 
         {/* Selected APP Banner (Steps 2-4) */}
         {step > 1 && selection.sourceAppId && (
-          <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between gap-4">
+          <div className="mx-6 mt-4 p-3 bg-blue-50 dark:bg-blue-500/15 border border-blue-200 dark:border-blue-500/35 rounded-lg flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-xs text-blue-900 font-semibold truncate">
+              <p className="text-xs text-blue-900 dark:text-blue-200 font-semibold truncate">
                 Selected APP: <span className="font-mono text-primary">{appDisplayName}</span>
               </p>
-              <p className="text-[11px] text-blue-700">
+              <p className="text-[11px] text-blue-700 dark:text-blue-300">
                 {selection.selectedLineItemIds.length} APP line items selected (Total: ₱{totalCalculatedBudget.toLocaleString()})
               </p>
             </div>
             <Button
               variant="outline"
               size="xs"
-              className="border-blue-300 text-blue-800 hover:bg-blue-100 flex-shrink-0"
+              className="border-blue-300 text-blue-800 hover:bg-blue-100 dark:border-blue-500/40 dark:text-blue-200 dark:hover:bg-blue-500/25 flex-shrink-0"
               onClick={() => setStep(1)}
               disabled={isPending}
             >
@@ -335,9 +335,9 @@ export function EditAPRDialog({ open, onOpenChange, apr, onSuccess }: EditAPRDia
           {step === 1 && (
             <div className="space-y-4">
               {/* Fiscal Year Selector */}
-              <div className="p-3 bg-slate-50 rounded-lg border space-y-1">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-border space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-gray-700">Fiscal Year</label>
+                  <label className="text-xs font-semibold text-foreground">Fiscal Year</label>
                   {fiscalYearsLoading && (
                     <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                       <Loader2 className="h-3 w-3 animate-spin" /> Loading fiscal years...
@@ -349,7 +349,7 @@ export function EditAPRDialog({ open, onOpenChange, apr, onSuccess }: EditAPRDia
                   onValueChange={(val) => setSelectedFiscalYear(parseInt(val, 10))}
                   disabled={fiscalYearsLoading || fiscalYears.length === 0}
                 >
-                  <SelectTrigger className="w-full bg-white h-9 text-xs">
+                  <SelectTrigger className="w-full bg-background h-9 text-xs">
                     <SelectValue placeholder="Select fiscal year" />
                   </SelectTrigger>
                   <SelectContent>
@@ -406,19 +406,19 @@ export function EditAPRDialog({ open, onOpenChange, apr, onSuccess }: EditAPRDia
             <div className="space-y-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     📋 Request Summary
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 text-xs">
-                  <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 rounded-lg border">
+                  <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-border">
                     <div>
                       <p className="text-muted-foreground">Source APP(s)</p>
-                      <p className="font-semibold text-gray-900">{appDisplayName}</p>
+                      <p className="font-semibold text-foreground">{appDisplayName}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Fiscal Year</p>
-                      <p className="font-semibold text-gray-900">FY {selectedFiscalYear}</p>
+                      <p className="font-semibold text-foreground">FY {selectedFiscalYear}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Selected Line Items</p>
@@ -426,25 +426,25 @@ export function EditAPRDialog({ open, onOpenChange, apr, onSuccess }: EditAPRDia
                     </div>
                     <div>
                       <p className="text-muted-foreground">Total Budget</p>
-                      <p className="font-semibold text-green-700">₱{totalCalculatedBudget.toLocaleString()}</p>
+                      <p className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">₱{totalCalculatedBudget.toLocaleString()}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-2 border-t pt-3">
-                    <p className="font-semibold text-gray-800">Header Information</p>
-                    <div className="grid grid-cols-2 gap-2 text-gray-600">
-                      <div><span className="font-medium">Control No:</span> {form.state.values.agencyControlNumber || 'N/A'}</div>
-                      <div><span className="font-medium">Account Code:</span> {form.state.values.agencyAccountCode || 'N/A'}</div>
-                      <div><span className="font-medium">Request Date:</span> {form.state.values.requestDate}</div>
-                      <div><span className="font-medium">Description:</span> {form.state.values.description || 'N/A'}</div>
+                  <div className="space-y-2 border-t border-border pt-3">
+                    <p className="font-semibold text-foreground">Header Information</p>
+                    <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                      <div><span className="font-medium text-foreground">Control No:</span> {form.state.values.agencyControlNumber || 'N/A'}</div>
+                      <div><span className="font-medium text-foreground">Account Code:</span> {form.state.values.agencyAccountCode || 'N/A'}</div>
+                      <div><span className="font-medium text-foreground">Request Date:</span> {form.state.values.requestDate}</div>
+                      <div><span className="font-medium text-foreground">Description:</span> {form.state.values.description || 'N/A'}</div>
                     </div>
                   </div>
 
-                  <div className="space-y-2 border-t pt-3">
-                    <p className="font-semibold text-gray-800">Terms & Conditions</p>
-                    <div className="grid grid-cols-2 gap-2 text-gray-600">
+                  <div className="space-y-2 border-t border-border pt-3">
+                    <p className="font-semibold text-foreground">Terms & Conditions</p>
+                    <div className="grid grid-cols-2 gap-2 text-muted-foreground">
                       <div>
-                        <span className="font-medium">Delivery Mode:</span>{' '}
+                        <span className="font-medium text-foreground">Delivery Mode:</span>{' '}
                         <Badge variant="outline" className="text-[10px]">
                           {form.state.values.modeOfDelivery === 'DoorToDoor' || form.state.values.modeOfDelivery === 'DOOR_TO_DOOR'
                             ? 'Door-to-Door'

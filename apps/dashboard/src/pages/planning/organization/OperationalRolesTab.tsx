@@ -675,11 +675,11 @@ export default function OperationalRolesTab() {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg text-slate-900">
+                <h3 className="font-semibold text-lg text-foreground">
                   ERP Operational Role Governance
                 </h3>
               </div>
-              <p className="text-sm text-slate-600 max-w-2xl">
+              <p className="text-sm text-muted-foreground max-w-2xl">
                 Operational roles (such as <strong>LIB Approver</strong>,{' '}
                 <strong>Planning Officer</strong>,{' '}
                 <strong>Procurement Officer</strong>, and{' '}
@@ -693,16 +693,16 @@ export default function OperationalRolesTab() {
 
           {/* Spectator Mode Banner */}
           {isTenantAdminSpectator && (
-            <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50/80 text-amber-900 shadow-xs">
-              <Eye className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+            <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 shadow-xs">
+              <Eye className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
               <div className="text-xs space-y-1">
-                <div className="font-semibold text-amber-950 flex items-center gap-2">
+                <div className="font-semibold text-amber-950 dark:text-amber-100 flex items-center gap-2">
                   <span>Spectator Mode (Read-Only)</span>
-                  <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 text-[10px]">
+                  <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700 text-[10px]">
                     Tenant Administrator
                   </Badge>
                 </div>
-                <p className="text-amber-800 leading-relaxed">
+                <p className="text-amber-800 dark:text-amber-300 leading-relaxed">
                   You are viewing this workspace’s operational roles as an Account Tenant Administrator. In the ERP dashboard, operational role assignments and member invitations are reserved exclusively for <strong>Dashboard System Admins</strong>.
                 </p>
               </div>
@@ -713,7 +713,7 @@ export default function OperationalRolesTab() {
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2.5 flex-1">
           <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search personnel, email, role, office..."
               value={searchQuery}
@@ -723,15 +723,15 @@ export default function OperationalRolesTab() {
           </div>
 
           {/* Quick status filters */}
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+          <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setStatusFilter('all')}
               className={`h-7 px-2.5 text-xs font-medium rounded-md transition ${
                 statusFilter === 'all'
-                  ? 'bg-white shadow-sm text-slate-900'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-background shadow-sm text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               All ({counts.total})
@@ -742,8 +742,8 @@ export default function OperationalRolesTab() {
               onClick={() => setStatusFilter('active')}
               className={`h-7 px-2.5 text-xs font-medium rounded-md transition ${
                 statusFilter === 'active'
-                  ? 'bg-white shadow-sm text-emerald-800'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-background shadow-sm text-emerald-700 dark:text-emerald-400'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Active ({counts.active})
@@ -755,8 +755,8 @@ export default function OperationalRolesTab() {
                 onClick={() => setStatusFilter('pending')}
                 className={`h-7 px-2.5 text-xs font-medium rounded-md transition ${
                   statusFilter === 'pending'
-                    ? 'bg-amber-100/90 text-amber-900 shadow-sm'
-                    : 'text-amber-700 hover:bg-amber-50'
+                    ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 shadow-sm'
+                    : 'text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
                 }`}
               >
                 Pending ({counts.pending})
@@ -769,8 +769,8 @@ export default function OperationalRolesTab() {
                 onClick={() => setStatusFilter('expired')}
                 className={`h-7 px-2.5 text-xs font-medium rounded-md transition ${
                   statusFilter === 'expired'
-                    ? 'bg-rose-100 text-rose-900 shadow-sm'
-                    : 'text-rose-700 hover:bg-rose-50'
+                    ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-900 dark:text-rose-200 shadow-sm'
+                    : 'text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
                 }`}
               >
                 Expired ({counts.expired})
@@ -780,7 +780,7 @@ export default function OperationalRolesTab() {
         </div>
 
         <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-          <div className="text-xs text-slate-500 hidden sm:block">
+          <div className="text-xs text-muted-foreground hidden sm:block">
             Showing {filteredRows.length} of {unifiedMembers.length} workspace members & invites
           </div>
           {isDashboardAdmin && <InviteWorkspaceMemberModal />}
@@ -788,23 +788,23 @@ export default function OperationalRolesTab() {
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg bg-white overflow-hidden shadow-sm">
+      <div className="border border-border rounded-lg bg-card text-card-foreground overflow-hidden shadow-sm">
         <Table>
-          <TableHeader className="bg-slate-50">
+          <TableHeader className="bg-muted/40">
             <TableRow>
-              <TableHead className="font-semibold text-slate-700">
+              <TableHead className="font-semibold text-muted-foreground">
                 Personnel / Member
               </TableHead>
-              <TableHead className="font-semibold text-slate-700">
+              <TableHead className="font-semibold text-muted-foreground">
                 Operational Roles
               </TableHead>
-              <TableHead className="font-semibold text-slate-700">
+              <TableHead className="font-semibold text-muted-foreground">
                 Official Office
               </TableHead>
-              <TableHead className="font-semibold text-slate-700">
+              <TableHead className="font-semibold text-muted-foreground">
                 Status
               </TableHead>
-              <TableHead className="text-right font-semibold text-slate-700 pr-6">
+              <TableHead className="text-right font-semibold text-muted-foreground pr-6">
                 Action
               </TableHead>
             </TableRow>
@@ -814,7 +814,7 @@ export default function OperationalRolesTab() {
               <TableRow>
                 <TableCell
                   colSpan={5}
-                  className="text-center py-8 text-slate-500"
+                  className="text-center py-8 text-muted-foreground"
                 >
                   Loading workspace records and invitations...
                 </TableCell>
@@ -823,7 +823,7 @@ export default function OperationalRolesTab() {
               <TableRow>
                 <TableCell
                   colSpan={5}
-                  className="text-center py-10 text-slate-500"
+                  className="text-center py-10 text-muted-foreground"
                 >
                   No workspace members or invitations found matching your search.
                 </TableCell>
@@ -832,8 +832,8 @@ export default function OperationalRolesTab() {
               filteredRows.map((row) => (
                 <TableRow
                   key={row.key}
-                  className={`hover:bg-slate-50/60 transition ${
-                    row.isPendingOrExpired ? 'bg-slate-50/40' : ''
+                  className={`hover:bg-muted/40 transition ${
+                    row.isPendingOrExpired ? 'bg-muted/20' : ''
                   }`}
                 >
                   <TableCell className="py-3">
@@ -842,15 +842,15 @@ export default function OperationalRolesTab() {
                         <img
                           src={row.avatarUrl}
                           alt={row.displayName}
-                          className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
+                          className="w-9 h-9 rounded-full object-cover border border-border shrink-0"
                         />
                       ) : (
                         <div
                           className={`w-9 h-9 rounded-full border flex items-center justify-center font-semibold text-xs shrink-0 ${
                             row.status === 'Expired'
-                              ? 'bg-rose-50 border-rose-200 text-rose-700'
+                              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
                               : row.status === 'Pending'
-                              ? 'bg-amber-50 border-amber-200 text-amber-700'
+                              ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300'
                               : 'bg-primary/10 border-primary/20 text-primary'
                           }`}
                         >
@@ -859,7 +859,7 @@ export default function OperationalRolesTab() {
                       )}
                       <div className="space-y-0.5 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-sm text-slate-900 truncate">
+                          <span className="font-semibold text-sm text-foreground truncate">
                             {row.displayName}
                           </span>
                           {row.isCurrentUser && (
@@ -873,13 +873,13 @@ export default function OperationalRolesTab() {
                           {row.roleBadge && (
                             <Badge
                               variant="secondary"
-                              className="text-[10px] px-1.5 py-0 h-4 bg-slate-100 text-slate-700 font-normal"
+                              className="text-[10px] px-1.5 py-0 h-4 bg-muted text-foreground font-normal"
                             >
                               {row.roleBadge}
                             </Badge>
                           )}
                         </div>
-                        <div className="text-xs text-slate-500 flex items-center gap-2 truncate">
+                        <div className="text-xs text-muted-foreground flex items-center gap-2 truncate">
                           <span>{row.email}</span>
                           {row.employeeNumber && (
                             <>
@@ -890,7 +890,7 @@ export default function OperationalRolesTab() {
                           {row.authId && !row.email.includes(row.authId) && (
                             <>
                               <span>•</span>
-                              <span className="font-mono text-[10px] text-slate-400">
+                              <span className="font-mono text-[10px] text-muted-foreground/70">
                                 {row.authId.slice(0, 14)}...
                               </span>
                             </>
@@ -908,10 +908,10 @@ export default function OperationalRolesTab() {
                             variant="outline"
                             className={`text-[11px] font-medium px-2 py-0.5 rounded-md ${
                               roleName.toLowerCase().includes('admin')
-                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
                                 : roleName.toLowerCase().includes('officer') || roleName.toLowerCase().includes('approver')
-                                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                : 'bg-slate-100 text-slate-700 border-slate-200'
+                                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                                : 'bg-muted text-foreground border-border'
                             }`}
                           >
                             {roleName}
@@ -921,28 +921,28 @@ export default function OperationalRolesTab() {
                     ) : row.roleBadge === 'Workspace Admin' || row.isCurrentUser ? (
                       <Badge
                         variant="outline"
-                        className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border-purple-200"
+                        className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
                       >
                         System Administrator (Workspace Admin)
                       </Badge>
                     ) : row.status === 'Active' ? (
                       <Badge
                         variant="outline"
-                        className="text-[11px] font-normal px-2 py-0.5 rounded-md bg-slate-50 text-slate-500 border-slate-200"
+                        className="text-[11px] font-normal px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground border-border"
                       >
                         Employee / Viewer (Default)
                       </Badge>
                     ) : (
-                      <span className="text-xs text-slate-400 italic">None</span>
+                      <span className="text-xs text-muted-foreground italic">None</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm text-slate-700">
+                  <TableCell className="text-sm text-foreground">
                     {row.isPendingOrExpired ? (
-                      <span className="text-slate-400 italic text-xs">
+                      <span className="text-muted-foreground italic text-xs">
                         {row.status === 'Expired' ? 'Invitation Expired' : 'Pending Activation'}
                       </span>
                     ) : (
-                      row.officeName || <span className="text-slate-400 italic">Unassigned</span>
+                      row.officeName || <span className="text-muted-foreground italic">Unassigned</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -957,17 +957,17 @@ export default function OperationalRolesTab() {
                     ) : row.status === 'Expired' ? (
                       <Badge
                         variant="destructive"
-                        className="text-[10px] bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 gap-1 font-medium"
+                        className="text-[10px] bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/50 gap-1 font-medium"
                       >
-                        <AlertTriangle className="w-3 h-3 text-rose-600" />
+                        <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
                         Expired
                       </Badge>
                     ) : row.status === 'Pending' ? (
                       <Badge
                         variant="secondary"
-                        className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 gap-1 font-medium"
+                        className="text-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 gap-1 font-medium"
                       >
-                        <Clock className="w-3 h-3 text-amber-600" />
+                        <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                         Pending Invite
                       </Badge>
                     ) : (
@@ -978,7 +978,7 @@ export default function OperationalRolesTab() {
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     {isTenantAdminSpectator ? (
-                      <span className="text-xs text-slate-400 italic">View Only</span>
+                      <span className="text-xs text-muted-foreground italic">View Only</span>
                     ) : row.isPendingOrExpired ? (
                       <div className="flex items-center justify-end gap-1.5">
                         {row.tenantMember?.id && (
@@ -987,12 +987,12 @@ export default function OperationalRolesTab() {
                             variant="outline"
                             onClick={() => resendMutation.mutate(row.tenantMember!.id)}
                             disabled={resendMutation.isPending}
-                            className="gap-1 text-xs h-7 px-2 border-amber-300 text-amber-800 hover:bg-amber-50"
+                            className="gap-1 text-xs h-7 px-2 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
                           >
                             {resendMutation.isPending && resendMutation.variables === row.tenantMember.id ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
-                              <RotateCw className="h-3 w-3 text-amber-600" />
+                              <RotateCw className="h-3 w-3 text-amber-600 dark:text-amber-400" />
                             )}
                             <span>Resend</span>
                           </Button>
@@ -1009,7 +1009,7 @@ export default function OperationalRolesTab() {
                             }
                           }}
                           disabled={revokeMutation.isPending}
-                          className="gap-1 text-xs h-7 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                          className="gap-1 text-xs h-7 px-2 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                         >
                           <Trash2 className="h-3 w-3" />
                           <span>Revoke</span>
@@ -1046,7 +1046,7 @@ export default function OperationalRolesTab() {
               {selectedRow && (
                 <span>
                   Select operational roles to delegate to{' '}
-                  <strong className="text-slate-900 font-semibold">
+                  <strong className="text-foreground font-semibold">
                     {selectedRow.displayName}
                   </strong>{' '}
                   ({selectedRow.email}).
@@ -1057,11 +1057,11 @@ export default function OperationalRolesTab() {
 
           <div className="flex-1 overflow-y-auto pr-2 py-4 space-y-3">
             {isLoadingRoles || loadingUserRoles ? (
-              <div className="text-center py-8 text-slate-500">
+              <div className="text-center py-8 text-muted-foreground">
                 {isLoadingRoles ? 'Loading assignable operational roles...' : 'Loading member roles...'}
               </div>
             ) : operationalRoles.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 flex flex-col items-center gap-2">
+              <div className="text-center py-8 text-muted-foreground flex flex-col items-center gap-2">
                 <AlertCircle className="h-6 w-6 text-amber-500" />
                 <span>
                   No operational roles found in the current workspace.
@@ -1077,7 +1077,7 @@ export default function OperationalRolesTab() {
                     className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition ${
                       isSelected
                         ? 'border-primary/50 bg-primary/5'
-                        : 'border-slate-200 hover:bg-slate-50'
+                        : 'border-border hover:bg-muted/50'
                     }`}
                   >
                     <Checkbox
@@ -1087,20 +1087,20 @@ export default function OperationalRolesTab() {
                     />
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm text-slate-900">
+                        <span className="font-semibold text-sm text-foreground">
                           {role.name}
                         </span>
                         {role.isSystemRole && (
                           <Badge
                             variant="outline"
-                            className="text-[10px] text-slate-600 bg-white"
+                            className="text-[10px] text-muted-foreground bg-muted/50 border-border"
                           >
                             System Role
                           </Badge>
                         )}
                       </div>
                       {role.description && (
-                        <p className="text-xs text-slate-600 leading-relaxed">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
                           {role.description}
                         </p>
                       )}
@@ -1111,13 +1111,13 @@ export default function OperationalRolesTab() {
                             .map((p: string, idx: number) => (
                               <span
                                 key={idx}
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono"
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
                               >
                                 {p}
                               </span>
                             ))}
                           {perms.length > 4 && (
-                            <span className="text-[10px] text-slate-400 self-center">
+                            <span className="text-[10px] text-muted-foreground/70 self-center">
                               +{perms.length - 4} more
                             </span>
                           )}

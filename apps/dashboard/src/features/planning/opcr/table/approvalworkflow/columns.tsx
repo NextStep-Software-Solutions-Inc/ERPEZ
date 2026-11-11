@@ -73,12 +73,12 @@ const getStatusColor = (
 ): string => {
   const statusLower = status?.toLowerCase()
   const colorMap: Record<string, string> = {
-    draft: 'bg-gray-100 text-gray-700 border-gray-200',
-    submitted: 'bg-amber-100 text-amber-800 border-amber-200',
-    approved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    returned: 'bg-rose-100 text-rose-800 border-rose-200',
+    draft: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+    submitted: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/35',
+    approved: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/35',
+    returned: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/35',
   }
-  return colorMap[statusLower || ''] || 'bg-gray-100 text-gray-700'
+  return colorMap[statusLower || ''] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
 }
 
 const getStatusLabel = (

@@ -196,7 +196,7 @@ export function CreatePersonnelForm({ onCreated, onClose, availablePositions, se
               
               {/* User Suggestions */}
               {showUserSuggestions && userSearchInput && !selectedUser && filteredUsers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-default-200 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
                   {filteredUsers.map((user) => (
                     <button
                       key={user.id}
@@ -208,10 +208,10 @@ export function CreatePersonnelForm({ onCreated, onClose, availablePositions, se
                         field.handleChange(user.id)
                         setShowUserSuggestions(false)
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-default-50 transition-colors border-b border-default-100 last:border-b-0"
+                      className="w-full text-left px-4 py-2 hover:bg-muted transition-colors border-b border-border last:border-b-0"
                     >
-                      <div className="font-medium text-sm text-default-900">{getUserDisplayName(user)}</div>
-                      <div className="text-xs text-default-500">{user.employeeNumber} • {user.email}</div>
+                      <div className="font-medium text-sm text-foreground">{getUserDisplayName(user)}</div>
+                      <div className="text-xs text-muted-foreground">{user.employeeNumber} • {user.email}</div>
                     </button>
                   ))}
                 </div>
@@ -322,7 +322,7 @@ export function CreatePersonnelForm({ onCreated, onClose, availablePositions, se
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
-                className="w-full h-10 px-3 border border-default-200 focus:border-primary focus:ring-primary/20 transition-all rounded-md"
+                className="w-full h-10 px-3 bg-background text-foreground border border-default-200 focus:border-primary focus:ring-primary/20 transition-all rounded-md"
               />
             </div>
           )}

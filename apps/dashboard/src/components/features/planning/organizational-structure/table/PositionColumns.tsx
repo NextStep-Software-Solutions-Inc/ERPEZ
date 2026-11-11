@@ -38,9 +38,9 @@ export const createPositionColumns = (
             <Briefcase className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-default-900 text-sm">{title}</div>
+            <div className="font-semibold text-foreground text-sm">{title}</div>
             {unit && (
-              <div className="text-[10px] text-default-500 font-medium flex items-center gap-1 mt-0.5">
+              <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1 mt-0.5">
                 <Building2Icon className="h-3 w-3" />
                 <span className="truncate">{unit.name}</span>
               </div>
@@ -63,7 +63,7 @@ export const createPositionColumns = (
       const gradeName =
         typeof sg === 'string' ? sg : sg?.name || '-'
       return (
-        <Badge variant="outline" className="font-semibold text-default-700 bg-background border-default-200">
+        <Badge variant="outline" className="font-semibold text-foreground bg-muted/50 border-border">
           {gradeName}
         </Badge>
       )
@@ -75,7 +75,7 @@ export const createPositionColumns = (
     cell: ({ row }) => {
       const fte = row.original.authorizedFTE
       return (
-        <div className="font-semibold text-default-900 text-center">
+        <div className="font-semibold text-foreground text-center">
           {fte}
         </div>
       )

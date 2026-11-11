@@ -331,14 +331,14 @@ export function TemplateTable<T extends { id: string | number }>({
           {toolbar(table)}
         </div>
       )}
-      <div className="rounded-md border flex-1 flex flex-col min-h-0 bg-white">
+      <div className="rounded-md border border-border flex-1 flex flex-col min-h-0 bg-card text-card-foreground">
         <Table>
-          <TableHeader className=" bg-transparent border rounded-t-3xl">
+          <TableHeader className="bg-muted/40 border-b border-border rounded-t-md">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="text-gray-500">
+                    <TableHead key={header.id} className="text-muted-foreground">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -357,6 +357,7 @@ export function TemplateTable<T extends { id: string | number }>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  className="hover:bg-muted/30"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
@@ -378,9 +379,9 @@ export function TemplateTable<T extends { id: string | number }>({
                   className="h-32 text-center align-middle"
                 >
                   <div className="flex flex-col items-center justify-center space-y-2 py-8">
-                    <div className="rounded-full bg-gray-100 p-3">
+                    <div className="rounded-full bg-muted p-3">
                       <svg
-                        className="h-6 w-6 text-gray-400"
+                        className="h-6 w-6 text-muted-foreground"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -394,8 +395,8 @@ export function TemplateTable<T extends { id: string | number }>({
                         />
                       </svg>
                     </div>
-                    <div className="text-sm font-medium text-gray-900">No data to display</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm font-medium text-foreground">No data to display</div>
+                    <div className="text-sm text-muted-foreground">
                       {globalFilter ? 'Try adjusting your search or filters' : 'Get started by adding some data'}
                     </div>
                   </div>
@@ -405,7 +406,7 @@ export function TemplateTable<T extends { id: string | number }>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex flex-row items-center justify-between space-x-2 py-2 pt-2.5">
+      <div className={`flex flex-row items-center justify-between space-x-2 py-2 pt-2.5${forTab ? ' px-4' : ''}`}>
         <div className="text-muted-foreground text-sm">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}
           {totalCount !== undefined ? totalCount : table.getFilteredRowModel().rows.length} row(s) selected.

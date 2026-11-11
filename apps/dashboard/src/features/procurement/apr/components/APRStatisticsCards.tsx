@@ -23,6 +23,7 @@ export function APRStatisticsCards({ statistics }: APRStatisticsCardProps) {
         label="Total Submitted"
         value={statistics.totalSubmitted}
         icon={FileText}
+        colorScheme="info"
         details={`${statistics.totalDraft} in draft`}
       />
 
@@ -30,28 +31,32 @@ export function APRStatisticsCards({ statistics }: APRStatisticsCardProps) {
         label="Pending Approval"
         value={statistics.totalPending}
         icon={Clock}
-        details={`Awaiting review`}
+        colorScheme="warning"
+        details="Awaiting review"
       />
 
       <StatCard
         label="Approved"
         value={statistics.totalApproved}
         icon={CheckCircle}
-        details={`${approvedCount} total`}
+        colorScheme="success"
+        details={`${approvedCount} total approved`}
       />
 
       <StatCard
         label="Returned"
         value={statistics.totalReturned}
         icon={AlertCircle}
-        details={`Needs revision`}
+        colorScheme="danger"
+        details="Needs revision"
       />
 
       <StatCard
         label="Total Budget Approved"
         value={`₱${new Intl.NumberFormat('en-PH').format(statistics.totalBudgetApproved)}`}
         icon={DollarSign}
-        details={`₱${new Intl.NumberFormat('en-PH').format(statistics.totalBudgetApproved)}`}
+        colorScheme="secondary"
+        details={`₱${new Intl.NumberFormat('en-PH').format(statistics.totalBudgetRequested)} requested`}
       />
     </div>
   )

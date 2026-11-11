@@ -619,9 +619,9 @@ export function AddItemDialog({
             <>
               {/* Unsynced depot banner */}
               {!lastSyncTime && !isLoading && rawItems.length > 0 && (
-                <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3 flex items-center justify-between gap-3 text-xs text-amber-900">
+                <div className="bg-amber-50/70 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/35 rounded-lg p-3 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
                   <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                     <span>
                       Warehouse stock figures for <strong>{selectedDepot || 'this catalog'}</strong> have not been synchronized yet. Click <strong>Sync Now</strong> to fetch authoritative stock counts from PS-PhilGEPS.
                     </span>
@@ -632,7 +632,7 @@ export function AddItemDialog({
                     variant="outline"
                     onClick={handleSyncDepot}
                     disabled={isSyncing}
-                    className="h-7 text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 font-medium whitespace-nowrap"
+                    className="h-7 text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 dark:text-amber-200 dark:border-amber-500/40 font-medium whitespace-nowrap"
                   >
                     {isSyncing ? (
                       <>
@@ -647,10 +647,10 @@ export function AddItemDialog({
               )}
 
               {itemsError && (
-                <div className="border rounded-lg p-4 bg-red-50">
+                <div className="border border-red-200 dark:border-red-500/35 rounded-lg p-4 bg-red-50 dark:bg-red-950/30">
                   <div className="flex gap-2">
-                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-red-800">
+                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-red-800 dark:text-red-200">
                       <p className="font-medium">Failed to load items</p>
                       <p>Unable to retrieve PSDBM items. Please verify your connection.</p>
                     </div>

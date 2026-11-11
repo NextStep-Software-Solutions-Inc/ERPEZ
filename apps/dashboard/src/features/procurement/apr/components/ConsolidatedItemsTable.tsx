@@ -77,17 +77,17 @@ export function ConsolidatedItemsTable({
 
   if (items.length === 0) {
     return (
-      <Card className="bg-white border border-gray-200/90 rounded-2xl shadow-xs">
-        <CardHeader className="py-4 px-6 border-b border-gray-100 flex flex-row items-center justify-between">
+      <Card className="bg-card text-card-foreground border border-border rounded-2xl shadow-xs">
+        <CardHeader className="py-4 px-6 border-b border-border flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[#f5f3ff] text-[#6366f1] border border-[#ede9fe] flex items-center justify-center flex-shrink-0 shadow-2xs">
+            <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/80 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/30 flex items-center justify-center flex-shrink-0 shadow-2xs">
               <Package className="h-5 w-5" />
             </div>
             <div className="space-y-0.5">
-              <CardTitle className="text-sm font-bold text-gray-950">
+              <CardTitle className="text-sm font-bold text-foreground">
                 Consolidated Items (0)
               </CardTitle>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Procurement items sourced and consolidated from Annual Procurement Plan
               </p>
             </div>
@@ -104,12 +104,12 @@ export function ConsolidatedItemsTable({
           )}
         </CardHeader>
         <CardContent className="py-12 flex flex-col items-center justify-center text-center space-y-3">
-          <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+          <div className="h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
             <PackageSearch className="h-6 w-6" />
           </div>
           <div className="space-y-1">
-            <h4 className="font-bold text-gray-950 text-sm">No consolidated items</h4>
-            <p className="text-xs text-gray-500 max-w-sm">
+            <h4 className="font-bold text-foreground text-sm">No consolidated items</h4>
+            <p className="text-xs text-muted-foreground max-w-sm">
               No items have been added to this Agency Purchase Request yet.
             </p>
           </div>
@@ -120,18 +120,18 @@ export function ConsolidatedItemsTable({
 
   return (
     <>
-      <Card className="bg-white border border-gray-200/90 rounded-2xl shadow-xs overflow-hidden">
+      <Card className="bg-card text-card-foreground border border-border rounded-2xl shadow-xs overflow-hidden">
         {/* Table Card Header */}
-        <CardHeader className="py-4 px-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <CardHeader className="py-4 px-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[#f5f3ff] text-[#6366f1] border border-[#ede9fe] flex items-center justify-center flex-shrink-0 shadow-2xs">
+            <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/80 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/30 flex items-center justify-center flex-shrink-0 shadow-2xs">
               <Package className="h-5 w-5" />
             </div>
             <div className="space-y-0.5">
-              <CardTitle className="text-sm font-bold text-gray-950">
+              <CardTitle className="text-sm font-bold text-foreground">
                 Consolidated Items ({items.length})
               </CardTitle>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Procurement items sourced and consolidated from Annual Procurement Plan
               </p>
             </div>
@@ -154,24 +154,24 @@ export function ConsolidatedItemsTable({
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-[#f8fafc] border-b border-gray-200">
-                <TableRow className="hover:bg-transparent border-b border-gray-200">
-                  <TableHead className="font-bold text-xs text-gray-800 py-3.5 pl-6">
+              <TableHeader className="bg-slate-50/90 dark:bg-slate-900/60 border-b border-border">
+                <TableRow className="hover:bg-transparent border-b border-border">
+                  <TableHead className="font-bold text-xs text-slate-700 dark:text-slate-200 py-3.5 pl-6">
                     Item & Description
                   </TableHead>
-                  <TableHead className="font-bold text-xs text-gray-800 py-3.5">
+                  <TableHead className="font-bold text-xs text-slate-700 dark:text-slate-200 py-3.5">
                     Office & Fund Source
                   </TableHead>
-                  <TableHead className="font-bold text-xs text-gray-800 py-3.5">
+                  <TableHead className="font-bold text-xs text-slate-700 dark:text-slate-200 py-3.5">
                     Quantity & PS-DBM Deficit
                   </TableHead>
-                  <TableHead className="font-bold text-xs text-gray-800 py-3.5 text-right">
+                  <TableHead className="font-bold text-xs text-slate-700 dark:text-slate-200 py-3.5 text-right">
                     Unit Cost
                   </TableHead>
-                  <TableHead className="font-bold text-xs text-gray-800 py-3.5 text-right">
+                  <TableHead className="font-bold text-xs text-slate-700 dark:text-slate-200 py-3.5 text-right">
                     Total Amount
                   </TableHead>
-                  <TableHead className="font-bold text-xs text-gray-800 py-3.5 text-center pr-6 w-16">
+                  <TableHead className="font-bold text-xs text-slate-700 dark:text-slate-200 py-3.5 text-center pr-6 w-16">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -192,7 +192,7 @@ export function ConsolidatedItemsTable({
                   return (
                     <TableRow
                       key={item.id || item.itemCode || `item-row-${index}`}
-                      className="bg-white hover:bg-[#f8fafc]/70 transition-colors border-b border-gray-200/90 last:border-b-0"
+                      className="bg-card hover:bg-slate-50/80 dark:hover:bg-slate-800/55 transition-colors border-b border-border/70 last:border-b-0"
                     >
                       {/* Item & Description with Image / Folder Thumbnail Preview */}
                       <TableCell className="pl-6 py-4.5 align-middle">
@@ -201,7 +201,7 @@ export function ConsolidatedItemsTable({
                             <button
                               type="button"
                               onClick={() => setPreviewItem(item)}
-                              className="relative group h-11 w-11 rounded-xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center flex-shrink-0 shadow-2xs cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-primary"
+                              className="relative group h-11 w-11 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center flex-shrink-0 shadow-2xs cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-primary"
                               title="Click to view full image"
                             >
                               <img
@@ -217,16 +217,16 @@ export function ConsolidatedItemsTable({
                               </div>
                             </button>
                           ) : (
-                            <div className="h-11 w-11 rounded-xl bg-[#fef3c7] border border-[#f59e0b]/40 flex items-center justify-center text-[#b45309] flex-shrink-0 shadow-2xs">
-                              <FolderClosed className="h-5 w-5 fill-[#fde68a] text-[#b45309]" />
+                            <div className="h-11 w-11 rounded-xl bg-amber-100/80 border border-amber-300/70 dark:bg-amber-500/15 dark:border-amber-500/30 flex items-center justify-center text-amber-700 dark:text-amber-400 flex-shrink-0 shadow-2xs">
+                              <FolderClosed className="h-5 w-5 fill-amber-200 text-amber-700 dark:fill-amber-500/25 dark:text-amber-400" />
                             </div>
                           )}
                           <div className="space-y-0.5 min-w-0">
-                            <p className="font-bold text-xs text-gray-950 leading-snug truncate">
+                            <p className="font-bold text-xs text-foreground leading-snug truncate">
                               {item.description}
                             </p>
                             {item.itemCode && (
-                              <p className="text-[11px] text-gray-400 font-mono tracking-tight">
+                              <p className="text-[11px] text-muted-foreground font-mono tracking-tight">
                                 {item.itemCode}
                               </p>
                             )}
@@ -237,11 +237,11 @@ export function ConsolidatedItemsTable({
                       {/* Office & Fund Source */}
                       <TableCell className="py-4.5 align-middle">
                         <div className="space-y-1">
-                          <p className="font-bold text-xs text-gray-900 leading-tight">
+                          <p className="font-bold text-xs text-foreground leading-tight">
                             {item.office || 'Innovation and Technology Solutions Division'}
                           </p>
                           <div className="flex items-center gap-1.5">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#eff6ff] text-[#3b82f6] border border-[#dbeafe]">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30">
                               {item.fundSource || 'PS-DBM'}
                             </span>
                           </div>
@@ -253,13 +253,13 @@ export function ConsolidatedItemsTable({
                         <div className="space-y-1.5 min-w-[170px]">
                           {/* Requested Quantity */}
                           <div className="flex items-baseline gap-1.5">
-                            <span className="font-extrabold text-xs text-gray-950">
+                            <span className="font-extrabold text-xs text-foreground tabular-nums">
                               {item.quantity}
                             </span>
-                            <span className="text-xs text-gray-500 font-medium">
+                            <span className="text-xs text-muted-foreground font-medium">
                               {item.unit || 'Box'}
                             </span>
-                            <span className="text-[10px] text-gray-400 font-medium">
+                            <span className="text-[10px] text-muted-foreground/80 font-medium">
                               (Requested)
                             </span>
                           </div>
@@ -267,35 +267,35 @@ export function ConsolidatedItemsTable({
                           {isFullyCoveredByPR ? (
                             <div className="flex flex-col gap-1">
                               {/* Stock status indicator */}
-                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" />
+                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                                 <span>Requisitioned via Out-of-Stock PR</span>
                               </div>
 
                               {/* PR linkage badge */}
                               <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100/90 text-emerald-900 border border-emerald-300">
-                                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100/90 text-emerald-900 border border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/35">
+                                  <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                                   <span>{linkedPRDisplay ? `PR Created (${linkedPRDisplay})` : 'Transferred to PR'}</span>
                                 </span>
                               </div>
 
                               {/* Deficit resolved breakdown */}
-                              <span className="text-[10px] text-gray-500 font-medium">
+                              <span className="text-[10px] text-muted-foreground font-medium">
                                 0 {item.unit || 'unit'} remaining deficit • All {item.quantity} {item.unit || 'unit'} covered
                               </span>
                             </div>
                           ) : isPartiallyCovered ? (
                             <div className="flex flex-col gap-1">
                               {/* Stock status indicator */}
-                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
-                                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                                <span className="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse flex-shrink-0" />
                                 <span>Partially Covered by PR</span>
                               </div>
 
                               {/* Deficit quantity breakdown badge */}
                               <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/35">
                                   <span>Remaining Deficit:</span>
                                   <span>{deficitQty} {item.unit || 'Box'}</span>
                                 </span>
@@ -304,12 +304,12 @@ export function ConsolidatedItemsTable({
                               {/* Action tag */}
                               <div className="flex items-center gap-1 flex-wrap">
                                 {linkedPRDisplay && (
-                                  <span className="inline-flex items-center gap-1 w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
-                                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                  <span className="inline-flex items-center gap-1 w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/35">
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                                     {itemFulfilled} in {linkedPRDisplay}
                                   </span>
                                 )}
-                                <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30">
                                   Eligible for PR ({deficitQty} left)
                                 </span>
                               </div>
@@ -317,14 +317,14 @@ export function ConsolidatedItemsTable({
                           ) : isDeficit ? (
                             <div className="flex flex-col gap-1">
                               {/* Stock status indicator */}
-                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
-                                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                                <span className="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse flex-shrink-0" />
                                 <span>Out of Stock at PS-DBM</span>
                               </div>
 
                               {/* Deficit quantity breakdown badge */}
                               <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/35">
                                   <span>Deficit:</span>
                                   <span>{deficitQty} {item.unit || 'Box'}</span>
                                 </span>
@@ -332,23 +332,23 @@ export function ConsolidatedItemsTable({
 
                               {/* Action tag */}
                               {linkedPRDisplay ? (
-                                <span className="inline-flex items-center gap-1 w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
-                                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                <span className="inline-flex items-center gap-1 w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/35">
+                                  <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                                   PR Created ({linkedPRDisplay})
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30">
                                   Eligible for PR
                                 </span>
                               )}
                             </div>
                           ) : (
                             <div className="flex flex-col gap-0.5">
-                              <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-semibold">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                              <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 flex-shrink-0" />
                                 <span>In Stock at PS-DBM</span>
                               </div>
-                              <span className="text-[10px] text-gray-400 font-medium">
+                              <span className="text-[10px] text-muted-foreground font-medium">
                                 Deficit: 0 {item.unit || 'Box'}
                               </span>
                             </div>
@@ -357,12 +357,12 @@ export function ConsolidatedItemsTable({
                       </TableCell>
 
                       {/* Unit Cost */}
-                      <TableCell className="py-4.5 align-middle text-right font-bold text-xs text-gray-900">
+                      <TableCell className="py-4.5 align-middle text-right font-bold text-xs text-foreground tabular-nums">
                         {formatCurrencyPHP(item.unitCost || 0)}
                       </TableCell>
 
                       {/* Total Amount */}
-                      <TableCell className="py-4.5 align-middle text-right font-extrabold text-xs text-gray-950">
+                      <TableCell className="py-4.5 align-middle text-right font-extrabold text-xs text-foreground tabular-nums">
                         {formatCurrencyPHP(
                           item.totalAmount ||
                             (item.unitCost || 0) * (item.quantity || 1)
@@ -377,7 +377,7 @@ export function ConsolidatedItemsTable({
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-gray-500 hover:text-gray-900 cursor-pointer"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
                                 aria-label="Open item options"
                               >
                                 <MoreVertical className="h-3.5 w-3.5" />
@@ -386,7 +386,7 @@ export function ConsolidatedItemsTable({
                             <DropdownMenuContent align="end" className="text-xs">
                               <DropdownMenuItem
                                 onClick={() => setItemToDelete(item)}
-                                className="cursor-pointer gap-2 text-red-600 focus:bg-red-50 focus:text-red-600"
+                                className="cursor-pointer gap-2 text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-500/15 focus:text-red-600 dark:focus:text-red-400"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                                 <span>Remove Item</span>
@@ -394,7 +394,7 @@ export function ConsolidatedItemsTable({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         ) : (
-                          <span className="text-xs text-gray-400">-</span>
+                          <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -405,14 +405,14 @@ export function ConsolidatedItemsTable({
           </div>
 
           {/* Table Footer with Darker High Contrast Styling */}
-          <div className="py-4 px-6 border-t border-gray-200 bg-[#f8fafc]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <span className="text-gray-500 font-medium">
+          <div className="py-4 px-6 border-t border-border bg-slate-50/80 dark:bg-slate-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <span className="text-muted-foreground font-medium">
               Showing {items.length} of {items.length} item{items.length === 1 ? '' : 's'}
             </span>
             <div className="flex items-center gap-6 self-end sm:self-auto flex-wrap">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-gray-600 font-medium">Total Units:</span>
-                <span className="font-bold text-gray-950">
+                <span className="text-muted-foreground font-medium">Total Units:</span>
+                <span className="font-bold text-foreground tabular-nums">
                   {items.reduce((sum, item) => sum + (item.quantity || 0), 0)}
                 </span>
               </div>
@@ -426,17 +426,17 @@ export function ConsolidatedItemsTable({
                 }, 0)
 
                 return totalDeficit > 0 ? (
-                  <div className="flex items-baseline gap-1.5 bg-amber-100/70 border border-amber-300 px-2.5 py-0.5 rounded-md">
-                    <span className="text-amber-900 font-medium">Total Deficit:</span>
-                    <span className="font-extrabold text-amber-950">
+                  <div className="flex items-baseline gap-1.5 bg-amber-100/70 border border-amber-300 dark:bg-amber-500/15 dark:border-amber-500/35 px-2.5 py-0.5 rounded-md">
+                    <span className="text-amber-900 dark:text-amber-300 font-medium">Total Deficit:</span>
+                    <span className="font-extrabold text-amber-950 dark:text-amber-200 tabular-nums">
                       {totalDeficit} units
                     </span>
                   </div>
                 ) : null
               })()}
               <div className="flex items-baseline gap-1.5">
-                <span className="text-gray-600 font-medium">Total Amount:</span>
-                <span className="font-extrabold text-sm text-gray-950">
+                <span className="text-muted-foreground font-medium">Total Amount:</span>
+                <span className="font-extrabold text-sm text-foreground tabular-nums">
                   {formatCurrencyPHP(
                     items.reduce(
                       (sum, item) =>
@@ -461,7 +461,7 @@ export function ConsolidatedItemsTable({
       >
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
-            <DialogTitle className="text-base font-semibold flex items-center gap-2 text-red-600">
+            <DialogTitle className="text-base font-semibold flex items-center gap-2 text-red-600 dark:text-red-400">
               <AlertTriangle className="h-4 w-4" />
               Remove Consolidated Item
             </DialogTitle>
@@ -470,10 +470,10 @@ export function ConsolidatedItemsTable({
             </DialogDescription>
           </DialogHeader>
           {itemToDelete && (
-            <div className="p-3 bg-slate-50 rounded-lg border text-xs space-y-1 my-2">
-              <p className="font-semibold text-gray-900">{itemToDelete.description}</p>
+            <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-border text-xs space-y-1 my-2">
+              <p className="font-semibold text-foreground">{itemToDelete.description}</p>
               <p className="text-muted-foreground font-mono">{itemToDelete.itemCode}</p>
-              <p className="text-gray-700">
+              <p className="text-muted-foreground">
                 Quantity: {itemToDelete.quantity} {itemToDelete.unit || 'units'} · Amount:{' '}
                 {formatCurrencyPHP(
                   itemToDelete.totalAmount ||

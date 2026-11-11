@@ -46,7 +46,7 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                 >
                   <div className="flex items-center space-x-2.5">
                     <RadioGroupItem value={ModeOfDelivery.FAST_LANE} id="fast-lane" />
-                    <Label htmlFor="fast-lane" className="cursor-pointer text-sm font-medium text-slate-700">
+                    <Label htmlFor="fast-lane" className="cursor-pointer text-sm font-medium text-foreground">
                       Fast Lane
                     </Label>
                   </div>
@@ -55,13 +55,13 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                       value={ModeOfDelivery.SCHEDULED_PICKUP}
                       id="scheduled-pickup"
                     />
-                    <Label htmlFor="scheduled-pickup" className="cursor-pointer text-sm font-medium text-slate-700">
+                    <Label htmlFor="scheduled-pickup" className="cursor-pointer text-sm font-medium text-foreground">
                       Scheduled Pick-up
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2.5">
                     <RadioGroupItem value={ModeOfDelivery.DOOR_TO_DOOR} id="door-to-door" />
-                    <Label htmlFor="door-to-door" className="cursor-pointer text-sm font-medium text-slate-700">
+                    <Label htmlFor="door-to-door" className="cursor-pointer text-sm font-medium text-foreground">
                       Door-to-Door
                     </Label>
                   </div>
@@ -97,19 +97,19 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                 >
                   <div className="flex items-center space-x-2.5">
                     <RadioGroupItem value={InsufficientFundsAction.REDUCE_QUANTITY} id="reduce" />
-                    <Label htmlFor="reduce" className="cursor-pointer text-sm font-medium text-slate-700">
+                    <Label htmlFor="reduce" className="cursor-pointer text-sm font-medium text-foreground">
                       Reduce Quantity
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2.5">
                     <RadioGroupItem value={InsufficientFundsAction.BILL_US} id="bill" />
-                    <Label htmlFor="bill" className="cursor-pointer text-sm font-medium text-slate-700">
+                    <Label htmlFor="bill" className="cursor-pointer text-sm font-medium text-foreground">
                       Bill Us
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2.5">
                     <RadioGroupItem value={InsufficientFundsAction.CHARGE_TO_DEPOSIT} id="charge" />
-                    <Label htmlFor="charge" className="cursor-pointer text-sm font-medium text-slate-700">
+                    <Label htmlFor="charge" className="cursor-pointer text-sm font-medium text-foreground">
                       Charge to Unutilized Deposit
                     </Label>
                   </div>
@@ -141,7 +141,7 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                   checked={field.state.value}
                   onCheckedChange={field.handleChange}
                 />
-                <Label htmlFor="obr" className="cursor-pointer text-sm font-medium text-slate-700">
+                <Label htmlFor="obr" className="cursor-pointer text-sm font-medium text-foreground">
                   Observation Report (ObR)
                 </Label>
               </div>
@@ -156,7 +156,7 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                   checked={field.state.value}
                   onCheckedChange={field.handleChange}
                 />
-                <Label htmlFor="cba" className="cursor-pointer text-sm font-medium text-slate-700">
+                <Label htmlFor="cba" className="cursor-pointer text-sm font-medium text-foreground">
                   Collective Barter Agreement (CBA)
                 </Label>
               </div>
@@ -171,7 +171,7 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                   checked={field.state.value}
                   onCheckedChange={field.handleChange}
                 />
-                <Label htmlFor="specs" className="cursor-pointer text-sm font-medium text-slate-700">
+                <Label htmlFor="specs" className="cursor-pointer text-sm font-medium text-foreground">
                   Complete Specifications
                 </Label>
               </div>

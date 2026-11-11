@@ -7,12 +7,12 @@ import type {VariantProps} from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const selectVariants = cva(
-  " w-full  px-3 h-10 text-sm flex [&>svg]:h-5 [&>svg]:w-5 [&>span]:line-clamp-1 [&>span]:text-left   justify-between items-center  read-only:bg-background  disabled:cursor-not-allowed disabled:opacity-50  transition duration-300 ",
+  "w-full bg-background text-foreground px-3 h-10 text-sm flex [&>svg]:h-5 [&>svg]:w-5 [&>span]:line-clamp-1 [&>span]:text-left justify-between items-center read-only:bg-background disabled:cursor-not-allowed disabled:opacity-50 transition duration-300",
   {
     variants: {
       color: {
         default:
-          "border-default-300 text-default-500 focus:outline-none focus:border-default-500/50 disabled:bg-default-200  placeholder:text-accent-foreground/50 [&>svg]:stroke-default-600",
+          "border-default-300 text-foreground data-[placeholder]:text-muted-foreground focus:outline-none focus:border-default-500/50 disabled:bg-default-200 placeholder:text-muted-foreground [&>svg]:stroke-default-600",
         primary:
           "border-primary text-primary focus:outline-none focus:border-primary-700 disabled:bg-primary/30 disabled:placeholder:text-primary  placeholder:text-primary/70 [&>svg]:stroke-primary",
         info: "border-info/50 text-info focus:outline-none focus:border-info-700 disabled:bg-info/30 disabled:placeholder:text-info  placeholder:text-info/70",

@@ -25,37 +25,37 @@ const THEME_STYLES: Record<
   indigo: {
     borderLeft: 'border-l-blue-500',
     activeBorder: 'border-blue-400 ring-2 ring-blue-500/30',
-    countText: 'text-blue-700',
-    badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
-    badgeText: 'text-blue-600',
+    countText: 'text-blue-700 dark:text-blue-300',
+    badgeBg: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+    badgeText: 'text-blue-600 dark:text-blue-400',
   },
   slate: {
-    borderLeft: 'border-l-slate-400',
-    activeBorder: 'border-slate-400 ring-2 ring-slate-400/30',
-    countText: 'text-slate-700',
-    badgeBg: 'bg-slate-50 text-slate-700 border-slate-200',
-    badgeText: 'text-slate-600',
+    borderLeft: 'border-l-muted-foreground',
+    activeBorder: 'border-border ring-2 ring-muted-foreground/30',
+    countText: 'text-foreground',
+    badgeBg: 'bg-secondary text-muted-foreground border-border',
+    badgeText: 'text-muted-foreground',
   },
   sky: {
     borderLeft: 'border-l-sky-500',
     activeBorder: 'border-sky-400 ring-2 ring-sky-500/30',
-    countText: 'text-sky-700',
-    badgeBg: 'bg-sky-50 text-sky-700 border-sky-200',
-    badgeText: 'text-sky-600',
+    countText: 'text-sky-700 dark:text-sky-300',
+    badgeBg: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20',
+    badgeText: 'text-sky-600 dark:text-sky-400',
   },
   rose: {
     borderLeft: 'border-l-rose-500',
     activeBorder: 'border-rose-400 ring-2 ring-rose-500/30',
-    countText: 'text-rose-700',
-    badgeBg: 'bg-rose-50 text-rose-700 border-rose-200',
-    badgeText: 'text-rose-600',
+    countText: 'text-rose-700 dark:text-rose-300',
+    badgeBg: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
+    badgeText: 'text-rose-600 dark:text-rose-400',
   },
   emerald: {
     borderLeft: 'border-l-emerald-500',
     activeBorder: 'border-emerald-400 ring-2 ring-emerald-500/30',
-    countText: 'text-emerald-700',
-    badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    badgeText: 'text-emerald-600',
+    countText: 'text-emerald-700 dark:text-emerald-300',
+    badgeBg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+    badgeText: 'text-emerald-600 dark:text-emerald-400',
   },
 }
 
@@ -74,9 +74,9 @@ export function NoticeOfAwardSummaryCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'w-full text-left rounded-xl border border-default-200 bg-white p-4 transition-all duration-200 flex flex-col justify-between gap-2 shadow-xs cursor-pointer select-none border-l-4 hover:translate-y-[-2px] hover:shadow-md',
+        'w-full text-left rounded-xl border border-border bg-card p-4 transition-all duration-200 flex flex-col justify-between gap-2 shadow-xs cursor-pointer select-none border-l-4 hover:translate-y-[-2px] hover:bg-secondary/40 hover:shadow-md',
         theme.borderLeft,
-        isSelected && cn('bg-default-50/70 shadow-sm', theme.activeBorder)
+        isSelected && cn('bg-secondary/70 shadow-sm', theme.activeBorder)
       )}
     >
       <div className="flex items-center justify-between w-full">

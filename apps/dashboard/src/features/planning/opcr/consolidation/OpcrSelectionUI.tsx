@@ -270,14 +270,14 @@ export default function OpcrSelectionUI() {
 
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">OPCR Selection</h2>
-        <p className="text-sm text-slate-600 mt-1">
+        <h2 className="text-2xl font-bold text-foreground">OPCR Selection</h2>
+        <p className="text-sm text-muted-foreground mt-1">
           Select approved Office OPCRs for agency consolidation
         </p>
       </div>
 
       {/* Selection Toolbar */}
-      <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 p-4 bg-muted/40 dark:bg-slate-900/60 rounded-xl border border-border lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             variant="outline"
@@ -294,7 +294,7 @@ export default function OpcrSelectionUI() {
           >
             Consolidate Selected OPCRs
           </Button>
-          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
+          <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
             <Checkbox
               checked={isAllSelected}
               onCheckedChange={handleSelectAll}
@@ -302,15 +302,15 @@ export default function OpcrSelectionUI() {
             />
             <label
               htmlFor="select-all"
-              className="text-sm font-medium text-slate-900 cursor-pointer"
+              className="text-sm font-medium text-foreground cursor-pointer"
             >
               Select All
             </label>
-            <span className="text-xs text-slate-600">
+            <span className="text-xs text-muted-foreground">
               ({selectedOpcrs.length}/{selectableOpcrs.length})
             </span>
           </div>
-          <Badge variant="outline" className="bg-white">
+          <Badge variant="outline" className="bg-card text-foreground border-border">
             {selectedOpcrs.length} selected
           </Badge>
         </div>
@@ -325,37 +325,37 @@ export default function OpcrSelectionUI() {
             <Card
               key={opcr.id}
               className={cn(
-                'p-4 border-2 transition-all',
+                'p-4 border transition-all',
                 isSelected
-                  ? 'border-emerald-500 bg-emerald-50'
-                  : 'border-slate-200 bg-white hover:border-slate-300',
+                  ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-500/10 dark:border-emerald-500/60'
+                  : 'border-border bg-card dark:bg-slate-900/60 hover:border-primary/40',
               )}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3 flex-1 min-w-[200px]">
                   <Checkbox
                     checked={isSelected}
                     onCheckedChange={() => handleToggleOpcr(opcr)}
                     onClick={(e) => e.stopPropagation()}
                     disabled={!!opcr.opcrConsolidationId}
                   />
-                  <div className="flex-1 flex-row ">
-                    <h3 className="font-semibold text-slate-900">
-                      {opcr.name}{' '}
+                  <div className="flex-1 flex-row">
+                    <h3 className="font-semibold text-foreground flex items-center flex-wrap gap-2">
+                      <span>{opcr.name}</span>
                       {opcr.opcrConsolidationId && (
                         <Badge
                           variant="outline"
-                          className="bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100"
+                          className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/35"
                         >
                           <Icon
                             icon="mdi:check-all"
-                            className="mr-1 text-amber-600"
+                            className="mr-1 text-amber-600 dark:text-amber-400"
                           />
                           Consolidated
                         </Badge>
                       )}
                     </h3>
-                    <p className="text-xs text-slate-600 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {opcr.officeName} • FY{' '}
                       {typeof opcr.fiscalYear === 'number'
                         ? opcr.fiscalYear
@@ -365,32 +365,32 @@ export default function OpcrSelectionUI() {
                 </div>
 
                 {/* Summary Badges */}
-                <div className="flex flex-wrap gap-2 justify-end ml-4">
+                <div className="flex flex-wrap items-center gap-2 justify-end ml-auto">
                   <Badge
                     variant="outline"
-                    className="bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
+                    className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/35"
                   >
                     <Icon
                       icon="mdi:target-multiple"
-                      className="mr-1 text-blue-600"
+                      className="mr-1 text-blue-600 dark:text-blue-400"
                     />
                     {opcr.kpiAssignmentCount} KPIs
                   </Badge>
                   <Badge
                     variant="outline"
-                    className="bg-purple-50 text-purple-700 border-purple-300 hover:bg-purple-100"
+                    className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/35"
                   >
                     <Icon
                       icon="mdi:file-document-multiple"
-                      className="mr-1 text-purple-600"
+                      className="mr-1 text-purple-600 dark:text-purple-400"
                     />
                     {opcr.activityCount} Activities
                   </Badge>
                   <Badge
                     variant="outline"
-                    className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                    className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/35"
                   >
-                    <Icon icon="mdi:cash" className="mr-1 text-green-600" />
+                    <Icon icon="mdi:cash" className="mr-1 text-emerald-600 dark:text-emerald-400" />
                     {formatCurrencyAbbr(opcr.totalBudget)}
                   </Badge>
 

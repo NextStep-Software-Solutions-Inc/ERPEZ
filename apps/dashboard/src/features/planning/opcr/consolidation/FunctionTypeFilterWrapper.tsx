@@ -42,10 +42,10 @@ export function FunctionTypeFilterWrapper({
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">
+        <h2 className="text-2xl font-bold text-foreground">
           Function Type Categories
         </h2>
-        <p className="text-sm text-slate-600 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Select a function type to view KPIs and activities
         </p>
       </div>
@@ -59,7 +59,7 @@ export function FunctionTypeFilterWrapper({
           return (
             <Button
               key={category}
-              className={`group relative h-auto overflow-hidden bg-white border-2 border-slate-200 rounded-lg p-6 text-left transition-all duration-300 hover:shadow-md hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full border-l-4 ${visuals.leftBorderColor}`}
+              className={`group relative h-auto overflow-hidden bg-card dark:bg-slate-900/65 border border-border rounded-xl p-6 text-left transition-all duration-200 hover:shadow-md hover:border-primary/40 hover:bg-muted/40 dark:hover:bg-slate-800/75 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 w-full border-l-4 ${visuals.leftBorderColor}`}
               onClick={() => {
                 navigate({
                   search: (prev) => ({
@@ -73,17 +73,17 @@ export function FunctionTypeFilterWrapper({
               {/* Content */}
               <div className="relative z-10 flex items-center justify-between w-full">
                 {/* Left Content */}
-                <div className="flex items-center gap-6 flex-1">
+                <div className="flex items-center gap-5 flex-1">
                   <div
-                    className={`p-4 rounded-lg shrink-0 ${visuals.iconBgColor}`}
+                    className={`p-4 rounded-xl shrink-0 ${visuals.iconBgColor}`}
                   >
-                    <IconComponent className={`h-8 w-8 ${visuals.iconColor}`} />
+                    <IconComponent className={`h-7 w-7 ${visuals.iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                    <h3 className="text-lg font-bold text-foreground group-hover:text-primary dark:group-hover:text-indigo-300 transition-colors">
                       {visuals.title}
                     </h3>
-                    <p className="text-sm text-slate-600 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {visuals.description}
                     </p>
                   </div>
@@ -91,34 +91,29 @@ export function FunctionTypeFilterWrapper({
 
                 {/* Right Content */}
                 <div className="flex items-center gap-6 shrink-0 ml-6">
-                  <Badge variant="outline">
+                  <Badge
+                    variant="outline"
+                    className={`${visuals.badgeBgColor} ${visuals.badgeTextColor} ${visuals.badgeBorderColor}`}
+                  >
                     {opcr?.opcrItems?.filter(
                       (kpi) => kpi.functionCategory === category,
                     ).length === 0 ? (
-                      <>
-                        <span>0 KPI</span>
-                      </>
+                      <span>0 KPI</span>
                     ) : (
-                      <>
-                        <span>
-                          {
-                            opcr?.opcrItems?.filter(
-                              (kpi) => kpi.functionCategory === category,
-                            ).length
-                          }{' '}
-                          KPI
-                        </span>
-                      </>
+                      <span>
+                        {
+                          opcr?.opcrItems?.filter(
+                            (kpi) => kpi.functionCategory === category,
+                          ).length
+                        }{' '}
+                        KPI
+                      </span>
                     )}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-4 shrink-0 ml-6">
-                  <Badge
-                  // className={`text-base font-semibold whitespace-nowrap px-3 py-1 ${category.badgeBgColor} ${category.badgeTextColor} ${category.badgeBorderColor} border`}
-                  >
-                    View Details
-                  </Badge>
-                  <ArrowRight className="h-5 w-5 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                  <Badge>View Details</Badge>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
                 </div>
               </div>
             </Button>

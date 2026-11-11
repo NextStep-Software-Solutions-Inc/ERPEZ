@@ -3,6 +3,7 @@ import { Layers } from 'lucide-react'
 import type { ProcurementModeShare } from '../../types/dashboardV2'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ChartTooltipRow, ChartTooltipShell, useChartTheme } from '@/components/ui/chart-tooltip'
 
 interface ModeDistributionChartProps {
   data: Array<ProcurementModeShare>
@@ -13,12 +14,14 @@ interface ModeDistributionChartProps {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4']
 
 export function ModeDistributionChart({ data, selectedMode, onSelectMode }: ModeDistributionChartProps) {
+  const { isDark, legendStyle } = useChartTheme()
+
   return (
     <Card className="border border-border shadow-xs">
-      <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between">
+      <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between gap-2">
         <div>
           <CardTitle className="text-xs font-bold tracking-wide uppercase text-muted-foreground flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-blue-600" />
+            <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             3. Procurement Mode Distribution
           </CardTitle>
           <CardDescription className="text-xs">
@@ -27,7 +30,7 @@ export function ModeDistributionChart({ data, selectedMode, onSelectMode }: Mode
         </div>
         <Badge
           variant="outline"
-          className="text-[10px] text-blue-700 bg-blue-50 dark:bg-blue-950/40 border-blue-300"
+          className="text-[10px] text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/15 border-blue-300 dark:border-blue-500/35 shrink-0"
         >
           {selectedMode ? `Filtered: ${selectedMode}` : 'Click slice to filter'}
         </Badge>
@@ -61,33 +64,46 @@ export function ModeDistributionChart({ data, selectedMode, onSelectMode }: Mode
                     key={`cell-${index}`}
                     fill={fill}
                     fillOpacity={opacity}
-                    stroke={isSelected ? '#1e293b' : 'transparent'}
-                    strokeWidth={isSelected ? 3 : 0}
+                    stroke={isSelected ? (isDark ? '#f8fafc' : '#1e293b') : 'transparent'}
+                    strokeWidth={isSelected ? 2.5 : 0}
                   />
                 )
               })}
             </Pie>
             <Tooltip
-              formatter={(value: any, name: any) => [`${value}%`, name]}
+              cursor={false}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
-                  const item = payload[0].payload as ProcurementModeShare
+                  const first = payload[0]
+                  const item = first.payload as ProcurementModeShare
+                  const swatch = first.payload?.fill || first.color || '#3b82f6'
                   return (
-                    <div className="bg-popover border border-border p-2.5 rounded-lg shadow-md text-xs space-y-1">
-                      <div className="font-bold text-foreground">{item.modeName}</div>
-                      <div className="text-muted-foreground">Volume: {item.count} projects ({item.percentage}%)</div>
-                      <div className="text-muted-foreground">Amount: ₱{item.amount?.toLocaleString('en-PH')}</div>
-                      <div className="text-[10px] text-blue-600 pt-1 border-t border-border/50">
-                        {selectedMode === item.modeName ? 'Click to clear filter' : 'Click to filter entire dashboard'}
+                    <ChartTooltipShell className="space-y-1">
+                      <div className="font-semibold text-popover-foreground pb-1 mb-1 border-b border-border/60">
+                        {item.modeName}
                       </div>
-                    </div>
+                      <ChartTooltipRow
+                        color={swatch}
+                        label="Volume"
+                        value={`${item.count} projects (${item.percentage}%)`}
+                      />
+                      <ChartTooltipRow
+                        label="Amount"
+                        value={`₱${(item.amount ?? 0).toLocaleString('en-PH')}`}
+                      />
+                      <div className="text-[10px] font-medium text-blue-600 dark:text-blue-400 pt-1.5 mt-1 border-t border-border/60">
+                        {selectedMode === item.modeName
+                          ? 'Click to clear filter'
+                          : 'Click to filter entire dashboard'}
+                      </div>
+                    </ChartTooltipShell>
                   )
                 }
                 return null
               }}
             />
             <Legend
-              wrapperStyle={{ fontSize: 11, cursor: 'pointer' }}
+              wrapperStyle={{ ...legendStyle, cursor: 'pointer' }}
               onClick={(e: any) => {
                 if (e && e.value) {
                   onSelectMode?.(e.value)

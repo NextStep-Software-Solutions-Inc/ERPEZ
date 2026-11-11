@@ -175,8 +175,8 @@ export function AmsRolesManagementView() {
         <div
           className={`p-3 rounded-md text-sm flex items-center gap-2 ${
             message.isError
-              ? 'bg-red-50 text-red-800 border border-red-200'
-              : 'bg-green-50 text-green-800 border border-green-200'
+              ? 'bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800/60'
+              : 'bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800/60'
           }`}
         >
           {message.isError ? (
@@ -260,8 +260,8 @@ export function AmsRolesManagementView() {
                             return (
                               <label
                                 key={perm}
-                                className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
-                                  isChecked ? 'bg-indigo-50/80 text-indigo-900 font-medium dark:bg-indigo-950/40' : ''
+                                className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer hover:bg-muted transition-colors ${
+                                  isChecked ? 'bg-indigo-50/80 text-indigo-900 dark:text-indigo-200 font-medium dark:bg-indigo-950/40' : ''
                                 }`}
                               >
                                 <input
@@ -325,7 +325,7 @@ export function AmsRolesManagementView() {
                   </CardTitle>
                   <div className="flex items-center gap-1 shrink-0">
                     {role.isSystemRole && (
-                      <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-700">
+                      <Badge variant="outline" className="text-[10px] bg-muted/50 text-foreground border-border">
                         System
                       </Badge>
                     )}

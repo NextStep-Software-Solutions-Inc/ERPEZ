@@ -55,35 +55,35 @@ export const getCategoryVisuals = (
         description: 'Key strategic objectives and long-term goals',
         icon: Target,
         leftBorderColor: 'border-l-blue-500',
-        iconColor: 'text-blue-600',
-        iconBgColor: 'bg-blue-100',
-        badgeBgColor: 'bg-blue-50',
-        badgeTextColor: 'text-blue-700',
-        badgeBorderColor: 'border-blue-200',
+        iconColor: 'text-blue-600 dark:text-blue-400',
+        iconBgColor: 'bg-blue-100 dark:bg-blue-500/15',
+        badgeBgColor: 'bg-blue-50 dark:bg-blue-500/15',
+        badgeTextColor: 'text-blue-700 dark:text-blue-300',
+        badgeBorderColor: 'border-blue-200 dark:border-blue-500/35',
       }
     case FunctionCategory.CORE:
       return {
         title: 'Core Function',
         description: 'Essential operational functions and processes',
         icon: ShieldCheck,
-        leftBorderColor: 'border-l-green-500',
-        iconColor: 'text-green-600',
-        iconBgColor: 'bg-green-100',
-        badgeBgColor: 'bg-green-50',
-        badgeTextColor: 'text-green-700',
-        badgeBorderColor: 'border-green-200',
+        leftBorderColor: 'border-l-emerald-500',
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        iconBgColor: 'bg-emerald-100 dark:bg-emerald-500/15',
+        badgeBgColor: 'bg-emerald-50 dark:bg-emerald-500/15',
+        badgeTextColor: 'text-emerald-700 dark:text-emerald-300',
+        badgeBorderColor: 'border-emerald-200 dark:border-emerald-500/35',
       }
     case FunctionCategory.SUPPORT:
       return {
         title: 'Support Function',
         description: 'Supporting and enabling functions',
         icon: Wrench,
-        leftBorderColor: 'border-l-orange-500',
-        iconColor: 'text-orange-600',
-        iconBgColor: 'bg-orange-100',
-        badgeBgColor: 'bg-orange-50',
-        badgeTextColor: 'text-orange-700',
-        badgeBorderColor: 'border-orange-200',
+        leftBorderColor: 'border-l-amber-500',
+        iconColor: 'text-amber-600 dark:text-amber-400',
+        iconBgColor: 'bg-amber-100 dark:bg-amber-500/15',
+        badgeBgColor: 'bg-amber-50 dark:bg-amber-500/15',
+        badgeTextColor: 'text-amber-700 dark:text-amber-300',
+        badgeBorderColor: 'border-amber-200 dark:border-amber-500/35',
       }
   }
 }

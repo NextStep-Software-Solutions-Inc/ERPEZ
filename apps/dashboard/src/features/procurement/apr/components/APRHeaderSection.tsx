@@ -40,26 +40,26 @@ export function APRIdentityBanner({ apr, context = 'user' }: APRHeaderSectionPro
   )
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-[#f4f2ff] via-[#f7f5ff] to-[#efeaff] border border-[#e8e3fe] rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+    <div className="relative overflow-hidden bg-gradient-to-r from-[#f4f2ff] via-[#f7f5ff] to-[#efeaff] border border-[#e8e3fe] dark:from-indigo-950/60 dark:via-slate-900/90 dark:to-purple-950/45 dark:border-indigo-500/25 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-start md:justify-between gap-4">
       <div className="space-y-1.5 min-w-0 z-10">
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-xl font-bold text-gray-900 font-sans tracking-tight">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50 font-sans tracking-tight">
             {apr.aprNumber}
           </h1>
           <APRStatusBadge status={apr.status || 'Draft'} context={context} size="sm" />
           {deficitItems.length > 0 && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/35 shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
               PS-DBM Deficit: {deficitItems.length} {deficitItems.length === 1 ? 'item' : 'items'} ({totalDeficitUnits} units)
             </span>
           )}
         </div>
         {apr.description ? (
-          <p className="text-xs text-gray-500 leading-relaxed max-w-2xl">
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
             {apr.description}
           </p>
         ) : (
-          <p className="text-xs text-gray-400 italic">
+          <p className="text-xs text-slate-500 dark:text-slate-400 italic">
             Agency Purchase Request for consolidated procurement items.
           </p>
         )}
@@ -70,7 +70,7 @@ export function APRIdentityBanner({ apr, context = 'user' }: APRHeaderSectionPro
         <Button
           variant="outline"
           size="sm"
-          className="bg-white/95 border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800 shadow-xs font-medium text-xs gap-1.5"
+          className="bg-white/95 dark:bg-slate-900/80 border-purple-200 dark:border-indigo-400/30 text-purple-700 dark:text-indigo-300 hover:bg-purple-50 dark:hover:bg-indigo-500/20 hover:text-purple-800 dark:hover:text-indigo-200 shadow-xs font-medium text-xs gap-1.5"
           onClick={async () => {
             if (!apr.id) return
             try {
@@ -87,25 +87,25 @@ export function APRIdentityBanner({ apr, context = 'user' }: APRHeaderSectionPro
             }
           }}
         >
-          <Download className="h-3.5 w-3.5 text-purple-600" />
+          <Download className="h-3.5 w-3.5 text-purple-600 dark:text-indigo-400" />
           Export Form 002 (PDF)
         </Button>
 
         {apr.id && (
-          <div className="flex items-center gap-2 bg-white/95 border border-purple-100/90 px-3 py-1.5 rounded-xl shadow-xs">
-            <span className="text-[11px] font-mono text-gray-500 select-all">
+          <div className="flex items-center gap-2 bg-white/95 dark:bg-slate-900/80 border border-purple-100/90 dark:border-indigo-400/25 px-3 py-1.5 rounded-xl shadow-xs">
+            <span className="text-[11px] font-mono text-slate-600 dark:text-slate-300 select-all">
               ID: {apr.id}
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-gray-400 hover:text-gray-700"
+              className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-100"
               onClick={handleCopyId}
               aria-label="Copy APR UUID to clipboard"
               title="Copy UUID"
             >
               {copied ? (
-                <Check className="h-3.5 w-3.5 text-green-600" />
+                <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
               ) : (
                 <Copy className="h-3.5 w-3.5" />
               )}
@@ -115,7 +115,7 @@ export function APRIdentityBanner({ apr, context = 'user' }: APRHeaderSectionPro
       </div>
 
       {/* Subtle decorative background graphic */}
-      <div className="absolute right-0 top-0 bottom-0 w-48 pointer-events-none opacity-40 hidden lg:block bg-radial from-purple-200/40 via-transparent to-transparent" />
+      <div className="absolute right-0 top-0 bottom-0 w-48 pointer-events-none opacity-40 hidden lg:block bg-radial from-purple-200/40 dark:from-indigo-500/20 via-transparent to-transparent" />
     </div>
   )
 }
@@ -148,12 +148,12 @@ export function APRDetailsEntitiesGrid({ apr }: APRHeaderSectionProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Details Card with blue circle icon */}
-      <Card className="bg-white border border-gray-100 shadow-xs rounded-2xl overflow-hidden">
-        <CardHeader className="py-3.5 px-6 border-b border-gray-50 flex flex-row items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+      <Card className="bg-card text-card-foreground border border-border shadow-xs rounded-2xl overflow-hidden">
+        <CardHeader className="py-3.5 px-6 border-b border-border/70 bg-slate-50/50 dark:bg-slate-900/40 flex flex-row items-center gap-2">
+          <div className="h-6 w-6 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
             <Info className="h-3.5 w-3.5" />
           </div>
-          <CardTitle className="text-xs font-bold text-gray-900">
+          <CardTitle className="text-xs font-bold text-foreground">
             Details
           </CardTitle>
         </CardHeader>
@@ -161,10 +161,10 @@ export function APRDetailsEntitiesGrid({ apr }: APRHeaderSectionProps) {
           <dl className="space-y-3">
             {detailsFields.map((field, idx) => (
               <div key={idx} className="flex justify-between items-baseline text-xs gap-4">
-                <dt className="text-gray-500 font-medium flex-shrink-0">
+                <dt className="text-muted-foreground font-medium flex-shrink-0">
                   {field.label}
                 </dt>
-                <dd className="text-gray-900 font-bold text-right truncate font-sans">
+                <dd className="text-foreground font-bold text-right truncate font-sans">
                   {field.value}
                 </dd>
               </div>
@@ -174,12 +174,12 @@ export function APRDetailsEntitiesGrid({ apr }: APRHeaderSectionProps) {
       </Card>
 
       {/* Entities & Requestor Card with green circle icon */}
-      <Card className="bg-white border border-gray-100 shadow-xs rounded-2xl overflow-hidden">
-        <CardHeader className="py-3.5 px-6 border-b border-gray-50 flex flex-row items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+      <Card className="bg-card text-card-foreground border border-border shadow-xs rounded-2xl overflow-hidden">
+        <CardHeader className="py-3.5 px-6 border-b border-border/70 bg-slate-50/50 dark:bg-slate-900/40 flex flex-row items-center gap-2">
+          <div className="h-6 w-6 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
             <Building2 className="h-3.5 w-3.5" />
           </div>
-          <CardTitle className="text-xs font-bold text-gray-900">
+          <CardTitle className="text-xs font-bold text-foreground">
             Entities & Requestor
           </CardTitle>
         </CardHeader>
@@ -187,10 +187,10 @@ export function APRDetailsEntitiesGrid({ apr }: APRHeaderSectionProps) {
           <dl className="space-y-3">
             {entityFields.map((field, idx) => (
               <div key={idx} className="flex justify-between items-baseline text-xs gap-4">
-                <dt className="text-gray-500 font-medium flex-shrink-0">
+                <dt className="text-muted-foreground font-medium flex-shrink-0">
                   {field.label}
                 </dt>
-                <dd className="text-gray-900 font-bold text-right truncate font-sans">
+                <dd className="text-foreground font-bold text-right truncate font-sans">
                   {field.value}
                 </dd>
               </div>

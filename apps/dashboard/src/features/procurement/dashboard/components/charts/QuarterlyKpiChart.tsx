@@ -1,12 +1,15 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { QuarterlyKpiPoint } from '../../types/dashboardV2'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartTooltipContent, useChartTheme } from '@/components/ui/chart-tooltip'
 
 interface QuarterlyKpiChartProps {
   data: Array<QuarterlyKpiPoint>
 }
 
 export function QuarterlyKpiChart({ data }: QuarterlyKpiChartProps) {
+  const { tickColor, gridStroke, axisStroke, legendStyle, barCursor } = useChartTheme()
+
   return (
     <Card className="border border-border shadow-xs">
       <CardHeader className="p-4 pb-2">
@@ -20,11 +23,21 @@ export function QuarterlyKpiChart({ data }: QuarterlyKpiChartProps) {
       <CardContent className="p-4 pt-1 h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="quarter" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
+            <XAxis
+              dataKey="quarter"
+              tick={{ fontSize: 11, fill: tickColor }}
+              tickLine={false}
+              axisLine={{ stroke: axisStroke }}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: tickColor }}
+              tickLine={false}
+              axisLine={false}
+              allowDecimals={false}
+            />
+            <Tooltip cursor={barCursor} content={<ChartTooltipContent />} />
+            <Legend wrapperStyle={legendStyle} />
             <Bar dataKey="prCount" name="PRs" fill="#3b82f6" radius={[4, 4, 0, 0]} />
             <Bar dataKey="poCount" name="POs" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
             <Bar dataKey="contractCount" name="Contracts" fill="#10b981" radius={[4, 4, 0, 0]} />

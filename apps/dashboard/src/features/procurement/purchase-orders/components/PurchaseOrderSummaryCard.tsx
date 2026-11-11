@@ -25,7 +25,7 @@ export function PurchaseOrderSummaryCard({
   valueColorClass,
   cardClassName,
 }: PurchaseOrderSummaryCardProps) {
-  const cardClasses = cardClassName ?? 'rounded-lg border border-default-200/70 bg-white/50 hover:shadow-lg transition'
+  const cardClasses = cardClassName ?? 'rounded-lg border border-border/80 bg-card hover:shadow-md transition'
 
   return (
     <Card className={cardClasses}>
@@ -33,13 +33,13 @@ export function PurchaseOrderSummaryCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {IconComponent && (
-              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${iconBgClass ?? 'bg-violet-50'}`}>
-                <IconComponent className={`h-5 w-5 ${iconColorClass ?? 'text-violet-600'}`} />
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${iconBgClass ?? 'bg-violet-500/10 dark:bg-violet-500/15'}`}>
+                <IconComponent className={`h-5 w-5 ${iconColorClass ?? 'text-violet-600 dark:text-violet-400'}`} />
               </div>
             )}
 
             <div>
-              <CardTitle className="text-base font-semibold text-default-900">{title}</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">{title}</CardTitle>
               <CardDescription className="text-xs text-muted-foreground mt-0.5">{description}</CardDescription>
             </div>
           </div>
@@ -49,7 +49,7 @@ export function PurchaseOrderSummaryCard({
       <CardContent className="px-5 pb-5 pt-2">
         <div className="flex items-center justify-between">
           <div>
-            <div className={`text-3xl font-extrabold ${valueColorClass ?? 'text-violet-700'}`}>{value}</div>
+            <div className={`text-3xl font-extrabold tabular-nums ${valueColorClass ?? 'text-violet-700 dark:text-violet-300'}`}>{value}</div>
             {/* small helper line if needed */}
           </div>
         </div>

@@ -33,7 +33,7 @@ const ConsolidateOPCRTab = lazy(
 const TabLoadingFallback = () => (
   <div className="flex items-center justify-center py-12">
     <div className="flex flex-col items-center gap-3">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-indigo-400" />
       <p className="text-sm text-muted-foreground">Loading tab content...</p>
     </div>
   </div>
@@ -123,22 +123,22 @@ function CommitmentsPage() {
         {/* Header Card */}
         <Card className="bg-linear-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <CardTitle className="text-3xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-2 flex-1 min-w-0">
+                <CardTitle className="text-2xl sm:text-3xl text-foreground">
                   Office Performance Commitment and Review (OPCR)
                 </CardTitle>
-                <CardDescription className="text-base">
+                <CardDescription className="text-sm sm:text-base">
                   Manage commitments, strategic targets, activities, and
                   approval workflows for OPCR
                 </CardDescription>
               </div>
               <Badge
                 variant="outline"
-                className="h-fit px-3 py-1 font-semibold"
+                className="h-fit w-fit shrink-0 px-3.5 py-1.5 font-semibold whitespace-nowrap border-primary/35 bg-primary/10 text-primary dark:text-indigo-300 dark:border-indigo-400/35 dark:bg-indigo-500/15"
               >
-                <TrendingUp className="h-3.5 w-3.5 mr-1.5" /> Performance
-                Management
+                <TrendingUp className="h-3.5 w-3.5 mr-1.5 shrink-0" />{' '}
+                Performance Management
               </Badge>
             </div>
           </CardHeader>
@@ -147,21 +147,26 @@ function CommitmentsPage() {
         {/* Main Content Card */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
                 <CardTitle>Data Management</CardTitle>
                 <CardDescription>
                   Manage and configure commitments data
                 </CardDescription>
               </div>
-              <h2 className="text-3xl font-bold text-gray-900">
+              <div className="shrink-0">
                 <Button
                   onClick={handleToggleOffice}
                   variant={hasOfficeId ? 'default' : 'outline'}
+                  className={
+                    !hasOfficeId
+                      ? 'border-border text-foreground hover:bg-muted'
+                      : undefined
+                  }
                 >
                   {hasOfficeId ? 'Remove Office Filter' : 'Toggle Office'}
                 </Button>
-              </h2>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -171,16 +176,27 @@ function CommitmentsPage() {
               className="w-full"
             >
               {/* Tab Navigation */}
-              <TabsList className="grid w-full grid-cols-4 gap-2 bg-muted/50 p-2 mb-6">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-1.5 rounded-xl bg-muted/70 dark:bg-slate-950/60 border border-border/60 p-1.5 mb-6">
                 {TAB_CONFIG.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="whitespace-nowrap text-xs sm:text-sm"
+                    onClick={() => {
+                      if (
+                        tab.id === activeTab &&
+                        (search.opcrId ||
+                          search.opcrConsolidationId ||
+                          search.kpiAssignmentId ||
+                          search.functionCategory)
+                      ) {
+                        setActiveTab(tab.id as CommitmentTabs)
+                      }
+                    }}
+                    className="whitespace-nowrap py-2 px-3 text-xs sm:text-sm rounded-lg data-[state=active]:bg-card dark:data-[state=active]:bg-slate-800 data-[state=active]:text-foreground data-[state=active]:shadow-xs"
                     title={tab.description}
                   >
-                    <span className="hidden sm:inline mr-1">{tab.icon}</span>
-                    {tab.label}
+                    <span className="hidden sm:inline mr-1.5">{tab.icon}</span>
+                    <span className="truncate">{tab.label}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { themes } from "@/config/thems";
 
 const HeaderStyle = () => {
-  const { theme: mode } = useTheme();
+  const { resolvedTheme: mode } = useTheme();
   const {
     theme: config,
     setTheme: setConfig,

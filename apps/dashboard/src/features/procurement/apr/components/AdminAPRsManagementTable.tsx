@@ -143,26 +143,29 @@ export function AdminAPRsManagementTable({
 
       {/* Empty state for filtered results */}
       {filteredData.length === 0 && (
-        <div className="flex items-center justify-center h-64 border rounded-md bg-gray-50">
-          <p className="text-muted-foreground">No APRs match your search or filters</p>
+        <div className="flex items-center justify-center h-64 border border-border rounded-xl bg-slate-50/70 dark:bg-slate-900/40">
+          <p className="text-sm text-muted-foreground">No APRs match your search or filters</p>
         </div>
       )}
 
       {/* Table */}
       {filteredData.length > 0 && (
         <>
-          <div className="rounded-md border overflow-x-auto">
+          <div className="rounded-xl border border-border overflow-hidden">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-slate-50/90 dark:bg-slate-900/60 border-b border-border">
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
+                  <TableRow key={headerGroup.id} className="border-b border-border hover:bg-transparent">
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} className="bg-gray-50">
+                      <TableHead
+                        key={header.id}
+                        className="bg-transparent text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 h-11 last:[&>div]:justify-end"
+                      >
                         {header.isPlaceholder ? null : (
                           <div
                             className={
                               header.column.getCanSort()
-                                ? 'cursor-pointer select-none hover:text-gray-900 flex items-center gap-2'
+                                ? 'cursor-pointer select-none hover:text-slate-950 dark:hover:text-white flex items-center gap-2 transition-colors'
                                 : 'flex items-center gap-2'
                             }
                             onClick={header.column.getToggleSortingHandler()}
@@ -187,9 +190,12 @@ export function AdminAPRsManagementTable({
               </TableHeader>
               <TableBody>
                 {table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} className="hover:bg-gray-50">
+                  <TableRow
+                    key={row.id}
+                    className="border-b border-border/60 transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/60"
+                  >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell key={cell.id} className="text-foreground">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),

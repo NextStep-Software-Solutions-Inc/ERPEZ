@@ -42,8 +42,8 @@ export function AttachmentRequirementsCard({
   const requiredCount = Object.values(safeAttachments).filter(Boolean).length
 
   return (
-    <Card className="border border-gray-200 shadow-xs bg-white">
-      <CardHeader className="py-3 px-5 border-b bg-slate-50/50 flex flex-row items-center justify-between">
+    <Card className="border border-border shadow-xs bg-card text-card-foreground rounded-2xl overflow-hidden">
+      <CardHeader className="py-3 px-5 border-b border-border/70 bg-slate-50/60 dark:bg-slate-900/50 flex flex-row items-center justify-between">
         <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Attachment Requirements
         </CardTitle>
@@ -52,7 +52,7 @@ export function AttachmentRequirementsCard({
         </span>
       </CardHeader>
       <CardContent className="p-5">
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border/70">
           {ATTACHMENT_TYPES.map(({ key, label, description }) => {
             const isRequired = Boolean(safeAttachments[key as keyof AttachmentOptions])
             return (
@@ -63,13 +63,13 @@ export function AttachmentRequirementsCard({
                 <div className="flex items-start gap-3 min-w-0">
                   <div className="mt-0.5 flex-shrink-0">
                     {isRequired ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     ) : (
-                      <Circle className="h-4 w-4 text-gray-300" />
+                      <Circle className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                     )}
                   </div>
                   <div className="space-y-0.5">
-                    <p className={`text-xs font-medium ${isRequired ? 'text-gray-900 font-semibold' : 'text-gray-700'}`}>
+                    <p className={`text-xs font-medium ${isRequired ? 'text-foreground font-semibold' : 'text-foreground/80'}`}>
                       {label}
                     </p>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -81,8 +81,8 @@ export function AttachmentRequirementsCard({
                   variant={isRequired ? 'default' : 'outline'}
                   className={`text-[10px] font-semibold tracking-wider flex-shrink-0 ${
                     isRequired
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                      : 'text-gray-500 border-gray-200 bg-gray-50/50'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/35 dark:hover:bg-emerald-500/25'
+                      : 'text-slate-500 border-slate-200 bg-slate-50/70 dark:text-slate-400 dark:border-slate-700 dark:bg-slate-800/60'
                   }`}
                 >
                   {isRequired ? 'REQUIRED' : 'OPTIONAL'}

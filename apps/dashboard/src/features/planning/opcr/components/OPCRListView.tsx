@@ -26,10 +26,12 @@ export default function OPCRListView({
 }: OPCRListViewProps) {
   if (opcrs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-        <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold">No OPCR records found</h3>
-        <p className="text-muted-foreground">
+      <div className="flex flex-col items-center justify-center py-12 bg-muted/30 dark:bg-slate-900/50 rounded-xl border border-border">
+        <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-foreground">
+          No OPCR records found
+        </h3>
+        <p className="text-sm text-muted-foreground mt-1">
           Create your first OPCR to get started
         </p>
       </div>

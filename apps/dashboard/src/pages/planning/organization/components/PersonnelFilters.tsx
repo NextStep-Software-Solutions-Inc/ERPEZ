@@ -60,7 +60,7 @@ export function PersonnelFilters({
           </div>
         ) : (
           <Select value="" onValueChange={onFilterChange}>
-            <SelectTrigger className="h-9 w-full max-w-sm bg-white border-default-200 text-sm font-medium rounded-md">
+            <SelectTrigger className="h-9 w-full max-w-sm bg-background border-border text-sm font-medium rounded-md">
               <SelectValue placeholder="Filter by Office/Division..." />
             </SelectTrigger>
             <SelectContent>

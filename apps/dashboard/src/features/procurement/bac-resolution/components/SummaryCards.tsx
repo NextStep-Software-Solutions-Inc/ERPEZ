@@ -45,8 +45,8 @@ export default function SummaryCards({
             className={cn(
               'group relative flex flex-col justify-between rounded-xl border p-3.5 text-left transition-all duration-200 cursor-pointer shadow-xs',
               isSelected
-                ? 'border-primary bg-primary/5 ring-2 ring-primary/40 shadow-sm'
-                : 'border-default-200 bg-white hover:border-primary/40 hover:bg-default-50/70 hover:shadow-sm',
+                ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm'
+                : 'border-border bg-card hover:border-primary/40 hover:bg-secondary/60 hover:shadow-sm',
             )}
           >
             <div className="flex items-center justify-between gap-2 w-full">
@@ -56,7 +56,9 @@ export default function SummaryCards({
               <div
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
-                  isSelected ? 'bg-primary text-white' : 'bg-default-100 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary',
+                  isSelected
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary',
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -66,13 +68,13 @@ export default function SummaryCards({
             <div className="mt-2 space-y-0.5">
               <p
                 className={cn(
-                  'text-2xl font-extrabold tracking-tight',
+                  'text-2xl font-extrabold tracking-tight tabular-nums',
                   item.key === 'approved'
-                    ? 'text-emerald-700'
+                    ? 'text-emerald-700 dark:text-emerald-400'
                     : item.key === 'for-approval'
-                      ? 'text-sky-700'
+                      ? 'text-sky-700 dark:text-sky-400'
                       : item.key === 'returned'
-                        ? 'text-rose-700'
+                        ? 'text-rose-700 dark:text-rose-400'
                         : 'text-foreground',
                 )}
               >

@@ -261,27 +261,27 @@ export default function OPCRItemKPIAccordion({
                   <AccordionItem
                     value={`kpi-${index}`}
                     className={cn(
-                      'border-2 rounded-lg px-4 border-l-4 border-l-blue-500 border-blue-200 bg-white transition-all duration-300 hover:shadow-lg hover:border-blue-300 hover:bg-blue-50/30',
+                      'border rounded-xl px-5 border-l-4 border-l-blue-500 border-blue-200/80 dark:border-slate-700/80 bg-card dark:bg-slate-900/65 transition-all duration-200 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500/50 hover:bg-blue-50/20 dark:hover:bg-slate-800/75',
                     )}
                   >
                     <AccordionTrigger className="hover:no-underline flex-row-reverse justify-end py-4">
-                      <div className="flex items-start justify-between w-full pl-4">
+                      <div className="flex items-start justify-between w-full pl-4 gap-4">
                         <div className="flex-1 text-left">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-bold text-lg text-gray-900">
+                          <div className="flex items-center gap-3 mb-1.5">
+                            <h3 className="font-bold text-lg text-foreground leading-snug">
                               {opcrItem?.kpiAssignment?.fyActiveKPI?.name ||
                                 'Unnamed KPI'}
                             </h3>
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs font-mono text-muted-foreground">
                             {opcrItem?.kpiAssignment?.fyActiveKPI?.code}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           {opcrItem?.kpiAssignment?.fyActiveKPI
                             ?.functionCategory && (
                               <Badge
-                                className="text-xs font-semibold bg-blue-100 text-blue-800 hover:bg-blue-100"
+                                className="text-xs font-semibold bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/35 hover:bg-blue-100 dark:hover:bg-blue-500/25"
                                 variant="outline"
                               >
                                 {
@@ -301,22 +301,22 @@ export default function OPCRItemKPIAccordion({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 hover:bg-blue-100"
+                                className="h-8 w-8 p-0 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/15"
                                 title="More actions"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <MoreHorizontal className="w-4 h-4 text-blue-600" />
+                                <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-56 p-0" align="end">
-                              <div className="flex flex-col">
+                              <div className="flex flex-col divide-y divide-border">
                                 {KPI_ACTIONS.map((action) => {
                                   const IconComponent = action.icon
                                   return (
                                     <Button
                                       key={action.id}
                                       variant="ghost"
-                                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors border-b last:border-b-0 justify-start"
+                                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors rounded-none justify-start"
                                       onClick={(e) => {
                                         e.stopPropagation()
                                         setOpenPopoverId(null)
@@ -345,8 +345,8 @@ export default function OPCRItemKPIAccordion({
                                         }
                                       }}
                                     >
-                                      <IconComponent className="w-4 h-4 text-gray-600" />
-                                      <span className="font-medium text-gray-900">
+                                      <IconComponent className="w-4 h-4 text-muted-foreground" />
+                                      <span className="font-medium text-foreground">
                                         {action.label}
                                       </span>
                                     </Button>
@@ -360,13 +360,13 @@ export default function OPCRItemKPIAccordion({
                     </AccordionTrigger>
 
                     <AccordionContent>
-                      <div className="space-y-6 pt-6 pl-4 border-l-2 border-blue-200">
+                      <div className="space-y-6 pt-4 pl-4 border-l-2 border-blue-200 dark:border-blue-500/30">
                         {/* Assigned Targets Grid (KPI Assignment Level) */}
-                        <div className="space-y-4">
-                          <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                             Assigned Targets
                           </h4>
-                          <div className="grid grid-cols-5 gap-2.5">
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                             {(() => {
                               const q1 =
                                 opcrItem?.kpiAssignment?.assignedTargetQ1 || 0
@@ -396,25 +396,27 @@ export default function OPCRItemKPIAccordion({
                                 <div
                                   key={quarter.label}
                                   className={cn(
-                                    'p-3 rounded-lg border-2 transition-all duration-300 text-center',
+                                    'p-3 rounded-lg border transition-all duration-200 text-center',
                                     isAnnual
-                                      ? 'border-blue-300 bg-linear-to-b from-blue-50 to-blue-100/50'
-                                      : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/20',
+                                      ? 'border-blue-300 dark:border-blue-500/40 bg-linear-to-b from-blue-50 to-blue-100/50 dark:from-blue-500/15 dark:to-blue-500/5'
+                                      : 'border-border bg-muted/30 dark:bg-slate-800/50 hover:border-blue-300 dark:hover:border-blue-500/40',
                                   )}
                                 >
                                   <p
-                                    className={`text-xs font-bold mb-1.5 uppercase tracking-wider ${isAnnual
-                                      ? 'text-blue-700'
-                                      : 'text-gray-600'
-                                      }`}
+                                    className={`text-xs font-bold mb-1.5 uppercase tracking-wider ${
+                                      isAnnual
+                                        ? 'text-blue-700 dark:text-blue-300'
+                                        : 'text-muted-foreground'
+                                    }`}
                                   >
                                     {quarter.label}
                                   </p>
                                   <p
-                                    className={`text-base font-bold ${isAnnual
-                                      ? 'text-blue-700'
-                                      : 'text-gray-900'
-                                      }`}
+                                    className={`text-base font-bold tabular-nums ${
+                                      isAnnual
+                                        ? 'text-blue-700 dark:text-blue-200'
+                                        : 'text-foreground'
+                                    }`}
                                   >
                                     {quarter.value?.toLocaleString() || 0}
                                   </p>
@@ -426,11 +428,11 @@ export default function OPCRItemKPIAccordion({
 
                         {/* KPI Description */}
                         {opcrItem?.kpiAssignment?.fyActiveKPI?.description && (
-                          <div className="border-t pt-4">
-                            <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-2">
+                          <div className="border-t border-border pt-4">
+                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                               Description
                             </h4>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-foreground/85 leading-relaxed">
                               {opcrItem.kpiAssignment.fyActiveKPI.description}
                             </p>
                           </div>
@@ -443,30 +445,30 @@ export default function OPCRItemKPIAccordion({
                               initial="hidden"
                               animate="show"
                               variants={cardVariants}
-                              className="space-y-3 border-t pt-4"
+                              className="space-y-3 border-t border-border pt-4"
                             >
-                              <label className="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
                                 Activities
                               </label>
-                              <div className="space-y-2">
+                              <div className="space-y-2.5">
                                 {opcrItem.opcrActivities.map(
                                   (activity: OPCRActivity) => (
                                     <div
                                       key={activity.id}
-                                      className="border border-blue-200 rounded-lg p-3 bg-blue-50/40 hover:bg-blue-50/60 hover:border-blue-300 transition-all duration-300"
+                                      className="border border-blue-200/80 dark:border-blue-500/25 rounded-lg p-3.5 bg-blue-50/40 dark:bg-slate-800/60 hover:bg-blue-50/60 dark:hover:bg-slate-800/90 hover:border-blue-300 dark:hover:border-blue-500/45 transition-all duration-200"
                                     >
                                       <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1">
-                                          <p className="font-semibold text-sm text-gray-900">
+                                          <p className="font-semibold text-sm text-foreground">
                                             {activity.name}
                                           </p>
                                           {activity.description && (
-                                            <p className="text-xs text-gray-600 mt-1.5">
+                                            <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
                                               {activity.description}
                                             </p>
                                           )}
                                           {activity.budget && (
-                                            <p className="text-xs text-blue-600 font-semibold mt-2">
+                                            <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-2 tabular-nums">
                                               Budget: ₱{activity.budget}
                                               {/* {activity.budget.toLocaleString()} */}
                                             </p>
@@ -487,20 +489,20 @@ export default function OPCRItemKPIAccordion({
                                             <Button
                                               variant="ghost"
                                               size="sm"
-                                              className="h-8 w-8 p-0 hover:bg-blue-100 shrink-0"
+                                              className="h-8 w-8 p-0 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/15 shrink-0"
                                               title="Activity actions"
                                               onClick={(e) =>
                                                 e.stopPropagation()
                                               }
                                             >
-                                              <MoreHorizontal className="w-4 h-4 text-blue-600" />
+                                              <MoreHorizontal className="w-4 h-4" />
                                             </Button>
                                           </PopoverTrigger>
                                           <PopoverContent
                                             className="w-56 p-0"
                                             align="end"
                                           >
-                                            <div className="flex flex-col">
+                                            <div className="flex flex-col divide-y divide-border">
                                               {ACTIVITY_ACTIONS.map(
                                                 (action) => {
                                                   const IconComponent =
@@ -509,10 +511,11 @@ export default function OPCRItemKPIAccordion({
                                                     <Button
                                                       key={action.id}
                                                       variant="ghost"
-                                                      className={`flex items-center gap-3 px-4 py-2 text-sm transition-colors border-b last:border-b-0 justify-start ${action.id === 'delete'
-                                                        ? 'text-red-600 hover:bg-red-50'
-                                                        : 'text-gray-700 hover:bg-gray-100'
-                                                        }`}
+                                                      className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors rounded-none justify-start ${
+                                                        action.id === 'delete'
+                                                          ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/15'
+                                                          : 'text-foreground hover:bg-muted'
+                                                      }`}
                                                       onClick={(e) => {
                                                         e.stopPropagation()
                                                         setOpenActivityPopoverId(
@@ -550,16 +553,18 @@ export default function OPCRItemKPIAccordion({
                                                       }}
                                                     >
                                                       <IconComponent
-                                                        className={`w-4 h-4 ${action.id === 'delete'
-                                                          ? 'text-red-600'
-                                                          : 'text-gray-600'
-                                                          }`}
+                                                        className={`w-4 h-4 ${
+                                                          action.id === 'delete'
+                                                            ? 'text-rose-600 dark:text-rose-400'
+                                                            : 'text-muted-foreground'
+                                                        }`}
                                                       />
                                                       <span
-                                                        className={`font-medium ${action.id === 'delete'
-                                                          ? 'text-red-600'
-                                                          : 'text-gray-900'
-                                                          }`}
+                                                        className={`font-medium ${
+                                                          action.id === 'delete'
+                                                            ? 'text-rose-600 dark:text-rose-400'
+                                                            : 'text-foreground'
+                                                        }`}
                                                       >
                                                         {action.label}
                                                       </span>

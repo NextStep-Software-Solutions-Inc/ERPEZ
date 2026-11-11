@@ -37,7 +37,7 @@ interface FieldWrapperProps {
 function FieldWrapper({ children, label, error }: FieldWrapperProps) {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <label className="text-sm font-medium text-foreground">{label}</label>
       {children}
       {error && <p className="text-sm text-red-500">{error}</p>}
     </div>
@@ -126,7 +126,7 @@ export function APRHeaderForm({ form }: APRHeaderFormProps) {
                 onValueChange={(value) => field.handleChange(parseInt(value))}
                 disabled={true}
               >
-                <SelectTrigger className="opacity-60 cursor-not-allowed bg-gray-100">
+                <SelectTrigger className="opacity-60 cursor-not-allowed bg-slate-100 dark:bg-slate-800/80">
                   <SelectValue placeholder="Select fiscal year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -140,7 +140,7 @@ export function APRHeaderForm({ form }: APRHeaderFormProps) {
                   })}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1">Fiscal year is determined by your APP selection</p>
+              <p className="text-xs text-muted-foreground mt-1">Fiscal year is determined by your APP selection</p>
             </FieldWrapper>
           )}
         />

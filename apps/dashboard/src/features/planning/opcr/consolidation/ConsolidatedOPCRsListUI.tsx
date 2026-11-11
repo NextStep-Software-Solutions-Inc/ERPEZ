@@ -447,8 +447,8 @@ export default function ConsolidatedOPCRsListUI() {
           <Card
             key={consolidation.id}
             className={cn(
-              'p-4 border-2 transition-all cursor-pointer hover:border-primary-400 hover:shadow-md',
-              'border-slate-200 bg-white',
+              'p-4 border transition-all cursor-pointer hover:border-primary/45 hover:shadow-md',
+              'border-border bg-card dark:bg-slate-900/60',
             )}
             onClick={() => handleViewConsolidationDetails(consolidation.id)}
             role="button"
@@ -462,19 +462,19 @@ export default function ConsolidatedOPCRsListUI() {
               }
             }}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-2">
                   <Icon
                     icon="mdi:folder-star"
-                    className="text-2xl text-amber-500"
+                    className="text-2xl text-amber-500 shrink-0"
                   />
                   <div>
-                    <h3 className="font-semibold text-slate-900">
+                    <h3 className="font-semibold text-foreground">
                       {consolidation.name ||
                         `Consolidation ${consolidation.id}`}
                     </h3>
-                    <p className="text-xs text-slate-600 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       FY {consolidation.fiscalyear} •{' '}
                       {format(
                         new Date(consolidation.createdDate),
@@ -486,14 +486,14 @@ export default function ConsolidatedOPCRsListUI() {
               </div>
 
               {/* Summary Badges */}
-              <div className="flex flex-wrap gap-2 justify-end ml-4">
+              <div className="flex flex-wrap items-center gap-2 justify-end ml-4">
                 <Badge
                   variant="outline"
-                  className="bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
+                  className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/35"
                 >
                   <Icon
                     icon="mdi:file-document-multiple"
-                    className="mr-1 text-blue-600"
+                    className="mr-1 text-blue-600 dark:text-blue-400"
                   />
                   {consolidation.opcrCount || 0} OPCRs
                 </Badge>

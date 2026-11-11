@@ -1,5 +1,3 @@
-// @ts-ignore -- tailwindcss types might be missing or conflicting
-import tailwindcssAnimate from "tailwindcss-animate"
 import type { Config } from "tailwindcss"
 
 const config = {
@@ -154,7 +152,6 @@ const config = {
     },
   },
   plugins: [
-    tailwindcssAnimate,
     function ({ addUtilities }: { addUtilities: (utilities: Record<string, Record<string, unknown>>) => void }) {
       addUtilities({
         '.scrollbar-hide': {

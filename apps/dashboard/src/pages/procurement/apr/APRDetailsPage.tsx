@@ -436,8 +436,8 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-        <Loader2 className="h-9 w-9 animate-spin text-[#6366f1]" />
-        <p className="text-xs font-medium text-gray-400">Loading APR details from database...</p>
+        <Loader2 className="h-9 w-9 animate-spin text-indigo-600 dark:text-indigo-400" />
+        <p className="text-xs font-medium text-muted-foreground">Loading APR details from database...</p>
       </div>
     )
   }
@@ -449,13 +449,13 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <Card className="border-red-200 bg-red-50/50 rounded-2xl">
+        <Card className="border-red-200 dark:border-red-500/35 bg-red-50/50 dark:bg-red-950/30 rounded-2xl">
           <CardContent className="p-6 flex items-center justify-between">
-            <div className="flex items-center gap-3 text-red-800">
-              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            <div className="flex items-center gap-3 text-red-800 dark:text-red-300">
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" />
               <div>
                 <p className="font-semibold text-sm">Failed to load APR</p>
-                <p className="text-xs text-red-700 mt-0.5">
+                <p className="text-xs text-red-700 dark:text-red-300/80 mt-0.5">
                   {String((error as any)?.message || 'The requested APR was not found in the database.')}
                 </p>
               </div>
@@ -521,13 +521,13 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
         <button
           type="button"
           onClick={handleBackClick}
-          className="text-[#6366f1] hover:text-[#4f46e5] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           <span>{isReviewer ? 'Manage APRs' : 'Agency Purchase Requests'}</span>
         </button>
-        <span className="text-gray-300 font-bold">›</span>
-        <span className="text-gray-900 font-bold">Details</span>
+        <span className="text-slate-300 dark:text-slate-600 font-bold">›</span>
+        <span className="text-foreground font-bold">Details</span>
       </div>
 
       {/* 1. Top Soft Purple Identity Banner */}
@@ -535,13 +535,13 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
 
       {/* Return Revisions Notice Banner */}
       {isReturned && (
-        <div className="p-4 bg-amber-50/90 border border-amber-200/90 rounded-2xl flex items-start gap-3.5 shadow-xs">
-          <div className="h-9 w-9 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center flex-shrink-0 text-amber-700">
+        <div className="p-4 bg-amber-50/90 dark:bg-amber-950/35 border border-amber-200/90 dark:border-amber-500/30 rounded-2xl flex items-start gap-3.5 shadow-xs">
+          <div className="h-9 w-9 rounded-xl bg-amber-100 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 flex items-center justify-center flex-shrink-0 text-amber-700 dark:text-amber-400">
             <AlertTriangle className="h-5 w-5" />
           </div>
           <div className="space-y-1 text-xs flex-1">
-            <p className="font-bold text-amber-950 text-sm">APR Returned for Revisions</p>
-            <p className="text-amber-900 leading-relaxed font-medium">
+            <p className="font-bold text-amber-950 dark:text-amber-200 text-sm">APR Returned for Revisions</p>
+            <p className="text-amber-900 dark:text-amber-300/90 leading-relaxed font-medium">
               <span className="font-bold">Procurement Officer Remarks:</span>{' '}
               {apr.returnRemarks || 'Please review and adjust line items or terms before resubmitting.'}
             </p>
@@ -564,8 +564,8 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
           className={cn(
             'p-4.5 border rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs transition-colors',
             deficitItemsCount === 0 && allLinkedPRs.length > 0
-              ? 'bg-gradient-to-r from-emerald-50 via-teal-50/40 to-emerald-50 border-emerald-200'
-              : 'bg-gradient-to-r from-[#fffbeb] via-[#fef3c7]/60 to-[#fffbeb] border-[#fde68a]'
+              ? 'bg-gradient-to-r from-emerald-50 via-teal-50/40 to-emerald-50 border-emerald-200 dark:from-emerald-950/45 dark:via-teal-900/25 dark:to-emerald-950/40 dark:border-emerald-500/35'
+              : 'bg-gradient-to-r from-amber-50 via-amber-100/60 to-amber-50 border-amber-200 dark:from-amber-950/45 dark:via-amber-900/25 dark:to-amber-950/40 dark:border-amber-500/35'
           )}
         >
           <div className="flex items-start gap-3.5">
@@ -573,29 +573,29 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
               className={cn(
                 'h-10 w-10 rounded-xl border flex items-center justify-center flex-shrink-0 shadow-2xs',
                 deficitItemsCount === 0 && allLinkedPRs.length > 0
-                  ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
-                  : 'bg-[#fef3c7] border-[#f59e0b]/40 text-[#b45309]'
+                  ? 'bg-emerald-100 border-emerald-300 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/35 dark:text-emerald-400'
+                  : 'bg-amber-100 border-amber-300/80 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/35 dark:text-amber-400'
               )}
             >
               {deficitItemsCount === 0 && allLinkedPRs.length > 0 ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               ) : (
                 <AlertTriangle className="h-5 w-5" />
               )}
             </div>
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-bold text-gray-950 text-sm">
+                <p className="font-bold text-foreground text-sm">
                   {deficitItemsCount === 0 && allLinkedPRs.length > 0
                     ? 'PS-DBM Deficit Requisitioned'
                     : 'PS-DBM Stock Deficit Notice'}
                 </p>
                 {deficitItemsCount > 0 ? (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#fde68a] text-[#78350f] border border-[#f59e0b]/40">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-200/80 text-amber-950 border border-amber-400/50 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-500/35">
                     {deficitItemsCount} {deficitItemsCount === 1 ? 'item' : 'items'} • {totalDeficitUnits} units deficit remaining
                   </span>
                 ) : (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/35">
                     Fully Requisitioned (0 deficit remaining)
                   </span>
                 )}
@@ -612,31 +612,31 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                         } as any,
                       })
                     }
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 dark:text-emerald-300 dark:border-emerald-500/35 transition-colors cursor-pointer"
                     title={`Click to view ${pr.prNumber}`}
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>PR Created: {pr.prNumber} ({pr.status})</span>
                   </button>
                 ))}
               </div>
-              <p className="text-gray-700 leading-relaxed font-medium">
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                 {deficitItemsCount === 0 && allLinkedPRs.length > 0 ? (
                   <>
                     The PS-DBM deficit items for this APR have been fully transferred to Purchase Request(s){' '}
-                    <span className="font-bold text-gray-950">
+                    <span className="font-bold text-foreground">
                       {allLinkedPRs.map((p) => p.prNumber).join(', ')}
                     </span>{' '}
                     for external procurement. You can track these requisitions directly.
                   </>
                 ) : allLinkedPRs.length > 0 ? (
                   <>
-                    Out-of-Stock Purchase Request(s) (<span className="font-bold text-gray-950">{allLinkedPRs.map((p) => p.prNumber).join(', ')}</span>) have been generated for part of this APR&apos;s deficit, but{' '}
-                    <span className="font-bold text-gray-950">{totalDeficitUnits} units across {deficitItemsCount} {deficitItemsCount === 1 ? 'item' : 'items'}</span> remain eligible for requisition. You can create another PR for the remaining deficit quantities.
+                    Out-of-Stock Purchase Request(s) (<span className="font-bold text-foreground">{allLinkedPRs.map((p) => p.prNumber).join(', ')}</span>) have been generated for part of this APR&apos;s deficit, but{' '}
+                    <span className="font-bold text-foreground">{totalDeficitUnits} units across {deficitItemsCount} {deficitItemsCount === 1 ? 'item' : 'items'}</span> remain eligible for requisition. You can create another PR for the remaining deficit quantities.
                   </>
                 ) : (
                   <>
-                    The items requested below have an unserved deficit or are marked as Out of Stock at PS-DBM. In accordance with procurement guidelines (RA 12009 / PS-DBM Form 002), your office is authorized to procure these deficit quantities via an <span className="font-bold text-gray-950">Out-of-Stock Purchase Request (PR)</span>.
+                    The items requested below have an unserved deficit or are marked as Out of Stock at PS-DBM. In accordance with procurement guidelines (RA 12009 / PS-DBM Form 002), your office is authorized to procure these deficit quantities via an <span className="font-bold text-foreground">Out-of-Stock Purchase Request (PR)</span>.
                   </>
                 )}
               </p>
@@ -649,7 +649,7 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                 key={pr.id}
                 size="sm"
                 variant="outline"
-                className="gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 rounded-xl h-9 px-3.5 shadow-xs"
+                className="gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 dark:border-emerald-500/35 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25 rounded-xl h-9 px-3.5 shadow-xs"
                 onClick={() =>
                   navigate({
                     to: '/v2/purchase-requests-pr',
@@ -660,7 +660,7 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                   })
                 }
               >
-                <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                <FileText className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 View PR ({pr.prNumber})
               </Button>
             ))}
@@ -704,18 +704,18 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
 
       {/* 5. Bottom Tabs: Terms & Conditions | Activity & Timeline */}
       <Tabs defaultValue="terms" className="w-full space-y-4">
-        <div className="border-b border-gray-100">
+        <div className="border-b border-border">
           <TabsList className="bg-transparent h-11 p-0 gap-8 border-b-0">
             <TabsTrigger
               value="terms"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#6366f1] data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-[#6366f1] px-1 pb-3 font-semibold text-xs text-gray-500 flex items-center gap-2 cursor-pointer transition-colors"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 dark:data-[state=active]:border-indigo-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 px-1 pb-3 font-semibold text-xs text-muted-foreground hover:text-foreground flex items-center gap-2 cursor-pointer transition-colors"
             >
               <FileText className="h-4 w-4" />
               <span>Terms & Conditions</span>
             </TabsTrigger>
             <TabsTrigger
               value="activity"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#6366f1] data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-[#6366f1] px-1 pb-3 font-semibold text-xs text-gray-500 flex items-center gap-2 cursor-pointer transition-colors"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 dark:data-[state=active]:border-indigo-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 px-1 pb-3 font-semibold text-xs text-muted-foreground hover:text-foreground flex items-center gap-2 cursor-pointer transition-colors"
             >
               <History className="h-4 w-4" />
               <span>Activity & Timeline</span>
@@ -730,23 +730,23 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
 
         {/* Tab Content: Activity & Timeline */}
         <TabsContent value="activity" className="space-y-4 outline-none">
-          <Card className="bg-white border border-gray-100 shadow-xs rounded-2xl overflow-hidden">
-            <CardHeader className="py-3.5 px-6 border-b border-gray-50">
-              <CardTitle className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+          <Card className="bg-card text-card-foreground border border-border shadow-xs rounded-2xl overflow-hidden">
+            <CardHeader className="py-3.5 px-6 border-b border-border/70 bg-slate-50/50 dark:bg-slate-900/40">
+              <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wider">
                 Lifecycle Activity & Audit History
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-4">
                 {timelineEvents.map((evt, idx) => (
-                  <div key={idx} className="flex items-start gap-3 pb-3.5 last:pb-0 border-b border-gray-50 last:border-b-0">
+                  <div key={idx} className="flex items-start gap-3 pb-3.5 last:pb-0 border-b border-border/60 last:border-b-0">
                     <div className="mt-0.5">
-                      <CheckCircle2 className="h-4 w-4 text-[#6366f1]" />
+                      <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div className="flex-1 text-xs space-y-0.5">
                       <div className="flex items-center justify-between">
-                        <p className="font-semibold text-gray-900">{evt.title}</p>
-                        <span className="text-[11px] text-gray-400 font-mono">
+                        <p className="font-semibold text-foreground">{evt.title}</p>
+                        <span className="text-[11px] text-muted-foreground font-mono">
                           {(() => {
                             try {
                               return format(new Date(evt.timestamp), 'MMM dd, yyyy hh:mm a')
@@ -757,10 +757,10 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                         </span>
                       </div>
                       {evt.actor && (
-                        <p className="text-[11px] text-gray-500">by {evt.actor}</p>
+                        <p className="text-[11px] text-muted-foreground">by {evt.actor}</p>
                       )}
                       {evt.remarks && (
-                        <div className="mt-1.5 p-2.5 bg-slate-50 border rounded-lg text-[11px] text-gray-700">
+                        <div className="mt-1.5 p-2.5 bg-slate-50 dark:bg-slate-900/60 border border-border rounded-lg text-[11px] text-foreground">
                           {evt.remarks}
                         </div>
                       )}
@@ -774,7 +774,7 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
       </Tabs>
 
       {/* 6. Sticky Bottom Action Bar inside container */}
-      <div className="sticky bottom-4 z-30 bg-white/95 backdrop-blur-md border border-gray-200/80 shadow-md rounded-2xl py-3.5 px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="sticky bottom-4 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 shadow-md dark:shadow-black/40 rounded-2xl py-3.5 px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Status indicator and timestamps on the left */}
         <div className="flex items-center gap-3">
           <APRStatusBadge
@@ -782,8 +782,8 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
             context={isReviewer ? 'procurement_officer' : 'user'}
             size="sm"
           />
-          <div className="flex flex-col text-[11px] text-gray-400 leading-tight">
-            <span className="text-gray-600 font-medium">Request Date: {formattedRequestDate}</span>
+          <div className="flex flex-col text-[11px] text-muted-foreground leading-tight">
+            <span className="text-foreground/90 font-medium">Request Date: {formattedRequestDate}</span>
             <span>
               Last updated: {formattedRequestDate} by {apr.requestedBy || 'Procurement Officer'}
             </span>
@@ -800,7 +800,7 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1.5 text-xs text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50 rounded-xl h-9 px-4"
+                    className="gap-1.5 text-xs text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50 dark:text-amber-300 dark:hover:text-amber-200 dark:border-amber-500/40 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 rounded-xl h-9 px-4"
                     onClick={() => setReturnDialogOpen(true)}
                     disabled={isSubmitting}
                   >
@@ -823,12 +823,12 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                 </>
               )}
               {isDraft && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
                   Draft — Not Yet Submitted
                 </span>
               )}
               {isReturned && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/35">
                   Returned for Revisions
                 </span>
               )}
@@ -861,7 +861,7 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-xs font-medium text-gray-600 border-gray-200 hover:bg-gray-50 rounded-xl px-4 h-9"
+                    className="text-xs font-medium rounded-xl px-4 h-9"
                     onClick={handleBackClick}
                     disabled={isSubmitting}
                   >
@@ -870,7 +870,7 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1.5 text-xs font-semibold text-[#6366f1] border-indigo-200 hover:bg-indigo-50/70 rounded-xl px-4 h-9 shadow-2xs"
+                    className="gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/35 hover:bg-indigo-50/70 dark:hover:bg-indigo-500/15 rounded-xl px-4 h-9 shadow-2xs"
                     onClick={() => setEditDialogOpen(true)}
                     disabled={isSubmitting}
                   >
@@ -896,8 +896,8 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
               {/* Submitted / ForApproval Actions for Requesting User */}
               {isSubmitted && (
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/35">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
                     Under Review by Procurement Officer
                   </span>
                   <Button
@@ -918,7 +918,7 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1.5 text-xs font-semibold text-[#6366f1] border-indigo-200 hover:bg-indigo-50/70 rounded-xl px-4 h-9 shadow-2xs"
+                    className="gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/35 hover:bg-indigo-50/70 dark:hover:bg-indigo-500/15 rounded-xl px-4 h-9 shadow-2xs"
                     onClick={() => setEditDialogOpen(true)}
                     disabled={isSubmitting}
                   >
@@ -1035,7 +1035,7 @@ function OutOfStockPRActionButton({
       <Button
         size="sm"
         variant="outline"
-        className={`gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 rounded-xl h-9 px-4 shadow-xs ${className ?? ''}`}
+        className={`gap-1.5 text-xs font-semibold border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 dark:border-emerald-500/35 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25 rounded-xl h-9 px-4 shadow-xs ${className ?? ''}`}
         onClick={() =>
           navigate({
             to: '/v2/purchase-requests-pr',
@@ -1046,7 +1046,7 @@ function OutOfStockPRActionButton({
           })
         }
       >
-        <FileText className="h-3.5 w-3.5 text-emerald-600" />
+        <FileText className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
         View Out-of-Stock PR ({linkedPR.prNumber})
       </Button>
     )

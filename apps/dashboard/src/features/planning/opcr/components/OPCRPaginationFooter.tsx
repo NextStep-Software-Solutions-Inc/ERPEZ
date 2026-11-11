@@ -46,7 +46,7 @@ export default function OPCRPaginationFooter({
       initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
       animate={prefersReducedMotion ? false : { opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 bg-white px-4 py-4 gap-4 mt-6 rounded-b-xl"
+      className="flex flex-col sm:flex-row items-center justify-between border-t border-border bg-card dark:bg-slate-900/50 px-4 py-4 gap-4 mt-6 rounded-b-xl"
     >
       {/* Results Info */}
       <div className="text-sm text-muted-foreground">

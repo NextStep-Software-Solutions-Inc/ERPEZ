@@ -137,17 +137,22 @@ export function APRListPage() {
   return (
     <div className="w-full space-y-6 pb-10">
       {/* Header Card */}
-      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-        <CardHeader>
+      <Card className="rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20 dark:from-primary/20 dark:via-primary/10 dark:to-card dark:border-primary/30 shadow-xs">
+        <CardHeader className="border-b-0 p-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="space-y-1">
-              <CardTitle className="text-3xl">Agency Purchase Requests (APR)</CardTitle>
-              <CardDescription className="text-base">
+              <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                Agency Purchase Requests (APR)
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base text-muted-foreground">
                 Manage all APRs and track procurement requests to PS-DBM
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
+              <Badge
+                variant="outline"
+                className="h-fit px-3 py-1 font-semibold bg-background/80 text-primary border-primary/30 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-400/35"
+              >
                 <ClipboardList className="h-3.5 w-3.5 mr-1.5" /> APR
               </Badge>
             </div>
@@ -155,7 +160,7 @@ export function APRListPage() {
         </CardHeader>
       </Card>
 
-      <div className="space-y-4 bg-gray-50 rounded-lg p-4">
+      <div className="space-y-4 bg-card text-card-foreground rounded-xl border border-border p-5 shadow-xs">
         {/* Toolbar */}
         {<APRsTableToolbar
           searchTerm={searchTerm}
@@ -175,18 +180,20 @@ export function APRListPage() {
 
         {/* Error State */}
         {error && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="pt-6 flex items-center justify-between gap-2 text-red-800">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+          <Card className="border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-950/30">
+            <CardContent className="p-5 flex items-center justify-between gap-2 text-red-800 dark:text-red-200">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" />
                 <div>
-                  <p className="font-medium">Failed to load APRs</p>
-                  <p className="text-sm">{String((error as any)?.message || 'An error occurred while fetching APRs from server')}</p>
+                  <p className="font-semibold">Failed to load APRs</p>
+                  <p className="text-sm text-red-700 dark:text-red-300/90">
+                    {String((error as any)?.message || 'An error occurred while fetching APRs from server')}
+                  </p>
                 </div>
               </div>
               <button
                 onClick={() => refetch()}
-                className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 text-sm font-medium rounded border border-red-300"
+                className="px-3 py-1.5 bg-red-100 hover:bg-red-200 dark:bg-red-500/20 dark:hover:bg-red-500/30 text-red-800 dark:text-red-200 text-xs font-semibold rounded-md border border-red-300 dark:border-red-500/40 transition-colors cursor-pointer"
               >
                 Retry
               </button>
@@ -196,48 +203,36 @@ export function APRListPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-center gap-2 text-gray-500 py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="text-sm font-medium">Fetching live APRs from database...</span>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex items-center justify-center gap-2 text-muted-foreground py-12 rounded-xl border border-border bg-slate-50/50 dark:bg-slate-900/40">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-sm font-medium">Fetching live APRs from database...</span>
+          </div>
         )}
 
         {/* Live Table */}
         {!isLoading && filteredAprList && filteredAprList.length > 0 && (
-          <Card>
-            <CardContent className="pt-6">
-              <TemplateTable
-                columns={columns as any}
-                data={filteredAprList}
-                actions={['read', 'write', 'delete', 'submit']}
-              />
-            </CardContent>
-          </Card>
+          <TemplateTable
+            columns={columns as any}
+            data={filteredAprList}
+            actions={['read', 'write', 'delete', 'submit']}
+          />
         )}
 
         {/* Empty State */}
         {!isLoading && (!filteredAprList || filteredAprList.length === 0) && !error && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <ClipboardList className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-                <p className="text-gray-600 font-medium mb-1">
-                  {searchTerm.trim() || statusFilter !== 'all'
-                    ? 'No APRs match your filters'
-                    : 'No Agency Purchase Requests found'}
-                </p>
-                <p className="text-sm text-gray-400">
-                  {searchTerm.trim() || statusFilter !== 'all'
-                    ? 'Try adjusting your search criteria'
-                    : 'Create your first APR from an approved Annual Procurement Plan (APP)'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="text-center py-12 rounded-xl border border-border bg-slate-50/60 dark:bg-slate-900/40">
+            <ClipboardList className="mx-auto h-12 w-12 text-muted-foreground/60 mb-3" />
+            <p className="text-foreground font-semibold mb-1">
+              {searchTerm.trim() || statusFilter !== 'all'
+                ? 'No APRs match your filters'
+                : 'No Agency Purchase Requests found'}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {searchTerm.trim() || statusFilter !== 'all'
+                ? 'Try adjusting your search criteria'
+                : 'Create your first APR from an approved Annual Procurement Plan (APP)'}
+            </p>
+          </div>
         )}
       </div>
 

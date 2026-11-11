@@ -72,28 +72,28 @@ export function APRItemsPreview({
   return (
     <Card className="bg-muted/50">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold text-gray-900">
+        <CardTitle className="text-sm font-semibold text-foreground">
           Preview: Items from {appName} to be Added to APR
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Budget Summary */}
-        <div className="grid grid-cols-4 gap-4 text-xs bg-white p-3 rounded-lg border">
+        <div className="grid grid-cols-4 gap-4 text-xs bg-card p-3 rounded-lg border border-border">
           <div>
             <p className="text-muted-foreground">Items</p>
-            <p className="font-semibold text-sm">{safeItems.length}</p>
+            <p className="font-semibold text-sm text-foreground">{safeItems.length}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Approved Budget</p>
-            <p className="font-semibold text-sm">₱{variance.totalApprovedBudget.toLocaleString()}</p>
+            <p className="font-semibold text-sm text-foreground tabular-nums">₱{variance.totalApprovedBudget.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Current Budget</p>
-            <p className="font-semibold text-sm">₱{currentBudget.toLocaleString()}</p>
+            <p className="font-semibold text-sm text-foreground tabular-nums">₱{currentBudget.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Budget Variance</p>
-            <p className={`font-semibold text-sm ${variance.totalVariance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+            <p className={`font-semibold text-sm tabular-nums ${variance.totalVariance > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {variance.totalVariancePercent > 0 ? '+' : ''}{variance.totalVariancePercent.toFixed(2)}%
             </p>
           </div>
@@ -120,17 +120,17 @@ export function APRItemsPreview({
         )}
 
         {/* Items Table */}
-        <div className="border rounded-lg overflow-hidden bg-white">
+        <div className="border border-border rounded-lg overflow-hidden bg-card">
           <ScrollArea className="h-64">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-muted/80 backdrop-blur-xs border-b">
+              <thead className="sticky top-0 bg-slate-50/90 dark:bg-slate-900/80 backdrop-blur-xs border-b border-border">
                 <tr>
-                  <th className="text-left p-2.5 font-semibold">Description</th>
-                  <th className="text-right p-2.5 font-semibold">Qty</th>
-                  <th className="text-right p-2.5 font-semibold">Unit Cost</th>
-                  <th className="text-right p-2.5 font-semibold">Total</th>
-                  <th className="text-center p-2.5 font-semibold">Variance</th>
-                  <th className="text-center p-2.5 font-semibold">BAC Milestones</th>
+                  <th className="text-left p-2.5 font-semibold text-foreground">Description</th>
+                  <th className="text-right p-2.5 font-semibold text-foreground">Qty</th>
+                  <th className="text-right p-2.5 font-semibold text-foreground">Unit Cost</th>
+                  <th className="text-right p-2.5 font-semibold text-foreground">Total</th>
+                  <th className="text-center p-2.5 font-semibold text-foreground">Variance</th>
+                  <th className="text-center p-2.5 font-semibold text-foreground">BAC Milestones</th>
                 </tr>
               </thead>
               <tbody>
@@ -139,22 +139,22 @@ export function APRItemsPreview({
                   return (
                     <tr
                       key={item.id || `item-preview-${index}`}
-                      className={`border-b hover:bg-muted/50 ${
-                        warning ? 'bg-red-50/50' : ''
+                      className={`border-b border-border/70 hover:bg-slate-50/80 dark:hover:bg-slate-800/55 ${
+                        warning ? 'bg-red-50/50 dark:bg-red-500/10' : ''
                       }`}
                     >
-                      <td className="p-2.5 font-medium">
+                      <td className="p-2.5 font-medium text-foreground">
                         <div className="truncate max-w-[200px]">{item.description}</div>
                         {warning && (
-                          <div className="text-red-600 text-[11px] mt-0.5 flex items-center gap-1">
+                          <div className="text-red-600 dark:text-red-400 text-[11px] mt-0.5 flex items-center gap-1">
                             <AlertCircle className="h-3 w-3 flex-shrink-0" />
                             {warning}
                           </div>
                         )}
                       </td>
-                      <td className="p-2.5 text-right font-mono">{item.quantity}</td>
-                      <td className="p-2.5 text-right font-mono">₱{(item.unitCost || 0).toLocaleString()}</td>
-                      <td className="p-2.5 text-right font-semibold font-mono">
+                      <td className="p-2.5 text-right font-mono text-foreground">{item.quantity}</td>
+                      <td className="p-2.5 text-right font-mono text-foreground">₱{(item.unitCost || 0).toLocaleString()}</td>
+                      <td className="p-2.5 text-right font-semibold font-mono text-foreground">
                         ₱{(item.totalAmount || 0).toLocaleString()}
                       </td>
                       <td className="p-2.5 text-center">
@@ -162,10 +162,10 @@ export function APRItemsPreview({
                           variant="outline"
                           className={`text-[10px] py-0 h-4 ${
                             (item.budgetVariancePercent ?? 0) === 0
-                              ? 'bg-gray-50 text-gray-700 border-gray-300'
+                              ? 'bg-slate-50 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                               : Math.abs(item.budgetVariancePercent ?? 0) > 10
-                              ? 'bg-red-50 text-red-700 border-red-300'
-                              : 'bg-amber-50 text-amber-700 border-amber-300'
+                              ? 'bg-red-50 text-red-700 border-red-300 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/35'
+                              : 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/35'
                           }`}
                         >
                           {(item.budgetVariancePercent ?? 0) > 0 ? '+' : ''}

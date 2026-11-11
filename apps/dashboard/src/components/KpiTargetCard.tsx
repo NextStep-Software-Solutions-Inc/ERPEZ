@@ -63,14 +63,14 @@ export const KpiTargetCard = ({
   return (
     <div
       className={cn(
-        'relative p-4 rounded-md border border-blue-500 bg-white shadow-md flex flex-col space-y-2',
+        'relative p-4 rounded-md border border-blue-500/60 bg-card text-card-foreground shadow-md flex flex-col space-y-2',
         className,
       )}
     >
       <div className="flex items-start justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
         {targetLabel && (
-          <span className="text-sm text-gray-500">{targetLabel}</span>
+          <span className="text-sm text-muted-foreground">{targetLabel}</span>
         )}
       </div>
       <div className="px-6 items-center flex flex-row justify-center">
@@ -87,7 +87,7 @@ export const KpiTargetCard = ({
             {Array.from({ length: Math.max(0, 4 - targets.length) }, (_, i) => (
               <div
                 key={`empty-${i}`}
-                className="h-12 w-20 rounded-full bg-gray-100 opacity-50"
+                className="h-12 w-20 rounded-full bg-muted opacity-50"
                 aria-hidden="true"
               />
             ))}

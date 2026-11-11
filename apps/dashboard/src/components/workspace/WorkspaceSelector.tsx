@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUnifiedAuth } from '@/auth/UnifiedAuthContext';
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ export function WorkspaceSelector() {
     isPlatformAdmin,
   } = useUnifiedAuth();
 
+  const queryClient = useQueryClient();
   const [isSwitching, setIsSwitching] = useState(false);
 
   const handleSelect = async (tenantId: string) => {
@@ -31,6 +33,36 @@ export function WorkspaceSelector() {
     try {
       setIsSwitching(true);
       await switchTenant(tenantId);
+
+      // Strip tenant-specific entity IDs from URL search params before invalidating queries
+      if (typeof window !== 'undefined' && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        const staleKeys = [
+          'opcrId',
+          'opcrConsolidationId',
+          'kpiAssignmentId',
+          'kpiId',
+          'opcrActivityId',
+          'officeId',
+          'fiscalYearId',
+          'functionCategory',
+          'functionTypeId',
+        ];
+        let changed = false;
+        for (const key of staleKeys) {
+          if (params.has(key)) {
+            params.delete(key);
+            changed = true;
+          }
+        }
+        if (changed) {
+          const qs = params.toString();
+          const nextUrl = `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`;
+          window.history.replaceState(window.history.state, '', nextUrl);
+        }
+      }
+
+      await queryClient.invalidateQueries();
       toast.success('Switched workspace successfully');
     } catch (err: any) {
       console.error('Failed to switch workspace:', err);

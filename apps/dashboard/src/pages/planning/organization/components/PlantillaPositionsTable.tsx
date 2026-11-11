@@ -74,7 +74,7 @@ export function PlantillaPositionsTable({
                 </div>
               </TableCell>
               <TableCell className="text-center">
-                <Badge variant="outline" className="font-medium text-default-700 bg-background border-default-200">
+                <Badge variant="outline" className="font-medium text-foreground bg-muted/50 border-border">
                   {item.salaryGrade}
                 </Badge>
               </TableCell>

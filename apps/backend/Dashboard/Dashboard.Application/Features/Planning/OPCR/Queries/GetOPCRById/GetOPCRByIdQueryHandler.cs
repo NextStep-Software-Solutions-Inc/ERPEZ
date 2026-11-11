@@ -12,7 +12,6 @@ using ERPEZ.Application.Features.Planning.OPCRItemMOV.Dtos;
 using ERPEZ.Application.Features.Planning.SDG.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
-using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCR.Queries.GetOPCRById;
@@ -451,8 +450,11 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork)
                 }).ToList()
             });
 
-        var opcr = await unitOfWork.OPCRRepository.GetFirstAsync(opcrQuery, cancellationToken)
-            ?? throw new NotFoundException("No data found.");
+        var opcr = await unitOfWork.OPCRRepository.GetFirstAsync(opcrQuery, cancellationToken);
+        if (opcr is null)
+        {
+            return ApiResponse<OPCRDetailedResponse>.Fail("No data found.");
+        }
 
         return ApiResponse<OPCRDetailedResponse>.Success(opcr, "OPCR retrieved successfully.");
     }

@@ -116,9 +116,9 @@ export function DepartmentItem({ dept }: { dept: PAPDepartment }) {
     return (
         <motion.div
             variants={itemVariants}
-            className="border rounded-md p-3 bg-white/50 hover:bg-white/70 transition-colors"
+            className="border border-border rounded-md p-3 bg-card/60 hover:bg-muted/60 transition-colors"
         >
-            <p className="text-sm font-medium">
+            <p className="text-sm font-medium text-foreground">
                 {dept.deliveryUnit.office.name || 'Unknown Office'}
             </p>
         </motion.div>

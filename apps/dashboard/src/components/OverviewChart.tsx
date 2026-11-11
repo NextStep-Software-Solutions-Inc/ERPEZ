@@ -6,6 +6,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { ChartTooltipContent, useChartTheme } from '@/components/ui/chart-tooltip'
 
 const data = [
   { name: 'Apr 6', value: 2400 },
@@ -26,19 +27,31 @@ const data = [
 ]
 
 export function OverviewChart() {
+  const { tickColor, axisStroke, lineCursor, activeDot } = useChartTheme()
+
   return (
     <div className="h-[300px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
-          <XAxis dataKey="name" stroke="#888" />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 11, fill: tickColor }}
+            tickLine={false}
+            axisLine={{ stroke: axisStroke }}
+          />
           <YAxis hide />
-          <Tooltip />
+          <Tooltip
+            cursor={lineCursor}
+            content={<ChartTooltipContent indicator="line" />}
+          />
           <Line
             type="monotone"
             dataKey="value"
+            name="Overview"
             stroke="#22c55e"
             strokeWidth={2}
             dot={false}
+            activeDot={{ ...activeDot, fill: '#22c55e' }}
           />
         </LineChart>
       </ResponsiveContainer>

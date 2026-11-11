@@ -45,9 +45,9 @@ export default function PositionToolbar({
   }
 
   return (
-    <div className="flex items-center gap-4 px-6 py-4 border-b bg-default-50/30 w-full">
+    <div className="flex items-center gap-4 px-6 py-4 border-b border-border bg-muted/30 w-full">
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-default-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search by title, code, or grade..."
           value={searchValue}
