@@ -25,7 +25,23 @@ public sealed class RFQDocumentContextService(
         string? mainOrgOrHeadOfficeAddress = null;
 
         // 0. Primary source of truth: Tenant Agency settings
-        var agency = await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
+        ERPEZ.Domain.Entities.Planning.Agency? agency = null;
+        if (unitOfWork.AgencyRepository != null)
+        {
+            try
+            {
+                agency = await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(
+                    ex,
+                    "RFQ {RFQNumber} (ID: {RFQId}) could not query Agency letterhead settings; falling back to office/organization hierarchy.",
+                    rfqNumber,
+                    rfqId);
+            }
+        }
+
         if (agency != null)
         {
             if (!string.IsNullOrWhiteSpace(agency.Name))
@@ -38,29 +54,35 @@ public sealed class RFQDocumentContextService(
             }
         }
 
-        // 1. Walk the office hierarchy up to the root to get the head office / procuring entity
-        var currentOffice = await unitOfWork.OfficeRepository.GetByIdWithDetailsAsync(startingOfficeId, cancellationToken);
-        if (currentOffice != null)
+        // 1. Walk the office hierarchy up to the root as fallback when Agency settings do not supply name/address
+        if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName) || string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeAddress))
         {
-            while (currentOffice.ParentId.HasValue && currentOffice.ParentId.Value != Guid.Empty)
+            var currentOffice = await unitOfWork.OfficeRepository.GetByIdWithDetailsAsync(startingOfficeId, cancellationToken);
+            if (currentOffice != null)
             {
-                var parentOffice = await unitOfWork.OfficeRepository.GetByIdWithDetailsAsync(currentOffice.ParentId.Value, cancellationToken);
-                if (parentOffice == null) break;
-                currentOffice = parentOffice;
-            }
+                while (currentOffice.ParentId.HasValue && currentOffice.ParentId.Value != Guid.Empty)
+                {
+                    var parentOffice = await unitOfWork.OfficeRepository.GetByIdWithDetailsAsync(currentOffice.ParentId.Value, cancellationToken);
+                    if (parentOffice == null) break;
+                    currentOffice = parentOffice;
+                }
 
-            if (currentOffice.Organization != null && !string.IsNullOrWhiteSpace(currentOffice.Organization.Name))
-            {
-                mainOrgOrHeadOfficeName = currentOffice.Organization.Name.Trim();
-            }
-            else if (!string.IsNullOrWhiteSpace(currentOffice.Name))
-            {
-                mainOrgOrHeadOfficeName = currentOffice.Name.Trim();
-            }
+                if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeName))
+                {
+                    if (currentOffice.Organization != null && !string.IsNullOrWhiteSpace(currentOffice.Organization.Name))
+                    {
+                        mainOrgOrHeadOfficeName = currentOffice.Organization.Name.Trim();
+                    }
+                    else if (!string.IsNullOrWhiteSpace(currentOffice.Name))
+                    {
+                        mainOrgOrHeadOfficeName = currentOffice.Name.Trim();
+                    }
+                }
 
-            if (!string.IsNullOrWhiteSpace(currentOffice.Address))
-            {
-                mainOrgOrHeadOfficeAddress = currentOffice.Address.Trim();
+                if (string.IsNullOrWhiteSpace(mainOrgOrHeadOfficeAddress) && !string.IsNullOrWhiteSpace(currentOffice.Address))
+                {
+                    mainOrgOrHeadOfficeAddress = currentOffice.Address.Trim();
+                }
             }
         }
 

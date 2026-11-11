@@ -286,8 +286,112 @@ public static class DependencyInjection
                 logger.LogCritical(ex, "Unexpected error while applying migrations.");
                 throw;
             }
+
+            // Ensure incremental operational columns exist even when MigrateAsync skipped due to
+            // pre-existing remote database objects (42P07 / 42710 / 42701) or dedicated tenant DBs.
+            await ReconcileOperationalSchemaColumnsAsync(
+                builder.Configuration,
+                scope.ServiceProvider.GetRequiredService<ERPEZ.Shared.Interfaces.ISecretEncryptionService>(),
+                logger);
         }
 
         return builder;
+    }
+
+    private static async Task ReconcileOperationalSchemaColumnsAsync(
+        IConfiguration configuration,
+        ERPEZ.Shared.Interfaces.ISecretEncryptionService encryptionService,
+        ILogger logger)
+    {
+        const string ensureAgencyLetterheadSql = """
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'planning' AND table_name = 'Agencies'
+                ) THEN
+                    ALTER TABLE planning."Agencies"
+                        ADD COLUMN IF NOT EXISTS "LetterheadAlignment" character varying(50) NOT NULL DEFAULT 'Default';
+                END IF;
+            END $$;
+            """;
+
+        var targetConnections = new HashSet<string>(StringComparer.Ordinal);
+
+        var defaultConn = configuration.GetConnectionString("DefaultConnection");
+        if (!string.IsNullOrWhiteSpace(defaultConn))
+        {
+            targetConnections.Add(defaultConn);
+        }
+
+        var operationalConn = configuration.GetConnectionString("OperationalConnection");
+        if (!string.IsNullOrWhiteSpace(operationalConn))
+        {
+            targetConnections.Add(operationalConn);
+        }
+
+        // Discover any Ready dedicated On-Premise tenant operational databases from Control Plane
+        var controlConnStr = configuration.GetConnectionString("ControlPlaneConnection")
+            ?? configuration.GetConnectionString("TenantManagementConnection");
+
+        if (string.IsNullOrWhiteSpace(controlConnStr) && !string.IsNullOrWhiteSpace(defaultConn))
+        {
+            controlConnStr = defaultConn.Contains("ERPEZ-DASHBOARD_DB", StringComparison.OrdinalIgnoreCase)
+                ? defaultConn.Replace("ERPEZ-DASHBOARD_DB", "ERPEZ-TENANT_MANAGEMENT_DB", StringComparison.OrdinalIgnoreCase)
+                : defaultConn;
+        }
+
+        if (!string.IsNullOrWhiteSpace(controlConnStr))
+        {
+            try
+            {
+                await using var controlConn = new Npgsql.NpgsqlConnection(controlConnStr);
+                await controlConn.OpenAsync();
+
+                const string listTenantDbsSql = """
+                    SELECT "EncryptedConnectionString", "EncryptionKeyVersion"
+                    FROM "TenantOperationalDatabases"
+                    WHERE "IsDeleted" = false
+                      AND "ProvisioningState"::text IN ('Ready', '1')
+                      AND "EncryptedConnectionString" IS NOT NULL;
+                    """;
+
+                await using var cmd = new Npgsql.NpgsqlCommand(listTenantDbsSql, controlConn);
+                await using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    var encrypted = reader.GetString(0);
+                    var version = reader.GetInt32(1);
+                    if (!string.IsNullOrWhiteSpace(encrypted))
+                    {
+                        var decrypted = encryptionService.Decrypt(encrypted, version);
+                        if (!string.IsNullOrWhiteSpace(decrypted))
+                        {
+                            targetConnections.Add(decrypted);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "Skipped dedicated tenant database discovery during startup schema reconciliation.");
+            }
+        }
+
+        foreach (var connStr in targetConnections)
+        {
+            try
+            {
+                await using var conn = new Npgsql.NpgsqlConnection(connStr);
+                await conn.OpenAsync();
+                await using var cmd = new Npgsql.NpgsqlCommand(ensureAgencyLetterheadSql, conn);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to reconcile planning.Agencies.LetterheadAlignment column during startup.");
+            }
+        }
     }
 }

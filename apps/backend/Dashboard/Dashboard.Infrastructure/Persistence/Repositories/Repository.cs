@@ -50,14 +50,14 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         return (entities, totalCount);
     }
 
-    public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public virtual async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.Set<T>()
             .Where(e => !e.IsDeleted)
             .FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id, cancellationToken);
     }
 
-    public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    public virtual async Task<T?> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
     {
         return await context.Set<T>().Where(e => !e.IsDeleted).FirstOrDefaultAsync(predicate, cancellationToken);
     }
@@ -133,7 +133,7 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         return await filteredQuery.SumAsync(selector, cancellationToken);
     }
 
-    public async Task<List<T>> FindAllAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    public virtual async Task<List<T>> FindAllAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
     {
         return await context.Set<T>().Where(e => !e.IsDeleted).Where(predicate).ToListAsync(cancellationToken);
     }

@@ -51,9 +51,18 @@ public static class PurchaseOrderDataResolver
         }
 
         // 2. Resolve procuring entity name, address, and logo from Agency letterhead or database fallback
-        var agency = unitOfWork.AgencyRepository != null
-            ? await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken)
-            : null;
+        ERPEZ.Domain.Entities.Planning.Agency? agency = null;
+        if (unitOfWork.AgencyRepository != null)
+        {
+            try
+            {
+                agency = await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Fall back to Organization / Office hierarchy if Agency settings cannot be read
+            }
+        }
 
         var topOrg = unitOfWork.OrganizationRepository != null
             ? (await unitOfWork.OrganizationRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.GenerateRFQDocument;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Application.Interfaces.Services;
+using ERPEZ.Application.Services;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
@@ -15,6 +17,7 @@ using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -436,5 +439,84 @@ public class GenerateRFQDocumentAuthorizationTests
         // Act & Assert
         var act = async () => await handler.Handle(command, CancellationToken.None);
         await act.Should().ThrowAsync<ForbiddenException>();
+    }
+
+    [Fact]
+    public async Task RFQDocumentContextService_WhenAgencyRepositoryThrowsSchemaError_ShouldFallbackToOfficeHierarchyWithoutFailing()
+    {
+        // Arrange
+        var officeId = Guid.NewGuid();
+        var agencyRepoMock = new Mock<IAgencyRepository>();
+        agencyRepoMock
+            .Setup(r => r.FindAsync(It.IsAny<Expression<Func<Agency, bool>>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("42703: column a.LetterheadAlignment does not exist"));
+
+        var officeRepoMock = new Mock<IOfficeRepository>();
+        officeRepoMock
+            .Setup(r => r.GetByIdWithDetailsAsync(officeId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Office
+            {
+                Id = officeId,
+                Name = "ICT Division",
+                Address = "100 Main Campus Ave",
+                Organization = new Organization { Id = Guid.NewGuid(), Name = "NextJump Solutions" }
+            });
+
+        var bacMemberRepoMock = new Mock<IRepository<BACMember>>();
+        var personnelPosRepoMock = new Mock<IPersonnelPositionRepository>();
+
+        var uowMock = new Mock<IUnitOfWork>();
+        uowMock.Setup(u => u.AgencyRepository).Returns(agencyRepoMock.Object);
+        uowMock.Setup(u => u.OfficeRepository).Returns(officeRepoMock.Object);
+        uowMock.Setup(u => u.BACMemberRepository).Returns(bacMemberRepoMock.Object);
+        uowMock.Setup(u => u.PersonnelPositionRepository).Returns(personnelPosRepoMock.Object);
+
+        var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
+        var loggerMock = new Mock<ILogger<RFQDocumentContextService>>();
+
+        var service = new RFQDocumentContextService(uowMock.Object, config, loggerMock.Object);
+
+        // Act
+        var ctx = await service.ResolveAsync("RFQ-2026-SVP-007", Guid.NewGuid(), officeId, CancellationToken.None);
+
+        // Assert
+        ctx.ProcuringEntity.Should().Be("NextJump Solutions");
+        ctx.ProcuringEntityAddress.Should().Be("100 Main Campus Ave");
+    }
+
+    [Fact]
+    public async Task RFQDocumentContextService_WhenAgencyExists_ShouldPreferAgencyNameAndAddress()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var unitOfWork = CreateUnitOfWork(context);
+
+        var office = new Office
+        {
+            Id = Guid.NewGuid(),
+            Name = "ICT Division",
+            Address = "Building B"
+        };
+        context.Offices?.Add(office);
+
+        context.Agencies?.Add(new Agency
+        {
+            Id = Guid.NewGuid(),
+            Name = "NextJump Solutions Inc.",
+            Address = "Corporate Headquarters, Cagayan de Oro",
+            LetterheadAlignment = "Center"
+        });
+        await context.SaveChangesAsync();
+
+        var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
+        var loggerMock = new Mock<ILogger<RFQDocumentContextService>>();
+        var service = new RFQDocumentContextService(unitOfWork, config, loggerMock.Object);
+
+        // Act
+        var ctx = await service.ResolveAsync("RFQ-2026-SVP-007", Guid.NewGuid(), office.Id, CancellationToken.None);
+
+        // Assert
+        ctx.ProcuringEntity.Should().Be("NextJump Solutions Inc.");
+        ctx.ProcuringEntityAddress.Should().Be("Corporate Headquarters, Cagayan de Oro");
     }
 }

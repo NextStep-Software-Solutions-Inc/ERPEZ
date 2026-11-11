@@ -62,7 +62,18 @@ public class GenerateContractDocumentCommandHandler(
         }).ToList();
 
         // Dynamically resolve Procuring Entity / Organization from database
-        var agency = await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
+        ERPEZ.Domain.Entities.Planning.Agency? agency = null;
+        if (unitOfWork.AgencyRepository != null)
+        {
+            try
+            {
+                agency = await unitOfWork.AgencyRepository.FindAsync(a => !a.IsDeleted, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Fall back to Organization / Office hierarchy if Agency settings cannot be read
+            }
+        }
 
         var topOrg = await unitOfWork.OrganizationRepository.FindAsync(o => o.ParentId == null && !o.IsDeleted, cancellationToken)
             ?? await unitOfWork.OrganizationRepository.FindAsync(o => !o.IsDeleted, cancellationToken);
