@@ -133,7 +133,7 @@ export default function DocumentViewer({
       return (
         <div
           className={cn(
-            'flex items-center justify-center font-bold text-slate-700 bg-linear-to-br from-slate-100 to-slate-200 border border-slate-200 rounded-lg select-none uppercase',
+            'flex items-center justify-center font-bold text-foreground bg-linear-to-br from-muted to-secondary border border-border rounded-lg select-none uppercase',
             fallbackBgClass,
             'w-full h-full',
           )}
@@ -144,14 +144,14 @@ export default function DocumentViewer({
     }
 
     return (
-      <div className="flex flex-col items-center justify-center bg-slate-50 border border-dashed border-slate-200 text-slate-400 rounded-lg w-full h-full">
+      <div className="flex flex-col items-center justify-center bg-muted/50 border border-dashed border-border text-muted-foreground rounded-lg w-full h-full">
         <LucideImage className="h-1/3 w-1/3 min-h-4 min-w-4 stroke-[1.5]" />
       </div>
     )
   }
 
   const containerClasses = cn(
-    'relative overflow-hidden rounded-lg border border-slate-100 shadow-sm bg-white group select-none transition-all duration-300 hover:shadow-md',
+    'relative overflow-hidden rounded-lg border border-border shadow-sm bg-card group select-none transition-all duration-300 hover:shadow-md',
     sizeClasses[size],
     aspectRatios[aspectRatio],
     className,
@@ -162,7 +162,7 @@ export default function DocumentViewer({
       <div
         className={cn(
           containerClasses,
-          'flex items-center justify-center bg-slate-50/50',
+          'flex items-center justify-center bg-muted/40',
         )}
       >
         <Loader2 className="h-5 w-5 animate-spin text-primary" />

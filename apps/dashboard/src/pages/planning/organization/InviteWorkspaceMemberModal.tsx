@@ -246,11 +246,11 @@ export function InviteWorkspaceMemberModal() {
           <>
             <DialogHeader className="p-6 pb-4 border-b">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-lg">
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <DialogTitle className="text-lg font-bold text-slate-900">
+                  <DialogTitle className="text-lg font-bold text-foreground">
                     Invitation Dispatched
                   </DialogTitle>
                   <DialogDescription className="text-xs text-muted-foreground mt-0.5">
@@ -261,21 +261,21 @@ export function InviteWorkspaceMemberModal() {
             </DialogHeader>
 
             <div className="p-6 space-y-5 overflow-y-auto">
-              <div className="p-4 rounded-xl bg-emerald-50/90 border border-emerald-200 text-xs text-emerald-950 space-y-2">
-                <div className="font-semibold text-emerald-950 flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-emerald-700 shrink-0" />
+              <div className="p-4 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-950 dark:text-emerald-100 space-y-2">
+                <div className="font-semibold text-emerald-950 dark:text-emerald-100 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
                   <span>Invitation registered for: <strong>{invitationResult.email}</strong></span>
                 </div>
-                <p className="leading-relaxed text-emerald-800">
+                <p className="leading-relaxed text-emerald-800 dark:text-emerald-200">
                   The member has been added in the Control Plane with status <strong>Pending</strong>. Their pre-delegated operational roles will activate automatically upon acceptance.
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
+                <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
                   <span>Direct Acceptance Link</span>
                   {hasCopied && (
-                    <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                       <Check className="w-3 h-3" /> Copied to clipboard!
                     </span>
                   )}
@@ -284,7 +284,7 @@ export function InviteWorkspaceMemberModal() {
                   <Input
                     readOnly
                     value={`${typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':5173') : 'http://localhost:5173'}/accept-invitation?token=${invitationResult.token}`}
-                    className="text-xs font-mono bg-slate-50 select-all h-9"
+                    className="text-xs font-mono bg-muted/50 select-all h-9"
                   />
                   <Button
                     type="button"
@@ -300,17 +300,17 @@ export function InviteWorkspaceMemberModal() {
                     }}
                     className="gap-1.5 text-xs shrink-0 h-9 px-3"
                   >
-                    {hasCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {hasCopied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{hasCopied ? 'Copied' : 'Copy Link'}</span>
                   </Button>
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-muted-foreground">
                   If Clerk automated email dispatch is active, an email was sent. You can also share this direct link directly with the user.
                 </p>
               </div>
             </div>
 
-            <DialogFooter className="p-4 border-t bg-slate-50/50 flex items-center justify-end">
+            <DialogFooter className="p-4 border-t bg-muted/30 flex items-center justify-end">
               <Button
                 type="button"
                 size="sm"
@@ -345,11 +345,11 @@ export function InviteWorkspaceMemberModal() {
 
         <div className="p-6 space-y-6 overflow-y-auto">
           {/* Explanation Alert */}
-          <div className="flex items-start gap-3 p-3.5 rounded-lg border border-primary/20 bg-primary/5 text-xs text-slate-700 leading-relaxed">
+          <div className="flex items-start gap-3 p-3.5 rounded-lg border border-primary/20 bg-primary/5 text-xs text-muted-foreground leading-relaxed">
             <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <div>
               Invited members receive an email link to join this workspace.
-              Pre-selected <strong>Operational ERP Roles</strong> will be bound immediately so their dashboard and functional modules activate as soon as they accept and sign in.
+              Pre-selected <strong className="text-foreground">Operational ERP Roles</strong> will be bound immediately so their dashboard and functional modules activate as soon as they accept and sign in.
             </div>
           </div>
 
@@ -418,7 +418,7 @@ export function InviteWorkspaceMemberModal() {
                   {selectedRoleIds.length} role{selectedRoleIds.length === 1 ? '' : 's'} selected
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 leading-normal">
+              <p className="text-[11px] text-muted-foreground leading-normal">
                 Choose the ERP business roles to delegate to this user. Access to PBMS, PMS, and Procurement modules will activate automatically upon their first sign-in.
               </p>
 
@@ -428,7 +428,7 @@ export function InviteWorkspaceMemberModal() {
                   <span>Loading operational roles...</span>
                 </div>
               ) : operationalRoles.length === 0 ? (
-                <div className="text-xs text-slate-500 italic p-2.5 border rounded-md bg-slate-50">
+                <div className="text-xs text-muted-foreground italic p-2.5 border border-border rounded-md bg-muted/40">
                   No assignable operational roles found in this workspace.
                 </div>
               ) : (
@@ -441,7 +441,7 @@ export function InviteWorkspaceMemberModal() {
                         className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition text-xs ${
                           isChecked
                             ? 'border-primary/50 bg-primary/5'
-                            : 'border-slate-200 hover:bg-slate-50'
+                            : 'border-border hover:bg-muted/50'
                         }`}
                       >
                         <Checkbox
@@ -451,20 +451,20 @@ export function InviteWorkspaceMemberModal() {
                         />
                         <div className="flex-1 space-y-0.5">
                           <div className="flex items-center justify-between">
-                            <span className="font-semibold text-slate-900">
+                            <span className="font-semibold text-foreground">
                               {opRole.name}
                             </span>
                             {opRole.isSystemRole && (
                               <Badge
                                 variant="outline"
-                                className="text-[9px] px-1 py-0 h-3.5 text-slate-500 bg-white font-normal"
+                                className="text-[9px] px-1 py-0 h-3.5 text-muted-foreground bg-muted/50 border-border font-normal"
                               >
                                 System
                               </Badge>
                             )}
                           </div>
                           {opRole.description && (
-                            <p className="text-[11px] text-slate-600 line-clamp-2">
+                            <p className="text-[11px] text-muted-foreground line-clamp-2">
                               {opRole.description}
                             </p>
                           )}
@@ -481,7 +481,7 @@ export function InviteWorkspaceMemberModal() {
           {workspaceInvitations.length > 0 && (
             <div className="space-y-3 pt-2 border-t">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                   <Clock className="h-3.5 w-3.5 text-amber-500" />
                   <span>Pending Invitations ({workspaceInvitations.length})</span>
                 </div>
@@ -491,10 +491,10 @@ export function InviteWorkspaceMemberModal() {
                 {workspaceInvitations.map((inv) => (
                   <div
                     key={inv.id}
-                    className="flex items-center justify-between p-2.5 rounded-md border bg-slate-50/70 text-xs"
+                    className="flex items-center justify-between p-2.5 rounded-md border border-border bg-muted/40 text-xs"
                   >
                     <div className="space-y-0.5 min-w-0 pr-2">
-                      <div className="font-medium text-slate-900 truncate">
+                      <div className="font-medium text-foreground truncate">
                         {inv.email}
                       </div>
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -514,7 +514,7 @@ export function InviteWorkspaceMemberModal() {
                       size="sm"
                       onClick={() => handleRevoke(inv.id, inv.email)}
                       disabled={revokingId === inv.id}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 px-2 text-xs shrink-0"
+                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 h-7 px-2 text-xs shrink-0"
                     >
                       {revokingId === inv.id ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -530,7 +530,7 @@ export function InviteWorkspaceMemberModal() {
           )}
         </div>
 
-        <DialogFooter className="p-4 border-t bg-slate-50/50 flex items-center justify-end gap-2">
+        <DialogFooter className="p-4 border-t bg-muted/30 flex items-center justify-end gap-2">
           <Button
             type="button"
             variant="outline"

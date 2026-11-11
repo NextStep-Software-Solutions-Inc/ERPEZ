@@ -19,7 +19,7 @@ import { UACSObligation } from '../components/charts/UACSObligation'
 import { PPMPConsolidationChart } from '../components/charts/PPMPConsolidationChart'
 import { AppProcurementReadiness } from '../components/charts/AppProcurementReadiness'
 import { PlanningAttentionRequired } from '../components/PlanningAttentionRequired'
-import { LayoutDashboard, RefreshCw } from 'lucide-react'
+import { LayoutDashboard, RefreshCw, Info, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -75,10 +75,11 @@ export default function DashboardPage() {
   return (
     <PageContainerDashtail
       title="Planning Dashboard Overview"
-      titleIcon={<LayoutDashboard className="h-6 w-6 text-blue-600" />}
+      titleIcon={<LayoutDashboard className="h-6 w-6 text-blue-600 dark:text-blue-400" />}
       description="Strategic performance, budget programming, and procurement readiness"
       headerSize="default"
-      containerClassName="p-6 bg-gray-50/60"
+      containerClassName="p-4 sm:p-6 bg-slate-50/50 dark:bg-background min-h-screen"
+      contentClassName="pt-5"
     >
       <div className="space-y-8">
         {/* ── SECTION 1: GLOBAL FILTERS ──────────────────────────────────────── */}
@@ -97,9 +98,10 @@ export default function DashboardPage() {
             variant="outline"
             size="sm"
             onClick={() => refetch()}
-            className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 self-end sm:self-center font-normal"
+            disabled={isLoading}
+            className="flex items-center gap-1.5 text-xs bg-card hover:bg-muted text-foreground border-border shadow-2xs self-end sm:self-center font-medium h-9 px-3.5"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className={`h-3.5 w-3.5 text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
             Refresh Data
           </Button>
         </div>
@@ -110,10 +112,14 @@ export default function DashboardPage() {
         </section>
 
         {/* ── SECTION 3: PLANNING PERFORMANCE ─────────────────────────────────── */}
-        <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Performance &amp; Commitments
-          </h3>
+        <section className="space-y-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="h-3.5 w-1 rounded-full bg-blue-600 dark:bg-blue-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+              Performance &amp; Commitments
+            </h3>
+            <div className="flex-1 h-px bg-border/60" />
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <OPCRLineChart data={opcrChartData} isLoading={isLoading} />
@@ -122,19 +128,27 @@ export default function DashboardPage() {
         </section>
 
         {/* ── SECTION 4: BUDGET PROGRAMMING ───────────────────────────────────── */}
-        <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Budget Allocation &amp; Programming
-          </h3>
+        <section className="space-y-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="h-3.5 w-1 rounded-full bg-amber-500 dark:bg-amber-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+              Budget Allocation &amp; Programming
+            </h3>
+            <div className="flex-1 h-px bg-border/60" />
+          </div>
 
           <UACSObligation data={uacsObligationData} isLoading={isLoading} />
         </section>
 
         {/* ── SECTION 5: PROCUREMENT READINESS ────────────────────────────────── */}
-        <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Procurement Readiness
-          </h3>
+        <section className="space-y-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="h-3.5 w-1 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+              Procurement Readiness
+            </h3>
+            <div className="flex-1 h-px bg-border/60" />
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <PPMPConsolidationChart data={ppmpConsolidationData} isLoading={isLoading} />
@@ -143,10 +157,14 @@ export default function DashboardPage() {
         </section>
 
         {/* ── SECTION 6: OPERATIONAL ATTENTION REQUIRED ─────────────────────────── */}
-        <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Operational Summary
-          </h3>
+        <section className="space-y-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="h-3.5 w-1 rounded-full bg-rose-500 dark:bg-rose-400" />
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+              Operational Summary
+            </h3>
+            <div className="flex-1 h-px bg-border/60" />
+          </div>
           <PlanningAttentionRequired
             items={attentionItems}
             fiscalYear={fiscalYear}
@@ -156,17 +174,23 @@ export default function DashboardPage() {
 
         {/* ── Role-based Information Banner ──────────────────────────────────── */}
         {isPlanningUser ? (
-          <div className="p-3.5 bg-blue-50/60 border border-blue-100 rounded-lg flex items-center justify-between">
-            <p className="text-xs text-blue-900 font-normal">
-              <span className="font-semibold">Planning Office View:</span> Displaying {selectedDeptId ? 'filtered' : 'institutional'} data
+          <div className="p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/50 rounded-xl flex items-start sm:items-center gap-3">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
+              <Info className="h-4 w-4" />
+            </div>
+            <p className="text-xs text-blue-950 dark:text-blue-200 font-normal leading-relaxed">
+              <span className="font-semibold text-blue-900 dark:text-blue-100">Planning Office View:</span> Displaying {selectedDeptId ? 'filtered' : 'institutional'} data
               {selectedDeptId && ` for ${departments.find((d) => d.id === selectedDeptId)?.name || 'selected department'}`}.
-              Use the organization filter above to scope analytics by office.
+              {' '}Use the organization filter above to scope analytics by office.
             </p>
           </div>
         ) : (
-          <div className="p-3.5 bg-gray-50 border border-gray-100 rounded-lg">
-            <p className="text-xs text-gray-600 font-normal">
-              <span className="font-semibold">Department View:</span> You are viewing data scoped to your assigned department.
+          <div className="p-3.5 bg-card border border-border/80 rounded-xl flex items-start sm:items-center gap-3 shadow-2xs">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <Building2 className="h-4 w-4" />
+            </div>
+            <p className="text-xs text-muted-foreground font-normal leading-relaxed">
+              <span className="font-semibold text-foreground">Department View:</span> You are viewing data scoped to your assigned department.
             </p>
           </div>
         )}

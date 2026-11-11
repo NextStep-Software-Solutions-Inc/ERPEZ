@@ -1,4 +1,5 @@
 import { Provider as JotaiProvider } from 'jotai'
+import { ThemeProvider } from 'next-themes'
 import { useEffect, type ReactNode } from 'react'
 import { UnifiedAuthProvider } from '@/auth/UnifiedAuthProvider'
 import { DevRoleSwitcher } from '@/components/DevRoleSwitcher'
@@ -89,12 +90,19 @@ export default function GlobalProviders({ children }: GlobalProvidersProps) {
     (import.meta.env.VITE_AUTH_PROVIDER || '').toLowerCase() !== 'clerk'
 
   return (
-    <JotaiProvider>
-      <TenantContextInitializer />
-      <UnifiedAuthProvider>
-        {children}
-        {isDevPersonasAllowed && <DevRoleSwitcher />}
-      </UnifiedAuthProvider>
-    </JotaiProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <JotaiProvider>
+        <TenantContextInitializer />
+        <UnifiedAuthProvider>
+          {children}
+          {isDevPersonasAllowed && <DevRoleSwitcher />}
+        </UnifiedAuthProvider>
+      </JotaiProvider>
+    </ThemeProvider>
   )
 }

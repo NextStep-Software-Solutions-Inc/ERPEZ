@@ -164,7 +164,7 @@ export default function MultiStepForm<TFormValues>({
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-muted rounded-full h-2">
           <div
             className="bg-primary h-2 rounded-full transition-all duration-300"
             style={{ width: `${(currentStep / totalSteps) * 100}%` }}
@@ -191,7 +191,7 @@ export default function MultiStepForm<TFormValues>({
           </Alert>
         )}
         {/* Form buttons */}
-        <div className="sticky bottom-0 left-0 right-0 flex justify-between gap-2 pt-4 border-t bg-white">
+        <div className="sticky bottom-0 left-0 right-0 flex justify-between gap-2 pt-4 border-t border-border bg-card">
           <div className="flex gap-2">
             <Button
               type="button"

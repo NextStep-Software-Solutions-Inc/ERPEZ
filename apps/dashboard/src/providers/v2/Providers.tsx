@@ -1,14 +1,27 @@
-import { ThemeProvider } from "next-themes";
+import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { useLocation } from "@tanstack/react-router";
 import { useThemeStore } from "~/store";
 import { cn } from "~/lib/utils";
 import { Toaster as ReactToaster } from "~/components/ui/toaster";
-import { SonnToaster } from "~/components/ui/sonner";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
     const { theme, radius } = useThemeStore();
     const location = useLocation();
+
+    useEffect(() => {
+        if (typeof document === "undefined") return;
+        const body = document.body;
+        Array.from(body.classList).forEach((cls) => {
+            if (cls.startsWith("theme-")) {
+                body.classList.remove(cls);
+            }
+        });
+        if (location.pathname !== "/" && theme) {
+            body.classList.add(`theme-${theme}`);
+        }
+        body.style.setProperty("--radius", `${radius}rem`);
+    }, [theme, radius, location.pathname]);
 
     const style = {
         "--radius": `${radius}rem`,
@@ -16,17 +29,13 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
 
     if (location.pathname === "/") {
         return (
-            <ThemeProvider
-                attribute="class"
-                enableSystem={false}
-                defaultTheme="light"
-            >
+            <>
                 <div className={cn("h-full dash-tail-app font-inter")}>
                     {children}
                     <ReactToaster />
                 </div>
                 <Toaster />
-            </ThemeProvider>
+            </>
         );
     }
 
@@ -35,17 +44,11 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
             className={cn("dash-tail-app font-inter", "theme-" + theme)}
             style={style}
         >
-            <ThemeProvider
-                attribute="class"
-                enableSystem={false}
-                defaultTheme="light"
-            >
-                <div className={cn("h-full")}>
-                    {children}
-                    <ReactToaster />
-                </div>
-                <Toaster />
-            </ThemeProvider>
+            <div className={cn("h-full")}>
+                {children}
+                <ReactToaster />
+            </div>
+            <Toaster />
         </div>
     );
 };

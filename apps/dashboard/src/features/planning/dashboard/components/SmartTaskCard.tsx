@@ -32,15 +32,15 @@ interface SmartTaskCardProps {
 function getPriorityConfig(priority: SmartTaskCardType['priority']) {
   const configs = {
     high: {
-      className: 'bg-red-100 text-red-800 border-red-300',
+      className: 'bg-red-500/10 text-red-700 dark:bg-red-500/15 dark:text-red-300 border-red-500/25',
       label: 'High Priority',
     },
     medium: {
-      className: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      className: 'bg-amber-500/10 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 border-amber-500/25',
       label: 'Medium Priority',
     },
     low: {
-      className: 'bg-blue-100 text-blue-800 border-blue-300',
+      className: 'bg-blue-500/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 border-blue-500/25',
       label: 'Low Priority',
     },
   }
@@ -53,19 +53,19 @@ function getPriorityConfig(priority: SmartTaskCardType['priority']) {
 function getStatusConfig(status: SmartTaskCardType['status']) {
   const configs = {
     pending: {
-      className: 'bg-gray-100 text-gray-800 border-gray-300',
+      className: 'bg-muted text-muted-foreground border-border',
       label: 'Pending',
     },
     'in-progress': {
-      className: 'bg-blue-100 text-blue-800 border-blue-300',
+      className: 'bg-blue-500/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 border-blue-500/25',
       label: 'In Progress',
     },
     completed: {
-      className: 'bg-green-100 text-green-800 border-green-300',
+      className: 'bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border-emerald-500/25',
       label: 'Completed',
     },
     overdue: {
-      className: 'bg-red-100 text-red-800 border-red-300',
+      className: 'bg-red-500/10 text-red-700 dark:bg-red-500/15 dark:text-red-300 border-red-500/25',
       label: 'Overdue',
     },
   }
@@ -156,14 +156,14 @@ export function SmartTaskCard({ task, onActionClick }: SmartTaskCardProps) {
   }
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-blue-500">
+    <Card className="bg-card border-border/80 hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-blue-500">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1">
-            <CardTitle className="text-base font-semibold text-gray-900">
+            <CardTitle className="text-base font-semibold text-foreground">
               {title}
             </CardTitle>
-            <CardDescription className="text-sm text-gray-600 mt-1">
+            <CardDescription className="text-sm text-muted-foreground mt-1">
               {description}
             </CardDescription>
           </div>
@@ -185,10 +185,10 @@ export function SmartTaskCard({ task, onActionClick }: SmartTaskCardProps) {
           <div
             className={`flex items-center gap-1 text-xs ${
               isOverdue
-                ? 'text-red-600 font-semibold'
+                ? 'text-red-600 dark:text-red-400 font-semibold'
                 : isUrgent
-                  ? 'text-yellow-600 font-semibold'
-                  : 'text-gray-600'
+                  ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                  : 'text-muted-foreground'
             }`}
           >
             <Calendar className="h-3 w-3" />
@@ -239,13 +239,13 @@ export function TaskQueue({ tasks, onTaskAction, isLoading }: TaskQueueProps) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse">
+          <Card key={i} className="animate-pulse bg-card border-border/80">
             <CardHeader>
-              <div className="h-5 w-3/4 bg-gray-200 rounded" />
-              <div className="h-4 w-full bg-gray-200 rounded mt-2" />
+              <div className="h-5 w-3/4 bg-muted rounded" />
+              <div className="h-4 w-full bg-muted rounded mt-2" />
             </CardHeader>
             <CardContent>
-              <div className="h-24 bg-gray-200 rounded" />
+              <div className="h-24 bg-muted rounded" />
             </CardContent>
           </Card>
         ))}
@@ -255,11 +255,11 @@ export function TaskQueue({ tasks, onTaskAction, isLoading }: TaskQueueProps) {
 
   if (tasks.length === 0) {
     return (
-      <Card className="border-dashed">
+      <Card className="border-dashed border-border bg-card">
         <CardContent className="flex flex-col items-center justify-center py-12">
-          <AlertCircle className="h-12 w-12 text-gray-400 mb-3" />
-          <p className="text-gray-600 font-medium">No pending tasks</p>
-          <p className="text-sm text-gray-500 mt-1">
+          <AlertCircle className="h-12 w-12 text-muted-foreground/60 mb-3" />
+          <p className="text-foreground font-medium">No pending tasks</p>
+          <p className="text-sm text-muted-foreground mt-1">
             You're all caught up! Great work.
           </p>
         </CardContent>

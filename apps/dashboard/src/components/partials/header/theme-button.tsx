@@ -32,16 +32,17 @@ const ThemeButton = () => {
         <DropdownMenuItem
           onClick={() => setTheme("light")}
           className={cn(
-            "p-2 font-medium text-sm text-default-600 cursor-pointer mb-[2px] ",
+            "p-2 font-medium text-sm text-default-600 cursor-pointer mb-[2px]",
             {
-              "bg-primary text-primary-foreground": theme === "light",
+              "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground":
+                theme === "light",
             }
           )}
         >
           <Sun className="w-5 h-5 mr-2" />
           <span className="mr-2">Light</span>
           <Check
-            className={cn("w-4 h-4 flex-none ml-auto ", {
+            className={cn("w-4 h-4 flex-none ml-auto", {
               hidden: theme !== "light",
             })}
           />
@@ -49,17 +50,36 @@ const ThemeButton = () => {
         <DropdownMenuItem
           onClick={() => setTheme("dark")}
           className={cn(
-            "p-2 font-medium text-sm text-default-600 hover:bg-primary hover:text-primary-foreground  dark:hover:bg-background cursor-pointer mb-[2px]",
+            "p-2 font-medium text-sm text-default-600 cursor-pointer mb-[2px]",
             {
-              "bg-primary text-primary-foreground": theme === "dark",
+              "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground":
+                theme === "dark",
             }
           )}
         >
           <Moon className="w-5 h-5 mr-2" />
           <span className="mr-2">Dark</span>
           <Check
-            className={cn("w-4 h-4 flex-none ml-auto text-default-700", {
+            className={cn("w-4 h-4 flex-none ml-auto", {
               hidden: theme !== "dark",
+            })}
+          />
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setTheme("system")}
+          className={cn(
+            "p-2 font-medium text-sm text-default-600 cursor-pointer",
+            {
+              "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground":
+                theme === "system",
+            }
+          )}
+        >
+          <Device className="w-5 h-5 mr-2" />
+          <span className="mr-2">System</span>
+          <Check
+            className={cn("w-4 h-4 flex-none ml-auto", {
+              hidden: theme !== "system",
             })}
           />
         </DropdownMenuItem>

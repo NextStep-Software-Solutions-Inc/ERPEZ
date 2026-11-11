@@ -23,9 +23,9 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="p-3 bg-gray-50/50 rounded-lg space-y-2 border border-gray-100">
-          <div className="h-4 bg-gray-200 rounded w-1/4" />
-          <div className="h-2 bg-gray-200 rounded w-full" />
+        <div key={i} className="p-3 bg-muted/40 rounded-lg space-y-2 border border-border">
+          <div className="h-4 bg-muted rounded w-1/4" />
+          <div className="h-2 bg-muted rounded w-full" />
         </div>
       ))}
     </div>
@@ -38,12 +38,12 @@ export function DepartmentBudgetDistribution({
 }: DepartmentBudgetDistributionProps) {
   if (isLoading) {
     return (
-      <Card className="border border-gray-100 shadow-sm">
+      <Card className="border border-border/80 shadow-xs bg-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-900">
+          <CardTitle className="text-sm font-semibold text-foreground">
             Department Budget Allocation
           </CardTitle>
-          <CardDescription className="text-xs text-gray-500 font-normal">
+          <CardDescription className="text-xs text-muted-foreground font-normal">
             Programmed line-item budget vs approved ceiling (₱)
           </CardDescription>
         </CardHeader>
@@ -56,17 +56,17 @@ export function DepartmentBudgetDistribution({
 
   if (!data || data.length === 0) {
     return (
-      <Card className="border border-gray-100 shadow-sm">
+      <Card className="border border-border/80 shadow-xs bg-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-900">
+          <CardTitle className="text-sm font-semibold text-foreground">
             Department Budget Allocation
           </CardTitle>
-          <CardDescription className="text-xs text-gray-500 font-normal">
+          <CardDescription className="text-xs text-muted-foreground font-normal">
             Programmed line-item budget vs approved ceiling (₱)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="py-8 text-center text-xs text-gray-500 font-normal">
+          <div className="py-8 text-center text-xs text-muted-foreground font-normal">
             No department budget records encoded for this fiscal year.
           </div>
         </CardContent>
@@ -79,19 +79,19 @@ export function DepartmentBudgetDistribution({
   const overallRate = totalCeiling > 0 ? (totalProgrammed / totalCeiling) * 100 : 0
 
   return (
-    <Card className="border border-gray-100 shadow-sm bg-white">
+    <Card className="border border-border/80 shadow-xs bg-card">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div>
-          <CardTitle className="text-sm font-semibold text-gray-900">
+          <CardTitle className="text-sm font-semibold text-foreground">
             Department Budget Allocation
           </CardTitle>
-          <CardDescription className="text-xs text-gray-500 font-normal">
+          <CardDescription className="text-xs text-muted-foreground font-normal">
             Programmed line-item budget vs allocated department ceiling
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500 font-normal bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-            Total: <span className="font-semibold text-gray-800">{formatCurrencyAbbr(totalProgrammed)}</span> / {formatCurrencyAbbr(totalCeiling)} ({overallRate.toFixed(1)}%)
+          <span className="text-xs text-muted-foreground font-normal bg-muted/60 px-2.5 py-0.5 rounded border border-border tabular-nums">
+            Total: <span className="font-semibold text-foreground">{formatCurrencyAbbr(totalProgrammed)}</span> / {formatCurrencyAbbr(totalCeiling)} ({overallRate.toFixed(1)}%)
           </span>
         </div>
       </CardHeader>
@@ -105,27 +105,27 @@ export function DepartmentBudgetDistribution({
             return (
               <div
                 key={dept.departmentId || dept.department}
-                className="p-3 bg-white hover:bg-gray-50/70 rounded-lg border border-gray-100 transition-colors"
+                className="p-3 bg-muted/30 dark:bg-slate-800/50 hover:bg-muted/60 dark:hover:bg-slate-800/80 rounded-lg border border-border/70 transition-colors"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                  <span className="font-medium text-sm text-gray-900">{dept.department}</span>
+                  <span className="font-medium text-sm text-foreground">{dept.department}</span>
 
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="font-semibold text-gray-900">{formatCurrencyPHP(dept.programmedAmount)}</span>
-                    <span className="text-gray-300">/</span>
+                  <div className="flex items-center gap-2 text-xs tabular-nums">
+                    <span className="font-semibold text-foreground">{formatCurrencyPHP(dept.programmedAmount)}</span>
+                    <span className="text-muted-foreground/60">/</span>
                     {hasCeiling ? (
-                      <span className="text-gray-500 font-normal">Ceiling: {formatCurrencyPHP(dept.ceilingAmount)}</span>
+                      <span className="text-muted-foreground font-normal">Ceiling: {formatCurrencyPHP(dept.ceilingAmount)}</span>
                     ) : (
-                      <span className="text-amber-600 font-normal italic">No ceiling allocated</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-normal italic">No ceiling allocated</span>
                     )}
 
                     {!hasCeiling ? (
                       <Badge
                         variant="secondary"
-                        className={`text-[10px] font-normal px-1.5 py-0.5 border ${
+                        className={`text-[10px] font-medium px-1.5 py-0.5 border ${
                           dept.programmedAmount > 0
-                            ? 'bg-amber-50 text-amber-700 border-amber-200/70'
-                            : 'bg-gray-50 text-gray-500 border-gray-200/60'
+                            ? 'bg-amber-500/10 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 border-amber-500/20'
+                            : 'bg-muted text-muted-foreground border-border'
                         }`}
                       >
                         {dept.programmedAmount > 0 ? 'Unallocated Ceiling' : 'No Ceiling'}
@@ -133,7 +133,7 @@ export function DepartmentBudgetDistribution({
                     ) : isExceeded ? (
                       <Badge
                         variant="secondary"
-                        className="text-[10px] font-medium px-1.5 py-0.5 bg-red-50 text-red-700 border border-red-200/70 flex items-center gap-1"
+                        className="text-[10px] font-semibold px-1.5 py-0.5 bg-red-500/10 text-red-700 dark:bg-red-500/15 dark:text-red-300 border border-red-500/20 flex items-center gap-1"
                       >
                         <AlertTriangle className="h-3 w-3" />
                         {dept.programmingPercentage.toFixed(1)}% (Over-Budget)
@@ -141,10 +141,10 @@ export function DepartmentBudgetDistribution({
                     ) : (
                       <Badge
                         variant="secondary"
-                        className={`text-[10px] font-medium px-1.5 py-0.5 border ${
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 border ${
                           pct >= 90
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70'
-                            : 'bg-blue-50 text-blue-700 border-blue-200/70'
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border-emerald-500/20'
+                            : 'bg-blue-500/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 border-blue-500/20'
                         }`}
                       >
                         {dept.programmingPercentage.toFixed(1)}%
@@ -156,12 +156,12 @@ export function DepartmentBudgetDistribution({
                 {hasCeiling ? (
                   <Progress
                     value={pct}
-                    className={`h-1.5 ${isExceeded ? '[&>div]:bg-red-500' : pct >= 90 ? '[&>div]:bg-emerald-500' : '[&>div]:bg-blue-500'}`}
+                    className={`h-1.5 bg-slate-200/70 dark:bg-slate-700/70 ${isExceeded ? '[&>div]:bg-red-500' : pct >= 90 ? '[&>div]:bg-emerald-500' : '[&>div]:bg-blue-500'}`}
                   />
                 ) : (
-                  <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-slate-200/70 dark:bg-slate-700/70 rounded-full overflow-hidden">
                     {dept.programmedAmount > 0 && (
-                      <div className="h-full bg-amber-400/50 w-full" />
+                      <div className="h-full bg-amber-400/60 w-full" />
                     )}
                   </div>
                 )}

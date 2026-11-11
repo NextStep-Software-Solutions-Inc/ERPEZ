@@ -46,13 +46,16 @@ export const positionColumns: Array<ColumnDef<Position>> = [
       const status = getValue<string>()
       const statusLower = status?.toLowerCase() || 'vacant'
       return (
-        <Badge 
+        <Badge
           variant="soft"
-          className={`text-xs capitalize ${
-            statusLower === 'vacant' ? 'bg-yellow-100 text-yellow-800' :
-            statusLower === 'filled' ? 'bg-green-100 text-green-800' :
-            'bg-gray-100 text-gray-800'
-          }`}
+          color={
+            statusLower === 'vacant'
+              ? 'warning'
+              : statusLower === 'filled'
+                ? 'success'
+                : 'default'
+          }
+          className="text-xs capitalize"
         >
           {statusLower}
         </Badge>

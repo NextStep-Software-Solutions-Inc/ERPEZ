@@ -110,7 +110,7 @@ export function LicenseStatusCard() {
             {license?.plan ?? 'Unlicensed'}
           </Badge>
           {license?.isAirGapped && (
-            <Badge variant="outline" className="text-xs bg-slate-50 text-slate-700">
+            <Badge variant="outline" className="text-xs bg-muted/50 text-foreground border-border">
               Air-Gapped
             </Badge>
           )}
@@ -121,7 +121,9 @@ export function LicenseStatusCard() {
         {message && (
           <div
             className={`p-3 rounded-md text-sm flex items-center gap-2 ${
-              isError ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200'
+              isError
+                ? 'bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800/60'
+                : 'bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800/60'
             }`}
           >
             {isError ? <AlertTriangle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
@@ -130,22 +132,22 @@ export function LicenseStatusCard() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+          <div className="p-3 bg-muted/40 rounded-lg border border-border">
             <div className="text-xs text-muted-foreground font-medium">Active Key</div>
             <div className="text-sm font-mono font-semibold mt-1 truncate">
               {license?.licenseKey || 'None'}
             </div>
           </div>
-          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+          <div className="p-3 bg-muted/40 rounded-lg border border-border">
             <div className="text-xs text-muted-foreground font-medium">Days Remaining</div>
             <div className="text-sm font-semibold mt-1 flex items-center gap-1.5">
-              <span className={license && license.remainingDays < 30 ? 'text-amber-600 font-bold' : 'text-emerald-700 font-bold'}>
+              <span className={license && license.remainingDays < 30 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-emerald-700 dark:text-emerald-400 font-bold'}>
                 {license?.remainingDays ?? 0}
               </span>
               <span className="text-xs text-muted-foreground">days until renewal</span>
             </div>
           </div>
-          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+          <div className="p-3 bg-muted/40 rounded-lg border border-border">
             <div className="text-xs text-muted-foreground font-medium">User Capacity</div>
             <div className="text-sm font-semibold mt-1">
               {license?.activeUsersCount ?? 0} / {license?.maxUsers ?? 0} Users
@@ -167,14 +169,14 @@ export function LicenseStatusCard() {
                   key={mod.code}
                   className={`p-3 rounded-lg border flex items-center gap-3 transition-colors ${
                     isEnabled
-                      ? 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/20'
-                      : 'bg-gray-50 border-gray-200 opacity-60 dark:bg-gray-900'
+                      ? 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/50'
+                      : 'bg-muted/30 border-border opacity-60'
                   }`}
                 >
                   {isEnabled ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   ) : (
-                    <Lock className="w-5 h-5 text-gray-400 shrink-0" />
+                    <Lock className="w-5 h-5 text-muted-foreground shrink-0" />
                   )}
                   <div>
                     <div className="text-xs font-bold leading-tight">{mod.name}</div>
@@ -187,7 +189,7 @@ export function LicenseStatusCard() {
         </div>
 
         {modalOpen && (
-          <form onSubmit={handleActivate} className="p-4 border rounded-lg bg-slate-50/80 dark:bg-slate-900/80 space-y-3">
+          <form onSubmit={handleActivate} className="p-4 border border-border rounded-lg bg-muted/40 space-y-3">
             <div className="text-sm font-semibold flex items-center gap-2">
               <Key className="w-4 h-4 text-emerald-600" />
               Enter License Activation Key

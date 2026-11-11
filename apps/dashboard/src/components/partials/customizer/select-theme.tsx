@@ -10,18 +10,22 @@ import { useThemeStore } from "@/store";
 const allThemes = [
   { key: "light", label: "Light", icon: "heroicons:sun" },
   { key: "dark", label: "Dark", icon: "heroicons:moon" },
+  { key: "system", label: "System", icon: "heroicons:computer-desktop" },
 ];
 
 const SelectTheme = () => {
   const { theme, setTheme, resolvedTheme: mode } = useTheme();
-  const { theme: config, setTheme: setConfig } = useThemeStore();
+  const { theme: config } = useThemeStore();
   const newTheme = themes.find((t) => t.name === config);
+  const activePrimary =
+    newTheme?.cssVars?.[mode === "dark" ? "dark" : "light"]?.primary;
 
   return (
     <div
       style={{
-        "--theme-primary": `hsl(${newTheme?.cssVars[mode === "dark" ? "dark" : "light"].primary
-          })`,
+        "--theme-primary": activePrimary
+          ? `hsl(${activePrimary})`
+          : "hsl(var(--primary))",
       } as React.CSSProperties
       }
     >
@@ -29,15 +33,15 @@ const SelectTheme = () => {
         Color Scheme
       </div>
       <div className="text-muted-foreground font-normal text-xs mb-4">
-        Choose Light or Dark Scheme.
+        Choose Light, Dark, or System Scheme.
       </div>
-      <div className=" grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {allThemes?.map((themeOption) => (
           <div key={themeOption.key} className="flex-1 w-full">
             <button
               onClick={() => setTheme(themeOption.key)}
               className={cn(
-                "border  flex  w-full text-center items-center justify-center py-[14px]  px-10 rounded relative",
+                "border flex w-full text-center items-center justify-center py-[14px] px-4 rounded relative",
                 {
                   "text-[var(--theme-primary)] border-[var(--theme-primary)]":
                     theme === themeOption.key,

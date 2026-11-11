@@ -36,25 +36,15 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" translate="no" className="notranslate">
+    <html lang="en" translate="no" className="notranslate" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        <GlobalProviders>{children}</GlobalProviders>
-        {/* <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-          ]}
-        /> */}
-        <SonnToaster position="bottom-right" expand />
+        <GlobalProviders>
+          {children}
+          <SonnToaster position="bottom-right" expand />
+        </GlobalProviders>
         <Scripts />
       </body>
     </html>
