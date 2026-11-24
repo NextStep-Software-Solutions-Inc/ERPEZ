@@ -7,7 +7,6 @@ import { useMemo, useState, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAtom } from 'jotai'
-import { toast } from 'sonner'
 import {
   createAPRDialogOpenAtom,
   aprListFilterAtom,
@@ -115,13 +114,11 @@ export function APRListPage() {
       await deleteAPR({
         pathParams: { aprId: aprToDelete.id },
       } as any)
-      toast.success(`APR ${aprToDelete.aprNumber} deleted successfully`)
       invalidateAPRQueries(queryClient)
       setAprToDelete(null)
       refetch()
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Failed to delete APR'
-      toast.error(msg)
+    } catch {
+      // Global API interceptor displays the error toast
     }
   }
 

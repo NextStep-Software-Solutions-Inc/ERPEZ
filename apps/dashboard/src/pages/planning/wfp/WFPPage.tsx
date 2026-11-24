@@ -3,7 +3,8 @@ import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import type { MetaActions } from '@/types/global'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { FileBarChart2, Layers, Activity, FileText, List } from 'lucide-react'
+import { FileBarChart2, Layers, Activity, FileText, List, Loader2, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { TemplateTable } from '@/components/TemplateTable'
 import { getWFPsRequest } from '@/components/features/planning/wfp/wfp/handlers/getWFPsRequest'
 import {
@@ -16,7 +17,7 @@ const useWFPs = createQueryHookFromTemplate(getWFPsRequest)
 
 function WFPPage() {
   // const { deliveryUnitId } = useParams({ from: '/v2/wfp/' })
-  const { data: wfpsData } = useWFPs({
+  const { data: wfpsData, isLoading, error, refetch } = useWFPs({
     pathParams: {},
     queryParams: { 
       pageNumber: 1, 
@@ -187,20 +188,37 @@ function WFPPage() {
 
       <Card className="border-slate-200/80 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
         <CardContent className="p-4 sm:p-5">
-          <TemplateTable
-            columns={Column}
-            data={tableData}
-            actions={actions}
-            readonly={false}
-            toolbar={(table) => (
-              <Toolbar 
-                table={table} 
-                showColumnVisibility={true}
-              />
-            )}
-            meta={{ wfps: tableData }}
-            fixedPageSize={10}
-          />
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-3">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Loading Work and Financial Plans...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
+              <AlertCircle className="h-6 w-6 text-destructive" />
+              <p className="text-sm text-destructive font-medium">
+                Failed to load Work and Financial Plans.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => void refetch()}>
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <TemplateTable
+              columns={Column}
+              data={tableData}
+              actions={actions}
+              readonly={false}
+              toolbar={(table) => (
+                <Toolbar 
+                  table={table} 
+                  showColumnVisibility={true}
+                />
+              )}
+              meta={{ wfps: tableData }}
+              fixedPageSize={10}
+            />
+          )}
         </CardContent>
       </Card>
       <WFPDialogManager />
